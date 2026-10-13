@@ -1,0 +1,40 @@
+{
+  "scope": "Only completed identities; remaining fixtures are still running.",
+  "failures": [
+    {
+      "identity": "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+      "candidate": "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+      "reason": "new semantic outcome",
+      "acceptable": [
+        {
+          "httpMatch": false,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        },
+        {
+          "httpMatch": true,
+          "outcome": "difference",
+          "renderMatch": false,
+          "scenarioErrors": {},
+          "skipReason": null,
+          "skipped": false,
+          "terminalMatch": false
+        }
+      ],
+      "actual": {
+        "outcome": "match",
+        "terminalMatch": true,
+        "renderMatch": true,
+        "httpMatch": true,
+        "scenarioErrors": {},
+        "skipped": false,
+        "skipReason": null
+      }
+    }
+  ],
+  "interpretation": "Exact-match model picker previously occurred at committed H01 and H02 before H03; H02 baseline CLI control retained the original accepted render difference. Do not widen frozen sets. Retain current attempt and repeat complete unchanged fixture after capture."
+}

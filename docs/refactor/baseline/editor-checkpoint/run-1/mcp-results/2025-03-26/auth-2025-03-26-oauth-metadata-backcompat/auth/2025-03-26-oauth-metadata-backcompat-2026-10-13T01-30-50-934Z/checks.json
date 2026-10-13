@@ -1,0 +1,1154 @@
+[
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /mcp (method: initialize)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.193Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "body": {
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2025-11-25",
+          "capabilities": {},
+          "clientInfo": {
+            "name": "PiSharp.McpConformance",
+            "version": "1.0.0.0"
+          }
+        },
+        "id": 1,
+        "jsonrpc": "2.0"
+      },
+      "mcpMethod": "initialize"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 401 response for POST /mcp (method: initialize)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.195Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "statusCode": 401,
+      "mcpMethod": "initialize",
+      "headers": {
+        "x-powered-by": "Express",
+        "www-authenticate": "Bearer error=\"invalid_token\", error_description=\"Missing Authorization header\"",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "76",
+        "etag": "W/\"4c-ptrIdu+3yjAtarglCEu6XVLnz2c\""
+      },
+      "body": {
+        "error": "invalid_token",
+        "error_description": "Missing Authorization header"
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received GET request for /.well-known/oauth-protected-resource/mcp",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.212Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-protected-resource/mcp"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 404 response for GET /.well-known/oauth-protected-resource/mcp",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.215Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-protected-resource/mcp",
+      "statusCode": 404,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-security-policy": "default-src 'none'",
+        "x-content-type-options": "nosniff",
+        "content-type": "text/html; charset=utf-8",
+        "content-length": 179
+      },
+      "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /.well-known/oauth-protected-resource/mcp</pre>\n</body>\n</html>\n"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received GET request for /.well-known/oauth-protected-resource",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.217Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-protected-resource"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 404 response for GET /.well-known/oauth-protected-resource",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.218Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-protected-resource",
+      "statusCode": 404,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-security-policy": "default-src 'none'",
+        "x-content-type-options": "nosniff",
+        "content-type": "text/html; charset=utf-8",
+        "content-length": 175
+      },
+      "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /.well-known/oauth-protected-resource</pre>\n</body>\n</html>\n"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received GET request for /.well-known/oauth-authorization-server",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.222Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-authorization-server"
+    }
+  },
+  {
+    "id": "authorization-server-metadata",
+    "name": "AuthorizationServerMetadata",
+    "description": "Client requested authorization server metadata",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.223Z",
+    "specReferences": [
+      {
+        "id": "RFC-8414-metadata-request",
+        "url": "https://www.rfc-editor.org/rfc/rfc8414.html#section-3.1"
+      },
+      {
+        "id": "MCP-Authorization-metadata-discovery",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#authorization-server-metadata-discovery"
+      }
+    ],
+    "details": {
+      "url": "/.well-known/oauth-authorization-server",
+      "path": "/.well-known/oauth-authorization-server"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 200 response for GET /.well-known/oauth-authorization-server",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.223Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-authorization-server",
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "465",
+        "etag": "W/\"1d1-amHJy/ZL7p6iHbq8tthOQnsA+70\""
+      },
+      "body": {
+        "issuer": "http://localhost:39575",
+        "authorization_endpoint": "http://localhost:39575/oauth/authorize",
+        "token_endpoint": "http://localhost:39575/oauth/token",
+        "registration_endpoint": "http://localhost:39575/oauth/register",
+        "response_types_supported": [
+          "code"
+        ],
+        "grant_types_supported": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "code_challenge_methods_supported": [
+          "S256"
+        ],
+        "authorization_response_iss_parameter_supported": true,
+        "token_endpoint_auth_methods_supported": [
+          "none"
+        ]
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /oauth/register",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.242Z",
+    "details": {
+      "method": "POST",
+      "path": "/oauth/register",
+      "body": {
+        "redirect_uris": [
+          "http://127.0.0.1:38119/callback"
+        ],
+        "token_endpoint_auth_method": "client_secret_post",
+        "grant_types": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "response_types": [
+          "code"
+        ],
+        "client_name": "pi",
+        "application_type": "native"
+      }
+    }
+  },
+  {
+    "id": "client-registration",
+    "name": "ClientRegistration",
+    "description": "Client registered with authorization server",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.243Z",
+    "specReferences": [
+      {
+        "id": "MCP-Dynamic-client-registration",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/client#dynamic-client-registration"
+      }
+    ],
+    "details": {
+      "endpoint": "/register",
+      "clientName": "pi"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 201 response for POST /oauth/register",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.243Z",
+    "details": {
+      "method": "POST",
+      "path": "/oauth/register",
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "138",
+        "etag": "W/\"8a-+xo5+IvwfiwCDKasYHp8+FdMx6U\""
+      },
+      "body": {
+        "client_id": "test-client-id",
+        "client_secret": "test-client-secret",
+        "client_name": "pi",
+        "redirect_uris": [
+          "http://127.0.0.1:38119/callback"
+        ]
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /mcp (method: server/discover)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.331Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "body": {
+        "method": "server/discover",
+        "params": {
+          "_meta": {
+            "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+            "io.modelcontextprotocol/clientInfo": {
+              "name": "PiSharp.McpConformance",
+              "version": "1.0.0.0"
+            },
+            "io.modelcontextprotocol/clientCapabilities": {}
+          }
+        },
+        "id": 1,
+        "jsonrpc": "2.0"
+      },
+      "mcpMethod": "server/discover"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 401 response for POST /mcp (method: server/discover)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.331Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "statusCode": 401,
+      "mcpMethod": "server/discover",
+      "headers": {
+        "x-powered-by": "Express",
+        "www-authenticate": "Bearer error=\"invalid_token\", error_description=\"Missing Authorization header\"",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "76",
+        "etag": "W/\"4c-ptrIdu+3yjAtarglCEu6XVLnz2c\""
+      },
+      "body": {
+        "error": "invalid_token",
+        "error_description": "Missing Authorization header"
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received GET request for /.well-known/oauth-protected-resource/mcp",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.333Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-protected-resource/mcp"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 404 response for GET /.well-known/oauth-protected-resource/mcp",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.333Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-protected-resource/mcp",
+      "statusCode": 404,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-security-policy": "default-src 'none'",
+        "x-content-type-options": "nosniff",
+        "content-type": "text/html; charset=utf-8",
+        "content-length": 179
+      },
+      "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /.well-known/oauth-protected-resource/mcp</pre>\n</body>\n</html>\n"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received GET request for /.well-known/oauth-protected-resource",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.333Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-protected-resource"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 404 response for GET /.well-known/oauth-protected-resource",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.334Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-protected-resource",
+      "statusCode": 404,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-security-policy": "default-src 'none'",
+        "x-content-type-options": "nosniff",
+        "content-type": "text/html; charset=utf-8",
+        "content-length": 175
+      },
+      "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /.well-known/oauth-protected-resource</pre>\n</body>\n</html>\n"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received GET request for /.well-known/oauth-authorization-server",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.334Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-authorization-server"
+    }
+  },
+  {
+    "id": "authorization-server-metadata",
+    "name": "AuthorizationServerMetadata",
+    "description": "Client requested authorization server metadata",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.334Z",
+    "specReferences": [
+      {
+        "id": "RFC-8414-metadata-request",
+        "url": "https://www.rfc-editor.org/rfc/rfc8414.html#section-3.1"
+      },
+      {
+        "id": "MCP-Authorization-metadata-discovery",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#authorization-server-metadata-discovery"
+      }
+    ],
+    "details": {
+      "url": "/.well-known/oauth-authorization-server",
+      "path": "/.well-known/oauth-authorization-server"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 200 response for GET /.well-known/oauth-authorization-server",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.334Z",
+    "details": {
+      "method": "GET",
+      "path": "/.well-known/oauth-authorization-server",
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "465",
+        "etag": "W/\"1d1-amHJy/ZL7p6iHbq8tthOQnsA+70\""
+      },
+      "body": {
+        "issuer": "http://localhost:39575",
+        "authorization_endpoint": "http://localhost:39575/oauth/authorize",
+        "token_endpoint": "http://localhost:39575/oauth/token",
+        "registration_endpoint": "http://localhost:39575/oauth/register",
+        "response_types_supported": [
+          "code"
+        ],
+        "grant_types_supported": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "code_challenge_methods_supported": [
+          "S256"
+        ],
+        "authorization_response_iss_parameter_supported": true,
+        "token_endpoint_auth_methods_supported": [
+          "none"
+        ]
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /oauth/register",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.335Z",
+    "details": {
+      "method": "POST",
+      "path": "/oauth/register",
+      "body": {
+        "redirect_uris": [
+          "http://127.0.0.1:45561/callback"
+        ],
+        "token_endpoint_auth_method": "client_secret_post",
+        "grant_types": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "response_types": [
+          "code"
+        ],
+        "client_name": "pi",
+        "application_type": "native"
+      }
+    }
+  },
+  {
+    "id": "client-registration",
+    "name": "ClientRegistration",
+    "description": "Client registered with authorization server",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.336Z",
+    "specReferences": [
+      {
+        "id": "MCP-Dynamic-client-registration",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/client#dynamic-client-registration"
+      }
+    ],
+    "details": {
+      "endpoint": "/register",
+      "clientName": "pi"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 201 response for POST /oauth/register",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.336Z",
+    "details": {
+      "method": "POST",
+      "path": "/oauth/register",
+      "statusCode": 201,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "138",
+        "etag": "W/\"8a-vS2GH4TpYaHzXMk/mak7ORyr7a4\""
+      },
+      "body": {
+        "client_id": "test-client-id",
+        "client_secret": "test-client-secret",
+        "client_name": "pi",
+        "redirect_uris": [
+          "http://127.0.0.1:45561/callback"
+        ]
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received GET request for /oauth/authorize",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.340Z",
+    "details": {
+      "method": "GET",
+      "path": "/oauth/authorize",
+      "query": {
+        "client_id": "test-client-id",
+        "redirect_uri": "http://127.0.0.1:45561/callback",
+        "response_type": "code",
+        "code_challenge": "mtSOhctX61ezDCFd3il3N3HSF0_nZP2eS7Lzthxcacw",
+        "code_challenge_method": "S256",
+        "state": "rOWKqPaQS6eI-EQt4EB5NPHi-elbNdx684iQzr4WV-A"
+      }
+    }
+  },
+  {
+    "id": "authorization-request",
+    "name": "AuthorizationRequest",
+    "description": "Client made authorization request",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.341Z",
+    "specReferences": [
+      {
+        "id": "OAUTH-2.1-authorization-endpoint",
+        "url": "https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-13.html#name-authorization-endpoint"
+      }
+    ],
+    "details": {
+      "query": {
+        "client_id": "test-client-id",
+        "redirect_uri": "http://127.0.0.1:45561/callback",
+        "response_type": "code",
+        "code_challenge": "mtSOhctX61ezDCFd3il3N3HSF0_nZP2eS7Lzthxcacw",
+        "code_challenge_method": "S256",
+        "state": "rOWKqPaQS6eI-EQt4EB5NPHi-elbNdx684iQzr4WV-A"
+      }
+    }
+  },
+  {
+    "id": "pkce-code-challenge-sent",
+    "name": "PKCE Code Challenge",
+    "description": "Client sent code_challenge in authorization request",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.341Z",
+    "specReferences": [
+      {
+        "id": "MCP-PKCE-requirement",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#authorization-code-protection"
+      }
+    ]
+  },
+  {
+    "id": "pkce-s256-method-used",
+    "name": "PKCE S256 Method",
+    "description": "Client used S256 code challenge method",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.341Z",
+    "specReferences": [
+      {
+        "id": "MCP-PKCE-requirement",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#authorization-code-protection"
+      }
+    ],
+    "details": {
+      "method": "S256"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 302 response for GET /oauth/authorize",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.342Z",
+    "details": {
+      "method": "GET",
+      "path": "/oauth/authorize",
+      "statusCode": 302,
+      "headers": {
+        "x-powered-by": "Express",
+        "location": "http://127.0.0.1:45561/callback?code=test-auth-code&state=rOWKqPaQS6eI-EQt4EB5NPHi-elbNdx684iQzr4WV-A&iss=http%3A%2F%2Flocalhost%3A39575",
+        "vary": "Accept",
+        "content-type": "text/plain; charset=utf-8",
+        "content-length": "158"
+      },
+      "body": "Found. Redirecting to http://127.0.0.1:45561/callback?code=test-auth-code&state=rOWKqPaQS6eI-EQt4EB5NPHi-elbNdx684iQzr4WV-A&iss=http%3A%2F%2Flocalhost%3A39575"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /oauth/token",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.369Z",
+    "details": {
+      "method": "POST",
+      "path": "/oauth/token"
+    }
+  },
+  {
+    "id": "token-request",
+    "name": "TokenRequest",
+    "description": "Client requested access token",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.372Z",
+    "specReferences": [
+      {
+        "id": "OAUTH-2.1-token-request",
+        "url": "https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-13.html#name-token-request"
+      }
+    ],
+    "details": {
+      "endpoint": "/token",
+      "grantType": "authorization_code"
+    }
+  },
+  {
+    "id": "pkce-code-verifier-sent",
+    "name": "PKCE Code Verifier",
+    "description": "Client sent code_verifier in token request",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.372Z",
+    "specReferences": [
+      {
+        "id": "MCP-PKCE-requirement",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#authorization-code-protection"
+      }
+    ]
+  },
+  {
+    "id": "pkce-verifier-matches-challenge",
+    "name": "PKCE Verifier Validation",
+    "description": "code_verifier correctly matches code_challenge (S256)",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.372Z",
+    "specReferences": [
+      {
+        "id": "MCP-PKCE-requirement",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#authorization-code-protection"
+      }
+    ],
+    "details": {
+      "matches": true,
+      "storedChallenge": "mtSOhctX61ezDCFd3il3N3HSF0_nZP2eS7Lzthxcacw",
+      "computedChallenge": "mtSOhctX61ezDCFd3il3N3HSF0_nZP2eS7Lzthxcacw"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 200 response for POST /oauth/token",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.373Z",
+    "details": {
+      "method": "POST",
+      "path": "/oauth/token",
+      "statusCode": 200,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "83",
+        "etag": "W/\"53-Sr9yPEqX4mT+OFM8zwCsKei4qoU\""
+      },
+      "body": {
+        "access_token": "test-token-1791855051373",
+        "token_type": "Bearer",
+        "expires_in": 3600
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /mcp (method: server/discover)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.415Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "body": {
+        "method": "server/discover",
+        "params": {
+          "_meta": {
+            "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+            "io.modelcontextprotocol/clientInfo": {
+              "name": "PiSharp.McpConformance",
+              "version": "1.0.0.0"
+            },
+            "io.modelcontextprotocol/clientCapabilities": {}
+          }
+        },
+        "id": 1,
+        "jsonrpc": "2.0"
+      },
+      "mcpMethod": "server/discover"
+    }
+  },
+  {
+    "id": "valid-bearer-token",
+    "name": "ValidBearerToken",
+    "description": "Client provided valid bearer token",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.416Z",
+    "specReferences": [
+      {
+        "id": "MCP-Access-token-usage",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#access-token-usage"
+      }
+    ],
+    "details": {
+      "token": "test-token-1791...",
+      "scopes": []
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 400 response for POST /mcp (method: server/discover)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.428Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "statusCode": 400,
+      "mcpMethod": "server/discover",
+      "headers": {
+        "x-powered-by": "Express",
+        "content-type": "application/json",
+        "content-length": 198
+      },
+      "body": {
+        "jsonrpc": "2.0",
+        "error": {
+          "code": -32000,
+          "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)"
+        },
+        "id": null
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /mcp (method: initialize)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.443Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "body": {
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2025-11-25",
+          "capabilities": {},
+          "clientInfo": {
+            "name": "PiSharp.McpConformance",
+            "version": "1.0.0.0"
+          }
+        },
+        "id": 2,
+        "jsonrpc": "2.0"
+      },
+      "mcpMethod": "initialize"
+    }
+  },
+  {
+    "id": "valid-bearer-token",
+    "name": "ValidBearerToken",
+    "description": "Client provided valid bearer token",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.443Z",
+    "specReferences": [
+      {
+        "id": "MCP-Access-token-usage",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#access-token-usage"
+      }
+    ],
+    "details": {
+      "token": "test-token-1791...",
+      "scopes": []
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 200 response for POST /mcp (method: initialize)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.448Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "statusCode": 200,
+      "mcpMethod": "initialize",
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-transform",
+        "connection": "keep-alive",
+        "content-type": "text/event-stream",
+        "x-accel-buffering": "no",
+        "content-length": 185
+      },
+      "body": "event: message\ndata: {\"result\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"auth-prm-pathbased-server\",\"version\":\"1.0.0\"}},\"jsonrpc\":\"2.0\",\"id\":2}\n\n"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received GET request for /mcp",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.458Z",
+    "details": {
+      "method": "GET",
+      "path": "/mcp"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 404 response for GET /mcp",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.459Z",
+    "details": {
+      "method": "GET",
+      "path": "/mcp",
+      "statusCode": 404,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-security-policy": "default-src 'none'",
+        "x-content-type-options": "nosniff",
+        "content-type": "text/html; charset=utf-8",
+        "content-length": 142
+      },
+      "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /mcp</pre>\n</body>\n</html>\n"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /mcp (method: notifications/initialized)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.462Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "body": {
+        "method": "notifications/initialized",
+        "params": {},
+        "jsonrpc": "2.0"
+      },
+      "mcpMethod": "notifications/initialized"
+    }
+  },
+  {
+    "id": "valid-bearer-token",
+    "name": "ValidBearerToken",
+    "description": "Client provided valid bearer token",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.462Z",
+    "specReferences": [
+      {
+        "id": "MCP-Access-token-usage",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#access-token-usage"
+      }
+    ],
+    "details": {
+      "token": "test-token-1791...",
+      "scopes": []
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 202 response for POST /mcp (method: notifications/initialized)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.466Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "statusCode": 202,
+      "mcpMethod": "notifications/initialized",
+      "headers": {
+        "x-powered-by": "Express"
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /mcp (method: initialize)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.472Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "body": {
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2025-11-25",
+          "capabilities": {},
+          "clientInfo": {
+            "name": "PiSharp.McpConformance",
+            "version": "1.0.0.0"
+          }
+        },
+        "id": 1,
+        "jsonrpc": "2.0"
+      },
+      "mcpMethod": "initialize"
+    }
+  },
+  {
+    "id": "valid-bearer-token",
+    "name": "ValidBearerToken",
+    "description": "Client provided valid bearer token",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.472Z",
+    "specReferences": [
+      {
+        "id": "MCP-Access-token-usage",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#access-token-usage"
+      }
+    ],
+    "details": {
+      "token": "test-token-1791...",
+      "scopes": []
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 200 response for POST /mcp (method: initialize)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.474Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "statusCode": 200,
+      "mcpMethod": "initialize",
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-transform",
+        "connection": "keep-alive",
+        "content-type": "text/event-stream",
+        "x-accel-buffering": "no",
+        "content-length": 185
+      },
+      "body": "event: message\ndata: {\"result\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"auth-prm-pathbased-server\",\"version\":\"1.0.0\"}},\"jsonrpc\":\"2.0\",\"id\":1}\n\n"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received GET request for /mcp",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.475Z",
+    "details": {
+      "method": "GET",
+      "path": "/mcp"
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 404 response for GET /mcp",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.475Z",
+    "details": {
+      "method": "GET",
+      "path": "/mcp",
+      "statusCode": 404,
+      "headers": {
+        "x-powered-by": "Express",
+        "content-security-policy": "default-src 'none'",
+        "x-content-type-options": "nosniff",
+        "content-type": "text/html; charset=utf-8",
+        "content-length": 142
+      },
+      "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /mcp</pre>\n</body>\n</html>\n"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /mcp (method: notifications/initialized)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.476Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "body": {
+        "method": "notifications/initialized",
+        "params": {},
+        "jsonrpc": "2.0"
+      },
+      "mcpMethod": "notifications/initialized"
+    }
+  },
+  {
+    "id": "valid-bearer-token",
+    "name": "ValidBearerToken",
+    "description": "Client provided valid bearer token",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.476Z",
+    "specReferences": [
+      {
+        "id": "MCP-Access-token-usage",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#access-token-usage"
+      }
+    ],
+    "details": {
+      "token": "test-token-1791...",
+      "scopes": []
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 202 response for POST /mcp (method: notifications/initialized)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.477Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "statusCode": 202,
+      "mcpMethod": "notifications/initialized",
+      "headers": {
+        "x-powered-by": "Express"
+      }
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /mcp (method: tools/list)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.491Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "body": {
+        "method": "tools/list",
+        "params": {},
+        "id": 2,
+        "jsonrpc": "2.0"
+      },
+      "mcpMethod": "tools/list"
+    }
+  },
+  {
+    "id": "valid-bearer-token",
+    "name": "ValidBearerToken",
+    "description": "Client provided valid bearer token",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.491Z",
+    "specReferences": [
+      {
+        "id": "MCP-Access-token-usage",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#access-token-usage"
+      }
+    ],
+    "details": {
+      "token": "test-token-1791...",
+      "scopes": []
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 200 response for POST /mcp (method: tools/list)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.494Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "statusCode": 200,
+      "mcpMethod": "tools/list",
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-transform",
+        "connection": "keep-alive",
+        "content-type": "text/event-stream",
+        "x-accel-buffering": "no",
+        "content-length": 121
+      },
+      "body": "event: message\ndata: {\"result\":{\"tools\":[{\"name\":\"test-tool\",\"inputSchema\":{\"type\":\"object\"}}]},\"jsonrpc\":\"2.0\",\"id\":2}\n\n"
+    }
+  },
+  {
+    "id": "incoming-request",
+    "name": "Incoming-request",
+    "description": "Received POST request for /mcp (method: tools/call)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.535Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "body": {
+        "method": "tools/call",
+        "params": {
+          "name": "test-tool",
+          "arguments": {}
+        },
+        "id": 3,
+        "jsonrpc": "2.0"
+      },
+      "mcpMethod": "tools/call"
+    }
+  },
+  {
+    "id": "valid-bearer-token",
+    "name": "ValidBearerToken",
+    "description": "Client provided valid bearer token",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:51.535Z",
+    "specReferences": [
+      {
+        "id": "MCP-Access-token-usage",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization#access-token-usage"
+      }
+    ],
+    "details": {
+      "token": "test-token-1791...",
+      "scopes": []
+    }
+  },
+  {
+    "id": "outgoing-response",
+    "name": "Outgoing-response",
+    "description": "Sent 200 response for POST /mcp (method: tools/call)",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:51.538Z",
+    "details": {
+      "method": "POST",
+      "path": "/mcp",
+      "statusCode": 200,
+      "mcpMethod": "tools/call",
+      "headers": {
+        "x-powered-by": "Express",
+        "cache-control": "no-cache, no-transform",
+        "connection": "keep-alive",
+        "content-type": "text/event-stream",
+        "x-accel-buffering": "no",
+        "content-length": 100
+      },
+      "body": "event: message\ndata: {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"test\"}]},\"jsonrpc\":\"2.0\",\"id\":3}\n\n"
+    }
+  }
+]

@@ -24,7 +24,7 @@ public sealed class TerminalScreenTests
         };
         var header = new[] { cwd, "", "Saved decision: untrusted", "Current session: untrusted", "" };
 
-        var currentSelection = TerminalEditor.RenderInlinePanel(theme, 100, "\nProject trust", options,
+        var currentSelection = TerminalDialogPanels.RenderInlinePanel(theme, 100, "\nProject trust", options,
             selectedIndex: 2, header, "↑↓ navigate  enter save  escape/ctrl+c cancel", optionIndent: 1,
             bottomSpacerLines: 1, showCurrentMarker: true, headerStyle: "muted");
         var currentText = string.Join('\n', currentSelection);
@@ -36,7 +36,7 @@ public sealed class TerminalScreenTests
             theme.Style("accent", "Do not trust"), currentText);
         Assert.Contains("     " + theme.Style("text", "Trust"), currentText);
 
-        var parentSelection = TerminalEditor.RenderInlinePanel(theme, 100, "\nProject trust", options,
+        var parentSelection = TerminalDialogPanels.RenderInlinePanel(theme, 100, "\nProject trust", options,
             selectedIndex: 1, header, "↑↓ navigate  enter save  escape/ctrl+c cancel", optionIndent: 1,
             bottomSpacerLines: 1, showCurrentMarker: true, headerStyle: "muted");
         Assert.Contains(" " + theme.Style("accent", "→ ") + "  " +

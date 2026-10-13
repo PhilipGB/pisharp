@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "tools/parity/pi_reference.py",
+    "verify",
+    "--pi",
+    "/tmp/pisharp-frozen-pi1"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 0.06392645835876465
+}

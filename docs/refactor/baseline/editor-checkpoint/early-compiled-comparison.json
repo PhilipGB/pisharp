@@ -1,0 +1,8 @@
+{
+  "pass_": true,
+  "failures": [],
+  "baselineFlaky": [],
+  "expected": 1687,
+  "candidate": 1723,
+  "scope": "Early compiled/unit/official-MCP preservation only. Full checkpoint waits for every original process/terminal identity."
+}

@@ -47,7 +47,27 @@ normal-buffer document/scrollback restoration.
 [TerminalEditor](../../src/PiSharp.Cli/Tui/TerminalEditor.cs) uses EditorBuffer,
 EditorKeymap, EditorCompletion and TerminalInput for draft editing and dispatches
 application actions through callbacks composed by Program. Dialogs and progress
-panels consume the same input/mode components. Command workflows and active bindings
+panels consume the same input/mode components. Editor retains ordinary draft editing,
+completion/history, active-run queue/abort and application shortcut dispatch. It owns
+the lazily opened console input and its terminal-response subscriptions.
+
+[TerminalDialogs](../../src/PiSharp.Cli/Tui/TerminalDialogs.cs) owns selector/model-refresh
+and prompt input loops, including redirected prompt fallback, panel preservation and
+mode cleanup. [TerminalDialogPanels](../../src/PiSharp.Cli/Tui/TerminalDialogPanels.cs)
+owns their concrete row, cursor and key-hint rendering. Model refresh retains its
+15-second cancellation bound and shows cached choices when refresh fails.
+[TerminalProgressDisplay](../../src/PiSharp.Cli/Tui/TerminalProgressDisplay.cs) owns the
+16-millisecond initial-frame delay, synchronized progress updates, operation settlement,
+cancel confirmation and backend/after-cancel ordering. Fast success or failure never
+opens a transient progress panel; failure preserves the original exception.
+
+[TerminalTranscriptSearchInput](../../src/PiSharp.Cli/Tui/TerminalTranscriptSearchInput.cs)
+owns the saved draft/footer/cursor, remembered search query, match navigation and close
+restoration. [TerminalAuthorizationInput](../../src/PiSharp.Cli/Tui/TerminalAuthorizationInput.cs)
+owns sign-in mouse/key/EOF handling and MCP authorization monitoring. Input and screen
+accessors use the editor's current bindings; owners do not cache an old attached screen.
+Editor entry points keep application callers together, while these owners execute
+their workflows and keep their state. Command workflows and active bindings
 are described in [CLI composition](cli-composition.md). Provider/MCP login owns
 its authentication workflow; terminal notification state only presents its URL.
 These concrete components remain inside CLI; no new TUI framework, project,
@@ -63,6 +83,9 @@ are parity-sensitive. Public screen/editor APIs and mode sequences are preserved
 cover coalescing, suspend/resume, live reflow/commit, auth-origin protection,
 scrollback, images and failure/lifetime transitions. Compositor, input, theme,
 Markdown, image, selection and Linux PTY tests cover their boundaries.
+[TerminalEditorProgressTests](../../tests/PiSharp.Tests/TerminalEditorProgressTests.cs)
+hosts fast progress success/failure in a real Linux PTY, exercising terminal mode
+ownership alongside draft/result/exception preservation and cancellation cleanup.
 
 The [terminal differential harness](../../tools/parity/terminal/run.py) uses the
 [frozen Pi reference](../parity/pi-reference.md), complete fixture matrices and

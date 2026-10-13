@@ -1,24 +1,18 @@
 namespace PiSharp.Cli.Tui;
 
-internal sealed record TerminalProgressState(string Message, double? Ratio = null, string? Detail = null);
-internal readonly record struct TerminalProgressOutcome<T>(bool Cancelled, T? Value);
-internal enum TerminalLoginInputAction { CopyAuthorizationUrl, Cancel }
-
-/// <summary>Normal-screen terminal editor. Leaves transcript in the terminal scrollback.</summary>
+/// <summary>Edits drafts and routes idle and active-run input to application actions and terminal dialogs.</summary>
 public sealed class TerminalEditor
 {
-    private static readonly TimeSpan InitialProgressFrameDelay = TimeSpan.FromMilliseconds(16);
     private readonly EditorBuffer _buffer;
     private TerminalInput? _input;
     private readonly EditorCompletion _completion;
     private readonly EditorKeymap _keymap;
+    private readonly TerminalDialogs _dialogs;
+    private readonly TerminalProgressDisplay _progress;
+    private readonly TerminalTranscriptSearchInput _transcriptSearch;
+    private readonly TerminalAuthorizationInput _authorizationInput;
     private TerminalScreen? _screen;
-    private bool _searchingTranscript;
     private string? _lastRenderedEditorText;
-    private string _savedDraft = "";
-    private string _savedFooter = "";
-    private int _savedCursor;
-    private string _lastSearchQuery = "";
     private bool _toolResultsExpanded;
     private long? _lastClearAtMilliseconds;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
@@ -31,6 +25,12 @@ public sealed class TerminalEditor
         _keymap = new(agentDirectory);
         _buffer = new(_keymap);
         _toolResultsExpanded = initiallyExpanded;
+        _dialogs = new(_keymap, EnsureInput, () => _screen,
+            token => ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false,
+                allowEmptySubmit: true, cancellationToken: token));
+        _progress = new(_keymap, EnsureInput, () => _screen, _dialogs);
+        _transcriptSearch = new(_buffer, _keymap, () => _screen);
+        _authorizationInput = new(_keymap, EnsureInput, () => _screen);
     }
     private const string Prompt = "❯ ";
     private int _renderedRows;
@@ -48,21 +48,8 @@ public sealed class TerminalEditor
             _keymap.GetDisplayKeys("app.message.copy"), _keymap.GetDisplayKeys("app.interrupt")) == true;
     internal void ClearAuthorizationUrl(string owner) => _screen?.ClearAuthorizationUrl(owner);
 
-    internal TerminalLoginInputAction? TryReadLoginAction()
-    {
-        if (!EnsureInput().TryRead(50, out var input)) return null;
-        if (input.Mouse is { } mouse)
-        {
-            var result = _screen?.HandleMouse(mouse) ?? default;
-            return result.Copy ? TerminalLoginInputAction.CopyAuthorizationUrl : null;
-        }
-        if (input.Key is not { } key) return null;
-        if (_keymap.Matches("tui.select.cancel", key) || _keymap.Matches("app.interrupt", key) ||
-            _keymap.Matches("app.clear", key))
-            return TerminalLoginInputAction.Cancel;
-        if (_keymap.Matches("app.message.copy", key)) return TerminalLoginInputAction.CopyAuthorizationUrl;
-        return null;
-    }
+    internal TerminalLoginInputAction? TryReadLoginAction() =>
+        _authorizationInput.TryReadLoginAction();
 
     public void ReloadKeybindings()
     {
@@ -112,371 +99,34 @@ public sealed class TerminalEditor
     internal TerminalSelection<T>? ShowSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
-        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items")
-    {
-        if (_screen is not { IsActive: true } screen) return null;
-        var input = EnsureInput();
-        using var mode = TerminalMode.Enter(screen);
-        return new TerminalOverlayHost(input).Select(screen, title, options, selectedKey, scopedOptions,
-            allLabel, scopedLabel, emptyMessage);
-    }
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items") =>
+        _dialogs.ShowSelectionList(title, options, selectedKey, scopedOptions, allLabel, scopedLabel, emptyMessage);
 
     internal TerminalSelection<T>? ShowModelSelectionList<T>(
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey, string hint,
         Func<T, string> modelName, IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
         Func<CancellationToken, Task<TerminalSelectionRefresh<T>>>? refreshModels = null,
-        CancellationToken cancellationToken = default)
-    {
-        if (_screen is not { IsActive: true } screen) return null;
-        var input = EnsureInput();
-        using var mode = TerminalMode.Enter(screen);
-        var list = new TerminalSelectionList<T>("Select model", options, selectedKey, scopedOptions,
-            allLabel: "all", scopedLabel: "scoped", emptyMessage: "No matching models");
-        var preservePanel = false;
-        using var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        refreshCancellation.CancelAfter(TimeSpan.FromSeconds(15));
-        var refreshStatus = refreshModels is null ? "Model catalogs refreshed." : "Refreshing model catalogs…";
-        var refreshSuccess = refreshModels is null;
-        var needsRender = true;
-        Task<TerminalSelectionRefresh<T>>? refreshTask = null;
-        try
-        {
-            var initialContent = list.RenderModelPicker(screen.TerminalWidth, screen.CurrentTheme, hint,
-                refreshStatus, refreshSuccess, modelName, out var initialCursorRow, out var initialCursorColumn);
-            screen.SetEditorPanel(initialContent, initialCursorRow, initialCursorColumn,
-                cursorVisible: false, bottomMargin: 2);
-            needsRender = false;
-            if (refreshModels is not null) refreshTask = refreshModels(refreshCancellation.Token);
-
-            while (screen.IsActive)
-            {
-                if (cancellationToken.IsCancellationRequested) return null;
-                screen.RefreshIfResized();
-                if (refreshTask is { IsCompleted: true })
-                {
-                    if (refreshTask.IsCompletedSuccessfully)
-                    {
-                        var refreshed = refreshTask.Result;
-                        list.ReplaceOptions(refreshed.Options, refreshed.ScopedOptions);
-                        refreshStatus = refreshed.Status;
-                        refreshSuccess = refreshed.IsSuccess;
-                    }
-                    else if (refreshTask.IsCanceled)
-                    {
-                        if (cancellationToken.IsCancellationRequested) return null;
-                        refreshStatus = "Model refresh timed out; showing cached models.";
-                        refreshSuccess = false;
-                    }
-                    else
-                    {
-                        refreshStatus = "Could not refresh model catalogs; showing cached models.";
-                        refreshSuccess = false;
-                    }
-                    refreshTask = null;
-                    needsRender = true;
-                }
-
-                if (needsRender)
-                {
-                    var content = list.RenderModelPicker(screen.TerminalWidth, screen.CurrentTheme, hint,
-                        refreshStatus, refreshSuccess, modelName, out var cursorRow, out var cursorColumn);
-                    screen.SetEditorPanel(content, cursorRow, cursorColumn, cursorVisible: false, bottomMargin: 2);
-                    needsRender = false;
-                }
-
-                if (!input.TryRead(40, out var next)) continue;
-                TerminalSelectionAction action;
-                if (TerminalInput.TryGetText(next, out _))
-                {
-                    var text = input.ReadAvailableText(next, out var following);
-                    action = list.HandleInput(new(null, text));
-                    if (following is not null) input.PushBack(following);
-                }
-                else action = list.HandleInput(next);
-                if (action is TerminalSelectionAction.Accept or TerminalSelectionAction.AcceptAsDefault)
-                {
-                    preservePanel = true;
-                    refreshCancellation.Cancel();
-                    return list.Selected is { } selected
-                        ? selected with { SetAsDefault = action == TerminalSelectionAction.AcceptAsDefault }
-                        : null;
-                }
-                if (action == TerminalSelectionAction.Cancel) return null;
-                if (next.IsEndOfStream) return null;
-                needsRender = true;
-            }
-            return null;
-        }
-        finally
-        {
-            refreshCancellation.Cancel();
-            if (!preservePanel) screen.SetEditorPanel(null);
-        }
-    }
+        CancellationToken cancellationToken = default) =>
+        _dialogs.ShowModelSelectionList(options, selectedKey, hint, modelName, scopedOptions, refreshModels, cancellationToken);
 
     internal TerminalSelection<T>? ShowInlineSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, IReadOnlyList<string>? header = null,
         string footer = "↑↓ move • enter select • escape/ctrl+c close", string? selectedKey = null,
         bool preservePanelAfterSelection = false, int optionIndent = 0, int bottomMargin = 2,
         int bottomSpacerLines = 0, bool showCurrentMarker = false,
-        CancellationToken cancellationToken = default, bool extensionDialog = false, string headerStyle = "dim")
-    {
-        if (_screen is not { IsActive: true } screen || options.Count == 0) return null;
-        var input = EnsureInput();
-        var selectedIndex = selectedKey is null ? 0 : Math.Max(0,
-            Array.FindIndex(options.ToArray(), option => option.Key.Equals(selectedKey, StringComparison.OrdinalIgnoreCase)));
-        using var mode = TerminalMode.Enter(screen);
-        var preservePanel = false;
-        var needsRender = true;
-        var renderedWidth = -1;
-        var renderedHeight = -1;
-        try
-        {
-            while (screen.IsActive)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                screen.RefreshIfResized();
-                if (needsRender || renderedWidth != screen.TerminalWidth || renderedHeight != screen.TerminalHeight)
-                {
-                    var panel = extensionDialog
-                        ? RenderExtensionSelectorPanel(screen, title, options, selectedIndex)
-                        : RenderInlinePanel(screen.CurrentTheme, screen.TerminalWidth, title, options, selectedIndex, header, footer,
-                            optionIndent, bottomSpacerLines, showCurrentMarker, headerStyle);
-                    if (extensionDialog)
-                        screen.SetStartupPanel(panel, panel.Count - 1, screen.TerminalWidth + 1, cursorVisible: false);
-                    else
-                        screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false,
-                            bottomMargin);
-                    if (extensionDialog) screen.RenderInitial();
-                    renderedWidth = screen.TerminalWidth;
-                    renderedHeight = screen.TerminalHeight;
-                    needsRender = false;
-                }
-                if (!input.TryRead(40, out var next)) continue;
-                while (true)
-                {
-                    if (next.IsEndOfStream) return null;
-                    if (next.Key is { } key)
-                    {
-                        if (key.Key == ConsoleKey.Escape || _keymap.Matches("app.interrupt", key) ||
-                            _keymap.Matches("app.clear", key)) return null;
-                        if (key.Key == ConsoleKey.Enter)
-                        {
-                            preservePanel = preservePanelAfterSelection;
-                            return new(options[selectedIndex], IsScoped: false);
-                        }
-                        if (key.Key == ConsoleKey.UpArrow) selectedIndex = (selectedIndex + options.Count - 1) % options.Count;
-                        else if (key.Key == ConsoleKey.DownArrow) selectedIndex = (selectedIndex + 1) % options.Count;
-                        else if (key.Key == ConsoleKey.Home) selectedIndex = 0;
-                        else if (key.Key == ConsoleKey.End) selectedIndex = options.Count - 1;
-                        else if (key.Key == ConsoleKey.PageUp) selectedIndex = Math.Max(0, selectedIndex - 10);
-                        else if (key.Key == ConsoleKey.PageDown) selectedIndex = Math.Min(options.Count - 1, selectedIndex + 10);
-                        needsRender = true;
-                    }
-
-                    if (!extensionDialog || !input.TryRead(0, out next)) break;
-                }
-            }
-            return null;
-        }
-        finally
-        {
-            if (!preservePanel)
-            {
-                if (extensionDialog) screen.SetStartupPanel([]);
-                else screen.SetEditorPanel(null);
-            }
-        }
-    }
+        CancellationToken cancellationToken = default, bool extensionDialog = false, string headerStyle = "dim") =>
+        _dialogs.ShowInlineSelectionList(title, options, header, footer, selectedKey, preservePanelAfterSelection, optionIndent, bottomMargin, bottomSpacerLines, showCurrentMarker, cancellationToken, extensionDialog, headerStyle);
 
     internal void ShowInlineSelectionPanel<T>(string title, IReadOnlyList<TerminalSelectionOption<T>> options,
         IReadOnlyList<string>? header = null, string footer = "↑↓ move • enter select • escape/ctrl+c close",
-        int selectedIndex = 0)
-    {
-        if (_screen is not { IsActive: true } screen || options.Count == 0) return;
-        var panel = RenderInlinePanel(screen.CurrentTheme, screen.TerminalWidth, title, options,
-            Math.Clamp(selectedIndex, 0, options.Count - 1), header, footer);
-        screen.SetEditorPanel(panel, panel.Count - 2, screen.TerminalWidth + 1, cursorVisible: false, bottomMargin: 2);
-    }
+        int selectedIndex = 0) =>
+        _dialogs.ShowInlineSelectionPanel(title, options, header, footer, selectedIndex);
 
-    internal async Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
+    internal Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
         IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
         bool preservePanelOnCancel = false, CancellationToken cancellationToken = default,
-        bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null)
-    {
-        if (prompts.Count == 0) return [];
-        if (_screen is not { IsActive: true } screen)
-        {
-            var redirectedValues = new List<string>(prompts.Count);
-            foreach (var prompt in prompts)
-            {
-                Console.Error.WriteLine(prompt.Message);
-                var value = await ReadLineAsync(_ => Task.CompletedTask, enableApplicationActions: false,
-                    allowEmptySubmit: true, cancellationToken: cancellationToken).ConfigureAwait(false);
-                if (value is null) return null;
-                redirectedValues.Add(value);
-            }
-            return redirectedValues;
-        }
-
-        var values = new List<string>(prompts.Count);
-        var input = EnsureInput();
-        var preservePanel = false;
-        using var mode = TerminalMode.Enter(screen);
-        try
-        {
-            var titleTheme = screen.CurrentTheme;
-            var titleBorder = titleTheme.Fg("border") + new string('─', Math.Max(1, screen.TerminalWidth)) + "\u001b[0m";
-            var titlePanel = new[]
-            {
-                titleBorder,
-                PadPanelLine(" " + titleTheme.Style("accent", TerminalSafeText.Normalize(title), bold: true),
-                    screen.TerminalWidth),
-                titleBorder
-            };
-            if (!extensionDialog) screen.SetEditorPanel(titlePanel, cursorVisible: false, bottomMargin: 2);
-            for (var promptIndex = 0; promptIndex < prompts.Count; promptIndex++)
-            {
-                var promptBuffer = new EditorBuffer(_keymap);
-                var needsRender = true;
-                var renderedWidth = -1;
-                var renderedHeight = -1;
-                while (screen.IsActive)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    screen.RefreshIfResized();
-                    if (renderedWidth != screen.TerminalWidth || renderedHeight != screen.TerminalHeight)
-                        needsRender = true;
-                    if (needsRender)
-                    {
-                        int cursorRow;
-                        int cursorColumn;
-                        var panel = extensionDialog
-                            ? RenderExtensionInputPanel(screen, title, promptBuffer.Text, promptBuffer.Cursor,
-                                out cursorRow, out cursorColumn)
-                            : RenderPromptPanel(screen, title, prompts, values, promptIndex, promptBuffer.Text,
-                                promptBuffer.Cursor, out cursorRow, out cursorColumn);
-                        if (extensionDialog)
-                            screen.SetStartupPanel(panel, cursorRow, cursorColumn, cursorVisible: false);
-                        else
-                            screen.SetEditorPanel(panel, cursorRow, cursorColumn, cursorVisible: false, bottomMargin: 2);
-                        if (extensionDialog) screen.RenderInitial();
-                        renderedWidth = screen.TerminalWidth;
-                        renderedHeight = screen.TerminalHeight;
-                        needsRender = false;
-                    }
-
-                    if (!input.TryRead(40, out var next)) continue;
-                    if (extensionDialog)
-                    {
-                        var submitted = false;
-                        while (true)
-                        {
-                            if (next.IsEndOfStream)
-                            {
-                                preservePanel = preservePanelOnCancel;
-                                return null;
-                            }
-                            if (next.Key is { } extensionKey && (extensionKey.Key == ConsoleKey.Escape ||
-                                _keymap.Matches("app.interrupt", extensionKey) ||
-                                _keymap.Matches("app.clear", extensionKey)))
-                            {
-                                preservePanel = preservePanelOnCancel;
-                                return null;
-                            }
-                            if (next.Key is { Key: ConsoleKey.Enter })
-                            {
-                                values.Add(promptBuffer.Text);
-                                submitted = true;
-                                break;
-                            }
-                            if (TerminalInput.TryGetText(next, out _))
-                            {
-                                var text = input.ReadAvailableText(next, out var following);
-                                _ = promptBuffer.InsertText(text);
-                                if (following is { } pending)
-                                {
-                                    next = pending;
-                                    continue;
-                                }
-                            }
-                            else if (next.Key is { } editKey)
-                            {
-                                _ = promptBuffer.Handle(editKey);
-                            }
-
-                            if (!input.TryRead(0, out next)) break;
-                        }
-                        if (submitted) break;
-                        needsRender = true;
-                        continue;
-                    }
-                    if (next.Mouse is { } mouse)
-                    {
-                        var mouseResult = _screen?.HandleMouse(mouse) ?? default;
-                        if (mouseResult.Copy && _screen?.ActiveAuthorizationUrl is not null &&
-                            dispatchApplicationAction is not null)
-                            await dispatchApplicationAction("app.message.copy");
-                        needsRender = true;
-                        continue;
-                    }
-                    if (next.IsEndOfStream)
-                    {
-                        preservePanel = preservePanelOnCancel;
-                        return null;
-                    }
-                    if (next.Key is { } key && (key.Key == ConsoleKey.Escape ||
-                        _keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key)))
-                    {
-                        preservePanel = preservePanelOnCancel;
-                        return null;
-                    }
-                    if (dispatchApplicationAction is not null && next.Key is { } copyKey &&
-                        _keymap.Matches("app.message.copy", copyKey) &&
-                        _screen?.ActiveAuthorizationUrl is not null)
-                    {
-                        await dispatchApplicationAction("app.message.copy");
-                        needsRender = true;
-                        continue;
-                    }
-                    if (next.Key is { } submit && submit.Key == ConsoleKey.Enter)
-                    {
-                        values.Add(promptBuffer.Text);
-                        var submittedPanel = RenderPromptPanel(screen, title, prompts, values, promptIndex,
-                            promptBuffer.Text, promptBuffer.Cursor, out var submittedCursorRow,
-                            out var submittedCursorColumn, submittedPrompt: true);
-                        screen.SetEditorPanel(submittedPanel, submittedCursorRow, submittedCursorColumn,
-                            cursorVisible: false, bottomMargin: 2, renderImmediately: true);
-                        break;
-                    }
-
-                    if (TerminalInput.TryGetText(next, out _))
-                    {
-                        var text = input.ReadAvailableText(next, out var following);
-                        _ = promptBuffer.InsertText(text);
-                        if (following is not null) input.PushBack(following);
-                    }
-                    else if (next.Key is { } editKey) _ = promptBuffer.Handle(editKey);
-                    needsRender = true;
-                }
-                if (!screen.IsActive)
-                {
-                    preservePanel = preservePanelOnCancel;
-                    return null;
-                }
-            }
-            preservePanel = preservePanelAfterSubmit;
-            return values;
-        }
-        finally
-        {
-            if (!preservePanel)
-            {
-                if (extensionDialog) screen.SetStartupPanel([]);
-                else screen.SetEditorPanel(null);
-            }
-        }
-    }
+        bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null) =>
+        _dialogs.PromptSequenceAsync(title, prompts, preservePanelAfterSubmit, preservePanelOnCancel, cancellationToken, extensionDialog, dispatchApplicationAction);
 
     internal void DismissEditorPanel() => _screen?.SetEditorPanel(null);
 
@@ -494,39 +144,11 @@ public sealed class TerminalEditor
         return new TerminalHuggingFaceSearch(screen, EnsureInput(), _keymap, client, cache).Show();
     }
 
-    internal void ShowInlineStatus(string title, string message)
-    {
-        if (_screen is not { IsActive: true } screen) return;
-        var theme = screen.CurrentTheme;
-        var width = screen.TerminalWidth;
-        var lines = new[]
-        {
-            PanelBorder(theme, width),
-            PadPanelLine(" " + theme.Style("accent", TerminalSafeText.Normalize(title), bold: true), width),
-            "",
-            PadPanelLine(" " + theme.Style("muted", TerminalSafeText.Normalize(message)), width),
-            PanelBorder(theme, width)
-        };
-        screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2);
-    }
+    internal void ShowInlineStatus(string title, string message) =>
+        _dialogs.ShowInlineStatus(title, message);
 
-    internal void ShowLlamaCatalogLoading()
-    {
-        if (_screen is not { IsActive: true } screen) return;
-        var theme = screen.CurrentTheme;
-        var width = screen.TerminalWidth;
-        var lines = new[]
-        {
-            PanelBorder(theme, width),
-            PadPanelLine(" " + theme.Style("accent", "llama.cpp models", bold: true), width),
-            new string(' ', width),
-            PadPanelLine(" " + theme.Style("muted", "Loading…"), width),
-            new string(' ', width),
-            PanelBorder(theme, width)
-        };
-        screen.SetEditorPanel(lines, lines.Length - 2, width + 1, cursorVisible: false, bottomMargin: 2,
-            flushPendingRenderOnOpen: false);
-    }
+    internal void ShowLlamaCatalogLoading() =>
+        _dialogs.ShowLlamaCatalogLoading();
 
     internal void SetStatusNotification(string message,
         TerminalStatusNotificationKind kind = TerminalStatusNotificationKind.Info) => _screen?.SetStatusNotification(message, kind);
@@ -538,315 +160,11 @@ public sealed class TerminalEditor
         else Console.WriteLine(message);
     }
 
-    internal static IReadOnlyList<string> RenderInlinePanel<T>(TerminalTheme theme, int width, string title,
-        IReadOnlyList<TerminalSelectionOption<T>> options, int selectedIndex, IReadOnlyList<string>? header,
-        string footer, int optionIndent = 0, int bottomSpacerLines = 0, bool showCurrentMarker = false,
-        string headerStyle = "dim")
-    {
-        var lines = new List<string> { PanelBorder(theme, width) };
-        var titleRows = TerminalSafeText.Normalize(title).Split('\n');
-        for (var index = 0; index < titleRows.Length; index++)
-        {
-            var row = " " + theme.Style("accent", titleRows[index], bold: true);
-            if (titleRows.Length > 1 && index < titleRows.Length - 1) row += theme.Fg("accent");
-            lines.Add(PadPanelLine(row, width) +
-                (titleRows.Length > 1 && index < titleRows.Length - 1 ? "\u001b[39m" : ""));
-        }
-        if (header is not null)
-        {
-            foreach (var row in header)
-                lines.Add(row.Length == 0 ? "" : PadPanelLine(" " + theme.Style(headerStyle, TerminalSafeText.Normalize(row)), width));
-        }
-        if (options.Count == 0)
-            lines.Add(PadPanelLine(" " + theme.Style("warning", "No router models are available"), width));
-        else
-        {
-            var labelWidth = Math.Clamp(Math.Max(34, options.Max(option => TerminalTextLayout.Width(option.Label))), 34, 54);
-            foreach (var (option, index) in options.Select((option, index) => (option, index)))
-            {
-                var label = TerminalSafeText.Normalize(option.Label);
-                var marker = index == selectedIndex ? "→ " : "  ";
-                var selected = index == selectedIndex;
-                var current = showCurrentMarker
-                    ? option.IsCurrent ? theme.Style("accent", "✓ ") : "  "
-                    : "";
-                var description = string.IsNullOrWhiteSpace(option.Description)
-                    ? "" : TerminalSafeText.Normalize(option.Description);
-                var primary = new string(' ', Math.Max(0, optionIndent)) + marker + current + label;
-                if (showCurrentMarker)
-                {
-                    var styledMarker = selected ? theme.Style("accent", marker) : marker;
-                    var styledLabel = theme.Style(selected ? "accent" : "text", label);
-                    var styledPrimary = new string(' ', Math.Max(0, optionIndent)) + styledMarker + current + styledLabel;
-                    if (description.Length > 0)
-                        styledPrimary += theme.Style("muted",
-                            new string(' ', Math.Max(2, labelWidth - TerminalTextLayout.Width(label) + 2)) + description);
-                    lines.Add(PadPanelLine(styledPrimary, width));
-                }
-                else if (description.Length == 0)
-                    lines.Add(selected ? theme.Style("accent", primary) : primary);
-                else if (selected)
-                    lines.Add(theme.Style("accent", marker + label.PadRight(labelWidth) + "  " + description));
-                else
-                    lines.Add(primary + theme.Style("muted",
-                        new string(' ', Math.Max(2, labelWidth - TerminalTextLayout.Width(label) + 2)) + description));
-            }
-        }
-        lines.Add("");
-        lines.Add(PadPanelLine(" " + RenderKeyHint(theme, TerminalSafeText.Normalize(footer)), width));
-        lines.AddRange(Enumerable.Repeat("", Math.Max(0, bottomSpacerLines)));
-        lines.Add(PanelBorder(theme, width));
-        return lines;
-    }
-
-    private static IReadOnlyList<string> RenderExtensionSelectorPanel<T>(TerminalScreen screen, string title,
-        IReadOnlyList<TerminalSelectionOption<T>> options, int selectedIndex)
-    {
-        var width = screen.TerminalWidth;
-        var theme = screen.CurrentTheme;
-        var border = theme.Fg("border") + new string('─', Math.Max(1, width)) + "\u001b[0m";
-        var lines = new List<string> { border, "" };
-        var titleRows = TerminalSafeText.Normalize(title).Split('\n');
-        for (var index = 0; index < titleRows.Length; index++)
-        {
-            var row = " " + theme.Style("accent", titleRows[index], bold: true);
-            if (index == 0 && titleRows.Length > 1)
-            {
-                var padding = Math.Max(0, width - TerminalTextLayout.Width(row));
-                lines.Add(row + theme.Fg("accent") + new string(' ', padding) + "\u001b[39m");
-            }
-            else
-            {
-                lines.Add(PadPanelLine(row, width));
-            }
-        }
-        lines.Add("");
-        for (var index = 0; index < options.Count; index++)
-        {
-            var label = TerminalSafeText.Normalize(options[index].Label);
-            lines.Add(index == selectedIndex
-                ? PadPanelLine(" " + theme.Style("accent", "→ " + label), width)
-                : PadPanelLine("   " + theme.Style("text", label), width));
-        }
-        lines.Add("");
-        lines.Add(PadPanelLine(" " + RenderExtensionKeyHint(theme,
-            ("↑↓", "navigate"), ("enter", "select"), ("escape/ctrl+c", "cancel")), width));
-        lines.Add("");
-        lines.Add(border);
-        return lines;
-    }
-
-    private static IReadOnlyList<string> RenderExtensionInputPanel(TerminalScreen screen, string title,
-        string value, int cursor, out int cursorRow, out int cursorColumn)
-    {
-        var width = screen.TerminalWidth;
-        var theme = screen.CurrentTheme;
-        var border = theme.Fg("border") + new string('─', Math.Max(1, width)) + "\u001b[0m";
-        var normalizedValue = TerminalSafeText.Normalize(value);
-        var cursorOffset = Math.Clamp(cursor, 0, normalizedValue.Length);
-        var cursorElementLength = cursorOffset < normalizedValue.Length
-            ? System.Globalization.StringInfo.GetNextTextElement(normalizedValue, cursorOffset).Length
-            : 0;
-        var cursorText = cursorElementLength > 0
-            ? normalizedValue.Substring(cursorOffset, cursorElementLength)
-            : " ";
-        var inputLine = "> " + normalizedValue[..cursorOffset] + "\u001b[7m" + cursorText + "\u001b[27m" +
-            normalizedValue[(cursorOffset + cursorElementLength)..];
-        var lines = new List<string>
-        {
-            border,
-            "",
-            PadPanelLine(" " + theme.Style("accent", TerminalSafeText.Normalize(title)), width),
-            "",
-            PadPanelLine(inputLine, width),
-            "",
-            PadPanelLine(" " + RenderExtensionKeyHint(theme,
-                ("enter", "submit"), ("escape/ctrl+c", "cancel")), width),
-            "",
-            border
-        };
-        cursorRow = 4;
-        cursorColumn = Math.Min(width, 3 + TerminalTextLayout.Width(normalizedValue[..cursorOffset]));
-        return lines;
-    }
-
-    private static string RenderExtensionKeyHint(TerminalTheme theme,
-        params (string Key, string Description)[] hints) =>
-        string.Join("  ", hints.Select(hint =>
-            theme.Style("dim", hint.Key) + theme.Style("muted", " " + hint.Description)));
-
-    private static string RenderKeyHint(TerminalTheme theme, string value)
-    {
-        var groups = value.Split(" • ", StringSplitOptions.None);
-        for (var index = 0; index < groups.Length; index++)
-        {
-            var separator = groups[index].IndexOf(' ');
-            groups[index] = separator <= 0
-                ? theme.Style("dim", groups[index])
-                : theme.Style("dim", groups[index][..separator]) +
-                  theme.Style("muted", groups[index][separator..]);
-        }
-        return string.Join(" • ", groups);
-    }
-
-    private static IReadOnlyList<string> RenderPromptPanel(TerminalScreen screen, string title,
-        IReadOnlyList<(string Message, string? Placeholder)> prompts, IReadOnlyList<string> completed,
-        int promptIndex, string value, int cursor, out int cursorRow, out int cursorColumn,
-        bool submittedPrompt = false)
-    {
-        var width = screen.TerminalWidth;
-        var theme = screen.CurrentTheme;
-        var border = theme.Fg("border") + new string('─', Math.Max(1, width)) + "\u001b[0m";
-        var lines = new List<string> { border,
-            PadPanelLine(" " + theme.Style("accent", TerminalSafeText.Normalize(title), bold: true), width) };
-        var currentInputRow = 0;
-        for (var index = 0; index <= promptIndex; index++)
-        {
-            lines.Add("");
-            lines.Add(PadPanelLine(" " + theme.Style("text", TerminalSafeText.Normalize(prompts[index].Message)), width));
-            if (!string.IsNullOrWhiteSpace(prompts[index].Placeholder))
-                lines.Add(PadPanelLine(" " + theme.Style("dim", "e.g., " + TerminalSafeText.Normalize(prompts[index].Placeholder!)), width));
-            currentInputRow = lines.Count;
-            var inputValue = TerminalSafeText.Normalize(index == promptIndex ? value : completed[index]);
-            var inputLine = "> " + inputValue;
-            if (index == promptIndex && !submittedPrompt)
-            {
-                var inputCursor = Math.Clamp(cursor, 0, inputValue.Length);
-                var cursorCharacter = inputCursor < inputValue.Length ? inputValue[inputCursor].ToString() : " ";
-                inputLine = "> " + inputValue[..inputCursor] + "\u001b[7m" + cursorCharacter + "\u001b[27m" +
-                    inputValue[(inputCursor + (inputCursor < inputValue.Length ? 1 : 0))..];
-            }
-            lines.Add(PadPanelLine(inputLine, width));
-            lines.Add(PadPanelLine(" (" + theme.Style("dim", "escape/ctrl+c") +
-                theme.Style("muted", " to cancel,") + " " + theme.Style("dim", "enter") +
-                theme.Style("muted", " to submit") + ")", width));
-        }
-        lines.Add(border);
-        cursorRow = currentInputRow;
-        var normalizedValue = TerminalSafeText.Normalize(value);
-        cursorColumn = Math.Min(width, 3 + TerminalTextLayout.Width(normalizedValue[..Math.Clamp(cursor, 0, normalizedValue.Length)]));
-        return lines;
-    }
-
-    private static string PanelBorder(TerminalTheme theme, int width) =>
-        theme.Fg("accent") + new string('─', Math.Max(1, width)) + "\u001b[0m";
-
-    private static string PadPanelLine(string line, int width) =>
-        line + new string(' ', Math.Max(0, width - TerminalTextLayout.Width(line)));
-
-    internal async Task<TerminalProgressOutcome<T>> RunProgressAsync<T>(string title, string subject,
+    internal Task<TerminalProgressOutcome<T>> RunProgressAsync<T>(string title, string subject,
         string cancelTitle, string cancelMessage,
         Func<CancellationToken, Action<TerminalProgressState>, Task<T>> run, Func<Task> cancelOperation,
-        Func<Task>? afterCancelled = null)
-    {
-        ArgumentNullException.ThrowIfNull(run);
-        ArgumentNullException.ThrowIfNull(cancelOperation);
-        if (_screen is not { IsActive: true } screen)
-            throw new InvalidOperationException("Progress requires an active terminal screen.");
-
-        using var mode = TerminalMode.Enter(screen);
-        using var cancellation = new CancellationTokenSource();
-        var input = EnsureInput();
-        var state = new TerminalProgressState("Starting…");
-        var progressGate = new object();
-        var progressFrameStarted = false;
-        var cancelOptions = new[]
-        {
-            new TerminalSelectionOption<bool>("yes", true, "Yes"),
-            new TerminalSelectionOption<bool>("no", false, "No")
-        };
-        var confirmationTitle = $"{cancelTitle}\n{cancelMessage}";
-        const string confirmationFooter = "enter select • escape/ctrl+c cancel";
-        void RenderProgress(TerminalProgressState progress)
-        {
-            var theme = screen.CurrentTheme;
-            var width = screen.TerminalWidth;
-            var lines = new List<string>
-            {
-                PanelBorder(theme, width),
-                PadPanelLine(" " + theme.Style("accent", TerminalSafeText.Normalize(title), bold: true), width),
-                PadPanelLine(" " + theme.Style("text", TerminalSafeText.Normalize(subject)), width),
-                "",
-                PadPanelLine(" " + theme.Style("muted", TerminalSafeText.Normalize(state.Message)), width)
-            };
-            if (state.Ratio is { } ratio)
-            {
-                var bounded = Math.Clamp(ratio, 0, 1);
-                var filled = (int)Math.Round(bounded * 40, MidpointRounding.AwayFromZero);
-                lines.Add(PadPanelLine(" " + theme.Style("accent", new string('█', filled) + new string('─', 40 - filled) +
-                    $" {Math.Round(bounded * 100):0}%"), width));
-            }
-            if (!string.IsNullOrEmpty(state.Detail))
-                lines.Add(PadPanelLine(" " + theme.Style("dim", TerminalSafeText.Normalize(state.Detail)), width));
-            lines.Add("");
-            lines.Add(PadPanelLine(" " + RenderKeyHint(theme, "escape/ctrl+c stop"), width));
-            lines.Add(PanelBorder(theme, width));
-            screen.SetEditorPanel(lines, lines.Count - 4, width + 1, cursorVisible: false, bottomMargin: 2);
-        }
-
-        void Update(TerminalProgressState progress)
-        {
-            lock (progressGate)
-            {
-                state = progress;
-                if (progressFrameStarted) RenderProgress(state);
-            }
-        }
-
-        async Task<(bool Succeeded, T? Value, Exception? Error)> SettleAsync()
-        {
-            try { return (true, await run(cancellation.Token, Update).ConfigureAwait(false), null); }
-            catch (Exception error) { return (false, default, error); }
-        }
-
-        var settled = SettleAsync();
-        if (await Task.WhenAny(settled, Task.Delay(InitialProgressFrameDelay)).ConfigureAwait(false) != settled)
-        {
-            lock (progressGate)
-            {
-                progressFrameStarted = true;
-                if (!settled.IsCompleted) RenderProgress(state);
-            }
-        }
-        try
-        {
-            while (!settled.IsCompleted)
-            {
-                if (!input.TryRead(50, out var next))
-                {
-                    screen.RefreshIfResized();
-                    await Task.Delay(10).ConfigureAwait(false);
-                    continue;
-                }
-                if (next.Key is not { } key ||
-                    !_keymap.Matches("app.interrupt", key) && !_keymap.Matches("app.clear", key)) continue;
-                var confirmation = ShowInlineSelectionList(confirmationTitle, cancelOptions, [""],
-                    confirmationFooter, preservePanelAfterSelection: true);
-                if (confirmation?.Option.Value != true)
-                {
-                    Update(state);
-                    continue;
-                }
-                cancellation.Cancel();
-                await cancelOperation().ConfigureAwait(false);
-                _ = await settled.ConfigureAwait(false);
-                if (afterCancelled is not null)
-                {
-                    ShowInlineSelectionPanel(confirmationTitle, cancelOptions, [""], confirmationFooter);
-                    await afterCancelled().ConfigureAwait(false);
-                }
-                return new(true, default);
-            }
-
-            var result = await settled.ConfigureAwait(false);
-            if (!result.Succeeded) throw result.Error!;
-            return new(false, result.Value);
-        }
-        finally
-        {
-            cancellation.Cancel();
-        }
-    }
+        Func<Task>? afterCancelled = null) =>
+        _progress.RunProgressAsync(title, subject, cancelTitle, cancelMessage, run, cancelOperation, afterCancelled);
 
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
     public void Prefill(string text) => _buffer.SetText(text);
@@ -890,7 +208,7 @@ public sealed class TerminalEditor
         }
         finally
         {
-            if (_searchingTranscript) CloseTranscriptSearch();
+            if (_transcriptSearch.IsActive) _transcriptSearch.Close();
             ClearLine();
         }
     }
@@ -920,14 +238,14 @@ public sealed class TerminalEditor
                 await dispatchApplicationAction("app.message.copy");
             return true;
         }
-        if (_searchingTranscript)
+        if (_transcriptSearch.IsActive)
         {
             if (next.Key is { } searchKey && _keymap.Matches("app.tools.expand", searchKey))
             {
                 ToggleToolResults();
                 return true;
             }
-            return HandleTranscriptSearchInput(next);
+            return _transcriptSearch.HandleInput(next);
         }
         if (next.Key is { } completionKey && _keymap.Matches("tui.input.tab", completionKey))
         {
@@ -956,7 +274,7 @@ public sealed class TerminalEditor
         {
             if (_keymap.Matches("tui.altScreen.search", screenKey))
             {
-                StartTranscriptSearch();
+                _transcriptSearch.Start();
                 return true;
             }
             if (dispatchApplicationAction is not null && !_keymap.MatchesEditorAction(screenKey) &&
@@ -1031,69 +349,7 @@ public sealed class TerminalEditor
         if (_screen is not { IsActive: true } screen) return;
         _toolResultsExpanded = screen.ToggleToolResultsExpanded();
         screen.AppendThemedStatusLine($"Tool output: {(_toolResultsExpanded ? "expanded" : "collapsed")}");
-        if (_searchingTranscript) UpdateTranscriptSearch();
-    }
-
-    private void StartTranscriptSearch()
-    {
-        if (_screen is not { IsActive: true }) return;
-        _savedFooter = _screen.FooterText;
-        _savedDraft = _buffer.Text;
-        _savedCursor = _buffer.Cursor;
-        _buffer.SetText(_lastSearchQuery);
-        _searchingTranscript = true;
-        UpdateTranscriptSearch();
-    }
-
-    private bool HandleTranscriptSearchInput(TerminalInputEvent next)
-    {
-        if (_screen is not { IsActive: true })
-        {
-            CloseTranscriptSearch();
-            return true;
-        }
-        if (next.Key is { } key)
-        {
-            if (_keymap.Matches("tui.altScreen.searchClose", key) || _keymap.Matches("app.interrupt", key))
-            {
-                CloseTranscriptSearch();
-                return true;
-            }
-            if (_keymap.Matches("tui.altScreen.searchNext", key))
-            {
-                UpdateTranscriptSearch(direction: 1);
-                return true;
-            }
-            if (_keymap.Matches("tui.altScreen.searchPrevious", key))
-            {
-                UpdateTranscriptSearch(direction: -1);
-                return true;
-            }
-        }
-
-        if (next.Text is not null) _buffer.InsertText(next.Text);
-        else if (next.Key is { } editKey) _ = _buffer.Handle(editKey);
-        UpdateTranscriptSearch();
-        return true;
-    }
-
-    private void UpdateTranscriptSearch(int direction = 0)
-    {
-        if (_screen is not { IsActive: true } screen) return;
-        var query = _buffer.Text;
-        var state = screen.SearchTranscript(query, direction);
-        var count = state.HasMoreMatches ? $"{state.MatchCount}+" : state.MatchCount.ToString();
-        var status = query.Length == 0 ? "type to search" : state.MatchCount == 0 ? "no matches" : $"{state.SelectedMatch}/{count}";
-        screen.SetFooter($"Search: {query} · {status} · Enter next · Shift+Enter previous · Escape close");
-    }
-
-    private void CloseTranscriptSearch()
-    {
-        _lastSearchQuery = _buffer.Text;
-        _searchingTranscript = false;
-        _buffer.SetText(_savedDraft, _savedCursor);
-        _screen?.ClearTranscriptSearch();
-        if (_savedFooter.Length > 0) _screen?.SetFooter(_savedFooter);
+        if (_transcriptSearch.IsActive) _transcriptSearch.Update();
     }
 
     public async Task<string?> ReadLineAsync(Func<string, Task> dispatchApplicationAction,
@@ -1224,49 +480,9 @@ public sealed class TerminalEditor
         }
     }
 
-    internal async Task MonitorMcpAuthorizationAsync(Task operation,
-        Func<string, Task> dispatchApplicationAction, Action cancel)
-    {
-        ArgumentNullException.ThrowIfNull(operation);
-        ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
-        ArgumentNullException.ThrowIfNull(cancel);
-        var input = EnsureInput();
-        using var mode = TerminalMode.Enter(_screen);
-        while (!operation.IsCompleted)
-        {
-            if (!input.TryRead(40, out var next))
-            {
-                _screen?.RefreshIfResized();
-                continue;
-            }
-            if (next.IsEndOfStream)
-            {
-                cancel();
-                return;
-            }
-            if (next.Mouse is { } mouse)
-            {
-                var result = _screen?.HandleMouse(mouse) ?? default;
-                if (result.Copy && _screen?.ActiveAuthorizationUrl is not null)
-                    await dispatchApplicationAction("app.message.copy");
-                continue;
-            }
-            if (next.Key is not { } key) continue;
-            if (_keymap.Matches("tui.select.cancel", key) || _keymap.Matches("app.interrupt", key) ||
-                _keymap.Matches("app.clear", key))
-            {
-                cancel();
-                continue;
-            }
-            if (_keymap.Matches("app.message.copy", key))
-            {
-                if (_screen?.ActiveAuthorizationUrl is not null)
-                    await dispatchApplicationAction("app.message.copy");
-                continue;
-            }
-            if (_keymap.MatchesEditorAction(key)) continue;
-        }
-    }
+    internal Task MonitorMcpAuthorizationAsync(Task operation,
+        Func<string, Task> dispatchApplicationAction, Action cancel) =>
+        _authorizationInput.MonitorMcpAuthorizationAsync(operation, dispatchApplicationAction, cancel);
 
     public async Task<bool> HandleApplicationShortcutAsync(ConsoleKeyInfo key, Func<string, Task> dispatch,
         Action? beforeDispatch = null)

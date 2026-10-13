@@ -1,0 +1,35 @@
+{
+  "fixture": "project-trust-extension",
+  "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+  "pisharpSha": "efc47d3df9b045bff28746fc3c6fa9a4986cf971",
+  "paired": {
+    "pi": {
+      "chatRequests": 1,
+      "trustedProjectSkillPresent": true,
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 1,
+      "trustedProjectSkillPresent": true,
+      "scenarioError": null
+    },
+    "skillTrustDifference": false,
+    "fullTerminalMatch": true,
+    "fullHttpMatch": true,
+    "stateDifferences": 0,
+    "renderDifferences": 0,
+    "rawByteMatch": false,
+    "scenarioErrors": {}
+  },
+  "calibration": {
+    "match": true,
+    "terminalMatch": true,
+    "httpMatch": true,
+    "renderDifferences": 0
+  },
+  "pisharpExtensionTrace": [
+    "configured",
+    "trust-undecided:true",
+    "trust-decision:true"
+  ]
+}

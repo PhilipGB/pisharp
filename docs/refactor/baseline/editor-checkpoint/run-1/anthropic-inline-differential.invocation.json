@@ -1,0 +1,15 @@
+{
+  "id": "anthropic-inline-differential",
+  "command": [
+    "python3",
+    "/home/philip/Downloads/pisharp-bootstrap/pisharp/tools/parity/anthropic-inline-differential.py",
+    "--pi",
+    "/tmp/pisharp-frozen-pi1",
+    "--output",
+    "/tmp/pisharp-editor-checkpoint/run-1/anthropic-inline-differential.json"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 8.731,
+  "logger": "stdout+stderr text"
+}

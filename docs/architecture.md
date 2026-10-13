@@ -62,3 +62,8 @@ boundary rather than a folder or testing preference.
 conversation content projections and status/authorization state from screen lifetime
 and frame composition. Timer callbacks share the screen lock; width/theme accessors
 preserve current-value lookup timing. Input and application actions remain in CLI.
+TerminalEditor owns draft editing, completion/history, terminal-response subscriptions,
+active-run queue/abort and application shortcut dispatch. Concrete dialog input/panel,
+progress settlement, transcript-search and authorization-input owners execute the
+modal workflows and own their state. Current-screen/input callbacks preserve attachment
+and mode lifetimes; no additional terminal framework or project is introduced.

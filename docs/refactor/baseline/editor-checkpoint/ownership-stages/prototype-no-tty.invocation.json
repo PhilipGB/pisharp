@@ -1,0 +1,26 @@
+{
+  "id": "prototype-no-tty",
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "command": [
+    "dotnet",
+    "test",
+    "PiSharp.slnx",
+    "--filter",
+    "FullyQualifiedName~TerminalEditorProgressTests|FullyQualifiedName~TerminalScreenTests|FullyQualifiedName~EditorKeymapTests|FullyQualifiedName~TerminalInputTests",
+    "--logger",
+    "trx;LogFileName=tests.trx",
+    "--results-directory",
+    "/tmp/pisharp-editor-slice/characterization"
+  ],
+  "exitCode": 1,
+  "total": 90,
+  "passed": 88,
+  "failed": 2,
+  "skipped": 0,
+  "allocatedTty": false,
+  "notes": "Prototype requires terminal mode: pipe failure and real-PTY success retained. Final Fact explicitly hosts its own Linux PTY and checks exactly one successful child case. Both success/failure operations execute in the child.",
+  "logger": "stdout+stderr text and VSTest TRX",
+  "environment": {
+    "notes": "Inherited initial environment; stale read-only-cache warning retained and corrected by separate forced restore."
+  }
+}

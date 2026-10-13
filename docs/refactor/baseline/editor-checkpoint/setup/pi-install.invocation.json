@@ -1,0 +1,14 @@
+{
+  "id": "pi-install",
+  "command": [
+    "npm",
+    "ci",
+    "--ignore-scripts",
+    "--no-audit",
+    "--no-fund"
+  ],
+  "cwd": "/tmp/pisharp-frozen-pi1",
+  "exitCode": 0,
+  "seconds": 14.27,
+  "logger": "stdout+stderr text"
+}

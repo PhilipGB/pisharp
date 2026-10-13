@@ -1,0 +1,8 @@
+{
+  "pass_": true,
+  "failures": [],
+  "baselineFlaky": [],
+  "expected": 1709,
+  "candidate": 1745,
+  "scope": "Complete compiled/unit/official-MCP/process differential preservation; terminal reports and semantic assertions are verified separately and by final full comparison."
+}

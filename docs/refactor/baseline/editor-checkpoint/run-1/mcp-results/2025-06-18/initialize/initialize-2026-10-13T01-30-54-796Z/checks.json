@@ -1,0 +1,39 @@
+[
+  {
+    "id": "mcp-client-initialization",
+    "name": "MCPClientInitialization",
+    "description": "Validates that MCP client properly initializes with server",
+    "status": "SUCCESS",
+    "timestamp": "2026-10-13T01:30:55.038Z",
+    "specReferences": [
+      {
+        "id": "MCP-Lifecycle",
+        "url": "https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle"
+      }
+    ],
+    "details": {
+      "protocolVersionSent": "2025-11-25",
+      "expectedSpecVersion": "2025-11-25",
+      "versionMatch": true,
+      "clientName": "PiSharp.McpConformance",
+      "clientVersion": "1.0.0.0"
+    }
+  },
+  {
+    "id": "server-info",
+    "name": "ServerInfo",
+    "description": "Test server info returned to client",
+    "status": "INFO",
+    "timestamp": "2026-10-13T01:30:55.039Z",
+    "specReferences": [
+      {
+        "id": "MCP-Lifecycle",
+        "url": "https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle"
+      }
+    ],
+    "details": {
+      "serverName": "test-server",
+      "serverVersion": "1.0.0"
+    }
+  }
+]

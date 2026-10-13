@@ -1,0 +1,38 @@
+{
+  "finding": "Exact terminal/render/HTTP match outside frozen two-run outcome set also reproduces on untouched baseline CLI 064bcc7b; this establishes pre-existing timing variance independently of H03 source.",
+  "baselineControl": "baseline-model-picker-control/source-disambiguation.json",
+  "precedingControls": [
+    "H01/H02 original exact-match candidate captures before Editor extraction",
+    "screen-checkpoint baseline CLI control reproduces accepted render difference"
+  ],
+  "sourceEvidence": "ownership-stages/source-audit.json normalizes all 22 moved bodies; model input loops/panel formatting unchanged.",
+  "frozenSetPolicy": "No outcome added to baseline sets. Keep original captures and repeat complete unchanged candidate fixture for strict preservation.",
+  "controlOutcome": {
+    "match": true,
+    "renderDifferences": 0,
+    "httpMatch": true,
+    "terminalMatch": true,
+    "comparedRenderFrameCount": 20
+  },
+  "frameEvidence": "Accepted H02 report: Pi 20 render frames vs PiSharp 19, 37,205 field differences from the missing intermediate frame. Current candidate and newly rebuilt untouched baseline control each produce 20 matched frames with HTTP match. Earlier untouched baseline control produced the 19-frame accepted difference.",
+  "candidateUnchangedAttempts": "Initial complete capture and first/second complete fixture repeats matched 20 frames. Third complete unchanged fixture repeat reproduced accepted render difference. Every original report/invocation remains under outside-baseline-first/second/third-attempts.",
+  "finalAcceptedOutcome": {
+    "match": false,
+    "renderDifferences": 37205,
+    "httpMatch": true,
+    "terminalMatch": false,
+    "comparedRenderFrameCount": 20
+  },
+  "fullComparison": {
+    "pass_": true,
+    "failures": [],
+    "baselineFlaky": [
+      "terminal/terminal-llama-load-cancel-paired/100x32-dark-fullscreen",
+      "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+      "terminal/terminal-resource-skill-prompt-no-reader-paired/120x40-dark-fullscreen",
+      "terminal/terminal-resource-skill-prompt-read-bash-paired/120x40-dark-fullscreen"
+    ],
+    "expected": 1858,
+    "candidate": 1894
+  }
+}

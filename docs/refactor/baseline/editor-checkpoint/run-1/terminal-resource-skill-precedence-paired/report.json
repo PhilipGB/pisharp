@@ -1,0 +1,151 @@
+{
+  "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+  "pisharpSha": "efc47d3df9b045bff28746fc3c6fa9a4986cf971",
+  "fixture": "resource-skill-precedence",
+  "calibration": false,
+  "concurrentHttpGroups": [],
+  "normalization": "Named checkpoints and stable synchronized render states are compared exactly, collapsing adjacent identical states, hidden cursor coordinates, transient loader glyphs, and in-flight Working-indicator frames. Same-Pi calibration shows fast scripted responses can finish before that animated frame is captured, making its presence and partial usage footer PTY-scheduling dependent. Raw bytes remain captured and exact-match status is reported separately. HTTP identity/count/order remain exact except within declared concurrent batches, where arrival order is unspecified. Only generated documentation package-root lines in system messages are canonicalized in HTTP comparisons. Per-checkpoint control buckets are diagnostic.",
+  "cases": [
+    {
+      "id": "120x40-dark-fullscreen",
+      "match": true,
+      "differences": 0,
+      "firstDifferences": [],
+      "scenarioErrors": {},
+      "terminalMatch": true,
+      "rawMatch": false,
+      "rawDifference": {
+        "piBytes": 13063,
+        "pisharpBytes": 12764,
+        "firstDifferingByte": 2
+      },
+      "comparedRenderFrameCount": 10,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "rawHttpMatch": false,
+      "rawHttpDifferenceCount": 1,
+      "rawHttpFirstDifferences": [
+        {
+          "path": "$.http[0].body.messages[0].content",
+          "pi": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\n<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>\n\n<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /tmp/pisharp-frozen-pi1/packages/coding-agent/README.md\n- Additional docs: /tmp/pisharp-frozen-pi1/packages/coding-agent/docs\n- Examples: /tmp/pisharp-frozen-pi1/packages/coding-agent/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>\n\n<cwd>\n/tmp/pisharp-terminal-fixture-workspace/resource-project\n</cwd>",
+          "pisharp": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.\n\n<tools>\n(none)\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>\n\n<rules>\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>\n\n<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: /home/philip/Downloads/pisharp-bootstrap/pisharp/README.md\n- Additional docs: /home/philip/Downloads/pisharp-bootstrap/pisharp/docs\n- Examples: /home/philip/Downloads/pisharp-bootstrap/pisharp/examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>\n\n<cwd>\n/tmp/pisharp-terminal-fixture-workspace/resource-project\n</cwd>"
+        }
+      ],
+      "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+      "controlBoundaryDifferenceCount": 507,
+      "controlBoundaryFirstDifferences": [
+        {
+          "path": "$.controlBoundaries[0].length",
+          "pi": 269,
+          "pisharp": 221
+        },
+        {
+          "path": "$.controlBoundaries[0][0]",
+          "pi": "1b5b3f3130343968",
+          "pisharp": "1b5b3e3775"
+        },
+        {
+          "path": "$.controlBoundaries[0][1]",
+          "pi": "1b5b3f376c",
+          "pisharp": "1b5b3f75"
+        },
+        {
+          "path": "$.controlBoundaries[0][2]",
+          "pi": "1b5b3f3130303068",
+          "pisharp": "1b5b3f3130343968"
+        },
+        {
+          "path": "$.controlBoundaries[0][3]",
+          "pi": "1b5b3f3130303268",
+          "pisharp": "1b5b3f376c"
+        },
+        {
+          "path": "$.controlBoundaries[0][4]",
+          "pi": "1b5b3f3130303368",
+          "pisharp": "1b5b3f32356c"
+        },
+        {
+          "path": "$.controlBoundaries[0][5]",
+          "pi": "1b5b3f3130303468",
+          "pisharp": "1b5b3f3130303068"
+        },
+        {
+          "path": "$.controlBoundaries[0][6]",
+          "pi": "1b5b3f3130303668",
+          "pisharp": "1b5b3f3130303268"
+        },
+        {
+          "path": "$.controlBoundaries[0][7]",
+          "pi": "1b5b324a",
+          "pisharp": "1b5b3f3130303368"
+        },
+        {
+          "path": "$.controlBoundaries[0][8]",
+          "pi": "1b5b48",
+          "pisharp": "1b5b3f3130303468"
+        },
+        {
+          "path": "$.controlBoundaries[0][9]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5b3f3130303668"
+        },
+        {
+          "path": "$.controlBoundaries[0][10]",
+          "pi": "1b5b3f3230303468",
+          "pisharp": "1b5d31303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][11]",
+          "pi": "1b5b3e3775",
+          "pisharp": "1b5d31313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][12]",
+          "pi": "1b5b3f75",
+          "pisharp": "1b5d343b303b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][13]",
+          "pi": "1b5d373530313b3f1b5c",
+          "pisharp": "1b5d343b313b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][14]",
+          "pi": "1b5b63",
+          "pisharp": "1b5d343b323b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][15]",
+          "pi": "1b5b3f32356c",
+          "pisharp": "1b5d343b333b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][16]",
+          "pi": "1b5d31303b3f07",
+          "pisharp": "1b5d343b343b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][17]",
+          "pi": "1b5d31313b3f07",
+          "pisharp": "1b5d343b353b3f07"
+        },
+        {
+          "path": "$.controlBoundaries[0][18]",
+          "pi": "1b5d343b303b3f07",
+          "pisharp": "1b5d343b363b3f07"
+        }
+      ],
+      "evidence": "120x40-dark-fullscreen.json.gz",
+      "assertionEvidence": "120x40-dark-fullscreen.assertions.json.gz",
+      "frameEvidence": {
+        "pi": "120x40-dark-fullscreen.pi.frames.jsonl.gz",
+        "pisharp": "120x40-dark-fullscreen.pisharp.frames.jsonl.gz"
+      },
+      "renderEvidence": {
+        "pi": "120x40-dark-fullscreen.pi.renders.jsonl.gz",
+        "pisharp": "120x40-dark-fullscreen.pisharp.renders.jsonl.gz"
+      }
+    }
+  ],
+  "match": true
+}

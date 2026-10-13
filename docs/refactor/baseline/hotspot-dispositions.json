@@ -23,7 +23,11 @@
     },
     {
       "id": "H03",
-      "disposition": "OPEN"
+      "disposition": "RESOLVED",
+      "resolution": "Concrete dialog input/panel rendering, progress settlement, transcript search state and authorization input owners separate modal workflows from ordinary draft editing, completion/history, active-run queue/abort and application dispatch. Current input/screen bindings and original terminal mode/cleanup ordering remain explicit.",
+      "evidence": "editor-checkpoint/editor-preservation-comparison.json",
+      "capabilityDocumentation": "../../capabilities/terminal.md",
+      "additionalEvidence": "editor-checkpoint/README.md"
     },
     {
       "id": "H04",
