@@ -58,7 +58,7 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
 
     private Projection Project(IEnumerable<ChatMessage> source, ChatOptions? options)
     {
-        var messages = source.ToList();
+        var messages = AnthropicToolResultProjection.Project(source).ToList();
         var projectedTranscript = options?.AdditionalProperties?.TryGetValue("pisharp.toolTranscript", out var transcript) == true &&
             transcript is JsonElement { ValueKind: JsonValueKind.Array };
         if (projectedTranscript)

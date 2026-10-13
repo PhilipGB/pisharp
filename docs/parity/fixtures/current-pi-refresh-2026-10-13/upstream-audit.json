@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 8,
+    "MATCHED": 9,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 10
+    "NEEDS_WORK": 9
   },
   "commits": [
     {
@@ -1070,7 +1070,7 @@
         "packages/ai/CHANGELOG.md",
         "packages/ai/src/api/anthropic-messages.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Anthropic error tool results replace each image with the exact omission note; successful tool images remain intact. PiSharp forwards tool-result images through the SDK.",
       "capability_ids": [
         "provider-anthropic-inline-tools"
@@ -1080,7 +1080,13 @@
       ],
       "implementation_plan": "Project error tool-result images to the omission note at the Anthropic boundary while retaining canonical content.",
       "differential_plan": "SDK request loopbacks for mixed text/images on error and success, with retained local history and Pi request comparison.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Anthropic error tool results replace every image with Pi's exact omission note and collapse text-only blocks to the same newline string; successful tool images remain intact. Live MAF results carry request-only attribution so only failed tool attachments are removed, unrelated user images remain, and the persisted contract is unchanged. Imported streaming/non-streaming and live execution cases failed first and now pass. The real SDK/Pi provider comparison matches ordered result blocks, image sources, error flags and unchanged input; the full suite passes 1432/1432 with zero skips and a zero-warning build. Paid provider and broader conversation-wire equivalence remain outside this bounded evidence.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/anthropic-error-images.json",
+        "tools/parity/anthropic-error-image-differential.py",
+        "tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicInlineToolTests.cs"
+      ]
     },
     {
       "sha": "6f2f164ab7e7f1516c4530da396b151ab2f84779",

@@ -12,6 +12,83 @@ namespace PiSharp.Tests;
 
 public sealed class AnthropicInlineToolTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task LiveStructuredToolResultsOmitOnlyErrorImagesAtTheAnthropicBoundary(bool isError)
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User,
+        [
+            new TextContent("before"),
+            new DataContent(Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aL1cAAAAASUVORK5CYII="), "image/png")
+        ]));
+        session.Append(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("call_image", "read", new Dictionary<string, object?> { ["path"] = "image.png" })]));
+        var result = new PiSharpToolResult("tool text", IsError: isError,
+            Images: [new PiSharpToolImage("image/png", "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aL1cAAAAASUVORK5CYII=")]);
+        session.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("call_image", result)]));
+
+        var (payload, _) = await Capture([], false, false, streaming: true, invoke: async (client, token) =>
+        {
+            var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()), noTools: true);
+            var run = await ConversationRun.OpenAsync(agent, session);
+            await foreach (var _ in run.RunEventsAsync("continue", token)) { }
+        });
+
+        var blocks = payload.GetProperty("messages").EnumerateArray()
+            .SelectMany(message => message.GetProperty("content").EnumerateArray()).ToArray();
+        var tool = blocks.Single(block => block.GetProperty("type").GetString() == "tool_result");
+        Assert.Equal(isError, tool.GetProperty("is_error").GetBoolean());
+        Assert.Equal(isError ? 1 : 2, blocks.Count(block => block.GetProperty("type").GetString() == "image"));
+        Assert.Equal(isError, tool.GetProperty("content").GetRawText().Contains(
+            "[image omitted: error tool results cannot contain images]", StringComparison.Ordinal));
+        Assert.Single(result.Images!);
+        Assert.Equal("tool text", result.Text);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    public async Task ErrorToolImagesBecomeOmissionNotesWhileSuccessfulImagesAndHistoryRemain(bool isError, bool streaming)
+    {
+        var session = Import("""
+            {"role":"user","content":"before"}
+            {"role":"assistant","content":[{"type":"toolCall","id":"call_image","name":"read","arguments":{"path":"image.png"}}]}
+            """ + "\n" + JsonSerializer.Serialize(new
+        {
+            role = "toolResult",
+            toolCallId = "call_image",
+            toolName = "read",
+            isError,
+            content = new object[]
+                {
+                    new { type = "text", text = "tool text" },
+                    new { type = "image", mimeType = "image/png", data = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aL1cAAAAASUVORK5CYII=" }
+                }
+        }));
+        var messages = session.ContextMessages();
+        var original = JsonSerializer.Serialize(messages, AIJsonUtilities.DefaultOptions);
+
+        var (payload, _) = await Capture(messages, false, false, streaming);
+
+        var tool = payload.GetProperty("messages").EnumerateArray()
+            .SelectMany(message => message.GetProperty("content").EnumerateArray())
+            .Single(block => block.GetProperty("type").GetString() == "tool_result");
+        Assert.Equal(isError, tool.GetProperty("is_error").GetBoolean());
+        if (isError)
+            Assert.Equal("tool text\n[image omitted: error tool results cannot contain images]", tool.GetProperty("content").GetString());
+        else
+        {
+            var blocks = tool.GetProperty("content").EnumerateArray().ToArray();
+            Assert.Equal("tool text", blocks[0].GetProperty("text").GetString());
+            Assert.Equal("image", blocks[1].GetProperty("type").GetString());
+        }
+        Assert.Equal(original, JsonSerializer.Serialize(messages, AIJsonUtilities.DefaultOptions));
+    }
+
     [Fact]
     public async Task OAuthUsesClaudeCodeNamesInInitialDefinitionsAndInlineRemovals()
     {
