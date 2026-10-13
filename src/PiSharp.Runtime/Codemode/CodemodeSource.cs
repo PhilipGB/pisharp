@@ -7,9 +7,16 @@ internal sealed record CodemodeSource(string Code, long MaxOutputTokens = 10000,
     public static CodemodeSource Parse(string source)
     {
         if (string.IsNullOrWhiteSpace(source)) throw new ArgumentException("Expected nonempty JavaScript source.");
+        const string prefix = "// @options:";
+        var lineNumber = 1;
+        foreach (var range in source.AsSpan().Split('\n'))
+        {
+            if (lineNumber > 1 && source.AsSpan()[range].TrimStart().StartsWith(prefix, StringComparison.Ordinal))
+                throw new ArgumentException($"The {prefix} line must be the first line of the input; found one on line {lineNumber}");
+            lineNumber++;
+        }
         var newline = source.IndexOf('\n');
         var first = (newline < 0 ? source : source[..newline]).TrimStart().TrimEnd('\r');
-        const string prefix = "// @options:";
         if (!first.StartsWith(prefix, StringComparison.Ordinal)) return new(source);
         var code = newline < 0 ? "" : source[newline..];
         if (string.IsNullOrWhiteSpace(code)) throw new ArgumentException("The @options line must be followed by JavaScript source.");

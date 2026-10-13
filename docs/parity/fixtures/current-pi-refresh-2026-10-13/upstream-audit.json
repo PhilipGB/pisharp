@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "NEEDS_WORK": 17,
+    "NEEDS_WORK": 16,
     "NO_BEHAVIOR_CHANGE": 13,
-    "MATCHED": 1
+    "MATCHED": 2
   },
   "commits": [
     {
@@ -665,7 +665,7 @@
         "packages/coding-agent/docs/codemode.md",
         "packages/coding-agent/test/suite/agent-session-codemode.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Any // @options: line after line one fails before execution, including a second directive. PiSharp only examines the first line.",
       "capability_ids": [
         "codemode-runtime"
@@ -675,7 +675,13 @@
       ],
       "implementation_plan": "Reject misplaced directives with the upstream line number before starting the sandbox.",
       "differential_plan": "Replay four upstream source vectors plus inline-string and optionsx negatives through parser and execution.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Misplaced // @options: lines now fail before worker launch with the exact line-number error, including blank/indented/CRLF/repeated directives. The source parser preserves valid optionsx/string/standalone-CR controls. Eight real current-Pi source comparisons match; 20 focused source tests pass (four fail-first cases plus controls).",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-source.json",
+        "tools/parity/codemode-source-differential.py",
+        "tests/PiSharp.Tests/Runtime/Codemode/CodemodeSourceTests.cs"
+      ]
     },
     {
       "sha": "3e477eab5f7c37015504a6ada56fa1f90aad7e0b",

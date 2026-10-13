@@ -3,7 +3,7 @@
 Starting merged main: `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`.
 Branch: `parity/current-pi-completion`. PR #1 is merged; exact-main [Linux CI 38427397999](https://github.com/PhilipGB/pisharp/actions/runs/38427397999) passes both jobs. The architecture refactor and Program composition review are complete. Final parity work still requires a bounded architecture regression review.
 
-The starting reference was `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; all baseline comparisons below used that SHA. The completely audited new configured reference is `3daa20280f6a7c7cbe0935680c9a38fdc3863005`. [The source audit](upstream-audit.json) classifies every one of the 50 commits between them: 19 `OUT_OF_SCOPE`, 13 `NO_BEHAVIOR_CHANGE`, 17 `NEEDS_WORK`, one `MATCHED`. Each in-scope entry records its observable change, exact changed upstream paths, affected existing ledger ID, current PiSharp source, implementation plan and differential plan. `NEEDS_WORK` includes missing proof where existing code may already match; it does not presume all remaining items need product edits.
+The starting reference was `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; all baseline comparisons below used that SHA. The completely audited new configured reference is `3daa20280f6a7c7cbe0935680c9a38fdc3863005`. [The source audit](upstream-audit.json) classifies every one of the 50 commits between them: 19 `OUT_OF_SCOPE`, 13 `NO_BEHAVIOR_CHANGE`, 16 `NEEDS_WORK`, 2 `MATCHED`. Each in-scope entry records its observable change, exact changed upstream paths, affected existing ledger ID, current PiSharp source, implementation plan and differential plan. `NEEDS_WORK` includes missing proof where existing code may already match; it does not presume all remaining items need product edits.
 
 ## Baseline evidence
 
@@ -48,7 +48,7 @@ Generated logs/captures live under `artifacts/parity/current-pi-baseline-2026-10
 | `aa499c24` | `OUT_OF_SCOPE` | Changes only independent env runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes. |
 | `b6fda579` | `OUT_OF_SCOPE` | Changes only independent env runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes. |
 | `55df12bf` | `OUT_OF_SCOPE` | Changes only independent durable, env runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes. |
-| `b6d505cd` | `NEEDS_WORK` | Any // @options: line after line one fails before execution, including a second directive. PiSharp only examines the first line. |
+| `b6d505cd` | `MATCHED` | Misplaced // @options: lines now fail before worker launch with the exact line-number error, including blank/indented/CRLF/repeated directives. The source parser preserves valid optionsx/string/standalone-CR controls. Eight real current-Pi source comparisons match; 20 focused source tests pass (four fail-first cases plus controls). |
 | `3e477eab` | `NEEDS_WORK` | PI_CLIPBOARD_OSC52=1 forces terminal emission after a successful native clipboard write. PiSharp detects SSH/Mosh only. |
 | `7bd01fb9` | `NEEDS_WORK` | Transient wording includes provider returned an error. PiSharp retry regex permits provider returned error but omits an. |
 | `0d79b74d` | `NO_BEHAVIOR_CHANGE` | Changelog-only inventory of changes individually classified in this range; no runtime change. |

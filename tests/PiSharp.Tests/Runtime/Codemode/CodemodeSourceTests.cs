@@ -7,6 +7,29 @@ namespace PiSharp.Tests;
 public sealed class CodemodeSourceTests
 {
     [Theory]
+    [InlineData("// count\n// @options: {\"timeout_ms\":1000}\ntext('executed')", 2)]
+    [InlineData("\n  // @options: {\"timeout_ms\":1000}\ntext('executed')", 2)]
+    [InlineData("text('executed')\r\n// @options: {\"timeout_ms\":1}", 2)]
+    [InlineData("// @options: {\"timeout_ms\":1000}\ntext('executed')\n// @options: {\"timeout_ms\":2}", 3)]
+    public async Task MisplacedDirectiveFailsBeforeExecutionWithItsLineNumber(string source, int line)
+    {
+        var result = await CodemodeSandbox.ExecuteAsync(source, Context(), new Dictionary<string, System.Text.Json.JsonElement>(), default);
+
+        Assert.False(result.Ok);
+        Assert.Empty(result.Text);
+        Assert.Equal($"The // @options: line must be the first line of the input; found one on line {line}", result.Error);
+    }
+
+    [Theory]
+    [InlineData("// @optionsx {}\ntext(1)")]
+    [InlineData("text(\"// @options: {}\")")]
+    [InlineData("// comment\rtext(1)")]
+    public void SimilarTextDoesNotBecomeAnOptionsDirective(string source)
+    {
+        Assert.Equal(source, CodemodeSource.Parse(source).Code);
+    }
+
+    [Theory]
     [InlineData("// @options: {\"unknown\":1}\ntext('executed')")]
     [InlineData("// @options: []\ntext('executed')")]
     [InlineData("// @options: {\"max_output_tokens\":9007199254740992}\ntext('executed')")]

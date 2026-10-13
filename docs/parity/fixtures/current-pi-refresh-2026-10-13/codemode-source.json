@@ -1,0 +1,83 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "sources": [
+    "// count\n// @options: {\"timeout_ms\":1000}\ntext(\"executed\")",
+    "\n  // @options: {\"timeout_ms\":1000}\nwhile (true) {}",
+    "text(1)\r\n// @options: {\"timeout_ms\":1}",
+    "// @options: {\"timeout_ms\":1000}\ntext(1)\n// @options: {\"timeout_ms\":2}",
+    "// @optionsx {}\ntext(1)",
+    "text(\"// @options: {}\")",
+    "\t// @options: {}\r\ntext(1)",
+    "// comment\rtext(1)"
+  ],
+  "pi": [
+    {
+      "code": null,
+      "error": "The // @options: line must be the first line of the input; found one on line 2"
+    },
+    {
+      "code": null,
+      "error": "The // @options: line must be the first line of the input; found one on line 2"
+    },
+    {
+      "code": null,
+      "error": "The // @options: line must be the first line of the input; found one on line 2"
+    },
+    {
+      "code": null,
+      "error": "The // @options: line must be the first line of the input; found one on line 3"
+    },
+    {
+      "code": "// @optionsx {}\ntext(1)",
+      "error": null
+    },
+    {
+      "code": "text(\"// @options: {}\")",
+      "error": null
+    },
+    {
+      "code": "\ntext(1)",
+      "error": null
+    },
+    {
+      "code": "// comment\rtext(1)",
+      "error": null
+    }
+  ],
+  "pisharp": [
+    {
+      "code": null,
+      "error": "The // @options: line must be the first line of the input; found one on line 2"
+    },
+    {
+      "code": null,
+      "error": "The // @options: line must be the first line of the input; found one on line 2"
+    },
+    {
+      "code": null,
+      "error": "The // @options: line must be the first line of the input; found one on line 2"
+    },
+    {
+      "code": null,
+      "error": "The // @options: line must be the first line of the input; found one on line 3"
+    },
+    {
+      "code": "// @optionsx {}\ntext(1)",
+      "error": null
+    },
+    {
+      "code": "text(\"// @options: {}\")",
+      "error": null
+    },
+    {
+      "code": "\ntext(1)",
+      "error": null
+    },
+    {
+      "code": "// comment\rtext(1)",
+      "error": null
+    }
+  ],
+  "match": true,
+  "comparison": "Exact rejection messages and preserved source text for misplaced directives and valid controls. Other options validation/default/deadline semantics are outside this probe."
+}

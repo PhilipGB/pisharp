@@ -30,7 +30,7 @@ internal static class CodemodeSandbox
         try { source = CodemodeSource.Parse(code); }
         catch (Exception error) when (error is ArgumentException or JsonException or InvalidOperationException)
         {
-            return new(false, "", "Invalid Codemode @options/source: " + error.Message);
+            return new(false, "", error.Message);
         }
         code = source.Code;
         var worker = Path.Combine(AppContext.BaseDirectory, "Codemode", "Engine", "worker.mjs");
