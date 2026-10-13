@@ -5237,5 +5237,37 @@
     "evidence": "https://github.com/PhilipGB/pisharp/tree/10e0d60eb8b192a5afcccf813281a753c3767553/docs/refactor/baseline/editor-checkpoint",
     "architecture": "docs/architecture.md",
     "capability_documentation": "docs/capabilities/"
+  },
+  "program_composition_verification": {
+    "date": "2026-10-13",
+    "scope": "Bounded Program composition decomposition; no feature parity claims added.",
+    "branch": "refactor/architecture-maintainability",
+    "baseline_pisharp": "95edc6771d6871ea36aa5692e59426d72ebe9d4b",
+    "production_code": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "frozen_pi": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "program": {
+      "originalLines": 1003,
+      "originalBytes": 58388,
+      "finalLines": 118,
+      "finalBytes": 6274
+    },
+    "baseline_dotnet_rows": 1382,
+    "dotnet_rows": 1390,
+    "added_rows": 8,
+    "unexpected_runner_skips": 0,
+    "node_tests": 24,
+    "python_tests": 47,
+    "mcp_checks": {
+      "total": 269,
+      "passing": 261,
+      "classified_baseline_failures": 8
+    },
+    "terminal_reports": 21,
+    "terminal_cases": 63,
+    "semantic_assertions": 3,
+    "evidence": "docs/parity/fixtures/program-composition-2026-10-13/verification.json",
+    "documentation": "docs/development/program-composition-refactor.md",
+    "limitations": "Full Pi parity and raw-byte/canonical-render timing stability are not established. Regular-mode cases terminate on the existing unsupported setting; they do not establish regular interactive behavior. Linux fixture coverage does not establish other platforms.",
+    "feature_status_changes": false
   }
 }

@@ -1,0 +1,1645 @@
+[
+  {
+    "name": "extension-resource-discovery-reload-baseline",
+    "fixture": "extension-resource-discovery-reload",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": false,
+    "match": true,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 16,
+        "controlBoundaryDifferenceCount": 1415,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "extension-resource-discovery-reload-calibration",
+    "fixture": "extension-resource-discovery-reload",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": true,
+    "match": true,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 16,
+        "controlBoundaryDifferenceCount": 164,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "extension-resource-discovery-reload-paired",
+    "fixture": "extension-resource-discovery-reload",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": false,
+    "match": true,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 16,
+        "controlBoundaryDifferenceCount": 1433,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "project-trust-extension-ui-baseline",
+    "fixture": "project-trust-extension-ui",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": false,
+    "match": true,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 14,
+        "controlBoundaryDifferenceCount": 706,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "project-trust-extension-ui-calibration",
+    "fixture": "project-trust-extension-ui",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": true,
+    "match": false,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": false,
+        "differences": 1,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 14,
+        "controlBoundaryDifferenceCount": 216,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.modes.private.2026",
+            "pi": false,
+            "pisharp": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "project-trust-extension-ui-calibration-repeat",
+    "fixture": "project-trust-extension-ui",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": true,
+    "match": true,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 14,
+        "controlBoundaryDifferenceCount": 19,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "project-trust-extension-ui-paired",
+    "fixture": "project-trust-extension-ui",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": false,
+    "match": true,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 14,
+        "controlBoundaryDifferenceCount": 717,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "selectors-settings-baseline",
+    "fixture": "selectors-settings",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": false,
+    "match": false,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": false,
+        "differences": 18603,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 9475,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 423,
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[0].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[1].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[2].chars",
+            "pi": "",
+            "pisharp": "+"
+          }
+        ]
+      },
+      {
+        "id": "80x24-dark-regular",
+        "match": false,
+        "differences": 1958,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 6,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "80x24-light-fullscreen",
+        "match": false,
+        "differences": 18599,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 9473,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 401,
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[0].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[1].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[2].chars",
+            "pi": "",
+            "pisharp": "+"
+          }
+        ]
+      },
+      {
+        "id": "80x24-light-regular",
+        "match": false,
+        "differences": 1958,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 6,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": false,
+        "differences": 29922,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 15204,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 443,
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[0].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[1].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[2].chars",
+            "pi": "",
+            "pisharp": "+"
+          }
+        ]
+      },
+      {
+        "id": "120x40-dark-regular",
+        "match": false,
+        "differences": 2758,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 6,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "120x40-light-fullscreen",
+        "match": false,
+        "differences": 29922,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 15204,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 447,
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[0].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[1].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[2].chars",
+            "pi": "",
+            "pisharp": "+"
+          }
+        ]
+      },
+      {
+        "id": "120x40-light-regular",
+        "match": false,
+        "differences": 2758,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 6,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "selectors-settings-calibration",
+    "fixture": "selectors-settings",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": true,
+    "match": true,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      },
+      {
+        "id": "80x24-dark-regular",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      },
+      {
+        "id": "80x24-light-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      },
+      {
+        "id": "80x24-light-regular",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 1,
+        "firstDifferences": []
+      },
+      {
+        "id": "120x40-dark-regular",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 1,
+        "firstDifferences": []
+      },
+      {
+        "id": "120x40-light-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 1,
+        "firstDifferences": []
+      },
+      {
+        "id": "120x40-light-regular",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 1,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "selectors-settings-paired",
+    "fixture": "selectors-settings",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": false,
+    "match": false,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": false,
+        "differences": 18603,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 9475,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 397,
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[0].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[1].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[2].chars",
+            "pi": "",
+            "pisharp": "+"
+          }
+        ]
+      },
+      {
+        "id": "80x24-dark-regular",
+        "match": false,
+        "differences": 1958,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 6,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "80x24-light-fullscreen",
+        "match": false,
+        "differences": 18578,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 9452,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 408,
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[0].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[1].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[0].cells[2].chars",
+            "pi": "",
+            "pisharp": "+"
+          }
+        ]
+      },
+      {
+        "id": "80x24-light-regular",
+        "match": false,
+        "differences": 1958,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 6,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": false,
+        "differences": 29922,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 15204,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 447,
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[0].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[1].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[2].chars",
+            "pi": "",
+            "pisharp": "+"
+          }
+        ]
+      },
+      {
+        "id": "120x40-dark-regular",
+        "match": false,
+        "differences": 2758,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 6,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "120x40-light-fullscreen",
+        "match": false,
+        "differences": 29922,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 15204,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 443,
+        "firstDifferences": [
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[0].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[1].chars",
+            "pi": "",
+            "pisharp": " "
+          },
+          {
+            "path": "$.frames[3].state.buffers.alternate.lines[8].cells[2].chars",
+            "pi": "",
+            "pisharp": "+"
+          }
+        ]
+      },
+      {
+        "id": "120x40-light-regular",
+        "match": false,
+        "differences": 2758,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 6,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "startup-baseline",
+    "fixture": "startup-editor",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": false,
+    "match": false,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": false,
+        "differences": 4810,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 592,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 216,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].chars",
+            "pi": "",
+            "pisharp": "\u2500"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.mode",
+            "pi": "default",
+            "pisharp": "rgb"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.value",
+            "pi": -1,
+            "pisharp": 7108219
+          }
+        ]
+      },
+      {
+        "id": "80x24-dark-regular",
+        "match": false,
+        "differences": 1958,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 7,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "80x24-light-fullscreen",
+        "match": false,
+        "differences": 4810,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 592,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 216,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].chars",
+            "pi": "",
+            "pisharp": "\u2500"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.mode",
+            "pi": "default",
+            "pisharp": "rgb"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.value",
+            "pi": -1,
+            "pisharp": 12765386
+          }
+        ]
+      },
+      {
+        "id": "80x24-light-regular",
+        "match": false,
+        "differences": 1958,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 7,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": false,
+        "differences": 5839,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 3431,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 253,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].chars",
+            "pi": "\u2500",
+            "pisharp": ""
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.mode",
+            "pi": "rgb",
+            "pisharp": "default"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.value",
+            "pi": 7108219,
+            "pisharp": -1
+          }
+        ]
+      },
+      {
+        "id": "120x40-dark-regular",
+        "match": false,
+        "differences": 2758,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 7,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "120x40-light-fullscreen",
+        "match": false,
+        "differences": 2520,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 112,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 256,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].chars",
+            "pi": "\u2500",
+            "pisharp": ""
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.mode",
+            "pi": "rgb",
+            "pisharp": "default"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.value",
+            "pi": 12765386,
+            "pisharp": -1
+          }
+        ]
+      },
+      {
+        "id": "120x40-light-regular",
+        "match": false,
+        "differences": 2758,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 7,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "startup-baseline-repeat",
+    "fixture": "startup-editor",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": false,
+    "match": false,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": false,
+        "differences": 4810,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 592,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 216,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].chars",
+            "pi": "",
+            "pisharp": "\u2500"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.mode",
+            "pi": "default",
+            "pisharp": "rgb"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.value",
+            "pi": -1,
+            "pisharp": 7108219
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "startup-baseline-repeat-120",
+    "fixture": "startup-editor",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": false,
+    "match": false,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": false,
+        "differences": 2520,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 112,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 260,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].chars",
+            "pi": "\u2500",
+            "pisharp": ""
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.mode",
+            "pi": "rgb",
+            "pisharp": "default"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.value",
+            "pi": 7108219,
+            "pisharp": -1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "startup-calibration",
+    "fixture": "startup-editor",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": true,
+    "match": true,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      },
+      {
+        "id": "80x24-dark-regular",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 1,
+        "firstDifferences": []
+      },
+      {
+        "id": "80x24-light-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      },
+      {
+        "id": "80x24-light-regular",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      },
+      {
+        "id": "120x40-dark-regular",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 1,
+        "firstDifferences": []
+      },
+      {
+        "id": "120x40-light-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      },
+      {
+        "id": "120x40-light-regular",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": true,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 0,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "startup-candidate-repeat",
+    "fixture": "startup-editor",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+    "calibration": false,
+    "match": false,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": false,
+        "differences": 7769,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 3551,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 217,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].chars",
+            "pi": "",
+            "pisharp": "\u2500"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.mode",
+            "pi": "default",
+            "pisharp": "rgb"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.value",
+            "pi": -1,
+            "pisharp": 7108219
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "startup-editor-paired",
+    "fixture": "startup-editor",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": false,
+    "match": false,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": false,
+        "differences": 7769,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 3551,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 213,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].chars",
+            "pi": "",
+            "pisharp": "\u2500"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.mode",
+            "pi": "default",
+            "pisharp": "rgb"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.value",
+            "pi": -1,
+            "pisharp": 7108219
+          }
+        ]
+      },
+      {
+        "id": "80x24-dark-regular",
+        "match": false,
+        "differences": 1958,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 7,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "80x24-light-fullscreen",
+        "match": false,
+        "differences": 4810,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 592,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 216,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].chars",
+            "pi": "",
+            "pisharp": "\u2500"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.mode",
+            "pi": "default",
+            "pisharp": "rgb"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[19].cells[0].foreground.value",
+            "pi": -1,
+            "pisharp": 12765386
+          }
+        ]
+      },
+      {
+        "id": "80x24-light-regular",
+        "match": false,
+        "differences": 1958,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 7,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": false,
+        "differences": 2520,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 112,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 260,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].chars",
+            "pi": "\u2500",
+            "pisharp": ""
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.mode",
+            "pi": "rgb",
+            "pisharp": "default"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.value",
+            "pi": 7108219,
+            "pisharp": -1
+          }
+        ]
+      },
+      {
+        "id": "120x40-dark-regular",
+        "match": false,
+        "differences": 2758,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 7,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      },
+      {
+        "id": "120x40-light-fullscreen",
+        "match": false,
+        "differences": 2520,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 112,
+        "comparedRenderFrameCount": 10,
+        "controlBoundaryDifferenceCount": 260,
+        "firstDifferences": [
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].chars",
+            "pi": "\u2500",
+            "pisharp": ""
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.mode",
+            "pi": "rgb",
+            "pisharp": "default"
+          },
+          {
+            "path": "$.frames[5].state.buffers.alternate.lines[25].cells[0].foreground.value",
+            "pi": 12765386,
+            "pisharp": -1
+          }
+        ]
+      },
+      {
+        "id": "120x40-light-regular",
+        "match": false,
+        "differences": 2758,
+        "scenarioErrors": {
+          "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        },
+        "terminalMatch": false,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 1,
+        "comparedRenderFrameCount": 6,
+        "controlBoundaryDifferenceCount": 4,
+        "firstDifferences": [
+          {
+            "path": "$.scenarioError",
+            "pisharp": "Terminal exited 2 before 'fixture-model'.\nsettings.json contains unsupported property 'tuiMode'.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+          },
+          {
+            "path": "$.frames.length",
+            "pi": 7,
+            "pisharp": 1
+          },
+          {
+            "path": "$.frames[0].state.buffers.normal.cursorX",
+            "pi": null,
+            "pisharp": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "thinking-toggle-baseline",
+    "fixture": "thinking-toggle",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": false,
+    "match": false,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": false,
+        "differences": 6404,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": false,
+        "rawMatch": false,
+        "renderDifferences": 3520,
+        "comparedRenderFrameCount": 12,
+        "controlBoundaryDifferenceCount": 528,
+        "firstDifferences": [
+          {
+            "path": "$.frames[0].state.buffers.alternate.lines[19].cells[0].foreground.value",
+            "pi": 6391244,
+            "pisharp": 7108219
+          },
+          {
+            "path": "$.frames[0].state.buffers.alternate.lines[19].cells[1].foreground.value",
+            "pi": 6391244,
+            "pisharp": 7108219
+          },
+          {
+            "path": "$.frames[0].state.buffers.alternate.lines[19].cells[2].foreground.value",
+            "pi": 6391244,
+            "pisharp": 7108219
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "thinking-toggle-calibration",
+    "fixture": "thinking-toggle",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": true,
+    "match": true,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 12,
+        "controlBoundaryDifferenceCount": 143,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "thinking-toggle-paired",
+    "fixture": "thinking-toggle",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": false,
+    "match": false,
+    "cases": [
+      {
+        "id": "80x24-dark-fullscreen",
+        "match": false,
+        "differences": 17599,
+        "scenarioErrors": {},
+        "terminalMatch": false,
+        "httpMatch": false,
+        "rawMatch": false,
+        "renderDifferences": 14715,
+        "comparedRenderFrameCount": 12,
+        "controlBoundaryDifferenceCount": 536,
+        "firstDifferences": [
+          {
+            "path": "$.frames[0].state.buffers.alternate.lines[19].cells[0].foreground.value",
+            "pi": 6391244,
+            "pisharp": 7108219
+          },
+          {
+            "path": "$.frames[0].state.buffers.alternate.lines[19].cells[1].foreground.value",
+            "pi": 6391244,
+            "pisharp": 7108219
+          },
+          {
+            "path": "$.frames[0].state.buffers.alternate.lines[19].cells[2].foreground.value",
+            "pi": 6391244,
+            "pisharp": 7108219
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trusted-project-settings-reload-calibration",
+    "fixture": "trusted-project-settings-reload",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": true,
+    "match": true,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 9,
+        "controlBoundaryDifferenceCount": 30,
+        "firstDifferences": []
+      }
+    ]
+  },
+  {
+    "name": "trusted-project-settings-reload-paired",
+    "fixture": "trusted-project-settings-reload",
+    "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reportedDriverSha": "25980bdb66d4c717628a5e7e187d9d3d3a9ae1de",
+    "calibration": false,
+    "match": true,
+    "cases": [
+      {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "scenarioErrors": {},
+        "terminalMatch": true,
+        "httpMatch": true,
+        "rawMatch": false,
+        "renderDifferences": 0,
+        "comparedRenderFrameCount": 9,
+        "controlBoundaryDifferenceCount": 539,
+        "firstDifferences": []
+      }
+    ]
+  }
+]

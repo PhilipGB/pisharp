@@ -1,0 +1,379 @@
+[
+  {
+    "fixture": "startup-editor",
+    "case": "80x24-dark-fullscreen",
+    "match": false,
+    "differenceCount": 3201,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 3201,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 155,
+    "firstDifferences": [
+      {
+        "path": "$.renders.length",
+        "pi": 10,
+        "pisharp": 9
+      },
+      {
+        "path": "$.renders[5].modes.keyboard.kittyFlags",
+        "pi": 7,
+        "pisharp": 0
+      },
+      {
+        "path": "$.renders[5].modes.keyboard.kittyStack.length",
+        "pi": 1,
+        "pisharp": 0
+      },
+      {
+        "path": "$.renders[6].modes.mouseTrackingMode",
+        "pi": "any",
+        "pisharp": "none"
+      },
+      {
+        "path": "$.renders[6].modes.private.1000",
+        "pi": true,
+        "pisharp": false
+      },
+      {
+        "path": "$.renders[6].modes.private.1002",
+        "pi": true,
+        "pisharp": false
+      },
+      {
+        "path": "$.renders[6].modes.private.1003",
+        "pi": true,
+        "pisharp": false
+      },
+      {
+        "path": "$.renders[6].modes.private.1004",
+        "pi": true,
+        "pisharp": false
+      }
+    ]
+  },
+  {
+    "fixture": "startup-editor",
+    "case": "80x24-dark-regular",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": true,
+    "controlBoundaryDifferenceCount": 0
+  },
+  {
+    "fixture": "startup-editor",
+    "case": "80x24-light-fullscreen",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 0
+  },
+  {
+    "fixture": "startup-editor",
+    "case": "80x24-light-regular",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": true,
+    "controlBoundaryDifferenceCount": 0
+  },
+  {
+    "fixture": "startup-editor",
+    "case": "120x40-dark-fullscreen",
+    "match": false,
+    "differenceCount": 3381,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 3381,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 156,
+    "firstDifferences": [
+      {
+        "path": "$.renders.length",
+        "pi": 9,
+        "pisharp": 10
+      },
+      {
+        "path": "$.renders[5].modes.keyboard.kittyFlags",
+        "pi": 0,
+        "pisharp": 7
+      },
+      {
+        "path": "$.renders[5].modes.keyboard.kittyStack.length",
+        "pi": 0,
+        "pisharp": 1
+      },
+      {
+        "path": "$.renders[6].modes.mouseTrackingMode",
+        "pi": "none",
+        "pisharp": "any"
+      },
+      {
+        "path": "$.renders[6].modes.private.1000",
+        "pi": false,
+        "pisharp": true
+      },
+      {
+        "path": "$.renders[6].modes.private.1002",
+        "pi": false,
+        "pisharp": true
+      },
+      {
+        "path": "$.renders[6].modes.private.1003",
+        "pi": false,
+        "pisharp": true
+      },
+      {
+        "path": "$.renders[6].modes.private.1004",
+        "pi": false,
+        "pisharp": true
+      }
+    ]
+  },
+  {
+    "fixture": "startup-editor",
+    "case": "120x40-dark-regular",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": true,
+    "controlBoundaryDifferenceCount": 0
+  },
+  {
+    "fixture": "startup-editor",
+    "case": "120x40-light-fullscreen",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 1
+  },
+  {
+    "fixture": "startup-editor",
+    "case": "120x40-light-regular",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": true,
+    "controlBoundaryDifferenceCount": 0
+  },
+  {
+    "fixture": "thinking-toggle",
+    "case": "80x24-dark-fullscreen",
+    "match": false,
+    "differenceCount": 11515,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 11515,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 40,
+    "firstDifferences": [
+      {
+        "path": "$.renders.length",
+        "pi": 12,
+        "pisharp": 13
+      },
+      {
+        "path": "$.renders[2].buffers.alternate.lines[8].cells[0].chars",
+        "pi": " ",
+        "pisharp": ""
+      },
+      {
+        "path": "$.renders[2].buffers.alternate.lines[8].cells[1].chars",
+        "pi": "T",
+        "pisharp": ""
+      },
+      {
+        "path": "$.renders[2].buffers.alternate.lines[8].cells[1].foreground.mode",
+        "pi": "rgb",
+        "pisharp": "default"
+      },
+      {
+        "path": "$.renders[2].buffers.alternate.lines[8].cells[1].foreground.value",
+        "pi": 8292494,
+        "pisharp": -1
+      },
+      {
+        "path": "$.renders[2].buffers.alternate.lines[8].cells[2].chars",
+        "pi": "h",
+        "pisharp": ""
+      },
+      {
+        "path": "$.renders[2].buffers.alternate.lines[8].cells[2].foreground.mode",
+        "pi": "rgb",
+        "pisharp": "default"
+      },
+      {
+        "path": "$.renders[2].buffers.alternate.lines[8].cells[2].foreground.value",
+        "pi": 8292494,
+        "pisharp": -1
+      }
+    ]
+  },
+  {
+    "fixture": "selectors-settings",
+    "case": "80x24-dark-fullscreen",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 59
+  },
+  {
+    "fixture": "selectors-settings",
+    "case": "80x24-dark-regular",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": true,
+    "controlBoundaryDifferenceCount": 0
+  },
+  {
+    "fixture": "selectors-settings",
+    "case": "80x24-light-fullscreen",
+    "match": false,
+    "differenceCount": 3053,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 3053,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 81,
+    "firstDifferences": [
+      {
+        "path": "$.renders.length",
+        "pi": 11,
+        "pisharp": 10
+      },
+      {
+        "path": "$.renders[5].buffers.alternate.lines[0].cells[0].chars",
+        "pi": "",
+        "pisharp": "S"
+      },
+      {
+        "path": "$.renders[5].buffers.alternate.lines[0].cells[1].chars",
+        "pi": "",
+        "pisharp": "e"
+      },
+      {
+        "path": "$.renders[5].buffers.alternate.lines[0].cells[2].chars",
+        "pi": "",
+        "pisharp": "t"
+      },
+      {
+        "path": "$.renders[5].buffers.alternate.lines[0].cells[3].chars",
+        "pi": "",
+        "pisharp": "t"
+      },
+      {
+        "path": "$.renders[5].buffers.alternate.lines[0].cells[4].chars",
+        "pi": "",
+        "pisharp": "i"
+      },
+      {
+        "path": "$.renders[5].buffers.alternate.lines[0].cells[5].chars",
+        "pi": "",
+        "pisharp": "n"
+      },
+      {
+        "path": "$.renders[5].buffers.alternate.lines[0].cells[6].chars",
+        "pi": "",
+        "pisharp": "g"
+      }
+    ]
+  },
+  {
+    "fixture": "selectors-settings",
+    "case": "80x24-light-regular",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": true,
+    "controlBoundaryDifferenceCount": 0
+  },
+  {
+    "fixture": "selectors-settings",
+    "case": "120x40-dark-fullscreen",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 1
+  },
+  {
+    "fixture": "selectors-settings",
+    "case": "120x40-dark-regular",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": true,
+    "controlBoundaryDifferenceCount": 0
+  },
+  {
+    "fixture": "selectors-settings",
+    "case": "120x40-light-fullscreen",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 1
+  },
+  {
+    "fixture": "selectors-settings",
+    "case": "120x40-light-regular",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": true,
+    "controlBoundaryDifferenceCount": 0
+  },
+  {
+    "fixture": "extension-resource-discovery-reload",
+    "case": "120x40-dark-fullscreen",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 467
+  },
+  {
+    "fixture": "project-trust-extension-ui",
+    "case": "120x40-dark-fullscreen",
+    "match": true,
+    "differenceCount": 0,
+    "stateDifferenceCount": 0,
+    "renderDifferenceCount": 0,
+    "httpMatch": true,
+    "rawMatch": false,
+    "controlBoundaryDifferenceCount": 95
+  }
+]

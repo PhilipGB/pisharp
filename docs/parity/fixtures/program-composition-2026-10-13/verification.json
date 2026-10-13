@@ -1,0 +1,377 @@
+{
+  "date": "2026-10-13",
+  "scope": "Bounded Program composition decomposition; no feature parity claims added.",
+  "branch": "refactor/architecture-maintainability",
+  "baseline": "95edc6771d6871ea36aa5692e59426d72ebe9d4b",
+  "productionCode": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+  "piReference": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+  "provenance": "Early reports identify repository HEAD 25980bdb while testing its modified working tree; that exact production/test code was subsequently committed as ad4319d2. Baseline-labelled reports use the untouched 95edc677 CLI/extension binaries through --pisharp/--pisharp-extension; their embedded pisharpSha identifies the driver repository HEAD, not the alternate binary. No source changed after the final warnings-as-errors build and 1390-row suite.",
+  "program": {
+    "originalLines": 1003,
+    "originalBytes": 58388,
+    "finalLines": 118,
+    "finalBytes": 6274
+  },
+  "tests": {
+    "baseline": 1382,
+    "final": 1390,
+    "added": 8,
+    "skipped": 0,
+    "existingTestSourcesUnchanged": true
+  },
+  "commands": [
+    {
+      "command": "dotnet restore PiSharp.slnx",
+      "result": "passed"
+    },
+    {
+      "command": "dotnet format PiSharp.slnx --verify-no-changes --no-restore",
+      "result": "passed"
+    },
+    {
+      "command": "dotnet build PiSharp.slnx --no-restore --warnaserror",
+      "result": "passed: zero warnings/errors"
+    },
+    {
+      "command": "dotnet test PiSharp.slnx --no-build --no-restore",
+      "result": "1390 passed, 0 skipped"
+    },
+    {
+      "command": "python3 tools/validate_doc_paths.py",
+      "result": "passed"
+    },
+    {
+      "command": "npm test --prefix tools/parity/terminal",
+      "result": "24 passed, 0 skipped"
+    },
+    {
+      "command": "python3 -m unittest discover -s tools/parity/terminal -p 'test_*.py'",
+      "result": "47 passed"
+    },
+    {
+      "command": "dotnet build tools/McpConformance/PiSharp.McpConformance.csproj --no-restore --warnaserror",
+      "result": "passed"
+    },
+    {
+      "command": "node tools/parity/mcp-conformance/run.mjs",
+      "result": "269 checks: 261 passing, 8 classified baseline failures; no regressions"
+    }
+  ],
+  "focusedRows": [
+    76,
+    209,
+    141,
+    96,
+    86,
+    34,
+    208
+  ],
+  "intermediateFullRows": 1387,
+  "differentials": [
+    {
+      "command": "python3 tools/parity/quiet-startup-differential.py --pi /tmp/pisharp-current-pi --output <output>",
+      "result": "28 settings scenarios, 3 writes and selector ordering matched"
+    },
+    {
+      "command": "python3 tools/parity/default-project-trust-process-differential.py --pi /tmp/pisharp-current-pi --output <output>",
+      "result": "9 scenario classifications matched; original provider-auth failure exits remain Pi 1 / PiSharp 2"
+    },
+    {
+      "command": "python3 tools/parity/virtual-model-routing-differential.py --pi /tmp/pisharp-current-pi --session-transitions --output <output>",
+      "result": "Matched routing, clone/fork/resume and saved virtual state"
+    },
+    {
+      "command": "python3 tools/parity/virtual-model-routing-differential.py --pi /tmp/pisharp-current-pi --context-compaction --thinking max --output <output>",
+      "result": "Matched maximum thinking, physical context and compaction"
+    },
+    {
+      "command": "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi --fixture tools/parity/terminal/fixtures/<fixture>.json --output <output> [--calibrate] [--case <case>] [--pisharp <baseline-dll>] [--pisharp-extension <extension-dll>]",
+      "result": "Exact fixture/report selections are retained in terminalReports; no comparison fixtures or normalization changed"
+    }
+  ],
+  "terminalReports": [
+    {
+      "name": "extension-resource-discovery-reload-baseline",
+      "fixture": "extension-resource-discovery-reload",
+      "calibration": false,
+      "match": true,
+      "cases": 1,
+      "matchedCases": 1,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "extension-resource-discovery-reload-baseline"
+    },
+    {
+      "name": "extension-resource-discovery-reload-calibration",
+      "fixture": "extension-resource-discovery-reload",
+      "calibration": true,
+      "match": true,
+      "cases": 1,
+      "matchedCases": 1,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "extension-resource-discovery-reload-calibration"
+    },
+    {
+      "name": "extension-resource-discovery-reload-paired",
+      "fixture": "extension-resource-discovery-reload",
+      "calibration": false,
+      "match": true,
+      "cases": 1,
+      "matchedCases": 1,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "extension-resource-discovery-reload-paired"
+    },
+    {
+      "name": "project-trust-extension-ui-baseline",
+      "fixture": "project-trust-extension-ui",
+      "calibration": false,
+      "match": true,
+      "cases": 1,
+      "matchedCases": 1,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "project-trust-extension-ui-baseline"
+    },
+    {
+      "name": "project-trust-extension-ui-calibration",
+      "fixture": "project-trust-extension-ui",
+      "calibration": true,
+      "match": false,
+      "cases": 1,
+      "matchedCases": 0,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "project-trust-extension-ui-calibration"
+    },
+    {
+      "name": "project-trust-extension-ui-calibration-repeat",
+      "fixture": "project-trust-extension-ui",
+      "calibration": true,
+      "match": true,
+      "cases": 1,
+      "matchedCases": 1,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "project-trust-extension-ui-calibration-repeat"
+    },
+    {
+      "name": "project-trust-extension-ui-paired",
+      "fixture": "project-trust-extension-ui",
+      "calibration": false,
+      "match": true,
+      "cases": 1,
+      "matchedCases": 1,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "project-trust-extension-ui-paired"
+    },
+    {
+      "name": "selectors-settings-baseline",
+      "fixture": "selectors-settings",
+      "calibration": false,
+      "match": false,
+      "cases": 8,
+      "matchedCases": 0,
+      "scenarioErrorCases": 4,
+      "evidence": "terminal-reports.json",
+      "reportName": "selectors-settings-baseline"
+    },
+    {
+      "name": "selectors-settings-calibration",
+      "fixture": "selectors-settings",
+      "calibration": true,
+      "match": true,
+      "cases": 8,
+      "matchedCases": 8,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "selectors-settings-calibration"
+    },
+    {
+      "name": "selectors-settings-paired",
+      "fixture": "selectors-settings",
+      "calibration": false,
+      "match": false,
+      "cases": 8,
+      "matchedCases": 0,
+      "scenarioErrorCases": 4,
+      "evidence": "terminal-reports.json",
+      "reportName": "selectors-settings-paired"
+    },
+    {
+      "name": "startup-baseline",
+      "fixture": "startup-editor",
+      "calibration": false,
+      "match": false,
+      "cases": 8,
+      "matchedCases": 0,
+      "scenarioErrorCases": 4,
+      "evidence": "terminal-reports.json",
+      "reportName": "startup-baseline"
+    },
+    {
+      "name": "startup-baseline-repeat",
+      "fixture": "startup-editor",
+      "calibration": false,
+      "match": false,
+      "cases": 1,
+      "matchedCases": 0,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "startup-baseline-repeat"
+    },
+    {
+      "name": "startup-baseline-repeat-120",
+      "fixture": "startup-editor",
+      "calibration": false,
+      "match": false,
+      "cases": 1,
+      "matchedCases": 0,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "startup-baseline-repeat-120"
+    },
+    {
+      "name": "startup-calibration",
+      "fixture": "startup-editor",
+      "calibration": true,
+      "match": true,
+      "cases": 8,
+      "matchedCases": 8,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "startup-calibration"
+    },
+    {
+      "name": "startup-candidate-repeat",
+      "fixture": "startup-editor",
+      "calibration": false,
+      "match": false,
+      "cases": 1,
+      "matchedCases": 0,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "startup-candidate-repeat"
+    },
+    {
+      "name": "startup-editor-paired",
+      "fixture": "startup-editor",
+      "calibration": false,
+      "match": false,
+      "cases": 8,
+      "matchedCases": 0,
+      "scenarioErrorCases": 4,
+      "evidence": "terminal-reports.json",
+      "reportName": "startup-editor-paired"
+    },
+    {
+      "name": "thinking-toggle-baseline",
+      "fixture": "thinking-toggle",
+      "calibration": false,
+      "match": false,
+      "cases": 1,
+      "matchedCases": 0,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "thinking-toggle-baseline"
+    },
+    {
+      "name": "thinking-toggle-calibration",
+      "fixture": "thinking-toggle",
+      "calibration": true,
+      "match": true,
+      "cases": 1,
+      "matchedCases": 1,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "thinking-toggle-calibration"
+    },
+    {
+      "name": "thinking-toggle-paired",
+      "fixture": "thinking-toggle",
+      "calibration": false,
+      "match": false,
+      "cases": 1,
+      "matchedCases": 0,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "thinking-toggle-paired"
+    },
+    {
+      "name": "trusted-project-settings-reload-calibration",
+      "fixture": "trusted-project-settings-reload",
+      "calibration": true,
+      "match": true,
+      "cases": 1,
+      "matchedCases": 1,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "trusted-project-settings-reload-calibration"
+    },
+    {
+      "name": "trusted-project-settings-reload-paired",
+      "fixture": "trusted-project-settings-reload",
+      "calibration": false,
+      "match": true,
+      "cases": 1,
+      "matchedCases": 1,
+      "scenarioErrorCases": 0,
+      "evidence": "terminal-reports.json",
+      "reportName": "trusted-project-settings-reload-paired"
+    }
+  ],
+  "terminalCases": 63,
+  "classifications": [
+    {
+      "id": "regular-mode-settings",
+      "status": "pre-existing",
+      "detail": "startup-editor/selectors-settings regular cases reject unsupported tuiMode at exit 2; identical untouched-baseline errors are retained."
+    },
+    {
+      "id": "startup-resize-presentation",
+      "status": "pre-existing",
+      "detail": "Fullscreen startup resize buffers differ from Pi; the baseline reproduces these differences. All baseline/candidate named checkpoint states match."
+    },
+    {
+      "id": "thinking-footer-colour",
+      "status": "pre-existing",
+      "detail": "The Pi/PiSharp foreground-colour mismatch is reproduced by the untouched baseline."
+    },
+    {
+      "id": "settings-panel-cell-representation",
+      "status": "pre-existing",
+      "detail": "Settings-panel empty versus space cells differ from Pi in both baseline and candidate."
+    },
+    {
+      "id": "intermediate-render-timing",
+      "status": "observed-baseline-variance",
+      "detail": "All preserved named checkpoints and HTTP requests match. Four cases differ in intermediate render sequence length. Repeating untouched 95edc677 at 120x40-dark-fullscreen yields both 9 and 10 canonical renders; the candidate has the same timing-dependent extra resize/shutdown frame shape. Diagnostic control buckets/raw bytes are not exact-match claims."
+    },
+    {
+      "id": "same-pi-trust-calibration",
+      "status": "capture-timing",
+      "detail": "First same-Pi trust calibration differs only at frames[5].state.modes.private.2026 (False/True), with zero render/HTTP differences. Unmodified repeat calibration passes; the paired candidate then passes. Both attempts are retained."
+    },
+    {
+      "id": "mcp-known-failures",
+      "status": "classified-repository-baseline",
+      "detail": "261 passing / 8 classified failing / 269 total. Existing official classifications and expectation files are unchanged."
+    }
+  ],
+  "semanticAssertions": [
+    "trusted-project-assertions.json",
+    "extension-resource-assertions.json",
+    "trust-ui-assertions.json"
+  ],
+  "limitations": "Full Pi parity and raw-byte/canonical-render timing stability are not established. Regular-mode cases terminate on the existing unsupported setting; they do not establish regular interactive behavior. Linux fixture coverage does not establish other platforms.",
+  "rawEvidenceLocation": "/tmp/pisharp-program-decomposition-evidence",
+  "newProductionProjects": 0,
+  "packageChanges": 0,
+  "publicApiChanges": 0,
+  "existingNamespaceChanges": 0,
+  "coreRuntimeSourceChanges": 0,
+  "report_summary_policy": "terminal-reports.json preserves every attempted report/case, outcome, difference count, scenario error and first three difference samples. Full report samples, raw captures and commands remain in the local evidence directory. Fixture inputs and comparators are unchanged.",
+  "renderVarianceEvidence": "baseline-render-variance.json"
+}
