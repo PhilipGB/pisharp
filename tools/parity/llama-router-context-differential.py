@@ -69,7 +69,7 @@ Console.WriteLine(JsonSerializer.Serialize(output, new JsonSerializerOptions(Jso
 )
 (work / "pi.mjs").write_text(
     "import fs from 'node:fs';\n"
-    "import { createLlamaProvider } from '{pi}/packages/coding-agent/src/extensions/llama/provider.ts';\n"
+    "import  createLlamaProvider  from 'pi/packages/coding-agent/src/extensions/llama/provider.ts';\n"
     "const [url,cachePath,phase]=process.argv.slice(2);\n"
     "const stored=fs.existsSync(cachePath)?JSON.parse(fs.readFileSync(cachePath,'utf8')):undefined;\n"
     "const controller=createLlamaProvider();\n"

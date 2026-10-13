@@ -80,4 +80,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-mcp-differential-') as director
         normalization='Compare account tokens, operation results and exact persisted keys; omit SDK-specific token envelope and fixed timestamps.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched {len(scenarios)} credential scenarios.')
+    print(f'Matched len(scenarios) credential scenarios.')

@@ -62,4 +62,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-capacity-differential-') as dir
         normalization='Compare provider request count, ordered retry event payloads, user/assistant role-text request contexts, completion and cleared retry state. Exclude system prompts and unrelated lifecycle/provider metadata; those have separate parity tasks.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched {len(scenarios)} capacity-retry scenarios.')
+    print(f'Matched len(scenarios) capacity-retry scenarios.')

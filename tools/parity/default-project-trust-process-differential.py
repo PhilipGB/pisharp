@@ -24,8 +24,8 @@ pi_cli = pi / 'packages/coding-agent/dist/cli.js'
 pisharp_cli = repo / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll'
 scenarios = [
     dict(id='malformed-global-string-falls-back-to-ask', user='defaultProjectTrust': 'sometimes'),
-    dict(id='malformed-global-type-falls-back-to-ask', user={'defaultProjectTrust': True}),
-    dict(id='project-always-does-not-override-global-never', user={'defaultProjectTrust': 'never'},
+    dict(id='malformed-global-type-falls-back-to-ask', user='defaultProjectTrust': True),
+    dict(id='project-always-does-not-override-global-never', user='defaultProjectTrust': 'never',
          project={'defaultProjectTrust': 'always', 'theme': 'light'}),
     dict(id='project-never-does-not-override-global-always', user={'defaultProjectTrust': 'always'},
          project={'defaultProjectTrust': 'never', 'theme': 'light'}),

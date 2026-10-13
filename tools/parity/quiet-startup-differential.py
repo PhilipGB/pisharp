@@ -62,4 +62,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-quiet-startup-differential-') a
         normalization='Exact settings scalars, user/trusted-project precedence, header and details visibility, preserved JSON writes and ordered supported selector values. Startup body text, layout, ANSI and cursor parity are outside this probe.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched {len(scenarios)} quiet-startup scenarios, three writes and ordered selector values.')
+    print(f'Matched len(scenarios) quiet-startup scenarios, three writes and ordered selector values.')

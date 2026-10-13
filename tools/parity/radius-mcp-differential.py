@@ -67,4 +67,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-radius-mcp-differential-') as d
         normalization='Exact offer presence and full resulting global JSON. No configuration normalization. UI rendering, credential exchange, cancellation navigation and actual runtime reload are separate terminal coverage.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched {len(scenarios)} radius-mcp MCP setup scenarios.')
+    print(f'Matched len(scenarios) radius-mcp MCP setup scenarios.')

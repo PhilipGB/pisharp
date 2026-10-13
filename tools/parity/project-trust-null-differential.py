@@ -59,4 +59,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-project-trust-null-') as direct
         normalization='Canonical project paths are reduced to relative labels. Compare inherited decisions and exact persisted null/boolean entries after removing the child null entry.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched {len(scenarios)} null-valued trust-store scenarios.')
+    print(f'Matched len(scenarios) null-valued trust-store scenarios.')

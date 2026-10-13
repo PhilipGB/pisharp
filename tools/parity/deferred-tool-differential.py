@@ -55,4 +55,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-deferred-differential-') as dir
         normalization='Compare ordered active names before and after registration, provider request tool names and persisted loadout names; omit unrelated messages, metadata and IDs.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched {len(scenarios)} deferred-tool scenarios.')
+    print(f'Matched len(scenarios) deferred-tool scenarios.')

@@ -294,10 +294,10 @@
         "src/PiSharp.Runtime/Agents/PiAgent.cs and Sessions/ConversationRun,ConversationSession,AutoCompactionPolicy.cs: tool-free MAF summary generation with usage, validated summary checkpoints, summary-plus-whole-tail context projection, manual compaction, and pre-prompt automatic compaction with rollback on summary/restore/save failure.",
         "src/PiSharp.Runtime/Providers/ModelCatalog.cs and src/PiSharp.Cli/Program.cs: context/reasoning/pricing metadata parsing, explicit environment context/pricing configuration, interactive reasoning/usage display, and token/cost session reporting.",
         "tests/PiSharp.Tests/AgentLifecycleTests,CompactionTests,ModelCatalogTests,RpcModeTests.cs: deterministic application lifecycle, restart accounting, model metadata, manual/RPC/automatic compaction, atomic tool-group context, and rollback fixtures.",
-        "src/PiSharp.Cli/UserSettings.cs and Sessions/AutoCompactionPolicy.cs use Pi defaults of 16,384 reserve tokens and 20,000 keep-recent tokens; ModelRuntimeController propagates model-specific recent-token settings through queued runtime changes. ConversationSession and ConversationCompactionCoordinator apply the oversized trailing tool-result fallback and closed recovery-omission suffix boundary. ConversationRun does not reject prompts or allocate an impossible in-flight budget when the reserve leaves a nonpositive threshold."
+        "src/PiSharp.Cli/Configuration/UserSettings.cs and Sessions/AutoCompactionPolicy.cs use Pi defaults of 16,384 reserve tokens and 20,000 keep-recent tokens; ModelRuntimeController propagates model-specific recent-token settings through queued runtime changes. ConversationSession and ConversationCompactionCoordinator apply the oversized trailing tool-result fallback and closed recovery-omission suffix boundary. ConversationRun does not reject prompts or allocate an impossible in-flight budget when the reserve leaves a nonpositive threshold."
       ],
       "evidence": [
-        "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/models.md,compaction.md, packages/coding-agent/src/core/compaction/{compaction.ts,utils.ts,branch-summarization.ts,index.ts}, core/session-manager.ts buildSessionProjection/buildSessionContext, core/usage-totals.ts, and model metadata tests. The local slice follows summary-plus-retained-tail projection, non-context usage records, provider-usage-first threshold estimation, atomic tool call/result retention, and summary usage accounting.",
+        "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/models.md,compaction.md, packages/coding-agent/src/core/compaction/compaction.ts,utils.ts,branch-summarization.ts,index.ts, core/session-manager.ts buildSessionProjection/buildSessionContext, core/usage-totals.ts, and model metadata tests. The local slice follows summary-plus-retained-tail projection, non-context usage records, provider-usage-first threshold estimation, atomic tool call/result retention, and summary usage accounting.",
         "AgentLifecycleTests.ReasoningAndProviderUsageStreamAndPersistWithCalculatedCost drives the MAF ChatClientAgent application path with TextReasoningContent and UsageContent; it verifies streamed reasoning, structured input/output/cache/reasoning/total counts, explicit per-million cost arithmetic, canonical non-context usage persistence, session totals, and JSON restart survival.",
         "CompactionTests behaviorally verify manual summary focus, repeated summary-plus-tail projection after restart, branch restoration of raw history, RPC compaction, provider usage accounting for summaries, automatic compaction before prompt acceptance from both usage and fallback estimates, whole tool-call/result retention, and unchanged head/context when summarization or checkpointing fails.",
         "ModelCatalogTests.ModelMetadataParsesContextReasoningAndBothPricingConventions verifies deterministic context-window/reasoning metadata plus Pi per-million and OpenRouter per-token pricing fixtures; invalid pricing remains unknown rather than inventing cost.",
@@ -460,7 +460,7 @@
       ],
       "implementation": [
         "src/PiSharp.Core/FileEdits.cs uses Pi's ECMAScript trimEnd whitespace set for fuzzy matching, avoiding false matches on U+0085 and allowing Pi-compatible U+FEFF trimming.",
-        "src/PiSharp.Runtime/Tools/CodingTools.cs checks edit targets with a read/write open and reports missing files as `Could not edit file: path. Error code: ENOENT.`; successful edit text remains `Successfully replaced {count} block(s) in {path}.`.",
+        "src/PiSharp.Runtime/Tools/CodingTools.cs checks edit targets with a read/write open and reports missing files as `Could not edit file: path. Error code: ENOENT.`; successful edit text remains `Successfully replaced count block(s) in path.`.",
         "src/PiSharp.Core/FileEditDiff.cs computes line-numbered display diffs, four-context unified patches and firstChangedLine from the normalized edit plan; Myers trace work is bounded at edit distance 1024, with a complete linear remove/add preview fallback.",
         "src/PiSharp.Runtime/Tools/CodingTools.cs exposes structured edit details to runtime history and lifecycle events; ObservedChatClient flattens them to the success text at the provider boundary."
       ],
@@ -487,7 +487,7 @@
         "src/PiSharp.Runtime/Tools/Shell/ShellOutputBuffer.cs keeps a UTF-8 decoded tail within the 2000-line/50KiB limits, flushes incomplete final UTF-8, spills a private complete-output file when raw bytes exceed 50KiB or decoded output truncates, and exposes structured tail/truncation metadata for direct RPC results.",
         "src/PiSharp.Runtime/Tools/Shell/ShellOutputNormalizer.cs streams Pi-style ANSI CSI/OSC removal, unsafe control filtering and carriage-return removal for direct Bash and interactive display; direct output spill files contain normalized UTF-8, while model-tool provider results retain raw decoded output.",
         "src/PiSharp.Runtime/Tools/Shell/BashOutputUpdates.cs coalesces bounded model-tool deltas at 100ms and forwards direct RPC chunks immediately; DurableToolFunction publishes correlated tool_execution_update lifecycle events; Program.cs prints normalized deltas during interactive runs without repeating successful output.",
-        "src/PiSharp.Cli/UserSettings.cs and Program.cs carry shellPath from user or trusted-project settings through agent creation and replacement.",
+        "src/PiSharp.Cli/Configuration/UserSettings.cs and Program.cs carry shellPath from user or trusted-project settings through agent creation and replacement.",
         "PiAgent.ExecuteBashAsync and ConversationRun.ExecuteBashAsync route direct RPC commands through the same CodingTools instance; ConversationRun persists a distinct bash_execution record and defers concurrent records until the active turn ends. Nonexcluded results project into MAF history and context; excluded results remain durable but never enter provider context. ConversationRun passes session metadata in AgentRunOptions.AdditionalProperties, and CodingTools reads it from AIAgent.CurrentRunContext for model-invoked Bash.",
         "ExtensionRegistration supports user_bash handlers from extensions admitted by personal, project-trust, or explicit-path catalog rules. RpcMode invokes handlers in registration order, passes command/cwd/context-exclusion/cancellation and a correlated async update callback, accepts the first structured result, emits extension_error on handler failure, then continues to later handlers or the shared shell runner.",
         "CodingTools receives shellCommandPrefix from effective settings and prepends it at the shared Bash process boundary; interactive !/!! and RPC direct Bash share ConversationRun.ExecuteBashAsync, and !! persists without projecting into provider context.",
@@ -550,7 +550,7 @@
         "Remaining: WSL text clipboard interop, live native macOS/Windows clipboard verification, EXIF orientation, Lanczos3 sampling, partial-viewport image cropping, queried pixel-cell dimensions, broad provider-specific transport, model-specific image limits and pinned image request/result differential evidence."
       ],
       "implementation": [
-        "src/PiSharp.Cli/CliFileArguments.cs: positional @file PNG/JPEG/GIF/WebP signature/size validation and DataContent; src/PiSharp.Cli/Program.cs: model modality refusal and prompt assembly",
+        "src/PiSharp.Cli/Startup/CliFileArguments.cs: positional @file PNG/JPEG/GIF/WebP signature/size validation and DataContent; src/PiSharp.Cli/Program.cs: model modality refusal and prompt assembly",
         "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: read-image attachment expansion plus images.blockImages provider-boundary filtering while retaining canonical session images; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs: SkiaSharp decode, BMP conversion and bounded resize",
         "src/PiSharp.Cli/Tui/TerminalClipboard.cs, ClipboardImageStore.cs and Program.cs: bounded image-first clipboard paste validates/normalizes through the Skia read pipeline, saves a private temporary file, inserts its path for the read tool, and falls back to text; Linux Wayland/X11 and WSL PowerShell image paths are covered.",
         "src/PiSharp.Cli/Tui/TerminalImageCapabilities.cs, TerminalImageLayout.cs, TerminalImageRenderer.cs, TerminalScreen.cs and TerminalScreenCompositor.cs: accepted prompt and read-tool DataContent images use conservative Kitty/iTerm2 detection, Pi #8938 distortion-aware sizing, bounded transcript-safe markers and byte/raster budgets, redraw placement, cleanup and safe text fallback."
@@ -700,7 +700,7 @@
       "implementation": [
         "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: bounded Pi v1-v3 import and v3 export; migrates v1 links/compaction indexes and v1/v2 hookMessage roles; retains original records and maps messages, tool calls/results, images, Bash, compaction, context edits, model changes and session metadata.",
         "src/PiSharp.Runtime/Sessions/PiJsonlSessionTreeBuilder.cs: maps valid entries with absent parent IDs to canonical roots while Pi projections and exports retain the original parent id; valid forward links remain linked in file order.",
-        "src/PiSharp.Cli/PiSessionImportService.cs validates and imports Pi JSONL into the project selected by startup --session, confirmed /import, or RPC switch_session. SessionForkFactory independently reads native or Pi JSONL fork sources and ConversationSession.ForkInto writes the full copied tree and selected head with the invocation project CWD; source files are not modified.",
+        "src/PiSharp.Cli/Sessions/PiSessionImportService.cs validates and imports Pi JSONL into the project selected by startup --session, confirmed /import, or RPC switch_session. SessionForkFactory independently reads native or Pi JSONL fork sources and ConversationSession.ForkInto writes the full copied tree and selected head with the invocation project CWD; source files are not modified.",
         "src/PiSharp.Runtime/Sessions/SessionFileLease.cs provides a shared bounded, cancellation-aware retry for native and Pi JSONL session locks; both stores retain hash fencing and atomic replacement after acquiring the lease.",
         "PiJsonlSessionInterchange.Import accepts distinct override and fallback working directories: startup/import fallback is applied only when Pi header cwd is missing; explicit header cwd remains authoritative.",
         "src/PiSharp.Runtime/Sessions/SessionFileLease.cs serializes leases for each normalized lock path within the process before taking the existing cross-process lock; the lease registry reference-counts waiters and disposes unused gates. macOS uses FileShare.None/flock with an explicit native support check because FileStream.Lock is unsupported there.",
@@ -835,12 +835,12 @@
         "src/PiSharp.Runtime/Resources/CanonicalDirectoryPath.cs and ProjectTrust.cs: canonicalize symlink aliases for trust reads/writes and protected-resource checks.",
         "src/PiSharp.Cli/Tui/TerminalTrustPicker.cs and ProjectTrust.SetManyAsync: bare /trust displays the nearest saved decision and applies Trust, Trust parent folder, and Do not trust choices atomically without changing the active session.",
         "src/PiSharp.Runtime/Resources/ProjectTrust.cs: accepts null trust-store values, skips them during nearest-ancestor lookup, preserves unrelated nulls and removes the selected null entry.",
-        "src/PiSharp.Cli/UserSettings.cs: global defaultProjectTrust accepts ask/always/never; malformed values fall back to ask and project values do not override the global trust policy.",
+        "src/PiSharp.Cli/Configuration/UserSettings.cs: global defaultProjectTrust accepts ask/always/never; malformed values fall back to ask and project values do not override the global trust policy.",
         "ExtensionRegistration.AddResourceDiscoveryHandler provides ordered asynchronous startup/reload callbacks; ProjectRuntimeContext loads discovered skills/prompts into ResourceCatalog and passes themes to TerminalThemeCatalog.",
         "src/PiSharp.Runtime/Extensions/ProjectTrustExtension.cs and ExtensionRegistration.AddProjectTrustHandler: ordered Yes/No/Undecided callbacks with cancellation and per-handler error recovery; ProjectRuntimeConfiguration preloads user/global and CLI extensions before trust, then transfers the same catalog into the trusted runtime and loads project extensions only after trust.",
         "src/PiSharp.Cli/Tui/TerminalEditor.cs and TerminalTrustPicker.cs: the bare trust selector styles detail headers as muted and renders selected arrow/current marker/label as independent accent segments, with unselected labels in text color.",
         "tools/parity/terminal/fixtures/project-trust-extension-ui.json and assert_project_trust_extension_ui.py now capture and assert the unsubmitted editor echo, submitted transcript echo and exact provider user message as separate checkpoints.",
-        "src/PiSharp.Cli/Tui/TerminalStartupPresentation.cs, TerminalScreenCompositor.cs, and Program.cs: preserve Pi startup spacer rows above the logo and between built-in onboarding and startup resource/trust details."
+        "src/PiSharp.Cli/Startup/TerminalStartupPresentation.cs, TerminalScreenCompositor.cs, and Program.cs: preserve Pi startup spacer rows above the logo and between built-in onboarding and startup resource/trust details."
       ],
       "evidence": [
         "Pi f1b2e77 resource-loader source and tests refreshed. Its 53-test suite passes. The two symlink cases failed first on PiSharp (expected one instruction occurrence, observed two); after commit 78bc0ffc9523cc28aa1f8bc05777ff4812b3f1e4, the focused application-loader tests pass 9/9, including nested worktree override/inheritance, same-name symlink deduplication, different-filename retention and bare/sibling guards. Exact-head Linux CI 37902383991 passes 1201/1201 with zero skips. See docs/parity/fixtures/context-instructions-nested-worktree-2026-10-09.json. Broader project trust/settings and resource workflow differentials remain open.",
@@ -1158,7 +1158,7 @@
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/CliArguments.cs and Program.cs implement --continue, --session, --session-dir, --no-session, --fork and --name. Session ID lookup remains project-local; --fork also accepts a foreign-project file path.",
+        "Partial: src/PiSharp.Cli/Startup/CliArguments.cs and Program.cs implement --continue, --session, --session-dir, --no-session, --fork and --name. Session ID lookup remains project-local; --fork also accepts a foreign-project file path.",
         "Startup --session also accepts Pi .jsonl files and migrates v1-v3 through PiJsonlSessionInterchange. Startup selection, confirmed /import, and RPC switch_session rebuild the project runtime, trust/resources and session store from the stored CWD; -r resume picker and --session-id remain absent."
       ],
       "evidence": [
@@ -1225,7 +1225,7 @@
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/AuthStatusCommand.cs and Program.cs implement a credential-metadata-only auth check with explicit provider and optional exact configured model; this code exits before loading project resources or sessions. Printing keys/tokens is not implemented."
+        "Partial: src/PiSharp.Cli/Authentication/AuthStatusCommand.cs and Program.cs implement a credential-metadata-only auth check with explicit provider and optional exact configured model; this code exits before loading project resources or sessions. Printing keys/tokens is not implemented."
       ],
       "evidence": [
         "tests/PiSharp.Tests/AuthStatusCommandTests.cs exercises separate CLI processes for missing and stored credentials, unrelated OPENAI_API_KEY isolation, no provider connection or session creation, and rejection of --credentials and unknown model ID. Result codes are 0 available, 1 missing, 2 invalid; this does not verify hosted acceptance or OAuth refresh.",
@@ -2321,7 +2321,7 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultProvider in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+        "Partial: src/PiSharp.Cli/Configuration/UserSettings.cs validates defaultProvider in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
       ],
       "evidence": [
         "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite and exact-head CI run 36577388693 passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
@@ -2338,7 +2338,7 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/UserSettings.cs validates defaultModel in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+        "Partial: src/PiSharp.Cli/Configuration/UserSettings.cs validates defaultModel in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
       ],
       "evidence": [
         "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite and exact-head CI run 36577388693 passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
@@ -2419,7 +2419,7 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "src/PiSharp.Cli/UserSettings.cs validates boolean user/trusted-project hideThinkingBlock (default visible); /settings edits it through the shared overlay. New runs suppress interactive stderr reasoning deltas when true. It does not remove model reasoning from history or machine events."
+        "src/PiSharp.Cli/Configuration/UserSettings.cs validates boolean user/trusted-project hideThinkingBlock (default visible); /settings edits it through the shared overlay. New runs suppress interactive stderr reasoning deltas when true. It does not remove model reasoning from history or machine events."
       ],
       "evidence": [
         "UserSettingsTests.HideThinkingBlockRequiresBooleanAndTrustedProjectCanOverrideDisplay verifies load, overlay, invalid type and duplicate rejection; UserSettingsWriterTests verifies edits; TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty verifies the UI save/close path. No rendered-reasoning or pinned upstream differential evidence."
@@ -2582,7 +2582,7 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/UserSettings.cs validates sessionDir in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
+        "Partial: src/PiSharp.Cli/Configuration/UserSettings.cs validates sessionDir in user settings and trusted project overlays; CLI/runtime wiring applies selected defaults, with Pi schema and reload parity still open."
       ],
       "evidence": [
         "Current Pi 5257d0d5f3ab7d42550804f32c67a77b49f485d4 settings-manager.ts and its defaultTools tests specify modifier-only layering and resolution. A new PiSharp test failed first because +codemode/-write passed through raw, then focused UserSettingsTests passed 44/44 with in-memory and file-backed user/project vectors; the sequential full suite and exact-head CI run 36577388693 passed 849/849 with zero skipped. ProjectSettingsProcessTests covers the trust boundary. A paired Pi/PiSharp process differential remains open."
@@ -2949,7 +2949,7 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "src/PiSharp.Cli/UserSettings.cs: validated user/trusted-project boolean overlay; /settings edits it and rebuilds the active agent",
+        "src/PiSharp.Cli/Configuration/UserSettings.cs: validated user/trusted-project boolean overlay; /settings edits it and rebuilds the active agent",
         "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: filter each provider request without changing canonical history"
       ],
       "evidence": [
@@ -3189,7 +3189,7 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "src/PiSharp.Cli/UserSettings.cs parses bounded shellPath strings and overlays trusted-project values; src/PiSharp.Cli/Program.cs supplies the selected path to every agent construction path; src/PiSharp.Runtime/Tools/CodingTools.cs expands leading ~ and Windows Git Bash/Cygwin drive paths before resolution."
+        "src/PiSharp.Cli/Configuration/UserSettings.cs parses bounded shellPath strings and overlays trusted-project values; src/PiSharp.Cli/Program.cs supplies the selected path to every agent construction path; src/PiSharp.Runtime/Tools/CodingTools.cs expands leading ~ and Windows Git Bash/Cygwin drive paths before resolution."
       ],
       "evidence": [
         "UserSettingsTests.ShellPathLoadsFromUserSettingsAndTrustedProjectOverlay checks user defaults, trusted project precedence, malformed values and missing project overrides.",
@@ -4134,7 +4134,7 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/ProviderModelRuntime.cs",
-        "src/PiSharp.Cli/Tui/TerminalProviderLogin.cs",
+        "src/PiSharp.Cli/Authentication/TerminalProviderLogin.cs",
         "src/PiSharp.Cli/LlamaRouterClient.cs"
       ],
       "evidence": [

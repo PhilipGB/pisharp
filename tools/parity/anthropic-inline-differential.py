@@ -106,4 +106,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-anthropic-differential-') as di
                     match=pi_results == pisharp_results and pi_compaction == pisharp_compaction)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
     assert evidence['match'], 'Anthropic transcript requests differ; inspect ' + args.output
-    print(f'Matched {len(scenarios)} Anthropic transcript scenarios.')
+    print(f'Matched len(scenarios) Anthropic transcript scenarios.')

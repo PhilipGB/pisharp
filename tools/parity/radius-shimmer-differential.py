@@ -57,4 +57,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-radius-shimmer-differential-') 
         normalization='Compare the exact selected Radius label shimmer ANSI substring from the actual Pi menu at a controlled clock, including foreground resets. No color/style/text normalization. Full selector layout, padding, borders and cursor are outside this fixture.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched {len(scenarios)} radius-shimmer selected shimmer frames.')
+    print(f'Matched len(scenarios) radius-shimmer selected shimmer frames.')

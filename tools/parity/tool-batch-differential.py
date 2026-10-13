@@ -39,5 +39,5 @@ with tempfile.TemporaryDirectory(prefix='pisharp-tool-batch-parity-') as directo
             pi = json.loads(subprocess.check_output(['node', str(probes / 'tool-batch-probe.mjs'), args.pi, wire, mode], timeout=25))
             pi['results'].sort(key=lambda item: (item['name'], item['terminate']))
             assert pi == pisharp, (flags, mode, pi, pisharp)
-            evidence['cases'].append({'flags': flags, 'piMode': mode, 'match': True, 'pi': pi, 'pisharp': pisharp})
+            evidence['cases'].append('flags': flags, 'piMode': mode, 'match': True, 'pi': pi, 'pisharp': pisharp)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')

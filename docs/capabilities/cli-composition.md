@@ -59,7 +59,7 @@ It resolves current selection after asynchronous catalog discovery and writes
 status to the current console writer. Program applies the resulting selection
 through its existing active/idle runtime gates.
 
-[UserSettingsPersistence](../../src/PiSharp.Cli/UserSettingsPersistence.cs) validates
+[UserSettingsPersistence](../../src/PiSharp.Cli/Configuration/UserSettingsPersistence.cs) validates
 project trust, writes the selected scope, reloads that scope and merges effective
 settings. Program applies the resulting runtime/terminal effects in their existing
 order. [TerminalClipboardActions](../../src/PiSharp.Cli/Tui/TerminalClipboardActions.cs)

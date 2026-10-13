@@ -35,5 +35,5 @@ with tempfile.TemporaryDirectory(prefix='pisharp-codemode-parity-') as directory
         pi = json.loads(subprocess.check_output(['node', str(probes / 'codemode-bash-probe.mjs'), args.pi, str(size), str(code)], timeout=25))
         pisharp = json.loads(subprocess.check_output(['dotnet', str(work / 'bin/Debug/net10.0/probe.dll'), str(size), str(code)], timeout=25))
         assert pi == pisharp, (size, code, pi, pisharp)
-        evidence['cases'].append({'bytes': size, 'exitCode': code, 'match': True, 'pi': pi, 'pisharp': pisharp})
+        evidence['cases'].append('bytes': size, 'exitCode': code, 'match': True, 'pi': pi, 'pisharp': pisharp)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
