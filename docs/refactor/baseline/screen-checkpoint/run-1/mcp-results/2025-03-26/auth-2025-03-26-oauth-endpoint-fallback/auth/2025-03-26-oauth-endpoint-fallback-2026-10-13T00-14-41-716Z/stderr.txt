@@ -1,0 +1,4 @@
+[pisharp-conformance] sign-in 1
+[pisharp-conformance] authorization URL: http://localhost:43591/authorize
+[pisharp-conformance] connected, scenario: auth/2025-03-26-oauth-endpoint-fallback
+[pisharp-conformance] test-tool completed

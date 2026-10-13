@@ -1,0 +1,11 @@
+{
+  "id": "docs-paths",
+  "command": [
+    "python3",
+    "tools/validate_doc_paths.py"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 0.114,
+  "logger": "stdout+stderr text"
+}

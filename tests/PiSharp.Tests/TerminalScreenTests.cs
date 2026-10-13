@@ -182,6 +182,64 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void SuspendCancelsPendingRenderAndResumeShowsUpdatesMadeWhileSuspended()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false,
+            minimumRenderInterval: TimeSpan.FromMilliseconds(16), timeProvider: clock);
+        screen.Output.Write("before suspend");
+        screen.Suspend();
+        output.GetStringBuilder().Clear();
+
+        screen.Output.Write("while suspended");
+        screen.SetEditor("draft", 5);
+        clock.Advance(TimeSpan.FromMilliseconds(100));
+        Assert.Empty(output.ToString());
+
+        screen.Resume();
+        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+        Assert.Contains("before suspendwhile suspended", output.ToString());
+        Assert.Contains("draft", output.ToString());
+        output.GetStringBuilder().Clear();
+        screen.SetEditor("resumed draft", 13);
+        clock.Advance(TimeSpan.FromMilliseconds(15));
+        Assert.Empty(output.ToString());
+        clock.Advance(TimeSpan.FromMilliseconds(1));
+        Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
+        Assert.Contains("resumed draft", output.ToString());
+    }
+
+    [Fact]
+    public void AuthorizationOwnershipPreservesNewerSignInAndRequiresAPanelForCopyStatus()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24);
+        var mcpUrl = new Uri("https://mcp.example/authorize?state=first");
+        var providerUrl = new Uri("https://provider.example/authorize?state=second");
+        screen.AppendMcpAuthorizationNotification("server", mcpUrl, "Ctrl+Y", "Escape");
+        Assert.Equal(mcpUrl.AbsoluteUri, screen.ActiveAuthorizationUrl);
+        Assert.False(screen.SetAuthorizationUrlCopyStatus("Copied", TerminalStatusNotificationKind.Info));
+
+        screen.SetEditorPanel(["login panel"]);
+        Assert.True(screen.SetAuthorizationUrlCopyStatus("Copied", TerminalStatusNotificationKind.Info));
+        Assert.True(screen.AppendProviderAuthorizationNotification("provider", "Provider", "Open browser",
+            providerUrl, "Ctrl+Y", "Escape"));
+        screen.ClearMcpAuthorizationNotification("server");
+        Assert.Equal(providerUrl.AbsoluteUri, screen.ActiveAuthorizationUrl);
+
+        screen.ClearAuthorizationUrl("provider:provider");
+        Assert.Null(screen.ActiveAuthorizationUrl);
+        Assert.False(screen.SetAuthorizationUrlCopyStatus("Copied", TerminalStatusNotificationKind.Info));
+        Assert.Throws<ArgumentException>(() => screen.AppendMcpAuthorizationNotification("server",
+            new Uri("file:///tmp/authorization")));
+        Assert.Null(screen.ActiveAuthorizationUrl);
+    }
+
+    [Fact]
     public void LlamaLoadingPanelReplacesPendingCommandEditorFrame()
     {
         using var output = new StringWriter();
@@ -756,6 +814,38 @@ public sealed class TerminalScreenTests
         var currentFrame = outputText[lastFrame..];
         Assert.Contains("\u001b[38;2;205;154;34m", currentFrame);
         Assert.DoesNotContain("\u001b[38;2;143;104;2m", currentFrame);
+    }
+
+    [Fact]
+    public void LiveAssistantReflowsAcrossThemeAndThinkingChangesThenCommitsWithoutOldDrafts()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var light = TerminalThemeCatalog.LoadBuiltIn("light", TerminalColorMode.TrueColor);
+        var dark = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24,
+            new TerminalImageRenderer(), light);
+        screen.SetAssistantThinkingText("live reasoning");
+        screen.SetAssistantText("# Streaming heading");
+        Assert.Contains("live reasoning", VisibleFrame(output.ToString()));
+
+        screen.SetThinkingBlocksHidden(true);
+        screen.SetTheme(dark);
+        var live = VisibleFrame(output.ToString());
+        Assert.Contains("Thinking...", live);
+        Assert.Contains("Streaming heading", live);
+        Assert.DoesNotContain("live reasoning", live);
+        var lastFrame = output.ToString().LastIndexOf("\u001b[?2026h", StringComparison.Ordinal);
+        Assert.Contains(dark.Fg("mdHeading"), output.ToString()[lastFrame..]);
+
+        screen.CommitAssistantThinkingText("committed reasoning");
+        screen.CommitAssistantText("# Final heading");
+        screen.SetThinkingBlocksHidden(false);
+        var committed = VisibleFrame(output.ToString());
+        Assert.Contains("committed reasoning", committed);
+        Assert.Contains("Final heading", committed);
+        Assert.DoesNotContain("live reasoning", committed);
+        Assert.DoesNotContain("Streaming heading", committed);
     }
 
     [Fact]

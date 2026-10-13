@@ -1,0 +1,9 @@
+{
+  "cliSha": "064bcc7b90344cffde595f9aca1c5b850cefe567",
+  "cliDll": "/tmp/pisharp-baseline-control-064bcc7b/src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll",
+  "cliDllSha256": "28d3b8302db34d53839282f8191930da1b71693692dd0e78c42a4e0447ca7c57",
+  "harnessSha": "b467dff6f4007656ba03e7d790165fa22cb1d56f",
+  "fixtureSha256": "ad2f9e27b2b7d4dbb5cc86e45a0492e97edc0d893f48d5d748ec8af89cf4dfc3",
+  "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+  "note": "run.py report pisharpSha identifies the harness checkout. --pisharp explicitly selects the freshly rebuilt untouched baseline CLI; this receipt disambiguates their revisions."
+}

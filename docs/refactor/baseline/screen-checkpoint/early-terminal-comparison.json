@@ -1,0 +1,48 @@
+{
+  "scope": "Only terminal identities already captured; final all-identity comparison still required",
+  "comparison": {
+    "pass_": false,
+    "failures": [
+      {
+        "identity": "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+        "candidate": "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+        "reason": "new semantic outcome",
+        "acceptable": [
+          {
+            "httpMatch": false,
+            "outcome": "difference",
+            "renderMatch": false,
+            "scenarioErrors": {},
+            "skipReason": null,
+            "skipped": false,
+            "terminalMatch": false
+          },
+          {
+            "httpMatch": true,
+            "outcome": "difference",
+            "renderMatch": false,
+            "scenarioErrors": {},
+            "skipReason": null,
+            "skipped": false,
+            "terminalMatch": false
+          }
+        ],
+        "actual": {
+          "outcome": "match",
+          "terminalMatch": true,
+          "renderMatch": true,
+          "httpMatch": true,
+          "scenarioErrors": {},
+          "skipped": false,
+          "skipReason": null
+        }
+      }
+    ],
+    "baselineFlaky": [
+      "terminal/terminal-llama-load-cancel-paired/100x32-dark-fullscreen",
+      "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen"
+    ],
+    "expected": 40,
+    "candidate": 40
+  }
+}

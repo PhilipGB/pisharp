@@ -1,0 +1,7 @@
+{
+  "oldDistinct": 43,
+  "newDistinct": 43,
+  "removed": [],
+  "added": [],
+  "limitations": "Interpolated expressions include identifier spelling, so state-owner substitutions are reviewed separately. Literal sets do not prove output ordering."
+}

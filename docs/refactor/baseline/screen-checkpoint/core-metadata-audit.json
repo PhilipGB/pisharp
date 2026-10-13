@@ -1,0 +1,8 @@
+{
+  "path": "src/PiSharp.Core/ConversationTree.cs",
+  "sha256": "1072479a208e56f1e1ecb734afe7d987b66edd4496133ee0563ccdc7ede82af4",
+  "unchangedFromBaseline": true,
+  "finding": "Append generates a default GUID and UTC timestamp when callers omit metadata. Tree branching/selection algorithms are deterministic over supplied nodes; this convenience API is not wholly deterministic.",
+  "scope": "Existing baseline behavior, outside frozen hotspot set. Project/compiled-call rules prevent provider/terminal/filesystem/process/network dependencies; they do not assert absence of metadata generation.",
+  "nextAction": "Correct the broad deterministic wording in permanent architecture docs after the locked H02 capture. Preserve public metadata defaults; no API redesign required by the recorded dependency boundary."
+}

@@ -8,7 +8,7 @@ alternate runtimes unreachable from its normal executable are excluded. Overall
 parity remains incomplete; `parity/execution-ledger.json` records scoped evidence
 and remaining work.
 
-`PiSharp.Core` contains deterministic conversation-tree, edit/diff and read-planning logic. It has no provider SDK, terminal, filesystem or process dependencies.
+`PiSharp.Core` contains in-memory conversation-tree, edit/diff and read-planning algorithms. Tree selection and branching are deterministic over supplied nodes; `ConversationTree.Append` retains its convenience defaults for generated IDs and UTC timestamps. Core has no provider SDK, terminal, filesystem I/O or process dependencies.
 
 ```mermaid
 flowchart LR
@@ -22,7 +22,7 @@ Runtime capabilities are grouped under sessions, tools, extensions, providers, r
 
 `PiSharp.Cli` composes runtime capabilities with provider adapters, configuration, CLI handling, interactive terminal components and JSON/RPC front ends. All modes use `ConversationRun`; protocol projectors translate runtime state and events instead of owning another agent loop. [Provider/model selection](capabilities/provider-selection.md) separates credential resolution, available snapshots and router discovery from scoped selection. Provider clients implement compatible chat, Responses, Messages, Bedrock, Google and routing boundaries. Anthropic uses the official beta IChatClient beneath the MAF tool loop; its transcript adapter preserves initial tool declarations and inserts later inline changes at valid call/result boundaries. SystemMessageTranscript owns Pi system metadata projection; StoredToolResultReplay restores persisted MEAI result representations. Terminal rendering, keybindings, selectors, clipboard and images belong to the CLI layer. TerminalStartupPresentation builds the theme-aware startup header and project trust notice; Program composes it and TerminalScreenCompositor pins it above the transcript. Startup model-scope and loaded-resource details remain open. TerminalProviderLogin owns the authentication menus and originating-menu cancellation; TerminalProviderOAuthInteraction adapts existing OAuth methods to the terminal. RadiusMcpSetup owns the global provider-auth proposal/write, while the terminal flow invokes the existing runtime reload. [CLI composition](capabilities/cli-composition.md) separates early startup, session document/model selection, JSON prompt handling, settings persistence, clipboard actions, session commands and interactive prompt monitoring. Idle model/thinking replacement has a canonical branch/checkpoint transaction owner; project resource reload and terminal model/thinking navigation have separate owners. Program remains the executable composition root, publishes named active bindings and wires concrete command workflows; runtime and project UI adoption are explicit.
 
-`PiSharp.Tests` combines deterministic Core/runtime tests, provider HTTP/SSE fixtures, MCP child processes, CLI/RPC processes and Linux PTY checks. `tools/parity` contains reproducible current-Pi comparisons, with normalized evidence in `docs/parity/fixtures`. Tests need no live provider credentials. Existing local/CI checks prove their covered slices, not full visual or behavioral parity. A reusable full terminal cell/style/cursor/mode differential harness is the next blocking enabling milestone; official MCP conformance remains required. First-class llama.cpp router login/configuration, model management/projection and Hugging Face download form the next near-term provider family, with configuration shared by chat and native classifiers.
+`PiSharp.Tests` combines deterministic Core/runtime tests, provider HTTP/SSE fixtures, MCP child processes, CLI/RPC processes and Linux PTY checks. `tools/parity` contains reproducible current-Pi comparisons, with normalized evidence in `docs/parity/fixtures`. Tests need no live provider credentials. Existing local/CI checks prove their covered slices, not full visual or behavioral parity. The terminal differential harness covers cell/style/cursor/mode states with same-Pi calibration; official MCP conformance remains required. llama.cpp router login/configuration, model management/projection and Hugging Face download have process and terminal fixtures; configuration is shared by chat and native classifiers. Their scoped results and remaining gaps are recorded in the parity inventories.
 
 Session recovery checkpoints prompts, tool intentions/outcomes and assistant history, and does not replay unknown tool side effects. Network-filesystem locking, native platform coverage, complete provider wire parity and current-Pi TUI interactions remain explicit audit work. Project trust gates resource loading; it is separate from process isolation. `ConversationRun` keeps prompt/retry/compaction orchestration and explicit settlement ordering while per-attempt turn journals, request attribution and stream checkpoints have separate owners. Canonical sessions and Pi JSONL interchange have explicit conversion/projection owners behind their public APIs.
 
@@ -50,3 +50,15 @@ documentation validation in normal Linux CI. DocumentationPathTests exercises
 real Git/Python fixtures, including a local-but-untracked target that must fail.
 Historical receipts distinguish committed summaries from unavailable local raw
 evidence; the configured Pi reference remains the current verification mechanism.
+
+Capabilities are vertical slices inside the three production projects. Project
+boundaries express dependency direction; capability folders express ownership.
+Concrete in-process collaborators use direct calls. MAF/MEAI execution remains
+direct, while Pi-specific conversation, transcript and persistence semantics retain
+application owners. New projects/interfaces require an actual dependency or I/O
+boundary rather than a folder or testing preference.
+
+[Terminal presentation](capabilities/terminal.md) separates timed render scheduling,
+conversation content projections and status/authorization state from screen lifetime
+and frame composition. Timer callbacks share the screen lock; width/theme accessors
+preserve current-value lookup timing. Input and application actions remain in CLI.

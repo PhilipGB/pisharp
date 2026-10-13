@@ -1,0 +1,7 @@
+{
+  "originalSha256": "7b4f04411be976e1f222e193e4c4b0c3ae5309a851210d35da8f843eaef972dc",
+  "candidateSha256": "a8a8482b34611a03471e86796b3585dcc68ccb7754c6cb10b544aada8661437f",
+  "sameMethodAndConstructorSignatures": true,
+  "signatureCount": 73,
+  "limitations": "Syntax audit covers public/internal methods and constructors, not property semantics. Focused/full behavioral evidence verifies covered state transitions; source review preserves setter guards, palette lookup timing and reflow/cleanup order."
+}

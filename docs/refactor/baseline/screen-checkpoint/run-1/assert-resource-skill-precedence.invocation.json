@@ -1,0 +1,13 @@
+{
+  "id": "assert-resource-skill-precedence",
+  "command": [
+    "python3",
+    "tools/parity/terminal/assert_resource_skill_precedence.py",
+    "/tmp/pisharp-screen-checkpoint/run-1/terminal-resource-skill-precedence-paired",
+    "/tmp/pisharp-screen-checkpoint/run-1/terminal-resource-skill-precedence-calibration"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 0.314,
+  "logger": "stdout+stderr text"
+}

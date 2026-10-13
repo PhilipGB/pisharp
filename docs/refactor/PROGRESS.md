@@ -3,10 +3,10 @@
 - **Baseline PiSharp:** `064bcc7b90344cffde595f9aca1c5b850cefe567` (untouched main branch point).
 - **Frozen Pi:** `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; authority: execution-ledger source note, corroborated by latest TODO/trust-startup evidence.
 - **Branch:** `refactor/architecture-maintainability`.
-- **Phase:** H01 composition ownership complete and full checkpoint verified; H02 next. Last verified remote: `633c5655bf764bd030116a1501be7ead84591d81`. Earlier checkpoint SHAs are recorded in slice metadata/history.
+- **Phase:** H01–H02 complete; H03 editor interaction next. Last verified remote: `b467dff6f4007656ba03e7d790165fa22cb1d56f`. Earlier checkpoint SHAs are recorded in slice metadata/history.
 - **Pilot:** coding tools, frozen hotspot H09. See `baseline/pilot-decision.json`.
 - **Completed slices:** untouched behavioral baseline, architectural inventory, neutral Pi-reference infrastructure, coding-tools pilot, session interchange, native session/context, agent catalog/summarization, streamed-attempt, MCP connection/publication, provider credentials/snapshots/router ownership and initial CLI workflow ownership.
-- **Active slice:** H01 RESOLVED: current model/project/conversation bindings and command workflows have named owners; root retains bootstrap/framework composition and resource leases. Full checkpoint preserves all 1,858 original identities (1,890 candidate), 1,378 .NET rows/zero skips, 24 Node/47 Python, 269 MCP checks, all process variants, all 66 terminal reports/136 cases/13 assertions. Two first terminal outcomes are retained and investigated; complete unchanged repeats return frozen acceptable outcomes. No sets, fixtures, tests or pin widened.
+- **Active slice:** H02 RESOLVED: scheduling, conversation presentation/live state and status/auth origin have owners; screen retains mode/writer lifetime, shared locking and frame composition. Three characterizations precede their respective extraction; 91 focused checks and complete checkpoint pass. All 1,858 original identities preserved (1,893 candidate), 1,381 .NET rows/zero skips, Node 24/Python 47, all MCP/process/66 terminal reports/136 cases/13 assertions. Two outside-set model-picker attempts and rebuilt untouched baseline control are retained; next unchanged complete repeat returns accepted outcome. Frozen sets/fixtures/pin unchanged. No new project/interface/public API or test movement.
 - **Latest observed main:** `064bcc7b90344cffde595f9aca1c5b850cefe567`; no divergence or merge conflicts at the session-start/checkpoint queries.
 - **Blockers:** none. A required push failure is a durability blocker; stop before continuing another slice.
 
@@ -36,12 +36,12 @@ only the explicitly required AGENTS pointer is now appended.
 
 ## Frozen hotspots
 
-The selection is immutable. H01 and H04–H10 are RESOLVED; H02–H03 remain OPEN. Current dispositions are recorded separately in `baseline/hotspot-dispositions.json`; untouched selection/metrics stay in `baseline/frozen-hotspots.json`.
+The selection is immutable. H01–H02 and H04–H10 are RESOLVED; H03 remains OPEN. Current dispositions are recorded separately in `baseline/hotspot-dispositions.json`; untouched selection/metrics stay in `baseline/frozen-hotspots.json`.
 
 | ID | File/type | Capability |
 |---|---|---|
 | H01 | Program.cs (RESOLVED) | Composition/startup |
-| H02 | TerminalScreen | Terminal rendering |
+| H02 | TerminalScreen (RESOLVED) | Terminal rendering |
 | H03 | TerminalEditor | Terminal interaction |
 | H04 | ConversationRun (RESOLVED) | Agent execution |
 | H05 | ConversationSession (RESOLVED) | Sessions |
@@ -76,17 +76,24 @@ execution direct; retain Pi-specific semantics. No new dependency lockfiles.
 - `baseline/composition-runtime/`: stale-save rollback/retry characterization, replacement/reload/navigation owners, permanent architecture checks and scoped original-identity comparison.
 - `baseline/documentation-validation/`: repaired provenance/path audit, negative controls, format/build, parser-neutrality and integrity receipts.
 - `baseline/composition-checkpoint/`: full all-identity composition capture, unchanged fixture repeats, original new-outcome attempts, source/commands and integrity receipts.
+- `baseline/screen-checkpoint/`: rendering characterizations, complete capture, two outside-set attempts, original baseline control, source/API audits, integrity and H03 draft resources.
 - `baseline/hotspot-dispositions.json`: current dispositions without altering untouched metrics.
 - `tools/`: standalone capture/parser/comparison/metrics tooling; parser dependencies only in `/tmp`.
 
 ## Exact next action
 
-Continue H02 screen rendering: characterize under-protected scheduling/live transcript
-transitions, extract actual scheduling/presentation ownership under the existing screen
-lock, run focused tests and complete affected calibrated terminal fixtures. Then H03
-editor interaction/dialog ownership. Preserve all complete terminal matrices and
-frozen semantic sets. Commit/push verified slices. Architecture and docs-path checks
-are wired into ordinary .NET tests and CI.
+Continue H03 editor interaction. Copy the proposed next-editor characterization
+from screen-checkpoint into tests, run it against unchanged TerminalEditor, then
+extract concrete dialog panel rendering, dialog input loops, progress settlement,
+transcript search input and authorization input using the audited draft script.
+Its source SHA guard must pass; draft code is not yet verified. Keep draft editing,
+completion/history, active-run queue/abort and application dispatch in TerminalEditor.
+Run focused editor/input/keymap/screen/PTY checks and complete calibrated terminal
+matrices; compare all original identities, retain/investigate new outcomes without
+widening frozen sets. Commit/push verified slice, then complete Phase A metrics/docs/
+audit and Section 23 independent review/finalization. Architecture/docs checks are
+already in ordinary .NET/CI. Core Append default metadata remains existing compatible
+behavior; permanent docs now state its actual boundary. No test/project moves.
 `tools/validate_doc_paths.py` verifies tracked local links/code paths; upstream Pi
 shorthand and synthetic input examples are distinct. The eight historical links
 were repaired without staging or changing user-owned evidence. Capture.py now reads starting-user-file inventory relative

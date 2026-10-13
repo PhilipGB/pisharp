@@ -15,7 +15,11 @@
     },
     {
       "id": "H02",
-      "disposition": "OPEN"
+      "disposition": "RESOLVED",
+      "resolution": "Timed scheduling, conversation presentation/live sources and status/authorization state have concrete owners. Screen retains terminal mode/writer lifetime, shared state locking, viewport/editor/panel state and frame composition; original render/capture/reflow/cleanup order remains explicit.",
+      "evidence": "screen-checkpoint/screen-preservation-comparison.json",
+      "capabilityDocumentation": "../../capabilities/terminal.md",
+      "additionalEvidence": "screen-checkpoint/README.md"
     },
     {
       "id": "H03",
