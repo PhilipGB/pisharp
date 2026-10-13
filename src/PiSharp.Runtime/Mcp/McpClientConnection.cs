@@ -4,7 +4,7 @@ using ModelContextProtocol.Protocol;
 
 namespace PiSharp.Runtime.Mcp;
 
-/// <summary>Owns SDK transports, authentication, protocol negotiation and discovered-resource refresh lifetime.</summary>
+/// <summary>Owns SDK transports, authentication, protocol negotiation and tool-discovery refresh lifetime.</summary>
 internal static class McpClientConnection
 {
     private const string s_protocolVersion = "2025-11-25";
@@ -21,9 +21,7 @@ internal static class McpClientConnection
         McpOAuthRefreshHandler? refreshHandler = null;
         McpConnectedServer? connected = null;
         var pendingToolsRefresh = 0;
-        var pendingResourcesRefresh = 0;
         var toolsRefreshGate = new SemaphoreSlim(1, 1);
-        var resourcesRefreshGate = new SemaphoreSlim(1, 1);
         try
         {
             IClientTransport CreateTransport()
@@ -106,28 +104,6 @@ internal static class McpClientConnection
                 finally { toolsRefreshGate.Release(); }
             }
 
-            async ValueTask RefreshResourcesAsync(CancellationToken token)
-            {
-                var current = connected;
-                var activeClient = client;
-                if (current is null || activeClient is null || current.IsDisposed)
-                {
-                    Interlocked.Exchange(ref pendingResourcesRefresh, 1);
-                    return;
-                }
-                await resourcesRefreshGate.WaitAsync(token);
-                try
-                {
-                    if (current.IsDisposed || activeClient.ServerCapabilities.Resources is null) return;
-                    var resourcesTask = TryListResourcesAsync(activeClient, token);
-                    var templatesTask = TryListResourceTemplatesAsync(activeClient, token);
-                    await Task.WhenAll(resourcesTask, templatesTask);
-                    if (!current.IsDisposed)
-                        current.ReplaceResources(await resourcesTask, await templatesTask);
-                }
-                finally { resourcesRefreshGate.Release(); }
-            }
-
             ValueTask QueueToolsRefreshAsync(CancellationToken _)
             {
                 var current = connected;
@@ -137,19 +113,6 @@ internal static class McpClientConnection
                 {
                     using var deadline = new CancellationTokenSource(server.Timeout);
                     await RefreshToolsAsync(deadline.Token);
-                });
-                return ValueTask.CompletedTask;
-            }
-
-            ValueTask QueueResourcesRefreshAsync(CancellationToken _)
-            {
-                var current = connected;
-                if (current is null)
-                    Interlocked.Exchange(ref pendingResourcesRefresh, 1);
-                else current.TrackRefresh(async () =>
-                {
-                    using var deadline = new CancellationTokenSource(server.Timeout);
-                    await RefreshResourcesAsync(deadline.Token);
                 });
                 return ValueTask.CompletedTask;
             }
@@ -170,8 +133,7 @@ internal static class McpClientConnection
                             NotificationHandlers = new Dictionary<string,
                                 Func<JsonRpcNotification, CancellationToken, ValueTask>>(StringComparer.Ordinal)
                             {
-                                ["notifications/tools/list_changed"] = (_, token) => QueueToolsRefreshAsync(token),
-                                ["notifications/resources/list_changed"] = (_, token) => QueueResourcesRefreshAsync(token)
+                                ["notifications/tools/list_changed"] = (_, token) => QueueToolsRefreshAsync(token)
                             }
                         }
                     }, cancellationToken: cancellationToken);
@@ -192,14 +154,9 @@ internal static class McpClientConnection
                 ? []
                 : await client.ListToolsAsync(cancellationToken: cancellationToken);
             var hasResources = client.ServerCapabilities.Resources is not null;
-            var resources = hasResources ? await TryListResourcesAsync(client, cancellationToken) : [];
-            var templates = hasResources ? await TryListResourceTemplatesAsync(client, cancellationToken) : [];
-            connected = new McpConnectedServer(client, refreshHandler, tools, hasResources, resources, templates,
-                toolsRefreshGate, resourcesRefreshGate);
+            connected = new McpConnectedServer(client, refreshHandler, tools, hasResources, toolsRefreshGate);
             if (Interlocked.Exchange(ref pendingToolsRefresh, 0) != 0)
                 await RefreshToolsAsync(cancellationToken);
-            if (Interlocked.Exchange(ref pendingResourcesRefresh, 0) != 0)
-                await RefreshResourcesAsync(cancellationToken);
             return connected;
         }
         catch
@@ -211,24 +168,9 @@ internal static class McpClientConnection
                 if (client is not null) await client.DisposeAsync();
                 else if (transport is IAsyncDisposable disposable) await disposable.DisposeAsync();
                 toolsRefreshGate.Dispose();
-                resourcesRefreshGate.Dispose();
             }
             throw;
         }
-    }
-
-    private static async Task<IList<McpClientResource>> TryListResourcesAsync(McpClient client,
-        CancellationToken cancellationToken)
-    {
-        try { return await client.ListResourcesAsync(cancellationToken: cancellationToken); }
-        catch (Exception error) when (error is not OperationCanceledException) { return []; }
-    }
-
-    private static async Task<IList<McpClientResourceTemplate>> TryListResourceTemplatesAsync(McpClient client,
-        CancellationToken cancellationToken)
-    {
-        try { return await client.ListResourceTemplatesAsync(cancellationToken: cancellationToken); }
-        catch (Exception error) when (error is not OperationCanceledException) { return []; }
     }
 
     private static string Expand(string value) => Regex.Replace(value, @"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", match =>

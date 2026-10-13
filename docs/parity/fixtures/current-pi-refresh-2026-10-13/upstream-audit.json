@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "NEEDS_WORK": 14,
+    "NEEDS_WORK": 13,
     "NO_BEHAVIOR_CHANGE": 13,
-    "MATCHED": 4
+    "MATCHED": 5
   },
   "commits": [
     {
@@ -398,7 +398,7 @@
         "packages/coding-agent/src/extensions/mcp/runtime.ts",
         "packages/coding-agent/test/mcp-extension.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Connecting and list/status no longer enumerate resources or templates; capability availability is reported instead. PiSharp still lists both during connect and on list_changed.",
       "capability_ids": [
         "mcp-runtime"
@@ -408,7 +408,14 @@
       ],
       "implementation_plan": "Remove eager resource listing and resource-change refresh; retain on-demand listing, and update CLI/UI status contracts.",
       "differential_plan": "A server advertises resources but blocks list requests; tools must be ready immediately and lists occur only on demand.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "MCP connections and resource-change notifications no longer enumerate resources/templates. Capability status reports resources without counts; shared resource tools list only on demand. The fail-first startup log now shows no listings until requested, and the notification scenario retains tool refresh plus fresh resource/template results. Seven current-Pi real-stdio scenarios match connection/on-demand request counts; CLI status capability checks pass.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-results-and-demand.json",
+        "tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeLifecycleTests.cs",
+        "tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeTests.cs",
+        "tests/PiSharp.Tests/Cli/Mcp/McpCommandTests.cs"
+      ]
     },
     {
       "sha": "67996ab75c2818847423549807eda888db218c1c",

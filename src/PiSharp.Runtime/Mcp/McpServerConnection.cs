@@ -5,40 +5,23 @@ using ModelContextProtocol.Protocol;
 namespace PiSharp.Runtime.Mcp;
 
 internal sealed class McpConnectedServer(McpClient client, McpOAuthRefreshHandler? refreshHandler,
-    IList<McpClientTool> tools, bool hasResources, IList<McpClientResource>? resources = null,
-    IList<McpClientResourceTemplate>? resourceTemplates = null, SemaphoreSlim? toolsRefreshGate = null,
-    SemaphoreSlim? resourcesRefreshGate = null) : IAsyncDisposable
+    IList<McpClientTool> tools, bool hasResources, SemaphoreSlim? toolsRefreshGate = null) : IAsyncDisposable
 {
     private readonly object _gate = new();
     private IList<McpClientTool> _tools = tools;
-    private IList<McpClientResource> _resources = resources ?? [];
-    private IList<McpClientResourceTemplate> _resourceTemplates = resourceTemplates ?? [];
     private readonly SemaphoreSlim _toolsRefreshGate = toolsRefreshGate ?? new SemaphoreSlim(1, 1);
-    private readonly SemaphoreSlim _resourcesRefreshGate = resourcesRefreshGate ?? new SemaphoreSlim(1, 1);
     private readonly HashSet<Task> _refreshTasks = [];
     private int _disposed;
 
     public McpClient Client { get; } = client;
     public string? Instructions => Client.ServerInstructions;
     public IList<McpClientTool> Tools { get { lock (_gate) return _tools.ToArray(); } }
-    public IList<McpClientResource> Resources { get { lock (_gate) return _resources.ToArray(); } }
-    public IList<McpClientResourceTemplate> ResourceTemplates { get { lock (_gate) return _resourceTemplates.ToArray(); } }
     public bool HasResources { get; } = hasResources;
     public bool IsDisposed => Volatile.Read(ref _disposed) != 0;
 
     public void ReplaceTools(IList<McpClientTool> tools)
     {
         lock (_gate) _tools = tools.ToArray();
-    }
-
-    public void ReplaceResources(IList<McpClientResource> resources,
-        IList<McpClientResourceTemplate> resourceTemplates)
-    {
-        lock (_gate)
-        {
-            _resources = resources.ToArray();
-            _resourceTemplates = resourceTemplates.ToArray();
-        }
     }
 
     public void TrackRefresh(Func<Task> refresh)
@@ -71,7 +54,6 @@ internal sealed class McpConnectedServer(McpClient client, McpOAuthRefreshHandle
         try { await Task.WhenAll(refreshTasks); }
         catch (Exception) { }
         _toolsRefreshGate.Dispose();
-        _resourcesRefreshGate.Dispose();
     }
 }
 

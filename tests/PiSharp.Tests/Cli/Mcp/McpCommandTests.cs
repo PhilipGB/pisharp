@@ -34,6 +34,8 @@ public sealed class McpCommandTests
             {
                 var server = Assert.Single(listed.RootElement.GetProperty("servers").EnumerateArray());
                 Assert.Equal("connected", server.GetProperty("state").GetString());
+                Assert.True(server.GetProperty("resources").GetBoolean());
+                Assert.False(server.TryGetProperty("resourceTemplates", out _));
                 Assert.Contains(server.GetProperty("tools").EnumerateArray(), item =>
                     item.GetString() == "mcp__fixture__echo");
             }

@@ -292,7 +292,7 @@ public sealed class McpRuntimeLifecycleTests
     }
 
     [Fact]
-    public async Task StdioListChangedNotificationsRefreshToolRegistrationAndResourceLists()
+    public async Task StdioListChangedNotificationsRefreshToolsAndLeaveResourcesForOnDemandListing()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-notifications-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -339,9 +339,14 @@ public sealed class McpRuntimeLifecycleTests
 
             using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
             while (!catalog.Registration.ToolDefinitions.Any(tool =>
-                       tool.Function.Name == "mcp__notify__added") ||
-                   !await NotificationFixtureRefreshedResourcesAsync(statePath))
+                       tool.Function.Name == "mcp__notify__added"))
                 await Task.Delay(20, deadline.Token);
+
+            using (var state = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(statePath)))
+            {
+                Assert.Equal(0, state.RootElement.GetProperty("resourcesList").GetInt32());
+                Assert.Equal(0, state.RootElement.GetProperty("templatesList").GetInt32());
+            }
 
             Assert.Equal(ToolExposure.Hidden, catalog.Registration.ToolDefinitions.Single(tool =>
                 tool.Function.Name == "mcp__notify__echo").Exposure);
@@ -366,6 +371,16 @@ public sealed class McpRuntimeLifecycleTests
                     ["server"] = "notify"
                 })), out var resourceResult));
             Assert.Contains("updated", resourceResult.Text, StringComparison.Ordinal);
+            var listTemplates = catalog.Registration.ToolDefinitions.Single(tool =>
+                tool.Function.Name == "list_mcp_resource_templates");
+            Assert.True(ToolResultOutput.TryReadContract(await listTemplates.Function.InvokeAsync(
+                new Microsoft.Extensions.AI.AIFunctionArguments(new Dictionary<string, object?>
+                {
+                    ["server"] = "notify"
+                })), out _));
+            using var finalState = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(statePath));
+            Assert.Equal(1, finalState.RootElement.GetProperty("resourcesList").GetInt32());
+            Assert.Equal(1, finalState.RootElement.GetProperty("templatesList").GetInt32());
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -552,15 +567,4 @@ public sealed class McpRuntimeLifecycleTests
             }
         }));
 
-    private static async Task<bool> NotificationFixtureRefreshedResourcesAsync(string statePath)
-    {
-        if (!File.Exists(statePath)) return false;
-        try
-        {
-            using var state = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(statePath));
-            return state.RootElement.GetProperty("resourcesList").GetInt32() >= 2 &&
-                state.RootElement.GetProperty("templatesList").GetInt32() >= 2;
-        }
-        catch (System.Text.Json.JsonException) { return false; }
-    }
 }

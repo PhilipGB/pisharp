@@ -11,6 +11,48 @@ namespace PiSharp.Tests;
 public sealed class McpRuntimeTests
 {
     [Fact]
+    public async Task ConnectionPublishesToolsWithoutListingResourcesUntilRequested()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-resource-demand-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var requests = Path.Combine(root, "requests.txt");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"), JsonSerializer.Serialize(new
+            {
+                mcpServers = new Dictionary<string, object>
+                {
+                    ["demand"] = new
+                    {
+                        command = "python3",
+                        args = new[] { fixture },
+                        exposure = "direct",
+                        env = new { MCP_FIXTURE_REQUEST_LOG = requests }
+                    }
+                }
+            }));
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+
+            Assert.Empty(await McpRuntime.RegisterAsync(configuration, catalog, root));
+
+            Assert.Contains(catalog.Registration.ToolDefinitions, tool => tool.Function.Name == "mcp__demand__echo");
+            var atConnection = await File.ReadAllLinesAsync(requests);
+            Assert.DoesNotContain("resources/list", atConnection);
+            Assert.DoesNotContain("resources/templates/list", atConnection);
+            var list = catalog.Registration.ToolDefinitions.Single(tool => tool.Function.Name == "list_mcp_resources");
+            Assert.True(ToolResultOutput.TryReadContract(await list.Function.InvokeAsync(new AIFunctionArguments()),
+                out var result));
+            Assert.Contains("fixture://note", result.Text);
+            var afterListing = await File.ReadAllLinesAsync(requests);
+            Assert.Single(afterListing, method => method == "resources/list");
+            Assert.DoesNotContain("resources/templates/list", afterListing);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task FailedConnectionReportsItsTypeWithoutLeakingChildErrorDetails()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-error-" + Guid.NewGuid().ToString("N"));

@@ -14,6 +14,10 @@ def respond(request, result):
 for line in sys.stdin:
     request = json.loads(line)
     method = request.get("method")
+    request_log = os.getenv("MCP_FIXTURE_REQUEST_LOG")
+    if request_log:
+        with open(request_log, "a", encoding="utf-8") as log:
+            log.write(method + "\n")
     if method == "exit":
         break
     if "id" not in request:
