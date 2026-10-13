@@ -90,6 +90,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-anthropic-strict-') as director
     inputs.write_text(json.dumps(cases))
     (work / 'Program.cs').write_text((repo / 'tools/parity/anthropic-strict-probe.cs').read_text())
     (work / 'Fixture.cs').write_text((repo / 'tests/PiSharp.Tests/TestInfrastructure/AnthropicStrictHttpFixture.cs').read_text())
+    (work / 'Listener.cs').write_text((repo / 'tests/PiSharp.Tests/TestInfrastructure/TestLoopbackListener.cs').read_text())
     (work / 'probe.csproj').write_text(f'''<Project Sdk="Microsoft.NET.Sdk">
 <PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><AssemblyName>PiSharp.Tests</AssemblyName><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
 <ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Cli/PiSharp.Cli.csproj" /></ItemGroup></Project>''')

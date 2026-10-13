@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Sockets;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
@@ -297,13 +296,8 @@ public sealed class AnthropicInlineToolTests
         bool systemSupport, bool toolSupport, bool streaming = false, int requestCount = 1,
         Func<IChatClient, CancellationToken, Task>? invoke = null, bool oauth = false)
     {
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        using var listener = new HttpListener();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        var (serverListener, port) = TestLoopbackListener.Start();
+        using var listener = serverListener;
         JsonElement payload = default;
         var beta = "";
         var server = Task.Run(async () =>

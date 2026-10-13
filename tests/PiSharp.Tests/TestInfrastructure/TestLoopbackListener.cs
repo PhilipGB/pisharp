@@ -26,6 +26,7 @@ internal static class TestLoopbackListener
             }
             catch (HttpListenerException error)
             {
+                listener.Prefixes.Clear();
                 listener.Close();
                 lastError = error;
             }

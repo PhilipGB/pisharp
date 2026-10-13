@@ -563,5 +563,23 @@
     "fullRecoveryLog": "artifacts/parity/current-pi-deltas-2026-10-13/codemode-timer-corrected-full-tests.log",
     "portReuseGuard": "tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicStrictHttpFixtureTests.cs",
     "differentialRecovery": "artifacts/parity/current-pi-deltas-2026-10-13/anthropic-strict-fixture-recovery.json"
+  },
+  "listenerAllocationCorrection": {
+    "finding": "A later parallel suite hit Address already in use while starting the older Anthropic inline capture fixture after releasing its ephemeral reservation. Both Anthropic fixtures now use the existing bounded TestLoopbackListener allocator. Failed-start cleanup clears unregistered prefixes before closing, so a collision can retry without reattempting the occupied bind during disposal. All request assertions remain intact.",
+    "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-corrected-full-tests.log",
+    "sha256": "160efbfc62f3a04d6d3b5e31b98825a8846d06f26fa3caa9455e4b23db5c5d18",
+    "recovery": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-listener-recovery-tests.log",
+    "differential": "artifacts/parity/current-pi-deltas-2026-10-13/anthropic-strict-listener-recovery.json",
+    "differentialCases": 57,
+    "differentialMatch": true,
+    "fullRecovery": {
+      "scope": "Combined working tree containing the independently recorded auth, provider and fixture corrections.",
+      "command": "dotnet test PiSharp.slnx --no-restore",
+      "passed": 1581,
+      "failed": 0,
+      "skipped": 0,
+      "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-final-full-tests.log",
+      "sha256": "14b1964a6da534709a2ad79f7e07023e12fdb4104b387891916c6f8651a6e5ec"
+    }
   }
 }

@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Sockets;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
@@ -9,7 +8,7 @@ namespace PiSharp.Tests;
 
 internal sealed class AnthropicStrictHttpFixture : IDisposable
 {
-    private readonly HttpListener _listener = new();
+    private readonly HttpListener _listener;
     private readonly CancellationTokenSource _deadline = new(TimeSpan.FromSeconds(10));
     private readonly Task _server;
     private readonly Uri _endpoint;
@@ -21,13 +20,10 @@ internal sealed class AnthropicStrictHttpFixture : IDisposable
 
     internal AnthropicStrictHttpFixture(Func<JsonElement, int, (int Status, string Body)> respond, bool ignoreDisconnect = false)
     {
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        _endpoint = new Uri($"http://127.0.0.1:{((IPEndPoint)reservation.LocalEndpoint).Port}/");
-        reservation.Stop();
-        _listener.Prefixes.Add(_endpoint.AbsoluteUri);
+        var (listener, port) = TestLoopbackListener.Start();
+        _listener = listener;
+        _endpoint = new Uri($"http://127.0.0.1:{port}/");
         _listener.IgnoreWriteExceptions = ignoreDisconnect;
-        _listener.Start();
         _server = Task.Run(async () =>
         {
             try
