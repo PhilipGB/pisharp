@@ -124,152 +124,12 @@ if (!modelBinding.Selection.Authenticated && projectBinding.Arguments.Mode != "r
     Environment.ExitCode = 2;
     return;
 }
-string? DescribeSlashCommand(string command)
-{
-    string? description;
-    ResourceSourceInfo? sourceInfo;
-    if (command.StartsWith("/skill:", StringComparison.Ordinal))
-    {
-        var skillName = command[7..];
-        var skill = projectBinding.Resources.Skills.FirstOrDefault(item => item.Name == skillName);
-        if (skill is null) return null;
-        description = skill.Description;
-        sourceInfo = skill.SourceInfo;
-    }
-    else if (command.StartsWith('/') && command.Length > 1 &&
-        projectBinding.Resources.Prompts.FirstOrDefault(item => "/" + item.Name == command) is { } prompt)
-    {
-        description = prompt.Description;
-        sourceInfo = prompt.SourceInfo;
-    }
-    else if (command.StartsWith('/') &&
-        extensionLease.Current.Registration.CommandInfo.TryGetValue(command[1..], out var extensionCommand))
-    {
-        description = extensionCommand.Description;
-        sourceInfo = extensionCommand.SourceInfo;
-    }
-    else return null;
-
-    var scope = sourceInfo.Scope == "user" ? "u" : sourceInfo.Scope == "project" ? "p" : "t";
-    var source = sourceInfo.Source.Trim();
-    var tag = source is "auto" or "local" or "cli" ? scope :
-        source.StartsWith("npm:", StringComparison.Ordinal) ? $"{scope}:{source}" : scope;
-    var visibleDescription = description?.Replace('\n', ' ').Replace('\r', ' ').Trim();
-    return string.IsNullOrWhiteSpace(visibleDescription) ? $"[{tag}]" : $"[{tag}] {visibleDescription}";
-}
-TerminalEditor? editor = !print && projectBinding.Arguments.Mode is not ("json" or "rpc") ? new TerminalEditor(() =>
-{
-    var skillCommands = projectBinding.Settings.SkillCommandsEnabled
-        ? projectBinding.Resources.Skills.Select(item => "/skill:" + item.Name)
-        : Enumerable.Empty<string>();
-    return skillCommands
-        .Concat(projectBinding.Resources.Prompts.Select(item => "/" + item.Name))
-        .Concat(extensionLease.Current.Registration.Commands.Keys.Select(name => "/" + name)).ToArray();
-},
-    agentDirectory, () => projectBinding.WorkingDirectory, initiallyExpanded: projectBinding.Arguments.Verbose,
-    describeCommand: DescribeSlashCommand) : null;
-string? cliThemeOverride = editor is null ? null : projectBinding.Arguments.UseTheme;
-string? ActiveThemeSetting() => cliThemeOverride ?? projectBinding.Settings.Theme;
-TerminalThemeCatalog CreateTerminalThemeCatalog() => new(agentDirectory, projectBinding.Trusted ? projectBinding.WorkingDirectory : null,
-    trueColorOverride: projectBinding.Settings.TerminalTrueColorOverride,
-    userThemePaths: projectBinding.BaseUserSettings.Themes, projectThemePaths: projectBinding.ProjectSettings?.Themes,
-    discoverThemes: !projectBinding.Arguments.NoThemes, explicitThemePaths: (projectBinding.Arguments.ThemePaths ?? [])
-        .Concat(projectBinding.Runtime.ExtensionResources.ThemePaths.Select(path => path.Path)).ToArray(),
-    explicitThemeBaseDirectory: invocationDirectory);
-var terminalThemeCatalog = CreateTerminalThemeCatalog();
-TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? terminalColors = null)
-{
-    var colors = terminalColors ?? new TerminalColorState();
-    try { return terminalThemeCatalog.Resolve(themeSetting, colors); }
-    catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or FormatException)
-    {
-        Console.Error.WriteLine($"Could not load theme '{themeSetting}': {error.Message}. Using terminal appearance defaults.");
-        return terminalThemeCatalog.Resolve(null, colors);
-    }
-}
-bool ThemeFollowsTerminalAppearance(string? themeSetting) => themeSetting is null or "" or "system" ||
-    themeSetting.Count(character => character == '/') == 1;
-var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());
-var startupPresentation = new TerminalStartupPresentation(projectBinding.Settings.QuietStartup, projectBinding.Arguments.Verbose,
-    action => editor?.GetDisplayKeys(action));
-if (editor is not null && startupPresentation.ShowDetails && modelRuntime.Scope.Count > 0)
-{
-    var cycleKey = editor.GetDisplayKeys("app.model.cycleForward");
-    var cycleHint = string.IsNullOrWhiteSpace(cycleKey) ? "" : $" ({cycleKey} to cycle)";
-    Console.WriteLine(initialTerminalTheme.Style("dim",
-        $"Model scope: {string.Join(", ", modelRuntime.Scope)}{cycleHint}"));
-}
-using var terminalScreen = editor is null ? null : new TerminalScreen(terminalIO.Output,
-    terminalIO.Error,
-    getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
-    queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
-    followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()), deferInitialRender: true,
-    minimumRenderInterval: TimeSpan.FromMilliseconds(16));
-terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
-terminalScreen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
-var hideThinkingBlock = projectBinding.Settings.HideThinkingBlock == true;
+using var presentation = new TerminalPresentation(agentDirectory, invocationDirectory, print, terminalIO,
+    projectBinding, modelBinding, conversationBinding, extensionLease, modelRuntime);
+var editor = presentation.Editor;
+var terminalScreen = presentation.Screen;
+var terminalClipboard = presentation.Clipboard;
 InteractiveTranscript? activeTranscript = null;
-terminalScreen?.SetThinkingBlocksHidden(hideThinkingBlock);
-terminalScreen?.Activate();
-using var terminalMode = editor is null ? null : TerminalMode.Enter(terminalScreen);
-void ConfigureMcpAuthorizationUrlPresenter(ProjectRuntimeContext context)
-{
-    Action<string, Uri>? presenter = terminalScreen is null ? null : (serverName, url) =>
-        terminalScreen.AppendMcpAuthorizationNotification(serverName, url,
-            editor?.GetDisplayKeys("app.message.copy"), editor?.GetDisplayKeys("app.interrupt"));
-    Action<string>? completed = terminalScreen is null ? null : terminalScreen.ClearMcpAuthorizationNotification;
-    context.SetMcpAuthorizationUrlPresenter(presenter, completed);
-}
-ConfigureMcpAuthorizationUrlPresenter(projectBinding.Runtime);
-editor?.AttachScreen(terminalScreen);
-editor?.CompleteInitialTerminalColorQuery();
-string IdleFooter(int? providerCount = null) => TerminalModelStatus.FormatIdleFooter(modelBinding.Selection.Model, modelBinding.Thinking, conversationBinding.Conversation,
-    conversationBinding.Run.ContextWindowTokens, projectBinding.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
-    terminalScreen?.TerminalWidth ?? 80, providerCount ?? modelRuntime.AvailableModelProviderCount,
-    conversationBinding.Run.EstimatedContextTokens);
-terminalScreen?.SetFooter(IdleFooter(providerCount: 1), render: false);
-terminalScreen?.RenderInitial();
-void RefreshTerminalTheme()
-{
-    if (terminalScreen is null) return;
-    terminalThemeCatalog = CreateTerminalThemeCatalog();
-    terminalScreen.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
-    terminalScreen.SetTheme(ResolveConfiguredTheme(ActiveThemeSetting(), terminalScreen.CurrentTerminalColors));
-    terminalScreen.SetTerminalAppearanceFollowing(ThemeFollowsTerminalAppearance(ActiveThemeSetting()));
-}
-void LoadSessionTranscript()
-{
-    if (terminalScreen is null) return;
-    var history = new InteractiveTranscript(Console.Out, Console.Error, interactive: true,
-        hideThinking: hideThinkingBlock, screen: terminalScreen,
-        toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
-        workingDirectory: conversationBinding.Conversation.WorkingDirectory);
-    history.LoadHistory(conversationBinding.Conversation);
-}
-LoadSessionTranscript();
-var startupTrustNotice = !projectBinding.Trusted && ProjectTrust.HasProtectedResources(projectBinding.WorkingDirectory)
-    ? "This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp."
-    : null;
-if (editor is not null)
-{
-    IReadOnlyList<TerminalStartupDetail> CurrentStartupDetails() => TerminalStartupDetails.Build(
-        projectBinding.Runtime.ContextFiles, projectBinding.Resources, extensionLease.Current, projectBinding.WorkingDirectory, terminalThemeCatalog.Diagnostics);
-    terminalScreen?.SetStartupHeader((theme, columns, expanded) =>
-        startupPresentation.BuildLogo(theme));
-    terminalScreen?.SetStartupContent((theme, columns, expanded) =>
-        startupPresentation.BuildContent(theme, columns, CurrentStartupDetails(), startupTrustNotice, expanded));
-}
-InteractiveTranscript CreateInteractiveTranscript(bool interactive = true) => new(Console.Out, Console.Error, interactive,
-    hideThinking: hideThinkingBlock, screen: terminalScreen,
-    toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
-    workingDirectory: projectBinding.WorkingDirectory);
-var terminalClipboard = new TerminalClipboard(writeTerminalControl: value =>
-{
-    if (terminalScreen is { IsActive: true }) terminalScreen.WriteControl(value);
-    else Console.Write(value);
-});
-terminalScreen?.SetFooter(IdleFooter(providerCount: 1));
-terminalScreen?.SetFooter(IdleFooter());
 CancellationTokenSource? activeRun = null;
 if (editor is null) Console.CancelKeyPress += (_, e) => { e.Cancel = true; activeRun?.Cancel(); };
 
@@ -278,10 +138,10 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
     using var runCancel = new CancellationTokenSource();
     activeRun = runCancel;
     using var execution = new InteractivePromptExecution(editor, terminalScreen, () => Console.Error,
-        () => projectBinding.Resources, () => conversationBinding.Run, () => IdleFooter(), ExecuteInteractiveBashAsync, HandleEditorApplicationAction);
+        () => projectBinding.Resources, () => conversationBinding.Run, () => presentation.IdleFooter(), ExecuteInteractiveBashAsync, HandleEditorApplicationAction);
     terminalScreen?.Activate();
     editor?.AttachScreen(terminalScreen);
-    var transcript = CreateInteractiveTranscript(interactive: !print);
+    var transcript = presentation.CreateInteractiveTranscript(interactive: !print);
     activeTranscript = transcript;
     try
     {
@@ -299,14 +159,14 @@ async Task Run(string input, IReadOnlyList<DataContent>? images = null)
         activeRun = null;
         if (ReferenceEquals(activeTranscript, transcript)) activeTranscript = null;
         terminalScreen?.SetWorkingStatus(null, render: false);
-        terminalScreen?.SetFooter(IdleFooter());
+        terminalScreen?.SetFooter(presentation.IdleFooter());
     }
 }
 
 async Task ExecuteInteractiveBashAsync(string command, bool excludeFromContext, CancellationToken cancellationToken)
 {
     await InteractiveBashExecutor.ExecuteAsync(conversationBinding.Run, command, excludeFromContext,
-        CreateInteractiveTranscript(), conversationBinding.Path is null ? null : token => projectBinding.Store.SaveAsync(conversationBinding.Conversation, conversationBinding.Path, token),
+        presentation.CreateInteractiveTranscript(), conversationBinding.Path is null ? null : token => projectBinding.Store.SaveAsync(conversationBinding.Conversation, conversationBinding.Path, token),
         cancellationToken);
 }
 
@@ -331,7 +191,7 @@ var terminalModelPicker = editor is null ? null : new TerminalModelPicker(modelR
         ? provider + "\0" + model : null);
 var terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(projectBinding.Store, editor);
 var terminalForkPicker = editor is null ? null : new TerminalForkPicker(editor);
-var terminalSettingsPicker = editor is null ? null : new TerminalSettingsPicker(editor, () => terminalThemeCatalog.GetAvailableNames());
+var terminalSettingsPicker = editor is null ? null : new TerminalSettingsPicker(editor, () => presentation.Themes.GetAvailableNames());
 var terminalTrustPicker = editor is null ? null : new TerminalTrustPicker(editor);
 var terminalProjectCommands = editor is null ? null : new TerminalProjectCommands(trustStore, projectBinding,
     terminalTrustPicker, editor, terminalScreen);
@@ -351,7 +211,7 @@ void ShowModelChangeStatus(bool persistAsDefault = false)
         ? $"Default model: {modelBinding.Selection.Provider.Id}/{modelBinding.Selection.Model.Id}"
         : $"Model: {modelBinding.Selection.Model.Id}";
     if (terminalScreen is { IsActive: true } screen)
-        screen.ShowModelChangeStatus(IdleFooter(), label);
+        screen.ShowModelChangeStatus(presentation.IdleFooter(), label);
     else Console.WriteLine($"Model: {modelBinding.Selection.Provider.Id}/{modelBinding.Selection.Model.Id} · thinking {modelBinding.Thinking}");
 }
 async Task SelectModelAsync()
@@ -379,7 +239,7 @@ async Task ResumeSessionAsync(SessionListing listing)
         return;
     }
     conversationBinding.Adopt(resumed.Conversation, resumed.Run, resumed.Path);
-    LoadSessionTranscript();
+    presentation.LoadSessionTranscript();
     Console.WriteLine($"Resumed {conversationBinding.Conversation.Id[..12]} · {conversationBinding.Conversation.Name ?? "(unnamed)"}");
 }
 
@@ -399,7 +259,7 @@ async Task ForkFromUserAsync(string id)
 {
     var branch = await projectTransitions.Sessions.ForkAtUserAsync(conversationBinding.Conversation, conversationBinding.Path, id);
     conversationBinding.Adopt(branch.Conversation, branch.Run, branch.Path);
-    LoadSessionTranscript();
+    presentation.LoadSessionTranscript();
     if (branch.Prompt is { } draft) editor?.Prefill(draft);
     Console.WriteLine($"Forked {branch.SourceEntryId![..12]} to {branch.Path ?? "(ephemeral)"}. Edit and submit the draft prompt.");
 }
@@ -434,11 +294,10 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingCoreAsync(bool
     projectBinding.SetSettings(savedSettings.User, savedSettings.Project, savedSettings.Effective);
     if (setting == "hideThinkingBlock")
     {
-        hideThinkingBlock = projectBinding.Settings.HideThinkingBlock == true;
-        terminalScreen?.SetThinkingBlocksHidden(hideThinkingBlock);
-        activeTranscript?.SetHideThinkingBlock(hideThinkingBlock);
+        presentation.SetHideThinking(projectBinding.Settings.HideThinkingBlock == true);
+        activeTranscript?.SetHideThinkingBlock(presentation.HideThinking);
     }
-    if (setting == "theme") cliThemeOverride = null;
+    if (setting == "theme") presentation.ClearThemeOverride();
     projectBinding.PublishSettingsConfiguration();
     if (setting == "steeringMode")
         conversationBinding.Run.SetSteeringMode(projectBinding.Settings.SteeringMode ?? PromptDeliveryMode.OneAtATime);
@@ -449,7 +308,7 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingCoreAsync(bool
         await modelTransitions.ReplaceAsync(modelBinding.Selection, modelBinding.Thinking, recordModelChange: false);
     if (setting is "theme" or "terminal.trueColor")
     {
-        RefreshTerminalTheme();
+        presentation.RefreshTerminalTheme();
     }
     else if (setting == "markdown.codeBlockIndent")
         terminalScreen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
@@ -465,7 +324,7 @@ async Task SelectSettingsAsync()
 {
     if (terminalSettingsPicker is null) return;
     await terminalSettingsPicker.ShowAsync(projectBinding.BaseUserSettings, projectBinding.ProjectSettings, SaveSettingAsync,
-        activeThemeSetting: ActiveThemeSetting);
+        activeThemeSetting: presentation.ActiveThemeSetting);
     Console.WriteLine("Settings closed.");
 }
 
@@ -476,10 +335,10 @@ async Task HandleEditorApplicationAction(string action)
         switch (action)
         {
             case "app.thinking.toggle":
-                var hide = !hideThinkingBlock;
+                var hide = !presentation.HideThinking;
                 await SaveSettingCoreAsync(projectScope: false, "hideThinkingBlock", hide ? "true" : "false",
                     announce: false);
-                hideThinkingBlock = hide;
+                presentation.SetHideThinking(hide);
                 terminalScreen?.SetThinkingBlocksHidden(hide);
                 activeTranscript?.SetHideThinkingBlock(hide);
                 terminalScreen?.AppendThemedStatusLine($"Thinking blocks: {(hide ? "hidden" : "visible")}");
@@ -533,22 +392,22 @@ async Task HandleEditorApplicationAction(string action)
     {
         Console.Error.WriteLine($"Shortcut action failed: {error.Message}");
     }
-    finally { terminalScreen?.SetFooter(IdleFooter()); }
+    finally { terminalScreen?.SetFooter(presentation.IdleFooter()); }
 }
 
 void RefreshProjectUi()
 {
     terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(projectBinding.Store, editor);
-    RefreshTerminalTheme();
+    presentation.RefreshTerminalTheme();
     terminalScreen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
 }
 Task ReloadResources() => projectTransitions.ReloadAsync(usesDefaultToolsSetting,
-    ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, LoadSessionTranscript);
+    presentation.ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, presentation.LoadSessionTranscript);
 void AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.Adopt(replacement,
-    ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, () =>
+    presentation.ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, () =>
     {
-        terminalScreen?.SetFooter(IdleFooter());
-        LoadSessionTranscript();
+        terminalScreen?.SetFooter(presentation.IdleFooter());
+        presentation.LoadSessionTranscript();
     });
 Task<bool> SwitchProjectSessionAsync(string reference, CancellationToken token) =>
     projectTransitions.SwitchAsync(reference, AdoptProjectSession, token);
@@ -664,7 +523,7 @@ else
                 var argument = split < 0 ? "" : line[(split + 1)..].Trim();
                 var sessionCommands = new InteractiveSessionCommands(projectBinding.Store, projectBinding.WorkingDirectory, projectBinding.Arguments.NoSession,
                     Console.Out, () => editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false),
-                    LoadSessionTranscript);
+                    presentation.LoadSessionTranscript);
                 if (!await sessionCommands.TryExecuteAsync(command, argument, conversationBinding.Conversation, conversationBinding.Run, conversationBinding.Path))
                 {
                     switch (command)
@@ -688,11 +547,11 @@ else
                             break;
                         case "/login":
                             await terminalProviderLogin!.ShowAsync(argument);
-                            terminalScreen?.SetFooter(IdleFooter());
+                            terminalScreen?.SetFooter(presentation.IdleFooter());
                             break;
                         case "/llama":
                             await terminalLlamaManager!.ShowAsync(argument);
-                            terminalScreen?.SetFooter(IdleFooter());
+                            terminalScreen?.SetFooter(presentation.IdleFooter());
                             break;
                         case "/logout":
                             await terminalProviderCommands.LogoutAsync(argument, modelTransitions.ReplaceAsync);
@@ -743,7 +602,7 @@ else
                             else
                                 branch = await projectTransitions.Sessions.NewAsync(conversationBinding.Conversation, conversationBinding.Path, conversationBinding.Path);
                             conversationBinding.Adopt(branch.Conversation, branch.Run, branch.Path);
-                            LoadSessionTranscript();
+                            presentation.LoadSessionTranscript();
                             Console.WriteLine($"{command[1..]}: {conversationBinding.Path ?? "(ephemeral)"}");
                             break;
                         default:
@@ -755,7 +614,7 @@ else
                 }
             }
             catch (Exception e) { Console.Error.WriteLine($"Session error: {e.Message}"); Environment.ExitCode = 1; }
-            terminalScreen?.SetFooter(IdleFooter());
+            terminalScreen?.SetFooter(presentation.IdleFooter());
             continue;
         }
         await Run(line);
