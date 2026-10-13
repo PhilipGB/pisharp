@@ -93,13 +93,13 @@ Console.WriteLine(JsonSerializer.Serialize(output, new JsonSerializerOptions(Jso
     '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
     '<OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>'
     '</PropertyGroup><ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Cli/PiSharp.Cli.csproj" />'
-    '</ItemGroup></Project>\n'.replace("repo", str(repo))
+    '</ItemGroup></Project>\n'.replace("{repo}", str(repo))
 )
 (work / "pi.mjs").write_text(
-    "import  createLlamaProvider  from 'pi/packages/coding-agent/src/extensions/llama/provider.ts';\n"
+    "import { createLlamaProvider } from '{pi}/packages/coding-agent/src/extensions/llama/provider.ts';\n"
     "const url=process.argv[2];\n"
     "const controller=createLlamaProvider();\n"
-    "await controller.provider.refreshModels?.(credential:type:'api_key',key:'local',env:{LLAMA_BASE_URL:url,"
+    "await controller.provider.refreshModels?.({credential:{type:'api_key',key:'local',env:{LLAMA_BASE_URL:url}},"
     "stored:undefined,publish:async publication=>{publication.update?.();return true;},allowNetwork:true,"
     "signal:new AbortController().signal});\n"
     "const context={state:{message:'fixture'},questions:{safe:{type:'bool',instructions:'Is the state safe?',"

@@ -56,7 +56,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-theme-differential-') as direct
         ['dotnet', str(work / 'bin/Debug/net10.0/PiSharp.Tests.dll'), encoded], env=environment, timeout=30))
     oracle = pi / 'packages/coding-agent/test/pisharp-theme-differential.test.ts'
     if oracle.exists():
-        raise RuntimeError(f'Refusing to overwrite oracle')
+        raise RuntimeError(f'Refusing to overwrite {oracle}')
     shutil.copyfile(probes / 'system-theme-probe.pi.test.ts', oracle)
     try:
         environment['PISHARP_THEME_SCENARIOS'] = encoded
@@ -72,4 +72,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-theme-differential-') as direct
         normalization='Compare exact ANSI color prefixes for every foreground/background role plus appearance; no color or style normalization. This fixture does not compare component layout or text reset sequences.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched len(scenarios) system-theme palettes.')
+    print(f'Matched {len(scenarios)} system-theme palettes.')

@@ -30,7 +30,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-tool-batch-parity-') as directo
     environment.setdefault('NUGET_HTTP_CACHE_PATH', '/tmp/pisharp-nuget-http')
     subprocess.run(['dotnet', 'build', str(work / 'probe.csproj'), '-p:UseSharedCompilation=false', '-m:1'],
                    env=environment, check=True, stdout=subprocess.DEVNULL, timeout=120)
-    evidence = 'cases': []
+    evidence = {'cases': []}
     for flags in [[[True, True]], [[True, False]], [[False, True]], [[False, False]], [[False, True], [True, True]]]:
         wire = json.dumps(flags)
         pisharp = json.loads(subprocess.check_output(['dotnet', str(work / 'bin/Debug/net10.0/probe.dll'), wire], timeout=25))
@@ -39,5 +39,5 @@ with tempfile.TemporaryDirectory(prefix='pisharp-tool-batch-parity-') as directo
             pi = json.loads(subprocess.check_output(['node', str(probes / 'tool-batch-probe.mjs'), args.pi, wire, mode], timeout=25))
             pi['results'].sort(key=lambda item: (item['name'], item['terminate']))
             assert pi == pisharp, (flags, mode, pi, pisharp)
-            evidence['cases'].append('flags': flags, 'piMode': mode, 'match': True, 'pi': pi, 'pisharp': pisharp)
+            evidence['cases'].append({'flags': flags, 'piMode': mode, 'match': True, 'pi': pi, 'pisharp': pisharp})
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')

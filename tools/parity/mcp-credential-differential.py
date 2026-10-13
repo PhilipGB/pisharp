@@ -64,7 +64,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-mcp-differential-') as director
         ['dotnet', str(work / 'bin/Debug/net10.0/PiSharp.Tests.dll'), encoded], env=environment, timeout=30))
     oracle = pi / 'packages/coding-agent/test/pisharp-credential-differential.test.ts'
     if oracle.exists():
-        raise RuntimeError(f'Refusing to overwrite oracle')
+        raise RuntimeError(f'Refusing to overwrite {oracle}')
     shutil.copyfile(probes / 'mcp-credential-probe.pi.test.ts', oracle)
     try:
         environment['PISHARP_CREDENTIAL_SCENARIOS'] = encoded
@@ -80,4 +80,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-mcp-differential-') as director
         normalization='Compare account tokens, operation results and exact persisted keys; omit SDK-specific token envelope and fixed timestamps.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched len(scenarios) credential scenarios.')
+    print(f'Matched {len(scenarios)} credential scenarios.')

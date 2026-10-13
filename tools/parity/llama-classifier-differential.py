@@ -49,11 +49,11 @@ Console.WriteLine(JsonSerializer.Serialize(new { baseline, image }, new JsonSeri
     '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
     '<OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>'
     '</PropertyGroup><ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Runtime/PiSharp.Runtime.csproj" />'
-    '</ItemGroup></Project>\n'.replace("repo", str(repo))
+    '</ItemGroup></Project>\n'.replace("{repo}", str(repo))
 )
 (work / "pi.mjs").write_text(
-    "import  classify  from 'pi/packages/ai/src/api/llama-cpp-classify.ts';\n"
-    "const context=state:text:'fixture',questions:{safe:{type:'bool',instructions:'safe?',criteria:{true:'safe',false:'unsafe'},"
+    "import { classify } from '{pi}/packages/ai/src/api/llama-cpp-classify.ts';\n"
+    "const context={state:{text:'fixture'},questions:{safe:{type:'bool',instructions:'safe?',criteria:{true:'safe',false:'unsafe'}},"
     "choice:{type:'choice',instructions:'choose',criteria:{a:'first',b:'second'}},"
     "score:{type:'score',instructions:'score',criteria:['low','high']}}};\n"
     "const imageContext={...context,images:[{type:'image',data:'AQID',mimeType:'image/png'}]};\n"

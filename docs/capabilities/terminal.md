@@ -6,22 +6,22 @@ those events without implementing another agent loop.
 
 ## Rendering flow
 
-[TerminalScreen](../../src/PiSharp.Cli/Tui/TerminalScreen.cs) owns terminal modes,
+[TerminalScreen](../../src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs) owns terminal modes,
 console-writer installation, the screen lock, viewport/editor/panel state and frame
 composition. Its public entry points preserve validation and shutdown behavior.
-[InteractiveTranscript](../../src/PiSharp.Cli/Tui/InteractiveTranscript.cs) translates
+[InteractiveTranscript](../../src/PiSharp.Cli/Tui/Rendering/InteractiveTranscript.cs) translates
 lifecycle events into streamed assistant updates, committed content and tool views.
 
-[TerminalConversationPresentation](../../src/PiSharp.Cli/Tui/TerminalConversationPresentation.cs)
+[TerminalConversationPresentation](../../src/PiSharp.Cli/Tui/Rendering/TerminalConversationPresentation.cs)
 owns live assistant/reasoning sources and rendered text, thinking visibility,
 Markdown indentation, user/skill spacing, tool projections and image registration.
-It projects into [TerminalTranscriptBuffer](../../src/PiSharp.Cli/Tui/TerminalTranscriptBuffer.cs),
+It projects into [TerminalTranscriptBuffer](../../src/PiSharp.Cli/Tui/Rendering/TerminalTranscriptBuffer.cs),
 which owns bounded retained segments, collapsed previews and scrollback capture.
 Theme/width accessors read current screen values, including callbacks retained for
 later theme reflow; they preserve the original width and palette lookup timing.
 Screen mutations call presentation under the existing screen lock.
 
-[TerminalRenderScheduler](../../src/PiSharp.Cli/Tui/TerminalRenderScheduler.cs) owns
+[TerminalRenderScheduler](../../src/PiSharp.Cli/Tui/Rendering/TerminalRenderScheduler.cs) owns
 timer lifetime, pending render state, timestamp and minimum-interval coalescing.
 Its timer callback takes the same screen lock; synchronous calls already hold it.
 Immediate modal rendering cancels pending work. Transcript replacement and shutdown
@@ -29,14 +29,14 @@ flush pending output before discarding state or restoring scrollback. Suspension
 cancels queued rendering; resuming repaints current state immediately. Deferral flags
 remain in the screen, which supplies an explicit render eligibility callback.
 
-[TerminalScreenNotifications](../../src/PiSharp.Cli/Tui/TerminalScreenNotifications.cs)
+[TerminalScreenNotifications](../../src/PiSharp.Cli/Tui/Rendering/TerminalScreenNotifications.cs)
 owns captured status/kind/origin, the originating sign-in URL and clipboard feedback.
 Clearing one auth origin cannot discard a newer origin's URL. Screen validates URLs
 and gates clipboard feedback on active panel visibility. Hyperlink/key-hint rendering
 keeps its original pre-lock timing and HTTP/HTTPS validation.
 
-[TerminalScreenCompositor](../../src/PiSharp.Cli/Tui/TerminalScreenCompositor.cs) composes
-rows and emits synchronized screen updates. [TerminalImageRenderer](../../src/PiSharp.Cli/Tui/TerminalImageRenderer.cs)
+[TerminalScreenCompositor](../../src/PiSharp.Cli/Tui/Rendering/TerminalScreenCompositor.cs) composes
+rows and emits synchronized screen updates. [TerminalImageRenderer](../../src/PiSharp.Cli/Tui/Rendering/TerminalImageRenderer.cs)
 owns terminal image protocol placement and cleanup. Search/mouse/viewport components
 retain navigation and selection. Screen keeps shutdown ordering visible: pending
 render, timer disposal, writer restoration, image/mouse/keyboard mode cleanup,
@@ -44,26 +44,26 @@ normal-buffer document/scrollback restoration.
 
 ## Input and actions
 
-[TerminalEditor](../../src/PiSharp.Cli/Tui/TerminalEditor.cs) uses EditorBuffer,
+[TerminalEditor](../../src/PiSharp.Cli/Tui/Editor/TerminalEditor.cs) uses EditorBuffer,
 EditorKeymap, EditorCompletion and TerminalInput for draft editing and dispatches
 application actions through callbacks composed by Program. Dialogs and progress
 panels consume the same input/mode components. Editor retains ordinary draft editing,
 completion/history, active-run queue/abort and application shortcut dispatch. It owns
 the lazily opened console input and its terminal-response subscriptions.
 
-[TerminalDialogs](../../src/PiSharp.Cli/Tui/TerminalDialogs.cs) owns selector/model-refresh
+[TerminalDialogs](../../src/PiSharp.Cli/Tui/Dialogs/TerminalDialogs.cs) owns selector/model-refresh
 and prompt input loops, including redirected prompt fallback, panel preservation and
-mode cleanup. [TerminalDialogPanels](../../src/PiSharp.Cli/Tui/TerminalDialogPanels.cs)
+mode cleanup. [TerminalDialogPanels](../../src/PiSharp.Cli/Tui/Dialogs/TerminalDialogPanels.cs)
 owns their concrete row, cursor and key-hint rendering. Model refresh retains its
 15-second cancellation bound and shows cached choices when refresh fails.
-[TerminalProgressDisplay](../../src/PiSharp.Cli/Tui/TerminalProgressDisplay.cs) owns the
+[TerminalProgressDisplay](../../src/PiSharp.Cli/Tui/Dialogs/TerminalProgressDisplay.cs) owns the
 16-millisecond initial-frame delay, synchronized progress updates, operation settlement,
 cancel confirmation and backend/after-cancel ordering. Fast success or failure never
 opens a transient progress panel; failure preserves the original exception.
 
-[TerminalTranscriptSearchInput](../../src/PiSharp.Cli/Tui/TerminalTranscriptSearchInput.cs)
+[TerminalTranscriptSearchInput](../../src/PiSharp.Cli/Tui/Input/TerminalTranscriptSearchInput.cs)
 owns the saved draft/footer/cursor, remembered search query, match navigation and close
-restoration. [TerminalAuthorizationInput](../../src/PiSharp.Cli/Tui/TerminalAuthorizationInput.cs)
+restoration. [TerminalAuthorizationInput](../../src/PiSharp.Cli/Tui/Input/TerminalAuthorizationInput.cs)
 owns sign-in mouse/key/EOF handling and MCP authorization monitoring. Input and screen
 accessors use the editor's current bindings; owners do not cache an old attached screen.
 Editor entry points keep application callers together, while these owners execute

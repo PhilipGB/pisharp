@@ -39,7 +39,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-deferred-differential-') as dir
         ['dotnet', str(work / 'bin/Debug/net10.0/PiSharp.Tests.dll'), encoded], env=environment, timeout=30))
     oracle = pi / 'packages/coding-agent/test/suite/pisharp-deferred-differential.test.ts'
     if oracle.exists():
-        raise RuntimeError(f'Refusing to overwrite oracle')
+        raise RuntimeError(f'Refusing to overwrite {oracle}')
     shutil.copyfile(probes / 'deferred-tool-probe.pi.test.ts', oracle)
     try:
         environment['PISHARP_DEFERRED_SCENARIOS'] = encoded
@@ -55,4 +55,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-deferred-differential-') as dir
         normalization='Compare ordered active names before and after registration, provider request tool names and persisted loadout names; omit unrelated messages, metadata and IDs.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched len(scenarios) deferred-tool scenarios.')
+    print(f'Matched {len(scenarios)} deferred-tool scenarios.')

@@ -51,7 +51,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-radius-mcp-differential-') as d
         ['dotnet', str(work / 'bin/Debug/net10.0/PiSharp.Tests.dll'), encoded], env=environment, timeout=30))
     oracle = pi / 'packages/coding-agent/test/pisharp-radius-mcp-differential.test.ts'
     if oracle.exists():
-        raise RuntimeError(f'Refusing to overwrite oracle')
+        raise RuntimeError(f'Refusing to overwrite {oracle}')
     shutil.copyfile(probes / 'radius-mcp-probe.pi.test.ts', oracle)
     try:
         environment['PISHARP_RADIUS_SCENARIOS'] = encoded
@@ -67,4 +67,4 @@ with tempfile.TemporaryDirectory(prefix='pisharp-radius-mcp-differential-') as d
         normalization='Exact offer presence and full resulting global JSON. No configuration normalization. UI rendering, credential exchange, cancellation navigation and actual runtime reload are separate terminal coverage.',
         scenarios=scenarios, pi=pi_results, pisharp=pisharp_results, match=True)
     pathlib.Path(args.output).write_text(json.dumps(evidence, indent=2) + '\n')
-    print(f'Matched len(scenarios) radius-mcp MCP setup scenarios.')
+    print(f'Matched {len(scenarios)} radius-mcp MCP setup scenarios.')

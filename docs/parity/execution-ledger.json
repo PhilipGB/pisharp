@@ -227,7 +227,7 @@
         "AgentRunRetryPolicy classifies model is at capacity as a transient assistant/provider error, retaining enabled/budget/backoff/cancellation and billing/quota precedence through the existing shared MAF/ConversationRun path."
       ],
       "evidence": [
-        "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/how-pi-works.md and packages/agent/src/agent-loop.ts,agent.ts: provider response -> tools/results -> continuation, queued later turns, partial/error hard exit, and session transcript model were used as the behavioral reference.",
+        "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/how-pi-works.md and packages/agent/src/{agent-loop.ts,agent.ts}: provider response -> tools/results -> continuation, queued later turns, partial/error hard exit, and session transcript model were used as the behavioral reference.",
         "dotnet test PiSharp.slnx --no-restore --filter 'FullyQualifiedName~AgentLifecycleTests|FullyQualifiedName~RpcModeTests' => 14 passed: combined fixture fails once before output, retries, writes via a streamed tool call, continues after its result, queues a second prompt while streaming, verifies prior turn/tool result in the next request, persists two user turns, and settles once; partial-output failure fixture proves one request/no retry and retained partialText; RPC fixture proves busy prompt queueing through the application adapter.",
         "Existing AgentIntegrationTests.ModelToolCallWritesFileAndContinuesStreaming and TwoToolCallsRetainResultsAndContinueInOneModelTurn behaviorally verify streamed FunctionCallContent/FunctionResultContent, actual side effects, model continuation and canonical result persistence.",
         "Existing AgentLifecycleTests.CancelledProviderReportsInterruptionAndSettlement verifies cancellation emits interruption then settlement without successful completion.",
@@ -258,9 +258,9 @@
       "implementation": [
         "src/PiSharp.Runtime/Sessions/ConversationRun.cs and PendingPrompts.cs: separate ordered steering/follow-up queues, lifecycle snapshots, atomic clear/return, steering dequeue at provider boundaries, and pending preservation after interruption.",
         "src/PiSharp.Runtime/Agents/PiAgent.cs and Sessions/ObservedChatClient.cs: MAF ChatClientAgent concurrent function invocation is enabled; steering is inserted before a continuation provider request and then reconciled into AgentSession history after the preceding tool result.",
-        "src/PiSharp.Cli/Tui/TerminalEditor,TerminalInput,EditorBuffer.cs and Program.cs: input stays active while a run streams; Enter steers, Alt+Enter follows up, Alt+Up dequeues, Escape/Ctrl+C abort, and unsent queue plus draft return to the editor.",
+        "src/PiSharp.Cli/Tui/{Editor/TerminalEditor,Input/TerminalInput,Editor/EditorBuffer}.cs and Program.cs: input stays active while a run streams; Enter steers, Alt+Enter follows up, Alt+Up dequeues, Escape/Ctrl+C abort, and unsent queue plus draft return to the editor.",
         "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: distinct steer, follow_up, clear_queue commands and queue state/events share the application runtime.",
-        "tests/PiSharp.Tests/AgentLifecycleTests,RpcModeTests,TerminalInputTests.cs: deterministic queue-boundary, abort restoration, key routing, RPC, transcript ordering, and concurrent-tool overlap fixtures.",
+        "tests/PiSharp.Tests/{AgentLifecycleTests,RpcModeTests,TerminalInputTests}.cs: deterministic queue-boundary, abort restoration, key routing, RPC, transcript ordering, and concurrent-tool overlap fixtures.",
         "src/PiSharp.Runtime/Sessions/PromptDeliveryQueue.cs and ConversationRun.cs: independently configure steering/follow-up delivery as one-at-a-time or all; all-mode drains distinct messages in queue order at provider boundaries and after turns.",
         "src/PiSharp.Cli/Protocols/Rpc/RpcQueueModeCommandHandler.cs and RpcUserSettingsController.cs: validated mode setters persist global settings and update the active canonical run; get_state exposes both modes and pending count."
       ],
@@ -291,13 +291,13 @@
       ],
       "implementation": [
         "src/PiSharp.Runtime/Sessions/UsageAccounting.cs, ConversationSession.cs, ConversationRun.cs, SessionStatistics.cs, and AgentLifecycleEvent.cs: structured MAF reasoning/usage events, branch-local durable provider and compaction usage, explicit-price cost calculation, usage-aware context budgeting, and selected-branch totals.",
-        "src/PiSharp.Runtime/Agents/PiAgent.cs and Sessions/ConversationRun,ConversationSession,AutoCompactionPolicy.cs: tool-free MAF summary generation with usage, validated summary checkpoints, summary-plus-whole-tail context projection, manual compaction, and pre-prompt automatic compaction with rollback on summary/restore/save failure.",
+        "src/PiSharp.Runtime/Agents/PiAgent.cs and Sessions/{ConversationRun,ConversationSession,AutoCompactionPolicy}.cs: tool-free MAF summary generation with usage, validated summary checkpoints, summary-plus-whole-tail context projection, manual compaction, and pre-prompt automatic compaction with rollback on summary/restore/save failure.",
         "src/PiSharp.Runtime/Providers/ModelCatalog.cs and src/PiSharp.Cli/Program.cs: context/reasoning/pricing metadata parsing, explicit environment context/pricing configuration, interactive reasoning/usage display, and token/cost session reporting.",
-        "tests/PiSharp.Tests/AgentLifecycleTests,CompactionTests,ModelCatalogTests,RpcModeTests.cs: deterministic application lifecycle, restart accounting, model metadata, manual/RPC/automatic compaction, atomic tool-group context, and rollback fixtures.",
+        "tests/PiSharp.Tests/{AgentLifecycleTests,CompactionTests,ModelCatalogTests,RpcModeTests}.cs: deterministic application lifecycle, restart accounting, model metadata, manual/RPC/automatic compaction, atomic tool-group context, and rollback fixtures.",
         "src/PiSharp.Cli/Configuration/UserSettings.cs and Sessions/AutoCompactionPolicy.cs use Pi defaults of 16,384 reserve tokens and 20,000 keep-recent tokens; ModelRuntimeController propagates model-specific recent-token settings through queued runtime changes. ConversationSession and ConversationCompactionCoordinator apply the oversized trailing tool-result fallback and closed recovery-omission suffix boundary. ConversationRun does not reject prompts or allocate an impossible in-flight budget when the reserve leaves a nonpositive threshold."
       ],
       "evidence": [
-        "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/models.md,compaction.md, packages/coding-agent/src/core/compaction/compaction.ts,utils.ts,branch-summarization.ts,index.ts, core/session-manager.ts buildSessionProjection/buildSessionContext, core/usage-totals.ts, and model metadata tests. The local slice follows summary-plus-retained-tail projection, non-context usage records, provider-usage-first threshold estimation, atomic tool call/result retention, and summary usage accounting.",
+        "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/{models.md,compaction.md}, packages/coding-agent/src/core/compaction/{compaction.ts,utils.ts,branch-summarization.ts,index.ts}, core/session-manager.ts buildSessionProjection/buildSessionContext, core/usage-totals.ts, and model metadata tests. The local slice follows summary-plus-retained-tail projection, non-context usage records, provider-usage-first threshold estimation, atomic tool call/result retention, and summary usage accounting.",
         "AgentLifecycleTests.ReasoningAndProviderUsageStreamAndPersistWithCalculatedCost drives the MAF ChatClientAgent application path with TextReasoningContent and UsageContent; it verifies streamed reasoning, structured input/output/cache/reasoning/total counts, explicit per-million cost arithmetic, canonical non-context usage persistence, session totals, and JSON restart survival.",
         "CompactionTests behaviorally verify manual summary focus, repeated summary-plus-tail projection after restart, branch restoration of raw history, RPC compaction, provider usage accounting for summaries, automatic compaction before prompt acceptance from both usage and fallback estimates, whole tool-call/result retention, and unchanged head/context when summarization or checkpointing fails.",
         "ModelCatalogTests.ModelMetadataParsesContextReasoningAndBothPricingConventions verifies deterministic context-window/reasoning metadata plus Pi per-million and OpenRouter per-token pricing fixtures; invalid pricing remains unknown rather than inventing cost.",
@@ -347,15 +347,15 @@
         "Use current models.dev metadata for Anthropic Claude 5.5 models, including prompt-length pricing tiers and adaptive-thinking support; keep Moonshot Kimi K3 pricing current."
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/ProviderModelRuntime,AuthStorage,ThinkingLevels,CliArguments,Program.cs selects configured OpenAI-compatible endpoints, adds model flags and interactive commands, and stores private credentials.",
-        "Partial: src/PiSharp.Runtime/Providers/ModelCatalog,Sessions/ConversationSession,Agents/PiAgent.cs records provider/model metadata, persists the provider ID, and passes reasoning options to MAF.",
+        "Partial: src/PiSharp.Cli/{Providers/ProviderModelRuntime,Authentication/AuthStorage,Providers/ThinkingLevels,Startup/CliArguments,Program}.cs selects configured OpenAI-compatible endpoints, adds model flags and interactive commands, and stores private credentials.",
+        "Partial: src/PiSharp.Runtime/{Providers/ModelCatalog,Sessions/ConversationSession,Agents/PiAgent}.cs records provider/model metadata, persists the provider ID, and passes reasoning options to MAF.",
         "src/PiSharp.Cli/Providers/ProviderProfileLoader.cs: bounded models.json parsing and provider endpoint/key-environment identity checks; src/PiSharp.Cli/Providers/BuiltinProviderProfiles.cs: pinned xAI Grok 4.3/4.5/4.6/4.7 Responses metadata; ProviderModelRuntime.ListModelsAsync uses static xAI catalogue without /models. xAI OAuth is not supported.",
-        "src/PiSharp.Cli/BuiltinProviderProfiles,ProviderChatClientFactory,ProviderModelRuntime.cs: Anthropic native Messages via Anthropic 12.50.0 MEAI adapter; three pinned Sonnet/Opus/Haiku entries, model-specific budget and adaptive/extended thinking dispatch, and reserved endpoint/key environment. OAuth sign-in and full model catalog remain absent.",
+        "src/PiSharp.Cli/{Providers/BuiltinProviderProfiles,Providers/ProviderChatClientFactory,Providers/ProviderModelRuntime}.cs: Anthropic native Messages via Anthropic 12.50.0 MEAI adapter; three pinned Sonnet/Opus/Haiku entries, model-specific budget and adaptive/extended thinking dispatch, and reserved endpoint/key environment. OAuth sign-in and full model catalog remain absent.",
         "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs and ProviderChatClientFactory.cs: Anthropic AUTH_TOKEN, OAUTH_TOKEN and API_KEY resolution precedes Anthropic-only workload identity federation; file-backed SDK credentials own token exchange/refresh while ambient SDK resolution is disabled. OAuth sign-in remains a separate open gap.",
-        "src/PiSharp.Cli/Tui/TerminalModelPicker.cs and ProviderModelRuntime.cs: Ctrl+L or /model opens searchable all/scoped catalog views and can resolve an out-of-scope choice without changing the configured cycling scope.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalModelPicker.cs and ProviderModelRuntime.cs: Ctrl+L or /model opens searchable all/scoped catalog views and can resolve an out-of-scope choice without changing the configured cycling scope.",
         "src/PiSharp.Cli/Protocols/Rpc/RpcModelProjector.cs emits the Pi model fields consistently for get_available_models, set_model, cycle_model and get_state; ModelMetadataJson and ModelInputLimits preserve Pi-shaped catalog/config data, and provider/model compatibility uses Pi-compatible nested merges.",
-        "src/PiSharp.Cli/MistralModelCatalog,BuiltinProviderProfiles,ProviderModelRuntime.cs embeds the current Pi snapshot of all 33 Mistral chat models and lists it statically without a generic /models probe; reasoning maps, image modalities, input limits, costs and the Mistral API identifier are retained. Unknown PISHARP_MISTRAL_MODEL values remain selectable alongside the built-in catalog.",
-        "src/PiSharp.Cli/AzureOpenAiRequestHandler,AzureOpenAiChatOptionsClient,AzureOpenAiModelCatalog,ProviderChatClientFactory.cs: Azure Responses API-key boundary, configurable API-version/deployment mapping, per-session prompt_cache_key and embedded 43-model snapshot. Exact-head CI is green; provider-wide image/tool/usage/error differential evidence remains incomplete.",
+        "src/PiSharp.Cli/{Providers/Mistral/MistralModelCatalog,Providers/BuiltinProviderProfiles,Providers/ProviderModelRuntime}.cs embeds the current Pi snapshot of all 33 Mistral chat models and lists it statically without a generic /models probe; reasoning maps, image modalities, input limits, costs and the Mistral API identifier are retained. Unknown PISHARP_MISTRAL_MODEL values remain selectable alongside the built-in catalog.",
+        "src/PiSharp.Cli/{Providers/AzureOpenAI/AzureOpenAiRequestHandler,Providers/AzureOpenAI/AzureOpenAiChatOptionsClient,Providers/AzureOpenAI/AzureOpenAiModelCatalog,Providers/ProviderChatClientFactory}.cs: Azure Responses API-key boundary, configurable API-version/deployment mapping, per-session prompt_cache_key and embedded 43-model snapshot. Exact-head CI is green; provider-wide image/tool/usage/error differential evidence remains incomplete.",
         "src/PiSharp.Cli/Providers/Anthropic/AnthropicThinkingSignatureClient.cs: replays unsigned Anthropic-compatible assistant reasoning as text unless model compat.allowEmptySignature is true; preserves signed thinking and applies a request-only MAF projection.",
         "Anthropic now exposes OAuth through `AnthropicOAuthAdapter`: browser PKCE and headless copy-code login, validated callback/input state, token refresh, private AuthStorage persistence, and the existing Anthropic OAuth request-token projection. Console code input is masked; API-key and environment-token precedence remains intact.",
         "Audit of Pi ee409a85: the key-personalized OpenRouter catalog is not implemented. PiSharp performs generic /models discovery and does not fetch authenticated /models/user data or persist the personalized catalog; this remains queued behind Resources / Instructions / Trust and the named upstream deltas."
@@ -372,7 +372,7 @@
         "tests/PiSharp.Tests/ProviderModelRuntimeTests.cs: xAI pinned Grok 4.3/4.5/4.6/4.7 API/price/static catalog and credential isolation, no invented unknown-model metadata, and six endpoint/key-env leakage rejection cases; local format/build/full 233-test suite passes, but no xAI account/OAuth request or upstream differential.",
         "ProviderProfileLoader canonicalizes case-variant built-in provider IDs; ProviderModelRuntimeTests.CaseVariantBuiltInOverrideKeepsCanonicalIdentityAndProtocol verifies uppercase ANTHROPIC override preserves native Messages dispatch, model owner and isolated credential. This is local identity evidence, not upstream differential.",
         "ProviderChatClientFactoryTests: Anthropic loopback verifies /v1/messages, x-api-key (not Bearer), Anthropic version, model-specific max_tokens, nonstream usage, SSE text/tool-call-result continuation, and inline PNG image blocks and AnthropicReasoningUsesPinnedModelThinkingMode verifies adaptive/effort vs extended/budget; ProviderModelRuntimeTests.AnthropicUsesItsOwnCredentialAndStaticMessagesCatalog: three pinned model prices/limits/modalities against d5629e2, known/unknown default overrides, credential isolation and no OpenAI /models probe. No live Anthropic account, reasoning/advanced usage semantics, OAuth or pinned Pi request differential.",
-        "tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: protocol selection for OpenAI Responses vs compatible Completions, unsupported API refusal, loopback Responses SSE request, nonstream usage and stateless history, function-call/tool-result continuation without previous_response_id, and subprocess unsupported-API refusal; src/PiSharp.Cli/ProviderChatClientFactory,StatelessResponsesChatClient.cs keeps canonical MAF history. No live hosted-provider or OAuth differential.",
+        "tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: protocol selection for OpenAI Responses vs compatible Completions, unsupported API refusal, loopback Responses SSE request, nonstream usage and stateless history, function-call/tool-result continuation without previous_response_id, and subprocess unsupported-API refusal; src/PiSharp.Cli/{Providers/ProviderChatClientFactory,Providers/OpenAI/StatelessResponsesChatClient}.cs keeps canonical MAF history. No live hosted-provider or OAuth differential.",
         "TerminalSelectionListTests plus ProviderModelRuntimeTests Linux PTY cover filtered all/scoped selection, out-of-scope resolution and VT navigation. Local suite passes 421/421; exact code head bb576e37c09a8fde1734f03e966e5233f62aabdd passed Linux CI run 36132336108; fuzzy scoring has no current-Pi differential, scoped-model editing/default persistence and provider/auth breadth remain open.",
         "RpcModelProcessTests.ModelCommandsProjectPiModelMetadataAndApplySparseDefaultsInTheCliProcess covers rich/sparse model projections, configured model endpoints, provider/model metadata merges, unavailable models, and header/credential isolation through a real CLI RPC process.",
         "Exact source head 49233922512294af3dd4a34381fb0d7e1e52e78d passed Linux CI run 36276515605: format passed, warnings-as-errors build passed with 0 warnings/errors, and 604 tests passed (0 failed, 0 skipped).",
@@ -437,12 +437,12 @@
         "Verify through application workflow and compare packages/coding-agent/src/core/tools/write.ts, file-mutation-queue.ts; CodingTools.Write; atomic-write/mode/symlink tests"
       ],
       "implementation": [
-        "src/PiSharp.Runtime/Tools/CodingTools.cs serializes same-path writes through FileMutationQueue and returns Pi's `Successfully wrote to path` result text. FileMutationQueue.ResolveExistingPath canonicalizes each existing symlink component so an existing target reached through a directory symlink uses the same lock key as its real path; missing targets retain their original absolute path key.",
+        "src/PiSharp.Runtime/Tools/CodingTools.cs serializes same-path writes through FileMutationQueue and returns Pi's `Successfully wrote to {path}` result text. FileMutationQueue.ResolveExistingPath canonicalizes each existing symlink component so an existing target reached through a directory symlink uses the same lock key as its real path; missing targets retain their original absolute path key.",
         "src/PiSharp.Runtime/Tools/AtomicFileWriter.cs creates parent directories, writes a same-directory temporary file, follows existing symlinks, preserves existing Linux mode and atomically replaces the target; new Linux files are private (`0600`).",
         "Linux EISDIR for directory targets, EACCES for denied mkdir/open operations, EEXIST for a direct file parent, and ENOTDIR for a file ancestor now use Node-style error messages. The EACCES open, EISDIR, EEXIST and ENOTDIR mappings have fixtures; the separate EACCES mkdir branch lacks a reliable fixture. Other I/O failures retain managed error text. Differences from Pi's direct fs/promises write remain: replacement is atomic rather than in-place, new-file mode differs from Node's platform default, read-only existing target behavior differs, cancellation can leave an existing target unchanged, and replacing a hard-linked path does not update its other hard links."
       ],
       "evidence": [
-        "Pinned and refreshed Pi write.ts return `Successfully wrote to path` with undefined details and call recursive mkdir followed by fsWriteFile; the inspected write and file-mutation-queue sources are unchanged between d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and 5fd446ca1843682e8da3fec4ceb71c42f56fbace.",
+        "Pinned and refreshed Pi write.ts return `Successfully wrote to {path}` with undefined details and call recursive mkdir followed by fsWriteFile; the inspected write and file-mutation-queue sources are unchanged between d5629e20489ccf770ed90b5a33941cb3b7ef24d0 and 5fd446ca1843682e8da3fec4ceb71c42f56fbace.",
         "tests/PiSharp.Tests/CodingToolsTests.cs: WriteReadAndEditResolveAgainstWorkingDirectory checks nested creation and exact result text; WriteToDirectoryUsesNodeEisdirError checks EISDIR; WritePermissionDeniedUsesNodeEaccesError checks denied-open EACCES; WriteUnderFileParentsUsesNodeEexistAndEnotdirErrors checks EEXIST and ENOTDIR; AtomicWritePreservesTargetOnCancellationAndFollowsSymlinks checks private mode, cancellation, symlink target and existing mode preservation; FileMutationQueueSerializesExistingTargetsThroughDirectorySymlinks uses a deterministic barrier to prove aliases share a lock. CodingToolsTests pass 19/19. A direct Node v24.21 probe confirmed the Linux error strings.",
         "Current local validation: format verification passed; Release warnings-as-errors build succeeded with 0 warnings/errors; Release suite passed 375/375 with 0 skipped. Edit commit CI run 36098970353 passed; write queue fix af68552a1 passed Linux CI run 36099478186."
       ],
@@ -460,7 +460,7 @@
       ],
       "implementation": [
         "src/PiSharp.Core/FileEdits.cs uses Pi's ECMAScript trimEnd whitespace set for fuzzy matching, avoiding false matches on U+0085 and allowing Pi-compatible U+FEFF trimming.",
-        "src/PiSharp.Runtime/Tools/CodingTools.cs checks edit targets with a read/write open and reports missing files as `Could not edit file: path. Error code: ENOENT.`; successful edit text remains `Successfully replaced count block(s) in path.`.",
+        "src/PiSharp.Runtime/Tools/CodingTools.cs checks edit targets with a read/write open and reports missing files as `Could not edit file: {path}. Error code: ENOENT.`; successful edit text remains `Successfully replaced {count} block(s) in {path}.`.",
         "src/PiSharp.Core/FileEditDiff.cs computes line-numbered display diffs, four-context unified patches and firstChangedLine from the normalized edit plan; Myers trace work is bounded at edit distance 1024, with a complete linear remove/add preview fallback.",
         "src/PiSharp.Runtime/Tools/CodingTools.cs exposes structured edit details to runtime history and lifecycle events; ObservedChatClient flattens them to the success text at the provider boundary."
       ],
@@ -552,8 +552,8 @@
       "implementation": [
         "src/PiSharp.Cli/Startup/CliFileArguments.cs: positional @file PNG/JPEG/GIF/WebP signature/size validation and DataContent; src/PiSharp.Cli/Program.cs: model modality refusal and prompt assembly",
         "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: read-image attachment expansion plus images.blockImages provider-boundary filtering while retaining canonical session images; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs: SkiaSharp decode, BMP conversion and bounded resize",
-        "src/PiSharp.Cli/Tui/TerminalClipboard.cs, ClipboardImageStore.cs and Program.cs: bounded image-first clipboard paste validates/normalizes through the Skia read pipeline, saves a private temporary file, inserts its path for the read tool, and falls back to text; Linux Wayland/X11 and WSL PowerShell image paths are covered.",
-        "src/PiSharp.Cli/Tui/TerminalImageCapabilities.cs, TerminalImageLayout.cs, TerminalImageRenderer.cs, TerminalScreen.cs and TerminalScreenCompositor.cs: accepted prompt and read-tool DataContent images use conservative Kitty/iTerm2 detection, Pi #8938 distortion-aware sizing, bounded transcript-safe markers and byte/raster budgets, redraw placement, cleanup and safe text fallback."
+        "src/PiSharp.Cli/Tui/Clipboard/TerminalClipboard.cs, ClipboardImageStore.cs and Program.cs: bounded image-first clipboard paste validates/normalizes through the Skia read pipeline, saves a private temporary file, inserts its path for the read tool, and falls back to text; Linux Wayland/X11 and WSL PowerShell image paths are covered.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalImageCapabilities.cs, TerminalImageLayout.cs, TerminalImageRenderer.cs, TerminalScreen.cs and TerminalScreenCompositor.cs: accepted prompt and read-tool DataContent images use conservative Kitty/iTerm2 detection, Pi #8938 distortion-aware sizing, bounded transcript-safe markers and byte/raster budgets, redraw placement, cleanup and safe text fallback."
       ],
       "evidence": [
         "tests/PiSharp.Tests/MultimodalRuntimeTests.cs: fake-provider image request and session round-trip/blocking; tests/PiSharp.Tests/ProviderChatClientFactoryTests.cs: loopback Responses request transports PNG DataContent as input_image data URL, not plain text",
@@ -576,29 +576,29 @@
         "Verify through application workflow and compare docs/tui.md, docs/terminal-setup.md; packages/tui/src/tui.ts, tui-alt-screen.ts; packages/coding-agent/src/modes/interactive/; VT renderer, pseudo-terminal snapshots"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/TerminalInput.cs, TerminalColorResponse.cs and TerminalScreen.cs: coordinated OSC 10/11/4 plus DA1 replies build the generated system theme; appearance changes trigger re-query and dependent screen re-rendering.",
-        "src/PiSharp.Cli/Tui/TerminalScreen.cs: active-run alternate-screen compositor now supports bounded transcript scrolling and rendered-text search with highlighted/cycling matches; src/PiSharp.Cli/Tui/TerminalEditor.cs preserves and restores the follow-up draft when search closes.",
-        "src/PiSharp.Cli/Tui/TerminalInput.cs: standard CSI PageUp/PageDown sequences decode alongside the existing modified-key forms.",
-        "src/PiSharp.Cli/Tui/TerminalScreen.cs and InteractiveTranscript.cs: completed tool-result text is retained as a bounded screen segment and collapsed to ten visual content rows by default, followed by a width-clipped count of hidden rows; the ANSI-aware preview is cached by width and recalculated after resize. Ctrl+O toggles all retained and future results. Narrow-width long-line and wrapped-multiline tests cover Bash, Codemode and MCP. Full text is captured for stderr scrollback replay after the active screen closes, subject to the existing 4 MB restore cap and 1 MB active-transcript cap; source a23ece8f7efc57415583c1d1b8ae2830f99490c6 passed exact-head Linux CI 36771008196 with 1015/1015 tests.",
-        "src/PiSharp.Cli/Tui/TerminalMarkdownRenderer.cs: basic GFM task lists render unchecked `[ ]` and checked `[x]` markers, including uppercase checked input; assistant content is reparsed while streaming.",
-        "src/PiSharp.Cli/Tui/TerminalMarkdownRenderer.cs: bounded GFM tables render in boxes with left/center/right alignment and display-width-aware wrapping; pipes in inline code and escaped pipes stay inside their cells, and table-cell inline styling is flattened. Tables that cannot fit their columns' minimum display widths retain source Markdown.",
-        "src/PiSharp.Cli/Tui/TerminalTextLayout.cs: shared ANSI-aware terminal-cell measurement and hard wrapping, used by the active transcript compositor and Markdown table cells; preserves SGR/OSC 8 state at wrap boundaries, keeps grapheme clusters intact, and substitutes a one-cell fallback when a grapheme cannot fit.",
-        "src/PiSharp.Cli/Tui/TerminalMarkdownParser.cs and TerminalMarkdownRenderer.cs: Markdig 1.3.2 CommonMark AST with pipe tables, task lists, emphasis extras, autolinks and math nodes; separate block, inline and table terminal renderers sanitize model text, disable raw HTML markup and retain PiSharp control of ANSI output.",
-        "src/PiSharp.Cli/Tui/TerminalTranscriptBuffer.cs, TerminalTranscriptViewport.cs and TranscriptSearchController.cs: split bounded transcript state, width-aware viewport mapping and search/highlight state out of TerminalScreen, leaving screen lifecycle and composition in the coordinator.",
-        "src/PiSharp.Cli/Tui/TerminalOverlayHost,TerminalOverlayLayout,TerminalSelectionList.cs and TerminalScreen.cs: persistent idle alternate-screen application with reusable modal list rendering; TerminalEditor acquires reentrant raw mode for overlays.",
-        "src/PiSharp.Cli/Tui/TerminalSessionPicker.cs and Program.cs: no-argument /resume opens the reusable searchable project-session overlay, marks the active session, and preserves direct ID/name resume.",
-        "src/PiSharp.Cli/Tui/TerminalForkPicker.cs and Program.cs: no-argument /fork opens the shared searchable overlay, preselects the newest active-branch user message, and preserves direct-ID selection; previews and search excerpts are bounded.",
-        "src/PiSharp.Cli/Tui/TerminalInput.cs, TerminalMouseMode.cs and TerminalScreen.cs decode SGR mouse reports, own mouse tracking across screen lifecycle, scroll transcript rows, and route completed selections to the named copy action.",
-        "src/PiSharp.Cli/Tui/TranscriptSelectionController.cs and TerminalTextLayout.cs map rendered ANSI rows to terminal-cell/grapheme selection, produce copied text, and reapply inverse highlighting after embedded SGR resets; TerminalOverlayLayout.cs and TerminalSelectionList.cs route wheel input and visible option clicks through the shared picker.",
-        "src/PiSharp.Cli/Tui/TerminalMouseRouter.cs routes transcript, prompt and overlay gestures; EditorViewport.RowMaps maps visible grapheme cells to UTF-16 source offsets, and EditorSelectionController preserves original wrapped prompt text on copy while click placement stays on grapheme boundaries.",
-        "src/PiSharp.Cli/Tui/TerminalScreenCompositor.cs owns editor/transcript/footer row composition, overlay placement and ANSI frame output. TerminalScreen retains lifecycle and app state, and sends a complete frame to the compositor.",
-        "src/PiSharp.Cli/Tui/TerminalImageRenderer.cs and TerminalScreenCompositor.cs: render accepted prompt and read-tool images as bounded Kitty/iTerm2 blocks; text layout treats opaque row markers as zero width, compositor anchors every row explicitly after inline image protocols, and screen suspend/disposal restores Kitty placements/data.",
-        "src/PiSharp.Cli/Tui/TerminalTheme.cs and Themes/dark,light.json: Pi-shaped tokens, variables, OKLCH/hex/indexed colors, terminal default slots, appearance inference, and ANSI truecolor/256/no-color output; TerminalThemeCatalog discovers embedded, user, and trusted-project palettes.",
+        "src/PiSharp.Cli/Tui/Input/TerminalInput.cs, TerminalColorResponse.cs and TerminalScreen.cs: coordinated OSC 10/11/4 plus DA1 replies build the generated system theme; appearance changes trigger re-query and dependent screen re-rendering.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs: active-run alternate-screen compositor now supports bounded transcript scrolling and rendered-text search with highlighted/cycling matches; src/PiSharp.Cli/Tui/Editor/TerminalEditor.cs preserves and restores the follow-up draft when search closes.",
+        "src/PiSharp.Cli/Tui/Input/TerminalInput.cs: standard CSI PageUp/PageDown sequences decode alongside the existing modified-key forms.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs and InteractiveTranscript.cs: completed tool-result text is retained as a bounded screen segment and collapsed to ten visual content rows by default, followed by a width-clipped count of hidden rows; the ANSI-aware preview is cached by width and recalculated after resize. Ctrl+O toggles all retained and future results. Narrow-width long-line and wrapped-multiline tests cover Bash, Codemode and MCP. Full text is captured for stderr scrollback replay after the active screen closes, subject to the existing 4 MB restore cap and 1 MB active-transcript cap; source a23ece8f7efc57415583c1d1b8ae2830f99490c6 passed exact-head Linux CI 36771008196 with 1015/1015 tests.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalMarkdownRenderer.cs: basic GFM task lists render unchecked `[ ]` and checked `[x]` markers, including uppercase checked input; assistant content is reparsed while streaming.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalMarkdownRenderer.cs: bounded GFM tables render in boxes with left/center/right alignment and display-width-aware wrapping; pipes in inline code and escaped pipes stay inside their cells, and table-cell inline styling is flattened. Tables that cannot fit their columns' minimum display widths retain source Markdown.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalTextLayout.cs: shared ANSI-aware terminal-cell measurement and hard wrapping, used by the active transcript compositor and Markdown table cells; preserves SGR/OSC 8 state at wrap boundaries, keeps grapheme clusters intact, and substitutes a one-cell fallback when a grapheme cannot fit.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalMarkdownParser.cs and TerminalMarkdownRenderer.cs: Markdig 1.3.2 CommonMark AST with pipe tables, task lists, emphasis extras, autolinks and math nodes; separate block, inline and table terminal renderers sanitize model text, disable raw HTML markup and retain PiSharp control of ANSI output.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalTranscriptBuffer.cs, TerminalTranscriptViewport.cs and TranscriptSearchController.cs: split bounded transcript state, width-aware viewport mapping and search/highlight state out of TerminalScreen, leaving screen lifecycle and composition in the coordinator.",
+        "src/PiSharp.Cli/Tui/{Rendering/TerminalOverlayHost,Rendering/TerminalOverlayLayout,Dialogs/TerminalSelectionList}.cs and TerminalScreen.cs: persistent idle alternate-screen application with reusable modal list rendering; TerminalEditor acquires reentrant raw mode for overlays.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalSessionPicker.cs and Program.cs: no-argument /resume opens the reusable searchable project-session overlay, marks the active session, and preserves direct ID/name resume.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalForkPicker.cs and Program.cs: no-argument /fork opens the shared searchable overlay, preselects the newest active-branch user message, and preserves direct-ID selection; previews and search excerpts are bounded.",
+        "src/PiSharp.Cli/Tui/Input/TerminalInput.cs, TerminalMouseMode.cs and TerminalScreen.cs decode SGR mouse reports, own mouse tracking across screen lifecycle, scroll transcript rows, and route completed selections to the named copy action.",
+        "src/PiSharp.Cli/Tui/Input/TranscriptSelectionController.cs and TerminalTextLayout.cs map rendered ANSI rows to terminal-cell/grapheme selection, produce copied text, and reapply inverse highlighting after embedded SGR resets; TerminalOverlayLayout.cs and TerminalSelectionList.cs route wheel input and visible option clicks through the shared picker.",
+        "src/PiSharp.Cli/Tui/Input/TerminalMouseRouter.cs routes transcript, prompt and overlay gestures; EditorViewport.RowMaps maps visible grapheme cells to UTF-16 source offsets, and EditorSelectionController preserves original wrapped prompt text on copy while click placement stays on grapheme boundaries.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalScreenCompositor.cs owns editor/transcript/footer row composition, overlay placement and ANSI frame output. TerminalScreen retains lifecycle and app state, and sends a complete frame to the compositor.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalImageRenderer.cs and TerminalScreenCompositor.cs: render accepted prompt and read-tool images as bounded Kitty/iTerm2 blocks; text layout treats opaque row markers as zero width, compositor anchors every row explicitly after inline image protocols, and screen suspend/disposal restores Kitty placements/data.",
+        "src/PiSharp.Cli/Tui/Themes/TerminalTheme.cs and Themes/{dark,light}.json: Pi-shaped tokens, variables, OKLCH/hex/indexed colors, terminal default slots, appearance inference, and ANSI truecolor/256/no-color output; TerminalThemeCatalog discovers embedded, user, and trusted-project palettes.",
         "Program.cs, UserSettings.cs, UserSettingsWriter.cs and TerminalSettingsPicker.cs: scalar theme selection follows user/trusted-project precedence, supports light/dark pairing, updates the active screen after saves, exposes discovered names in /settings, and refreshes the catalog on /reload; Markdown, footer and modal surfaces consume shared theme tokens.",
-        "src/PiSharp.Cli/Tui/TerminalToolPresentation.cs: theme-token call/result formatting is separate from InteractiveTranscript and TerminalScreen; active transcript segments retain immutable renderer views so palette changes re-render them without retaining plugin callbacks. The transcript buffer supplies themed collapsed previews while image markers remain hidden until expansion.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalToolPresentation.cs: theme-token call/result formatting is separate from InteractiveTranscript and TerminalScreen; active transcript segments retain immutable renderer views so palette changes re-render them without retaining plugin callbacks. The transcript buffer supplies themed collapsed previews while image markers remain hidden until expansion.",
         "src/PiSharp.Runtime/Extensions/PiSharpToolRenderer.cs and ExtensionRegistration: extensions can provide semantic text-span renderers for tool calls/results; the host snapshots JSON arguments/views, strips terminal controls, bounds output, and falls back on null/empty views or callback errors.",
-        "src/PiSharp.Cli/Tui/TerminalTextLayout.cs: word-aware wrapping drops whitespace used for breaks, carries supported SGR/OSC 8 state across rows, and exposes LayoutResult rows and source-to-visual-row positions. TerminalTranscriptViewport and TerminalScreenCompositor share this layout for drawing, scrolling and search centering; TranscriptSearchController strips formatting while preserving raw offsets. TerminalMarkdownInlineRenderer closes nested styles and reapplies parent SGR state after code/link spans and emphasis.",
-        "src/PiSharp.Cli/Tui/TerminalColorQueryController.cs, TerminalColorResponse.cs, TerminalSystemTheme.cs and Program.cs: bounded coordinated OSC 10/11/4 plus DA1 querying feeds a generated `system` theme; appearance reports and COLORFGBG drive fallback selection, mode 2031 changes re-query and rebuild the active system/automatic theme, and theme changes re-render retained themed surfaces.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalTextLayout.cs: word-aware wrapping drops whitespace used for breaks, carries supported SGR/OSC 8 state across rows, and exposes LayoutResult rows and source-to-visual-row positions. TerminalTranscriptViewport and TerminalScreenCompositor share this layout for drawing, scrolling and search centering; TranscriptSearchController strips formatting while preserving raw offsets. TerminalMarkdownInlineRenderer closes nested styles and reapplies parent SGR state after code/link spans and emphasis.",
+        "src/PiSharp.Cli/Tui/Input/TerminalColorQueryController.cs, TerminalColorResponse.cs, TerminalSystemTheme.cs and Program.cs: bounded coordinated OSC 10/11/4 plus DA1 querying feeds a generated `system` theme; appearance reports and COLORFGBG drive fallback selection, mode 2031 changes re-query and rebuild the active system/automatic theme, and theme changes re-render retained themed surfaces.",
         "TerminalSystemTheme caps generated palette/foreground chroma at source chroma times the existing falloff. TerminalColorSpace shares OKLCH conversion with theme parsing; ANSI-256 gray selection chooses the lower entry on ties as Pi does."
       ],
       "evidence": [
@@ -617,7 +617,7 @@
         "TerminalScreenTests, EditorViewportTests and TerminalSelectionListTests pass 22/22 after the frame composition extraction. Local format verification, warnings-as-errors build and all 455 tests pass; exact commit 0d73b956ab42ad5760bca5eddff5f386608fdd62 passes Linux CI run 36156922067 with format, build and all 455 tests. Existing screen/scroll/search/picker fixtures exercise the composed output; this is a structural refactor, not new behavior evidence.",
         "TerminalImageRendererTests, TerminalScreenTests and AgentIntegrationTests cover detection, fallback, width/height/aspect sizing including current Pi #8938 vectors, cache pruning, Kitty upload/replacement/cleanup, iTerm2 cursor placement, user/read image lifecycle and binary-free serialized events. Exact code commit ff301f231d80b0ec81f093cf8d09d5b5b45b821c passes local format verification, warnings-as-errors build and 491/491 tests; Linux CI run 36172481288 passed restore, format verification, warnings-as-errors build and all 491 tests on exact head. Partial viewport image cropping and terminal cell-pixel probing remain unverified.",
         "TerminalThemeTests cover built-in token palettes, vars/OKLCH/indexed colors, invalid/circular values, user/project discovery and precedence, appearance pairing, NO_COLOR and terminal defaults; TerminalColorQueryController and TerminalColorResponse tests cover coordinated OSC 10/11/4 plus DA1 replies and generated system-theme colors; TerminalScreenTests cover appearance refresh and theme re-rendering; UserSettingsWriterTests cover user/project values and invalid pairs. TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty selects light and confirms persistence. Focused theme/settings tests and the extended PTY test pass locally; no pinned Pi rendering differential or cross-terminal color probe yet.",
-        "Against current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31, both embedded dark/light JSON palettes are semantically identical to packages/coding-agent/src/modes/interactive/theme/dark,light.json; theme-json.ts, theme-controller.ts, terminal-colors.ts, theme-selector.ts and their theme/color tests were inspected. This confirms current palette assets and parsing/selection protocol shape, not full rendered-output parity.",
+        "Against current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31, both embedded dark/light JSON palettes are semantically identical to packages/coding-agent/src/modes/interactive/theme/{dark,light}.json; theme-json.ts, theme-controller.ts, terminal-colors.ts, theme-selector.ts and their theme/color tests were inspected. This confirms current palette assets and parsing/selection protocol shape, not full rendered-output parity.",
         "Focused InteractiveTranscriptTests, TerminalScreenTests and ExtensionCatalogTests pass 32/32 after adding themed tool-call/result views, theme-change re-rendering, renderer exception fallbacks, argument context, control filtering, safe image collapse, and a compiled trusted extension exercised through PiAgent.RunEventsAsync. TerminalPtyTests.ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal passes 1/1 locally against a loopback Responses SSE provider and compiled extension, confirming call/result rendering, provider continuation and alternate-screen restoration. Local format verification, warnings-as-errors build and all 510 tests pass; exact code commit e50ea5786038f5657869e1a881ceaec028c263d0 passes Linux CI run 36182423444 with restore, format verification, warnings-as-errors build and all 510 tests. No broad Pi TUI differential yet.",
         "Pinned current-Pi comparison at e1787702d32e0a7fd7387840c918faa4d1286187 directly executed wrapTextWithAnsi under Node 24.21.0. Paired vectors cover prose, repeated spaces, SGR, OSC 8, long words, CJK and emoji. Fail-first tests cover wrapped whitespace, nested style state, shared row/search mapping, OSC 8 search offsets, viewport windows and current-Pi CJK/emoji rows; width-1 CJK substitution remains a deliberate difference. See docs/parity/fixtures/tui-wrap-layout-baseline.md. Local full suite passed 719/719; the final CJK/emoji vector test was then added and the complete focused rendering suite passed 51/51. `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passes and the warnings-as-errors solution build reports 0 warnings/errors. Exact-head Linux CI for this pushed source remains to be checked.",
         "Current Pi e1787702d32e0a7fd7387840c918faa4d1286187 theme-controller, system-theme, theme-detection, terminal-color source/tests were inspected. TerminalThemeTests cover pinned light/dark/background-only/readability vectors and OKHSL; TerminalPtyTests.TerminalColorQueriesWorkThroughLinuxPty covers the terminal query protocol. CLI theme path behavior is recorded separately. Exact-head Linux CI run 36417080999 for 90c08f7 passed format, warnings-as-errors build, and 720/720 tests (0 skipped). Broader Pi process/cross-terminal TUI differential and custom HTML-export theme CSS remain open.",
@@ -668,12 +668,12 @@
         "Verify through application workflow and compare docs/keybindings.md; packages/coding-agent/src/core/keybindings.ts; key map and interaction tests"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs and TerminalEditor.cs: configurable app.tools.expand defaults to Ctrl+O and toggles active-run tool output while retaining state across turns.",
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs, TerminalEditor.cs, TerminalInput.cs and Program.cs: idle-prompt app.thinking.cycle (Shift+Tab) and app.model.cycleForward/backward (Ctrl+P, Ctrl+Shift+P with Alt+P fallback) dispatch through the existing model/thinking replacement path and preserve the draft; model selection is persisted. Common modified ASCII CSI-u input is decoded for Ctrl+Shift+P. No Kitty protocol negotiation yet.",
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs and Program.cs: configurable app.session.resume dispatches to the shared session picker and has no default binding.",
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs and Program.cs: configurable app.session.fork opens the searchable active-branch user-message picker and has no default binding.",
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs and TerminalEditor.cs: named app.message.copy and app.clipboard.pasteImage actions use Pi default bindings; editor actions take precedence over app shortcuts on collisions in idle and active-run input contexts.",
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs, Program.cs, TerminalScreen.cs, TerminalTranscriptBuffer.cs, and InteractiveTranscript.cs: app.thinking.toggle defaults to Ctrl+T, re-renders retained reasoning when visibility changes, hides live reasoning behind the Thinking... placeholder, and persists hideThinkingBlock across restart."
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs and TerminalEditor.cs: configurable app.tools.expand defaults to Ctrl+O and toggles active-run tool output while retaining state across turns.",
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs, TerminalEditor.cs, TerminalInput.cs and Program.cs: idle-prompt app.thinking.cycle (Shift+Tab) and app.model.cycleForward/backward (Ctrl+P, Ctrl+Shift+P with Alt+P fallback) dispatch through the existing model/thinking replacement path and preserve the draft; model selection is persisted. Common modified ASCII CSI-u input is decoded for Ctrl+Shift+P. No Kitty protocol negotiation yet.",
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs and Program.cs: configurable app.session.resume dispatches to the shared session picker and has no default binding.",
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs and Program.cs: configurable app.session.fork opens the searchable active-branch user-message picker and has no default binding.",
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs and TerminalEditor.cs: named app.message.copy and app.clipboard.pasteImage actions use Pi default bindings; editor actions take precedence over app shortcuts on collisions in idle and active-run input contexts.",
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs, Program.cs, TerminalScreen.cs, TerminalTranscriptBuffer.cs, and InteractiveTranscript.cs: app.thinking.toggle defaults to Ctrl+T, re-renders retained reasoning when visibility changes, hides live reasoning behind the Thinking... placeholder, and persists hideThinkingBlock across restart."
       ],
       "evidence": [
         "EditorKeymapTests decodes Ctrl+O from terminal input and verifies user keymap replacement; TerminalScreenTests verifies collapsed/expanded tool results. Focused TUI tests pass 18/18 and the Release suite passes 400/400 with 0 skipped; format verification and warnings-as-errors build pass. Linux CI run 36111858689 passed.",
@@ -733,7 +733,7 @@
         "Verify through application workflow and compare docs/session-format.md and packages/coding-agent/src/core/session-manager.ts, session-export.ts; persisted selected-branch tests with tool calls, failures and restart"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/TerminalForkPicker.cs: adapts the shared searchable list to active-branch forkable user messages, preselects the newest message, and bounds preview/search text.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalForkPicker.cs: adapts the shared searchable list to active-branch forkable user messages, preselects the newest message, and bounds preview/search text.",
         "src/PiSharp.Cli/Program.cs: no-argument /fork and configurable app.session.fork route selected messages through the same fork path as direct /fork <id>; the selected prompt remains editable.",
         "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: exports all PiSharp branches parent-first and adds a session_info anchor when required to restore the selected head in Pi.",
         "src/PiSharp.Cli/Program.cs: confirmed /import <path.jsonl> replaces the active session after validation; /export-jsonl [path] writes a create-new file with user-only Unix permissions.",
@@ -833,12 +833,12 @@
         "src/PiSharp.Runtime/Resources/ContextInstructions.cs: nested linked-worktree Git metadata detection, canonical same-filename duplicate suppression, safe fallback for sibling/bare layouts.",
         "tests/PiSharp.Tests/ContextInstructionsTests.cs: fail-first symlink regressions and inheritance/filename/bare/sibling guards.",
         "src/PiSharp.Runtime/Resources/CanonicalDirectoryPath.cs and ProjectTrust.cs: canonicalize symlink aliases for trust reads/writes and protected-resource checks.",
-        "src/PiSharp.Cli/Tui/TerminalTrustPicker.cs and ProjectTrust.SetManyAsync: bare /trust displays the nearest saved decision and applies Trust, Trust parent folder, and Do not trust choices atomically without changing the active session.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalTrustPicker.cs and ProjectTrust.SetManyAsync: bare /trust displays the nearest saved decision and applies Trust, Trust parent folder, and Do not trust choices atomically without changing the active session.",
         "src/PiSharp.Runtime/Resources/ProjectTrust.cs: accepts null trust-store values, skips them during nearest-ancestor lookup, preserves unrelated nulls and removes the selected null entry.",
         "src/PiSharp.Cli/Configuration/UserSettings.cs: global defaultProjectTrust accepts ask/always/never; malformed values fall back to ask and project values do not override the global trust policy.",
         "ExtensionRegistration.AddResourceDiscoveryHandler provides ordered asynchronous startup/reload callbacks; ProjectRuntimeContext loads discovered skills/prompts into ResourceCatalog and passes themes to TerminalThemeCatalog.",
         "src/PiSharp.Runtime/Extensions/ProjectTrustExtension.cs and ExtensionRegistration.AddProjectTrustHandler: ordered Yes/No/Undecided callbacks with cancellation and per-handler error recovery; ProjectRuntimeConfiguration preloads user/global and CLI extensions before trust, then transfers the same catalog into the trusted runtime and loads project extensions only after trust.",
-        "src/PiSharp.Cli/Tui/TerminalEditor.cs and TerminalTrustPicker.cs: the bare trust selector styles detail headers as muted and renders selected arrow/current marker/label as independent accent segments, with unselected labels in text color.",
+        "src/PiSharp.Cli/Tui/Editor/TerminalEditor.cs and TerminalTrustPicker.cs: the bare trust selector styles detail headers as muted and renders selected arrow/current marker/label as independent accent segments, with unselected labels in text color.",
         "tools/parity/terminal/fixtures/project-trust-extension-ui.json and assert_project_trust_extension_ui.py now capture and assert the unsubmitted editor echo, submitted transcript echo and exact provider user message as separate checkpoints.",
         "src/PiSharp.Cli/Startup/TerminalStartupPresentation.cs, TerminalScreenCompositor.cs, and Program.cs: preserve Pi startup spacer rows above the logo and between built-in onboarding and startup resource/trust details."
       ],
@@ -1003,8 +1003,8 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/Program.cs: /new, /resume, /name, /session, /tree, /fork, /clone and /sessions",
-        "src/PiSharp.Cli/Tui/TerminalSessionPicker.cs: reusable overlay displays project sessions with current marker and searches name, ID, model and path; /resume direct resolution now shares the same switch routine.",
-        "src/PiSharp.Cli/Tui/TerminalForkPicker.cs and Program.cs: searchable no-argument /fork selector with newest active-branch user message selected; direct ID fork uses the same fork routine.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalSessionPicker.cs: reusable overlay displays project sessions with current marker and searches name, ID, model and path; /resume direct resolution now shares the same switch routine.",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalForkPicker.cs and Program.cs: searchable no-argument /fork selector with newest active-branch user message selected; direct ID fork uses the same fork routine.",
         "src/PiSharp.Cli/Program.cs: /import <path.jsonl> confirms before replacing active session and /export-jsonl [path] writes Pi v3 JSONL; imported history is rendered immediately."
       ],
       "evidence": [
@@ -1123,7 +1123,7 @@
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/CliArguments,Program,SessionExportCommand.cs dispatches print/JSON/RPC/TTY and a standalone --export path. Export reads an explicit PiSharp canonical session and uses Runtime/Sessions/SessionExport.cs to write no-overwrite, escaped, private HTML without initializing any model or resource loader."
+        "Partial: src/PiSharp.Cli/{Startup/CliArguments,Program,Sessions/SessionExportCommand}.cs dispatches print/JSON/RPC/TTY and a standalone --export path. Export reads an explicit PiSharp canonical session and uses Runtime/Sessions/SessionExport.cs to write no-overwrite, escaped, private HTML without initializing any model or resource loader."
       ],
       "evidence": [
         "tests/PiSharp.Tests/SessionExportCommandTests.cs invokes separate CLI processes to check inferred and explicit destinations, escaped prompt, private file permissions, no overwrite, corrupt/symlink input rejection, and no agent directory/provider requirement. Other prompt and protocol modes have separate narrow tests; no whole CLI parity claim.",
@@ -1141,10 +1141,10 @@
         "Test parsed flags, conflict/recovery and process behaviour"
       ],
       "implementation": [
-        "Partial: src/PiSharp.Cli/CliArguments,Program,ProviderModelRuntime,ThinkingLevels.cs implements configured OpenAI-compatible provider/model flags, bounded catalog and a basic capability-based reasoning option; --api-key is runtime-only."
+        "Partial: src/PiSharp.Cli/{Startup/CliArguments,Program,Providers/ProviderModelRuntime,Providers/ThinkingLevels}.cs implements configured OpenAI-compatible provider/model flags, bounded catalog and a basic capability-based reasoning option; --api-key is runtime-only."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/ProviderModelRuntimeTests,TerminalPtyTests,ModelCatalogTests.cs: exact-model/no-/models selection, custom-endpoint credential isolation, PTY model switch and unsupported thinking rejection, CLI startup saved-model conflict, catalog and streamed prompt fixtures. Full provider selector and hosted adapters remain missing."
+        "tests/PiSharp.Tests/{ProviderModelRuntimeTests,TerminalPtyTests,ModelCatalogTests}.cs: exact-model/no-/models selection, custom-endpoint credential isolation, PTY model switch and unsupported thinking rejection, CLI startup saved-model conflict, catalog and streamed prompt fixtures. Full provider selector and hosted adapters remain missing."
       ],
       "dependencies": []
     },
@@ -1162,7 +1162,7 @@
         "Startup --session also accepts Pi .jsonl files and migrates v1-v3 through PiJsonlSessionInterchange. Startup selection, confirmed /import, and RPC switch_session rebuild the project runtime, trust/resources and session store from the stored CWD; -r resume picker and --session-id remain absent."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/CliProcessTests,TerminalPtyTests,ProviderModelRuntimeTests.cs include process startup selection, fork and model conflict fixtures; docs/parity/detailed-inventory.md records the remaining interoperability and picker gaps. This does not prove Pi session equivalence.",
+        "tests/PiSharp.Tests/{CliProcessTests,TerminalPtyTests,ProviderModelRuntimeTests}.cs include process startup selection, fork and model conflict fixtures; docs/parity/detailed-inventory.md records the remaining interoperability and picker gaps. This does not prove Pi session equivalence.",
         "SessionPathArgumentTests and TerminalPtyTests cover .jsonl path arguments and startup import; exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with 526 tests and no skips.",
         "Exact integrated source head 2f0250ee91a500cdb6b08dce2e940b849089ba26 passed Linux CI run 36217090057: format verification, warnings-as-errors build with 0 warnings/errors, and 574 tests (0 failed, 0 skipped). Cross-project switching is covered by RpcSessionProcessTests.SwitchSessionRebuildsTheRuntimeForTheRecordedProjectDirectory and TerminalPtyTests.PiJsonlImportConfirmsAndSwitchesTheActiveSessionThroughLinuxPty.",
         "PiSessionStartupTargetTests.RpcStartupForksForeignProjectSessionIntoTheInvocationProject covers native and Pi JSONL path sources in the real CLI RPC process. Focused `ConversationTreeTests` and `PiSessionStartupTargetTests` pass 10/10. Full local format verification passed, warnings-as-errors build had 0 warnings/errors, and all 616 tests passed (0 failed, 0 skipped). Exact-head CI is pending for the current change."
@@ -1196,7 +1196,7 @@
         "The `--theme`, `--use-theme`, and `--no-themes` flags are parsed and applied. Explicit theme files/directories are repeatable and cwd-relative; `--no-themes` suppresses discovered/configured user and trusted-project themes but keeps built-ins/system and explicit CLI paths. `--use-theme` is an interactive-only startup override and an explicit saved theme replaces it."
       ],
       "evidence": [
-        "tests/PiSharp.Tests/ResourceCatalogTests,ExtensionCatalogTests,ProviderModelRuntimeTests.cs exercise duplicate precedence, opt-in paths, HTTP provider request content and PTY extension command behavior. Upstream package resolution and trust diagnostics still differ.",
+        "tests/PiSharp.Tests/{ResourceCatalogTests,ExtensionCatalogTests,ProviderModelRuntimeTests}.cs exercise duplicate precedence, opt-in paths, HTTP provider request content and PTY extension command behavior. Upstream package resolution and trust diagnostics still differ.",
         "CliThemeArgumentsTests covers values/repeatability and missing arguments; TerminalThemeTests covers explicit nested paths with discovery disabled; CliThemeProcessTests verifies the unique custom footer color in a Linux PTY with all three flags. Current Pi args.test.ts, resource-loader.ts, resource-loader-theme.test.ts and docs/cli.md were inspected at e1787702d32e0a7fd7387840c918faa4d1286187. Exact-head Linux CI run 36420934092 passed format, warnings-as-errors build and 729/729 tests (0 skipped).",
         "At Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f, a paired PTY fixture returns skill, prompt, and theme paths at startup and reload, including a file-URL skill path. Both sides expand startup and reloaded skill/prompt content with four provider requests and zero scenario errors. Full pair differs by 212,720 terminal-state fields, 126,434 render fields, and HTTP/system-prompt traces; same-Pi calibration matches normalized terminal state and HTTP. Exact-head CI 37961269172 passes 1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md."
       ],
@@ -1541,7 +1541,7 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs: cycles only levels supported by the current model thinkingLevelMap while idle or active, returns level, and returns null when no level is available."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs: cycles only levels supported by the current model thinkingLevelMap while idle or active, returns {level}, and returns null when no level is available."
       ],
       "evidence": [
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the unsupported-model null result and wrap from max to off for a reasoning-capable model.",
@@ -1562,7 +1562,7 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/Providers/ThinkingLevels.cs and Program.cs: expose off-only for models without reasoning; apply current Pi null and explicit xhigh/max map rules; translate canonical map values to M.E.AI ReasoningEffort where representable.",
-        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: returns levels for get_available_thinking_levels."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: returns {levels} for get_available_thinking_levels."
       ],
       "evidence": [
         "RpcModelProcessTests.RpcModelAndThinkingCommandsSelectAndCycleTheRunningRuntime verifies the exact seven-level response for a reasoning model.",
@@ -2098,7 +2098,7 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/Rpc/RpcEventWriter.cs: projects queue snapshots as top-level type, steering, followUp and omits the PiSharp-only prompt_queued notice.",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcEventWriter.cs: projects queue snapshots as top-level {type, steering, followUp} and omits the PiSharp-only prompt_queued notice.",
         "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: routes RPC lifecycle output through the dedicated event writer while sharing the atomic JSONL writer with command responses."
       ],
       "evidence": [
@@ -2162,7 +2162,7 @@
         "Test protocol through RPC process, including failures and cancellation"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: emits top-level type, level before successful set/cycle responses only when the effective level changes."
+        "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: emits top-level {type, level} before successful set/cycle responses only when the effective level changes."
       ],
       "evidence": [
         "Compared current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/src/modes/rpc/rpc-mode.ts and core/agent-session.ts: session level changes synchronously emit thinking_level_changed before the RPC success response.",
@@ -2184,7 +2184,7 @@
         "Remaining: configurable keys, full movement/selection and upstream PTY differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/EditorBuffer.cs: basic cursor and history navigation"
+        "src/PiSharp.Cli/Tui/Editor/EditorBuffer.cs: basic cursor and history navigation"
       ],
       "evidence": [
         "tests/PiSharp.Tests/EditorBufferTests.cs; tests/PiSharp.Tests/TerminalPtyTests.cs: limited editor input"
@@ -2202,7 +2202,7 @@
         "Remaining: kill ring, undo, selection and keybindings config."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/EditorBuffer.cs: basic deletion and word editing"
+        "src/PiSharp.Cli/Tui/Editor/EditorBuffer.cs: basic deletion and word editing"
       ],
       "evidence": [
         "tests/PiSharp.Tests/EditorBufferTests.cs: local editor mutations"
@@ -2220,7 +2220,7 @@
         "Remaining: WSL text clipboard interop, clipboard-selection parity and upstream differential."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/EditorBuffer.cs and terminal input: submit, multiline, completion, bracketed paste and configurable editor bindings.",
+        "src/PiSharp.Cli/Tui/Editor/EditorBuffer.cs and terminal input: submit, multiline, completion, bracketed paste and configurable editor bindings.",
         "Ctrl+G external editor action uses a private temporary prompt file and restores alternate-screen/raw terminal state around the child process.",
         "Ctrl+V reads, validates and stores a supported clipboard image as a private temporary path for read; absent a supported image it pastes clipboard text."
       ],
@@ -2273,7 +2273,7 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/Program.cs: Alt+Enter follow-up and Alt+Up dequeue",
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs and Program.cs: configurable app.session.resume opens the project-scoped searchable picker; no default binding is assigned."
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs and Program.cs: configurable app.session.resume opens the project-scoped searchable picker; no default binding is assigned."
       ],
       "evidence": [
         "tests/PiSharp.Tests/TerminalPtyTests.cs: interactive queue fixture; tests/PiSharp.Tests/AgentLifecycleTests.cs: queue ordering",
@@ -2304,7 +2304,7 @@
         "Test in PTY including configurable bindings and widget precedence"
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/EditorKeymap.cs, TerminalInput.cs and TerminalEditor.cs: active-run PageUp/PageDown/Home/End scrolling, Ctrl+F search fallback, Enter/Shift+Enter cycling and Escape close; search takes precedence over editor actions while active. Search indexes at most 10,000 matches and restores the queued follow-up draft."
+        "src/PiSharp.Cli/Tui/Editor/EditorKeymap.cs, TerminalInput.cs and TerminalEditor.cs: active-run PageUp/PageDown/Home/End scrolling, Ctrl+F search fallback, Enter/Shift+Enter cycling and Escape close; search takes precedence over editor actions while active. Search indexes at most 10,000 matches and restores the queued follow-up draft."
       ],
       "evidence": [
         "tests/PiSharp.Tests/TerminalScreenTests.cs and EditorKeymapTests.cs cover search highlights/cycling/draft restoration, page-key decoding and editor action precedence; 11/11 focused tests and 399/399 Release tests pass with 0 skipped. Standard and modified CSI paging forms are decoded. Ctrl+Shift+Up/Down, active-run PTY coverage and pinned Pi workflow comparison remain open."
@@ -3981,7 +3981,7 @@
         "Match current OAuth selector wording and browser callback success/failure presentation; compare terminal cell/style/cursor state and local auth fixtures."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/TerminalScreen.cs and TerminalEditor.cs: active MCP authorization URL, OSC 8 link, configured copy/cancel hints, live app.message.copy handling, and Esc cancellation while /mcp login awaits the browser callback.",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs and TerminalEditor.cs: active MCP authorization URL, OSC 8 link, configured copy/cancel hints, live app.message.copy handling, and Esc cancellation while /mcp login awaits the browser callback.",
         "src/PiSharp.Cli/Program.cs, src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs, and src/PiSharp.Runtime/Mcp/McpRuntimeManager.cs: route MCP sign-in URL presentation, clipboard feedback, cancellation, and URL cleanup through the active TUI.",
         "PiSharp source b1cc9013fc: route provider auth_url notices through the active terminal screen; expose the configured copy action during browser wait and manual code entry; show clipboard feedback within the login panel; prioritize cancellation and clear the active URL after login."
       ],
@@ -4171,7 +4171,7 @@
         "Compare exact deterministic fake-router requests, results and reusable terminal screen/style/cursor frames."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Tui/TerminalLlamaManager.cs",
+        "src/PiSharp.Cli/Tui/Commands/TerminalLlamaManager.cs",
         "src/PiSharp.Cli/Providers/Llama/LlamaRouterClient.cs",
         "src/PiSharp.Cli/Providers/Llama/LlamaRouterCatalog.cs",
         "tests/PiSharp.Tests/LlamaRouterManagerTuiTests.cs"
@@ -4214,9 +4214,9 @@
       "implementation": [
         "src/PiSharp.Cli/Providers/Llama/LlamaRouterCatalog.cs",
         "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs",
-        "src/PiSharp.Cli/Tui/TerminalModelPicker.cs",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalModelPicker.cs",
         "src/PiSharp.Cli/Program.cs",
-        "src/PiSharp.Cli/Tui/TerminalLlamaManager.cs",
+        "src/PiSharp.Cli/Tui/Commands/TerminalLlamaManager.cs",
         "tests/PiSharp.Tests/LlamaRouterManagerTuiTests.cs",
         "tests/PiSharp.Tests/LlamaRouterProviderTests.cs",
         "src/PiSharp.Runtime/Classifiers/LlamaClassifierClient.cs",
@@ -4266,7 +4266,7 @@
       ],
       "implementation": [
         "src/PiSharp.Cli/Providers/HuggingFace/HuggingFaceClient.cs",
-        "src/PiSharp.Cli/Tui/TerminalLlamaManager.cs",
+        "src/PiSharp.Cli/Tui/Commands/TerminalLlamaManager.cs",
         "src/PiSharp.Cli/Providers/Llama/LlamaRouterClient.cs",
         "tools/parity/terminal/fixtures/llama-huggingface-token-file.json",
         "tools/parity/terminal/fixtures/llama-huggingface-home-token-file.json",

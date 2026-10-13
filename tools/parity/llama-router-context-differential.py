@@ -65,15 +65,15 @@ Console.WriteLine(JsonSerializer.Serialize(output, new JsonSerializerOptions(Jso
     '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
     '<OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>'
     '</PropertyGroup><ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Cli/PiSharp.Cli.csproj" />'
-    '</ItemGroup></Project>\n'.replace("repo", str(repo))
+    '</ItemGroup></Project>\n'.replace("{repo}", str(repo))
 )
 (work / "pi.mjs").write_text(
     "import fs from 'node:fs';\n"
-    "import  createLlamaProvider  from 'pi/packages/coding-agent/src/extensions/llama/provider.ts';\n"
+    "import { createLlamaProvider } from '{pi}/packages/coding-agent/src/extensions/llama/provider.ts';\n"
     "const [url,cachePath,phase]=process.argv.slice(2);\n"
     "const stored=fs.existsSync(cachePath)?JSON.parse(fs.readFileSync(cachePath,'utf8')):undefined;\n"
     "const controller=createLlamaProvider();\n"
-    "await controller.provider.refreshModels?.(credential:type:'api_key',key:'local',env:{LLAMA_BASE_URL:url,"
+    "await controller.provider.refreshModels?.({credential:{type:'api_key',key:'local',env:{LLAMA_BASE_URL:url}},"
     "stored,publish:async publication=>{if(publication.persist!==undefined)fs.writeFileSync(cachePath,"
     "JSON.stringify(publication.persist));publication.update?.();return true;},allowNetwork:phase!=='offline',"
     "signal:new AbortController().signal});\n"

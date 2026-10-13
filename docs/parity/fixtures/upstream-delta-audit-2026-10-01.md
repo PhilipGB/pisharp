@@ -48,7 +48,7 @@ The header logo is clickable in the normal coding-agent TUI and launches a 3D an
 - **Pi files:** `packages/tui/src/autocomplete.ts`, `packages/tui/test/autocomplete-skill-slash.test.ts`.
 - **Pi behavior:** leading spaces or tabs before a slash command do not prevent command-name completion. The original indentation remains in the editor. The same normalization lets existing command-argument completers run when the command is indented.
 - **PiSharp behavior / mismatch:** `EditorCompletion` recognizes slash commands only when the slash token starts at offset zero, so `"  /mod"` falls through to path completion. PiSharp currently exposes command-name completion but has no command-argument completion contract; that pre-existing broader gap is separate from this commit's whitespace fix.
-- **PiSharp files:** `src/PiSharp.Cli/Tui/EditorCompletion.cs`, `tests/PiSharp.Tests/EditorCompletionTests.cs`.
+- **PiSharp files:** `src/PiSharp.Cli/Tui/Editor/EditorCompletion.cs`, `tests/PiSharp.Tests/EditorCompletionTests.cs`.
 - **Required test:** cover one or more leading spaces and a tab before a slash prefix; assert matching command candidates and that applying a candidate preserves the exact leading whitespace. Keep the existing mid-sentence path-completion behavior.
 - **Required implementation:** identify slash commands after leading whitespace only when the entire prompt prefix is whitespace plus the slash command, and apply completion to the command fragment without replacing the indentation.
 - **Resolution evidence:** the fail-first theory returned no candidates for one space, two spaces, and a tab before `/tr`. `IsSlashCommandStart` now recognizes the slash after current-line indentation, while mid-sentence slash text remains path input. `EditorCompletionTests` passes 10/10, including the three new cases. Local restore passes with `--no-http-cache` (the default vulnerability-cache path is read-only in this environment); format verification passes and formats 0 of 409 files; warnings-as-errors build passes with 0 warnings/errors; all 1,039 tests pass with zero skips using `TERM=xterm-256color` and `xUnit.ParallelizeTestCollections=false`. Exact-head Linux CI [36795625551](https://github.com/PhilipGB/pisharp/actions/runs/36795625551) passes restore, format, warnings-as-errors build with 0 warnings/errors, and 1,039/1,039 tests with zero skips on PiSharp source `884a69b07743e57e135a50ce03e65f11c74cdd39`.
@@ -65,7 +65,7 @@ The header logo is clickable in the normal coding-agent TUI and launches a 3D an
 
 ### `d850edee9ccc5d3b6cec79553d4839a1cbab47ed` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/mcp/oauth.ts,runtime.ts`, `packages/mcp/src/oauth/discovery.ts,errors.ts,flow.ts,types.ts`, and MCP OAuth/configuration tests.
+- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/mcp/{oauth.ts,runtime.ts}`, `packages/mcp/src/oauth/{discovery.ts,errors.ts,flow.ts,types.ts}`, and MCP OAuth/configuration tests.
 - **Pi behavior:** an optional `oauth.authServerMetadataUrl` supplies a trusted authorization-server metadata document instead of normal authorization-server discovery; it must be HTTPS except for loopback HTTP. When metadata advertises RFC 9207 issuer responses, authorization codes are exchanged only if the callback `iss` equals that metadata's issuer. A present but mismatched `iss` is rejected as well.
 - **PiSharp behavior / mismatch:** `McpOAuthSettings` does not accept a metadata URL, and the SDK performs only its normal discovery flow. RFC 9207 issuer validation is already present in the pinned `ModelContextProtocol.Core` 2.2.0: `McpOAuthLogin` returns callback `iss` in `AuthorizationResult`, and `ClientOAuthProvider.ValidateIssuerResponse` checks it against discovered metadata before code exchange. The remaining mismatch is the configured trusted metadata-document override and its URL validation.
 - **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuth.cs`, `src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs`, `src/PiSharp.Runtime/Mcp/McpOAuthMetadataHandler.cs`, `src/PiSharp.Runtime/Mcp/McpRuntime.cs`, MCP configuration parsing, and focused tests in `tests/PiSharp.Tests/McpOAuthMetadataTests.cs`.
@@ -78,7 +78,7 @@ The header logo is clickable in the normal coding-agent TUI and launches a 3D an
 - **Pi files:** `packages/tui/src/utils.ts`, `packages/tui/test/regression-slice-by-column-ansi-order.test.ts`.
 - **Pi behavior:** when slicing ANSI-styled text by display columns, SGR codes before the slice and codes exactly at the boundary retain source order. This prevents a reset from being emitted before the style it resets and leaking color beyond mouse-selection or search-highlight boundaries.
 - **PiSharp behavior:** mouse selection renders the complete ANSI-preserving row through `TerminalTextLayout.HighlightCells`; terminal wrapping carries active SGR sequences in source order. Clipboard selection deliberately uses `SliceCells` to return plain text.
-- **PiSharp files:** `src/PiSharp.Cli/Tui/TerminalTextLayout.cs`, `src/PiSharp.Cli/Tui/TranscriptSearchController.cs`, and `tests/PiSharp.Tests/TerminalTextLayoutTests.cs`.
+- **PiSharp files:** `src/PiSharp.Cli/Tui/Rendering/TerminalTextLayout.cs`, `src/PiSharp.Cli/Tui/Input/TranscriptSearchController.cs`, and `tests/PiSharp.Tests/TerminalTextLayoutTests.cs`.
 - **Resolution evidence:** both upstream input vectors now run through the wrapped-row and selection-highlight paths. The resulting visible-range prefix keeps the preceding style before the boundary `39` reset, the reset precedes selection highlighting, and later styled text remains intact. The focused regression test passes 1/1; local restore, format verification, warnings-as-errors build (0 warnings/errors), and the full serial suite pass with 1,058/1,058 tests and zero skips. Existing behavior already matches, so no runtime code change was needed. Exact-head Linux CI [36840078307](https://github.com/PhilipGB/pisharp/actions/runs/36840078307) and [36840344261](https://github.com/PhilipGB/pisharp/actions/runs/36840344261) pass on PiSharp source `bc2b1be94254fa08beb483098730e7eb00700b31`, each with 1,058/1,058 tests and zero skips.
 
 ### `4bae8677597bc4f96acae5e6d3039de1f61ecb58` — `NO_BEHAVIOR_CHANGE`
@@ -91,7 +91,7 @@ Adds extensions and per-conversation agent configuration to the separate experim
 
 ### `8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d` — `NEEDS_WORK` (resolved at exact head `9f33151c7`)
 
-- **Pi files:** `packages/mcp/src/client.ts`, `packages/mcp/src/oauth/discovery.ts,flow.ts,types.ts`, and the matching MCP client/OAuth tests.
+- **Pi files:** `packages/mcp/src/client.ts`, `packages/mcp/src/oauth/{discovery.ts,flow.ts,types.ts}`, and the matching MCP client/OAuth tests.
 - **Pi behavior:** optional empty/null OAuth fields are treated as absent, including empty refresh tokens and client secrets; `expires_in: null` leaves expiry unspecified; empty requested scopes fall through to the next source; invalid URLs in protected-resource metadata fall back to the MCP server origin; and empty/null pagination cursors end pagination.
 - **PiSharp behavior / mismatch:** the pinned `ModelContextProtocol.Core` 2.2.0 SDK handles nullable expiry and ignores an empty dynamic-registration client secret, and its scope selection falls through for empty configured/challenge scopes. However, `McpClient.ListToolsAsync` continues while `NextCursor` is non-null, so `""` is treated as another page. OAuth token parsing stores `refresh_token: ""` rather than preserving the previously stored refresh token, and invalid `authorization_servers` metadata is rejected during authorization-server selection instead of falling back to the resource origin. `McpOAuthRefreshHandler.IsValidTokenResponseAsync` also rejects `expires_in: null` for its cross-process refresh coordination path.
 - **PiSharp files:** dependency boundary `ModelContextProtocol.Core` 2.2.0 (`src/PiSharp.Runtime/PiSharp.Runtime.csproj`); `src/PiSharp.Runtime/Mcp/McpProtocolCompatibilityHandler.cs`, `McpRuntime.cs`, `McpOAuthLogin.cs`, and `McpOAuthRefreshHandler.cs`; and focused tests under `tests/PiSharp.Tests/`.
@@ -115,7 +115,7 @@ Adds an explicitly experimental coding-agent TUI backed by the separate Pi Durab
 - **Pi files:** `packages/coding-agent/src/extensions/mcp/index.ts` and its changelog.
 - **Pi behavior:** `/mcp login` in TUI mode emits the long authorization URL as an OSC 8 hyperlink and puts the click instruction on a separate short linked line, so terminal wrapping does not break the target.
 - **PiSharp behavior / mismatch:** before this slice, interactive `/mcp login` passed the URL through generic console text normalization, which strips terminal control sequences. The standalone `pisharp mcp login` path prints through `McpOAuthLogin` and must remain plain text.
-- **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs`, `src/PiSharp.Runtime/Mcp/McpRuntimeManager.cs`, `src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs`, `src/PiSharp.Cli/Program.cs`, `src/PiSharp.Cli/Tui/TerminalScreen.cs`, and focused MCP/TUI tests.
+- **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs`, `src/PiSharp.Runtime/Mcp/McpRuntimeManager.cs`, `src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs`, `src/PiSharp.Cli/Program.cs`, `src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs`, and focused MCP/TUI tests.
 - **Required test:** exercise the MCP login URL through a PTY/TUI notification with a long URL; verify the OSC 8 target survives display wrapping and the short click hint points to the same URL, while plain CLI output remains readable.
 - **Required implementation:** expose the MCP login URL through the TUI's hyperlink-capable notification path and preserve the existing plain-text CLI behavior.
 
@@ -146,7 +146,7 @@ Adds a pinned official MCP client conformance suite, its baseline runner, and a 
 
 ### `5806068c26e55feefd1f5875bf05c0419ec5d912` — `NEEDS_WORK` (resolved at exact head `930bc2d020`)
 
-- **Pi files:** `packages/coding-agent/src/extensions/mcp/oauth.ts,runtime.ts,cli.ts` and `packages/coding-agent/test/mcp-oauth-store.test.ts`.
+- **Pi files:** `packages/coding-agent/src/extensions/mcp/{oauth.ts,runtime.ts,cli.ts}` and `packages/coding-agent/test/mcp-oauth-store.test.ts`.
 - **Pi behavior:** OAuth credentials are isolated by normalized MCP server name and canonical URL, so two configured server names at the same URL can use different accounts. A legacy URL-only entry migrates to the first server that loads it; logout removes only that server's key (or its legacy entry).
 - **PiSharp mismatch:** `McpTokenCache` keys credentials, refresh locks and logout by URL alone. `McpRuntime`, explicit login and `/mcp logout` pass the URL but not `McpServerConfiguration.Name`; same-URL aliases therefore share tokens.
 - **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuth.cs`, `McpOAuthLogin.cs`, `McpRuntime.cs`, `McpRuntimeManager.cs`, `McpOAuthRefreshHandler.cs`, and `tests/PiSharp.Tests/McpOAuthTests.cs`.
@@ -185,7 +185,7 @@ The OAuth selector now displays “not configured” instead of “unconfigured�
 - **Pi files:** `packages/coding-agent/src/modes/interactive/theme/system-theme.ts` and `packages/coding-agent/test/system-theme.test.ts`.
 - **Pi behavior:** generated anchored palette colors are capped at the source color's chroma, keeping pastel source palettes pastel as lightness changes.
 - **Original PiSharp mismatch:** `TerminalSystemTheme.Anchored` preserves OKHSL saturation without a source-chroma ceiling; lightness shifts can increase actual chroma and oversaturate a pastel palette.
-- **PiSharp files:** `src/PiSharp.Cli/Tui/TerminalSystemTheme.cs`, `TerminalColorSpace.cs`, and a focused `TerminalThemeTests` fixture.
+- **PiSharp files:** `src/PiSharp.Cli/Tui/Themes/TerminalSystemTheme.cs`, `TerminalColorSpace.cs`, and a focused `TerminalThemeTests` fixture.
 - **Fail-first evidence:** port the Catppuccin Frappe pastel-pink sample and compare generated OKLCH chroma at the relevant palette steps.
 - **Required implementation:** clamp generated chroma to the source chroma with the same palette falloff while retaining current contrast/lightness rules.
 - **Validation/dependencies:** focused color fixtures, full solution validation and exact-head CI.
@@ -194,7 +194,7 @@ The OAuth selector now displays “not configured” instead of “unconfigured�
 
 ### `f29ea3deb298280b417892c6229ce478ad8c4d2f` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/settings-manager.ts`, `src/index.ts`, `src/modes/interactive/components/settings-selector.ts,interactive-mode.ts`, settings docs and interactive-mode tests.
+- **Pi files:** `packages/coding-agent/src/core/settings-manager.ts`, `src/index.ts`, `src/modes/interactive/{components/settings-selector.ts,interactive-mode.ts}`, settings docs and interactive-mode tests.
 - **Pi behavior:** `quietStartup` accepts `true`, `false` or `"header"`. Header mode keeps the startup header/version/key hints while suppressing the model-scope line and resource notices; `true` hides the full startup presentation.
 - **Original PiSharp mismatch:** `UserSettings.QuietStartup` is boolean-only and `Program` either hides or shows a combined banner/metadata string.
 - **PiSharp files:** `src/PiSharp.Cli/Configuration/UserSettings.cs`, `UserSettingsWriter.cs`, `Tui/TerminalSettingsPicker.cs`, `Program.cs`, and `tests/PiSharp.Tests/QuietStartupTests.cs` plus a CLI/PTY fixture.
@@ -229,7 +229,7 @@ The normal browser OAuth callback page displays a colored Pi logo. This user-fac
 
 ### `aab34df655e3c5974fc40618f75e9eafdb031293` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/model-registry.ts`, `src/extensions/codemode/execute.ts,tool.ts`, model/Codemode docs and Codemode session tests.
+- **Pi files:** `packages/coding-agent/src/core/model-registry.ts`, `src/extensions/codemode/{execute.ts,tool.ts}`, model/Codemode docs and Codemode session tests.
 - **Pi behavior:** Codemode exposes `models.generateImages(model, context)`, resolves identity against the configured image-model catalog (never trusting script-supplied credentials/base URL), returns text/image output plus usage and stop/error status, and records nested call/cost evidence.
 - **PiSharp mismatch:** `ICodemodeModels` and `ProviderCodemodeModels` expose catalog and classifier operations but no image-generation method or guest global; image catalog metadata exists separately.
 - **PiSharp files:** `src/PiSharp.Runtime/Codemode/ICodemodeModels.cs`, model globals/call accounting, `src/PiSharp.Cli/Providers/ProviderCodemodeModels.cs`, process worker/output projection and focused Codemode image tests.
@@ -247,11 +247,11 @@ Documentation-only provider-page and documentation-navigation edits; they add no
 
 ### `88ff80b986e34d4fbd1fa94a4df65c60ae964516` — `MATCHED`
 
-For this commit's default-mode change, PiSharp already starts its interactive TUI in the alternate screen and its normal interactive view, matching Pi's new default fullscreen presentation. Evidence: `src/PiSharp.Cli/Tui/TerminalScreen.cs` enters `?1049h`; `TerminalScreenTests` and Linux PTY tests verify alternate-screen lifecycle. PiSharp's separate `tuiMode` setting and normal-mode option remain open ledger work; this classification only covers the upstream commit's new default.
+For this commit's default-mode change, PiSharp already starts its interactive TUI in the alternate screen and its normal interactive view, matching Pi's new default fullscreen presentation. Evidence: `src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs` enters `?1049h`; `TerminalScreenTests` and Linux PTY tests verify alternate-screen lifecycle. PiSharp's separate `tuiMode` setting and normal-mode option remain open ledger work; this classification only covers the upstream commit's new default.
 
 ### `6f1072cc081f06b86a673bd142f03720d17afe15` — `NEEDS_WORK`
 
-- **Pi files:** `packages/codemode/src/declarations.ts,index.ts,runtime/prelude-source.ts`, Codemode sandbox tests, coding-agent Codemode prompt/tool files and `docs/codemode.md`.
+- **Pi files:** `packages/codemode/src/{declarations.ts,index.ts,runtime/prelude-source.ts}`, Codemode sandbox tests, coding-agent Codemode prompt/tool files and `docs/codemode.md`.
 - **Pi behavior:** reduces Codemode prompt size, documents globals one line each, reports close matches/available names for unknown tool or model members, and gives actionable model-catalog, image-output and store-capacity guidance from runtime errors.
 - **PiSharp mismatch:** the built-in Codemode description is large and inline; the guest bridge does not provide equivalent namespace/member diagnostics and errors for unknown globals, bad model selections and store overflow are generic.
 - **PiSharp files:** `src/PiSharp.Runtime/Codemode/CodemodeBuiltin.cs`, `CodemodeModelGlobals.cs`, `src/PiSharp.Runtime/Codemode` worker bridge and sandbox, plus dedicated prompt/runtime tests.

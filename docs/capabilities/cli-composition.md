@@ -24,7 +24,7 @@ conversation state; CLI owns configuration, provider adapters and presentation.
 
 ## Terminal workflows
 
-[InteractivePromptExecution](../../src/PiSharp.Cli/Tui/InteractivePromptExecution.cs)
+[InteractivePromptExecution](../../src/PiSharp.Cli/Tui/Commands/InteractivePromptExecution.cs)
 validates prompt capabilities, expands resources, monitors steering/follow-up input
 and presents lifecycle events. Its explicit current-run/resource accessors preserve
 runtime replacement during application actions. Program owns cancellation and the
@@ -53,7 +53,7 @@ in their original order, including cleanup on failure. Explicit accessors read t
 current arguments/settings/tool state after asynchronous configuration loading,
 preserving the original lookup timing and settings updates before reload.
 
-[TerminalModelNavigation](../../src/PiSharp.Cli/Tui/TerminalModelNavigation.cs)
+[TerminalModelNavigation](../../src/PiSharp.Cli/Tui/Commands/TerminalModelNavigation.cs)
 owns available scoped-model cycling and supported-thinking-level navigation.
 It resolves current selection after asynchronous catalog discovery and writes
 status to the current console writer. Program applies the resulting selection
@@ -62,7 +62,7 @@ through its existing active/idle runtime gates.
 [UserSettingsPersistence](../../src/PiSharp.Cli/Configuration/UserSettingsPersistence.cs) validates
 project trust, writes the selected scope, reloads that scope and merges effective
 settings. Program applies the resulting runtime/terminal effects in their existing
-order. [TerminalClipboardActions](../../src/PiSharp.Cli/Tui/TerminalClipboardActions.cs)
+order. [TerminalClipboardActions](../../src/PiSharp.Cli/Tui/Clipboard/TerminalClipboardActions.cs)
 owns selection/assistant copy, sign-in URL status and text/image insertion; native
 clipboard process access remains in TerminalClipboard.
 
@@ -83,14 +83,14 @@ state owners, with small explicit constructors; they do not hide PiAgent's publi
 constructor or replace MAF/MEAI execution. Root using scopes and ExtensionLease
 retain resource disposal/extension-transfer ownership.
 
-[TerminalProviderCommands](../../src/PiSharp.Cli/Tui/TerminalProviderCommands.cs)
+[TerminalProviderCommands](../../src/PiSharp.Cli/Tui/Commands/TerminalProviderCommands.cs)
 owns model/scope listings, thinking commands, named selection and logout/rebind.
 Its replacement/application callbacks cross real execution/checkpoint boundaries.
-[TerminalProjectCommands](../../src/PiSharp.Cli/Tui/TerminalProjectCommands.cs)
+[TerminalProjectCommands](../../src/PiSharp.Cli/Tui/Commands/TerminalProjectCommands.cs)
 owns trust aliases/picker persistence and reload progress/keybinding/UI cleanup.
 [TerminalSessionImport](../../src/PiSharp.Cli/Sessions/TerminalSessionImport.cs)
 owns import path validation, confirmation, outgoing save and prepared project-session
-adoption. [InteractiveResourceCommands](../../src/PiSharp.Cli/Tui/InteractiveResourceCommands.cs)
+adoption. [InteractiveResourceCommands](../../src/PiSharp.Cli/Tui/Commands/InteractiveResourceCommands.cs)
 owns skill/prompt/custom-extension command routing and MCP sign-in monitoring and
 cancellation. Registry/resource lookup timing and current console writers remain
 explicit. Program's interactive switch wires these concrete workflows and existing
