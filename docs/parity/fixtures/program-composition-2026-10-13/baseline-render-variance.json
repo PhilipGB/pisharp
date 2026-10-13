@@ -1,0 +1,50 @@
+{
+  "baselineCode": "95edc6771d6871ea36aa5692e59426d72ebe9d4b",
+  "candidateCode": "ad4319d2a2d68ecf379190fd77cc1dc32100bef1",
+  "fixture": "startup-editor",
+  "case": "120x40-dark-fullscreen",
+  "comparisons": [
+    {
+      "comparison": "unchanged-baseline-repeat",
+      "leftCanonicalRenders": 9,
+      "rightCanonicalRenders": 10,
+      "extraFrameIndices": [
+        5
+      ],
+      "match": false,
+      "stateDifferenceCount": 0,
+      "renderDifferenceCount": 3381,
+      "httpMatch": true,
+      "controlBoundaryDifferenceCount": 156,
+      "firstDifferences": [
+        {
+          "path": "$.renders.length",
+          "pi": 9,
+          "pisharp": 10
+        },
+        {
+          "path": "$.renders[5].modes.keyboard.kittyFlags",
+          "pi": 0,
+          "pisharp": 7
+        },
+        {
+          "path": "$.renders[5].modes.keyboard.kittyStack.length",
+          "pi": 0,
+          "pisharp": 1
+        }
+      ]
+    },
+    {
+      "comparison": "repeat-baseline-versus-candidate",
+      "leftCanonicalRenders": 10,
+      "rightCanonicalRenders": 10,
+      "extraFrameIndices": [],
+      "match": true,
+      "stateDifferenceCount": 0,
+      "renderDifferenceCount": 0,
+      "httpMatch": true,
+      "controlBoundaryDifferenceCount": 0,
+      "firstDifferences": []
+    }
+  ]
+}

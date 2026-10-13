@@ -46,8 +46,8 @@ internal sealed class ConversationToolState(PiAgent agent, ConversationSession c
     private static JsonElement? TranscriptPayload(PiSharp.Core.ConversationNode node)
     {
         if (node.Type == "tool_transcript") return node.Payload;
-        if (PiJsonlSessionInterchange.OriginalEntry(node) is not { } original ||
-            PiJsonlSessionInterchange.StringProperty(original, "customType") != "pisharp.tool_transcript" ||
+        if (PiJsonlEntryCodec.OriginalEntry(node) is not { } original ||
+            PiJsonlEntryCodec.StringProperty(original, "customType") != "pisharp.tool_transcript" ||
             !original.TryGetProperty("data", out var data)) return null;
         return data.Clone();
     }

@@ -1,0 +1,394 @@
+using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Codemode;
+using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Tools;
+namespace PiSharp.Runtime;
+
+/// <summary>One shared streaming runtime for terminal and one-shot invocation.</summary>
+public sealed class PiAgent
+{
+    private readonly InMemoryChatHistoryProvider _history = new();
+    private readonly ICodemodeModels? _codemodeModels;
+    private readonly CodingTools _codingTools;
+    private readonly ChatClientAgent _agent;
+    private readonly PiCompactionSummarizer _summarizer;
+    private readonly MutableChatClient _chatClient;
+    private readonly RoutedChatClient _routedChatClient;
+    private readonly PiSharpToolHookPipeline _toolHooks;
+    private readonly AgentToolCatalog _toolCatalog;
+    private readonly ConcurrentDictionary<string, AIFunction> _runtimeToolFunctions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, PiSharpToolRegistration> _runtimeToolRegistrations = new(StringComparer.Ordinal);
+    private readonly object _runtimeToolGate = new();
+    private readonly string? _customSystemPrompt;
+    private readonly string? _appendSystemPrompt;
+    private readonly string? _projectInstructions;
+    private readonly Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? _getSkillInstructions;
+    private readonly PiSharpContextTransformPipeline _contextTransforms;
+    private readonly SemaphoreSlim _runGate = new(1, 1);
+    private ReasoningOptions? _reasoning;
+    private readonly ToolBatchTermination _toolBatchTermination = new();
+    private DurableExecution? _active;
+    private Action<AgentLifecycleEvent>? _events;
+    private Func<bool, IReadOnlyList<ChatMessage>>? _takeSteering;
+    private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
+    private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
+    private int _providerRequestIndex;
+    private int _supportsImages;
+    private ModelImageResizeOptions? _selectedImageResizeOptions;
+    private long _systemMessageTimestamp;
+    private ToolLoadout? _currentToolLoadout;
+    private readonly ConditionalWeakTable<AgentSession, ToolDeclarationTranscript> _toolTranscripts = new();
+    private ToolDeclarationTranscript? _currentToolTranscript;
+
+    internal ToolDeclarationTranscript GetToolTranscript(AgentSession session) =>
+        _toolTranscripts.GetValue(session, _ => new());
+
+    public string SystemInstructions { get; }
+    public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => _toolCatalog.ToolDeclarations;
+    /// <summary>Gets the independent tool loadout associated with one agent session.</summary>
+    public ToolLoadout GetToolLoadout(AgentSession session) => _toolCatalog.GetToolLoadout(session);
+
+    internal void RestoreToolLoadout(AgentSession session, IEnumerable<string> activeToolNames) =>
+        _toolCatalog.RestoreToolLoadout(session, activeToolNames);
+
+    internal void RestoreCodemodeStore(AgentSession session, IReadOnlyDictionary<string, System.Text.Json.JsonElement> values) =>
+        GetToolLoadout(session).SetCodemodeStore(values);
+
+    public long? SystemMessageTimestamp => Volatile.Read(ref _systemMessageTimestamp) is var timestamp && timestamp != 0
+        ? timestamp
+        : null;
+
+    public PiAgent(IChatClient client, CodingTools tools, IReadOnlyList<string>? selectedTools = null, IReadOnlyList<string>? excludedTools = null, bool noTools = false, string? contextInstructions = null, string? systemPrompt = null, string? appendSystemPrompt = null,
+        IReadOnlyCollection<AIFunction>? extensionTools = null, ProviderRetryPolicy? retryPolicy = null,
+        ReasoningOptions? reasoning = null, bool blockImages = false, bool noBuiltinTools = false, bool supportsImages = true,
+        IReadOnlyCollection<PiSharpToolRegistration>? extensionToolRegistrations = null,
+        IReadOnlyList<PiSharpToolCallHook>? extensionToolCallHooks = null,
+        IReadOnlyList<PiSharpToolResultHook>? extensionToolResultHooks = null,
+        ExtensionRegistration? liveExtensionRegistration = null,
+        VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null,
+        Func<string?>? getAdditionalSystemInstructions = null,
+        IReadOnlyList<PiSharpContextTransform>? extensionContextTransforms = null,
+        Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? getSkillInstructions = null)
+    {
+        _contextTransforms = new(extensionContextTransforms);
+        _codemodeModels = codemodeModels;
+        _codingTools = tools;
+        _customSystemPrompt = systemPrompt;
+        _appendSystemPrompt = appendSystemPrompt;
+        _projectInstructions = contextInstructions;
+        _getSkillInstructions = getSkillInstructions;
+        _selectedImageResizeOptions = tools.ImageResizeOptions;
+        _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
+        _chatClient = new MutableChatClient(client);
+        _routedChatClient = new RoutedChatClient(_chatClient, value => _events?.Invoke(value), route => SetPhysicalImageLimits(route.Model));
+        _routedChatClient.SetRouter(virtualModelRequestRouter);
+        _supportsImages = supportsImages ? 1 : 0;
+        _reasoning = reasoning;
+        _summarizer = new PiCompactionSummarizer(_routedChatClient);
+        _toolCatalog = new AgentToolCatalog(tools, selectedTools, excludedTools, noTools, noBuiltinTools,
+            extensionTools, extensionToolRegistrations);
+        lock (_runtimeToolGate)
+        {
+            foreach (var registration in _toolCatalog.Registrations)
+                UpdateRuntimeToolFunction(registration);
+        }
+        if (liveExtensionRegistration is not null)
+        {
+            var weakAgent = new WeakReference<PiAgent>(this);
+            Action<IReadOnlyCollection<PiSharpToolRegistration>>? handler = null;
+            handler = definitions =>
+            {
+                if (weakAgent.TryGetTarget(out var agent)) agent.RefreshExtensionTools(definitions);
+                else liveExtensionRegistration.ToolDefinitionsChanged -= handler;
+            };
+            liveExtensionRegistration.ToolDefinitionsChanged += handler;
+        }
+        var initialLoadout = _toolCatalog.CreateLoadout().Snapshot;
+        SystemInstructions = BuildSystemInstructions(initialLoadout.Declared, initialLoadout.ActiveToolNames);
+        _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, value => _events?.Invoke(value),
+            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
+            supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
+            _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions,
+            _contextTransforms.ApplyAsync, (messages, options) =>
+                _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout), new ChatClientAgentOptions
+                {
+                    Name = "PiSharp",
+                    ChatHistoryProvider = _history,
+                    AllowConcurrentInvocation = true,
+                    ChatOptions = new ChatOptions
+                    {
+                        Instructions = SystemInstructions,
+                        Tools = [],
+                        Reasoning = reasoning
+                    }
+                });
+    }
+
+    private IReadOnlyList<ChatMessage> TakeSteeringForRequest(IEnumerable<ChatMessage> messages)
+    {
+        var firstProviderRequest = _providerRequestIndex++ == 0;
+        var steering = _takeSteering?.Invoke(firstProviderRequest) ?? [];
+        if (steering.Count == 0) return steering;
+        var afterCallId = messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
+            .LastOrDefault()?.CallId;
+        _injectedSteering.AddRange(steering.Select(message => (message, afterCallId)));
+        return steering;
+    }
+
+    private IReadOnlyList<AITool> GetToolsForRequest()
+    {
+        var loadout = Volatile.Read(ref _currentToolLoadout) ??
+            _toolCatalog.CreateLoadout();
+        var declarations = loadout.GetDeclarationsForRequest();
+        return FunctionsFor(declarations);
+    }
+
+    private IReadOnlyList<AITool> GetToolsForContextEstimate()
+    {
+        var loadout = Volatile.Read(ref _currentToolLoadout) ??
+            _toolCatalog.CreateLoadout();
+        return FunctionsFor(loadout.Snapshot.TranscriptDeclarations);
+    }
+
+    private IReadOnlyList<AITool> FunctionsFor(IEnumerable<PiSharpToolDeclaration> declarations) =>
+        Array.AsReadOnly<AITool>(declarations.Select(declaration =>
+        {
+            var function = _runtimeToolFunctions[declaration.Registration.Function.Name];
+            return string.Equals(declaration.Description, function.Description, StringComparison.Ordinal)
+                ? function
+                : new DescribedAIFunction(function, declaration.Description);
+        }).ToArray());
+
+    private string GetSystemInstructionsForCurrentLoadout() => GetSystemPromptForCurrentLoadout().Text;
+
+    private PiSystemPromptBuilder.Projection GetSystemPromptForCurrentLoadout()
+    {
+        var loadout = Volatile.Read(ref _currentToolLoadout)?.Snapshot ??
+            _toolCatalog.CreateLoadout().Snapshot;
+        return BuildSystemPrompt(loadout.Declared, loadout.ActiveToolNames);
+    }
+
+    private string BuildSystemInstructions(IReadOnlyList<PiSharpToolDeclaration> declarations,
+        IReadOnlyList<string> activeToolNames) => BuildSystemPrompt(declarations, activeToolNames).Text;
+
+    private PiSystemPromptBuilder.Projection BuildSystemPrompt(IReadOnlyList<PiSharpToolDeclaration> declarations,
+        IReadOnlyList<string> activeToolNames) => PiSystemPromptBuilder.BuildProjection(_codingTools.WorkingDirectory,
+        declarations, _customSystemPrompt, _appendSystemPrompt, _projectInstructions,
+        _getSkillInstructions?.Invoke(activeToolNames,
+            declarations.Select(declaration => declaration.Registration.Function.Name).ToArray()));
+
+    private void RefreshExtensionTools(IReadOnlyCollection<PiSharpToolRegistration> definitions)
+    {
+        lock (_runtimeToolGate)
+        {
+            // Publish executable wrappers before catalog changes become visible to existing loadouts.
+            _toolCatalog.ReplaceExtensions(definitions, registrations =>
+            {
+                foreach (var registration in registrations) UpdateRuntimeToolFunction(registration);
+            });
+        }
+    }
+
+    private void UpdateRuntimeToolFunction(PiSharpToolRegistration registration)
+    {
+        var name = registration.Function.Name;
+        if (_runtimeToolRegistrations.TryGetValue(name, out var previous) &&
+            ReferenceEquals(previous.Function, registration.Function) &&
+            previous.OutputSchema.Equals(registration.OutputSchema) &&
+            previous.ReachesTools == registration.ReachesTools &&
+            previous.Namespace == registration.Namespace) return;
+        _runtimeToolRegistrations[name] = registration;
+        _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
+            value => _events?.Invoke(value), _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
+            () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels,
+            registration.ReachesTools, registration.Namespace);
+    }
+
+    private IReadOnlyList<AITool> GetRuntimeFunctionsForRun() =>
+        Array.AsReadOnly<AITool>(_runtimeToolFunctions.Values.ToArray());
+
+    private Task<IReadOnlyList<ChatMessage>> ProjectForRequestAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken token) =>
+        // The pre-prompt policy owns the first request; only a pre-content overflow can force it.
+        (force || _providerRequestIndex > 1) && _projectContext is { } project
+            ? project(messages, force, token) : Task.FromResult(messages);
+
+    public Task<CompactionSummary> SummarizeAsync(IReadOnlyList<ChatMessage> messages, string? focus,
+        CancellationToken cancellationToken = default, string? previousSummary = null, bool turnPrefix = false) =>
+        _summarizer.SummarizeAsync(messages, focus, cancellationToken, previousSummary, turnPrefix);
+
+    public sealed record CompactionSummary(string Text, UsageDetails? Usage, IReadOnlyList<UsageRecord>? PhysicalUsage = null);
+
+    public async Task<AgentSession> CreateSessionAsync(CancellationToken cancellationToken = default) =>
+        await _agent.CreateSessionAsync(cancellationToken);
+
+    public void SetReasoningOptions(ReasoningOptions? reasoning) => Volatile.Write(ref _reasoning, reasoning);
+
+    public void SetModelRuntime(IChatClient client, bool supportsImages, ModelImageResizeOptions? imageResizeOptions,
+        VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null)
+    {
+        _chatClient.SetClient(client);
+        _routedChatClient.SetRouter(virtualModelRequestRouter);
+        Volatile.Write(ref _supportsImages, supportsImages ? 1 : 0);
+        _selectedImageResizeOptions = imageResizeOptions;
+        _codingTools.SetImageResizeOptions(imageResizeOptions);
+    }
+
+    internal bool HasVirtualModelRouter => _routedChatClient.HasRouter;
+
+    internal void SetPhysicalImageLimits(ModelDescriptor? model) =>
+        _codingTools.SetImageResizeOptions(model is null ? _selectedImageResizeOptions : model.InputLimits?.Images?.Resize);
+
+    internal void SetVirtualModelSession(ConversationSession session, string thinkingLevel,
+        Func<CancellationToken, Task>? save) => _routedChatClient.SetSession(session, thinkingLevel, save);
+
+    internal void SetVirtualModelContextPreparation(Func<IReadOnlyList<ChatMessage>, VirtualModelRequestRoute, bool,
+        CancellationToken, Task<IReadOnlyList<ChatMessage>>>? prepare) => _routedChatClient.SetContextPreparation(prepare);
+
+    internal void SetVirtualModelThinkingLevel(string thinkingLevel) => _routedChatClient.SetThinkingLevel(thinkingLevel);
+
+    public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
+        CancellationToken cancellationToken = default) => _codingTools.ExecuteBashAsync(command, onUpdate, cancellationToken);
+
+    public void AbortBash() => _codingTools.AbortBash();
+
+    public IReadOnlyList<ChatMessage> GetHistory(AgentSession session) =>
+        _history.GetMessages(session).Select(ChatMessageProperties.WithoutRequestAttribution).ToArray();
+
+    internal int EstimateContextTokens(IEnumerable<ChatMessage> history)
+    {
+        var systemPrompt = GetSystemPromptForCurrentLoadout();
+        var tools = GetToolsForContextEstimate();
+        return PiContextUsageEstimator.Estimate(systemPrompt.ContextEstimateCharacters, tools, history);
+    }
+
+    internal int EstimateContextTokens(long usageTokens, IEnumerable<ChatMessage> trailingMessages) =>
+        PiContextUsageEstimator.EstimateAfterUsage(usageTokens, trailingMessages);
+
+    public void AppendToHistory(AgentSession session, ChatMessage message)
+    {
+        var messages = _history.GetMessages(session).ToList();
+        messages.Add(message);
+        _history.SetMessages(session, messages);
+    }
+
+    public async Task<AgentSession> RestoreHistoryAsync(IEnumerable<ChatMessage> messages, CancellationToken cancellationToken = default)
+    {
+        var session = await CreateSessionAsync(cancellationToken);
+        _history.SetMessages(session, messages.ToList());
+        return session;
+    }
+
+
+    public IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(string prompt, AgentSession session,
+        CancellationToken cancellationToken = default) => RunStreamingAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken);
+
+    public IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(ChatMessage prompt, AgentSession session,
+        CancellationToken cancellationToken = default) => RunStreamingDurableAsync(prompt, session, cancellationToken, null);
+
+    internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
+        CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
+        Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
+        RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent,
+            takeSteering, projectContext, bashSessionEnvironment);
+
+    internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
+        CancellationToken cancellationToken, DurableExecution? durable,
+        Action<AgentLifecycleEvent>? onEvent = null, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
+        RunStreamingDurableCoreAsync(prompt, session, cancellationToken, durable, onEvent, takeSteering,
+            projectContext, bashSessionEnvironment);
+
+    internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationDurableAsync(AgentSession session,
+        CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
+        Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
+        RunStreamingDurableCoreAsync(null, session, cancellationToken, durable, onEvent, takeSteering,
+            projectContext, bashSessionEnvironment);
+
+    private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableCoreAsync(ChatMessage? prompt,
+        AgentSession session,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
+        Action<AgentLifecycleEvent>? onEvent, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering,
+        Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext,
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment)
+    {
+        await _runGate.WaitAsync(cancellationToken);
+        try
+        {
+            Interlocked.CompareExchange(ref _systemMessageTimestamp, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), 0);
+            var loadout = GetToolLoadout(session);
+            loadout.BeginRun();
+            Volatile.Write(ref _currentToolLoadout, loadout);
+            _currentToolTranscript = GetToolTranscript(session);
+            _active = durable;
+            _events = onEvent;
+            _takeSteering = takeSteering;
+            _projectContext = projectContext;
+            _providerRequestIndex = 0;
+            _injectedSteering.Clear();
+            var runOptions = new ChatClientAgentRunOptions(new ChatOptions
+            {
+                Tools = GetRuntimeFunctionsForRun().ToList()
+            });
+            if (bashSessionEnvironment is { Count: > 0 })
+            {
+                var properties = new AdditionalPropertiesDictionary();
+                foreach (var (key, value) in bashSessionEnvironment)
+                    if (value is not null) properties[key] = value;
+                runOptions.AdditionalProperties = properties;
+            }
+            try
+            {
+                var updates = prompt is null
+                    ? _agent.RunStreamingAsync(session, runOptions, cancellationToken)
+                    : _agent.RunStreamingAsync(prompt, session, runOptions, cancellationToken);
+                await foreach (var update in updates)
+                    yield return update;
+            }
+            finally
+            {
+                PersistInjectedSteering(session);
+                _history.SetMessages(session, ObservedChatClient.NormalizeReadImagesForHistory(_history.GetMessages(session)).ToList());
+            }
+        }
+        finally
+        {
+            _projectContext = null;
+            _takeSteering = null;
+            _events = null;
+            _active = null;
+            Volatile.Write(ref _currentToolLoadout, null);
+            _currentToolTranscript = null;
+            _runGate.Release();
+        }
+    }
+
+    private void PersistInjectedSteering(AgentSession session)
+    {
+        if (_injectedSteering.Count == 0) return;
+        var history = _history.GetMessages(session).ToList();
+        foreach (var (message, afterCallId) in _injectedSteering)
+        {
+            if (history.Any(item => ReferenceEquals(item, message))) continue;
+            var index = afterCallId is null ? history.Count - 1 : history.FindLastIndex(item =>
+                item.Contents.OfType<FunctionResultContent>().Any(result => result.CallId == afterCallId));
+            var insertionIndex = Math.Clamp(index + 1, 0, history.Count);
+            while (insertionIndex < history.Count && _injectedSteering.Any(steering =>
+                steering.AfterCallId == afterCallId && ReferenceEquals(steering.Message, history[insertionIndex])))
+                insertionIndex++;
+            history.Insert(insertionIndex, message);
+        }
+        _history.SetMessages(session, history);
+        _injectedSteering.Clear();
+    }
+}

@@ -306,8 +306,8 @@
       "docs/parity/fixtures/llama-terminal-current-pi-2026-10-09.md",
       "docs/parity/fixtures/llama-terminal-current-pi-2026-10-11.md",
       "src/PiSharp.Runtime/Resources/LocalResourcePathRules.cs",
-      "tests/PiSharp.Tests/LocalResourcePathRulesTests.cs",
-      "tests/PiSharp.Tests/ResourceCatalogTests.cs",
+      "tests/PiSharp.Tests/Runtime/Resources/LocalResourcePathRulesTests.cs",
+      "tests/PiSharp.Tests/Runtime/Resources/ResourceCatalogTests.cs",
       "tools/parity/terminal/fixtures/llama-model-picker.json",
       "tools/parity/terminal/fixtures/resource-skill-precedence.json"
     ],

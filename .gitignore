@@ -6,3 +6,6 @@
 *.suo
 .pisharp-autonomy/
 **/__pycache__/
+
+# Generated parity captures and local evidence archives
+/artifacts/parity/

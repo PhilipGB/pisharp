@@ -40,7 +40,7 @@ public static class SessionExport
                     await Line($"<article><small>{Html(node.Type)} · {Html(node.Id)} · parent {Html(node.ParentId ?? "root")} · {Html(node.Timestamp.ToString("O"))}{(node.Id == session.Tree.HeadId ? " · selected" : "")}</small>");
                     if (node.Type == "chat")
                     {
-                        var message = ConversationSession.RestoreEntry(node);
+                        var message = ConversationMessageCodec.RestoreEntry(node);
                         await Line($"<h2>{Html(message.Role.ToString())}</h2>");
                         foreach (var content in message.Contents)
                         {
@@ -55,7 +55,7 @@ public static class SessionExport
                             };
                             if (failure is not null) await Line($"<strong>Tool failure:</strong><pre>{Html(failure)}</pre>");
                         }
-                        if (ConversationSession.NestedToolCallsFor(node) is { } nestedToolCalls)
+                        if (ConversationMessageCodec.NestedToolCallsFor(node) is { } nestedToolCalls)
                         {
                             await Line($"<h3>Nested tool calls{(nestedToolCalls.Complete ? "" : " (incomplete)")}</h3><ol>");
                             foreach (var call in nestedToolCalls.Calls)

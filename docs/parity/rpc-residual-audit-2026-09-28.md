@@ -1,6 +1,6 @@
 # Bounded RPC residual audit — 2026-09-28
 
-Reference: current Pi `6f7551516b84278eb9da1c340c8e7bc66be1a6ba` (0.87.1), verified with `git ls-remote` on 2026-09-28. Scope was the public command union in `packages/coding-agent/src/modes/rpc/rpc-types.ts`, dispatch and command lifecycle in `rpc-mode.ts`, PiSharp dispatch in `src/PiSharp.Cli/Protocols/RpcMode.cs`, and the corresponding focused handlers. This is a bounded compatibility audit, not a full process differential of every command.
+Reference: current Pi `6f7551516b84278eb9da1c340c8e7bc66be1a6ba` (0.87.1), verified with `git ls-remote` on 2026-09-28. Scope was the public command union in `packages/coding-agent/src/modes/rpc/rpc-types.ts`, dispatch and command lifecycle in `rpc-mode.ts`, PiSharp dispatch in `src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs`, and the corresponding focused handlers. This is a bounded compatibility audit, not a full process differential of every command.
 
 The current Pi union contains 33 distinct command names, and every name has a literal dispatch/handler reference under `src/PiSharp.Cli`. The checked paths have no source diff between the prior audit pin `2b0a123de98318c2ff8069661721ce0c3794c34e` and current main, so there is no newly added command or dispatcher change. Route presence alone does not prove every command's behavior; central workflows retain their individual process or deterministic evidence.
 

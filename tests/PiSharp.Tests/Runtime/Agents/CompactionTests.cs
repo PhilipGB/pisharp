@@ -1,0 +1,1194 @@
+using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
+using Microsoft.Extensions.AI;
+using PiSharp.Runtime;
+using PiSharp.Runtime.Sessions;
+
+namespace PiSharp.Tests;
+
+public sealed class CompactionTests
+{
+    [Fact]
+    public void CompactionKeepsProjectedBashEntriesInTheRecentContext()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "first"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "first answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, "second"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "second answer"));
+        conversation.AppendBashExecution(new BashExecutionRecord("printf retained", "retained output", 0,
+            false, false, null, false));
+
+        var bashEntry = conversation.Tree.ActivePath().Last(entry => entry.Type == "bash_execution");
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction());
+        Assert.Equal(bashEntry.Id, plan.FirstKeptEntryId);
+        Assert.DoesNotContain(plan.MessagesToSummarize, message => message.Text.Contains("retained output", StringComparison.Ordinal));
+        conversation.AppendCompaction(plan, "Summary of first turn");
+
+        Assert.Equal(2, conversation.ContextMessages().Count);
+        Assert.Contains(conversation.ContextMessages(), message => message.Text.Contains("retained output", StringComparison.Ordinal));
+        Assert.Contains(ConversationSession.Parse(conversation.ToJson()).ContextMessages(), message =>
+            message.Text.Contains("retained output", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void CompactionProjectionUsesPiSummaryTextAndDropsEarlierSystemMessages()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "old question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "old answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, "retained question"));
+        conversation.Append(new ChatMessage(ChatRole.System, "old system instruction"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "retained answer"));
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction());
+        conversation.AppendCompaction(plan, "summary of old turn");
+
+        var context = conversation.ContextMessages();
+        Assert.Equal(3, context.Count);
+        Assert.Equal("The conversation history before this point was compacted into the following summary:\n\n<summary>\nsummary of old turn\n</summary>", context[0].Text);
+        Assert.DoesNotContain(context, message => message.Text == "old system instruction");
+        Assert.Equal(["retained question", "retained answer"], context.Skip(1).Select(message => message.Text));
+    }
+
+    [Fact]
+    public async Task ManualCompactionPreservesHistoryAndRestoresShortContextAfterRestartAndBranch()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-compact-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = Seed(cwd);
+            var previous = conversation.Tree.HeadId;
+            var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+            var client = new SummaryClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                save: token => store.SaveAsync(conversation, path, token));
+            Assert.True(await run.CompactAsync("prioritize files"));
+            Assert.Contains("prioritize files", client.LastSummaryRequest);
+            Assert.Contains("<conversation>", client.LastSummaryRequest);
+            Assert.Contains("## Goal", client.LastSummaryRequest);
+            Assert.Equal(4, conversation.ActiveMessages().Count);
+            Assert.Equal(3, conversation.ContextMessages().Count);
+            Assert.Contains("compacted into the following summary", conversation.ContextMessages()[0].Text);
+            Assert.Equal("second", conversation.ContextMessages()[1].Text);
+            Assert.Null(conversation.PrepareCompaction());
+            var reloaded = await store.LoadAsync(path);
+            Assert.Equal(4, reloaded.ActiveMessages().Count);
+            Assert.Equal(3, reloaded.ContextMessages().Count);
+            var resumedClient = new SummaryClient();
+            var resumed = await ConversationRun.OpenAsync(new PiAgent(resumedClient, new CodingTools(cwd)), reloaded);
+            await foreach (var _ in resumed.RunStreamingAsync("third")) { }
+            Assert.Equal(4, resumedClient.SeenMessages!.Count);
+            Assert.DoesNotContain(resumedClient.SeenMessages, message => message.Text == "first");
+            Assert.True(await resumed.CompactAsync());
+            Assert.Contains("Summary of first turn", resumedClient.LastSummaryRequest);
+            Assert.Contains("second", resumedClient.LastSummaryRequest);
+            Assert.Equal(6, reloaded.ActiveMessages().Count);
+            Assert.Equal(3, reloaded.ContextMessages().Count);
+            await resumed.SelectAsync(previous);
+            Assert.Equal(4, reloaded.ContextMessages().Count);
+            Assert.Equal("first", reloaded.ContextMessages()[0].Text);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ManualCompactionUsesPiDefaultRecentTokenBudgetWithoutAContextWindow()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new SummaryClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())),
+            conversation, keepRecentTokens: 20_000);
+
+        Assert.False(await run.CompactAsync());
+        Assert.Empty(client.SummaryRequests);
+        Assert.DoesNotContain(conversation.Tree.ActivePath(), entry => entry.Type == "compaction");
+    }
+
+    [Fact]
+    public async Task CompactionUsageIsPersistedAndIncludedInSessionBilling()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var client = new SummaryClient
+        {
+            SummaryUsage = new UsageDetails { InputTokenCount = 500, OutputTokenCount = 50, TotalTokenCount = 550 }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            pricing: new ModelPricing(Input: 2m, Output: 8m));
+
+        Assert.True(await run.CompactAsync());
+
+        var usage = Assert.Single(conversation.ActiveUsage());
+        Assert.Equal("compaction", usage.Source);
+        Assert.Equal(550, usage.TotalTokens);
+        Assert.Equal(0.0014m, usage.Cost);
+        var stats = SessionStatistics.Calculate(conversation);
+        Assert.Equal(550, stats.BilledTokens);
+        Assert.Equal(0.0014m, stats.Cost);
+    }
+
+    [Fact]
+    public async Task AutoBudgetCompactsBeforeNextPromptAndPersistsRawHistory()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-auto-compact-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('a', 3000)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "earlier answer"));
+            conversation.Append(new ChatMessage(ChatRole.User, "latest"));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "latest answer"));
+            var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+            var client = new SummaryClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                save: token => store.SaveAsync(conversation, path, token),
+                autoCompaction: new AutoCompactionPolicy(1800, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+            Assert.Contains(events, item => item.Type == "context_compacted");
+            Assert.True(events.FindIndex(item => item.Type == "context_compacted") < events.FindIndex(item => item.Type == "prompt_accepted"));
+            Assert.Equal(6, conversation.ActiveMessages().Count);
+            Assert.Contains("Summary of first turn", conversation.ContextMessages()[0].Text);
+            Assert.DoesNotContain(client.SeenMessages!, message => message.Text == new string('a', 3000));
+            Assert.Equal(6, (await store.LoadAsync(path)).ActiveMessages().Count);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task AutomaticCompactionUsesTheSplitTurnCoordinatorBeforeAcceptingTheNextPrompt()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, new string('U', 100)));
+        conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "continue the current task",
+            partialAssistantText = new string('P', 80),
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+        var client = new SummaryClient { SummaryResponses = ["older history summary", "current turn prefix summary"] };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1024, 100, 15));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        Assert.Equal(2, client.SummaryRequests.Count);
+        var contextCompacted = Assert.Single(events, item => item.Type == "context_compacted");
+        var accepted = Assert.Single(events, item => item.Type == "prompt_accepted");
+        Assert.True(events.IndexOf(contextCompacted) < events.IndexOf(accepted));
+        Assert.Contains(conversation.Tree.Entries, entry => entry.Type == "compaction" &&
+            entry.Payload.GetProperty("summary").GetString() ==
+            "older history summary\n\n---\n\n**Turn Context (split turn):**\n\ncurrent turn prefix summary");
+        Assert.Contains(client.SeenMessages!, message => message.Text.Contains(new string('P', 80), StringComparison.Ordinal));
+        Assert.DoesNotContain(client.SeenMessages!, message => message.Text == "older question");
+        Assert.Equal(1, conversation.ContextMessages().Count(message => message.Text == new string('P', 80)));
+    }
+
+    [Fact]
+    public async Task AutoBudgetPrefersLatestProviderUsageAfterCurrentCompactionBoundary()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        conversation.AppendUsage(new UsageRecord("fixture", "model", 4300, 200, 0, 0, 4500, null));
+        var client = new SummaryClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(5000, 1000));
+        var events = new List<AgentLifecycleEvent>();
+
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+
+        Assert.Contains(events, item => item.Type == "context_compacted");
+        Assert.DoesNotContain(client.SeenMessages!, message => message.Text == "first");
+        Assert.Null(conversation.LatestContextUsageTokens());
+    }
+
+    [Fact]
+    public async Task AutoBudgetFailureRollsBackWithoutSendingNewPrompt()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        conversation.Append(new ChatMessage(ChatRole.Assistant, new string('X', 3000)));
+        var oldHead = conversation.Tree.HeadId;
+        var client = new SummaryClient { FailSummary = true };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(1800, 300));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("continue")) events.Add(item);
+        Assert.Contains(events, item => item.Type == "prompt_rejected");
+        Assert.DoesNotContain(events, item => item.Type == "prompt_accepted");
+        Assert.Null(client.SeenMessages);
+        Assert.Equal(oldHead, conversation.Tree.HeadId);
+        Assert.Equal(5, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public async Task ToolContinuationCompactsOnlyItsRequestAndPreservesCanonicalToolHistory()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-budget-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('A', 900)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+            var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+            var client = new ToolLoopBudgetClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                save: token => store.SaveAsync(conversation, path, token),
+                autoCompaction: new AutoCompactionPolicy(2100, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read output.txt")) events.Add(item);
+
+            Assert.Equal(2, client.Requests);
+            Assert.Equal(1, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryAndToolResult);
+            Assert.Contains(events, item => item.Type == "context_compacted_in_flight");
+            Assert.DoesNotContain(events, item => item.Type == "context_compacted");
+            Assert.DoesNotContain(conversation.Tree.ActivePath(), node => node.Type == "compaction");
+            Assert.Equal(900, conversation.ActiveMessages()[0].Text.Length);
+            Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents),
+                content => content is FunctionResultContent result && result.Result?.ToString()?.Contains(new string('Z', 1400), StringComparison.Ordinal) == true);
+            Assert.Equal(conversation.ActiveMessages().Count, (await store.LoadAsync(path)).ActiveMessages().Count);
+            Assert.Null(conversation.LatestContextUsageTokens());
+            Assert.Null((await store.LoadAsync(path)).LatestContextUsageTokens());
+            Assert.Contains((await store.LoadAsync(path)).Tree.ActivePath(), node => node.Type == "context_projection");
+            Assert.Single(conversation.ActiveUsage(), usage => usage.Source == "compaction" && usage.TotalTokens == 48);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RepeatedToolLoopIterationsReuseUnchangedEarlierTurnSummary()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-cache-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('A', 900)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+            var client = new ToolLoopBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2300, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read both files")) events.Add(item);
+            Assert.True(client.Requests == 3, string.Join(" | ", events.Select(item => $"{item.Type}: {item.Error}")));
+            Assert.Equal(1, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryAndToolResult);
+            Assert.Single(events, item => item.Type == "context_compacted_in_flight");
+            Assert.Equal(2, conversation.ActiveMessages().SelectMany(message => message.Contents)
+                .OfType<FunctionResultContent>().Count());
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData(70_000, 1)]
+    [InlineData(1_100_000, 2)]
+    public async Task LargePrefixReusesOnlyBoundedFingerprint(int historySize, int summaries)
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-large-prefix-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('A', historySize)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+            var trigger = AutoCompactionPolicy.Estimate(conversation.ContextMessages(), "read both files") + 300;
+            var client = new ToolLoopBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(trigger + 300, 300));
+            await foreach (var _ in run.RunEventsAsync("read both files")) { }
+            Assert.Equal(3, client.Requests);
+            Assert.Equal(summaries, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryAndToolResult);
+            Assert.Contains(conversation.ActiveMessages(), message => message.Text == new string('A', historySize));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData(17, 1)]
+    [InlineData(18, 2)]
+    public async Task AggregatePrefixCapControlsSummaryReuse(int turnCount, int expectedSummaries)
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-aggregate-prefix-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var largeTurn = new string('A', 950_000);
+            for (var i = 0; i < turnCount; i++)
+                conversation.Append(new ChatMessage(ChatRole.User, largeTurn + i));
+            var trigger = AutoCompactionPolicy.Estimate(conversation.ContextMessages(), "read both files") + 300;
+            var client = new ToolLoopBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(trigger + 300, 300));
+            await foreach (var _ in run.RunEventsAsync("read both files")) { }
+            Assert.Equal(3, client.Requests);
+            Assert.Equal(expectedSummaries, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryAndToolResult);
+            Assert.Equal(turnCount, conversation.ActiveMessages().Count(message => message.Role == ChatRole.User && message.Text.Length > 900_000));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task NewSteeringBoundaryInvalidatesInFlightSummaryCache()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-steering-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('A', 900)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+            ConversationRun? run = null;
+            var client = new ToolLoopBudgetClient
+            {
+                RepeatRead = true,
+                OnFirstSummary = () => Assert.True(run!.TrySteer("explain the second result"))
+            };
+            run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2300, 300));
+            await foreach (var _ in run.RunEventsAsync("read both files")) { }
+            Assert.Equal(3, client.Requests);
+            Assert.Equal(2, client.Summaries);
+            Assert.True(client.ContinuationSawSteering);
+            Assert.Contains(conversation.ActiveMessages(), message => message.Text.Contains("explain the second result", StringComparison.Ordinal));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task OversizedMultiCycleTurnCutsOnlyAfterEachCompletedToolResult()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-split-cycles-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 4000));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "small.txt"), "small result");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var client = new ToolLoopBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2700, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read two files")) events.Add(item);
+            Assert.Equal(3, client.Requests);
+            Assert.Equal(2, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryWithoutRawToolResult);
+            Assert.Equal(2, events.Count(item => item.Type == "context_compacted_in_flight"));
+            Assert.Equal(2, conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>().Count());
+            Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>(),
+                result => result.Result?.ToString()?.Contains(new string('Z', 4000), StringComparison.Ordinal) == true);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SummaryRejectsOversizedFocusBeforeProviderAndEmptyProviderOutput()
+    {
+        var client = new SummaryClient { SummaryResponses = [" "] };
+        var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            agent.SummarizeAsync([new ChatMessage(ChatRole.User, "context")], new string('F', 4097)));
+        Assert.Empty(client.SummaryRequests);
+
+        var failure = await Assert.ThrowsAsync<InvalidDataException>(() =>
+            agent.SummarizeAsync([new ChatMessage(ChatRole.User, "context")], null));
+        Assert.Equal("Summarizer returned an empty response.", failure.Message);
+        Assert.Single(client.SummaryRequests);
+    }
+
+    [Fact]
+    public async Task LongSummaryTranscriptRetainsLatestMessageWithinBound()
+    {
+        var client = new ToolLoopBudgetClient();
+        var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()));
+        var messages = Enumerable.Range(0, 60).Select(i =>
+            new ChatMessage(ChatRole.User, new string('A', i == 59 ? 1_100_000 : 1900) +
+                (i == 59 ? " LATEST_MARKER" : $" {i}"))).ToArray();
+        await agent.SummarizeAsync(messages, null);
+        Assert.Contains("LATEST_MARKER", client.LastSummaryRequest);
+        Assert.Contains("Earlier conversation omitted", client.LastSummaryRequest);
+        Assert.True(client.LastSummaryRequest.Length < 65 * 1024);
+    }
+
+    [Fact]
+    public async Task ParallelToolCallBatchCutsOnlyAfterBothResultsAndRetainsRawHistory()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-parallel-cut-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "first.txt"), new string('X', 4000));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "second.txt"), new string('Y', 4000));
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var client = new ParallelToolBudgetClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2700, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read both files")) events.Add(item);
+            Assert.True(client.Requests == 2,
+                $"Expected two provider requests but saw {client.Requests}: {string.Join(" | ", client.RequestSnapshots)}");
+            Assert.Equal(1, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryWithoutOrphanedResults);
+            Assert.Single(events, item => item.Type == "context_compacted_in_flight");
+            var contents = conversation.ActiveMessages().SelectMany(message => message.Contents).ToArray();
+            Assert.Equal(2, contents.OfType<FunctionCallContent>().Count());
+            var functionResults = contents.OfType<FunctionResultContent>().ToArray();
+            Assert.True(functionResults.Length == 2,
+                $"Expected two canonical tool results but saw {functionResults.Length}: " +
+                string.Join(" | ", functionResults.Select(result =>
+                    $"{result.CallId}: {result.Result?.ToString()?.Length ?? 0} chars, exception={result.Exception?.Message}")) +
+                $". Tool events: {string.Join(" | ", events.Where(item => item.ToolResultMessage is not null).Select(item =>
+                    string.Join(", ", item.ToolResultMessage!.Contents.OfType<FunctionResultContent>().Select(result =>
+                        $"{result.CallId}: {result.Result?.ToString()?.Length ?? 0} chars, exception={result.Exception?.Message}"))))}.");
+            Assert.Contains(contents.OfType<FunctionResultContent>(), result => result.Result?.ToString()?.Contains(new string('X', 4000), StringComparison.Ordinal) == true);
+            Assert.Contains(contents.OfType<FunctionResultContent>(), result => result.Result?.ToString()?.Contains(new string('Y', 4000), StringComparison.Ordinal) == true);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task MultiCycleParallelToolGraphSplitsOnlyAfterCompletedBatches()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-parallel-cycles-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "first.txt"), new string('X', 4000));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "second.txt"), new string('Y', 4000));
+            await File.WriteAllTextAsync(Path.Combine(cwd, "third.txt"), new string('Z', 4000));
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var client = new ParallelToolBudgetClient { RepeatRead = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2700, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read all three files")) events.Add(item);
+            Assert.True(client.SecondRequestSawSummaryWithoutOrphans);
+            Assert.True(client.Requests == 3,
+                $"Expected three provider requests but saw {client.Requests}: {string.Join(" | ", client.RequestSnapshots)}");
+            Assert.Equal(2, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryWithoutOrphanedResults);
+            Assert.Equal(2, events.Count(item => item.Type == "context_compacted_in_flight"));
+            Assert.Contains(events, item => item.Type == "turn_completed");
+            var contents = conversation.ActiveMessages().SelectMany(message => message.Contents).ToArray();
+            var toolCalls = contents.OfType<FunctionCallContent>().ToArray();
+            Assert.True(toolCalls.Length == 3,
+                $"Expected three canonical tool calls but saw {toolCalls.Length}: " +
+                string.Join(" | ", toolCalls.Select(call => $"{call.Name}:{call.CallId}")) +
+                ". Canonical assistant messages: " + string.Join(" | ", conversation.ActiveMessages()
+                    .Where(message => message.Role == ChatRole.Assistant && message.Contents.OfType<FunctionCallContent>().Any())
+                    .Select(message => string.Join(",", message.Contents.OfType<FunctionCallContent>()
+                        .Select(call => $"{call.Name}:{call.CallId}")))) +
+                $". Provider snapshots: {string.Join(" | ", client.RequestSnapshots)}.");
+            Assert.Equal(3, contents.OfType<FunctionResultContent>().Count());
+            foreach (var marker in new[] { 'X', 'Y', 'Z' })
+                Assert.Contains(contents.OfType<FunctionResultContent>(), result =>
+                    result.Result?.ToString()?.Contains(new string(marker, 4000), StringComparison.Ordinal) == true);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task OversizedSingleTurnSummarizesOnlyCompletedToolCycleWithoutReplacingHistory()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-split-turn-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 4000) + " TAIL_SENTINEL");
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var client = new ToolLoopBudgetClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                autoCompaction: new AutoCompactionPolicy(2700, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read output.txt")) events.Add(item);
+            Assert.Equal(2, client.Requests);
+            Assert.Equal(1, client.Summaries);
+            Assert.True(client.ContinuationSawSummaryWithoutRawToolResult);
+            Assert.Contains("TAIL_SENTINEL", client.LastSummaryRequest);
+            Assert.True(client.LastSummaryRequest.Length < 64 * 1024);
+            Assert.Single(events, item => item.Type == "context_compacted_in_flight");
+            Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents)
+                .OfType<FunctionResultContent>(), result => result.Result?.ToString()?.Contains(new string('Z', 4000), StringComparison.Ordinal) == true);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ToolContinuationSummaryFailureForOversizedSingleTurnDoesNotReplayTool()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-budget-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 4000));
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+            var client = new ToolLoopBudgetClient { FailSummaryOnce = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                save: token => store.SaveAsync(conversation, path, token),
+                autoCompaction: new AutoCompactionPolicy(2700, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read output.txt")) events.Add(item);
+            Assert.Equal(1, client.Requests);
+            Assert.Equal(1, client.Summaries);
+            Assert.Contains(events, item => item.Type == "turn_failed" && item.Error!.Contains("summarizer unavailable", StringComparison.Ordinal));
+            var reloaded = await store.LoadAsync(path);
+            Assert.Contains(reloaded.Tree.ActivePath(), node => node.Type == "tool_outcome");
+            Assert.Contains(reloaded.Tree.ActivePath(), node => node.Type == "run_finished" &&
+                node.Payload.GetProperty("completed").GetBoolean() == false);
+            await foreach (var _ in run.RunEventsAsync("inspect the previous result before trying again")) { }
+            Assert.True(client.SawRecoveryNotice);
+            Assert.Equal(2, client.Requests);
+            Assert.Equal(2, client.Summaries);
+            Assert.Contains(conversation.ActiveMessages(), message => message.Text.Contains("Recovery notice", StringComparison.Ordinal));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ToolContinuationSummaryFailureDoesNotSendUnboundedRequestOrReplaceHistory()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-loop-budget-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(cwd, "output.txt"), new string('Z', 1400));
+            var conversation = new ConversationSession(cwd, "fixture", null);
+            conversation.Append(new ChatMessage(ChatRole.User, new string('A', 900)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+            var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+            var client = new ToolLoopBudgetClient { FailSummary = true };
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd)), conversation,
+                save: token => store.SaveAsync(conversation, path, token),
+                autoCompaction: new AutoCompactionPolicy(2100, 300));
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("read output.txt")) events.Add(item);
+            Assert.Equal(1, client.Requests);
+            Assert.Equal(1, client.Summaries);
+            Assert.Contains(events, item => item.Type == "turn_failed" && item.Error!.Contains("summarizer unavailable", StringComparison.Ordinal));
+            Assert.DoesNotContain(conversation.Tree.ActivePath(), node => node.Type == "compaction");
+            Assert.Equal(900, conversation.ActiveMessages()[0].Text.Length);
+            var reloaded = await store.LoadAsync(path);
+            Assert.Contains(reloaded.Tree.ActivePath(), node => node.Type == "tool_outcome");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData("Your input exceeds the context window of this model", false, true)]
+    [InlineData("the request exceeds the available context size, try increasing it", false, true)]
+    [InlineData("400 `prompt too long; exceeded max context length by 100918 tokens`", false, true)]
+    [InlineData("400 {\"code\":\"1261\",\"message\":\"Prompt exceeds max length\"}", false, true)]
+    [InlineData("400 Input length (265330) exceeds model's maximum context length (262144).", false, true)]
+    [InlineData("400 model runner crashed", false, false)]
+    [InlineData("rate limit: too many requests; context_length_exceeded", false, false)]
+    [InlineData("Your input exceeds the context window of this model", true, false)]
+    public async Task ProviderOverflowRetriesOnceOnlyBeforeContentWithShortenedRequest(string error, bool afterContent, bool recover)
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, new string('P', 900)));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+        var client = new OverflowBudgetClient(error, afterContent);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()), noTools: true), conversation,
+            autoCompaction: new AutoCompactionPolicy(4000, 500));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("new prompt")) events.Add(item);
+
+        Assert.Equal(recover ? 2 : 1, client.Requests);
+        Assert.Equal(recover ? 1 : 0, client.Summaries);
+        Assert.Equal(recover, client.RetrySawSummaryWithoutOldRawUser);
+        Assert.Equal(recover, events.Any(item => item.Type == "model_context_overflow_recovery"));
+        Assert.Contains(events, item => item.Type == (recover ? "turn_completed" : "turn_failed"));
+        Assert.Equal(900, conversation.ActiveMessages()[0].Text.Length);
+        Assert.DoesNotContain(conversation.Tree.ActivePath(), node => node.Type == "compaction");
+        if (recover) Assert.Single(conversation.ActiveMessages(), message => message.Text == "new prompt");
+    }
+
+    [Theory]
+    [InlineData("missing-result")]
+    [InlineData("unknown-result")]
+    [InlineData("duplicate-call")]
+    public async Task OverflowProjectionRefusesMalformedEarlierToolGraph(string graph)
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, new string('P', 900)));
+        if (graph is "missing-result" or "duplicate-call")
+            conversation.Append(new ChatMessage(ChatRole.Assistant,
+                [new FunctionCallContent("orphan", "read", new Dictionary<string, object?> { ["path"] = "missing.txt" })]));
+        if (graph == "unknown-result")
+            conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("orphan", "result")]));
+        if (graph == "duplicate-call")
+        {
+            conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("orphan", "result")]));
+            conversation.Append(new ChatMessage(ChatRole.Assistant,
+                [new FunctionCallContent("orphan", "read", new Dictionary<string, object?> { ["path"] = "missing.txt" })]));
+            conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("orphan", "result")]));
+        }
+        var client = new OverflowBudgetClient("context_length_exceeded", afterContent: false);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()), noTools: true), conversation,
+            autoCompaction: new AutoCompactionPolicy(4000, 500));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("new prompt")) events.Add(item);
+
+        Assert.Equal(1, client.Requests);
+        Assert.Equal(0, client.Summaries);
+        Assert.DoesNotContain(events, item => item.Type == "model_context_overflow_recovery");
+        Assert.Contains(events, item => item.Type == "turn_failed");
+        Assert.Contains(conversation.ActiveMessages().SelectMany(message => message.Contents),
+            content => graph == "unknown-result" ? content is FunctionResultContent { CallId: "orphan" } :
+                content is FunctionCallContent { CallId: "orphan" });
+    }
+
+    [Fact]
+    public async Task RepeatedProviderOverflowStopsAfterOneRecoveryAttempt()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, new string('P', 900)));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "previous answer"));
+        var client = new OverflowBudgetClient("context_length_exceeded", afterContent: false, alwaysOverflow: true);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()), noTools: true), conversation,
+            autoCompaction: new AutoCompactionPolicy(4000, 500));
+        var events = new List<AgentLifecycleEvent>();
+        await foreach (var item in run.RunEventsAsync("new prompt")) events.Add(item);
+        Assert.Equal(2, client.Requests);
+        Assert.Equal(1, client.Summaries);
+        Assert.Contains(events, item => item.Type == "turn_failed");
+        Assert.Single(events, item => item.Type == "model_context_overflow_recovery");
+    }
+
+    [Fact]
+    public void StreamingContextEstimateMatchesSerializedUtf16LengthsIncludingUnicodeAndLargeToolResults()
+    {
+        var context = new ChatMessage[]
+        {
+            new(ChatRole.User, "emoji 😀, Greek α, newline\n, quote \" and backslash \\"),
+            new(ChatRole.Assistant,
+            [new FunctionCallContent("call-1", "read", new Dictionary<string, object?> { ["path"] = "π.txt" })]),
+            new(ChatRole.Tool, [new FunctionResultContent("call-1", new string('Z', 1_100_000) + " ✓")])
+        };
+        const string prompt = "more 😀";
+        var chars = prompt.Length + context.Sum(message =>
+            JsonSerializer.Serialize(message, AIJsonUtilities.DefaultOptions).Length + 64L);
+        var expected = (int)Math.Min(int.MaxValue, (chars + 1) / 2 + 512);
+        Assert.Equal(expected, AutoCompactionPolicy.Estimate(context, prompt));
+    }
+
+    [Fact]
+    public void AutoBudgetIsDisabledWithoutKnownContextWindowAndRejectsInvalidLimits()
+    {
+        Assert.Null(AutoCompactionPolicy.FromEnvironment(_ => null));
+        Assert.Throws<ArgumentException>(() => AutoCompactionPolicy.FromEnvironment(name =>
+            name == "PISHARP_CONTEXT_WINDOW_TOKENS" ? "invalid" : null));
+        Assert.Equal(0, new AutoCompactionPolicy(1024, 1024).TriggerTokens);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoCompactionPolicy(1024, -1).TriggerTokens);
+        var policy = AutoCompactionPolicy.FromEnvironment(name => name == "PISHARP_CONTEXT_WINDOW_TOKENS" ? "2048" : null);
+        Assert.Equal(-14_336, policy!.TriggerTokens);
+        Assert.Equal(1536, AutoCompactionPolicy.FromEnvironment(name => name switch
+        {
+            "PISHARP_CONTEXT_WINDOW_TOKENS" => "2048",
+            "PISHARP_CONTEXT_RESERVE_TOKENS" => "512",
+            _ => null
+        })!.TriggerTokens);
+        Assert.Null(ModelPricing.FromEnvironment(_ => null));
+        var pricing = ModelPricing.FromEnvironment(name => name switch
+        {
+            "PISHARP_INPUT_COST_PER_MILLION" => "2.5",
+            "PISHARP_OUTPUT_COST_PER_MILLION" => "10",
+            _ => null
+        });
+        Assert.Equal(new ModelPricing(2.5m, 10m), pricing);
+        Assert.Throws<ArgumentException>(() => ModelPricing.FromEnvironment(name =>
+            name == "PISHARP_INPUT_COST_PER_MILLION" ? "2" : null));
+        var usage = UsageRecord.Create("fixture", "model", new UsageDetails
+        {
+            InputTokenCount = 10,
+            OutputTokenCount = 2,
+            TotalTokenCount = 0
+        }, null);
+        Assert.Equal(12, usage.TotalTokens);
+    }
+
+    [Fact]
+    public void UsageAccountingAppliesRequestWideModelInputPricingTiers()
+    {
+        var pricing = new ModelPricing(5m, 30m, 0.5m, [new ModelPricingTier(272000, 10m, 45m, 1m, 12.5m)], 6.25m);
+        var below = UsageRecord.Create("tiered", "model", new UsageDetails
+        {
+            InputTokenCount = 200000,
+            CachedInputTokenCount = 100000,
+            OutputTokenCount = 1000,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 10000 }
+        }, pricing);
+        var above = UsageRecord.Create("tiered", "model", new UsageDetails
+        {
+            InputTokenCount = 272001,
+            CachedInputTokenCount = 100000,
+            OutputTokenCount = 1000,
+            AdditionalCounts = new AdditionalPropertiesDictionary<long> { ["cacheWriteTokens"] = 10000 }
+        }, pricing);
+        Assert.Equal(0.6425m, below.Cost);
+        Assert.Equal(1.99001m, above.Cost);
+    }
+
+    [Fact]
+    public void CutAtLatestUserKeepsToolCallWithItsResult()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "first"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("tool1", "read", new Dictionary<string, object?>())]));
+        conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("tool1", "read output")]));
+        conversation.Append(new ChatMessage(ChatRole.User, "second"));
+        var plan = conversation.PrepareCompaction();
+        Assert.NotNull(plan);
+        Assert.Equal(3, plan.MessagesToSummarize.Count);
+        Assert.Equal(conversation.Tree.HeadId, plan.FirstKeptEntryId);
+        Assert.Equal("second", conversation.ContextMessages().Last().Text);
+        conversation.AppendCompaction(plan, "Older tool read output was inspected.");
+        Assert.Equal(4, conversation.ActiveMessages().Count);
+        Assert.Equal(2, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public void RecentTokenBudgetFallsBackBeforeOversizedTrailingToolResults()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "old history"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "old answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, "read the large file"));
+        var currentUserId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("call-1", "read", new Dictionary<string, object?> { ["path"] = "big.txt" })]));
+        var toolCallId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Tool,
+            [new FunctionResultContent("call-1", new string('x', 8000))]));
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction(1000));
+
+        Assert.Equal(toolCallId, plan.FirstKeptEntryId);
+        Assert.Equal(["old history", "old answer"], plan.MessagesToSummarize.Select(message => message.Text));
+        Assert.Equal(["read the large file"], plan.TurnPrefixMessages!.Select(message => message.Text));
+        Assert.True(plan.IsSplitTurn);
+        Assert.NotEqual(currentUserId, plan.FirstKeptEntryId);
+    }
+
+    [Fact]
+    public void CompactionMovesBoundaryPastClosedRecoveryOmissionSuffix()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, new string('U', 100)));
+        var currentUserId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("failed-call", "read", new Dictionary<string, object?> { ["path"] = "current.txt" })]));
+        var failedAssistantId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Tool,
+            [new FunctionResultContent("failed-call", new string('R', 100))]));
+        var toolResultId = conversation.Tree.ActivePath().Last().Id;
+        var interrupted = conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "continue the current task",
+            partialAssistantText = "partial output",
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+        conversation.AppendContextOmission(failedAssistantId);
+        conversation.AppendContextOmission(toolResultId);
+        conversation.AppendContextOmission(interrupted.Id);
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction(15));
+
+        Assert.Equal(failedAssistantId, plan.FirstKeptEntryId);
+        Assert.True(plan.IsSplitTurn);
+        Assert.Equal(["older question", "older answer"], plan.MessagesToSummarize.Select(message => message.Text));
+        Assert.Equal([new string('U', 100)], plan.TurnPrefixMessages!.Select(message => message.Text));
+        Assert.NotEqual(currentUserId, plan.FirstKeptEntryId);
+    }
+
+    [Fact]
+    public void CompactionProjectionDoesNotCountAnInterruptedAssistantTwice()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, "current request"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "partial answer"));
+        var assistantId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "current request",
+            partialAssistantText = "partial answer",
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction(1));
+
+        Assert.Equal(assistantId, plan.FirstKeptEntryId);
+        Assert.Equal(["current request"], plan.TurnPrefixMessages!.Select(message => message.Text));
+        Assert.Equal(4, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public void RecoveryOmissionFallbackDoesNotAdvanceAcrossVisibleInput()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "current request"));
+        var currentRequestId = conversation.Tree.ActivePath().Last().Id;
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "failed attempt"));
+        var failedAssistantId = conversation.Tree.ActivePath().Last().Id;
+        conversation.AppendContextOmission(failedAssistantId);
+        conversation.Append(new ChatMessage(ChatRole.User, "new unsent input"));
+
+        Assert.Null(conversation.RecoveryOmittedAssistantAfter(
+            conversation.Tree.ActivePath().ToList().FindIndex(node => node.Id == currentRequestId)));
+    }
+
+    [Fact]
+    public async Task ManualCompactionSplitsAnInterruptedTurnAtTheAssistantAndSummarizesBothParts()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, new string('U', 100)));
+        conversation.Append(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("read-call", "read", new Dictionary<string, object?> { ["path"] = "current.txt" })]));
+        conversation.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("read-call", new string('R', 80))]));
+        var interrupted = conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "continue the current task",
+            partialAssistantText = new string('P', 80),
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+
+        var plan = Assert.IsType<ConversationSession.CompactionPlan>(conversation.PrepareCompaction(15));
+        Assert.True(plan.IsSplitTurn);
+        Assert.Equal(interrupted.Id, plan.FirstKeptEntryId);
+        Assert.Equal(["older question", "older answer"], plan.MessagesToSummarize.Select(message => message.Text));
+        Assert.Equal(ChatRole.User, plan.TurnPrefixMessages![0].Role);
+        Assert.Equal(3, plan.TurnPrefixMessages!.Count);
+        Assert.Single(plan.TurnPrefixMessages.SelectMany(message => message.Contents).OfType<FunctionCallContent>());
+        Assert.Single(plan.TurnPrefixMessages.SelectMany(message => message.Contents).OfType<FunctionResultContent>());
+
+        var client = new SummaryClient
+        {
+            SummaryResponses = ["older history summary", "current turn prefix summary"],
+            SummaryUsage = new UsageDetails { InputTokenCount = 10, OutputTokenCount = 2, TotalTokenCount = 12 }
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(5000, 1000, 15));
+        Assert.True(await run.CompactAsync("preserve important context"));
+
+        Assert.Equal(2, client.SummaryRequests.Count);
+        Assert.Contains("preserve important context", client.SummaryRequests[0], StringComparison.Ordinal);
+        Assert.Contains("## Goal", client.SummaryRequests[0], StringComparison.Ordinal);
+        Assert.Contains("older question", client.SummaryRequests[0], StringComparison.Ordinal);
+        Assert.Contains("Original Request", client.SummaryRequests[1], StringComparison.Ordinal);
+        Assert.Contains("current.txt", client.SummaryRequests[1], StringComparison.Ordinal);
+        Assert.DoesNotContain("preserve important context", client.SummaryRequests[1], StringComparison.Ordinal);
+        var compaction = Assert.Single(conversation.Tree.Entries, entry => entry.Type == "compaction");
+        Assert.Equal(interrupted.Id, compaction.Payload.GetProperty("firstKeptEntryId").GetString());
+        Assert.Equal("older history summary\n\n---\n\n**Turn Context (split turn):**\n\ncurrent turn prefix summary\n\n<read-files>\ncurrent.txt\n</read-files>",
+            compaction.Payload.GetProperty("summary").GetString());
+        var usage = Assert.Single(conversation.ActiveUsage(), item => item.Source == "compaction");
+        Assert.Equal(20, usage.InputTokens);
+        Assert.Equal(4, usage.OutputTokens);
+        Assert.Equal(24, usage.TotalTokens);
+        Assert.Equal("The conversation history before this point was compacted into the following summary:\n\n<summary>\n" +
+            compaction.Payload.GetProperty("summary").GetString() + "\n</summary>", conversation.ContextMessages()[0].Text);
+        Assert.Equal(new string('P', 80), conversation.ContextMessages().Last().Text);
+        var reloaded = ConversationSession.Parse(conversation.ToJson());
+        Assert.Equal(interrupted.Id, reloaded.Tree.ActivePath().Single(entry => entry.Type == "compaction")
+            .Payload.GetProperty("firstKeptEntryId").GetString());
+        Assert.Equal(conversation.ContextMessages().Select(message => message.Text),
+            reloaded.ContextMessages().Select(message => message.Text));
+    }
+
+    [Fact]
+    public async Task FailedSummaryOrCheckpointCannotReplaceModelContext()
+    {
+        var cwd = Path.GetTempPath();
+        var conversation = Seed(cwd);
+        var before = conversation.Tree.HeadId;
+        var failed = new SummaryClient { FailSummary = true };
+        var run = await ConversationRun.OpenAsync(new PiAgent(failed, new CodingTools(cwd)), conversation);
+        await Assert.ThrowsAsync<IOException>(() => run.CompactAsync());
+        Assert.Equal(before, conversation.Tree.HeadId);
+        var successful = new SummaryClient();
+        var saveFails = await ConversationRun.OpenAsync(new PiAgent(successful, new CodingTools(cwd)), conversation,
+            save: _ => throw new IOException("checkpoint failed"));
+        await Assert.ThrowsAsync<IOException>(() => saveFails.CompactAsync());
+        Assert.Equal(before, conversation.Tree.HeadId);
+        Assert.Equal(4, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public async Task FailedTurnPrefixSummaryLeavesTheCanonicalBranchUntouched()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "older question"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older answer"));
+        conversation.Append(new ChatMessage(ChatRole.User, new string('U', 100)));
+        conversation.Tree.Append("interrupted", JsonSerializer.SerializeToElement(new
+        {
+            prompt = "continue the current task",
+            partialAssistantText = new string('P', 80),
+            terminalType = "turn_interrupted",
+            stopReason = "aborted",
+            errorMessage = "Request was aborted"
+        }));
+        var head = conversation.Tree.HeadId;
+        var client = new SummaryClient
+        {
+            SummaryResponses = ["older history summary", "unused"],
+            FailSummaryNumber = 2
+        };
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())), conversation,
+            autoCompaction: new AutoCompactionPolicy(5000, 1000, 15));
+
+        await Assert.ThrowsAsync<IOException>(() => run.CompactAsync());
+
+        Assert.Equal(2, client.SummaryRequests.Count);
+        Assert.Equal(head, conversation.Tree.HeadId);
+        Assert.DoesNotContain(conversation.Tree.Entries, entry => entry.Type == "compaction");
+        Assert.Equal(4, conversation.ContextMessages().Count);
+    }
+
+    [Fact]
+    public void MalformedCompactionOnInactiveBranchIsRejected()
+    {
+        var conversation = Seed(Path.GetTempPath());
+        var first = conversation.Tree.ActivePath().First(node => node.Type == "chat").Id;
+        conversation.Tree.Append("compaction", JsonSerializer.SerializeToElement(new { summary = "bad", firstKeptEntryId = "missing" }));
+        conversation.Tree.Select(first);
+        Assert.Throws<InvalidDataException>(() => ConversationSession.Parse(conversation.ToJson()));
+    }
+
+    private static ConversationSession Seed(string cwd)
+    {
+        var conversation = new ConversationSession(cwd, "fixture", null);
+        conversation.Append(new ChatMessage(ChatRole.User, "first"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "answer one"));
+        conversation.Append(new ChatMessage(ChatRole.User, "second"));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "answer two"));
+        return conversation;
+    }
+
+    private sealed class OverflowBudgetClient(string error, bool afterContent, bool alwaysOverflow = false) : IChatClient
+    {
+        public int Requests { get; private set; }
+        public int Summaries { get; private set; }
+        public bool RetrySawSummaryWithoutOldRawUser { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            Summaries++;
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Earlier context summary")])
+            {
+                Usage = new UsageDetails { InputTokenCount = 20, OutputTokenCount = 5, TotalTokenCount = 25 }
+            });
+        }
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            Requests++;
+            if (Requests == 1)
+            {
+                if (afterContent) yield return new ChatResponseUpdate(ChatRole.Assistant, "partial output");
+                throw new HttpRequestException(error, null, System.Net.HttpStatusCode.BadRequest);
+            }
+            var snapshot = messages.ToArray();
+            RetrySawSummaryWithoutOldRawUser = snapshot.Any(message => message.Text.Contains("Earlier context summary", StringComparison.Ordinal)) &&
+                !snapshot.Any(message => message.Text == new string('P', 900));
+            if (alwaysOverflow) throw new HttpRequestException(error, null, System.Net.HttpStatusCode.BadRequest);
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ParallelToolBudgetClient : IChatClient
+    {
+        private readonly ConcurrentQueue<string> _requestSnapshots = new();
+        private int _requests;
+        public int Requests => Volatile.Read(ref _requests);
+        public IReadOnlyList<string> RequestSnapshots => _requestSnapshots.ToArray();
+        public int Summaries { get; private set; }
+        public bool ContinuationSawSummaryWithoutOrphanedResults { get; private set; }
+        public bool RepeatRead { get; init; }
+        public bool SecondRequestSawSummaryWithoutOrphans { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            Summaries++;
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Both files were read.")]));
+        }
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var request = Interlocked.Increment(ref _requests);
+            _requestSnapshots.Enqueue(string.Join("; ", messages.Select(message =>
+            {
+                var content = string.Join(',', message.Contents.Select(item => item switch
+                {
+                    FunctionCallContent call => $"call:{call.Name}:{call.CallId}",
+                    FunctionResultContent result => $"result:{result.CallId}",
+                    _ => item.GetType().Name
+                }));
+                return $"{message.Role}[{content}] {message.Text[..Math.Min(message.Text.Length, 80)]}";
+            })));
+            if (request == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [
+                    new FunctionCallContent("first", "read", new Dictionary<string, object?> { ["path"] = "first.txt" }),
+                    new FunctionCallContent("second", "read", new Dictionary<string, object?> { ["path"] = "second.txt" })
+                ]);
+            else if (request == 2 && RepeatRead)
+            {
+                var snapshot = messages.ToArray();
+                SecondRequestSawSummaryWithoutOrphans =
+                    snapshot.Any(message => message.Text.Contains("Both files were read.", StringComparison.Ordinal)) &&
+                    !snapshot.SelectMany(message => message.Contents).Any(content => content is FunctionCallContent or FunctionResultContent);
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("third", "read", new Dictionary<string, object?> { ["path"] = "third.txt" })]);
+            }
+            else
+            {
+                var snapshot = messages.ToArray();
+                ContinuationSawSummaryWithoutOrphanedResults =
+                    snapshot.Any(message => message.Text.Contains("Both files were read.", StringComparison.Ordinal)) &&
+                    !snapshot.SelectMany(message => message.Contents).Any(content => content is FunctionCallContent or FunctionResultContent);
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            }
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ToolLoopBudgetClient : IChatClient
+    {
+        public int Requests { get; private set; }
+        public int Summaries { get; private set; }
+        public bool FailSummary { get; init; }
+        public bool ContinuationSawSummaryAndToolResult { get; private set; }
+        public string LastSummaryRequest { get; private set; } = "";
+        public bool RepeatRead { get; init; }
+        public bool FailSummaryOnce { get; init; }
+        public Action? OnFirstSummary { get; init; }
+        public bool ContinuationSawSummaryWithoutRawToolResult { get; private set; }
+        public bool ContinuationSawSteering { get; private set; }
+        public bool SawRecoveryNotice { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            Summaries++;
+            if (FailSummary || FailSummaryOnce && Summaries == 1) throw new IOException("summarizer unavailable");
+            LastSummaryRequest = messages.Last().Text;
+            if (Summaries == 1) OnFirstSummary?.Invoke();
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "Previous question answered.")])
+            {
+                Usage = new UsageDetails { InputTokenCount = 40, OutputTokenCount = 8, TotalTokenCount = 48 }
+            });
+        }
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            Requests++;
+            if (Requests == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("read-1", "read", new Dictionary<string, object?> { ["path"] = "output.txt" })]);
+            else if (Requests == 2 && RepeatRead)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("read-2", "read", new Dictionary<string, object?> { ["path"] = "small.txt" })]);
+            else
+            {
+                var snapshot = messages.ToArray();
+                SawRecoveryNotice = snapshot.Any(message => message.Text.Contains("Recovery notice", StringComparison.Ordinal));
+                ContinuationSawSteering = snapshot.Any(message => message.Text.Contains("explain the second result", StringComparison.Ordinal));
+                ContinuationSawSummaryWithoutRawToolResult = snapshot.Any(message => message.Text.Contains("Previous question answered.", StringComparison.Ordinal)) &&
+                    !snapshot.SelectMany(message => message.Contents).OfType<FunctionResultContent>().Any();
+                ContinuationSawSummaryAndToolResult = snapshot.Any(message => message.Text.Contains("Previous question answered.", StringComparison.Ordinal)) &&
+                    snapshot.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
+                        .Any(result => result.Result?.ToString()?.Contains(new string('Z', 1400), StringComparison.Ordinal) == true) &&
+                    !snapshot.Any(message => message.Text == new string('A', 900));
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "finished");
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new UsageContent(new UsageDetails { InputTokenCount = 20, OutputTokenCount = 4, TotalTokenCount = 24 })]);
+            }
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class SummaryClient : IChatClient
+    {
+        public bool FailSummary { get; init; }
+        public int? FailSummaryNumber { get; init; }
+        public UsageDetails? SummaryUsage { get; init; }
+        public string LastSummaryRequest { get; private set; } = "";
+        public IReadOnlyList<string>? SummaryResponses { get; init; }
+        public List<string> SummaryRequests { get; } = [];
+        public List<ChatMessage>? SeenMessages { get; private set; }
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            LastSummaryRequest = messages.Last().Text;
+            SummaryRequests.Add(LastSummaryRequest);
+            if (FailSummary || FailSummaryNumber == SummaryRequests.Count)
+                throw new IOException("summary provider failed");
+            var summary = SummaryResponses is { } responses && SummaryRequests.Count <= responses.Count
+                ? responses[SummaryRequests.Count - 1]
+                : "Summary of first turn";
+            return Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, summary)])
+            {
+                Usage = SummaryUsage
+            });
+        }
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            SeenMessages = messages.ToList();
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "continued");
+            await Task.CompletedTask;
+        }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+}

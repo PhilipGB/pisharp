@@ -7,12 +7,14 @@ npm ci --prefix tools/parity/terminal --ignore-scripts --no-audit --no-fund
 npm test --prefix tools/parity/terminal
 python3 -m unittest discover -s tools/parity/terminal -p 'test_*.py'
 python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi \
-  --calibrate --output /tmp/terminal-calibration
+  --calibrate --output artifacts/parity/startup-calibration
 python3 tools/parity/terminal/run.py --pi /tmp/pisharp-current-pi \
-  --output /tmp/terminal-comparison
+  --output artifacts/parity/startup-comparison
 ```
 
 Build PiSharp first. Pi must have its workspace dependencies installed. `--pisharp` selects another built DLL; `--fixture` selects a reusable JSON scenario; `--case 80x24-dark-fullscreen` selects one matrix case. Exit code 0 means all selected checkpoints match; exit code 1 means a product mismatch or an incomplete product scenario. Calibration compares two independent executions of Pi and must pass before relying on cross-product evidence. There is no option to turn product mismatches into success.
+
+Use a distinct directory under `artifacts/parity/` for each generated run. Git ignores this output; it persists locally but needs a separate backup for long-term retention. Select reviewed compact reports/assertions and pinned notes for `docs/parity/fixtures/` when recording evidence. Raw streams stay in the local output directory. See the [evidence storage policy](../../../docs/development/verification.md#parity-evidence-storage).
 
 Each checkpoint captures every viewport cell's characters and width, foreground/background color modes and values, all text attributes, underline style/color and hyperlink. It also records cursor coordinates, visibility, style/blink, active screen, complete normal/alternate buffers with scrollback and wrapping, terminal/input/mouse/focus/paste/keyboard/synchronized-output modes, and default colors. The emulator captures every completed synchronized-output frame with the same full terminal state. The comparison checks named checkpoints and each rendered state transition, collapsing only adjacent identical snapshots and cursor coordinates while that cursor is hidden. Per-checkpoint control buckets are retained for diagnosis, because an asynchronous write can land on either side of a readiness checkpoint. The complete raw stream and its exact match status remain in the evidence and report, including redundant redraw bytes whose scheduling can differ. Fixtures may declare a concurrent request batch unordered only when both current Pi and PiSharp source launch those requests concurrently; request identity/count stay exact, and order around each batch remains exact. Clipboard, image and other string escape payloads remain intact. Image pixel rendering still needs dedicated image fixtures and terminal-profile evidence; captured escape payloads alone do not prove image appearance.
 

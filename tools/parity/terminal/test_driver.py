@@ -23,6 +23,11 @@ apply_test_thread_limit()
 
 
 class DriverTests(unittest.TestCase):
+    def test_session_imports_use_the_owned_agent_directory(self):
+        child_environment = environment(Path('/tmp/parity-agent'), persist_sessions=True)
+        self.assertEqual('/tmp/parity-agent/sessions', child_environment['PISHARP_SESSION_DIR'])
+        self.assertNotIn('PISHARP_SESSION_DIR', environment(Path('/tmp/parity-agent')))
+
     def test_assertion_evidence_omits_raw_and_render_streams(self):
         from run import write_assertion_evidence
 

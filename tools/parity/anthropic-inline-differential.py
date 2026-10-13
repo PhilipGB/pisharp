@@ -9,6 +9,8 @@ import shutil
 import subprocess
 import tempfile
 
+from pi_reference import verify_pi_checkout
+
 from terminal.thread_limits import apply_test_thread_limit
 apply_test_thread_limit()
 
@@ -16,6 +18,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--pi', required=True)
 parser.add_argument('--output', required=True)
 args = parser.parse_args()
+verify_pi_checkout(args.pi)
 pi = pathlib.Path(args.pi).resolve()
 repo = pathlib.Path(__file__).resolve().parents[2]
 probes = pathlib.Path(__file__).resolve().parent
@@ -74,7 +77,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-anthropic-differential-') as di
     (work / 'probe.csproj').write_text(f'''<Project Sdk="Microsoft.NET.Sdk">
 <PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><AssemblyName>PiSharp.Tests</AssemblyName><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
 <ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Cli/PiSharp.Cli.csproj" /><PackageReference Include="xunit" Version="2.9.3" /><Using Include="Xunit" />
-<Compile Include="{repo}/tests/PiSharp.Tests/AnthropicInlineToolTests.cs" Link="AnthropicInlineToolTests.cs" /></ItemGroup></Project>''')
+<Compile Include="{repo}/tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicInlineToolTests.cs" Link="AnthropicInlineToolTests.cs" /></ItemGroup></Project>''')
     environment = dict(os.environ)
     environment['NUGET_HTTP_CACHE_PATH'] = '/tmp/pisharp-nuget-http'
     subprocess.run(['dotnet', 'build', str(work / 'probe.csproj'), '-p:UseSharedCompilation=false', '-m:1', '--nologo'], env=environment, check=True, stdout=subprocess.DEVNULL, timeout=120)

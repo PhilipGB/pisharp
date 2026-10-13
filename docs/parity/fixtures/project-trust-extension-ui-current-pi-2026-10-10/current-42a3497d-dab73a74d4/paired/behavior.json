@@ -1,0 +1,73 @@
+{
+  "fixture": "project-trust-extension-ui",
+  "piSha": "42a3497d03ad17e308a2299fa824727894f2c0ec",
+  "pisharpSha": "dab73a74d4fb762c78365ec4e58296370303ebc0",
+  "paired": {
+    "pi": {
+      "chatRequests": 1,
+      "trustedProjectSkillPresent": true,
+      "systemPromptSectionOrder": [
+        "tools",
+        "rules",
+        "docs",
+        "skills",
+        "cwd"
+      ],
+      "normalizedSystemPromptSha256": "7f4100f7c700f2dcfde0929ae2fa634d7242ada53df572e8e6f782fc0da9dd6a",
+      "scenarioError": null
+    },
+    "pisharp": {
+      "chatRequests": 1,
+      "trustedProjectSkillPresent": true,
+      "systemPromptSectionOrder": [
+        "tools",
+        "rules",
+        "docs",
+        "skills",
+        "cwd"
+      ],
+      "normalizedSystemPromptSha256": "7f4100f7c700f2dcfde0929ae2fa634d7242ada53df572e8e6f782fc0da9dd6a",
+      "scenarioError": null
+    },
+    "terminalMatch": false,
+    "httpMatch": false,
+    "stateDifferences": 24110,
+    "renderDifferences": 18921,
+    "rawByteMatch": false,
+    "startupDialogFrames": [
+      {
+        "id": "trust-select",
+        "stateMatched": true,
+        "activeScreen": "normal"
+      },
+      {
+        "id": "trust-select-option",
+        "stateMatched": true,
+        "activeScreen": "normal"
+      },
+      {
+        "id": "trust-confirm",
+        "stateMatched": true,
+        "activeScreen": "normal"
+      }
+    ],
+    "scenarioErrors": {},
+    "normalizedSystemPromptMatch": true,
+    "providerRequestDifferenceCount": 1,
+    "providerRequestDifferencePaths": [
+      "$.messages[0].content"
+    ]
+  },
+  "calibration": {
+    "match": true,
+    "terminalMatch": true,
+    "httpMatch": true,
+    "renderDifferences": 0
+  },
+  "pisharpExtensionTrace": [
+    "configured",
+    "trust-undecided:true",
+    "trust-decision:true",
+    "trust-ui:tui:true:Continue:true:approved"
+  ]
+}
