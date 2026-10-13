@@ -61,22 +61,10 @@ catch (Exception e) when (e is not OperationCanceledException)
 using var projectRuntimeOwner = projectRuntime;
 modelRuntime.SetVirtualModelRegistry(projectRuntime.Extensions.Registration.VirtualModels);
 var projectBinding = new ActiveProjectRuntime(projectConfiguration, projectRuntime, cli);
-ModelSelection selection;
-ConnectionSettings connection;
-var thinking = cli.Thinking ?? "off";
-try
-{
-    selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
-    thinking = explicitThinking ?? userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? ThinkingLevels.Default;
-    thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
-    connection = selection.Connection;
-}
-catch (Exception error) when (error is ArgumentException or InvalidOperationException or InvalidDataException or IOException or System.Text.Json.JsonException)
-{
-    Console.Error.WriteLine(error.Message);
-    Environment.ExitCode = 2;
-    return;
-}
+var initialSelection = await InitialModelComposition.ResolveAsync(modelRuntime, cli, explicitThinking, userSettings);
+if (initialSelection is null) return;
+var selection = initialSelection.Selection;
+var thinking = initialSelection.Thinking;
 async Task<IReadOnlyList<ModelDescriptor>> GetModelsAsync(CancellationToken token = default) =>
     await modelRuntime.ListModelsAsync(projectBinding.Arguments.Provider, token);
 using var codemodeHttp = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
@@ -104,71 +92,20 @@ catch (Exception error) when (error is NotSupportedException or InvalidOperation
 }
 var store = projectRuntime.Store;
 using var extensionLease = new ExtensionLease(projectRuntime.TransferExtensions());
-PiAgent agent;
-try
-{
-    agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings,
-        modelRuntimeController.CreateVirtualModelRouter(selection), codemodeModels);
-}
-catch (ArgumentException e)
-{
-    Console.Error.WriteLine(e.Message);
-    Environment.ExitCode = 2;
-    return;
-}
-AutoCompactionPolicy? contextPolicy;
-ModelPricing? modelPricing;
-try
-{
-    contextPolicy = userSettings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
-    modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
-}
-catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
-ActiveModelRuntime modelBinding;
+var initialModel = InitialModelComposition.Create(projectRuntime, chat, selection, thinking, cli, userSettings,
+    modelRuntimeController, codemodeModels);
+if (initialModel is null) return;
 var runComposition = new ConversationRunComposition(projectBinding, modelRuntimeController);
+var opened = await ConversationStartup.OpenAsync(projectBinding, initialModel, modelRuntime, modelRuntimeController,
+    codemodeModels, runComposition, currentDirectory, explicitThinking);
+if (opened is null) return;
+var modelBinding = opened.Model;
+var conversationBinding = opened.Conversation;
 Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path,
     string? runProvider = null, string? reasoningLevel = null, ProjectRuntimeContext? targetProject = null,
     IReadOnlyList<string>? activeToolNamesOverride = null, PreparedModelRuntime? targetRuntime = null) =>
     runComposition.OpenAsync(modelBinding, runningAgent, session, path, runProvider, reasoningLevel,
         targetProject, activeToolNamesOverride, targetRuntime);
-var sessionPath = SessionStartupController.ResolvePath(cli, store);
-ConversationSession conversation;
-ConversationRun conversationRun;
-try
-{
-    var startupConversation = await SessionStartupController.LoadAsync(cli, projectRuntime, selection, currentDirectory, sessionPath);
-    conversation = startupConversation.Conversation;
-    sessionPath = startupConversation.Path;
-    var startupModel = await SessionStartupController.ResolveModelAsync(conversation, selection, thinking,
-        cli, explicitThinking, userSettings, modelRuntime);
-    selection = startupModel.Selection;
-    thinking = startupModel.Thinking;
-    if (startupModel.RebuildRuntime)
-    {
-        connection = selection.Connection;
-        thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
-        chat = ProviderChatClientFactory.Create(selection, userSettings.Retry?.Provider, userSettings.HttpIdleTimeoutMs);
-        contextPolicy = userSettings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");
-        modelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? selection.Model.Pricing;
-        agent = projectRuntime.CreateAgent(chat, selection, thinking, cli, userSettings,
-            modelRuntimeController.CreateVirtualModelRouter(selection), codemodeModels);
-    }
-    modelBinding = new ActiveModelRuntime(selection, chat, agent, thinking, contextPolicy, modelPricing);
-    using var initialNameChange = cli.SessionName is null ? null : conversation.BeginSessionNameChange(cli.SessionName);
-    if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
-    var initialPath = sessionPath;
-    conversationRun = await OpenRunAsync(agent, conversation, initialPath);
-    if ((cli.SessionName is not null || cli.ForkSource is not null) && sessionPath is not null)
-        await store.SaveAsync(conversation, sessionPath);
-    initialNameChange?.Commit();
-}
-catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
-{
-    Console.Error.WriteLine($"Could not open session: {e.Message}");
-    Environment.ExitCode = 2;
-    return;
-}
-var conversationBinding = new ActiveConversationRuntime(conversation, conversationRun, sessionPath);
 var sessionController = new InteractiveSessionController(projectBinding.Store, projectBinding.Arguments.NoSession,
     (branch, path) => OpenRunAsync(modelBinding.Agent, branch, path));
 var projectSessionRuntimeFactory = new ProjectSessionRuntimeFactory(agentDirectory, projectBinding.Arguments,
