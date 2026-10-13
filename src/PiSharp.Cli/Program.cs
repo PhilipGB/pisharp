@@ -101,16 +101,10 @@ var opened = await ConversationStartup.OpenAsync(projectBinding, initialModel, m
 if (opened is null) return;
 var modelBinding = opened.Model;
 var conversationBinding = opened.Conversation;
-Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path,
-    string? runProvider = null, string? reasoningLevel = null, ProjectRuntimeContext? targetProject = null,
-    IReadOnlyList<string>? activeToolNamesOverride = null, PreparedModelRuntime? targetRuntime = null) =>
-    runComposition.OpenAsync(modelBinding, runningAgent, session, path, runProvider, reasoningLevel,
-        targetProject, activeToolNamesOverride, targetRuntime);
-var sessionController = new InteractiveSessionController(projectBinding.Store, projectBinding.Arguments.NoSession,
-    (branch, path) => OpenRunAsync(modelBinding.Agent, branch, path));
-var projectSessionRuntimeFactory = new ProjectSessionRuntimeFactory(agentDirectory, projectBinding.Arguments,
-    configuredSessionDirectory, trustStore, modelRuntime, codemodeModels);
-var projectResourceReload = new ProjectResourceReload(agentDirectory, configuredSessionDirectory, trustStore, modelRuntime);
+var modelTransitions = new ConversationModelTransitions(projectBinding, modelBinding, conversationBinding,
+    modelRuntimeController, codemodeModels, runComposition);
+var projectTransitions = new ProjectConversationTransitions(agentDirectory, configuredSessionDirectory, trustStore,
+    projectBinding, modelBinding, conversationBinding, modelRuntime, codemodeModels, runComposition, extensionLease);
 bool print = projectBinding.Arguments.Print || projectBinding.Arguments.Mode == "print" || Console.IsInputRedirected || Console.IsOutputRedirected;
 var prompt = projectBinding.Arguments.Prompt;
 // Pi combines trimmed piped input before @file content and the positional prompt.
@@ -316,70 +310,11 @@ async Task ExecuteInteractiveBashAsync(string command, bool excludeFromContext, 
         cancellationToken);
 }
 
-async Task AdoptPreparedModelRuntime(PreparedModelRuntime prepared, bool recordModelChange)
-{
-    var nextAgent = projectBinding.Runtime.CreateAgent(prepared.ChatClient, prepared.Selection, prepared.Thinking, projectBinding.Arguments, projectBinding.Settings,
-        prepared.VirtualModelRouter, codemodeModels);
-    var nextRun = await ConversationModelReplacement.ReplaceAsync(conversationBinding.Conversation, modelBinding.Selection, modelBinding.Thinking, prepared,
-        recordModelChange,
-        () => OpenRunAsync(nextAgent, conversationBinding.Conversation, conversationBinding.Path, prepared.Selection.Provider.Id, prepared.Thinking,
-            targetRuntime: prepared),
-        conversationBinding.Path is null ? null : () => projectBinding.Store.SaveAsync(conversationBinding.Conversation, conversationBinding.Path));
-    modelBinding.AdoptPrepared(prepared, nextAgent);
-    conversationBinding.ReplaceRun(nextRun);
-}
-
-Task ReplaceModelRuntime(ModelSelection nextSelection, string nextThinking, bool recordModelChange,
-    bool requireAuthenticated = true) => AdoptPreparedModelRuntime(
-        modelRuntimeController.Prepare(nextSelection, nextThinking, requireAuthenticated), recordModelChange);
-
-async Task ApplyModelSelectionAsync(ModelSelection nextSelection, string nextThinking)
-{
-    await modelRuntimeController.ApplySelectionAsync(nextSelection, nextThinking, modelBinding.Agent, conversationBinding.Run,
-        prepared =>
-        {
-            modelBinding.AdoptPrepared(prepared);
-        }, prepared => AdoptPreparedModelRuntime(prepared, recordModelChange: true));
-}
-
 async Task<IReadOnlyList<ModelDescriptor>> GetRpcModelsAsync(string? providerId, CancellationToken token) =>
     (await modelRuntime.ListModelsAsync(providerId, token, includeOutOfScope: true)).Where(model => model.Available).ToArray();
 
 async Task<IReadOnlyList<ModelDescriptor>> GetRpcCycleModelsAsync(string? providerId, CancellationToken token) =>
     (await modelRuntime.ListModelsAsync(providerId, token)).Where(model => model.Available).ToArray();
-
-async Task<ModelDescriptor> SelectRpcModelAsync(ModelDescriptor model, CancellationToken token)
-{
-    var nextSelection = await modelRuntimeController.ResolveRpcModelAsync(model, token);
-    var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, modelBinding.Thinking);
-    await ApplyModelSelectionAsync(nextSelection, nextThinking);
-    return modelBinding.Selection.Model;
-}
-
-async Task<string> SetRpcThinkingLevelAsync(string level, CancellationToken token)
-{
-    token.ThrowIfCancellationRequested();
-    var normalized = ThinkingLevels.Normalize(level);
-    var nextThinking = ThinkingLevels.ValidateForModel(normalized, modelBinding.Selection.Model.Reasoning,
-        modelBinding.Selection.Model.ThinkingLevelMap);
-    if (nextThinking.Equals(modelBinding.Thinking, StringComparison.Ordinal)) return modelBinding.Thinking;
-    await ReplaceModelRuntime(modelBinding.Selection, nextThinking, recordModelChange: false);
-    return modelBinding.Thinking;
-}
-
-Task<string> SetRpcThinkingLevelDuringRunAsync(string level, CancellationToken token)
-{
-    token.ThrowIfCancellationRequested();
-    var normalized = ThinkingLevels.Normalize(level);
-    var nextThinking = ThinkingLevels.ValidateForModel(normalized, modelBinding.Selection.Model.Reasoning,
-        modelBinding.Selection.Model.ThinkingLevelMap);
-    if (nextThinking.Equals(modelBinding.Thinking, StringComparison.Ordinal)) return Task.FromResult(modelBinding.Thinking);
-    if (!conversationBinding.Run.SetThinkingLevelDuringRun(nextThinking,
-        ThinkingLevels.ToOptions(nextThinking, modelBinding.Selection.Model.ThinkingLevelMap)))
-        throw new InvalidOperationException("The active run is already settling.");
-    modelBinding.SetThinking(nextThinking);
-    return Task.FromResult(modelBinding.Thinking);
-}
 
 var rpcUserSettings = new RpcUserSettingsController(agentDirectory, Environment.GetEnvironmentVariable,
     () => projectBinding.ProjectSettings,
@@ -402,13 +337,13 @@ var terminalProjectCommands = editor is null ? null : new TerminalProjectCommand
     terminalTrustPicker, editor, terminalScreen);
 var terminalSessionImport = editor is null ? null : new TerminalSessionImport(projectBinding, modelBinding, conversationBinding,
     () => editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false),
-    () => projectSessionRuntimeFactory, AdoptProjectSession);
+    () => projectTransitions.SessionFactory, AdoptProjectSession);
 var terminalLlamaManager = editor is null ? null : new TerminalLlamaManager(modelRuntime, editor, catalogHttp,
     Environment.GetEnvironmentVariable);
 var terminalProviderLogin = editor is null ? null : new TerminalProviderLogin(modelRuntime, editor, agentDirectory,
     Environment.GetEnvironmentVariable,
     () => projectBinding.WorkingDirectory, () => modelBinding.Selection.Provider.Id,
-    async () => await ReplaceModelRuntime(await modelRuntime.ResolveAsync(modelBinding.Selection.Provider.Id, modelBinding.Selection.Model.Id), modelBinding.Thinking, false),
+    async () => await modelTransitions.ReplaceAsync(await modelRuntime.ResolveAsync(modelBinding.Selection.Provider.Id, modelBinding.Selection.Model.Id), modelBinding.Thinking, false),
     ReloadResources, () => HandleEditorApplicationAction("app.message.copy"));
 void ShowModelChangeStatus(bool persistAsDefault = false)
 {
@@ -425,7 +360,7 @@ async Task SelectModelAsync()
     var picked = await terminalModelPicker.ShowAsync(modelBinding.Selection);
     if (picked is null) return;
     var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(picked.Selection, modelBinding.Thinking);
-    await ApplyModelSelectionAsync(picked.Selection, nextThinking);
+    await modelTransitions.ApplySelectionAsync(picked.Selection, nextThinking);
     if (picked.PersistAsDefault)
     {
         await SaveSettingAsync(projectScope: false, "defaultProvider", modelBinding.Selection.Provider.Id);
@@ -436,7 +371,7 @@ async Task SelectModelAsync()
 
 async Task ResumeSessionAsync(SessionListing listing)
 {
-    var resumed = await sessionController.ResumeAsync(conversationBinding.Conversation, conversationBinding.Path, listing,
+    var resumed = await projectTransitions.Sessions.ResumeAsync(conversationBinding.Conversation, conversationBinding.Path, listing,
         modelBinding.Connection.Model, modelBinding.Connection.Endpoint?.ToString(), modelBinding.Selection.Provider.Id);
     if (resumed is null)
     {
@@ -462,7 +397,7 @@ async Task SelectSessionAsync()
 
 async Task ForkFromUserAsync(string id)
 {
-    var branch = await sessionController.ForkAtUserAsync(conversationBinding.Conversation, conversationBinding.Path, id);
+    var branch = await projectTransitions.Sessions.ForkAtUserAsync(conversationBinding.Conversation, conversationBinding.Path, id);
     conversationBinding.Adopt(branch.Conversation, branch.Run, branch.Path);
     LoadSessionTranscript();
     if (branch.Prompt is { } draft) editor?.Prefill(draft);
@@ -511,7 +446,7 @@ async Task<(UserSettings User, UserSettings? Project)> SaveSettingCoreAsync(bool
         conversationBinding.Run.SetFollowUpMode(projectBinding.Settings.FollowUpMode ?? PromptDeliveryMode.OneAtATime);
     if (setting is "images.blockImages" or "compaction.enabled" or "retry.provider.maxRetries" or
         "retry.provider.maxRetryDelayMs" or "retry.provider.timeoutMs" or "httpIdleTimeoutMs")
-        await ReplaceModelRuntime(modelBinding.Selection, modelBinding.Thinking, recordModelChange: false);
+        await modelTransitions.ReplaceAsync(modelBinding.Selection, modelBinding.Thinking, recordModelChange: false);
     if (setting is "theme" or "terminal.trueColor")
     {
         RefreshTerminalTheme();
@@ -552,7 +487,7 @@ async Task HandleEditorApplicationAction(string action)
             case "app.thinking.cycle":
                 var nextThinking = terminalModelNavigation.NextThinkingLevel(modelBinding.Selection, modelBinding.Thinking);
                 if (nextThinking is null) return;
-                await ReplaceModelRuntime(modelBinding.Selection, nextThinking, recordModelChange: false);
+                await modelTransitions.ReplaceAsync(modelBinding.Selection, nextThinking, recordModelChange: false);
                 Console.WriteLine($"Thinking level: {modelBinding.Thinking}");
                 break;
             case "app.model.select":
@@ -589,7 +524,7 @@ async Task HandleEditorApplicationAction(string action)
                 var nextSelection = await terminalModelNavigation.NextModelAsync(() => modelBinding.Selection, projectBinding.Arguments.Provider, direction);
                 if (nextSelection is null) return;
                 var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, modelBinding.Thinking);
-                await ApplyModelSelectionAsync(nextSelection, compatibleThinking);
+                await modelTransitions.ApplySelectionAsync(nextSelection, compatibleThinking);
                 ShowModelChangeStatus();
                 break;
         }
@@ -601,87 +536,24 @@ async Task HandleEditorApplicationAction(string action)
     finally { terminalScreen?.SetFooter(IdleFooter()); }
 }
 
-async Task ReloadResources()
+void RefreshProjectUi()
 {
-    ProjectRuntimeContext? nextProject = null;
-    var previousContextPolicy = modelBinding.ContextPolicy;
-    try
-    {
-        var reload = await projectResourceReload.LoadAsync(projectBinding.WorkingDirectory, () => projectBinding.Settings, () => projectBinding.Arguments, projectBinding.Trusted,
-            usesDefaultToolsSetting, () => conversationBinding.Run.ActiveToolNames);
-        using var nextConfiguration = reload.Configuration;
-        var reloadPlan = reload.ToolPlan;
-        nextProject = reload.Project;
-        ConfigureMcpAuthorizationUrlPresenter(nextProject);
-        modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
-        var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,
-            Environment.GetEnvironmentVariable);
-        var reloadAgentArguments = usesDefaultToolsSetting
-            ? reloadPlan.Arguments with { Tools = null }
-            : reloadPlan.Arguments;
-        var nextAgent = nextProject.CreateAgent(modelBinding.Chat, modelBinding.Selection, modelBinding.Thinking, reloadAgentArguments, nextConfiguration.Settings,
-            nextController.CreateVirtualModelRouter(modelBinding.Selection), codemodeModels);
-        var nextContextPolicy = nextConfiguration.Settings.ResolveCompactionPolicy(modelBinding.Selection.Model.ContextLength, Environment.GetEnvironmentVariable,
-            $"{modelBinding.Selection.Provider.Id}/{modelBinding.Selection.Model.Id}");
-        var nextModelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? modelBinding.Selection.Model.Pricing;
-        var nextRun = await OpenRunAsync(nextAgent, conversationBinding.Conversation, conversationBinding.Path, targetProject: nextProject,
-            activeToolNamesOverride: reloadPlan.ActiveToolNames);
-        extensionLease.Replace(nextProject.TransferExtensions());
-        projectBinding.Adopt(nextConfiguration, nextProject, reloadPlan.Arguments);
-        modelBinding.SetContext(nextContextPolicy, nextModelPricing);
-        sessionController = new InteractiveSessionController(projectBinding.Store, projectBinding.Arguments.NoSession,
-            (branch, path) => OpenRunAsync(modelBinding.Agent, branch, path));
-        projectSessionRuntimeFactory = new ProjectSessionRuntimeFactory(agentDirectory, projectBinding.Arguments,
-            configuredSessionDirectory, trustStore, modelRuntime, codemodeModels);
-        terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(projectBinding.Store, editor);
-        RefreshTerminalTheme();
-        terminalScreen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
-        modelBinding.ReplaceAgent(nextAgent);
-        conversationBinding.ReplaceRun(nextRun);
-        LoadSessionTranscript();
-    }
-    catch
-    {
-        modelBinding.RestoreContextPolicy(previousContextPolicy);
-        nextProject?.Dispose();
-        throw;
-    }
-}
-void AdoptProjectSession(ProjectSessionRuntime replacement)
-{
-    var nextProject = replacement.Project;
-    ConfigureMcpAuthorizationUrlPresenter(nextProject);
-    extensionLease.Replace(nextProject.TransferExtensions());
-    projectBinding.Adopt(nextProject.Configuration, nextProject);
-    conversationBinding.Adopt(replacement.Conversation, replacement.Run, replacement.Path);
-    modelBinding.AdoptProject(replacement);
-    sessionController = new InteractiveSessionController(projectBinding.Store, projectBinding.Arguments.NoSession,
-        (branch, path) => OpenRunAsync(modelBinding.Agent, branch, path));
     terminalSessionPicker = editor is null ? null : new TerminalSessionPicker(projectBinding.Store, editor);
     RefreshTerminalTheme();
     terminalScreen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
-    terminalScreen?.SetFooter(IdleFooter());
-    LoadSessionTranscript();
 }
-
-async Task<bool> SwitchProjectSessionAsync(string sessionReference, CancellationToken cancellationToken)
-{
-    var targetPath = Path.GetFullPath(sessionReference, projectBinding.WorkingDirectory);
-    var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-    if (conversationBinding.Path is not null && Path.GetFullPath(conversationBinding.Path).Equals(targetPath, comparison)) return false;
-    if (conversationBinding.Path is not null) await projectBinding.Store.SaveAsync(conversationBinding.Conversation, conversationBinding.Path, cancellationToken);
-    using var replacement = await projectSessionRuntimeFactory.OpenAsync(targetPath, projectBinding.WorkingDirectory,
-        modelBinding.Selection, modelBinding.Thinking, keepSourceSessionDirectory: true, cancellationToken: cancellationToken);
-    AdoptProjectSession(replacement);
-    return false;
-}
-
-Task ValidateRpcSessionSwitchAsync(string sessionReference, CancellationToken cancellationToken)
-{
-    cancellationToken.ThrowIfCancellationRequested();
-    projectSessionRuntimeFactory.ValidateExistingSwitchTarget(sessionReference, projectBinding.WorkingDirectory);
-    return Task.CompletedTask;
-}
+Task ReloadResources() => projectTransitions.ReloadAsync(usesDefaultToolsSetting,
+    ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, LoadSessionTranscript);
+void AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.Adopt(replacement,
+    ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, () =>
+    {
+        terminalScreen?.SetFooter(IdleFooter());
+        LoadSessionTranscript();
+    });
+Task<bool> SwitchProjectSessionAsync(string reference, CancellationToken token) =>
+    projectTransitions.SwitchAsync(reference, AdoptProjectSession, token);
+Task ValidateRpcSessionSwitchAsync(string reference, CancellationToken token) =>
+    projectTransitions.ValidateSwitchAsync(reference, token);
 
 if (projectBinding.Arguments.Mode == "rpc")
 {
@@ -693,7 +565,7 @@ if (projectBinding.Arguments.Mode == "rpc")
     async Task<bool> StartRpcSessionAsync(string? parentSession, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var created = await sessionController.NewAsync(conversationBinding.Conversation, conversationBinding.Path, parentSession);
+        var created = await projectTransitions.Sessions.NewAsync(conversationBinding.Conversation, conversationBinding.Path, parentSession);
         AdoptRpcSession(created);
         return false;
     }
@@ -702,7 +574,7 @@ if (projectBinding.Arguments.Mode == "rpc")
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var forked = await sessionController.ForkPreparedAsync(conversationBinding.Conversation, conversationBinding.Path, entryId, branchSnapshot, prompt);
+        var forked = await projectTransitions.Sessions.ForkPreparedAsync(conversationBinding.Conversation, conversationBinding.Path, entryId, branchSnapshot, prompt);
         AdoptRpcSession(forked);
         return forked.Prompt;
     }
@@ -710,14 +582,14 @@ if (projectBinding.Arguments.Mode == "rpc")
     async Task<string?> PrepareRpcCloneAsync(ConversationSession branchSnapshot, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return await sessionController.PrepareCloneAsync(conversationBinding.Conversation, conversationBinding.Path, branchSnapshot, cancellationToken);
+        return await projectTransitions.Sessions.PrepareCloneAsync(conversationBinding.Conversation, conversationBinding.Path, branchSnapshot, cancellationToken);
     }
 
     async Task<bool> CloneRpcSessionAsync(ConversationSession branchSnapshot, string? branchPath,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var cloned = await sessionController.ActivatePreparedCloneAsync(branchSnapshot, branchPath);
+        var cloned = await projectTransitions.Sessions.ActivatePreparedCloneAsync(branchSnapshot, branchPath);
         AdoptRpcSession(cloned);
         return false;
     }
@@ -727,11 +599,11 @@ if (projectBinding.Arguments.Mode == "rpc")
         projectBinding.Resources, GetRpcModelsAsync,
         extensionLease.Current.Registration, () => modelBinding.Selection.Authenticated ? null :
             $"Provider '{modelBinding.Selection.Provider.Id}' is not authenticated. Use /login {modelBinding.Selection.Provider.Id} or configure {modelBinding.Selection.Provider.ApiKeyEnvironment ?? "a credential"}.",
-        SelectRpcModelAsync, () => conversationBinding.Run, () => modelBinding.Thinking, () => modelRuntime.Scope.Count > 0,
-        SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(modelBinding.Selection.Model.Reasoning,
+        modelTransitions.SelectRpcModelAsync, () => conversationBinding.Run, () => modelBinding.Thinking, () => modelRuntime.Scope.Count > 0,
+        modelTransitions.SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(modelBinding.Selection.Model.Reasoning,
             modelBinding.Selection.Model.ThinkingLevelMap),
         () => modelBinding.Selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(modelBinding.Selection),
-        SetRpcThinkingLevelDuringRunAsync, rpcUserSettings.SetAutoRetryEnabledAsync, StartRpcSessionAsync,
+        modelTransitions.SetRpcThinkingLevelDuringRunAsync, rpcUserSettings.SetAutoRetryEnabledAsync, StartRpcSessionAsync,
         ForkRpcSessionAsync, CloneRpcSessionAsync, SwitchProjectSessionAsync,
         () => projectBinding.Resources, () => extensionLease.Current.Registration,
         rpcUserSettings.SetPromptDeliveryModeAsync,
@@ -812,7 +684,7 @@ else
                             await terminalProviderCommands.SetScopeAsync(argument, projectBinding.Arguments.Provider);
                             break;
                         case "/thinking":
-                            await terminalProviderCommands.SetThinkingAsync(argument, ReplaceModelRuntime);
+                            await terminalProviderCommands.SetThinkingAsync(argument, modelTransitions.ReplaceAsync);
                             break;
                         case "/login":
                             await terminalProviderLogin!.ShowAsync(argument);
@@ -823,7 +695,7 @@ else
                             terminalScreen?.SetFooter(IdleFooter());
                             break;
                         case "/logout":
-                            await terminalProviderCommands.LogoutAsync(argument, ReplaceModelRuntime);
+                            await terminalProviderCommands.LogoutAsync(argument, modelTransitions.ReplaceAsync);
                             break;
                         case "/compact":
                             Console.WriteLine(await conversationBinding.Run.CompactAsync(argument) ? "Context compacted; full history retained." :
@@ -852,7 +724,7 @@ else
                                 await SelectModelAsync();
                                 break;
                             }
-                            await terminalProviderCommands.SelectNamedModelAsync(argument, ApplyModelSelectionAsync);
+                            await terminalProviderCommands.SelectNamedModelAsync(argument, modelTransitions.ApplySelectionAsync);
                             ShowModelChangeStatus();
                             break;
                         case "/fork":
@@ -867,9 +739,9 @@ else
                         case "/clone":
                             SessionBranchResult branch;
                             if (command == "/clone")
-                                branch = await sessionController.CloneAsync(conversationBinding.Conversation, conversationBinding.Path);
+                                branch = await projectTransitions.Sessions.CloneAsync(conversationBinding.Conversation, conversationBinding.Path);
                             else
-                                branch = await sessionController.NewAsync(conversationBinding.Conversation, conversationBinding.Path, conversationBinding.Path);
+                                branch = await projectTransitions.Sessions.NewAsync(conversationBinding.Conversation, conversationBinding.Path, conversationBinding.Path);
                             conversationBinding.Adopt(branch.Conversation, branch.Run, branch.Path);
                             LoadSessionTranscript();
                             Console.WriteLine($"{command[1..]}: {conversationBinding.Path ?? "(ephemeral)"}");
