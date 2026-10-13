@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 11, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 7}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 12, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 6}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -243,7 +243,8 @@
         "Fail-first OpenAI Responses loopback cases measured immediate second requests after Retry-After not-a-date/Infinity (7-119 ms). After invalid dates return no server delay, both cases wait for exponential fallback; a cancellation case verifies an in-progress malformed-header fallback is cancelled without a retry. Existing server-delay maximum coverage still rejects the second request. Focused filter passes 6/6; format and warnings-as-errors build pass; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head CI 36758603590 with 1009/1009 tests and zero skips.",
         "Current Pi 3874b3e98 adds capacity retry wording. Three cases failed first; focused retry tests pass 17/17, Pi retry tests pass 25/25. Six paired scenarios compare request contexts/counts, ordered retry event payloads, recovery/exhaustion, enabled/zero budgets, billing exclusion, backoff cancellation and cleared state. See docs/parity/fixtures/provider-capacity-retry-2026-10-02.md. Format verification, zero-warning build and all 1098 tests pass with zero skips; Exact-head Linux CI 36994405262 passes on source 095c893a15f5fcdbea356d6c1cfbc57c8c4c5329, including all 1098 tests with zero skips; broader classifier/lifecycle parity remains open.",
         "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 7bd01fb9, 4b994d5e to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
-        "The transient retry classifier now accepts provider returned an error while retaining quota/context exclusions and retry budgets. The new wording failed first, then focused tests passed. Twelve current-Pi agent/session comparisons match request contexts/counts, ordered recovery/exhaustion events, disabled/zero budgets, billing exclusions and backoff cancellation for both capacity and gateway messages. See docs/parity/fixtures/current-pi-refresh-2026-10-13/gateway-retry.json, tools/parity/capacity-retry-differential.py, tests/PiSharp.Tests/Runtime/Agents/AgentRunRetryPolicyTests.cs. This closes the named current-source delta, not the broader capability."
+        "The transient retry classifier now accepts provider returned an error while retaining quota/context exclusions and retry budgets. The new wording failed first, then focused tests passed. Twelve current-Pi agent/session comparisons match request contexts/counts, ordered recovery/exhaustion events, disabled/zero budgets, billing exclusions and backoff cancellation for both capacity and gateway messages. See docs/parity/fixtures/current-pi-refresh-2026-10-13/gateway-retry.json, tools/parity/capacity-retry-differential.py, tests/PiSharp.Tests/Runtime/Agents/AgentRunRetryPolicyTests.cs. This closes the named current-source delta, not the broader capability.",
+        "Malformed Unicode escapes are retained as literal text without dropping later fields; valid escapes decode normally and incomplete Unicode escapes keep Pi's prefix semantics. A pure Core parser also matches Pi's trimming and repair ordering. Native Chat/Responses SDK results are repaired before MAF and replay using parsed arguments; the shared raw capture now supports Anthropic streaming, and Bedrock/RPC reuse the parser. Five native SDK cases failed first. Exact comparisons match 175 prefix/repair vectors and nine real Pi/PiSharp provider tool results. SDK replay, a live RPC read spanning valid and malformed Unicode, and Bedrock controls pass; full suite 1478/1478, zero skips, zero-warning build. Depths above 64, non-JSON numeric values/unsafe-integer rounding and complete RPC event envelopes remain outside this bounded proof. See docs/parity/fixtures/current-pi-refresh-2026-10-13/tool-argument-unicode.json, tools/parity/tool-argument-json-differential.py, tests/PiSharp.Tests/Core/ToolArgumentJsonTests.cs, tests/PiSharp.Tests/Cli/Providers/ProviderToolArgumentRepairTests.cs, tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcToolCallDeltaProcessTests.cs, tests/PiSharp.Tests/Cli/Providers/Bedrock/BedrockProviderTests.cs. This closes the named current-source delta, not the broader capability."
       ],
       "dependencies": []
     },
@@ -5347,9 +5348,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "MATCHED": 11,
+      "MATCHED": 12,
       "NO_BEHAVIOR_CHANGE": 13,
-      "NEEDS_WORK": 7
+      "NEEDS_WORK": 6
     },
     "audit_complete": true,
     "pin_advanced": true,

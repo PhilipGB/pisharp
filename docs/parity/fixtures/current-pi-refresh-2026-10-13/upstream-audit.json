@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 11,
+    "MATCHED": 12,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 7
+    "NEEDS_WORK": 6
   },
   "commits": [
     {
@@ -1024,7 +1024,7 @@
         "packages/ai/src/utils/json-parse.ts",
         "packages/ai/test/json-parse.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Malformed Unicode escapes such as \\usepackage become literal text while valid/incomplete Unicode escapes retain streaming semantics. PiSharp provider tool argument parsing lacks evidenced repair.",
       "capability_ids": [
         "feature-agent-multi-turn-and-streaming"
@@ -1034,7 +1034,16 @@
       ],
       "implementation_plan": "Inspect all tool-call parser boundaries and apply shared repair without dropping later fields or altering valid escapes.",
       "differential_plan": "The upstream three JSON vectors and provider SSE chunk splits; compare tool arguments and actual write-tool content.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Malformed Unicode escapes are retained as literal text without dropping later fields; valid escapes decode normally and incomplete Unicode escapes keep Pi's prefix semantics. A pure Core parser also matches Pi's trimming and repair ordering. Native Chat/Responses SDK results are repaired before MAF and replay using parsed arguments; the shared raw capture now supports Anthropic streaming, and Bedrock/RPC reuse the parser. Five native SDK cases failed first. Exact comparisons match 175 prefix/repair vectors and nine real Pi/PiSharp provider tool results. SDK replay, a live RPC read spanning valid and malformed Unicode, and Bedrock controls pass; full suite 1478/1478, zero skips, zero-warning build. Depths above 64, non-JSON numeric values/unsafe-integer rounding and complete RPC event envelopes remain outside this bounded proof.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/tool-argument-unicode.json",
+        "tools/parity/tool-argument-json-differential.py",
+        "tests/PiSharp.Tests/Core/ToolArgumentJsonTests.cs",
+        "tests/PiSharp.Tests/Cli/Providers/ProviderToolArgumentRepairTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcToolCallDeltaProcessTests.cs",
+        "tests/PiSharp.Tests/Cli/Providers/Bedrock/BedrockProviderTests.cs"
+      ]
     },
     {
       "sha": "cea257439d5666ad6a987c065eb3ab0e230a135d",

@@ -9,6 +9,27 @@ namespace PiSharp.Tests;
 
 public sealed class BedrockProviderTests
 {
+    [Theory]
+    [InlineData("""{"text":"\url{x}","mode":"w"}""", "\\url{x}")]
+    [InlineData("""{"text":"ab\u00""", "ab")]
+    public async Task BedrockToolArgumentsRepairMalformedAndIncompleteUnicodeEscapes(string arguments, string expected)
+    {
+        var transport = new RecordingTransport([
+            new MessageStartEvent { Role = ConversationRole.Assistant },
+            new ContentBlockStartEvent { ContentBlockIndex = 0, Start = new ContentBlockStart
+                { ToolUse = new ToolUseBlockStart { ToolUseId = "call_fixture", Name = "fixture_tool" } } },
+            new ContentBlockDeltaEvent { ContentBlockIndex = 0, Delta = new ContentBlockDelta
+                { ToolUse = new ToolUseBlockDelta { Input = arguments } } },
+            new ContentBlockStopEvent { ContentBlockIndex = 0 },
+            new MessageStopEvent { StopReason = "tool_use" }
+        ]);
+        using var client = new BedrockConverseChatClient(transport,
+            BedrockModelCatalog.Load().Single(item => item.Id == "global.anthropic.claude-sonnet-4-6"), false, false, false, "us-east-1");
+        var response = await client.GetResponseAsync([new ChatMessage(ChatRole.User, "fixture")]);
+        var call = Assert.Single(response.Messages.SelectMany(message => message.Contents).OfType<FunctionCallContent>());
+        Assert.Equal(expected, call.Arguments!["text"]);
+    }
+
     private static readonly byte[] s_png = Convert.FromBase64String(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/bX8AAAAASUVORK5CYII=");
 

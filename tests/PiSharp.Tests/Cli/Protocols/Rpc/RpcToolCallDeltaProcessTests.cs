@@ -8,14 +8,17 @@ namespace PiSharp.Tests;
 
 public sealed class RpcToolCallDeltaProcessTests
 {
-    [Fact]
-    public async Task RpcProcessProjectsEachOpenAiToolArgumentFragmentInArrivalOrder()
+    [Theory]
+    [InlineData("fixture.txt", "{\"path\":", "\"fixture.txt\"}")]
+    [InlineData("é\\usepackage{x}.txt", "{\"path\":\"\\u00", "e9\\usepackage{x}.txt\"}")]
+    public async Task RpcProcessProjectsEachOpenAiToolArgumentFragmentInArrivalOrder(string filename,
+        string firstFragment, string secondFragment)
     {
         if (!OperatingSystem.IsLinux()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-tool-deltas-" + Guid.NewGuid().ToString("N"));
         var agentDirectory = Path.Combine(root, "agent");
         Directory.CreateDirectory(agentDirectory);
-        await File.WriteAllTextAsync(Path.Combine(root, "fixture.txt"), "tool result");
+        await File.WriteAllTextAsync(Path.Combine(root, filename), "tool result");
         using var listener = StartLoopbackListener(out var port);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
         var releaseSecondFragment = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -38,7 +41,7 @@ public sealed class RpcToolCallDeltaProcessTests
                             index = 0,
                             id = "call-read",
                             type = "function",
-                            function = new { name = "read", arguments = "{\"path\":" }
+                            function = new { name = "read", arguments = firstFragment }
                         }
                     }
                 }, null));
@@ -47,7 +50,7 @@ public sealed class RpcToolCallDeltaProcessTests
                 {
                     tool_calls = new[]
                     {
-                        new { index = 0, function = new { arguments = "\"fixture.txt\"}" } }
+                        new { index = 0, function = new { arguments = secondFragment } }
                     }
                 }, null));
                 await WriteChunkAsync(writer, ToolChunk(new { }, "tool_calls"));
@@ -107,7 +110,7 @@ public sealed class RpcToolCallDeltaProcessTests
                 using var record = JsonDocument.Parse(line);
                 if (record.RootElement.GetProperty("type").GetString() == "message_update" &&
                     record.RootElement.GetProperty("assistantMessageEvent").TryGetProperty("delta", out var delta) &&
-                    delta.GetString() == "{\"path\":")
+                    delta.GetString() == firstFragment)
                 {
                     firstFragmentObserved.TrySetResult();
                     releaseSecondFragment.TrySetResult();
@@ -135,13 +138,13 @@ public sealed class RpcToolCallDeltaProcessTests
             }
             Assert.Equal(["toolcall_start", "toolcall_delta", "toolcall_delta", "toolcall_end"],
                 updates.Select(item => item.GetProperty("type").GetString()));
-            Assert.Equal(["{\"path\":", "\"fixture.txt\"}"], updates
+            Assert.Equal([firstFragment, secondFragment], updates
                 .Where(item => item.GetProperty("type").GetString() == "toolcall_delta")
                 .Select(item => item.GetProperty("delta").GetString()));
             Assert.Equal(0, updates[0].GetProperty("contentIndex").GetInt32());
             Assert.Equal("call-read", updates[0].GetProperty("id").GetString());
             Assert.Equal("read", updates[0].GetProperty("toolName").GetString());
-            Assert.Equal("fixture.txt", updates[3].GetProperty("toolCall").GetProperty("arguments")
+            Assert.Equal(filename, updates[3].GetProperty("toolCall").GetProperty("arguments")
                 .GetProperty("path").GetString());
             Assert.True(recordTypes.IndexOf("message_start") < recordTypes.IndexOf("message_update"));
             Assert.True(recordTypes.FindIndex(type => type == "tool_execution_start") >

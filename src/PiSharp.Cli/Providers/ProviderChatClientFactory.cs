@@ -54,6 +54,7 @@ public static class ProviderChatClientFactory
         var requestTimeout = configuredTimeout ?? (idleTimeout == 0 ? int.MaxValue : idleTimeout);
         var sdkTimeout = TimeSpan.FromMilliseconds(requestTimeout);
         IChatClient providerClient;
+        ProviderToolCallDeltaCapture? argumentCapture = null;
         if (protocol == "bedrock-converse-stream")
         {
             providerClient = BedrockConverseChatClientFactory.Create(selection);
@@ -76,6 +77,7 @@ public static class ProviderChatClientFactory
         }
         else if (protocol == "anthropic-messages")
         {
+            argumentCapture = new ProviderToolCallDeltaCapture();
             var transcript = new AnthropicTranscriptRequest();
             var baseUrl = selection.Connection.Endpoint?.ToString() ?? selection.Provider.Endpoint.ToString();
             var options = new ClientOptions
@@ -86,7 +88,7 @@ public static class ProviderChatClientFactory
                 BaseUrl = baseUrl,
                 MaxRetries = 0,
                 Timeout = sdkTimeout,
-                Handlers = [new AnthropicSystemMessageHandler(transcript), new ProviderWireActivityHandler()]
+                Handlers = [new AnthropicSystemMessageHandler(transcript), argumentCapture.CreateHandler(), new ProviderWireActivityHandler()]
             };
             if (selection.AnthropicIsOAuthToken)
             {
@@ -170,13 +172,14 @@ public static class ProviderChatClientFactory
                 ? new StatelessResponsesChatClient(client.GetResponsesClient().AsIChatClient(selection.Model.Id))
                 : client.GetChatClient(selection.Model.Id).AsIChatClient();
 #pragma warning restore OPENAI001
-            providerClient = toolCallCapture is null ? chat : new OpenAiCompletionsToolCallDeltaClient(chat, toolCallCapture);
+            providerClient = chat;
+            argumentCapture = toolCallCapture?.Capture;
             if (mistralContext is not null)
                 providerClient = new MistralChatOptionsClient(providerClient, selection.Model, mistralContext);
             if (azureContext is not null)
                 providerClient = new AzureOpenAiChatOptionsClient(providerClient, azureContext);
         }
-        var timeoutClient = new ProviderRequestTimeoutChatClient(providerClient, requestTimeout, idleTimeout);
+        var timeoutClient = new ProviderRequestTimeoutChatClient(new ProviderToolArgumentChatClient(providerClient, argumentCapture), requestTimeout, idleTimeout);
         return new ProviderRetryChatClient(timeoutClient, providerMaxRetries,
             retrySettings?.MaxRetryDelayMs ?? ProviderRetrySettings.DefaultMaxRetryDelayMs);
     }

@@ -195,9 +195,9 @@ internal sealed class BedrockConverseChatClient(IBedrockConverseTransport transp
         if (string.IsNullOrWhiteSpace(json)) return new Dictionary<string, object?>();
         try
         {
-            using var document = JsonDocument.Parse(json);
-            return document.RootElement.ValueKind == JsonValueKind.Object
-                ? ToDictionary(document.RootElement)
+            var parsed = PiSharp.Core.ToolArgumentJson.ParseStreaming(json);
+            return parsed.ValueKind == JsonValueKind.Object
+                ? ToDictionary(parsed)
                 : new Dictionary<string, object?>();
         }
         catch (JsonException)
