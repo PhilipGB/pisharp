@@ -238,8 +238,9 @@ public sealed class CodemodeWorkerLifecycleTests
             () => new Dictionary<string, AIFunction> { ["hold"] = hold }, _ => { }, "test", null, "codemode",
             new Dictionary<string, object?>());
         using var cancellation = new CancellationTokenSource();
-        var code = (check == "timeout" ? "// @options: {\"timeout_ms\":500}\n" : "") +
+        var code = (check == "timeout" ? "// @options: {\"timeout_ms\":2000}\n" : "") +
             "text('partial'); await tools.hold({});";
+        var started = Stopwatch.StartNew();
         var pending = CodemodeSandbox.ExecuteAsync(code, context,
             new Dictionary<string, JsonElement>(), cancellation.Token);
         try
@@ -253,7 +254,10 @@ public sealed class CodemodeWorkerLifecycleTests
                 Assert.True(elapsed.Elapsed < TimeSpan.FromMilliseconds(750), $"Cancellation waited {elapsed.Elapsed}.");
             else Assert.Equal("partial", result.Text);
             if (check == "timeout")
-                Assert.Equal("Codemode timed out after 500 ms.", result.Error);
+            {
+                Assert.Equal("Codemode timed out after 2000 ms.", result.Error);
+                Assert.True(started.Elapsed < TimeSpan.FromSeconds(3));
+            }
         }
         finally
         {
