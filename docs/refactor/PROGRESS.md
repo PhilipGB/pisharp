@@ -3,7 +3,7 @@
 - **Baseline PiSharp:** `064bcc7b90344cffde595f9aca1c5b850cefe567`, untouched main branch point.
 - **Frozen Pi:** `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; selected from execution-ledger source note and latest TODO/trust-startup evidence.
 - **Branch:** `refactor/architecture-maintainability`.
-- **Phase:** Phase A complete; review-ready, independent Round 1 next. Latest verified remote `10e0d60eb8b192a5afcccf813281a753c3767553`; Phase A metrics/receipt commit pending publication. Earlier SHAs remain in history/slice metadata.
+- **Phase:** Phase B Round 1 passed with no material findings; Phase C full verification next. Latest verified remote `fe1eb66e9fbebf3a61fe03f8eb2c564528d5e2a1`; review record/TEMP diagnostic-label correction pending publication. Earlier SHAs remain in history/slice metadata.
 - **Pilot:** H09 coding tools; `baseline/pilot-decision.json` records the in-project ownership pattern and unchanged dependency/project graph.
 - **Active slice:** H03 concrete dialog panels/input, progress settlement, transcript search and authorization input; editor retains editing/completion/history, queue/abort and app dispatch. Pre-change characterization 89, focused 276; complete capture preserves 1,858 original identities (1,894 candidate), .NET 1,382/zero skips, Node 24/Python 47, MCP/process/66 terminal reports/136 cases/13 assertions. Three outside-set picker attempts and actual baseline exact-match control are retained; final unchanged repeat reproduces accepted 19-frame difference. Sets/fixtures/pin unchanged.
 - **Latest observed main:** `064bcc7b90344cffde595f9aca1c5b850cefe567`; no divergence/integration conflicts. No merge/rebase performed.
@@ -77,15 +77,19 @@ source unchanged afterward. Diagnostic coverage retains five instrumentation fai
 uninstrumented rebuild and all ten boundary/docs tests pass. Permanent parity ledger
 now contains qualified structural evidence without changing capability statuses.
 
-Exact next action: commit/push this review-ready Phase A state, then use a fresh
-read-only independent reviewer on actual repository/all goal criteria. Round 1 must
-inspect actual cohesion/boundaries/hotspot dispositions/compatibility/evidence; resolve
-material findings. At most two rounds, with Round 2 limited to Round 1 fixes/direct
-new violations. After review passes, Phase C must rerun full capture/comparison and
-update final metrics before the immutable remote preservation ref and exact allowlist.
-Then direct-child cleanup and fresh Phase F/G per Section 23. No reviewer, preservation
-ref or cleanup exists yet. No test/project moves; never declare completion from green
-slice checks alone.
+Independent fresh read-only Round 1 passes with no material findings; all ten
+resolved dispositions supported by source. `baseline/independent-review/` records
+scope/reconstruction and one nonmaterial TEMP diagnostic-label correction. Raw data,
+metrics, production/tests and frozen sets remain unchanged. No Round 2 is needed.
+
+Exact next action: commit/push the review record and label correction, then Phase C:
+rerun complete capture and strict preservation comparison, update final temporary
+metrics, define complete cleanup allowlist and finish every permanent change. Only
+then set exact next action to `Phase E — cleanup, but only after remote preservation-ref verification`,
+commit/push preservation state, create immutable preservation ref once, remotely verify
+exact SHA/required contents. Follow D/E direct-child allowlisted cleanup and fresh F/G.
+No preservation ref or cleanup exists yet. No test/project moves. Never declare goal
+complete before requirement-by-requirement final audit.
 
 ## Exact temporary AGENTS pointer
 
