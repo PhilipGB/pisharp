@@ -79,6 +79,7 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                 }
 
                 if (!input.TryRead(40, out var next)) continue;
+                if (list.Selected is null && TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                 TerminalSelectionAction action;
                 if (TerminalInput.TryGetText(next, out _))
                 {
@@ -150,6 +151,11 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                 while (true)
                 {
                     if (next.IsEndOfStream) return null;
+                    if (TerminalWheelInput.TryRouteUnhandled(screen, next))
+                    {
+                        if (!extensionDialog || !input.TryRead(0, out next)) break;
+                        continue;
+                    }
                     if (next.Key is { } key)
                     {
                         if (key.Key == ConsoleKey.Escape || keymap.Matches("app.interrupt", key) ||
@@ -260,6 +266,7 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                     }
 
                     if (!input.TryRead(40, out var next)) continue;
+                    if (TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                     if (extensionDialog)
                     {
                         var submitted = false;
@@ -269,6 +276,11 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                             {
                                 preservePanel = preservePanelOnCancel;
                                 return null;
+                            }
+                            if (TerminalWheelInput.TryRouteUnhandled(screen, next))
+                            {
+                                if (!input.TryRead(0, out next)) break;
+                                continue;
                             }
                             if (next.Key is { } extensionKey && (extensionKey.Key == ConsoleKey.Escape ||
                                 keymap.Matches("app.interrupt", extensionKey) ||

@@ -25,6 +25,7 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
                 }
                 else next = input.Read();
                 if (next.IsEndOfStream) return null;
+                if (list.Selected is null && TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                 var mouseContentLine = next.Mouse is { } mouse
                     ? TerminalOverlayLayout.ContentLineAt(content, screen.TerminalWidth, screen.TerminalHeight,
                         mouse.Column, mouse.Row)

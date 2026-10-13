@@ -92,6 +92,7 @@ internal sealed class TerminalProgressDisplay(EditorKeymap keymap, Func<Terminal
                     await Task.Delay(10).ConfigureAwait(false);
                     continue;
                 }
+                if (TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                 if (next.Key is not { } key ||
                     !keymap.Matches("app.interrupt", key) && !keymap.Matches("app.clear", key)) continue;
                 var confirmation = dialogs.ShowInlineSelectionList(confirmationTitle, cancelOptions, [""],

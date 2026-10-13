@@ -93,6 +93,7 @@ internal sealed class TerminalHuggingFaceSearch(TerminalScreen screen, TerminalI
                     continue;
                 }
                 if (next.IsEndOfStream) return null;
+                if (TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                 if (TerminalInput.TryGetText(next, out _))
                 {
                     var text = input.ReadAvailableText(next, out var following);

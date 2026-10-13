@@ -138,6 +138,7 @@ public sealed class TerminalScreen : IDisposable
     public bool IsActive => _active;
     internal int TerminalWidth => Columns();
     internal int TerminalHeight => Rows();
+    internal int TranscriptScrollOffset { get { lock (_gate) return _scrollOffset; } }
     internal TerminalTheme CurrentTheme { get { lock (_gate) return _theme; } }
     internal TerminalColorState CurrentTerminalColors => _terminalColorQuery?.Current ?? _terminalColors;
     internal bool ToolResultsExpanded { get { lock (_gate) return _transcript.IsExpanded; } }

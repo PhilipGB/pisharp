@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 12,
+    "MATCHED": 13,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 6
+    "NEEDS_WORK": 5
   },
   "commits": [
     {
@@ -463,7 +463,7 @@
         "packages/tui/src/tui-alt-screen.ts",
         "packages/tui/test/tui-alt-screen.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Unhandled wheel input scrolls the transcript below a focused overlay. PiSharp routes mouse input through concrete dialogs and selection lists; no broad current overlay differential proves all paths.",
       "capability_ids": [
         "feature-tui-normal-fullscreen-renderer"
@@ -474,7 +474,13 @@
       ],
       "implementation_plan": "Characterize wheel dispatch for input and mouse-aware overlays and route only unhandled wheel input to the transcript.",
       "differential_plan": "PTY fixture with a long transcript and focused input overlay; compare viewport and untouched editor input.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Unhandled wheel input now scrolls the transcript under extension input dialogs, keyboard-only selection, progress and search panels, including events drained between text fragments. Empty mouse-aware lists decline to the transcript; populated lists consume wheel even at the selection boundary. Focused viewport keys retain their input path. Six PTY cases failed first after correcting non-TTY setup and separating the PTY prologue from tagged JSON. Eight paired cases now match Pi's native focused-overlay routing; typed/selected/progress outcomes stay intact. The full suite passes 1484/1484 with zero skips and a zero-warning build. Full cell layout, selector movement increments, pointer selection and non-POSIX hosts remain outside this bounded proof.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/overlay-wheel.json",
+        "tools/parity/overlay-wheel-differential.py",
+        "tests/PiSharp.Tests/Cli/Tui/Dialogs/TerminalDialogWheelTests.cs"
+      ]
     },
     {
       "sha": "014873d7d58b303bb832d5c9341dcf98ec5d27c9",
