@@ -1,0 +1,37 @@
+[
+  {
+    "original": "coverage/tests.trx",
+    "compressed": "coverage/tests.trx.gz",
+    "sha256": "fcc2d61512d68b2a5e1102b0eeb329045c65ab6498a167912cc739e08acb94b7",
+    "compressedSha256": "910586c153e1a9031771171d018cd0a42a08f7cf5cc083221c54828e683c931b",
+    "bytes": 1987895
+  },
+  {
+    "original": "coverage.log",
+    "compressed": "coverage.log.gz",
+    "sha256": "e0d4c75a3aa74cc0192898cd28b6d40a8741fa7d9314d2be1080ee6b7e834fb6",
+    "compressedSha256": "92aef312bc3b70498de4b2b9d85450bfaaa1ff21dfcc4445b62bd2e3620742ed",
+    "bytes": 10731
+  },
+  {
+    "original": "restored-boundaries/tests.trx",
+    "compressed": "restored-boundaries/tests.trx.gz",
+    "sha256": "e1aee9c8b211367d0b0dcc9e83b715cc8952c0eadc6729d21d397a10cf1746c7",
+    "compressedSha256": "a5cfff2740fbeda7189cbf0376bc0791e361ced6c5d184beae150cf87ff3884f",
+    "bytes": 15609
+  },
+  {
+    "original": "restored-boundaries.log",
+    "compressed": "restored-boundaries.log.gz",
+    "sha256": "c7df8efd21e9115cd8c0b8e7ba6c2b93b217b5847e1770e0dbba44d7a74d1eac",
+    "compressedSha256": "1434d4f375c36f2bae72ccb618fcac028bd33e19d3310838a8f8651c06ee26e9",
+    "bytes": 454
+  },
+  {
+    "original": "uninstrumented-rebuild.log",
+    "compressed": "uninstrumented-rebuild.log.gz",
+    "sha256": "ed790965d202760c25c2b24d516691616c64ae24520c5fb5dcc5e325227943eb",
+    "compressedSha256": "864ca2fd64a4aef90ac64cc8a321f2d516a343a4d04e295fb28dccc553702dc3",
+    "bytes": 860
+  }
+]

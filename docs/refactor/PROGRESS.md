@@ -3,7 +3,7 @@
 - **Baseline PiSharp:** `064bcc7b90344cffde595f9aca1c5b850cefe567`, untouched main branch point.
 - **Frozen Pi:** `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; selected from execution-ledger source note and latest TODO/trust-startup evidence.
 - **Branch:** `refactor/architecture-maintainability`.
-- **Phase:** structural slices H01–H10 verified/resolved; finish Phase A metrics/audit, then independent review. Latest verified remote `efc47d3df9b045bff28746fc3c6fa9a4986cf971`; H03 checkpoint is ready for commit/push. Earlier SHAs remain in history/slice metadata.
+- **Phase:** Phase A complete; review-ready, independent Round 1 next. Latest verified remote `10e0d60eb8b192a5afcccf813281a753c3767553`; Phase A metrics/receipt commit pending publication. Earlier SHAs remain in history/slice metadata.
 - **Pilot:** H09 coding tools; `baseline/pilot-decision.json` records the in-project ownership pattern and unchanged dependency/project graph.
 - **Active slice:** H03 concrete dialog panels/input, progress settlement, transcript search and authorization input; editor retains editing/completion/history, queue/abort and app dispatch. Pre-change characterization 89, focused 276; complete capture preserves 1,858 original identities (1,894 candidate), .NET 1,382/zero skips, Node 24/Python 47, MCP/process/66 terminal reports/136 cases/13 assertions. Three outside-set picker attempts and actual baseline exact-match control are retained; final unchanged repeat reproduces accepted 19-frame difference. Sets/fixtures/pin unchanged.
 - **Latest observed main:** `064bcc7b90344cffde595f9aca1c5b850cefe567`; no divergence/integration conflicts. No merge/rebase performed.
@@ -69,16 +69,23 @@ Standalone capture/parser/metrics tools stay under `tools/`; no test/project mov
 Capture reads starting-user inventory relative to its preserved script, so Phase F
 can use that worktree while targeting final HEAD without temporary files there.
 
-Finish Phase A: publish H03; compute final metrics from its committed SHA and compare
-project graph/top files/constructors/complexity/hotspots/coverage with untouched data.
-Attempt one final diagnostic coverage collection, retain any known collector failure,
-verify compatibility goldens and permanent docs/path checks, fetch/query main and
-record integration risk, then mark review-ready. Full H03 capture may satisfy Phase A
-full-scope verification while production source stays unchanged. Use a fresh read-only
-reviewer only after Phase A completes; at most two rounds per Section 23. After review,
-Phase C must rerun full capture/comparison before the immutable remote preservation
-ref, exact cleanup allowlist/direct-child cleanup, and fresh Phase F/G. None of
-review/preservation/cleanup exists yet. Never mark goal complete from slice checks.
+Phase A is complete at `baseline/phase-a/`: graph/top files/constructor/complexity/
+hotspots/coverage comparison, compatibility/goldens, permanent docs, normal CI
+architecture/docs checks, fresh unchanged main and clean non-mutating merge forecast.
+Same complete H03 capture satisfies full-scope Phase A verification; production/test
+source unchanged afterward. Diagnostic coverage retains five instrumentation failures;
+uninstrumented rebuild and all ten boundary/docs tests pass. Permanent parity ledger
+now contains qualified structural evidence without changing capability statuses.
+
+Exact next action: commit/push this review-ready Phase A state, then use a fresh
+read-only independent reviewer on actual repository/all goal criteria. Round 1 must
+inspect actual cohesion/boundaries/hotspot dispositions/compatibility/evidence; resolve
+material findings. At most two rounds, with Round 2 limited to Round 1 fixes/direct
+new violations. After review passes, Phase C must rerun full capture/comparison and
+update final metrics before the immutable remote preservation ref and exact allowlist.
+Then direct-child cleanup and fresh Phase F/G per Section 23. No reviewer, preservation
+ref or cleanup exists yet. No test/project moves; never declare completion from green
+slice checks alone.
 
 ## Exact temporary AGENTS pointer
 

@@ -1,0 +1,23 @@
+{
+  "command": [
+    "dotnet",
+    "test",
+    "PiSharp.slnx",
+    "--no-build",
+    "--no-restore",
+    "--filter",
+    "FullyQualifiedName~ArchitectureTests|FullyQualifiedName~DocumentationPathTests",
+    "--logger",
+    "trx;LogFileName=tests.trx",
+    "--results-directory",
+    "/tmp/pisharp-phase-a/restored-boundaries"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "sourceSha": "10e0d60eb8b192a5afcccf813281a753c3767553",
+  "environment": {
+    "NUGET_HTTP_CACHE_PATH": "/tmp/pisharp-nuget-http",
+    "DOTNET_PROCESSOR_COUNT": "2"
+  },
+  "exitCode": 0,
+  "logger": "stdout+stderr/TRX"
+}

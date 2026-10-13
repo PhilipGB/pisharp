@@ -1,0 +1,436 @@
+{
+  "sourceSha": "10e0d60eb8b192a5afcccf813281a753c3767553",
+  "runs": [
+    {
+      "id": "baseline-run-1",
+      "path": "/home/philip/Downloads/pisharp-bootstrap/pisharp/docs/refactor/baseline/run-1/dotnet/4872fab1-dd61-4e89-87bb-5ada1507a3ec/coverage.cobertura.xml",
+      "sha256": "68e8c88f66eb7e7dd6c3ce9f57373855e223b9b4888b61f7abb1d69706f5a7cd",
+      "overall": {
+        "line-rate": "0.8798",
+        "branch-rate": "0.7497",
+        "version": "1.9",
+        "timestamp": "1791804605",
+        "lines-covered": "32234",
+        "lines-valid": "36635",
+        "branches-covered": "20674",
+        "branches-valid": "27575"
+      },
+      "originalHotspotFiles": {
+        "H01": {
+          "path": "src/PiSharp.Cli/Program.cs",
+          "coverage": {
+            "classCount": 30,
+            "coveredDistinctSourceLines": 833,
+            "distinctSourceLines": 1063,
+            "lineRate": 0.7836312323612418
+          }
+        },
+        "H02": {
+          "path": "src/PiSharp.Cli/Tui/TerminalScreen.cs",
+          "coverage": {
+            "classCount": 11,
+            "coveredDistinctSourceLines": 932,
+            "distinctSourceLines": 1100,
+            "lineRate": 0.8472727272727273
+          }
+        },
+        "H03": {
+          "path": "src/PiSharp.Cli/Tui/TerminalEditor.cs",
+          "coverage": {
+            "classCount": 12,
+            "coveredDistinctSourceLines": 790,
+            "distinctSourceLines": 1093,
+            "lineRate": 0.7227813357731016
+          }
+        },
+        "H04": {
+          "path": "src/PiSharp.Runtime/Sessions/ConversationRun.cs",
+          "coverage": {
+            "classCount": 22,
+            "coveredDistinctSourceLines": 781,
+            "distinctSourceLines": 854,
+            "lineRate": 0.914519906323185
+          }
+        },
+        "H05": {
+          "path": "src/PiSharp.Runtime/Sessions/ConversationSession.cs",
+          "coverage": {
+            "classCount": 10,
+            "coveredDistinctSourceLines": 673,
+            "distinctSourceLines": 728,
+            "lineRate": 0.9244505494505495
+          }
+        },
+        "H06": {
+          "path": "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs",
+          "coverage": {
+            "classCount": 2,
+            "coveredDistinctSourceLines": 689,
+            "distinctSourceLines": 728,
+            "lineRate": 0.9464285714285714
+          }
+        },
+        "H07": {
+          "path": "src/PiSharp.Runtime/PiAgent.cs",
+          "coverage": {
+            "classCount": 6,
+            "coveredDistinctSourceLines": 353,
+            "distinctSourceLines": 357,
+            "lineRate": 0.988795518207283
+          }
+        },
+        "H08": {
+          "path": "src/PiSharp.Cli/ProviderModelRuntime.cs",
+          "coverage": {
+            "classCount": 27,
+            "coveredDistinctSourceLines": 513,
+            "distinctSourceLines": 557,
+            "lineRate": 0.9210053859964094
+          }
+        },
+        "H09": {
+          "path": "src/PiSharp.Runtime/CodingTools.cs",
+          "coverage": {
+            "classCount": 23,
+            "coveredDistinctSourceLines": 471,
+            "distinctSourceLines": 540,
+            "lineRate": 0.8722222222222222
+          }
+        },
+        "H10": {
+          "path": "src/PiSharp.Runtime/Mcp/McpRuntime.cs",
+          "coverage": {
+            "classCount": 16,
+            "coveredDistinctSourceLines": 448,
+            "distinctSourceLines": 501,
+            "lineRate": 0.8942115768463074
+          }
+        }
+      },
+      "extractedOwners": {}
+    },
+    {
+      "id": "baseline-run-2",
+      "path": "/home/philip/Downloads/pisharp-bootstrap/pisharp/docs/refactor/baseline/run-2/dotnet/da37858f-aa4c-40c6-bafc-8cd908ddfdd8/coverage.cobertura.xml",
+      "sha256": "3ae1d3d62dcf48ffacf9a76d3265d5f4bb178e578ed5729304907e13fa702320",
+      "overall": {
+        "line-rate": "0.8822",
+        "branch-rate": "0.7532",
+        "version": "1.9",
+        "timestamp": "1791807600",
+        "lines-covered": "32323",
+        "lines-valid": "36635",
+        "branches-covered": "20770",
+        "branches-valid": "27575"
+      },
+      "originalHotspotFiles": {
+        "H01": {
+          "path": "src/PiSharp.Cli/Program.cs",
+          "coverage": {
+            "classCount": 30,
+            "coveredDistinctSourceLines": 827,
+            "distinctSourceLines": 1063,
+            "lineRate": 0.7779868297271872
+          }
+        },
+        "H02": {
+          "path": "src/PiSharp.Cli/Tui/TerminalScreen.cs",
+          "coverage": {
+            "classCount": 11,
+            "coveredDistinctSourceLines": 954,
+            "distinctSourceLines": 1100,
+            "lineRate": 0.8672727272727273
+          }
+        },
+        "H03": {
+          "path": "src/PiSharp.Cli/Tui/TerminalEditor.cs",
+          "coverage": {
+            "classCount": 12,
+            "coveredDistinctSourceLines": 810,
+            "distinctSourceLines": 1093,
+            "lineRate": 0.7410795974382434
+          }
+        },
+        "H04": {
+          "path": "src/PiSharp.Runtime/Sessions/ConversationRun.cs",
+          "coverage": {
+            "classCount": 22,
+            "coveredDistinctSourceLines": 786,
+            "distinctSourceLines": 854,
+            "lineRate": 0.9203747072599532
+          }
+        },
+        "H05": {
+          "path": "src/PiSharp.Runtime/Sessions/ConversationSession.cs",
+          "coverage": {
+            "classCount": 10,
+            "coveredDistinctSourceLines": 673,
+            "distinctSourceLines": 728,
+            "lineRate": 0.9244505494505495
+          }
+        },
+        "H06": {
+          "path": "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs",
+          "coverage": {
+            "classCount": 2,
+            "coveredDistinctSourceLines": 689,
+            "distinctSourceLines": 728,
+            "lineRate": 0.9464285714285714
+          }
+        },
+        "H07": {
+          "path": "src/PiSharp.Runtime/PiAgent.cs",
+          "coverage": {
+            "classCount": 6,
+            "coveredDistinctSourceLines": 353,
+            "distinctSourceLines": 357,
+            "lineRate": 0.988795518207283
+          }
+        },
+        "H08": {
+          "path": "src/PiSharp.Cli/ProviderModelRuntime.cs",
+          "coverage": {
+            "classCount": 27,
+            "coveredDistinctSourceLines": 513,
+            "distinctSourceLines": 557,
+            "lineRate": 0.9210053859964094
+          }
+        },
+        "H09": {
+          "path": "src/PiSharp.Runtime/CodingTools.cs",
+          "coverage": {
+            "classCount": 23,
+            "coveredDistinctSourceLines": 471,
+            "distinctSourceLines": 540,
+            "lineRate": 0.8722222222222222
+          }
+        },
+        "H10": {
+          "path": "src/PiSharp.Runtime/Mcp/McpRuntime.cs",
+          "coverage": {
+            "classCount": 16,
+            "coveredDistinctSourceLines": 448,
+            "distinctSourceLines": 501,
+            "lineRate": 0.8942115768463074
+          }
+        }
+      },
+      "extractedOwners": {}
+    },
+    {
+      "id": "candidate-diagnostic",
+      "path": "/tmp/pisharp-phase-a/coverage/78654611-fcc7-49b2-b3ae-d87c1ea0b49a/coverage.cobertura.xml",
+      "sha256": "0d1cff30fd2ff64a50c0052a92048a792f23f99748eeba5797b287380a4780bd",
+      "overall": {
+        "line-rate": "0.8834000000000001",
+        "branch-rate": "0.7535",
+        "version": "1.9",
+        "timestamp": "1791860040",
+        "lines-covered": "32638",
+        "lines-valid": "36944",
+        "branches-covered": "20762",
+        "branches-valid": "27551"
+      },
+      "originalHotspotFiles": {
+        "H01": {
+          "path": "src/PiSharp.Cli/Program.cs",
+          "coverage": {
+            "classCount": 25,
+            "coveredDistinctSourceLines": 567,
+            "distinctSourceLines": 669,
+            "lineRate": 0.8475336322869955
+          }
+        },
+        "H02": {
+          "path": "src/PiSharp.Cli/Tui/TerminalScreen.cs",
+          "coverage": {
+            "classCount": 4,
+            "coveredDistinctSourceLines": 752,
+            "distinctSourceLines": 846,
+            "lineRate": 0.8888888888888888
+          }
+        },
+        "H03": {
+          "path": "src/PiSharp.Cli/Tui/TerminalEditor.cs",
+          "coverage": {
+            "classCount": 5,
+            "coveredDistinctSourceLines": 286,
+            "distinctSourceLines": 409,
+            "lineRate": 0.6992665036674817
+          }
+        },
+        "H04": {
+          "path": "src/PiSharp.Runtime/Sessions/ConversationRun.cs",
+          "coverage": {
+            "classCount": 21,
+            "coveredDistinctSourceLines": 599,
+            "distinctSourceLines": 649,
+            "lineRate": 0.9229583975346687
+          }
+        },
+        "H05": {
+          "path": "src/PiSharp.Runtime/Sessions/ConversationSession.cs",
+          "coverage": {
+            "classCount": 4,
+            "coveredDistinctSourceLines": 328,
+            "distinctSourceLines": 346,
+            "lineRate": 0.9479768786127167
+          }
+        },
+        "H06": {
+          "path": "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs",
+          "coverage": {
+            "classCount": 1,
+            "coveredDistinctSourceLines": 27,
+            "distinctSourceLines": 27,
+            "lineRate": 1.0
+          }
+        },
+        "H07": {
+          "path": "src/PiSharp.Runtime/PiAgent.cs",
+          "coverage": {
+            "classCount": 5,
+            "coveredDistinctSourceLines": 248,
+            "distinctSourceLines": 252,
+            "lineRate": 0.9841269841269841
+          }
+        },
+        "H08": {
+          "path": "src/PiSharp.Cli/ProviderModelRuntime.cs",
+          "coverage": {
+            "classCount": 22,
+            "coveredDistinctSourceLines": 346,
+            "distinctSourceLines": 371,
+            "lineRate": 0.9326145552560647
+          }
+        },
+        "H09": {
+          "path": "src/PiSharp.Runtime/CodingTools.cs",
+          "coverage": {
+            "classCount": 5,
+            "coveredDistinctSourceLines": 69,
+            "distinctSourceLines": 70,
+            "lineRate": 0.9857142857142858
+          }
+        },
+        "H10": {
+          "path": "src/PiSharp.Runtime/Mcp/McpRuntime.cs",
+          "coverage": {
+            "classCount": 5,
+            "coveredDistinctSourceLines": 171,
+            "distinctSourceLines": 186,
+            "lineRate": 0.9193548387096774
+          }
+        }
+      },
+      "extractedOwners": {
+        "src/PiSharp.Runtime/AgentToolCatalog.cs": {
+          "classCount": 1,
+          "coveredDistinctSourceLines": 81,
+          "distinctSourceLines": 81,
+          "lineRate": 1.0
+        },
+        "src/PiSharp.Runtime/PiCompactionSummarizer.cs": {
+          "classCount": 2,
+          "coveredDistinctSourceLines": 49,
+          "distinctSourceLines": 49,
+          "lineRate": 1.0
+        },
+        "src/PiSharp.Runtime/Sessions/ProviderRequestAttribution.cs": {
+          "classCount": 1,
+          "coveredDistinctSourceLines": 33,
+          "distinctSourceLines": 33,
+          "lineRate": 1.0
+        },
+        "src/PiSharp.Runtime/Sessions/ProviderTurnJournal.cs": {
+          "classCount": 1,
+          "coveredDistinctSourceLines": 61,
+          "distinctSourceLines": 61,
+          "lineRate": 1.0
+        },
+        "src/PiSharp.Cli/Tui/TerminalAuthorizationInput.cs": {
+          "classCount": 2,
+          "coveredDistinctSourceLines": 36,
+          "distinctSourceLines": 51,
+          "lineRate": 0.7058823529411765
+        },
+        "src/PiSharp.Cli/Tui/TerminalConversationPresentation.cs": {
+          "classCount": 8,
+          "coveredDistinctSourceLines": 157,
+          "distinctSourceLines": 204,
+          "lineRate": 0.7696078431372549
+        },
+        "src/PiSharp.Cli/Tui/TerminalDialogPanels.cs": {
+          "classCount": 1,
+          "coveredDistinctSourceLines": 99,
+          "distinctSourceLines": 168,
+          "lineRate": 0.5892857142857143
+        },
+        "src/PiSharp.Cli/Tui/TerminalDialogs.cs": {
+          "classCount": 2,
+          "coveredDistinctSourceLines": 248,
+          "distinctSourceLines": 336,
+          "lineRate": 0.7380952380952381
+        },
+        "src/PiSharp.Cli/Tui/TerminalProgressDisplay.cs": {
+          "classCount": 6,
+          "coveredDistinctSourceLines": 91,
+          "distinctSourceLines": 99,
+          "lineRate": 0.9191919191919192
+        },
+        "src/PiSharp.Cli/Tui/TerminalRenderScheduler.cs": {
+          "classCount": 1,
+          "coveredDistinctSourceLines": 52,
+          "distinctSourceLines": 55,
+          "lineRate": 0.9454545454545454
+        },
+        "src/PiSharp.Cli/Tui/TerminalScreenNotifications.cs": {
+          "classCount": 1,
+          "coveredDistinctSourceLines": 52,
+          "distinctSourceLines": 52,
+          "lineRate": 1.0
+        },
+        "src/PiSharp.Cli/Tui/TerminalTranscriptSearchInput.cs": {
+          "classCount": 1,
+          "coveredDistinctSourceLines": 46,
+          "distinctSourceLines": 55,
+          "lineRate": 0.8363636363636363
+        }
+      }
+    }
+  ],
+  "candidateDiagnosticFailures": [
+    {
+      "identity": "PiSharp.Tests.TerminalPtyTests.ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal",
+      "message": "Assert.Equal() Failure: Values differ\nExpected: 0\nActual:   134",
+      "classification": "Child instrumented process shutdown exits 134/abandoned tracker mutex, reproduced in original diagnostic baseline."
+    },
+    {
+      "identity": "PiSharp.Tests.QuietStartupTests.TerminalStartupVisibilityFollowsQuietStartup(value: \"\\\"header\\\"\", verbose: True, header: True, details: True)",
+      "message": "Assert.Equal() Failure: Values differ\nExpected: 0\nActual:   134",
+      "classification": "Child instrumented process shutdown exits 134/abandoned tracker mutex, reproduced in original diagnostic baseline."
+    },
+    {
+      "identity": "PiSharp.Tests.McpCommandTests.IndependentProcessesDoNotLoseConcurrentConfigUpdates",
+      "message": "Assert.All() Failure: 4 out of 6 items in the collection did not pass.\n[1]: Item:  Tuple (134, \"Added global MCP server \\\"p1\\\" in /tmp/pisharp-mcp\"\u00b7\u00b7\u00b7, \"Unhandled exception. System.Threading.AbandonedMut\"\u00b7\u00b7\u00b7)\n     Error: Unhandled exception. System.Threading.AbandonedMutexException: The wait completed due to an abandoned mutex.\n               at System.Threading.WaitHandle.WaitOneNoCheck(Int32 millisecondsTimeout, Boolean useTrivialWaits, Object associatedObject, WaitHandleWaitSourceMap waitSource) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/System/Threading/WaitHandle.cs:line 196\n               at Coverlet.Core.Instrumentation.Tracker.PiSharp.Cli_83738477-6f3a-4564-90e1-a4f477251d02.UnloadModule(Object, EventArgs)\n            Added global MCP server \"p1\" in /tmp/pisharp-mcp-processes-b09195bf27894531a2cb4edc6da5121d/mcp.json.\n            \n[2]: Item:  Tuple (134, \"Added global MCP server \\\"p2\\\" in /tmp/pisharp-mcp\"\u00b7\u00b7\u00b7, \"Unhandled exception. System.IO.IOException: The pr\"\u00b7\u00b7\u00b7)\n     Error: Unhandled exception. System.IO.IOException: The process cannot access the file '/tmp/PiSharp.Cli_83738477-6f3a-4564-90e1-a4f477251d02' because it is being used by another process.\n               at Microsoft.Win32.SafeHandles.SafeFileHandle.Init(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Int64& fileLength, UnixFileMode& filePermissions) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/Microsoft/Win32/SafeHandles/SafeFileHandle.Unix.cs:line 361\n               at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/Microsoft/Win32/SafeHandles/SafeFileHandle.Unix.cs:line 208\n               at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/System/IO/Strategies/OSFileStreamStrategy.cs:line 46\n               at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share, Int32 bufferSize, FileOptions options, Int64 preallocationSize) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/System/IO/FileStream.cs:line 222\n               at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/System/IO/FileStream.cs:line 131\n               at Coverlet.Core.Instrumentation.Tracker.PiSharp.Cli_83738477-6f3a-4564-90e1-a4f477251d02.UnloadModule(Object, EventArgs)\n            Added global MCP server \"p2\" in /tmp/pisharp-mcp-processes-b09195bf27894531a2cb4edc6da5121d/mcp.json.\n            \n[3]: Item:  Tuple (134, \"Added global MCP server \\\"p3\\\" in /tmp/pisharp-mcp\"\u00b7\u00b7\u00b7, \"Unhandled exception. System.IO.IOException: The pr\"\u00b7\u00b7\u00b7)\n     Error: Unhandled exception. System.IO.IOException: The process cannot access the file '/tmp/PiSharp.Cli_83738477-6f3a-4564-90e1-a4f477251d02' because it is being used by another process.\n               at Microsoft.Win32.SafeHandles.SafeFileHandle.Init(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Int64& fileLength, UnixFileMode& filePermissions) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/Microsoft/Win32/SafeHandles/SafeFileHandle.Unix.cs:line 361\n               at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, UnixFileMode openPermissions, Int64& fileLength, UnixFileMode& filePermissions, Boolean failForSymlink, Boolean& wasSymlink, Func`4 createOpenException) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/Microsoft/Win32/SafeHandles/SafeFileHandle.Unix.cs:line 208\n               at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/System/IO/Strategies/OSFileStreamStrategy.cs:line 46\n               at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share, Int32 bufferSize, FileOptions options, Int64 preallocationSize) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/System/IO/FileStream.cs:line 222\n               at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/System/IO/FileStream.cs:line 131\n               at Coverlet.Core.Instrumentation.Tracker.PiSharp.Cli_83738477-6f3a-4564-90e1-a4f477251d02.UnloadModule(Object, EventArgs)\n            Added global MCP server \"p3\" in /tmp/pisharp-mcp-processes-b09195bf27894531a2cb4edc6da5121d/mcp.json.\n            \n[4]: Item:  Tuple (134, \"Added global MCP server \\\"p4\\\" in /tmp/pisharp-mcp\"\u00b7\u00b7\u00b7, \"Unhandled exception. System.Threading.AbandonedMut\"\u00b7\u00b7\u00b7)\n     Error: Unhandled exception. System.Threading.AbandonedMutexException: The wait completed due to an abandoned mutex.\n               at System.Threading.WaitHandle.WaitOneNoCheck(Int32 millisecondsTimeout, Boolean useTrivialWaits, Object associatedObject, WaitHandleWaitSourceMap waitSource) in /_/src/runtime/src/libraries/System.Private.CoreLib/src/System/Threading/WaitHandle.cs:line 196\n               at Coverlet.Core.Instrumentation.Tracker.PiSharp.Cli_83738477-6f3a-4564-90e1-a4f477251d02.UnloadModule(Object, EventArgs)\n            Added global MCP server \"p4\" in /tmp/pisharp-mcp-processes-b09195bf27894531a2cb4edc6da5121d/mcp.json.\n            ",
+      "classification": "Injected Coverlet tracker adds actual FileStream calls to instrumented Core; ordinary source/binary boundary remains enforced."
+    },
+    {
+      "identity": "PiSharp.Tests.ArchitectureTests.CoreDoesNotCallTerminalFilesystemProcessOrNetworkApis",
+      "message": "Coverlet.Core.Instrumentation.Tracker.PiSharp.Core_83738477-6f3a-4564-90e1-a4f477251d02.UnloadModule references System.IO.FileStream..ctor",
+      "classification": "Injected Coverlet tracker adds actual FileStream calls to instrumented Core; ordinary source/binary boundary remains enforced."
+    },
+    {
+      "identity": "PiSharp.Tests.McpOAuthTuiTests.McpLoginUrlKeepsItsHyperlinkAndSupportsConfiguredCopyActionWhenWrappedInTheTui(clipboardUnavailable: False, customCopyKey: True, cancelLogin: False)",
+      "message": "Assert.Equal() Failure: Values differ\nExpected: 0\nActual:   134",
+      "classification": "Child instrumented process shutdown exits 134/abandoned tracker mutex, reproduced in original diagnostic baseline."
+    }
+  ],
+  "limitations": [
+    "All three full collections are diagnostic because instrumented child-process tracker faults alter outcomes; compare rates as measured evidence, not an ordinary full-success coverage guarantee.",
+    "Raw distinct-file line counts consolidate compiler-generated class source locations. Flow moves distribute coverage over new owner files; root percentage alone is not a capability comparison.",
+    "No numeric threshold is introduced; full ordinary 1382-row/1858-identity verification remains authoritative.",
+    "The six architecture tests are not disabled or filtered from the full collection; one correctly detects the injected tracker I/O. Rebuild and ordinary boundary/doc tests check the restored product binary.",
+    "Other platforms/live endpoints are not established by these Linux measurements."
+  ]
+}

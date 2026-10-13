@@ -5203,5 +5203,39 @@
       "Run a fresh final Pi source audit, close applicable MCP conformance gaps, review and fix material architecture bottlenecks, then complete exact-head verification."
     ],
     "bookkeeping": "After each coherent implementation slice, run focused verification, format verification, warnings-as-errors build and the full test suite; commit and push; verify exact-head CI; update parity evidence; refresh current Pi when the active family requires it; then continue until every ledger capability and the complete final gate are satisfied. Preserve unrelated user-owned worktree files."
+  },
+  "architecture_refactor_verification": {
+    "scope": "Architecture-only pre-review structural checkpoint; existing capability statuses and known parity gaps remain unchanged.",
+    "branch": "refactor/architecture-maintainability",
+    "baseline_pisharp": "064bcc7b90344cffde595f9aca1c5b850cefe567",
+    "candidate_pisharp": "10e0d60eb8b192a5afcccf813281a753c3767553",
+    "frozen_pi": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "reference_configuration": "tools/parity/pi-reference.txt",
+    "preserved_logical_identities": 1858,
+    "candidate_logical_identities": 1894,
+    "dotnet_rows": 1382,
+    "unexpected_runner_skips": 0,
+    "node_tests": 24,
+    "python_tests": 47,
+    "mcp_checks": {
+      "total": 269,
+      "passing": 261,
+      "classified_baseline_failures": 8
+    },
+    "terminal_reports": 66,
+    "terminal_cases": 136,
+    "semantic_assertion_invocations": 13,
+    "logical_identity_mappings": {},
+    "invocation_mappings": {},
+    "baseline_flaky_cases": [
+      "terminal-llama-load-cancel-paired/100x32-dark-fullscreen",
+      "terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+      "terminal-resource-skill-prompt-no-reader-paired/120x40-dark-fullscreen",
+      "terminal-resource-skill-prompt-read-bash-paired/120x40-dark-fullscreen"
+    ],
+    "limitations": "Four live llama tests have no endpoint assertions; Linux guards do not establish other platforms. Invalid old paid-classifier probe and known regular-mode/presentation/malformed-Markdown conditions remain. Picker attempts outside the frozen set are retained; untouched baseline control reproduces exact-match timing variance. Final unchanged attempt belongs to the original set; no set/fixture/pin was widened.",
+    "evidence": "https://github.com/PhilipGB/pisharp/tree/10e0d60eb8b192a5afcccf813281a753c3767553/docs/refactor/baseline/editor-checkpoint",
+    "architecture": "docs/architecture.md",
+    "capability_documentation": "docs/capabilities/"
   }
 }
