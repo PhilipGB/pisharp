@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 7, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 11}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 8, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 10}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -1143,7 +1143,8 @@
       "evidence": [
         "tests/PiSharp.Tests/Cli/Sessions/SessionExportCommandTests.cs invokes separate CLI processes to check inferred and explicit destinations, escaped prompt, private file permissions, no overwrite, corrupt/symlink input rejection, and no agent directory/provider requirement. Other prompt and protocol modes have separate narrow tests; no whole CLI parity claim.",
         "dotnet format --verify-no-changes and warning-as-error build passed; 129/129 deterministic tests passed including the standalone export process fixture.",
-        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 441f5767 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 441f5767 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
+        "Text print mode preserves partial stdout, emits Pi's exact output-token-limit warning to stderr and exits 1 when the final provider response finishes with length. Successful later continuations override earlier length stops, empty responses still warn, and interactive/JSON modes retain their behavior. One process test failed first; all 25 print/transcript checks pass. Four real Pi/PiSharp CLI scenarios match text-mode stdout/stderr/exit/request count and bounded JSON-mode text/exit behavior with compaction/retry disabled. PiSharp's different JSON envelope and absent public stop reason remain explicitly open protocol requirements. See docs/parity/fixtures/current-pi-refresh-2026-10-13/print-truncation.json, tools/parity/print-truncation-differential.py, tests/PiSharp.Tests/Cli/Startup/PrintModeTruncationProcessTests.cs, tests/PiSharp.Tests/Cli/Tui/Rendering/InteractiveTranscriptTests.cs. This closes the named current-source delta, not the broader capability."
       ],
       "dependencies": []
     },
@@ -5343,9 +5344,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "MATCHED": 7,
+      "MATCHED": 8,
       "NO_BEHAVIOR_CHANGE": 13,
-      "NEEDS_WORK": 11
+      "NEEDS_WORK": 10
     },
     "audit_complete": true,
     "pin_advanced": true,

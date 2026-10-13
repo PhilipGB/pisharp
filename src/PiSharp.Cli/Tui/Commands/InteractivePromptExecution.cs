@@ -74,6 +74,7 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             new ChatMessage(ChatRole.User, contents), expanded, cancellation.Token))
             ProcessRunUpdate(update);
         transcript.FinishTurn();
+        Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);
     }
 
     public async Task StopMonitoringAsync()

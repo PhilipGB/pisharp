@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 7,
+    "MATCHED": 8,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 11
+    "NEEDS_WORK": 10
   },
   "commits": [
     {
@@ -552,7 +552,7 @@
         "packages/coding-agent/src/modes/print-mode.ts",
         "packages/coding-agent/test/print-mode.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Text print mode preserves partial stdout but warns on stderr and exits 1 for a final length stop. PiSharp print execution does not handle output-token-limit finish reason.",
       "capability_ids": [
         "cli-prompt-modes"
@@ -563,7 +563,14 @@
       ],
       "implementation_plan": "Propagate the final finish reason to print-mode exit handling without affecting interactive/JSON modes.",
       "differential_plan": "Paired print CLI processes with a deterministic length-stop provider; assert stdout, stderr and exit status.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Text print mode preserves partial stdout, emits Pi's exact output-token-limit warning to stderr and exits 1 when the final provider response finishes with length. Successful later continuations override earlier length stops, empty responses still warn, and interactive/JSON modes retain their behavior. One process test failed first; all 25 print/transcript checks pass. Four real Pi/PiSharp CLI scenarios match text-mode stdout/stderr/exit/request count and bounded JSON-mode text/exit behavior with compaction/retry disabled. PiSharp's different JSON envelope and absent public stop reason remain explicitly open protocol requirements.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/print-truncation.json",
+        "tools/parity/print-truncation-differential.py",
+        "tests/PiSharp.Tests/Cli/Startup/PrintModeTruncationProcessTests.cs",
+        "tests/PiSharp.Tests/Cli/Tui/Rendering/InteractiveTranscriptTests.cs"
+      ]
     },
     {
       "sha": "e6fb2581dff67cd9aadb9a626b0b5070d7e83379",

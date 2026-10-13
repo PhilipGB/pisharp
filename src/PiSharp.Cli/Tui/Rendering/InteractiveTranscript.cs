@@ -18,6 +18,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     private readonly TerminalToolPresentation _toolPresentation = new(toolRenderer,
         workingDirectory ?? Environment.CurrentDirectory, () => screen?.ToolResultsExpanded ?? false);
     private bool _hideThinkingBlock = hideThinking;
+    private string? _lastFinishReason;
 
     public bool HasAssistantOutput { get; private set; }
     public int ExitCode { get; private set; }
@@ -123,6 +124,12 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         }
         switch (update.Type)
         {
+            case "prompt_accepted" when !interactive:
+                _lastFinishReason = null;
+                break;
+            case "model_request_completed" when !interactive:
+                _lastFinishReason = update.ProviderFinishReason;
+                break;
             case "prompt_accepted" when interactive && screen is not null:
                 screen.AppendUserMessage(Safe(update.Text ?? ""), update.Images);
                 break;
@@ -180,6 +187,11 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     {
         CommitAssistantThinkingText();
         CommitAssistantText();
+        if (!interactive && _lastFinishReason == "length")
+        {
+            status.WriteLine("Response was truncated: the model reached its output token limit.");
+            ExitCode = Math.Max(ExitCode, 1);
+        }
         if (!HasAssistantOutput) return;
         output.WriteLine();
         HasAssistantOutput = false;
