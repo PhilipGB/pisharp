@@ -50,7 +50,7 @@ selection are parity-sensitive contracts.
 
 ## Verification
 
-[CodingToolsTests](../../tests/PiSharp.Tests/CodingToolsTests.cs) protects exact
+[CodingToolsTests](../../tests/PiSharp.Tests/Runtime/Tools/CodingToolsTests.cs) protects exact
 schemas, selection, file coordination, shell results, cancellation and timeouts.
 `ReadTextConformanceTests`, `EditConformanceTests`, `ReadImageToolTests`,
 `CodemodeBashOutputTests` and session/environment/provider tests protect execution

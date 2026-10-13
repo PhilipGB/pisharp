@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
-    <EmbeddedResource Include="Fixtures/cli-help.txt" LogicalName="PiSharp.Tests.Fixtures.cli-help.txt" />
+    <EmbeddedResource Include="TestInfrastructure/Fixtures/cli-help.txt" LogicalName="PiSharp.Tests.Fixtures.cli-help.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,8 +24,8 @@
     <ProjectReference Include="..\ResourceDiscoveryExtension\ResourceDiscoveryExtension.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Fixtures/mcp_fixture.py" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Fixtures/mcp_notification_fixture.py" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Fixtures/mcp_reconnect_fixture.py" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="TestInfrastructure/Fixtures/mcp_fixture.py" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="TestInfrastructure/Fixtures/mcp_notification_fixture.py" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="TestInfrastructure/Fixtures/mcp_reconnect_fixture.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

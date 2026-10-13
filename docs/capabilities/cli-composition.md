@@ -98,12 +98,12 @@ session/model/settings controllers rather than implementing their infrastructure
 
 ## Verification
 
-[CliInformationalProcessTests](../../tests/PiSharp.Tests/CliInformationalProcessTests.cs)
+[CliInformationalProcessTests](../../tests/PiSharp.Tests/Cli/Startup/CliInformationalProcessTests.cs)
 checks exact help output, argument errors and configuration-loading precedence.
-[RpcModelReplacementProcessTests](../../tests/PiSharp.Tests/RpcModelReplacementProcessTests.cs)
+[RpcModelReplacementProcessTests](../../tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcModelReplacementProcessTests.cs)
 characterizes stale-checkpoint model/thinking rollback, retained inactive entries,
 unchanged disk bytes and a successful retry before transaction extraction.
-[TerminalPtyTests](../../tests/PiSharp.Tests/TerminalPtyTests.cs) covers real terminal
+[TerminalPtyTests](../../tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs) covers real terminal
 startup/disposal, settings, clipboard, session confirmation, branching and import.
 Startup session, JSON lifecycle, project settings, session export and RPC session
 replacement tests use deterministic local fixtures. Full terminal differentials

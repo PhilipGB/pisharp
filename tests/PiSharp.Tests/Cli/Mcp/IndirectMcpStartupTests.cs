@@ -19,7 +19,7 @@ public sealed class IndirectMcpStartupTests
         Directory.CreateDirectory(projectConfig);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
             var startedPath = Path.Combine(root, "initialize-started");
             var releasePath = Path.Combine(root, "initialize-release");
             var completedPath = Path.Combine(root, "initialize-completed");

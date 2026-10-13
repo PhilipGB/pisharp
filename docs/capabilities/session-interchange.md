@@ -52,7 +52,7 @@ PiSharp's native persistence format and assembly/public API identity are unchang
 
 ## Verification
 
-[PiJsonlSessionInterchangeTests](../../tests/PiSharp.Tests/PiJsonlSessionInterchangeTests.cs)
+[PiJsonlSessionInterchangeTests](../../tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs)
 protect migrations, branches, context edits, compaction, unknown records, media,
 interruptions, metadata and private/non-overwriting file exports.
 `PiJsonlSessionFileStoreTests` and `PiJsonlSessionRecoveryProcessTests` protect

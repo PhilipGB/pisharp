@@ -15,7 +15,7 @@ public sealed class McpRuntimeLifecycleTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
             var startedPath = Path.Combine(root, "initialize-started");
             await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
                 System.Text.Json.JsonSerializer.Serialize(new
@@ -59,7 +59,7 @@ public sealed class McpRuntimeLifecycleTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
             var fastStarted = Path.Combine(root, "fast-started");
             var slowStarted = Path.Combine(root, "slow-started");
             await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
@@ -134,7 +134,7 @@ public sealed class McpRuntimeLifecycleTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
             var startedPath = Path.Combine(root, "initialize-started");
             await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
                 System.Text.Json.JsonSerializer.Serialize(new
@@ -180,7 +180,7 @@ public sealed class McpRuntimeLifecycleTests
         ExtensionCatalog? catalog = null;
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
             var startedPath = Path.Combine(root, "initialize-started");
             await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
                 System.Text.Json.JsonSerializer.Serialize(new
@@ -298,7 +298,7 @@ public sealed class McpRuntimeLifecycleTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_notification_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_notification_fixture.py");
             var statePath = Path.Combine(root, "state.json");
             await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
                 System.Text.Json.JsonSerializer.Serialize(new
@@ -377,7 +377,7 @@ public sealed class McpRuntimeLifecycleTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_reconnect_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_reconnect_fixture.py");
             var counter = Path.Combine(root, "starts");
             await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"), System.Text.Json.JsonSerializer.Serialize(new
             {
@@ -432,7 +432,7 @@ public sealed class McpRuntimeLifecycleTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_notification_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_notification_fixture.py");
             var statePath = Path.Combine(root, "state.json");
             var configurationPath = Path.Combine(root, "mcp.json");
             await File.WriteAllTextAsync(configurationPath,
@@ -501,7 +501,7 @@ public sealed class McpRuntimeLifecycleTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_notification_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_notification_fixture.py");
             var statePath = Path.Combine(root, "state.json");
             var manager = new McpRuntimeManager(root);
             using var catalog = ExtensionCatalog.Load(root, root, false, discover: false,

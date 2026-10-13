@@ -50,7 +50,7 @@ public sealed class McpRuntimeTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
             await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"),
                 System.Text.Json.JsonSerializer.Serialize(new
                 {
@@ -83,7 +83,7 @@ public sealed class McpRuntimeTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
             var configurationPath = Path.Combine(root, "mcp.json");
             await File.WriteAllTextAsync(configurationPath, System.Text.Json.JsonSerializer.Serialize(new
             {
@@ -187,7 +187,7 @@ public sealed class McpRuntimeTests
         Directory.CreateDirectory(root);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
             var servers = new Dictionary<string, object>
             {
                 ["docs"] = new

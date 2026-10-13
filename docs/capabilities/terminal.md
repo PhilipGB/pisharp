@@ -78,12 +78,12 @@ interface or generic rendering bus is introduced.
 Live reasoning/text, Markdown palettes/indentation, skill spacing, modal flushes,
 reload deferral, alternate-screen restoration and authorization clipboard state
 are parity-sensitive. Public screen/editor APIs and mode sequences are preserved.
-[TerminalScreenTests](../../tests/PiSharp.Tests/TerminalScreenTests.cs) and
-[InteractiveTranscriptTests](../../tests/PiSharp.Tests/InteractiveTranscriptTests.cs)
+[TerminalScreenTests](../../tests/PiSharp.Tests/Cli/Tui/Rendering/TerminalScreenTests.cs) and
+[InteractiveTranscriptTests](../../tests/PiSharp.Tests/Cli/Tui/Rendering/InteractiveTranscriptTests.cs)
 cover coalescing, suspend/resume, live reflow/commit, auth-origin protection,
 scrollback, images and failure/lifetime transitions. Compositor, input, theme,
 Markdown, image, selection and Linux PTY tests cover their boundaries.
-[TerminalEditorProgressTests](../../tests/PiSharp.Tests/TerminalEditorProgressTests.cs)
+[TerminalEditorProgressTests](../../tests/PiSharp.Tests/Cli/Tui/Editor/TerminalEditorProgressTests.cs)
 hosts fast progress success/failure in a real Linux PTY, exercising terminal mode
 ownership alongside draft/result/exception preservation and cancellation cleanup.
 

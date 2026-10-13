@@ -17,7 +17,7 @@ public sealed class McpCommandTests
         Directory.CreateDirectory(project);
         try
         {
-            var fixture = Path.Combine(AppContext.BaseDirectory, "Fixtures", "mcp_fixture.py");
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
             var output = new StringWriter();
             var errors = new StringWriter();
             Assert.Equal(0, await McpCommand.RunAsync(["add", "fixture", "--exposure", "direct", "--",

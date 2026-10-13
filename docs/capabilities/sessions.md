@@ -53,7 +53,7 @@ native-extension assembly identity and documented facade APIs remain intact.
 
 ## Verification
 
-[ConversationSessionTests](../../tests/PiSharp.Tests/ConversationSessionTests.cs)
+[ConversationSessionTests](../../tests/PiSharp.Tests/Runtime/Sessions/ConversationSessionTests.cs)
 protect migration, inactive-branch validation, leases, branching, side-effect
 recovery and persistence. Explicit null-head and invalid inactive usage are
 characterized before restructuring. Compaction, context budget/estimator,

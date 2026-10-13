@@ -52,7 +52,7 @@ remain parity-sensitive.
 
 ## Verification
 
-[ProviderModelRuntimeTests](../../tests/PiSharp.Tests/ProviderModelRuntimeTests.cs)
+[ProviderModelRuntimeTests](../../tests/PiSharp.Tests/Cli/Providers/ProviderModelRuntimeTests.cs)
 protect credential precedence/isolation, endpoint authority, catalog scopes,
 configuration and process selection. The command-line provider/classifier binding
 case was characterized before extraction. Llama router, classifier auth, scope,

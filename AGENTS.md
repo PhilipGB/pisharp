@@ -3,9 +3,9 @@
 ## Project Structure & Module Organization
 
 - `src/PiSharp.Core/`: deterministic conversation trees, edit/diff logic, and read planning; keep provider, terminal, filesystem, and process dependencies out.
-- `src/PiSharp.Runtime/`: shared agent execution, sessions, tools, extensions, resources, MCP, and Codemode.
-- `src/PiSharp.Cli/`: provider adapters, configuration, terminal UI, and JSON/RPC front ends. Embedded assets live in `Providers/Data/` and `Tui/Themes/`.
-- `tests/PiSharp.Tests/`: unit, integration, process, and terminal tests; `tests/ResourceDiscoveryExtension/` supplies an extension fixture.
+- `src/PiSharp.Runtime/`: shared agent execution under `Agents/`, sessions, tools (including `Tools/Shell/`), extensions, resources, MCP, and Codemode.
+- `src/PiSharp.Cli/`: startup, authentication, composition, sessions, provider adapters under `Providers/`, and JSON/RPC front ends under `Protocols/Json/` and `Protocols/Rpc/`. TUI code is grouped by responsibility; embedded assets live in `Providers/Data/` and `Tui/Themes/`.
+- `tests/PiSharp.Tests/`: capability-organized `Architecture/`, `Core/`, `Runtime/`, and `Cli/` tests; shared fixtures and helpers live in `TestInfrastructure/`. `tests/ResourceDiscoveryExtension/` supplies an extension fixture.
 - `tools/parity/` and `tools/McpConformance/`: differential probes and conformance tooling. Architecture, protocol contracts, and parity evidence live in `docs/`.
 
 ## Build, Test, and Development Commands
