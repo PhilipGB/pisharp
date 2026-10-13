@@ -5269,5 +5269,23 @@
     "documentation": "docs/development/program-composition-refactor.md",
     "limitations": "Full Pi parity and raw-byte/canonical-render timing stability are not established. Regular-mode cases terminate on the existing unsupported setting; they do not establish regular interactive behavior. Linux fixture coverage does not establish other platforms.",
     "feature_status_changes": false
+  },
+  "local_parity_artifact_archive": {
+    "date": "2026-10-13",
+    "scope": "Storage and review of previously untracked historical parity artifacts; no new differential verification.",
+    "branch": "refactor/architecture-maintainability",
+    "starting_pisharp": "bb12fe95bbb5193b60ef0b28792ecdac6cd4d726",
+    "configured_pi": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+    "archived_original_files": 1747,
+    "archived_original_bytes": 1361001023,
+    "sha256_verified_files": 1747,
+    "reviewed_historical_notes": 5,
+    "reviewed_json_records": 17,
+    "inventory": "docs/parity/fixtures/artifact-archive-2026-10-13/inventory.json",
+    "manifest": "docs/parity/fixtures/artifact-archive-2026-10-13/manifest.jsonl",
+    "manifest_sha256": "5e7f41a7b0b39333c0303a77ccd6f3741d0546931d7b09a034c0b92554b4d4f0",
+    "documentation": "docs/parity/fixtures/artifact-archive-2026-10-13/README.md",
+    "feature_status_changes": false,
+    "limitations": "No historical run, CI result or raw capture was re-executed or independently authenticated. The hashes prove this archive preserves the local backlog, not the accuracy of historical parity claims. Archives are local and are absent from clean checkouts; keep a backup for long-term retention."
   }
 }

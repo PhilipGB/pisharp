@@ -37,6 +37,8 @@ Recent commits use imperative subjects such as “Align startup spacing with Pi.
 
 Before parity work, review `TODO.md`, `docs/continuation.md`, and `docs/parity/feature-matrix.md`. Update relevant inventories, fixtures, and the execution ledger when evidence changes.
 
+Write generated parity captures to `artifacts/parity/<run>/` (Git ignored). Commit reviewed, compact evidence under `docs/parity/fixtures/` with source pins, scope and limitations. Keep raw streams out of routine commits; ignored local archives need a separate backup for long-term retention.
+
 ## Security & Configuration
 
 Keep credentials out of commits and fixtures. Prefer provider environment variables over `--api-key`. Use `PISHARP_AGENT_DIR` and `PISHARP_SESSION_DIR` to isolate local configuration and sessions.

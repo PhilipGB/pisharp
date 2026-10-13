@@ -1,0 +1,42 @@
+{
+  "piSha": "4270522473e677ddba7b093caa0064a3df51d459",
+  "pisharpSha": "ccc346725d5d39c74eca96c088a8fa7c66e6118a",
+  "fixture": "tools/parity/terminal/fixtures/quiet-startup-resources.json",
+  "projectionMatch": true,
+  "untrustedProjectSkillHidden": true,
+  "checkpoints": {
+    "startup": {
+      "Context": [
+        "[Context]",
+        "  ~/SYSTEM.md, ~/APPEND_SYSTEM.md, ~/AGENTS.md, AGENTS.md"
+      ],
+      "Skills": [
+        "[Skills]",
+        "  startup-skill"
+      ],
+      "Prompts": [
+        "[Prompts]",
+        "  /startup-template"
+      ]
+    },
+    "expand-startup": {
+      "Context": [
+        "[Context]",
+        "  ~/SYSTEM.md",
+        "  ~/APPEND_SYSTEM.md",
+        "  ~/AGENTS.md",
+        "  /tmp/pisharp-terminal-fixture-workspace/quiet-startup/AGENTS.md"
+      ],
+      "Skills": [
+        "[Skills]",
+        "  user",
+        "    ~/skills/startup-skill/SKILL.md"
+      ],
+      "Prompts": [
+        "[Prompts]",
+        "  user",
+        "    /startup-template"
+      ]
+    }
+  }
+}

@@ -14,9 +14,11 @@ Full-screen presentation remains different: 64,818 normalized state/render field
 frames. Product wording, clipping, transcript placement and terminal control
 sequences remain limitations; raw bytes differ.
 
-The original local receipt, reports and streams under the current-42705224-ff180dac
-quiet-startup-resources directory were not committed. They are user-owned local
-artifacts and are unavailable in a clean checkout. This tracked document preserves
-that receipt's stated source/results and limitations; it does not supply the missing
-raw evidence or establish a new full-screen parity claim. The committed fixture
-and permanent reference mechanism support intentional fresh verification.
+The [reviewed historical receipt](resources-terminal-current-pi-2026-10-12/current-42705224-ff180dac/quiet-startup-resources/README.md),
+[calibration report](resources-terminal-current-pi-2026-10-12/current-42705224-ff180dac/quiet-startup-resources/calibration/report.json)
+and [paired report](resources-terminal-current-pi-2026-10-12/current-42705224-ff180dac/quiet-startup-resources/paired/report.json)
+are now committed. The original note and raw streams remain in the local ignored
+archive recorded by the [archive inventory](artifact-archive-2026-10-13/README.md);
+those streams are unavailable in a clean checkout. This storage review did not
+rerun the scenario or establish a new full-screen parity claim. The committed
+fixture and permanent reference mechanism support intentional fresh verification.
