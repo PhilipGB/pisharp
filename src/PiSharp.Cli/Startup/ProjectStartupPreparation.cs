@@ -1,15 +1,6 @@
-using System.Text.Json;
-using Microsoft.Extensions.AI;
-using PiSharp.Runtime;
-using PiSharp.Runtime.Sessions;
-using PiSharp.Runtime.Providers;
-using PiSharp.Runtime.Extensions;
-using PiSharp.Runtime.Resources;
-using PiSharp.Cli.Tui;
-using PiSharp.Cli.Protocols;
 using PiSharp.Cli.Sessions;
-using PiSharp.Cli.Startup;
-using PiSharp.Cli.Composition;
+using PiSharp.Cli.Tui;
+using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Cli.Startup;
 
@@ -57,11 +48,19 @@ internal static class ProjectStartupPreparation
             Environment.ExitCode = 2;
             return null;
         }
-        var userSettings = projectConfiguration.Settings;
-        var usesDefaultToolsSetting = DefaultToolReloadPolicy.UsesSettingsDefaults(cli);
-        var explicitThinking = cli.Thinking;
-        cli = DefaultToolReloadPolicy.ApplyStartupDefaults(cli, userSettings, Environment.GetEnvironmentVariable,
-            preserveSessionModel: cli.Continue || cli.SessionPath is not null || cli.ForkSource is not null || cli.ListModels);
-        return new(invocationDirectory, configuredSessionDirectory, trustStore, projectConfiguration, cli, explicitThinking, usesDefaultToolsSetting);
+        try
+        {
+            var userSettings = projectConfiguration.Settings;
+            var usesDefaultToolsSetting = DefaultToolReloadPolicy.UsesSettingsDefaults(cli);
+            var explicitThinking = cli.Thinking;
+            cli = DefaultToolReloadPolicy.ApplyStartupDefaults(cli, userSettings, Environment.GetEnvironmentVariable,
+                preserveSessionModel: cli.Continue || cli.SessionPath is not null || cli.ForkSource is not null || cli.ListModels);
+            return new(invocationDirectory, configuredSessionDirectory, trustStore, projectConfiguration, cli, explicitThinking, usesDefaultToolsSetting);
+        }
+        catch
+        {
+            projectConfiguration.Dispose();
+            throw;
+        }
     }
 }

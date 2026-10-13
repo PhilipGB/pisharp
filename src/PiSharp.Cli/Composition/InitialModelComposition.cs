@@ -1,17 +1,9 @@
-using System.Text.Json;
 using Microsoft.Extensions.AI;
-using PiSharp.Runtime;
-using PiSharp.Runtime.Sessions;
-using PiSharp.Runtime.Providers;
-using PiSharp.Runtime.Extensions;
-using PiSharp.Runtime.Resources;
-using PiSharp.Cli.Tui;
-using PiSharp.Cli.Protocols;
 using PiSharp.Cli.Sessions;
-using PiSharp.Cli.Startup;
-using PiSharp.Cli.Composition;
-
+using PiSharp.Runtime;
 using PiSharp.Runtime.Codemode;
+using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Composition;
 
@@ -29,6 +21,7 @@ internal static class InitialModelComposition
             selection = await modelRuntime.ResolveAsync(cli.Provider ?? (cli.Local ? "local" : null), cli.ModelOverride);
             thinking = explicitThinking ?? userSettings.GetModelThinkingLevel(selection) ?? cli.Thinking ?? ThinkingLevels.Default;
             thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
+            _ = selection.Connection;
         }
         catch (Exception error) when (error is ArgumentException or InvalidOperationException or InvalidDataException or IOException or System.Text.Json.JsonException)
         {

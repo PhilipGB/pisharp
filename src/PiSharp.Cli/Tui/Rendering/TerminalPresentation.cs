@@ -1,69 +1,60 @@
-using System.Text.Json;
-using Microsoft.Extensions.AI;
-using PiSharp.Runtime;
-using PiSharp.Runtime.Sessions;
-using PiSharp.Runtime.Providers;
-using PiSharp.Runtime.Extensions;
-using PiSharp.Runtime.Resources;
-using PiSharp.Cli.Tui;
-using PiSharp.Cli.Protocols;
+using PiSharp.Cli.Composition;
 using PiSharp.Cli.Sessions;
 using PiSharp.Cli.Startup;
-using PiSharp.Cli.Composition;
-
-using PiSharp.Runtime.Codemode;
+using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Cli.Tui;
 
 internal sealed class TerminalPresentation : IDisposable
 {
-    private readonly string agentDirectory;
-    private readonly string invocationDirectory;
-    private readonly ActiveProjectRuntime projectBinding;
-    private readonly ActiveModelRuntime modelBinding;
-    private readonly ActiveConversationRuntime conversationBinding;
-    private readonly ExtensionLease extensionLease;
-    private readonly ProviderModelRuntime modelRuntime;
-    private readonly TerminalEditor? editor;
-    private readonly TerminalScreen? terminalScreen;
-    private readonly TerminalMode? terminalMode;
-    private TerminalThemeCatalog terminalThemeCatalog = null!;
-    private string? cliThemeOverride;
-    private bool hideThinkingBlock;
-    public TerminalEditor? Editor => editor;
-    public TerminalScreen? Screen => terminalScreen;
+    private readonly string _agentDirectory;
+    private readonly string _invocationDirectory;
+    private readonly ActiveProjectRuntime _projectBinding;
+    private readonly ActiveModelRuntime _modelBinding;
+    private readonly ActiveConversationRuntime _conversationBinding;
+    private readonly ExtensionLease _extensionLease;
+    private readonly ProviderModelRuntime _modelRuntime;
+    private readonly TerminalEditor? _editor;
+    private readonly TerminalScreen? _terminalScreen;
+    private readonly TerminalMode? _terminalMode;
+    private TerminalThemeCatalog _terminalThemeCatalog = null!;
+    private string? _cliThemeOverride;
+    private bool _hideThinkingBlock;
+    public TerminalEditor? Editor => _editor;
+    public TerminalScreen? Screen => _terminalScreen;
     public TerminalClipboard Clipboard { get; }
-    public TerminalThemeCatalog Themes => terminalThemeCatalog;
-    public bool HideThinking => hideThinkingBlock;
+    public TerminalThemeCatalog Themes => _terminalThemeCatalog;
+    public bool HideThinking => _hideThinkingBlock;
 
     public TerminalPresentation(string agentDirectory, string invocationDirectory, bool print, CliTerminalIO terminalIO,
         ActiveProjectRuntime projectBinding, ActiveModelRuntime modelBinding, ActiveConversationRuntime conversationBinding,
         ExtensionLease extensionLease, ProviderModelRuntime modelRuntime)
     {
-        this.agentDirectory = agentDirectory;
-        this.invocationDirectory = invocationDirectory;
-        this.projectBinding = projectBinding;
-        this.modelBinding = modelBinding;
-        this.conversationBinding = conversationBinding;
-        this.extensionLease = extensionLease;
-        this.modelRuntime = modelRuntime;
-        var completion = new TerminalResourceCompletion(projectBinding, extensionLease);
-        editor = !print && projectBinding.Arguments.Mode is not ("json" or "rpc")
-            ? new TerminalEditor(completion.Commands, agentDirectory, () => projectBinding.WorkingDirectory,
-                initiallyExpanded: projectBinding.Arguments.Verbose, describeCommand: completion.Describe) : null;
-        cliThemeOverride = editor is null ? null : projectBinding.Arguments.UseTheme;
-        terminalThemeCatalog = CreateTerminalThemeCatalog();
+        _agentDirectory = agentDirectory;
+        _invocationDirectory = invocationDirectory;
+        _projectBinding = projectBinding;
+        _modelBinding = modelBinding;
+        _conversationBinding = conversationBinding;
+        _extensionLease = extensionLease;
+        _modelRuntime = modelRuntime;
+        var completion = new TerminalResourceCompletion(_projectBinding, _extensionLease);
+        _editor = !print && _projectBinding.Arguments.Mode is not ("json" or "rpc")
+            ? new TerminalEditor(completion.Commands, _agentDirectory, () => _projectBinding.WorkingDirectory,
+                initiallyExpanded: _projectBinding.Arguments.Verbose, describeCommand: completion.Describe) : null;
+        _cliThemeOverride = _editor is null ? null : _projectBinding.Arguments.UseTheme;
+        _terminalThemeCatalog = CreateTerminalThemeCatalog();
         var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());
-        var startupPresentation = new TerminalStartupPresentation(projectBinding.Settings.QuietStartup, projectBinding.Arguments.Verbose,
-            action => editor?.GetDisplayKeys(action));
-        if (editor is not null && startupPresentation.ShowDetails && modelRuntime.Scope.Count > 0)
+        var startupPresentation = new TerminalStartupPresentation(_projectBinding.Settings.QuietStartup, _projectBinding.Arguments.Verbose,
+            action => _editor?.GetDisplayKeys(action));
+        if (_editor is not null && startupPresentation.ShowDetails && _modelRuntime.Scope.Count > 0)
         {
-            var cycleKey = editor.GetDisplayKeys("app.model.cycleForward");
+            var cycleKey = _editor.GetDisplayKeys("app.model.cycleForward");
             var cycleHint = string.IsNullOrWhiteSpace(cycleKey) ? "" : $" ({cycleKey} to cycle)";
             Console.WriteLine(initialTerminalTheme.Style("dim",
-                $"Model scope: {string.Join(", ", modelRuntime.Scope)}{cycleHint}"));
+                $"Model scope: {string.Join(", ", _modelRuntime.Scope)}{cycleHint}"));
         }
-        terminalScreen = editor is null ? null : new TerminalScreen(terminalIO.Output,
+        _terminalScreen = _editor is null ? null : new TerminalScreen(terminalIO.Output,
             terminalIO.Error,
             getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
             queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
@@ -71,37 +62,37 @@ internal sealed class TerminalPresentation : IDisposable
             minimumRenderInterval: TimeSpan.FromMilliseconds(16));
         try
         {
-            terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
-            terminalScreen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
-            hideThinkingBlock = projectBinding.Settings.HideThinkingBlock == true;
-            terminalScreen?.SetThinkingBlocksHidden(hideThinkingBlock);
-            terminalScreen?.Activate();
-            terminalMode = editor is null ? null : TerminalMode.Enter(terminalScreen);
-            ConfigureMcpAuthorizationUrlPresenter(projectBinding.Runtime);
-            editor?.AttachScreen(terminalScreen);
-            editor?.CompleteInitialTerminalColorQuery();
-            terminalScreen?.SetFooter(IdleFooter(providerCount: 1), render: false);
-            terminalScreen?.RenderInitial();
+            _terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
+            _terminalScreen?.SetMarkdownCodeBlockIndent(_projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
+            _hideThinkingBlock = _projectBinding.Settings.HideThinkingBlock == true;
+            _terminalScreen?.SetThinkingBlocksHidden(_hideThinkingBlock);
+            _terminalScreen?.Activate();
+            _terminalMode = _editor is null ? null : TerminalMode.Enter(_terminalScreen);
+            ConfigureMcpAuthorizationUrlPresenter(_projectBinding.Runtime);
+            _editor?.AttachScreen(_terminalScreen);
+            _editor?.CompleteInitialTerminalColorQuery();
+            _terminalScreen?.SetFooter(IdleFooter(providerCount: 1), render: false);
+            _terminalScreen?.RenderInitial();
             LoadSessionTranscript();
-            var startupTrustNotice = !projectBinding.Trusted && ProjectTrust.HasProtectedResources(projectBinding.WorkingDirectory)
+            var startupTrustNotice = !_projectBinding.Trusted && ProjectTrust.HasProtectedResources(_projectBinding.WorkingDirectory)
                 ? "This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp."
                 : null;
-            if (editor is not null)
+            if (_editor is not null)
             {
                 IReadOnlyList<TerminalStartupDetail> CurrentStartupDetails() => TerminalStartupDetails.Build(
-                    projectBinding.Runtime.ContextFiles, projectBinding.Resources, extensionLease.Current, projectBinding.WorkingDirectory, terminalThemeCatalog.Diagnostics);
-                terminalScreen?.SetStartupHeader((theme, columns, expanded) =>
+                    _projectBinding.Runtime.ContextFiles, _projectBinding.Resources, _extensionLease.Current, _projectBinding.WorkingDirectory, _terminalThemeCatalog.Diagnostics);
+                _terminalScreen?.SetStartupHeader((theme, columns, expanded) =>
                     startupPresentation.BuildLogo(theme));
-                terminalScreen?.SetStartupContent((theme, columns, expanded) =>
+                _terminalScreen?.SetStartupContent((theme, columns, expanded) =>
                     startupPresentation.BuildContent(theme, columns, CurrentStartupDetails(), startupTrustNotice, expanded));
             }
             Clipboard = new TerminalClipboard(writeTerminalControl: value =>
             {
-                if (terminalScreen is { IsActive: true }) terminalScreen.WriteControl(value);
+                if (_terminalScreen is { IsActive: true }) _terminalScreen.WriteControl(value);
                 else Console.Write(value);
             });
-            terminalScreen?.SetFooter(IdleFooter(providerCount: 1));
-            terminalScreen?.SetFooter(IdleFooter());
+            _terminalScreen?.SetFooter(IdleFooter(providerCount: 1));
+            _terminalScreen?.SetFooter(IdleFooter());
         }
         catch
         {
@@ -110,69 +101,69 @@ internal sealed class TerminalPresentation : IDisposable
         }
     }
 
-    public void ClearThemeOverride() => cliThemeOverride = null;
+    public void ClearThemeOverride() => _cliThemeOverride = null;
     public void SetHideThinking(bool hide)
     {
-        hideThinkingBlock = hide;
-        terminalScreen?.SetThinkingBlocksHidden(hide);
+        _hideThinkingBlock = hide;
+        _terminalScreen?.SetThinkingBlocksHidden(hide);
     }
 
     public void Dispose()
     {
-        try { terminalMode?.Dispose(); }
-        finally { terminalScreen?.Dispose(); }
+        try { _terminalMode?.Dispose(); }
+        finally { _terminalScreen?.Dispose(); }
     }
 
-    public string? ActiveThemeSetting() => cliThemeOverride ?? projectBinding.Settings.Theme;
-    TerminalThemeCatalog CreateTerminalThemeCatalog() => new(agentDirectory, projectBinding.Trusted ? projectBinding.WorkingDirectory : null,
-        trueColorOverride: projectBinding.Settings.TerminalTrueColorOverride,
-        userThemePaths: projectBinding.BaseUserSettings.Themes, projectThemePaths: projectBinding.ProjectSettings?.Themes,
-        discoverThemes: !projectBinding.Arguments.NoThemes, explicitThemePaths: (projectBinding.Arguments.ThemePaths ?? [])
-            .Concat(projectBinding.Runtime.ExtensionResources.ThemePaths.Select(path => path.Path)).ToArray(),
-        explicitThemeBaseDirectory: invocationDirectory);
+    public string? ActiveThemeSetting() => _cliThemeOverride ?? _projectBinding.Settings.Theme;
+    TerminalThemeCatalog CreateTerminalThemeCatalog() => new(_agentDirectory, _projectBinding.Trusted ? _projectBinding.WorkingDirectory : null,
+        trueColorOverride: _projectBinding.Settings.TerminalTrueColorOverride,
+        userThemePaths: _projectBinding.BaseUserSettings.Themes, projectThemePaths: _projectBinding.ProjectSettings?.Themes,
+        discoverThemes: !_projectBinding.Arguments.NoThemes, explicitThemePaths: (_projectBinding.Arguments.ThemePaths ?? [])
+            .Concat(_projectBinding.Runtime.ExtensionResources.ThemePaths.Select(path => path.Path)).ToArray(),
+        explicitThemeBaseDirectory: _invocationDirectory);
     TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? terminalColors = null)
     {
         var colors = terminalColors ?? new TerminalColorState();
-        try { return terminalThemeCatalog.Resolve(themeSetting, colors); }
+        try { return _terminalThemeCatalog.Resolve(themeSetting, colors); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or FormatException)
         {
             Console.Error.WriteLine($"Could not load theme '{themeSetting}': {error.Message}. Using terminal appearance defaults.");
-            return terminalThemeCatalog.Resolve(null, colors);
+            return _terminalThemeCatalog.Resolve(null, colors);
         }
     }
     bool ThemeFollowsTerminalAppearance(string? themeSetting) => themeSetting is null or "" or "system" ||
         themeSetting.Count(character => character == '/') == 1;
     public void ConfigureMcpAuthorizationUrlPresenter(ProjectRuntimeContext context)
     {
-        Action<string, Uri>? presenter = terminalScreen is null ? null : (serverName, url) =>
-            terminalScreen.AppendMcpAuthorizationNotification(serverName, url,
-                editor?.GetDisplayKeys("app.message.copy"), editor?.GetDisplayKeys("app.interrupt"));
-        Action<string>? completed = terminalScreen is null ? null : terminalScreen.ClearMcpAuthorizationNotification;
+        Action<string, Uri>? presenter = _terminalScreen is null ? null : (serverName, url) =>
+            _terminalScreen.AppendMcpAuthorizationNotification(serverName, url,
+                _editor?.GetDisplayKeys("app.message.copy"), _editor?.GetDisplayKeys("app.interrupt"));
+        Action<string>? completed = _terminalScreen is null ? null : _terminalScreen.ClearMcpAuthorizationNotification;
         context.SetMcpAuthorizationUrlPresenter(presenter, completed);
     }
-    public string IdleFooter(int? providerCount = null) => TerminalModelStatus.FormatIdleFooter(modelBinding.Selection.Model, modelBinding.Thinking, conversationBinding.Conversation,
-        conversationBinding.Run.ContextWindowTokens, projectBinding.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
-        terminalScreen?.TerminalWidth ?? 80, providerCount ?? modelRuntime.AvailableModelProviderCount,
-        conversationBinding.Run.EstimatedContextTokens);
+    public string IdleFooter(int? providerCount = null) => TerminalModelStatus.FormatIdleFooter(_modelBinding.Selection.Model, _modelBinding.Thinking, _conversationBinding.Conversation,
+        _conversationBinding.Run.ContextWindowTokens, _projectBinding.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
+        _terminalScreen?.TerminalWidth ?? 80, providerCount ?? _modelRuntime.AvailableModelProviderCount,
+        _conversationBinding.Run.EstimatedContextTokens);
     public void RefreshTerminalTheme()
     {
-        if (terminalScreen is null) return;
-        terminalThemeCatalog = CreateTerminalThemeCatalog();
-        terminalScreen.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
-        terminalScreen.SetTheme(ResolveConfiguredTheme(ActiveThemeSetting(), terminalScreen.CurrentTerminalColors));
-        terminalScreen.SetTerminalAppearanceFollowing(ThemeFollowsTerminalAppearance(ActiveThemeSetting()));
+        if (_terminalScreen is null) return;
+        _terminalThemeCatalog = CreateTerminalThemeCatalog();
+        _terminalScreen.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
+        _terminalScreen.SetTheme(ResolveConfiguredTheme(ActiveThemeSetting(), _terminalScreen.CurrentTerminalColors));
+        _terminalScreen.SetTerminalAppearanceFollowing(ThemeFollowsTerminalAppearance(ActiveThemeSetting()));
     }
     public void LoadSessionTranscript()
     {
-        if (terminalScreen is null) return;
+        if (_terminalScreen is null) return;
         var history = new InteractiveTranscript(Console.Out, Console.Error, interactive: true,
-            hideThinking: hideThinkingBlock, screen: terminalScreen,
-            toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
-            workingDirectory: conversationBinding.Conversation.WorkingDirectory);
-        history.LoadHistory(conversationBinding.Conversation);
+            hideThinking: _hideThinkingBlock, screen: _terminalScreen,
+            toolRenderer: name => _extensionLease.Current.Registration.GetToolRenderer(name),
+            workingDirectory: _conversationBinding.Conversation.WorkingDirectory);
+        history.LoadHistory(_conversationBinding.Conversation);
     }
     public InteractiveTranscript CreateInteractiveTranscript(bool interactive = true) => new(Console.Out, Console.Error, interactive,
-        hideThinking: hideThinkingBlock, screen: terminalScreen,
-        toolRenderer: name => extensionLease.Current.Registration.GetToolRenderer(name),
-        workingDirectory: projectBinding.WorkingDirectory);
+        hideThinking: _hideThinkingBlock, screen: _terminalScreen,
+        toolRenderer: name => _extensionLease.Current.Registration.GetToolRenderer(name),
+        workingDirectory: _projectBinding.WorkingDirectory);
 }

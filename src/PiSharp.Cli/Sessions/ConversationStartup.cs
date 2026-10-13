@@ -1,17 +1,7 @@
-using System.Text.Json;
-using Microsoft.Extensions.AI;
-using PiSharp.Runtime;
-using PiSharp.Runtime.Sessions;
-using PiSharp.Runtime.Providers;
-using PiSharp.Runtime.Extensions;
-using PiSharp.Runtime.Resources;
-using PiSharp.Cli.Tui;
-using PiSharp.Cli.Protocols;
-using PiSharp.Cli.Sessions;
-using PiSharp.Cli.Startup;
 using PiSharp.Cli.Composition;
-
 using PiSharp.Runtime.Codemode;
+using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Sessions;
 
@@ -48,6 +38,7 @@ internal static class ConversationStartup
             thinking = startupModel.Thinking;
             if (startupModel.RebuildRuntime)
             {
+                _ = selection.Connection;
                 thinking = ThinkingLevels.ValidateForModel(thinking, selection.Model.Reasoning, selection.Model.ThinkingLevelMap);
                 chat = ProviderChatClientFactory.Create(selection, userSettings.Retry?.Provider, userSettings.HttpIdleTimeoutMs);
                 contextPolicy = userSettings.ResolveCompactionPolicy(selection.Model.ContextLength, Environment.GetEnvironmentVariable, $"{selection.Provider.Id}/{selection.Model.Id}");

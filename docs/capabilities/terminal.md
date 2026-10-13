@@ -46,7 +46,8 @@ normal-buffer document/scrollback restoration.
 
 [TerminalEditor](../../src/PiSharp.Cli/Tui/Editor/TerminalEditor.cs) uses EditorBuffer,
 EditorKeymap, EditorCompletion and TerminalInput for draft editing and dispatches
-application actions through callbacks composed by Program. Dialogs and progress
+application actions through [InteractiveMode](../../src/PiSharp.Cli/Tui/InteractiveMode.cs)
+and [TerminalApplicationActions](../../src/PiSharp.Cli/Tui/Commands/TerminalApplicationActions.cs). Dialogs and progress
 panels consume the same input/mode components. Editor retains ordinary draft editing,
 completion/history, active-run queue/abort and application shortcut dispatch. It owns
 the lazily opened console input and its terminal-response subscriptions.

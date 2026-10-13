@@ -48,4 +48,14 @@ internal static class CliStartupCommands
         }
         return cli;
     }
+    public static async Task ListModelsAsync(ProviderModelRuntime models, CliArguments cli, TextWriter output)
+    {
+        var catalog = await models.ListModelsAsync(cli.Provider);
+        var matching = catalog.Where(model => CliModelFilter.Matches(cli.ListModelsFilter, model.Provider, model.Id))
+            .OrderBy(model => model.Provider, StringComparer.Ordinal).ThenBy(model => model.Id, StringComparer.Ordinal).ToArray();
+        if (cli.ListModelsFilter is not null && matching.Length == 0)
+            output.WriteLine($"No models matching \"{cli.ListModelsFilter}\"");
+        foreach (var model in matching)
+            output.WriteLine($"{model.Provider}/{model.Id}\t{(model.Available ? model.Status ?? "available" : model.UnavailableReason ?? "unavailable")}\t{model.ContextLength?.ToString() ?? ""}");
+    }
 }

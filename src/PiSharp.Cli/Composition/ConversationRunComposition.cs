@@ -1,15 +1,7 @@
-using System.Text.Json;
-using Microsoft.Extensions.AI;
-using PiSharp.Runtime;
-using PiSharp.Runtime.Sessions;
-using PiSharp.Runtime.Providers;
-using PiSharp.Runtime.Extensions;
-using PiSharp.Runtime.Resources;
-using PiSharp.Cli.Tui;
-using PiSharp.Cli.Protocols;
 using PiSharp.Cli.Sessions;
-using PiSharp.Cli.Startup;
-using PiSharp.Cli.Composition;
+using PiSharp.Runtime;
+using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Composition;
 
