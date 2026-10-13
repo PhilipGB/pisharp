@@ -1,0 +1,23 @@
+{
+  "piSha": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+  "pisharpSha": "633c5655bf764bd030116a1501be7ead84591d81",
+  "fixture": "legacy-project-skills-prompt-reload",
+  "behavior": {
+    "mode": "reload",
+    "manualInvocationWorksWhileAutocompleteDisabled": true,
+    "advertisementMatchedPerRequest": true,
+    "advertisementUpdatedAfterReload": true,
+    "expandedMessagesMatched": true,
+    "chatRequestCount": 2
+  },
+  "samePiCalibration": true,
+  "dialogueTraceMatch": true,
+  "normalizedRequestDifferences": [],
+  "httpNormalization": "Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are canonicalized; raw request bodies remain captured.",
+  "fullTerminalMatch": true,
+  "fullHttpMatch": true,
+  "rawMatch": false,
+  "renderDifferences": 0,
+  "controlBoundaryDifferenceCount": 648,
+  "scenarioErrors": {}
+}

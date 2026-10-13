@@ -3,12 +3,15 @@
   "hotspots": [
     {
       "id": "H01",
-      "disposition": "OPEN",
-      "completedWork": "Early startup/terminal I/O, startup session/model selection, JSON prompt handling, settings persistence, clipboard and session commands, interactive prompt execution have concrete owners. Canonical idle model replacement/checkpoint rollback, configuration/resource reload planning and model/thinking navigation have owners; transient policy/pricing root mutations and unused state bindings are removed.",
-      "remainingWork": "Remaining command coordination and project/UI runtime adoption still concentrate state in the composition root.",
-      "evidence": "composition-slice/README.md",
+      "disposition": "RESOLVED",
+      "resolution": "Startup/mode/session/model/reload/prompt and command workflows have concrete owners. Active project, model and conversation bindings publish named transitions instead of scattered mutable root locals; root retains bootstrap, implementation selection, resource leases and transparent UI/protocol wiring.",
+      "evidence": "composition-checkpoint/composition-preservation-comparison.json",
       "capabilityDocumentation": "../../capabilities/cli-composition.md",
-      "additionalEvidence": "composition-runtime/README.md"
+      "additionalEvidence": [
+        "composition-slice/README.md",
+        "composition-runtime/README.md",
+        "composition-checkpoint/README.md"
+      ]
     },
     {
       "id": "H02",

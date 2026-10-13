@@ -1,0 +1,12 @@
+{
+  "pass_": true,
+  "failures": [],
+  "baselineFlaky": [
+    "terminal/terminal-llama-load-cancel-paired/100x32-dark-fullscreen",
+    "terminal/terminal-llama-model-picker-paired/100x32-dark-fullscreen",
+    "terminal/terminal-resource-skill-prompt-no-reader-paired/120x40-dark-fullscreen",
+    "terminal/terminal-resource-skill-prompt-read-bash-paired/120x40-dark-fullscreen"
+  ],
+  "expected": 1858,
+  "candidate": 1890
+}

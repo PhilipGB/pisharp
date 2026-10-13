@@ -67,9 +67,34 @@ owns selection/assistant copy, sign-in URL status and text/image insertion; nati
 clipboard process access remains in TerminalClipboard.
 
 These concrete owners stay inside CLI. There is no additional project, framework
-wrapper, service locator or generic command bus. Remaining command coordination
-and project/runtime UI adoption still concentrate state in Program and need further
-composition work.
+wrapper, service locator or generic command bus. Program retains bootstrap,
+implementation selection, resource leases and transparent UI/protocol wiring.
+
+## Active state and command coordination
+
+[ActiveModelRuntime](../../src/PiSharp.Cli/Composition/ActiveModelRuntime.cs),
+[ActiveProjectRuntime](../../src/PiSharp.Cli/Composition/ActiveProjectRuntime.cs) and
+[ActiveConversationRuntime](../../src/PiSharp.Cli/Composition/ActiveConversationRuntime.cs)
+own current model/execution bindings, project/configuration/settings/trust and
+conversation/run/path respectively. They publish named state transitions; callbacks
+read those current bindings after model, branch, reload or cross-project adoption.
+Bootstrap locals are used only to construct the initial bindings. These are active
+state owners, with small explicit constructors; they do not hide PiAgent's public
+constructor or replace MAF/MEAI execution. Root using scopes and ExtensionLease
+retain resource disposal/extension-transfer ownership.
+
+[TerminalProviderCommands](../../src/PiSharp.Cli/Tui/TerminalProviderCommands.cs)
+owns model/scope listings, thinking commands, named selection and logout/rebind.
+Its replacement/application callbacks cross real execution/checkpoint boundaries.
+[TerminalProjectCommands](../../src/PiSharp.Cli/Tui/TerminalProjectCommands.cs)
+owns trust aliases/picker persistence and reload progress/keybinding/UI cleanup.
+[TerminalSessionImport](../../src/PiSharp.Cli/Sessions/TerminalSessionImport.cs)
+owns import path validation, confirmation, outgoing save and prepared project-session
+adoption. [InteractiveResourceCommands](../../src/PiSharp.Cli/Tui/InteractiveResourceCommands.cs)
+owns skill/prompt/custom-extension command routing and MCP sign-in monitoring and
+cancellation. Registry/resource lookup timing and current console writers remain
+explicit. Program's interactive switch wires these concrete workflows and existing
+session/model/settings controllers rather than implementing their infrastructure.
 
 ## Verification
 

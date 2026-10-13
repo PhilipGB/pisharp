@@ -3,10 +3,10 @@
 - **Baseline PiSharp:** `064bcc7b90344cffde595f9aca1c5b850cefe567` (untouched main branch point).
 - **Frozen Pi:** `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`; authority: execution-ledger source note, corroborated by latest TODO/trust-startup evidence.
 - **Branch:** `refactor/architecture-maintainability`.
-- **Phase:** Permanent documentation validation verified; resume remaining structural work. Last verified remote documentation checkpoint: `87091cf3b0972e308715e03daa9e5e6d7bd5665c`. Earlier checkpoint SHAs are recorded in slice metadata/history.
+- **Phase:** H01 composition ownership complete and full checkpoint verified; H02 next. Last verified remote: `633c5655bf764bd030116a1501be7ead84591d81`. Earlier checkpoint SHAs are recorded in slice metadata/history.
 - **Pilot:** coding tools, frozen hotspot H09. See `baseline/pilot-decision.json`.
 - **Completed slices:** untouched behavioral baseline, architectural inventory, neutral Pi-reference infrastructure, coding-tools pilot, session interchange, native session/context, agent catalog/summarization, streamed-attempt, MCP connection/publication, provider credentials/snapshots/router ownership and initial CLI workflow ownership.
-- **Active slice:** Documentation validator passes 123 tracked documents/364 local references; all ten architecture/documentation checks pass, format/build clean. Four new real Git/Python controls reject local untracked and missing paths, accept tracked links/directories and exclude temporary refactor docs. Eight historical broken links now have tracked receipts or explicit untracked provenance; user evidence untouched. Capture invokes the new CI gate, and parser extension preserves all 1,515 previous scoped identities unchanged. H01 remains OPEN for remaining command coordination and project/UI adoption.
+- **Active slice:** H01 RESOLVED: current model/project/conversation bindings and command workflows have named owners; root retains bootstrap/framework composition and resource leases. Full checkpoint preserves all 1,858 original identities (1,890 candidate), 1,378 .NET rows/zero skips, 24 Node/47 Python, 269 MCP checks, all process variants, all 66 terminal reports/136 cases/13 assertions. Two first terminal outcomes are retained and investigated; complete unchanged repeats return frozen acceptable outcomes. No sets, fixtures, tests or pin widened.
 - **Latest observed main:** `064bcc7b90344cffde595f9aca1c5b850cefe567`; no divergence or merge conflicts at the session-start/checkpoint queries.
 - **Blockers:** none. A required push failure is a durability blocker; stop before continuing another slice.
 
@@ -36,11 +36,11 @@ only the explicitly required AGENTS pointer is now appended.
 
 ## Frozen hotspots
 
-The selection is immutable. H04–H10 are RESOLVED; H01–H03 remain OPEN. Current dispositions are recorded separately in `baseline/hotspot-dispositions.json`; untouched selection/metrics stay in `baseline/frozen-hotspots.json`.
+The selection is immutable. H01 and H04–H10 are RESOLVED; H02–H03 remain OPEN. Current dispositions are recorded separately in `baseline/hotspot-dispositions.json`; untouched selection/metrics stay in `baseline/frozen-hotspots.json`.
 
 | ID | File/type | Capability |
 |---|---|---|
-| H01 | Program.cs | Composition/startup |
+| H01 | Program.cs (RESOLVED) | Composition/startup |
 | H02 | TerminalScreen | Terminal rendering |
 | H03 | TerminalEditor | Terminal interaction |
 | H04 | ConversationRun (RESOLVED) | Agent execution |
@@ -75,20 +75,18 @@ execution direct; retain Pi-specific semantics. No new dependency lockfiles.
 - `baseline/composition-slice/`: startup/help/error goldens, ownership stages, broad/final-source checks, declared preservation scopes, fast-output diagnostic and capture-recovery proof.
 - `baseline/composition-runtime/`: stale-save rollback/retry characterization, replacement/reload/navigation owners, permanent architecture checks and scoped original-identity comparison.
 - `baseline/documentation-validation/`: repaired provenance/path audit, negative controls, format/build, parser-neutrality and integrity receipts.
+- `baseline/composition-checkpoint/`: full all-identity composition capture, unchanged fixture repeats, original new-outcome attempts, source/commands and integrity receipts.
 - `baseline/hotspot-dispositions.json`: current dispositions without altering untouched metrics.
 - `tools/`: standalone capture/parser/comparison/metrics tooling; parser dependencies only in `/tmp`.
 
 ## Exact next action
 
-Finish remaining H01 command
-coordination with explicit state ownership. Keep an identifiable composition root
-and existing controllers; do not replace Program with another opaque god class or
-a dependency/options bag. Preserve CLI/RPC/TUI lifecycle/disposal and transactional
-model/project replacement. Full checkpoints after major boundaries.
-Then H02 screen rendering and H03 editor interaction; preserve all complete
-calibrated terminal matrices. Wire mechanical dependency and docs-path checks into
-standard CI (dependency checks now run in ordinary .NET/CI tests; documentation
-validation is wired directly into CI and its controls join normal .NET tests).
+Continue H02 screen rendering: characterize under-protected scheduling/live transcript
+transitions, extract actual scheduling/presentation ownership under the existing screen
+lock, run focused tests and complete affected calibrated terminal fixtures. Then H03
+editor interaction/dialog ownership. Preserve all complete terminal matrices and
+frozen semantic sets. Commit/push verified slices. Architecture and docs-path checks
+are wired into ordinary .NET tests and CI.
 `tools/validate_doc_paths.py` verifies tracked local links/code paths; upstream Pi
 shorthand and synthetic input examples are distinct. The eight historical links
 were repaired without staging or changing user-owned evidence. Capture.py now reads starting-user-file inventory relative

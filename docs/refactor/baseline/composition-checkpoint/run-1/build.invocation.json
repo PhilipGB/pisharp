@@ -1,0 +1,16 @@
+{
+  "id": "build",
+  "command": [
+    "dotnet",
+    "build",
+    "PiSharp.slnx",
+    "--no-restore",
+    "--warnaserror",
+    "-m:1",
+    "-p:UseSharedCompilation=false"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 25.892,
+  "logger": "stdout+stderr text"
+}

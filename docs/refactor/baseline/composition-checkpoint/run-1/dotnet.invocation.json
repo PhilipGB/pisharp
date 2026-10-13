@@ -1,0 +1,18 @@
+{
+  "id": "dotnet",
+  "command": [
+    "dotnet",
+    "test",
+    "PiSharp.slnx",
+    "--no-build",
+    "--no-restore",
+    "--logger",
+    "trx;LogFileName=tests.trx",
+    "--results-directory",
+    "/tmp/pisharp-composition-checkpoint/run-1/dotnet"
+  ],
+  "cwd": "/home/philip/Downloads/pisharp-bootstrap/pisharp",
+  "exitCode": 0,
+  "seconds": 137.935,
+  "logger": "stdout+stderr text"
+}
