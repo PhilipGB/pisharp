@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'NEEDS_WORK': 16, 'NO_BEHAVIOR_CHANGE': 13, 'MATCHED': 2}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'NEEDS_WORK': 15, 'NO_BEHAVIOR_CHANGE': 13, 'MATCHED': 3}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -1068,7 +1068,8 @@
         "TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty seeds assistant text, pastes clipboard text, exercises Ctrl+X and /copy, and verifies the copied bytes with a fake Wayland clipboard helper.",
         "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending. Follow-up commit b27a4b7bb8b3e9333a398e770b9e1801c675da46 updates ProcessTestHelpers to treat procfs disappearance after File.Exists as process exit while preserving the process-tree assertion; exact-head Linux CI run 36150182304 passed format verification, warnings-as-errors build and all 447 tests.",
         "PiJsonlSessionInterchangeTests cover all-branch v3 export, active-head restoration, exclusive file creation and cancellation cleanup; TerminalPtyTests covers /export-jsonl. Exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with all 526 tests.",
-        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 3e477eab, cea25743 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 3e477eab, cea25743 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
+        "PI_CLIPBOARD_OSC52=1 now emits the exact UTF-8 OSC52 payload after a successful native copy on macOS, Windows and Linux. Other values do not force emission. Three cases failed before the fix; the clipboard/retry focused run passes 30/30 and twelve real-Pi comparisons match native-write/terminal ordering with injected platform writers. Native OS clipboard availability remains separately unverified. See docs/parity/fixtures/current-pi-refresh-2026-10-13/clipboard-force.json, tools/parity/clipboard-force-differential.py, tests/PiSharp.Tests/Cli/Tui/Clipboard/TerminalClipboardTests.cs. This closes the named current-source delta, not the broader capability."
       ],
       "dependencies": []
     },
@@ -5338,9 +5339,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "NEEDS_WORK": 16,
+      "NEEDS_WORK": 15,
       "NO_BEHAVIOR_CHANGE": 13,
-      "MATCHED": 2
+      "MATCHED": 3
     },
     "audit_complete": true,
     "pin_advanced": true,

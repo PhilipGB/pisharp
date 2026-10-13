@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "NEEDS_WORK": 16,
+    "NEEDS_WORK": 15,
     "NO_BEHAVIOR_CHANGE": 13,
-    "MATCHED": 2
+    "MATCHED": 3
   },
   "commits": [
     {
@@ -692,7 +692,7 @@
         "packages/coding-agent/src/utils/clipboard.ts",
         "packages/coding-agent/test/clipboard.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "PI_CLIPBOARD_OSC52=1 forces terminal emission after a successful native clipboard write. PiSharp detects SSH/Mosh only.",
       "capability_ids": [
         "commands-output-share"
@@ -702,7 +702,13 @@
       ],
       "implementation_plan": "Add the force environment value to remote-session detection and cover successful native copies and size failures.",
       "differential_plan": "Injected platform/clipboard vectors and OSC52 PTY payload checks; only the exact value 1 forces copying.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "PI_CLIPBOARD_OSC52=1 now emits the exact UTF-8 OSC52 payload after a successful native copy on macOS, Windows and Linux. Other values do not force emission. Three cases failed before the fix; the clipboard/retry focused run passes 30/30 and twelve real-Pi comparisons match native-write/terminal ordering with injected platform writers. Native OS clipboard availability remains separately unverified.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/clipboard-force.json",
+        "tools/parity/clipboard-force-differential.py",
+        "tests/PiSharp.Tests/Cli/Tui/Clipboard/TerminalClipboardTests.cs"
+      ]
     },
     {
       "sha": "7bd01fb92485c06f92ecfff7ccf3197148bc16af",

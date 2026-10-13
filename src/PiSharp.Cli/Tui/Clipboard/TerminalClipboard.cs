@@ -272,7 +272,8 @@ internal sealed class TerminalClipboard
 
     private bool Has(string name) => !string.IsNullOrWhiteSpace(_environment(name));
 
-    private bool IsRemoteSession() => Has("SSH_CONNECTION") || Has("SSH_CLIENT") || Has("MOSH_CONNECTION");
+    private bool IsRemoteSession() => Has("SSH_CONNECTION") || Has("SSH_CLIENT") || Has("MOSH_CONNECTION") ||
+        _environment("PI_CLIPBOARD_OSC52") == "1";
 
     private string ClipboardFailureMessage()
     {
