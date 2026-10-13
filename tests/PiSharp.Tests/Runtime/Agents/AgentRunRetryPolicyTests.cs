@@ -8,6 +8,9 @@ public sealed class AgentRunRetryPolicyTests
 {
     [Theory]
     [InlineData("overloaded upstream", true)]
+    [InlineData("Provider returned error", true)]
+    [InlineData("The upstream provider returned an error", true)]
+    [InlineData("The upstream provider returned an error: billing limit reached", false)]
     [InlineData("rate limit 429", true)]
     [InlineData("503 service unavailable", true)]
     [InlineData("429 insufficient_quota", false)]

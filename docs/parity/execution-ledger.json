@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'NEEDS_WORK': 15, 'NO_BEHAVIOR_CHANGE': 13, 'MATCHED': 3}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'NEEDS_WORK': 14, 'NO_BEHAVIOR_CHANGE': 13, 'MATCHED': 4}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -242,7 +242,8 @@
         "Exact-head Linux CI run 36746011211 for source 2550531a7f4813e9f10abce4241cbffc28f2ea7c passed restore, format, warnings-as-errors build and 1000/1000 tests, zero skips.",
         "Fail-first OpenAI Responses loopback cases measured immediate second requests after Retry-After not-a-date/Infinity (7-119 ms). After invalid dates return no server delay, both cases wait for exponential fallback; a cancellation case verifies an in-progress malformed-header fallback is cancelled without a retry. Existing server-delay maximum coverage still rejects the second request. Focused filter passes 6/6; format and warnings-as-errors build pass; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head CI 36758603590 with 1009/1009 tests and zero skips.",
         "Current Pi 3874b3e98 adds capacity retry wording. Three cases failed first; focused retry tests pass 17/17, Pi retry tests pass 25/25. Six paired scenarios compare request contexts/counts, ordered retry event payloads, recovery/exhaustion, enabled/zero budgets, billing exclusion, backoff cancellation and cleared state. See docs/parity/fixtures/provider-capacity-retry-2026-10-02.md. Format verification, zero-warning build and all 1098 tests pass with zero skips; Exact-head Linux CI 36994405262 passes on source 095c893a15f5fcdbea356d6c1cfbc57c8c4c5329, including all 1098 tests with zero skips; broader classifier/lifecycle parity remains open.",
-        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 7bd01fb9, 4b994d5e to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim."
+        "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 7bd01fb9, 4b994d5e to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
+        "The transient retry classifier now accepts provider returned an error while retaining quota/context exclusions and retry budgets. The new wording failed first, then focused tests passed. Twelve current-Pi agent/session comparisons match request contexts/counts, ordered recovery/exhaustion events, disabled/zero budgets, billing exclusions and backoff cancellation for both capacity and gateway messages. See docs/parity/fixtures/current-pi-refresh-2026-10-13/gateway-retry.json, tools/parity/capacity-retry-differential.py, tests/PiSharp.Tests/Runtime/Agents/AgentRunRetryPolicyTests.cs. This closes the named current-source delta, not the broader capability."
       ],
       "dependencies": []
     },
@@ -5339,9 +5340,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "NEEDS_WORK": 15,
+      "NEEDS_WORK": 14,
       "NO_BEHAVIOR_CHANGE": 13,
-      "MATCHED": 3
+      "MATCHED": 4
     },
     "audit_complete": true,
     "pin_advanced": true,

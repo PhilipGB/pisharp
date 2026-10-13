@@ -30,6 +30,9 @@ scenarios = [
     dict(id='zero-budget', message=message, errors=1, retries=0, enabled=True, cancel=False),
     dict(id='billing', message=message + '; billing limit reached', errors=1, retries=2, enabled=True, cancel=False),
     dict(id='cancel-backoff', message=message, errors=1, retries=2, enabled=True, cancel=True)]
+scenarios += [dict(scenario, id='gateway-' + scenario['id'],
+                   message=scenario['message'].replace(message, 'The upstream provider returned an error'))
+              for scenario in scenarios.copy()]
 
 with tempfile.TemporaryDirectory(prefix='pisharp-capacity-differential-') as directory:
     work = pathlib.Path(directory)

@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "NEEDS_WORK": 15,
+    "NEEDS_WORK": 14,
     "NO_BEHAVIOR_CHANGE": 13,
-    "MATCHED": 3
+    "MATCHED": 4
   },
   "commits": [
     {
@@ -717,7 +717,7 @@
         "packages/ai/CHANGELOG.md",
         "packages/ai/src/utils/retry.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Transient wording includes provider returned an error. PiSharp retry regex permits provider returned error but omits an.",
       "capability_ids": [
         "feature-agent-multi-turn-and-streaming"
@@ -727,7 +727,13 @@
       ],
       "implementation_plan": "Broaden the existing transient wording while preserving pre-output retry guards and budgets.",
       "differential_plan": "Paired retry loop scenarios for old/new wording, exhausted/zero budget, cancellation and no post-content replay.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "The transient retry classifier now accepts provider returned an error while retaining quota/context exclusions and retry budgets. The new wording failed first, then focused tests passed. Twelve current-Pi agent/session comparisons match request contexts/counts, ordered recovery/exhaustion events, disabled/zero budgets, billing exclusions and backoff cancellation for both capacity and gateway messages.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/gateway-retry.json",
+        "tools/parity/capacity-retry-differential.py",
+        "tests/PiSharp.Tests/Runtime/Agents/AgentRunRetryPolicyTests.cs"
+      ]
     },
     {
       "sha": "0d79b74db124f550d1058c2fb10f56bc429ffd74",
