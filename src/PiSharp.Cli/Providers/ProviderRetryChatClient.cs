@@ -104,7 +104,8 @@ internal sealed class ProviderRetryChatClient : DelegatingChatClient, IProviderT
         CancellationToken cancellationToken, out double delayMs)
     {
         delayMs = 0;
-        if (cancellationToken.IsCancellationRequested || retryIndex >= _maxRetries ||
+        cancellationToken.ThrowIfCancellationRequested();
+        if (retryIndex >= _maxRetries ||
             !ProviderRequestRetryPolicy.IsRetryable(error, response)) return false;
 
         var serverDelay = ProviderRequestRetryPolicy.GetServerDelay(response);
