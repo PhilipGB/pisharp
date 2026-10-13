@@ -64,7 +64,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-mcp-differential-') as director
         ['dotnet', str(work / 'bin/Debug/net10.0/PiSharp.Tests.dll'), encoded], env=environment, timeout=30))
     oracle = pi / 'packages/coding-agent/test/pisharp-credential-differential.test.ts'
     if oracle.exists():
-        raise RuntimeError(f'Refusing to overwrite {oracle}')
+        raise RuntimeError(f'Refusing to overwrite oracle')
     shutil.copyfile(probes / 'mcp-credential-probe.pi.test.ts', oracle)
     try:
         environment['PISHARP_CREDENTIAL_SCENARIOS'] = encoded

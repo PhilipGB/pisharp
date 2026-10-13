@@ -40,7 +40,7 @@ Adds task ownership, completion holds, waiting, and bottom-up abort to the separ
 
 ### `1c7e7df765a6fe542d24906756ee981bf7bb84c4` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/codemode/{execute.ts,tool.ts}`, `packages/coding-agent/src/extensions/mcp/{config.ts,index.ts,tools.ts}`, `packages/coding-agent/src/extensions/tool-search/tool.ts`, and related extension types/tests/docs.
+- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/codemode/execute.ts,tool.ts`, `packages/coding-agent/src/extensions/mcp/{config.ts,index.ts,tools.ts}`, `packages/coding-agent/src/extensions/tool-search/tool.ts`, and related extension types/tests/docs.
 - **Pi behavior:** MCP `codemode` exposure does not put each tool schema in the Codemode description. That description lists server namespaces and configured summaries; scripts use `searchTools(query, { namespace })` and `describeNamespace(name)` for callable tools, optional summaries and server initialize instructions. `codemode-deferred` is accepted as a legacy alias for `codemode`.
 - **PiSharp behavior / mismatch:** Codemode rendered callable MCP tool samples directly in its description and exposed `searchTools`/`describeTool`, but had no `describeNamespace` path, MCP `description` configuration, or server-initialize instruction projection.
 - **PiSharp files:** `src/PiSharp.Runtime/Codemode/CodemodeBuiltin.cs`, `src/PiSharp.Runtime/Codemode/CodemodeSandbox.cs`, `src/PiSharp.Runtime/Codemode/Engine/worker.mjs`, and MCP/tool namespace registration code and tests.
@@ -50,7 +50,7 @@ Adds task ownership, completion holds, waiting, and bottom-up abort to the separ
 
 ### `7c9fe66452de9689223e3b490939f014c6e94e52` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/mcp/{cli.ts,oauth.ts,runtime.ts}`, and OAuth tests/docs.
+- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/mcp/cli.ts,oauth.ts,runtime.ts`, and OAuth tests/docs.
 - **Pi behavior:** accept a per-server `oauth.clientName`, validate it, and send that name as OAuth dynamic-client-registration `client_name`; the default remains `pi`. `pi mcp add --oauth-client-name` writes the same setting.
 - **PiSharp behavior / mismatch:** `McpOAuthSettings` has client ID/secret, callback URL and scopes only; configuration parsing and SDK registration do not expose the custom OAuth client name.
 - **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuth.cs`, MCP configuration/loading and OAuth runtime code, and MCP OAuth tests.
@@ -94,7 +94,7 @@ Pi avoids requesting Anthropic strict tool schemas when a schema contains reject
 
 ### `e029c3ed0add2ba55cc9c68b2bc3920e56d32888` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/{codemode/execute.ts,codemode/tool.ts,mcp/cli.ts,mcp/index.ts,tool-search/tool.ts}`, and MCP/Codemode/tool-search tests.
+- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/codemode/execute.ts,codemode/tool.ts,mcp/cli.ts,mcp/index.ts,tool-search/tool.ts`, and MCP/Codemode/tool-search tests.
 - **Pi behavior:** only direct MCP tools hold the first prompt for the bounded startup wait. Codemode/tool-search wait in the background for only the named/needed servers, and MCP server state is described in a dedicated context section.
 - **PiSharp behavior / mismatch:** `McpRuntime.RegisterAsync` starts connections concurrently but waits up to ten seconds for all enabled servers, including indirect Codemode servers, before the first prompt.
 - **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpRuntime.cs`, MCP connection/registration and prompt execution boundaries, plus MCP/Codemode process tests.
@@ -104,7 +104,7 @@ Pi avoids requesting Anthropic strict tool schemas when a schema contains reject
 
 ### `0582d9c11da78c1812d4537af2d194f1dd060d26` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/tools/renderers/bash.ts`, `packages/coding-agent/src/extensions/{codemode/renderer.ts,mcp/tools.ts}`, `packages/coding-agent/src/modes/interactive/components/visual-truncate.ts`, and renderer tests.
+- **Pi files:** `packages/coding-agent/src/core/tools/renderers/bash.ts`, `packages/coding-agent/src/extensions/codemode/renderer.ts,mcp/tools.ts`, `packages/coding-agent/src/modes/interactive/components/visual-truncate.ts`, and renderer tests.
 - **Pi behavior:** result previews are limited by visual wrapped rows, including a single long logical line, for Bash, Codemode and MCP.
 - **PiSharp behavior / mismatch:** `TerminalTranscriptBuffer.PreviewToolResult` limits logical lines, so a single very long line bypasses the intended visual preview bound.
 - **PiSharp files:** `src/PiSharp.Cli/Tui/TerminalTranscriptBuffer.cs` and terminal/tool-preview tests.
@@ -136,7 +136,7 @@ Adds compaction and overflow handling to the separate durable execution harness 
 
 ### `b29db895c5c1b30b560a39fb9e4664508f1683de` — `NEEDS_WORK`
 
-- **Pi files:** MCP server/tool namespace normalization, Codemode tool discovery and MCP configuration/runtime tests under `packages/coding-agent/src/extensions/{mcp,codemode}`.
+- **Pi files:** MCP server/tool namespace normalization, Codemode tool discovery and MCP configuration/runtime tests under `packages/coding-agent/src/extensions/mcp,codemode`.
 - **Pi behavior:** MCP server namespaces and exposed tool names replace `-` with `_`, so provider-visible names match JavaScript identifiers. When names collide after normalization, each colliding name receives a stable hash suffix independent of server/tool list order. Configuration rejects server names that collide after normalization, and extension registrations use the normalized namespace for collision/replacement checks.
 - **PiSharp behavior / mismatch:** `McpRuntime.Sanitize` preserves hyphens while `CodemodeToolCatalog.JavascriptIdentifier` converts them to underscores, so provider tool names can differ from the names Codemode scripts can call. MCP configuration permits a pair such as `foo-bar` and `foo_bar`, and extension collision checks use exact names.
 - **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpRuntime.cs`, `McpConfiguration.cs`, `ExtensionCatalog.cs`, Codemode tool-name projection, and their tests.

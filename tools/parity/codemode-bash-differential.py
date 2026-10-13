@@ -30,7 +30,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-codemode-parity-') as directory
     environment.setdefault('NUGET_HTTP_CACHE_PATH', '/tmp/pisharp-nuget-http')
     subprocess.run(['dotnet', 'build', str(work / 'probe.csproj'), '-p:UseSharedCompilation=false', '-m:1'],
                    env=environment, check=True, stdout=subprocess.DEVNULL, timeout=120)
-    evidence = {'cases': []}
+    evidence = 'cases': []
     for size, code in [(100000, 7), (1048567, 0), (1100000, 0)]:
         pi = json.loads(subprocess.check_output(['node', str(probes / 'codemode-bash-probe.mjs'), args.pi, str(size), str(code)], timeout=25))
         pisharp = json.loads(subprocess.check_output(['dotnet', str(work / 'bin/Debug/net10.0/probe.dll'), str(size), str(code)], timeout=25))

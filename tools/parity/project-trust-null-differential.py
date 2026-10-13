@@ -42,7 +42,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-project-trust-null-') as direct
         ['dotnet', str(work / 'bin/Debug/net10.0/PiSharp.Tests.dll'), encoded], env=environment, timeout=30))
     oracle = pi / 'packages/coding-agent/test/pisharp-project-trust-null-differential.test.ts'
     if oracle.exists():
-        raise RuntimeError(f'Refusing to overwrite {oracle}')
+        raise RuntimeError(f'Refusing to overwrite oracle')
     shutil.copyfile(probes / 'project-trust-null-probe.pi.test.ts', oracle)
     try:
         environment['PISHARP_TRUST_SCENARIOS'] = encoded

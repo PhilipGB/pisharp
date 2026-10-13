@@ -1,6 +1,6 @@
 # Agent execution
 
-[PiAgent](../../src/PiSharp.Runtime/PiAgent.cs) composes and runs Microsoft Agent
+[PiAgent](../../src/PiSharp.Runtime/Agents/PiAgent.cs) composes and runs Microsoft Agent
 Framework `ChatClientAgent` directly over Microsoft.Extensions.AI clients. It owns
 execution history, active run callbacks, provider request state and durable tool
 binding. `ConversationRun` coordinates prompts/retries/compaction against canonical
@@ -8,7 +8,7 @@ binding. `ConversationRun` coordinates prompts/retries/compaction against canoni
 
 ## Ownership and flow
 
-- [AgentToolCatalog](../../src/PiSharp.Runtime/AgentToolCatalog.cs) owns initial
+- [AgentToolCatalog](../../src/PiSharp.Runtime/Agents/AgentToolCatalog.cs) owns initial
   built-in/extension selection, exposure policy, live catalog replacement and
   per-session `ToolLoadout` objects. The registry represents available tools;
   loadouts and declaration transcripts represent session selections and provider
@@ -18,7 +18,7 @@ binding. `ConversationRun` coordinates prompts/retries/compaction against canoni
   registrations become visible, replacement executable wrappers are prepared
   under the existing update lock. Tool descriptions/declarations preserve Pi's
   provider-facing contract separately from executable identity.
-- [PiCompactionSummarizer](../../src/PiSharp.Runtime/PiCompactionSummarizer.cs) owns
+- [PiCompactionSummarizer](../../src/PiSharp.Runtime/Agents/PiCompactionSummarizer.cs) owns
   bounded transcript construction, normal/update/turn-prefix prompts and its MAF
   summarizer agent. It uses the shared routed client directly, preserving physical
   route usage/pricing attribution and bypassing ordinary virtual selection where

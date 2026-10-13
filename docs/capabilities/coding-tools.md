@@ -7,7 +7,7 @@ facade, including interactive Bash and model-specific image limits.
 
 ## Ownership and flow
 
-- [CodingTools](../../src/PiSharp.Runtime/CodingTools.cs) selects tools and binds
+- [CodingTools](../../src/PiSharp.Runtime/Tools/CodingTools.cs) selects tools and binds
   their delegates with Microsoft.Extensions.AI's `AIFunctionFactory`. The Bash
   adapter reads Pi session properties from the current MAF run and passes explicit
   environment values to shell execution.
@@ -22,7 +22,7 @@ facade, including interactive Bash and model-specific image limits.
   writes and exact batch edits. A shared `FileMutationQueue` serializes resolved
   aliases across independent facade instances. Edit planning happens against the
   original file; UTF-8 BOMs, original newline convention and file mode survive.
-- [ShellExecution](../../src/PiSharp.Runtime/Tools/ShellExecution.cs) owns running
+- [ShellExecution](../../src/PiSharp.Runtime/Tools/Shell/ShellExecution.cs) owns running
   processes, cancellation, timeouts, environment sanitation, output pumping and
   process-group cleanup. Direct execution returns cancellation and exit metadata;
   model tool execution projects Pi-compatible failures and structured output.

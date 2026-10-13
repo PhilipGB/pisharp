@@ -65,7 +65,7 @@ The header logo is clickable in the normal coding-agent TUI and launches a 3D an
 
 ### `d850edee9ccc5d3b6cec79553d4839a1cbab47ed` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/mcp/{oauth.ts,runtime.ts}`, `packages/mcp/src/oauth/{discovery.ts,errors.ts,flow.ts,types.ts}`, and MCP OAuth/configuration tests.
+- **Pi files:** `packages/coding-agent/src/core/mcp-servers.ts`, `packages/coding-agent/src/extensions/mcp/oauth.ts,runtime.ts`, `packages/mcp/src/oauth/{discovery.ts,errors.ts,flow.ts,types.ts}`, and MCP OAuth/configuration tests.
 - **Pi behavior:** an optional `oauth.authServerMetadataUrl` supplies a trusted authorization-server metadata document instead of normal authorization-server discovery; it must be HTTPS except for loopback HTTP. When metadata advertises RFC 9207 issuer responses, authorization codes are exchanged only if the callback `iss` equals that metadata's issuer. A present but mismatched `iss` is rejected as well.
 - **PiSharp behavior / mismatch:** `McpOAuthSettings` does not accept a metadata URL, and the SDK performs only its normal discovery flow. RFC 9207 issuer validation is already present in the pinned `ModelContextProtocol.Core` 2.2.0: `McpOAuthLogin` returns callback `iss` in `AuthorizationResult`, and `ClientOAuthProvider.ValidateIssuerResponse` checks it against discovered metadata before code exchange. The remaining mismatch is the configured trusted metadata-document override and its URL validation.
 - **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuth.cs`, `src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs`, `src/PiSharp.Runtime/Mcp/McpOAuthMetadataHandler.cs`, `src/PiSharp.Runtime/Mcp/McpRuntime.cs`, MCP configuration parsing, and focused tests in `tests/PiSharp.Tests/McpOAuthMetadataTests.cs`.
@@ -91,7 +91,7 @@ Adds extensions and per-conversation agent configuration to the separate experim
 
 ### `8ce69e9d2b171d173fe4b6b2b6256f1f4411e69d` — `NEEDS_WORK` (resolved at exact head `9f33151c7`)
 
-- **Pi files:** `packages/mcp/src/client.ts`, `packages/mcp/src/oauth/{discovery.ts,flow.ts,types.ts}`, and the matching MCP client/OAuth tests.
+- **Pi files:** `packages/mcp/src/client.ts`, `packages/mcp/src/oauth/discovery.ts,flow.ts,types.ts`, and the matching MCP client/OAuth tests.
 - **Pi behavior:** optional empty/null OAuth fields are treated as absent, including empty refresh tokens and client secrets; `expires_in: null` leaves expiry unspecified; empty requested scopes fall through to the next source; invalid URLs in protected-resource metadata fall back to the MCP server origin; and empty/null pagination cursors end pagination.
 - **PiSharp behavior / mismatch:** the pinned `ModelContextProtocol.Core` 2.2.0 SDK handles nullable expiry and ignores an empty dynamic-registration client secret, and its scope selection falls through for empty configured/challenge scopes. However, `McpClient.ListToolsAsync` continues while `NextCursor` is non-null, so `""` is treated as another page. OAuth token parsing stores `refresh_token: ""` rather than preserving the previously stored refresh token, and invalid `authorization_servers` metadata is rejected during authorization-server selection instead of falling back to the resource origin. `McpOAuthRefreshHandler.IsValidTokenResponseAsync` also rejects `expires_in: null` for its cross-process refresh coordination path.
 - **PiSharp files:** dependency boundary `ModelContextProtocol.Core` 2.2.0 (`src/PiSharp.Runtime/PiSharp.Runtime.csproj`); `src/PiSharp.Runtime/Mcp/McpProtocolCompatibilityHandler.cs`, `McpRuntime.cs`, `McpOAuthLogin.cs`, and `McpOAuthRefreshHandler.cs`; and focused tests under `tests/PiSharp.Tests/`.
@@ -146,7 +146,7 @@ Adds a pinned official MCP client conformance suite, its baseline runner, and a 
 
 ### `5806068c26e55feefd1f5875bf05c0419ec5d912` — `NEEDS_WORK` (resolved at exact head `930bc2d020`)
 
-- **Pi files:** `packages/coding-agent/src/extensions/mcp/{oauth.ts,runtime.ts,cli.ts}` and `packages/coding-agent/test/mcp-oauth-store.test.ts`.
+- **Pi files:** `packages/coding-agent/src/extensions/mcp/oauth.ts,runtime.ts,cli.ts` and `packages/coding-agent/test/mcp-oauth-store.test.ts`.
 - **Pi behavior:** OAuth credentials are isolated by normalized MCP server name and canonical URL, so two configured server names at the same URL can use different accounts. A legacy URL-only entry migrates to the first server that loads it; logout removes only that server's key (or its legacy entry).
 - **PiSharp mismatch:** `McpTokenCache` keys credentials, refresh locks and logout by URL alone. `McpRuntime`, explicit login and `/mcp logout` pass the URL but not `McpServerConfiguration.Name`; same-URL aliases therefore share tokens.
 - **PiSharp files:** `src/PiSharp.Runtime/Mcp/McpOAuth.cs`, `McpOAuthLogin.cs`, `McpRuntime.cs`, `McpRuntimeManager.cs`, `McpOAuthRefreshHandler.cs`, and `tests/PiSharp.Tests/McpOAuthTests.cs`.
@@ -194,7 +194,7 @@ The OAuth selector now displays “not configured” instead of “unconfigured�
 
 ### `f29ea3deb298280b417892c6229ce478ad8c4d2f` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/settings-manager.ts`, `src/index.ts`, `src/modes/interactive/{components/settings-selector.ts,interactive-mode.ts}`, settings docs and interactive-mode tests.
+- **Pi files:** `packages/coding-agent/src/core/settings-manager.ts`, `src/index.ts`, `src/modes/interactive/components/settings-selector.ts,interactive-mode.ts`, settings docs and interactive-mode tests.
 - **Pi behavior:** `quietStartup` accepts `true`, `false` or `"header"`. Header mode keeps the startup header/version/key hints while suppressing the model-scope line and resource notices; `true` hides the full startup presentation.
 - **Original PiSharp mismatch:** `UserSettings.QuietStartup` is boolean-only and `Program` either hides or shows a combined banner/metadata string.
 - **PiSharp files:** `src/PiSharp.Cli/UserSettings.cs`, `UserSettingsWriter.cs`, `Tui/TerminalSettingsPicker.cs`, `Program.cs`, and `tests/PiSharp.Tests/QuietStartupTests.cs` plus a CLI/PTY fixture.
@@ -229,7 +229,7 @@ The normal browser OAuth callback page displays a colored Pi logo. This user-fac
 
 ### `aab34df655e3c5974fc40618f75e9eafdb031293` — `NEEDS_WORK`
 
-- **Pi files:** `packages/coding-agent/src/core/model-registry.ts`, `src/extensions/codemode/{execute.ts,tool.ts}`, model/Codemode docs and Codemode session tests.
+- **Pi files:** `packages/coding-agent/src/core/model-registry.ts`, `src/extensions/codemode/execute.ts,tool.ts`, model/Codemode docs and Codemode session tests.
 - **Pi behavior:** Codemode exposes `models.generateImages(model, context)`, resolves identity against the configured image-model catalog (never trusting script-supplied credentials/base URL), returns text/image output plus usage and stop/error status, and records nested call/cost evidence.
 - **PiSharp mismatch:** `ICodemodeModels` and `ProviderCodemodeModels` expose catalog and classifier operations but no image-generation method or guest global; image catalog metadata exists separately.
 - **PiSharp files:** `src/PiSharp.Runtime/Codemode/ICodemodeModels.cs`, model globals/call accounting, `src/PiSharp.Cli/ProviderCodemodeModels.cs`, process worker/output projection and focused Codemode image tests.
@@ -251,7 +251,7 @@ For this commit's default-mode change, PiSharp already starts its interactive TU
 
 ### `6f1072cc081f06b86a673bd142f03720d17afe15` — `NEEDS_WORK`
 
-- **Pi files:** `packages/codemode/src/{declarations.ts,index.ts,runtime/prelude-source.ts}`, Codemode sandbox tests, coding-agent Codemode prompt/tool files and `docs/codemode.md`.
+- **Pi files:** `packages/codemode/src/declarations.ts,index.ts,runtime/prelude-source.ts`, Codemode sandbox tests, coding-agent Codemode prompt/tool files and `docs/codemode.md`.
 - **Pi behavior:** reduces Codemode prompt size, documents globals one line each, reports close matches/available names for unknown tool or model members, and gives actionable model-catalog, image-output and store-capacity guidance from runtime errors.
 - **PiSharp mismatch:** the built-in Codemode description is large and inline; the guest bridge does not provide equivalent namespace/member diagnostics and errors for unknown globals, bad model selections and store overflow are generic.
 - **PiSharp files:** `src/PiSharp.Runtime/Codemode/CodemodeBuiltin.cs`, `CodemodeModelGlobals.cs`, `src/PiSharp.Runtime/Codemode` worker bridge and sandbox, plus dedicated prompt/runtime tests.

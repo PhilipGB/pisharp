@@ -30,7 +30,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-tool-batch-parity-') as directo
     environment.setdefault('NUGET_HTTP_CACHE_PATH', '/tmp/pisharp-nuget-http')
     subprocess.run(['dotnet', 'build', str(work / 'probe.csproj'), '-p:UseSharedCompilation=false', '-m:1'],
                    env=environment, check=True, stdout=subprocess.DEVNULL, timeout=120)
-    evidence = {'cases': []}
+    evidence = 'cases': []
     for flags in [[[True, True]], [[True, False]], [[False, True]], [[False, False]], [[False, True], [True, True]]]:
         wire = json.dumps(flags)
         pisharp = json.loads(subprocess.check_output(['dotnet', str(work / 'bin/Debug/net10.0/probe.dll'), wire], timeout=25))

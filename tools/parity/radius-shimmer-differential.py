@@ -41,7 +41,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-radius-shimmer-differential-') 
         ['dotnet', str(work / 'bin/Debug/net10.0/PiSharp.Tests.dll'), encoded], env=environment, timeout=30))
     oracle = pi / 'packages/coding-agent/test/pisharp-radius-shimmer-differential.test.ts'
     if oracle.exists():
-        raise RuntimeError(f'Refusing to overwrite {oracle}')
+        raise RuntimeError(f'Refusing to overwrite oracle')
     shutil.copyfile(probes / 'radius-shimmer-probe.pi.test.ts', oracle)
     try:
         environment['PISHARP_RADIUS_SCENARIOS'] = encoded

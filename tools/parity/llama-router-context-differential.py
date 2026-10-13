@@ -65,7 +65,7 @@ Console.WriteLine(JsonSerializer.Serialize(output, new JsonSerializerOptions(Jso
     '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework>'
     '<OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>'
     '</PropertyGroup><ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Cli/PiSharp.Cli.csproj" />'
-    '</ItemGroup></Project>\n'.replace("{repo}", str(repo))
+    '</ItemGroup></Project>\n'.replace("repo", str(repo))
 )
 (work / "pi.mjs").write_text(
     "import fs from 'node:fs';\n"

@@ -46,7 +46,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-capacity-differential-') as dir
         ['dotnet', str(work / 'bin/Debug/net10.0/PiSharp.Tests.dll'), encoded], env=environment, timeout=30))
     oracle = pi / 'packages/coding-agent/test/suite/pisharp-capacity-differential.test.ts'
     if oracle.exists():
-        raise RuntimeError(f'Refusing to overwrite {oracle}')
+        raise RuntimeError(f'Refusing to overwrite oracle')
     shutil.copyfile(probes / 'capacity-retry-probe.pi.test.ts', oracle)
     try:
         environment['PISHARP_CAPACITY_SCENARIOS'] = encoded

@@ -77,7 +77,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-anthropic-differential-') as di
     (work / 'probe.csproj').write_text(f'''<Project Sdk="Microsoft.NET.Sdk">
 <PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><AssemblyName>PiSharp.Tests</AssemblyName><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
 <ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Cli/PiSharp.Cli.csproj" /><PackageReference Include="xunit" Version="2.9.3" /><Using Include="Xunit" />
-<Compile Include="{repo}/tests/PiSharp.Tests/AnthropicInlineToolTests.cs" Link="AnthropicInlineToolTests.cs" /></ItemGroup></Project>''')
+<Compile Include="repo/tests/PiSharp.Tests/AnthropicInlineToolTests.cs" Link="AnthropicInlineToolTests.cs" /></ItemGroup></Project>''')
     environment = dict(os.environ)
     environment['NUGET_HTTP_CACHE_PATH'] = '/tmp/pisharp-nuget-http'
     subprocess.run(['dotnet', 'build', str(work / 'probe.csproj'), '-p:UseSharedCompilation=false', '-m:1', '--nologo'], env=environment, check=True, stdout=subprocess.DEVNULL, timeout=120)
@@ -86,7 +86,7 @@ with tempfile.TemporaryDirectory(prefix='pisharp-anthropic-differential-') as di
     pisharp_raw = json.loads(subprocess.check_output(['dotnet', str(work / 'bin/Debug/net10.0/PiSharp.Tests.dll'), encoded], env=environment, timeout=60))
     oracle = pi / 'packages/ai/test/pisharp-anthropic-inline-differential.test.ts'
     if oracle.exists():
-        raise RuntimeError(f'Refusing to overwrite {oracle}')
+        raise RuntimeError(f'Refusing to overwrite oracle')
     shutil.copyfile(probes / 'anthropic-inline-probe.pi.test.ts', oracle)
     try:
         environment['PISHARP_ANTHROPIC_SCENARIOS'] = encoded

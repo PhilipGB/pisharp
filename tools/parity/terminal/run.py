@@ -371,7 +371,7 @@ def main():
     cwd = WORKSPACE
     owner = cwd / '.pisharp-terminal-harness'
     if cwd.exists() and not owner.exists():
-        raise RuntimeError(f'Refusing to use unowned fixture directory: {cwd}')
+        raise RuntimeError(f'Refusing to use unowned fixture directory: cwd')
     cwd.mkdir(exist_ok=True, mode=0o700)
     owner.touch()
     lock = owner.open('r+')
