@@ -121,6 +121,14 @@ public sealed class McpTokenCache(string agentDirectory)
 
     internal bool HasPendingRefresh(string key) => _pendingRefreshes.ContainsKey(key);
 
+    internal McpRefreshFileLease? PendingRefresh(string key) => _pendingRefreshes.GetValueOrDefault(key);
+
+    internal async ValueTask ReleasePendingRefreshAsync(string key, McpRefreshFileLease pending)
+    {
+        if (_pendingRefreshes.TryRemove(new KeyValuePair<string, McpRefreshFileLease>(key, pending)))
+            await pending.DisposeAsync();
+    }
+
     internal async Task WaitForPendingRefreshAsync(string key)
     {
         while (_pendingRefreshes.TryGetValue(key, out var lease))
@@ -138,10 +146,7 @@ public sealed class McpTokenCache(string agentDirectory)
         finally
         {
             if (pending is not null)
-            {
-                await pending.DisposeAsync();
-                _pendingRefreshes.TryRemove(key, out _);
-            }
+                await ReleasePendingRefreshAsync(key, pending);
         }
     }
 

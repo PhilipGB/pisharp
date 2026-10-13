@@ -16,6 +16,7 @@ internal static class McpClientConnection
         Func<string, CancellationToken, Task<string?>>? providerTokenResolver,
         Func<McpClient, IList<McpClientTool>, Task> onToolsChanged, CancellationToken cancellationToken)
     {
+        using var oauthRequest = McpOAuthRequestContext.Begin();
         McpClient? client = null;
         IClientTransport? transport = null;
         McpOAuthRefreshHandler? refreshHandler = null;
@@ -73,7 +74,7 @@ internal static class McpClientConnection
                         throw new McpSignInRequiredException();
                     });
                 refreshHandler = new McpOAuthRefreshHandler(tokenCache);
-                HttpMessageHandler handler = refreshHandler;
+                HttpMessageHandler handler = new McpSharedOAuthRefreshHandler(tokenCache, refreshHandler);
                 if (oauth.AuthServerMetadataUrl is { } metadataUrl)
                     handler = new McpOAuthMetadataHandler(server.Url!, metadataUrl, handler);
                 handler = new McpProtocolCompatibilityHandler(server.Url!, handler);
@@ -83,6 +84,7 @@ internal static class McpClientConnection
             transport = CreateTransport();
             async ValueTask RefreshToolsAsync(CancellationToken token)
             {
+                using var refreshRequest = McpOAuthRequestContext.Begin();
                 var current = connected;
                 var activeClient = client;
                 if (current is null || activeClient is null || current.IsDisposed)

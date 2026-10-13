@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 10,
+    "MATCHED": 11,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 8
+    "NEEDS_WORK": 7
   },
   "commits": [
     {
@@ -511,7 +511,7 @@
         "packages/mcp/src/transports/transport.ts",
         "packages/mcp/test/streamable-http.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "Calls cancelled or timed out during shared OAuth recovery never dispatch after refresh; surviving requests still proceed. PiSharp forwards tokens through SDK handlers but lacks this race proof.",
       "capability_ids": [
         "mcp-runtime"
@@ -522,7 +522,13 @@
       ],
       "implementation_plan": "Exercise the real SDK transport recovery race and adapt its boundary if a settled request is dispatched.",
       "differential_plan": "Gate one shared refresh, abort one call, time out one and retain one; only the survivor reaches the server.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "Canceled/deadline-expired MCP requests settle before a shared OAuth refresh finishes and never replay afterwards; the surviving caller proceeds across one grant without retiring the connection. A bounded cloned grant persists rotation and client/issuer binding independently of canceled callers. Request-scoped challenge attribution prevents an SDK metadata race from refreshing a newly saved token for an old challenge. Exact-lease removal precedes unlock and failed persistence settles. The real connection race failed first; null-expiry, subsequent valid refresh and failed-write controls now pass. Production Pi OAuth/HTTP and native PiSharp SDK comparisons match caller settlement, executed names, one grant, surviving text and preserved tokens/client. Full suite 1451/1451, zero skips, zero-warning build; official MCP has no regressions against eight classified failures. Close-during-refresh and public exception-shape parity are not established by this slice.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-oauth-cancellation.json",
+        "tools/parity/mcp-oauth-cancellation-differential.py",
+        "tests/PiSharp.Tests/Runtime/Mcp/McpOAuthCancellationTests.cs"
+      ]
     },
     {
       "sha": "b0ac39687a0a269aed4d5f6c62479306a825b532",

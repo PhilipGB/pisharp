@@ -114,6 +114,7 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
             var connected = await GetConnectedAsync(cancellationToken);
             try
             {
+                using var oauthRequest = McpOAuthRequestContext.Begin();
                 _ = connected.Tools.FirstOrDefault(item => item.Name == name) ??
                     throw new InvalidOperationException("MCP server no longer advertises tool " + name + ".");
                 // The SDK's nullable StructuredContent property loses an explicit JSON null.
@@ -126,6 +127,7 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
                             item => JsonSerializer.SerializeToElement(item.Value, McpJsonUtilities.DefaultOptions))
                     }, McpJsonUtilities.DefaultOptions, cancellationToken: cancellationToken);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error) when (attempt == 0 && IsSessionExpired(error))
             {
                 await RetireIfCurrentAsync(connected);
@@ -153,7 +155,12 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
         for (var attempt = 0; ; attempt++)
         {
             var connected = await GetConnectedAsync(cancellationToken);
-            try { return await action(connected.Client, cancellationToken); }
+            try
+            {
+                using var oauthRequest = McpOAuthRequestContext.Begin();
+                return await action(connected.Client, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error) when (attempt == 0 && IsSessionExpired(error))
             {
                 await RetireIfCurrentAsync(connected);

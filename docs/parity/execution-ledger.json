@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 10, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 8}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 11, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 7}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -3750,7 +3750,8 @@
         "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 148622bc, f4cca2dc, 67996ab7, da0eadf0 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
         "MCP connections and resource-change notifications no longer enumerate resources/templates. Capability status reports resources without counts; shared resource tools list only on demand. The fail-first startup log now shows no listings until requested, and the notification scenario retains tool refresh plus fresh resource/template results. Seven current-Pi real-stdio scenarios match connection/on-demand request counts; CLI status capability checks pass. See docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-results-and-demand.json, tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeLifecycleTests.cs, tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeTests.cs, tests/PiSharp.Tests/Cli/Mcp/McpCommandTests.cs. This closes the named current-source delta, not the broader capability.",
         "MCP script results preserve arrays, explicit null, strings, numbers and booleans, including missing content normalized to an empty array. Empty model content falls back to pretty JSON and undeclared structuredContent accepts any JSON value. Native SDK session responses retain field presence before typed block conversion, avoiding nullable-deserialization loss. Seven real-stdio Pi comparisons match complete script JSON, model text and error state; nested null/array Codemode paths and schema validation pass. The full working-tree suite passes 1418/1418, zero skips; official MCP retains 261 passing checks and eight classified failures with no regressions. See docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-results-and-demand.json, tools/parity/mcp-result-differential.py, tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeTests.cs. This closes the named current-source delta, not the broader capability.",
-        "The standalone MCP help now matches Pi's timeout description and 300-second default exactly in real isolated CLI processes. Existing login code already creates a linked deadline before token-cache lookup and passes it to SDK initialization, OAuth metadata/grants and callback handling; this upstream commit changes its description only. A focused help assertion passes; all 26 print/help/transcript checks pass. See docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-timeout-help.json, src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs, tests/PiSharp.Tests/Cli/Mcp/McpCommandTests.cs. This closes the named current-source delta, not the broader capability."
+        "The standalone MCP help now matches Pi's timeout description and 300-second default exactly in real isolated CLI processes. Existing login code already creates a linked deadline before token-cache lookup and passes it to SDK initialization, OAuth metadata/grants and callback handling; this upstream commit changes its description only. A focused help assertion passes; all 26 print/help/transcript checks pass. See docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-timeout-help.json, src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs, tests/PiSharp.Tests/Cli/Mcp/McpCommandTests.cs. This closes the named current-source delta, not the broader capability.",
+        "Canceled/deadline-expired MCP requests settle before a shared OAuth refresh finishes and never replay afterwards; the surviving caller proceeds across one grant without retiring the connection. A bounded cloned grant persists rotation and client/issuer binding independently of canceled callers. Request-scoped challenge attribution prevents an SDK metadata race from refreshing a newly saved token for an old challenge. Exact-lease removal precedes unlock and failed persistence settles. The real connection race failed first; null-expiry, subsequent valid refresh and failed-write controls now pass. Production Pi OAuth/HTTP and native PiSharp SDK comparisons match caller settlement, executed names, one grant, surviving text and preserved tokens/client. Full suite 1451/1451, zero skips, zero-warning build; official MCP has no regressions against eight classified failures. Close-during-refresh and public exception-shape parity are not established by this slice. See docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-oauth-cancellation.json, tools/parity/mcp-oauth-cancellation-differential.py, tests/PiSharp.Tests/Runtime/Mcp/McpOAuthCancellationTests.cs. This closes the named current-source delta, not the broader capability."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -5346,9 +5347,9 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "MATCHED": 10,
+      "MATCHED": 11,
       "NO_BEHAVIOR_CHANGE": 13,
-      "NEEDS_WORK": 8
+      "NEEDS_WORK": 7
     },
     "audit_complete": true,
     "pin_advanced": true,
