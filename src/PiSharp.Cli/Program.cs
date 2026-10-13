@@ -19,48 +19,18 @@ var agentDirectory = Path.GetFullPath(Environment.GetEnvironmentVariable("PISHAR
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent"));
 var cli = await CliStartupCommands.ParseOrRunAsync(args, agentDirectory, Console.Out, Console.Error);
 if (cli is null) return;
-var invocationDirectory = Environment.CurrentDirectory;
-string? configuredSessionDirectory;
-try
-{
-    configuredSessionDirectory = Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR");
-    if (configuredSessionDirectory is not null)
-        configuredSessionDirectory = Path.GetFullPath(configuredSessionDirectory, invocationDirectory);
-    var startupTarget = PiSessionStartupTarget.Resolve(invocationDirectory, cli);
-    cli = startupTarget.Arguments;
-    Environment.CurrentDirectory = startupTarget.WorkingDirectory;
-}
-catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or
-    System.Text.Json.JsonException or ArgumentException or NotSupportedException)
-{
-    Console.Error.WriteLine($"Could not inspect session startup target: {error.Message}");
-    Environment.ExitCode = 2;
-    return;
-}
+var startup = await ProjectStartupPreparation.PrepareAsync(cli, agentDirectory, standardInput);
+if (startup is null) return;
+using var projectConfigurationOwner = startup.Configuration;
+var projectConfiguration = startup.Configuration;
+var invocationDirectory = startup.InvocationDirectory;
+var configuredSessionDirectory = startup.SessionDirectory;
+var trustStore = startup.Trust;
+var explicitThinking = startup.ExplicitThinking;
+var usesDefaultToolsSetting = startup.UsesDefaultToolsSetting;
+cli = startup.Arguments;
 var currentDirectory = Environment.CurrentDirectory;
-var trustStore = new ProjectTrust(agentDirectory);
-ProjectRuntimeConfiguration projectConfiguration;
-var hasProjectTrustUi = cli.Mode == "interactive" && !cli.Print &&
-    !Console.IsInputRedirected && !Console.IsOutputRedirected;
-var projectTrustMode = cli.Print ? "print" : cli.Mode;
-var projectTrustUi = new ProjectTrustStartupUi(hasProjectTrustUi, projectTrustMode, Console.Out, Console.Error);
-try
-{
-    projectConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
-        trustStore, hasProjectTrustUi, standardInput, Console.Error, extensionUi: projectTrustUi);
-}
-catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
-{
-    Console.Error.WriteLine(error.Message);
-    Environment.ExitCode = 2;
-    return;
-}
-using var projectConfigurationOwner = projectConfiguration;
 var userSettings = projectConfiguration.Settings;
-var usesDefaultToolsSetting = DefaultToolReloadPolicy.UsesSettingsDefaults(cli);
-var explicitThinking = cli.Thinking;
-cli = DefaultToolReloadPolicy.ApplyStartupDefaults(cli, userSettings, Environment.GetEnvironmentVariable,
-    preserveSessionModel: cli.Continue || cli.SessionPath is not null || cli.ForkSource is not null || cli.ListModels);
 using var catalogHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
 ProviderModelRuntime modelRuntime;
 try
@@ -155,31 +125,12 @@ try
 }
 catch (ArgumentException error) { Console.Error.WriteLine(error.Message); Environment.ExitCode = 2; return; }
 ActiveModelRuntime modelBinding;
+var runComposition = new ConversationRunComposition(projectBinding, modelRuntimeController);
 Task<ConversationRun> OpenRunAsync(PiAgent runningAgent, ConversationSession session, string? path,
-    string? runProvider = null, string? reasoningLevel = null,
-    ProjectRuntimeContext? targetProject = null,
-    IReadOnlyList<string>? activeToolNamesOverride = null, PreparedModelRuntime? targetRuntime = null)
-{
-    var runProject = targetProject ?? projectBinding.Runtime;
-    var runModel = targetRuntime?.Selection ?? modelBinding.Selection;
-    var runSettings = targetProject is null ? projectBinding.Settings : targetProject.Settings;
-    var runCompaction = targetRuntime is not null ? targetRuntime.ContextPolicy : targetProject is null ? modelBinding.ContextPolicy : runSettings.ResolveCompactionPolicy(runModel.Model.ContextLength,
-        Environment.GetEnvironmentVariable, $"{runModel.Provider.Id}/{runModel.Model.Id}");
-    var runPricing = targetRuntime is not null ? targetRuntime.Pricing : targetProject is null ? modelBinding.Pricing :
-        ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? runModel.Model.Pricing;
-    return ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
-        token => runProject.Store.SaveAsync(session, path, token), autoCompaction: runCompaction, pricing: runPricing,
-        sessionFile: path, provider: runProvider ?? runModel.Provider.Id, reasoningLevel: reasoningLevel ?? modelBinding.Thinking,
-        retryPolicy: runSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default,
-        steeringMode: runSettings.SteeringMode ?? PromptDeliveryMode.OneAtATime,
-        followUpMode: runSettings.FollowUpMode ?? PromptDeliveryMode.OneAtATime,
-        autoCompactionEnabled: runSettings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
-        keepRecentTokens: runSettings.ResolveCompactionKeepRecentTokens(
-            $"{runModel.Provider.Id}/{runModel.Model.Id}"),
-        physicalContextResolver: modelRuntimeController.ResolvePhysicalContextAsync,
-        providerApi: ProviderChatClientFactory.ResolveProtocol(runModel),
-        activeToolNamesOverride: activeToolNamesOverride);
-}
+    string? runProvider = null, string? reasoningLevel = null, ProjectRuntimeContext? targetProject = null,
+    IReadOnlyList<string>? activeToolNamesOverride = null, PreparedModelRuntime? targetRuntime = null) =>
+    runComposition.OpenAsync(modelBinding, runningAgent, session, path, runProvider, reasoningLevel,
+        targetProject, activeToolNamesOverride, targetRuntime);
 var sessionPath = SessionStartupController.ResolvePath(cli, store);
 ConversationSession conversation;
 ConversationRun conversationRun;
