@@ -22,13 +22,19 @@ for (const scenario of JSON.parse(fs.readFileSync(process.argv[3], 'utf8'))) {
   const loader = new DefaultResourceLoader({ cwd, agentDir,
     settingsManager: SettingsManager.create(cwd, agentDir, { projectTrusted: !!scenario.trusted }),
     noSkills: !scenario.discover, noPromptTemplates: !scenario.discover,
-    noExtensions: true, noThemes: true, noContextFiles: true,
+    noExtensions: true, noThemes: !(scenario.includeThemes && scenario.discover), noContextFiles: true,
     additionalSkillPaths: (scenario.skillPaths || []).map(p => path.join(root, p)),
     additionalPromptTemplatePaths: (scenario.promptPaths || []).map(p => path.join(root, p)) });
   try { await loader.reload(); }
   catch (error) {
     if (!scenario.expectPathError) throw error;
     results.push({id: scenario.id, pathError: error.message});
+    continue;
+  }
+  if (scenario.includeThemes) {
+    results.push({id: scenario.id, themes: loader.getThemes().themes.map(theme => ({
+      name: theme.name, accent: theme.fg('accent', 'sample')
+    })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)});
     continue;
   }
   const extensionPaths = paths => (paths || []).map(p => ({ path: path.join(root, p),

@@ -17,6 +17,35 @@ foreach (var scenario in input.RootElement.EnumerateArray())
     var trusted = scenario.TryGetProperty("trusted", out var trust) && trust.GetBoolean();
     var userSettings = await UserSettings.LoadAsync(agent, _ => null);
     var projectSettings = await UserSettings.LoadProjectAsync(cwd);
+    if (scenario.TryGetProperty("includeThemes", out var includeThemes) && includeThemes.GetBoolean())
+    {
+        var catalogType = typeof(UserSettings).Assembly.GetType("PiSharp.Cli.Tui.TerminalThemeCatalog", throwOnError: true)!;
+        var constructor = AssertSingleConstructor(catalogType);
+        var arguments = constructor.GetParameters().Select(parameter => parameter.Name switch
+        {
+            "agentDirectory" => (object)agent,
+            "trustedProjectDirectory" => trusted ? cwd : null,
+            "trueColorOverride" => true,
+            "explicitThemeBaseDirectory" => cwd,
+            "discoverThemes" => discover,
+            "userThemePaths" => userSettings.Themes,
+            "projectThemePaths" => trusted ? projectSettings?.Themes : null,
+            "userPackages" => userSettings.Packages,
+            "projectPackages" => trusted ? projectSettings?.Packages : null,
+            _ => parameter.DefaultValue
+        }).ToArray();
+        var themes = constructor.Invoke(arguments);
+        var names = (IReadOnlyList<string>)catalogType.GetMethod("GetAvailableNames")!.Invoke(themes, null)!;
+        results.Add(new { id, themes = names.Where(name => name is not ("dark" or "light" or "system"))
+            .Order(StringComparer.Ordinal).Select(name =>
+            {
+                var theme = catalogType.GetMethod("Load")!.Invoke(themes, [name])!;
+                var accent = (string)theme.GetType().GetMethod("Fg",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(theme, ["accent"])!;
+                return new { name, accent = accent + "sample\u001b[39m" };
+            }).ToArray() });
+        continue;
+    }
     ResourceCatalog catalog;
     try
     {
@@ -64,3 +93,4 @@ foreach (var scenario in input.RootElement.EnumerateArray())
 }
 Console.WriteLine(JsonSerializer.Serialize(results));
 static object Summary(string text) => new { hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text))), characters = text.Length };
+static System.Reflection.ConstructorInfo AssertSingleConstructor(Type type) => type.GetConstructors().Single();

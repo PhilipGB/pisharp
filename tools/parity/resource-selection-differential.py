@@ -183,11 +183,36 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--packages', action='store_true', help='Include local package settings/manifest/filter/scope comparisons')
     parser.add_argument('--package-edges', action='store_true', help='Include additional package filesystem edge characterization')
+    parser.add_argument('--package-themes', action='store_true', help='Include package theme availability and selected palette comparisons')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     cases = scenarios()
     if args.packages or args.package_edges:
         cases.extend(package_scenarios(args.package_edges))
+    if args.package_themes:
+        theme = json.loads((ROOT / 'src/PiSharp.Cli/Tui/Themes/dark.json').read_text())
+        theme['name'] = 'package-theme'
+        theme['colors']['accent'] = '#010203'
+        for name, user, project, trusted in [
+            ('user', dict(packages=['../outside/package']), {}, False),
+            ('project-trusted', {}, dict(packages=['../../outside/package']), True),
+            ('project-untrusted', {}, dict(packages=['../../outside/package']), False),
+            ('disabled-kind', dict(packages=[dict(source='../outside/package', themes=[])]), {}, False),
+            ('filtered-out', dict(packages=[dict(source='../outside/package', themes=['!custom.json'])]), {}, False),
+            ('forced-include', dict(packages=[dict(source='../outside/package', themes=['!*.json', '+themes/custom.json'])]), {}, False),
+            ('same-configured-disabled-path', dict(packages=[dict(source='../outside/package', themes=[])],
+                themes=['../outside/package/themes/custom.json']), {}, False),
+            ('object-convention-fallback', dict(packages=[dict(source='../outside/package')]), {}, False),
+            ('no-themes', dict(packages=['../outside/package']), {}, False),
+            ('string-empty-manifest', dict(packages=['../outside/package']), {}, False),
+            ('delta-include', dict(packages=[dict(source='../outside/package', autoload=False, themes=['+themes/custom.json'])]), {}, False),
+            ('delta-no-patterns', dict(packages=[dict(source='../outside/package', autoload=False)]), {}, False),
+        ]:
+            cases.append(dict(id='package-theme-' + name, files={
+                'outside/package/themes/custom.json': json.dumps(theme),
+                'outside/package/package.json': json.dumps(dict(pi={} if name in ['object-convention-fallback', 'string-empty-manifest'] else dict(themes=['themes'])))},
+                links={}, discover=name != 'no-themes', includeThemes=True, skillPaths=[], promptPaths=[],
+                user=user, project=project, trusted=trusted))
     with tempfile.TemporaryDirectory(prefix='pisharp-resource-selection-') as directory:
         root = Path(directory)
         home = root / 'home'
@@ -223,7 +248,8 @@ def main():
             env=env, capture_output=True, text=True, timeout=120)
         if build.returncode:
             raise RuntimeError(build.stdout + build.stderr)
-        env.update(HOME=str(home), PI_CODING_AGENT_DIR=str(root / 'agent'))
+        env.update(HOME=str(home), PI_CODING_AGENT_DIR=str(root / 'agent'),
+                   TERM='xterm-256color', COLORTERM='truecolor', PI_TRUE_COLOR='1')
         expected = json.loads(subprocess.check_output(['node', '--experimental-transform-types',
             str(ROOT / 'tools/parity/resource-selection-probe.mjs'), str(args.pi.resolve()), str(inputs), str(root)], env=env, timeout=60))
         actual = json.loads(subprocess.check_output(['dotnet', str(root / 'bin/Debug/net10.0/probe.dll'), str(inputs), str(root)],

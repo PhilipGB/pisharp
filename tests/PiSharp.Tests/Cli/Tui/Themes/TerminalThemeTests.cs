@@ -5,6 +5,45 @@ namespace PiSharp.Tests;
 
 public sealed class TerminalThemeTests
 {
+    [Theory]
+    [InlineData("user", true)]
+    [InlineData("project", true)]
+    [InlineData("untrusted", false)]
+    [InlineData("disabled", false)]
+    [InlineData("disabled-and-configured", false)]
+    [InlineData("no-themes", false)]
+    public void PackageThemesRespectScopeFiltersAndConfiguredPathPrecedence(string scenario, bool available)
+    {
+        var root = TempRoot();
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        var package = Path.Combine(root, "package");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(project);
+        Directory.CreateDirectory(Path.Combine(package, "themes"));
+        try
+        {
+            var theme = BuiltIn("package-theme");
+            theme["colors"]!["accent"] = "#010203";
+            File.WriteAllText(Path.Combine(package, "themes", "custom.json"), theme.ToJsonString());
+            File.WriteAllText(Path.Combine(package, "package.json"), "{\"pi\":{\"themes\":[\"themes\"]}}");
+            var projectScope = scenario is "project" or "untrusted";
+            var disabled = scenario.StartsWith("disabled", StringComparison.Ordinal);
+            var declaration = new PiSharp.Runtime.Resources.ResourcePackageSource(projectScope ? "../../package" : "../package",
+                Themes: disabled ? [] : null, HasFilter: disabled);
+
+            var catalog = new TerminalThemeCatalog(agent, scenario == "project" ? project : null,
+                environment: _ => null, trueColorOverride: true,
+                userThemePaths: scenario == "disabled-and-configured" ? ["../package/themes/custom.json"] : null,
+                discoverThemes: scenario != "no-themes", explicitThemeBaseDirectory: project,
+                userPackages: projectScope ? null : [declaration], projectPackages: projectScope ? [declaration] : null);
+
+            Assert.Equal(available, catalog.GetAvailableNames().Contains("package-theme", StringComparer.Ordinal));
+            if (available) Assert.Equal("\u001b[38;2;1;2;3m", catalog.Load("package-theme").Fg("accent"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public void BuiltInPalettesMatchCurrentPiInTrueColorMode()
     {

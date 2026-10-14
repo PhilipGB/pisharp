@@ -20,6 +20,7 @@ internal sealed class TerminalThemeCatalog
     private readonly string _explicitThemeBaseDirectory;
     private readonly TerminalColorMode _mode;
     private readonly Func<string, string?> _environment;
+    private readonly IReadOnlyList<PackageResourceFile> _packageThemes;
 
     public IReadOnlyList<TerminalThemeDiagnostic> Diagnostics => GetDiagnostics();
 
@@ -27,7 +28,8 @@ internal sealed class TerminalThemeCatalog
         Func<string, string?>? environment = null, bool? trueColorOverride = null,
         IReadOnlyList<string>? userThemePaths = null, IReadOnlyList<string>? projectThemePaths = null,
         bool discoverThemes = true, IReadOnlyList<string>? explicitThemePaths = null,
-        string? explicitThemeBaseDirectory = null)
+        string? explicitThemeBaseDirectory = null,
+        IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(agentDirectory);
         _environment = environment ?? Environment.GetEnvironmentVariable;
@@ -50,6 +52,8 @@ internal sealed class TerminalThemeCatalog
         _projectThemeDirectory = trustedProjectDirectory is null
             ? null
             : Path.Combine(_projectBaseDirectory!, "themes");
+        _packageThemes = ResourcePackageFiles.Load(trustedProjectDirectory ?? _explicitThemeBaseDirectory, _userBaseDirectory,
+            trustedProjectDirectory is not null, userPackages, projectPackages, CancellationToken.None).Themes;
     }
 
     public IReadOnlyList<string> GetAvailableNames()
@@ -143,21 +147,24 @@ internal sealed class TerminalThemeCatalog
     private IEnumerable<string> ThemeFiles()
     {
         var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        var packagePaths = _packageThemes.Select(file => file.Path).ToHashSet(seen.Comparer);
         if (_discoverThemes)
         {
             if (_projectBaseDirectory is not null)
             {
                 foreach (var path in ConfiguredThemeFiles(_projectThemePaths, _projectBaseDirectory))
-                    if (seen.Add(path)) yield return path;
+                    if (!packagePaths.Contains(path) && seen.Add(path)) yield return path;
                 foreach (var path in ThemeFilesIn(_projectThemeDirectory, recursive: false))
-                    if (seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _projectThemePaths, _projectBaseDirectory))
+                    if (!packagePaths.Contains(path) && seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _projectThemePaths, _projectBaseDirectory))
                         yield return path;
             }
             foreach (var path in ConfiguredThemeFiles(_userThemePaths, _userBaseDirectory))
-                if (seen.Add(path)) yield return path;
+                if (!packagePaths.Contains(path) && seen.Add(path)) yield return path;
             foreach (var path in ThemeFilesIn(_userThemeDirectory, recursive: false))
-                if (seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _userThemePaths, _userBaseDirectory))
+                if (!packagePaths.Contains(path) && seen.Add(path) && LocalResourcePathRules.IsEnabledByOverrides(path, _userThemePaths, _userBaseDirectory))
                     yield return path;
+            foreach (var file in _packageThemes)
+                if (file.Enabled && seen.Add(file.Path)) yield return file.Path;
         }
         foreach (var entry in _explicitThemePaths ?? [])
         {

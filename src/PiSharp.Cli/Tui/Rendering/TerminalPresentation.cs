@@ -120,7 +120,9 @@ internal sealed class TerminalPresentation : IDisposable
         userThemePaths: _projectBinding.BaseUserSettings.Themes, projectThemePaths: _projectBinding.ProjectSettings?.Themes,
         discoverThemes: !_projectBinding.Arguments.NoThemes, explicitThemePaths: (_projectBinding.Arguments.ThemePaths ?? [])
             .Concat(_projectBinding.Runtime.ExtensionResources.ThemePaths.Select(path => path.Path)).ToArray(),
-        explicitThemeBaseDirectory: _invocationDirectory);
+        explicitThemeBaseDirectory: _invocationDirectory,
+        userPackages: _projectBinding.BaseUserSettings.Packages,
+        projectPackages: _projectBinding.ProjectSettings?.Packages);
     TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? terminalColors = null)
     {
         var colors = terminalColors ?? new TerminalColorState();

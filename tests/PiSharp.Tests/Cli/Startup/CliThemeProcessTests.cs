@@ -8,13 +8,15 @@ namespace PiSharp.Tests;
 
 public sealed class CliThemeProcessTests
 {
-    [Fact]
-    public async Task ExplicitThemePathAndUseThemeApplyThroughLinuxPtyWithNoThemes()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExplicitOrPackageThemeAppliesThroughLinuxPty(bool package)
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-theme-cli-pty-" + Guid.NewGuid().ToString("N"));
         var agent = Path.Combine(cwd, "agent");
-        var themeDirectory = Path.Combine(cwd, "themes");
+        var themeDirectory = Path.Combine(cwd, package ? "package/themes" : "themes");
         Directory.CreateDirectory(agent);
         Directory.CreateDirectory(themeDirectory);
         Process? process = null;
@@ -27,6 +29,11 @@ public sealed class CliThemeProcessTests
             theme["name"] = "cli-custom";
             theme["colors"]!["dim"] = "#010203";
             await File.WriteAllTextAsync(Path.Combine(themeDirectory, "custom.json"), theme.ToJsonString());
+            if (package)
+            {
+                await File.WriteAllTextAsync(Path.Combine(cwd, "package/package.json"), "{\"pi\":{\"themes\":[\"themes\"]}}");
+                await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), "{\"packages\":[\"../package\"]}");
+            }
 
             var start = new ProcessStartInfo("/usr/bin/script")
             {
@@ -38,7 +45,8 @@ public sealed class CliThemeProcessTests
             start.ArgumentList.Add("-q");
             start.ArgumentList.Add("-e");
             start.ArgumentList.Add("-c");
-            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --no-session --no-tools --theme themes/custom.json --use-theme cli-custom --no-themes");
+            var selection = package ? "--use-theme cli-custom" : "--theme themes/custom.json --use-theme cli-custom --no-themes";
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --no-session --no-tools {selection}");
             start.ArgumentList.Add("/dev/null");
             start.Environment["PISHARP_AGENT_DIR"] = agent;
             start.Environment["TERM"] = "xterm-256color";

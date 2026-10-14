@@ -1,6 +1,6 @@
 namespace PiSharp.Runtime.Resources;
 
-internal enum ResourceDiscoveryKind { Skills, AgentSkills, Prompts, ConfiguredPrompts, AutoPrompts }
+internal enum ResourceDiscoveryKind { Skills, AgentSkills, Prompts, ConfiguredPrompts, AutoPrompts, ConfiguredThemes }
 
 /// <summary>Finds resource files using the selected directory's discovery rules.</summary>
 internal static class ResourceFileDiscovery
@@ -8,8 +8,9 @@ internal static class ResourceFileDiscovery
     internal static IReadOnlyList<string> Enumerate(string path, ResourceDiscoveryKind kind, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var extension = kind == ResourceDiscoveryKind.ConfiguredThemes ? ".json" : ".md";
         if (IsRegularFile(path))
-            return path.EndsWith(".md", StringComparison.Ordinal) ? [Path.GetFullPath(path)] : [];
+            return path.EndsWith(extension, StringComparison.Ordinal) ? [Path.GetFullPath(path)] : [];
         if (!Directory.Exists(path)) return [];
 
         var files = new List<string>();
@@ -73,8 +74,8 @@ internal static class ResourceFileDiscovery
                         if (ignore is not null && (name.StartsWith(".", StringComparison.Ordinal) || name == "node_modules")) continue;
                         var isDirectory = Directory.Exists(entry);
                         if (ignore?.IsIgnored(Path.GetRelativePath(path, entry), isDirectory) == true) continue;
-                        if (isDirectory && kind == ResourceDiscoveryKind.ConfiguredPrompts) VisitPrompts(entry);
-                        else if (entry.EndsWith(".md", StringComparison.Ordinal) && IsRegularFile(entry)) files.Add(entry);
+                        if (isDirectory && kind is ResourceDiscoveryKind.ConfiguredPrompts or ResourceDiscoveryKind.ConfiguredThemes) VisitPrompts(entry);
+                        else if (entry.EndsWith(extension, StringComparison.Ordinal) && IsRegularFile(entry)) files.Add(entry);
                     }
                 }
                 finally { ancestors.Remove(identity); }

@@ -66,7 +66,20 @@
     },
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
-    "docs": "Documentation paths verified: 132 documents, 500 references"
+    "docs": "Documentation paths verified: 132 documents, 500 references",
+    "exactCi": {
+      "sha": "80272e82c4545f64517855ddc7daf2663f4ca658",
+      "run": 38623190521,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38623190521",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1920,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "newScenarioIds": [
     "package-trailing-separator-source",
@@ -115,7 +128,8 @@
     "package-source-uri-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "package-source-uri-rpc-pi.records.json": "106cb27e1d9c5d2a5175e1f05a301b59646f9622953fff1083b928440f40320a",
     "package-source-uri-full.log": "8e9ecd8289a6ea4138e7ed3ef0686ad11aaa5154fa8477c1fc86c105d401971e",
-    "package-source-uri-docs.log": "b85b4243ac3276ed7c9a60a68a334541c954796a6f2b5dc0db8f982769ad6b52"
+    "package-source-uri-docs.log": "b85b4243ac3276ed7c9a60a68a334541c954796a6f2b5dc0db8f982769ad6b52",
+    "package-source-uri-exact-ci.log": "6023455d1edea560b5c123e5951ba22ea1f2a2fdf7de28b6a4cef8bd55cf5849"
   },
   "limits": [
     "Linux evidence covers the named valid URL/error scenarios; additional path and malformed URL edge cases remain required. Windows/macOS differential coverage is not established by these Linux runs.",
