@@ -398,5 +398,12 @@
       "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-final-format-verification.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
+  },
+  "publishedVerification": {
+    "piSharpSha": "d499697e6abf3aab0e5c7717e2794cba9fe0b156",
+    "ciRun": 38486370551,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38486370551",
+    "conclusion": "success",
+    "scope": "Both Linux CI and MCP jobs pass at the exact published auth/provider/fixture head; classified MCP outcomes remain required work."
   }
 }

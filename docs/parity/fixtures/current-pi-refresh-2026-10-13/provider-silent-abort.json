@@ -57,5 +57,12 @@
     "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-final-full-tests.log",
     "sha256": "14b1964a6da534709a2ad79f7e07023e12fdb4104b387891916c6f8651a6e5ec",
     "scope": "Combined working tree includes the separately recorded auth and fixture corrections. The real saved-settings CLI test verifies timeout exit 1 and no late content."
+  },
+  "publishedVerification": {
+    "piSharpSha": "6f1f06dc08c69f095e993ed895d4720eb754ad1e",
+    "ciRun": 38486255190,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38486255190",
+    "conclusion": "success",
+    "scope": "Exact published source includes its independently committed earlier fixes. Both jobs pass; broader MCP classifications remain open."
   }
 }

@@ -74,5 +74,12 @@
     "fullLogSha256": "14b1964a6da534709a2ad79f7e07023e12fdb4104b387891916c6f8651a6e5ec",
     "scope": "Full run includes the separate auth/timeout and fixture corrections recorded alongside this evidence."
   },
-  "implementation": "ProviderRetryChatClient checks caller cancellation before retry budget and error classification in both call modes, preserving the caller token and preventing replay."
+  "implementation": "ProviderRetryChatClient checks caller cancellation before retry budget and error classification in both call modes, preserving the caller token and preventing replay.",
+  "publishedVerification": {
+    "piSharpSha": "90dded7bd57ef8c7dfa0d1b1225450636b68612f",
+    "ciRun": 38486201109,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38486201109",
+    "conclusion": "success",
+    "scope": "Exact published source includes its independently committed earlier fixes. Both jobs pass; broader MCP classifications remain open."
+  }
 }
