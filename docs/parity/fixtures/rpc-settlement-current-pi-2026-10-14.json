@@ -17,7 +17,7 @@
   ],
   "sourceReview": [
     "packages/coding-agent/src/core/agent-session.ts:_emitAgentSettled clears _isAgentRunActive before external settlement; RPC get_state projects session.isStreaming.",
-    "packages/coding-agent/src/modes/rpc/rpc-mode.ts: prompt preflight acknowledgement is authoritative; subscription forwards agent_settled. Source review, not a new paired RPC wire differential."
+    "packages/coding-agent/src/modes/rpc/rpc-mode.ts: prompt preflight acknowledgement is authoritative; subscription forwards agent_settled. Paired normal-entrypoint process replay added below with bounded semantic scope."
   ],
   "fix": [
     "Save before the external settlement marker; report any save error before that marker.",
@@ -64,7 +64,7 @@
     ],
     "repeatsRanAlongsideFullSuite": true
   },
-  "ci": "Exact commit Linux CI pending at publication. The original red run and unrelated later green runs remain historical evidence.",
+  "ci": "Both focused repair commits pass exact-head Linux CI. The original failed runs remain recorded; their resolution is supported by fail-first barrier tests and bounded process/PTY evidence, not merely by subsequent green CI.",
   "limits": [
     "Deterministic fixtures use actual MAF/ConversationRun execution with an in-memory provider; Linux process repetitions use real CLI and loopback provider. No live keys.",
     "This fixes the characterized settlement boundary, not every RPC lifecycle/session/cancellation parity requirement. No capability status changes.",
@@ -79,6 +79,102 @@
     "timing-fixes-process-repeats.json": "5dfc7e47c850a39afe933d26be7eb393c8a5c7c8d893cd06face3f71979748eb",
     "timing-fixes-full-tests.log": "972a84a7b12b921f0c43b86aacfa247e32b46450492998b282bd75660b785fa1",
     "timing-fixes-build.log": "75aeb330f60e80095ec3348eecd529034b9c43606b8762d8c52fe13bd982e89b",
-    "timing-fixes-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "timing-fixes-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "rpc-settlement-pinned-paired.json": "3ff7fe80961c621feb27fed031034842f7c790f06fa0ac572c2b3e9adb30532b",
+    "rpc-settlement-pinned-paired.log": "3d94efa997bf80ffd899648fe768700b3f7145d0ca46706301a1c29ddaa7d63e",
+    "rpc-settlement-pinned-paired-pi.records.json": "b048cd7f463d721b41e668d92e727aac69e90497506a05d5d1245a29c7478b03",
+    "rpc-settlement-pinned-paired-pisharp.records.json": "056e25e19be4a15f83c40130a5aac16850454bb4500099b3293112587c91ab4b",
+    "rpc-settlement-pinned-paired-pi.http.json": "62e2b4b68a2d493698b154905eccd1ae691a19f98f94ce4bc584da8005edc323",
+    "rpc-settlement-pinned-paired-pisharp.http.json": "a43a1af86badd5e60c6bc4af176edd30c27167c0426e39379f9540c0a75684ce",
+    "rpc-settlement-exact-ci.log": "1a8642cf886b675bbee6ceb832495ad62f152bd72f6a8018904f96f231b8cac5"
+  },
+  "processDifferential": {
+    "driver": "tools/parity/rpc-settlement-differential.py",
+    "result": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "pisharpSha": "bac3f6645feaf156d40b3761caab972a46c1e569",
+      "pisharpAssemblySha256": "dfce65b562e390c15f76a08fba497e9796ceb9f1819958105e412730a9e33499",
+      "results": {
+        "pi": {
+          "promptResponses": [
+            {
+              "command": "prompt",
+              "success": true
+            },
+            {
+              "command": "prompt",
+              "success": true
+            },
+            {
+              "command": "prompt",
+              "success": true
+            },
+            {
+              "command": "prompt",
+              "success": true
+            },
+            {
+              "command": "prompt",
+              "success": true
+            }
+          ],
+          "settledCount": 5,
+          "providerRequests": 5,
+          "isStreaming": false,
+          "pendingMessageCount": 0
+        },
+        "pisharp": {
+          "promptResponses": [
+            {
+              "command": "prompt",
+              "success": true
+            },
+            {
+              "command": "prompt",
+              "success": true
+            },
+            {
+              "command": "prompt",
+              "success": true
+            },
+            {
+              "command": "prompt",
+              "success": true
+            },
+            {
+              "command": "prompt",
+              "success": true
+            }
+          ],
+          "settledCount": 5,
+          "providerRequests": 5,
+          "isStreaming": false,
+          "pendingMessageCount": 0
+        }
+      },
+      "match": true,
+      "scope": "Prompt success, one provider request/settlement per turn, real session save and final idle state. Each next prompt is sent immediately after external settlement with no sleep. Full wire events, JSONL formats, errors/abort and indefinitely blocked saves remain outside this comparison."
+    },
+    "log": "rpc-settlement-pinned-paired.log",
+    "limits": "Compares successful prompt acknowledgements, provider request/settlement counts, saved file presence and final idle/queue state. Text is checked across string/part representations; full requests and events retained without comparison normalization. No full wire/JSONL-format parity claim."
+  },
+  "retainedDriverCorrections": [
+    "Initial probe assumed OpenAI user content was always a string; Pi sends text parts. Corrected semantic extraction while retaining both representations in raw HTTP captures.",
+    "The next probe assumed both products persist .jsonl; Native persists .session.json. Now assert the exact get_state sessionFile exists, is nonempty and remains inside the owned session directory. File-format parity was outside the comparison. Both failed attempts remain in raw artifacts."
+  ],
+  "exactHeadCi": {
+    "sha": "bac3f6645feaf156d40b3761caab972a46c1e569",
+    "run": 38533106677,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38533106677",
+    "testJob": "success",
+    "mcpConformanceJob": "success",
+    "dotnetPassed": 1735,
+    "dotnetFailed": 0,
+    "dotnetSkipped": 0,
+    "nodePassed": 24,
+    "pythonPassed": 49,
+    "format": "passed",
+    "warningsAsErrorsBuild": "passed",
+    "documentation": "132 documents / 481 references"
   }
 }

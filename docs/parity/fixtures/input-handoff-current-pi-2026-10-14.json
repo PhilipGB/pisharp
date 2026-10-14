@@ -79,7 +79,7 @@
   "limits": [
     "Linux 120x40 dark fullscreen with no tools and gated loopback provider; broader dimensions, platforms, tool/queue/abort and regular-mode presentation remain open.",
     "Canonical comparison uses existing harness normalization. Raw PTY/control bytes differ, and paired raw HTTP differs only at three generated documentation roots; these are retained.",
-    "A later unrelated green run did not resolve the original failure. Exact commit CI is pending at publication.",
+    "A later unrelated green run did not resolve the original failure. Exact repair commit CI subsequently passed; see exactHeadCi.",
     "Raw captures are Git ignored and require a separate backup for long-term retention."
   ],
   "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
@@ -90,6 +90,22 @@
     "input-handoff-final-full-tests.log": "3547c160f078b6a5c7ac1033dda62d36be53abe5a2baef6e73b3d2589bf7ed03",
     "input-handoff-python-tests.log": "dab5f640518cede3c1f140ee459602149265b47c51e5a02a11bbfea447253122",
     "input-handoff-final-build.log": "c7025e8d8ed8fa10b39b73ef790ee7a1b74c75f5f639fe6fd3d33dba231edf4c",
-    "input-handoff-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "input-handoff-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "input-handoff-exact-ci.log": "bab362981ea236f718d4fc3d8f82293031e93f2a39e26509d51b09570cf08ead"
+  },
+  "exactHeadCi": {
+    "sha": "d462f4ae865d97bb167558f94df8a68082129e5d",
+    "run": 38532839354,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38532839354",
+    "testJob": "success",
+    "mcpConformanceJob": "success",
+    "dotnetPassed": 1732,
+    "dotnetFailed": 0,
+    "dotnetSkipped": 0,
+    "nodePassed": 24,
+    "pythonPassed": 49,
+    "format": "passed",
+    "warningsAsErrorsBuild": "passed",
+    "documentation": "132 documents / 481 references"
   }
 }
