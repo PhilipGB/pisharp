@@ -8,6 +8,22 @@ public sealed class ConversationTreeTests
     private static JsonElement Text(string text) => JsonSerializer.SerializeToElement(new { text });
 
     [Fact]
+    public void ClonePreservesAnExplicitEmptySelectionWithRetainedHistory()
+    {
+        var tree = new ConversationTree();
+        tree.Append("user", Text("prior"));
+        tree.Append("assistant", Text("answer"));
+        tree.Select(null);
+        var copy = tree.Clone();
+        Assert.Null(copy.HeadId);
+        Assert.Empty(copy.ActivePath());
+        Assert.Equal(2, copy.Entries.Count);
+        Assert.Null(copy.Append("user", Text("new root")).ParentId);
+        Assert.Null(tree.HeadId);
+        Assert.Equal(2, tree.Entries.Count);
+    }
+
+    [Fact]
     public void NavigatingAndBranchingKeepsPriorDescendantsOutOfActiveContext()
     {
         var tree = new ConversationTree();
