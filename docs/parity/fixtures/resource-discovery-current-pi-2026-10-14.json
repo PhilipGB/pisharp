@@ -176,7 +176,18 @@
     "format": "passed",
     "buildWarnings": 0,
     "buildErrors": 0,
-    "exactHeadCi": "pending at publication"
+    "exactHeadCi": {
+      "sha": "0eb7b1147b5df8317b9f0a88540302ad432fa6e0",
+      "run": 38535070869,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38535070869",
+      "jobs": "both pass",
+      "dotnetPassed": 1745,
+      "failed": 0,
+      "skipped": 0,
+      "nodePassed": 24,
+      "pythonPassed": 49,
+      "documentation": "132 documents / 483 references"
+    }
   },
   "limits": [
     "The 1002-skill comparison proves behavior above the former 1000-file cap. No 10000-directory-scale performance or long-path/platform claim.",
@@ -196,7 +207,8 @@
     "resource-discovery-full-tests.log": "200b5eb2f80bc85b11987f24d2923092b3b3ee800b265a36e6169e333bae8080",
     "resource-discovery-build.log": "85adab55b6338f5c3761bf86a797d783ce7d4098da10e95124ad7d9098bf9863",
     "resource-discovery-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "resource-discovery-source-tests.log": "9efdd75276a4dcd623c50d829fc08fb6a8a23fed1d37470c463ffe1d8caf4baf"
+    "resource-discovery-source-tests.log": "9efdd75276a4dcd623c50d829fc08fb6a8a23fed1d37470c463ffe1d8caf4baf",
+    "resource-discovery-exact-ci.log": "eff553716051803d03f7f7916173532a3473e1b358288c592bc35ba7ec0cc645"
   },
   "reproduce": "python3 tools/parity/resource-discovery-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-discovery.json",
   "next": "Characterize and match .gitignore/.ignore/.fdignore traversal filtering, then collisions/precedence and invocation errors."

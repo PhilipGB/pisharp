@@ -1,0 +1,512 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "0eb7b1147b5df8317b9f0a88540302ad432fa6e0",
+  "candidate": "Base plus focused skill ignore rules, traversal integration and tests in this commit; captures use this working tree before publication.",
+  "match": true,
+  "cases": 60,
+  "basicDiscoveryRegressionCases": 17,
+  "comparison": "Real loadSkills/loadPromptTemplates with includeDefaults:false, explicit directories and source-pinned ignore 7.0.8. Exact metadata/order/relative paths/full body SHA256/UTF16 length/raw diagnostic type/path/text/order; no matcher output normalization.",
+  "sourceDependencies": {
+    "ignore": "7.0.8",
+    "packageLockIntegrity": "sha512-YYNsSlXBjMk92SKnkwvB5LOVSa6OznlFUGcsvrFgNJbJCd0M1XKeFVRc8ZByeCqz32FivYNHJVooLmdqrmvp/Q=="
+  },
+  "sourceHashes": {
+    "packages/coding-agent/src/core/skills.ts": "8dcc644dbabbb34238f609ecf191c0da370d74873ccaccaf3c3cd0e7703d9431",
+    "packages/coding-agent/src/core/prompt-templates.ts": "11db52a6bea6f3f094c6f533d4a3162462bdef4693f238ba1a8a1be6729d4545",
+    "package-lock.json": "e56f77e5f423d2d2cd052dc90622d4c223cd81209a3b996cd4d43587a6a05deb",
+    "node_modules/ignore/index.js": "643735013bdcf86dfeca4d38fb74d9a4fafa7a640ad2d251077862f18b2556fe"
+  },
+  "productionHashes": {
+    "src/PiSharp.Runtime/Resources/ResourceIgnoreRules.cs": "ea0aef27658f6e64619fa011586d2131813abbb2d61cadd9823587e0b58b63ad",
+    "src/PiSharp.Runtime/Resources/ResourceFileDiscovery.cs": "32c8c87e7bf6a6f68a5fcec2d98681d11ebabb8dc3d2d30f2e9e1585577f750e"
+  },
+  "characterization": [
+    {
+      "phase": "Initial ignore-file behavior",
+      "cases": 21,
+      "mismatches": 17,
+      "nativeFailed": 7,
+      "nativePassedControls": 2
+    },
+    {
+      "phase": "Expanded wildcard/escape/class syntax",
+      "cases": 50,
+      "mismatches": 4,
+      "nativeFailed": 4,
+      "result": "POSIX alpha/digit/negative-digit and leading literal ] class repaired; 50/50 compare afterward."
+    },
+    {
+      "phase": "All named POSIX classes",
+      "cases": 60,
+      "mismatches": 1,
+      "nativeFailed": 1,
+      "result": "Punctuation must not match the directory separator; native guard added, 60/60 compare afterward."
+    }
+  ],
+  "implementation": [
+    "ResourceIgnoreRules loads .gitignore, .ignore, .fdignore in that order per visited directory, sharing the rule sequence across depth-first traversal as Pi does.",
+    "Root-relative prefix conversion includes Pi-specific root slash removal, nested basename scope and escaped-bang behavior. Parent exclusions prevent child-only negation from restoring an ignored directory.",
+    "Case-insensitive glob matching supports single/double stars, question marks, escapes, literal braces, ranges/negated classes, named POSIX classes and literal closing bracket. Character classes cannot cross separators.",
+    "Ignore rules filter SKILL.md before it establishes a directory root. Prompts and explicit individual skill files do not apply skill directory ignore rules."
+  ],
+  "verification": {
+    "focusedPassed": 87,
+    "fullPassed": 1761,
+    "fullFailed": 0,
+    "fullSkipped": 0,
+    "format": "passed",
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "cliProviderCasesAdded": 2,
+    "exactHeadCi": "pending at publication"
+  },
+  "matchedResults": [
+    {
+      "id": "gitignore-directory",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "69d091bddd6f4b37c237029943ed62126a86b1eee85c21a98611d1de0bb59f72"
+    },
+    {
+      "id": "ignore-directory",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "4ba83e2365c564da1afd08bd9cb1ce5f45f297eebbad1f592c70f5a73daa1bdb"
+    },
+    {
+      "id": "fdignore-directory",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "e32582ef0a364c9f4490ad3c540eb5e0ed8236cc7497b65416afcbab53398e79"
+    },
+    {
+      "id": "ignored-declaration",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "7ae91a5f0bd7e13f11ff1691814ca94bf56790e57e4af33e97d79a7f56fa9016"
+    },
+    {
+      "id": "ignored-root-slash",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "d77d59d09cecf94e312c6ad0ff486202edc1470f81dff21da77d7331bfd47bc6"
+    },
+    {
+      "id": "reinclude-child-declaration",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "6cc3b26c90d4ec609831f954182b29eda577df5df7f49c0dab81bd579cc2982a"
+    },
+    {
+      "id": "parent-cannot-reinclude",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "62d51727f23b4f073cec54d3982c98c863dd2cc1bd8246f32f3e1f8093698065"
+    },
+    {
+      "id": "directory-reinclude",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "3cb77ac37d292470114f8eea16e4f774ace90f8808151faeb53763922a010692"
+    },
+    {
+      "id": "case-insensitive-ignore",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "300f0d55e3cf95dfcc3645b6b222fbfed3f650d456923553f915a261c5ffc4b9"
+    },
+    {
+      "id": "ignore-file-order",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "d50e183a7f6447379ecdf6e4db3af8e15ebface6b3cd3cf2c97b10c60d9f9481"
+    },
+    {
+      "id": "nested-rules-after-root-fdignore",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "6f64afc35aa9c8b0a546e0a486bea6cf6c9ba46bae51bf081700b594c960d475"
+    },
+    {
+      "id": "nested-basename-prefix",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "5bb4db9ec9890d7475815c1fa2442a8052ec4e032b1387e948e660a785b6aeeb"
+    },
+    {
+      "id": "ancestor-ignore-outside-scan",
+      "skills": 3,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "5f83263e5971b60a0a42adf9b68cddd339f9b0f9fdeb18434dccd73b472de407"
+    },
+    {
+      "id": "comments-trailing-spaces",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "311f58129eda34b9361fcc05a33bbacae777ca248a92595d6c3453e0660fd66c"
+    },
+    {
+      "id": "escaped-hash",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "dceedfa6e3e859b59811091ce646a05bfd8c45d0cbe1ac8e5989c69b488acede"
+    },
+    {
+      "id": "escaped-bang",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "30ff6f339521e2ab945aed416f7393ffaa0fabaf6ad9c639f3b62b4cdfc4fc9c"
+    },
+    {
+      "id": "escaped-space",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "36672ca702550ca0ead225c8c7804ee89264fb7f620fe70ee7cd535273a24871"
+    },
+    {
+      "id": "double-star",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "46bb1a918704393972b06d545aa0d12c68dd232cf43301f8fb7a53b2b4c9c7b8"
+    },
+    {
+      "id": "question-and-character-class",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "0371dd44545dbf307c4d0d154e85751e94463d48e7fcefbb7b982bd331127d58"
+    },
+    {
+      "id": "brace-literal",
+      "skills": 3,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "41d443b0feddc0c3add29ffd78e5bcb4cf0c5646332d9c203797962d785ee46c"
+    },
+    {
+      "id": "prompt-ignore-files-unused",
+      "skills": 0,
+      "prompts": 2,
+      "diagnostics": [],
+      "resultSha256": "06c283ee6c74c0aad7cb868aa9947df2cbfd654925fa939b0ed45905f70cd984"
+    },
+    {
+      "id": "ignore-pattern-00",
+      "skills": 0,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "fc6471078c3c2deadbc72ac08cb72ffd5992bb66577dc3019c246a23bc2a97f3"
+    },
+    {
+      "id": "ignore-pattern-01",
+      "skills": 9,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "7dfa0259d07944b01110c2517be1643206978f6fde7d9738a89a4aac1c366282"
+    },
+    {
+      "id": "ignore-pattern-02",
+      "skills": 10,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "8a603252da29a015eb2a367d7cfb47952e993b12493dd66caa06e6f579046a68"
+    },
+    {
+      "id": "ignore-pattern-03",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "f14c6049b009f8dbfd05c0f53c6d034797edbb9ff22de9e076d09690964aadf7"
+    },
+    {
+      "id": "ignore-pattern-04",
+      "skills": 12,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "4eb6eae681b6060a10ffc2acb7e84e4a1449b86bf8e124dbe5fb07971ad6fa71"
+    },
+    {
+      "id": "ignore-pattern-05",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "ec3b7b2694c0bf77756be918ec9ae51c3ef6677b1a78e9c6c31bafb3d5569b97"
+    },
+    {
+      "id": "ignore-pattern-06",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "b5fad5022d41b02b4a65cbe5ce80f92b6e902f62e45811ddab9ad342bed5813b"
+    },
+    {
+      "id": "ignore-pattern-07",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "4f2241674eae1448c9fdaf991c21d3238219a9fe58ad94247c307eeb6394dc40"
+    },
+    {
+      "id": "ignore-pattern-08",
+      "skills": 10,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "9e00d78640a3839e05cf0775ab296928c43a76f860ec7e8de786eb663ce71f51"
+    },
+    {
+      "id": "ignore-pattern-09",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "1ba4f925f55d4ffc9a368aa44aafd50e7ad059ac67759595459339c42735cd44"
+    },
+    {
+      "id": "ignore-pattern-10",
+      "skills": 10,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "bef167372c79a13405172fe0af1a4c091c4b8d1881e45577eb8d288379487cff"
+    },
+    {
+      "id": "ignore-pattern-11",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "4385b317c1ebe4a3a3bd19e7a33cd920f81d75c0580c838c0b2c3144795521bb"
+    },
+    {
+      "id": "ignore-pattern-12",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "97ce9ccb148b936673b7a575bfa27c2a3320095cc4019d77979af7de636054a2"
+    },
+    {
+      "id": "ignore-pattern-13",
+      "skills": 3,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "2bc594133c23ca6c8a9553f6ce8b449258a4c7596383b2dae59f8f46894b799a"
+    },
+    {
+      "id": "ignore-pattern-14",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "92c8b868c2195546681d2f1c102110f1e819c6626cb93124982e41ef0802670a"
+    },
+    {
+      "id": "ignore-pattern-15",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "278ed10df01eec07fbd104aaed0a4a1ba4343ec8bfd5f0914ea2642dd7868ff2"
+    },
+    {
+      "id": "ignore-pattern-16",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "53888aa70eb72d4dea76d87dd2108979544ec9e46b58b1874768834841a4ed6b"
+    },
+    {
+      "id": "ignore-pattern-17",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "14d4b9600b66c530930746d141ae238ff07b55fea640f112d8edfd05d781e518"
+    },
+    {
+      "id": "ignore-pattern-18",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "06022fb7f7c3fff0dad7871abe1f97cc4b67270e8dbea9fe0dbbe947dc4f7bcd"
+    },
+    {
+      "id": "ignore-pattern-19",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "44935af68ed50121f106d476943b334ed451771e81450f4d91b4fcf7727ed909"
+    },
+    {
+      "id": "ignore-pattern-20",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "cb6d7d8efda3d676a021059b712b6459e12e4c9b47da1ac3631eb5ee3c3eabf7"
+    },
+    {
+      "id": "ignore-pattern-21",
+      "skills": 12,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "d5a87b7d295a9f61ea62135cdc43d0d61be8b7ca9e27ff6ffc77a24a15963a91"
+    },
+    {
+      "id": "ignore-pattern-22",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "38573e27b6ec59984d7790f1613bea9afdbb4970a132f1fe8401d68964f7f7d1"
+    },
+    {
+      "id": "ignore-pattern-23",
+      "skills": 12,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "46d7ac645b3d1e133ef68db82e7245def642378751ccf48b64cd65c4f5cce8c8"
+    },
+    {
+      "id": "ignore-pattern-24",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "fb5b0a2b2f34b77966b2eaa2215fc58f0c39ae96cb9d28becf50682f35a9c037"
+    },
+    {
+      "id": "ignore-pattern-25",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "89d2782856a3f0ca3c2304e5612459fb2c57dbcbea67525f4e4d3ac4f90c8007"
+    },
+    {
+      "id": "ignore-pattern-26",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "b87458ca3ef5d2cc1feb9264b673a430ec47c008dfc0af916edb71f1d6c86993"
+    },
+    {
+      "id": "ignore-pattern-27",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "bdc1a5029c0bf8027775f9b265badd56323594ad89856ce28379ef79cebc99e4"
+    },
+    {
+      "id": "ignore-pattern-28",
+      "skills": 12,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "b320814ee749a480acbd672217787de5e87ad7bcfb90ed7f6cf05b613ee89dc8"
+    },
+    {
+      "id": "ignore-posix-alnum",
+      "skills": 0,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "1f385d69824e0cf439e7ae8a35f01cb98219818ff3d507e00dddd94eb6f5908e"
+    },
+    {
+      "id": "ignore-posix-blank",
+      "skills": 10,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "30a2f4c0bc6f993532aecf3e538f2c34be106e90001eda5c0a104afd1f7f29f0"
+    },
+    {
+      "id": "ignore-posix-cntrl",
+      "skills": 11,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "57661ae90257a9d060fa599afc61c4c106c4944ae9a7a4f3212631ea15400ac2"
+    },
+    {
+      "id": "ignore-posix-graph",
+      "skills": 0,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "389b65f1992bf3d25f6226f56d94c666d6675040708b0121fc8e37d8b3eba719"
+    },
+    {
+      "id": "ignore-posix-lower",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "e8cc7353d63124583acc7d6c2e55603dd36c72fffd7b8246b7706ca44cce0e4e"
+    },
+    {
+      "id": "ignore-posix-print",
+      "skills": 0,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "8d17bc510a5ff1193d7d6f88c47b2f9a63c8c18e851a19ccdf1453ae2706933f"
+    },
+    {
+      "id": "ignore-posix-punct",
+      "skills": 7,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "d0017e3cc88dab39b992186e0ad7daffcee2cbfae4e74777dfcc9d83490c8f3c"
+    },
+    {
+      "id": "ignore-posix-space",
+      "skills": 10,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "138d8c3f86aa7c885042d52567c61624346e252212e5f981e48f5ec33558f7a6"
+    },
+    {
+      "id": "ignore-posix-upper",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "7f15ca52ffbd5afe4a04382056635abe9546a4f9b4d0a2d3eec12f8110d71136"
+    },
+    {
+      "id": "ignore-posix-xdigit",
+      "skills": 2,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "2c228ac3db6c37e06331c927a76e6f17f392e473975fe33fe3bb67c982871288"
+    }
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-ignore-fail-first.json": "f1b0a473e7a714b84b0dda538959790a85d20bb00c4722a48b294ffb4cbf0784",
+    "resource-ignore-fail-first.log": "d5a72bb0f3be651ff6c18dcaa28231216c3a83fd8c430c6af4224b9373f9befe",
+    "resource-ignore-fail-first-tests.log": "2d834109b269d3968b8eeb5ead4245b3c65f95e4641109b014b895973a405c85",
+    "resource-ignore-expanded-first.json": "6920905b702f96cdd1a9ca054cdce1d1d8fa8192adc53aa39bf31ea1e332406f",
+    "resource-ignore-class-fail-first-tests.log": "4228a359ee584e70f6149602df3d279beca9b73c7844bbb9e640f3257bba1d67",
+    "resource-ignore-final.json": "bbccd097ab991d3f03ec227935f071dc8fa525a10d0a6ff26fd5182325ec2739",
+    "resource-ignore-punctuation-fail-first-tests.log": "7ca9c150a9cfdcbcbbe5d9ca440956403b533766f441812ec2209973abec01cf",
+    "resource-ignore-sixty-recovery.json": "ab81c906a1c35f0a2d73753397f45a7bebeafb6d03d0115c12206a588fcc722a",
+    "resource-ignore-sixty-recovery.log": "5897f5d3f76f9bd56740051369eb46aa3403e90147981d5ce6b081277bd7ea77",
+    "resource-ignore-basic-regression.json": "377ea21b393aa711111d3f2c1702d16c4e20d724d71d392650f047eb2c86f9e7",
+    "resource-ignore-final-all-focused-tests.log": "34588c353dbaa61c3cf97f7dfff98e2f70142700dda214da4c46199b547a32b1",
+    "resource-ignore-full-tests.log": "de00cc8ffa20190b040260a1d716340ac805b50494825bb7fb7e72e301a70d75",
+    "resource-ignore-build.log": "c8e3ec219ba5ebb4a3345d74e8be29d01ec1fc8c559a9ec1b51436857ab0340d",
+    "resource-ignore-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "limits": [
+    "Sixty controlled Linux file-loader cases cover the retained ignore rules/patterns, not every malformed/pathological rule, Unicode fold, arbitrary byte filename, whitespace envelope or native platform.",
+    "Nonregular ignore files are skipped before opening; that safeguard does not establish Pi-equivalent behavior for a blocking ignore-file pipe/device.",
+    "Canonical symlink deduplication, resource name/diagnostic collision order, full configuration/default-source precedence, invocation errors and terminal presentation remain open.",
+    "Two native real CLI/provider cases prove an ignored invalid declared root permits a complete alias expansion and skill ignore files do not filter prompts. They are not paired CLI/terminal evidence.",
+    "No resource capability status change; full 194-capability completion and final source audit remain required."
+  ],
+  "reproduce": "python3 tools/parity/resource-discovery-differential.py --pi /tmp/pisharp-parity-audit-pi --group ignore --output artifacts/parity/<run>/resource-ignore.json",
+  "next": "Characterize canonical symlink/file identity, collision diagnostics and configuration-source precedence; retain remaining ignore/error/Unicode and invocation/presentation gaps."
+}

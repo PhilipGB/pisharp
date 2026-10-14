@@ -32,8 +32,14 @@ public sealed class ResourceFileProcessTests
     public Task DirectorySelectedMarkdownAliasReachesProvider(bool skill) =>
         RunAsync(skill, unreadable: false, namedPipe: false, directory: true);
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public Task DirectoryIgnoreRulesPreserveAllowedCliExpansion(bool skill) =>
+        RunAsync(skill, unreadable: false, namedPipe: false, directory: true, ignoreRules: true);
+
     private static async Task RunAsync(bool skill, bool unreadable, bool namedPipe, bool invalidYaml = false,
-        bool directory = false)
+        bool directory = false, bool ignoreRules = false)
     {
         if ((unreadable || namedPipe) && OperatingSystem.IsWindows()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resource-file-process-" + Guid.NewGuid().ToString("N"));
@@ -55,6 +61,12 @@ public sealed class ResourceFileProcessTests
             try
             {
                 await File.WriteAllBytesAsync(path, bytes);
+                if (ignoreRules)
+                {
+                    await File.WriteAllTextAsync(Path.Combine(root, "guide", ".ignore"), skill ? "SKILL.md\n" : "*.md\n");
+                    if (skill) await File.WriteAllTextAsync(Path.Combine(root, "guide", "SKILL.md"),
+                        "---\ndescription: [broken\n---\nignored invalid declaration");
+                }
                 if (namedPipe)
                 {
                     var pipeStart = new ProcessStartInfo("mkfifo");

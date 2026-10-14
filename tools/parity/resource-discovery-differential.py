@@ -51,13 +51,70 @@ def scenarios():
     return cases
 
 
+def ignore_scenarios():
+    cases = []
+    common = {'scan/blocked/SKILL.md': skill('blocked'), 'scan/keep/SKILL.md': skill('keep'),
+              'scan/alias.md': skill('alias')}
+
+    def add(name, rules, files=None, kind='skill'):
+        cases.append(dict(id=name, kind=kind, paths=['scan'], files={**(common if files is None else files), **rules}, links={}))
+
+    for filename in ['.gitignore', '.ignore', '.fdignore']:
+        add(filename[1:] + '-directory', {'scan/' + filename: 'blocked/\n'})
+    add('ignored-declaration', {'scan/.ignore': 'SKILL.md\n'},
+        {'scan/SKILL.md': skill('root'), 'scan/alias.md': skill('alias'), 'scan/child/SKILL.md': skill('child')})
+    add('ignored-root-slash', {'scan/.ignore': '/SKILL.md\n'},
+        {'scan/SKILL.md': skill('root'), 'scan/alias.md': skill('alias'), 'scan/child/SKILL.md': skill('child')})
+    add('reinclude-child-declaration', {'scan/.ignore': 'SKILL.md\n!child/SKILL.md\n'},
+        {'scan/SKILL.md': skill('root'), 'scan/alias.md': skill('alias'), 'scan/child/SKILL.md': skill('child')})
+    add('parent-cannot-reinclude', {'scan/.ignore': 'blocked/\n!blocked/SKILL.md\n'})
+    add('directory-reinclude', {'scan/.ignore': '*/\n!keep/\n'})
+    add('case-insensitive-ignore', {'scan/.ignore': 'BLOCKED/\n'})
+    add('ignore-file-order', {'scan/.gitignore': 'blocked/SKILL.md\n', 'scan/.ignore': '!blocked/SKILL.md\n',
+                             'scan/.fdignore': 'blocked/SKILL.md\n'})
+    add('nested-rules-after-root-fdignore', {'scan/.fdignore': '*/SKILL.md\n', 'scan/keep/.gitignore': '!SKILL.md\n'})
+    add('nested-basename-prefix', {'scan/blocked/.ignore': 'SKILL.md\n'},
+        {'scan/blocked/SKILL.md': skill('blocked'), 'scan/blocked/deep/SKILL.md': skill('deep'), 'scan/keep/SKILL.md': skill('keep')})
+    add('ancestor-ignore-outside-scan', {'.ignore': 'scan/\n'})
+    add('comments-trailing-spaces', {'scan/.ignore': ' # comment\n\nblocked/   \n'})
+    add('escaped-hash', {'scan/.ignore': '\\#guide.md\n'},
+        {'scan/#guide.md': skill('hashed'), 'scan/visible.md': skill('visible')})
+    add('escaped-bang', {'scan/.ignore': '\\!guide.md\n'},
+        {'scan/!guide.md': skill('bang'), 'scan/visible.md': skill('visible')})
+    add('escaped-space', {'scan/.ignore': 'white\\ .md\n'},
+        {'scan/white .md': skill('white'), 'scan/visible.md': skill('visible')})
+    add('double-star', {'scan/.ignore': '**/blocked/**\n'},
+        {'scan/top/blocked/SKILL.md': skill('blocked'), 'scan/top/keep/SKILL.md': skill('keep')})
+    add('question-and-character-class', {'scan/.ignore': '[ab]?/\n'},
+        {'scan/a1/SKILL.md': skill('a'), 'scan/b2/SKILL.md': skill('b'), 'scan/c3/SKILL.md': skill('c')})
+    add('brace-literal', {'scan/.ignore': '{blocked,keep}/\n'})
+    add('prompt-ignore-files-unused', {'scan/.gitignore': '*.md\n', 'scan/.ignore': '*.md\n', 'scan/.fdignore': '*.md\n'},
+        {'scan/a.md': 'a body', 'scan/.hidden.md': 'hidden body'}, kind='prompt')
+    pattern_files = {f'scan/{file}': skill(f'p{index}') for index, file in enumerate([
+        'a.md', 'b.md', '1.md', 'white .md', 'white\t.md', 'literal$+.md',
+        'star*.md', 'query?.md', '[left].md', '{a,b}.md'])}
+    pattern_files.update({'scan/a/SKILL.md': skill('nested-a'), 'scan/a/deep/SKILL.md': skill('deep'),
+                          'scan/x/aa/SKILL.md': skill('nested-aa')})
+    for index, pattern in enumerate(['*', 'a*', 'a*/', 'a/**', 'a/**/', 'a/**/SKILL.md', '**/a/**',
+                                    'a/*', '**/', 'a**.md', '[ab]*.md', '[!ab]*.md', '[^ab]*.md',
+                                    '[[:alpha:]]*.md', '[[:digit:]]*.md', '[![:digit:]]*.md',
+                                    'star\\*.md', 'query\\?.md', '\\[left\\].md', 'literal$+.md',
+                                    '{a,b}.md', '[broken', '[]a].md', '[z-a]*.md', 'white\t.md',
+                                    '*\n!a.md', '**/SKILL.md\n!a/deep/SKILL.md', 'a/', '*/SKILL.md']):
+        add(f'ignore-pattern-{index:02d}', {'scan/.ignore': pattern + '\n'}, pattern_files)
+    for name in ['alnum', 'blank', 'cntrl', 'graph', 'lower', 'print', 'punct', 'space', 'upper', 'xdigit']:
+        add('ignore-posix-' + name, {'scan/.ignore': f'*[[:{name}:]]*.md\n'}, pattern_files)
+    return cases
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--group', choices=['basic', 'ignore'], default='basic')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
-    cases = scenarios()
+    cases = scenarios() if args.group == 'basic' else ignore_scenarios()
     with tempfile.TemporaryDirectory(prefix='pisharp-resource-discovery-') as directory:
         root = Path(directory)
         (root / 'Program.cs').write_text((ROOT / 'tools/parity/resource-path-probe.cs').read_text())

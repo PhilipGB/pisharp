@@ -13,6 +13,7 @@ internal static class ResourceFileDiscovery
         var files = new List<string>();
         if (skills)
         {
+            var ignore = new ResourceIgnoreRules(Path.GetFullPath(path));
             var ancestors = new HashSet<string>(OperatingSystem.IsWindows()
                 ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             VisitSkills(Path.GetFullPath(path), includeAliases: true);
@@ -26,8 +27,10 @@ internal static class ResourceFileDiscovery
                 if (!ancestors.Add(identity)) return;
                 try
                 {
+                    ignore.AddDirectory(directory);
                     var entries = ReadEntries(directory);
-                    var declared = entries.FirstOrDefault(entry => Path.GetFileName(entry) == "SKILL.md" && IsRegularFile(entry));
+                    var declared = entries.FirstOrDefault(entry => Path.GetFileName(entry) == "SKILL.md" && IsRegularFile(entry) &&
+                        !ignore.IsIgnored(Path.GetRelativePath(path, entry), directory: false));
                     if (declared is not null)
                     {
                         files.Add(declared);
@@ -38,7 +41,9 @@ internal static class ResourceFileDiscovery
                         cancellationToken.ThrowIfCancellationRequested();
                         var name = Path.GetFileName(entry);
                         if (name.StartsWith(".", StringComparison.Ordinal) || name == "node_modules") continue;
-                        if (Directory.Exists(entry)) VisitSkills(entry, includeAliases: false);
+                        var isDirectory = Directory.Exists(entry);
+                        if (ignore.IsIgnored(Path.GetRelativePath(path, entry), isDirectory)) continue;
+                        if (isDirectory) VisitSkills(entry, includeAliases: false);
                         else if (includeAliases && name.EndsWith(".md", StringComparison.Ordinal) && IsRegularFile(entry))
                             files.Add(entry);
                     }
