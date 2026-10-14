@@ -7,7 +7,8 @@ namespace PiSharp.Runtime.Resources;
 
 public sealed record ResourceSourceInfo(string Path, string Source, string Scope, string Origin, string? BaseDir);
 public sealed record SkillResource(string Name, string Description, string Path, bool ExplicitOnly, ResourceSourceInfo SourceInfo);
-public sealed record PromptResource(string Name, string Description, string Template, string Path, ResourceSourceInfo SourceInfo);
+public sealed record PromptResource(string Name, string Description, string Template, string Path, ResourceSourceInfo SourceInfo,
+    string? ArgumentHint = null);
 
 /// <summary>Discovers user resources; project auto-discovery requires trust, while explicit paths are caller-selected.</summary>
 public sealed class ResourceCatalog
@@ -118,7 +119,8 @@ public sealed class ResourceCatalog
             var body = metadata.Body;
             var description = metadata.Description;
             if (string.IsNullOrEmpty(description)) description = PromptDescription(body);
-            prompts.Add(new(name, description, body, path, source));
+            prompts.Add(new(name, description, body, path, source,
+                string.IsNullOrEmpty(metadata.ArgumentHint) ? null : metadata.ArgumentHint));
         }
 
         skillDiagnostics.AddRange(skillCollisions);

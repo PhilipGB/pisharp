@@ -19,6 +19,7 @@ internal sealed class TerminalResourceCompletion(ActiveProjectRuntime projectBin
     {
         string? description;
         ResourceSourceInfo? sourceInfo;
+        string? argumentHint = null;
         if (command.StartsWith("/skill:", StringComparison.Ordinal))
         {
             var skillName = command[7..];
@@ -32,6 +33,7 @@ internal sealed class TerminalResourceCompletion(ActiveProjectRuntime projectBin
         {
             description = prompt.Description;
             sourceInfo = prompt.SourceInfo;
+            argumentHint = prompt.ArgumentHint;
         }
         else if (command.StartsWith('/') &&
             extensionLease.Current.Registration.CommandInfo.TryGetValue(command[1..], out var extensionCommand))
@@ -46,6 +48,7 @@ internal sealed class TerminalResourceCompletion(ActiveProjectRuntime projectBin
         var tag = source is "auto" or "local" or "cli" ? scope :
             source.StartsWith("npm:", StringComparison.Ordinal) ? $"{scope}:{source}" : scope;
         var visibleDescription = description?.Replace('\n', ' ').Replace('\r', ' ').Trim();
-        return string.IsNullOrWhiteSpace(visibleDescription) ? $"[{tag}]" : $"[{tag}] {visibleDescription}";
+        var taggedDescription = string.IsNullOrWhiteSpace(visibleDescription) ? $"[{tag}]" : $"[{tag}] {visibleDescription}";
+        return string.IsNullOrEmpty(argumentHint) ? taggedDescription : $"{argumentHint} — {taggedDescription}";
     }
 }

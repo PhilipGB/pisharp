@@ -19,7 +19,7 @@ for (const scenario of JSON.parse(fs.readFileSync(process.argv[3], 'utf8'))) {
   results.push({ id: scenario.id, result: {
     skills: skills.skills.map(s => ({ name: s.name, description: s.description, explicitOnly: s.disableModelInvocation, path: path.relative(root, s.filePath),
       body: summary(parseFrontmatter(fs.readFileSync(s.filePath, 'utf8')).body.trim()) })),
-    prompts: prompts.templates.map(p => ({ name: p.name, description: p.description, path: path.relative(root, p.filePath), body: summary(p.content) })),
+    prompts: prompts.templates.map(p => ({ name: p.name, description: p.description, argumentHint: p.argumentHint ?? null, path: path.relative(root, p.filePath), body: summary(p.content) })),
     diagnostics: [...skills.diagnostics, ...prompts.diagnostics].map(d => ({ type: d.type, path: path.relative(root, d.path),
       category: d.message.startsWith('name ') || d.message.startsWith('description ') ? d.message : 'parse warning' }))
   }, error: null, warningMessages: [...skills.diagnostics, ...prompts.diagnostics].map(d => d.message) });

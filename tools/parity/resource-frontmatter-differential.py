@@ -8,6 +8,8 @@ apply_test_thread_limit()
 parser=argparse.ArgumentParser(description='Compare real skill/template YAML metadata and per-file parse recovery with Pi.')
 parser.add_argument('--pi',type=Path,required=True)
 parser.add_argument('--output',type=Path,required=True)
+parser.add_argument('--argument-hints',action='store_true',help='Extend the original YAML cases with typed prompt argument-hint metadata.')
+parser.add_argument('--repository-prompt',action='store_true',help='Verify and load the repository dup prompt against the pinned Pi asset.')
 args=parser.parse_args()
 repo=Path(__file__).resolve().parents[2]; pi=args.pi.resolve();pi_sha=verify_pi_checkout(pi)
 vectors={
@@ -57,6 +59,25 @@ vectors={
 'empty-literal':'name: guide\ndescription: |',
 'empty-quoted':'name: guide\ndescription: ""',
 'nel-description':'name: guide\ndescription: "\\u0085"'}
+if args.argument_hints:
+ vectors.update({
+ 'hint-plain': 'name: guide\ndescription: Guide\nargument-hint: <subject>',
+ 'hint-empty': 'name: guide\ndescription: Guide\nargument-hint: ""',
+ 'hint-whitespace': 'name: guide\ndescription: Guide\nargument-hint: " "',
+ 'hint-number': 'name: guide\ndescription: Guide\nargument-hint: 123',
+ 'hint-boolean': 'name: guide\ndescription: Guide\nargument-hint: true',
+ 'hint-null': 'name: guide\ndescription: Guide\nargument-hint: null',
+ 'hint-map': 'name: guide\ndescription: Guide\nargument-hint: {name: arg}',
+ 'hint-sequence': 'name: guide\ndescription: Guide\nargument-hint: [arg]',
+ 'hint-quoted-boolean': 'name: guide\ndescription: Guide\nargument-hint: "true"',
+ 'hint-explicit-string': 'name: guide\ndescription: Guide\nargument-hint: !!str true',
+ 'hint-anchor': 'name: guide\ndescription: &hint Guide\nargument-hint: *hint',
+ 'hint-literal': 'name: guide\ndescription: Guide\nargument-hint: |\n  <subject>\n  [detail]',
+ 'hint-folded': 'name: guide\ndescription: Guide\nargument-hint: >-\n  <subject>\n  [detail]',
+ 'hint-case-key': 'name: guide\ndescription: Guide\nArgument-Hint: arg',
+ 'hint-quoted-number': 'name: guide\ndescription: Guide\nargument-hint: "123"',
+ 'hint-unicode': 'name: guide\ndescription: Guide\nargument-hint: "🌍 \uFEFF"',
+ })
 cases=[]
 for kind in ['skill','prompt']:
  for identifier, yaml in vectors.items():
@@ -64,11 +85,16 @@ for kind in ['skill','prompt']:
  cases.append(dict(id=kind+'-immediate-empty',kind=kind,paths=['SKILL.md' if kind=='skill' else 'guide.md'],content='---\n---\nbody'))
  cases.append(dict(id=kind+'-space-opening',kind=kind,paths=['SKILL.md' if kind=='skill' else 'guide.md'],content='--- \nname: guide\ndescription: Guide\n---\nbody'))
 cases.extend([dict(id='prompt-raw-feff-line',kind='prompt',paths=['guide.md'],content='\ufeff\ufeff\nbody'), dict(id='prompt-raw-nel-line',kind='prompt',paths=['guide.md'],content='\u0085\nbody')])
+if args.repository_prompt:
+ upstream=(pi/'.pi/prompts/dup.md').read_bytes()
+ native=(repo/'.pi/prompts/dup.md').read_bytes()
+ assert native==upstream,'Repository dup prompt differs from the configured Pi asset.'
+ cases.append(dict(id='repository-dup-prompt',kind='prompt',paths=['dup.md'],content=upstream.decode('utf-8')))
 with tempfile.TemporaryDirectory(prefix='pisharp-frontmatter-oracle-') as directory:
  root=Path(directory)
  (root/'Program.cs').write_text((repo/'tools/parity/resource-frontmatter-probe.cs').read_text())
  (root/'probe.csproj').write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup><ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Runtime/PiSharp.Runtime.csproj" /></ItemGroup></Project>')
- env=dict(os.environ,NUGET_HTTP_CACHE_PATH='/tmp/pisharp-nuget-http')
+ env=dict(os.environ,NUGET_HTTP_CACHE_PATH='/tmp/pisharp-nuget-http',NUGET_PACKAGES='/tmp/pisharp-nuget-packages')
  build=subprocess.run(['dotnet','build',str(root/'probe.csproj'),'--warnaserror','-m:1','-p:UseSharedCompilation=false', '-p:RestoreFallbackFolders=' + str(Path.home() / '.nuget/packages')],env=env,capture_output=True,text=True,timeout=120)
  if build.returncode:raise RuntimeError(build.stdout+build.stderr)
  for case in cases:

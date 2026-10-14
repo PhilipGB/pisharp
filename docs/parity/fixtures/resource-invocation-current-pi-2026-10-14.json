@@ -72,7 +72,19 @@
       },
       "match": true
     },
-    "exactHeadCi": "Pending publication; previous selection source 0672b794 passes both jobs in run 38546090541."
+    "exactHeadCi": {
+      "sha": "96fa481f33feba14cc478c111ba60bc5bbef419f",
+      "run": 38554053384,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38554053384",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1811,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
   },
   "results": [
     {
@@ -387,7 +399,8 @@
     "resource-invocation-process-final-pi.records.json": "f626dbbcafac055bc050b2d6760ac752b1094eab7c8122c9d289f93aa83fba66",
     "resource-invocation-process-final-pisharp.records.json": "303f5a3bc49f8322661e9aea8e3aeb329e080fda302a83c27a7747839c81ba29",
     "resource-invocation-process-final-pi.http.json": "5358a7867cd71c1adb887e901e756bdf157729e11da83750761bddd741dd54c3",
-    "resource-invocation-process-final-pisharp.http.json": "9c7d32c402c56591feddc1a89f8a14ef322481b35174b1ec929694fece21aefa"
+    "resource-invocation-process-final-pisharp.http.json": "9c7d32c402c56591feddc1a89f8a14ef322481b35174b1ec929694fece21aefa",
+    "resource-invocation-exact-ci.log": "55b00e58a6c75b40f6e0b4d28dc70fca361a8e209ab4c0f385a60789cef9a9f5"
   },
   "limits": [
     "The AgentSession method receiver supplies a structural resource-loader/error-runner boundary; the method and all template/skill parsing/expansion logic are real Pi source. The normal RPC CLI replay supplies separate application/provider integration evidence.",

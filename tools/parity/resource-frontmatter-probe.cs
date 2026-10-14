@@ -26,7 +26,7 @@ foreach (var scenario in inputs.RootElement.EnumerateArray())
             var body = expanded[(expanded.IndexOf("\n\n", StringComparison.Ordinal) + 2)..^9];
             skills.Add(new { name = skill.Name, description = skill.Description, explicitOnly = skill.ExplicitOnly, path = Path.GetRelativePath(root, skill.Path), body = Summary(body) });
         }
-        result = new { skills, prompts = catalog.Prompts.Select(p => new { name = p.Name, description = p.Description,
+        result = new { skills, prompts = catalog.Prompts.Select(p => new { name = p.Name, description = p.Description, argumentHint = p.ArgumentHint,
             path = Path.GetRelativePath(root, p.Path), body = Summary(p.Template) }).ToArray(),
             diagnostics = catalog.Diagnostics.Select(d => new { type = d.Type, path = Path.GetRelativePath(root, d.Path!),
                 category = d.Message.StartsWith("name ", StringComparison.Ordinal) || d.Message.StartsWith("description ", StringComparison.Ordinal) ? d.Message : "parse warning" }).ToArray() };

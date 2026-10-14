@@ -1,0 +1,178 @@
+{
+  "id": "prompt-argument-hints",
+  "settings": {
+    "quietStartup": true
+  },
+  "environment": {
+    "pi": {
+      "HOME": "{agent}/isolated-home"
+    },
+    "pisharp": {
+      "HOME": "{agent}/isolated-home"
+    }
+  },
+  "files": {
+    "pi": {
+      "isolated-home/.pisharp-terminal-harness": "owned fixture home"
+    },
+    "pisharp": {
+      "isolated-home/.pisharp-terminal-harness": "owned fixture home"
+    }
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "hint-suggestion",
+      "send": "/gui",
+      "expect": [
+        "<subject>",
+        "[t] Guide"
+      ]
+    },
+    {
+      "id": "clear-hint",
+      "send": "\u0003",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "empty-hint-suggestion",
+      "send": "/plai",
+      "expect": "[t] Plain"
+    },
+    {
+      "id": "clear-plain",
+      "send": "\u0003",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "multiline-hint-suggestion",
+      "send": "/mul",
+      "expect": [
+        "<subject> [detail]",
+        "[t] Guide"
+      ]
+    },
+    {
+      "id": "clear-multiline",
+      "send": "\u0003",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "template-request-active",
+      "send": "/guide subject\r",
+      "waitGatesAfter": [
+        "hint-request"
+      ],
+      "expect": "Working",
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "template-reply-active",
+      "releaseGates": [
+        "hint-content"
+      ],
+      "expect": [
+        "HINT_REPLY",
+        "Working"
+      ],
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "template-reply-idle",
+      "releaseGates": [
+        "hint-finish"
+      ],
+      "expect": "HINT_REPLY",
+      "notExpect": "Working",
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "workingDirectory": "hint-project",
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--prompt-template",
+      "temporary-prompts",
+      "--no-approve"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--prompt-template",
+      "temporary-prompts",
+      "--no-approve",
+      "--no-context-files"
+    ]
+  },
+  "projectFiles": {
+    "hint-project/temporary-prompts/guide.md": "---\ndescription: Guide\nargument-hint: <subject>\n---\nReview $1",
+    "hint-project/temporary-prompts/plain.md": "---\ndescription: Plain\nargument-hint: \"\"\n---\nPlain $1",
+    "hint-project/temporary-prompts/multi.md": "---\ndescription: Guide\nargument-hint: |-\n  <subject>\n  [detail]\n---\nMulti $1"
+  },
+  "assertionFrames": [
+    "startup",
+    "hint-suggestion",
+    "empty-hint-suggestion",
+    "multiline-hint-suggestion",
+    "template-request-active",
+    "template-reply-active",
+    "template-reply-idle"
+  ],
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "hint-request"
+    ],
+    "chatResponseContentGates": [
+      "hint-content"
+    ],
+    "chatResponseFinishGates": [
+      "hint-finish"
+    ],
+    "chatResponseContentByRequest": [
+      "HINT_REPLY"
+    ]
+  }
+}

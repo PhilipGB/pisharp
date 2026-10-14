@@ -5,7 +5,8 @@ using YamlDotNet.RepresentationModel;
 namespace PiSharp.Runtime.Resources;
 
 /// <summary>Parses resource YAML while preserving Pi's typed metadata and body envelope.</summary>
-internal sealed record ResourceFrontmatter(string? Name, string? Description, bool DisableModelInvocation, string Body)
+internal sealed record ResourceFrontmatter(string? Name, string? Description, bool DisableModelInvocation, string Body,
+    string? ArgumentHint = null)
 {
     private static readonly char[] BodyWhitespace = "\t\n\v\f\r \u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF".ToCharArray();
     private const string NumericScalar = @"^(?:[-+]?[0-9]+|0o[0-7]+|0x[0-9a-fA-F]+|[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*|(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+)|[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$";
@@ -30,7 +31,7 @@ internal sealed record ResourceFrontmatter(string? Name, string? Description, bo
         YamlNode? Field(string name) => mapping.Children.FirstOrDefault(pair =>
             pair.Key is YamlScalarNode key && key.Value == name).Value;
         return new(StringValue(Field("name")), StringValue(Field("description")),
-            BooleanTrue(Field("disable-model-invocation")), body);
+            BooleanTrue(Field("disable-model-invocation")), body, StringValue(Field("argument-hint")));
     }
 
     internal static string TrimBody(string text) => text.Trim(BodyWhitespace);
