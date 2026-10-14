@@ -31,6 +31,8 @@ def replay(product, pi, native, root, output, scenario):
     skill.parent.mkdir()
     description = '!!int word' if scenario == 'invalid-tag' else 'Guide'
     skill.write_text(f'---\nname: guide\ndescription: {description}\n---\nbody')
+    if scenario == 'malformed-flow':
+        skill.write_text('---\nname: guide\nunused: [bad\ndescription: *missing\n---\nbody')
     server = ThreadingHTTPServer(('127.0.0.1', 0), shared.Provider)
     server.requests = []
     worker = threading.Thread(target=server.serve_forever, daemon=True)
@@ -85,8 +87,11 @@ def replay(product, pi, native, root, output, scenario):
 
             send(dict(id='commands', type='get_commands'))
             commands = until(lambda r: r.get('id') == 'commands')
-            command_info = next(c for c in commands['data']['commands'] if c['name'] == 'skill:guide')
-            assert command_info['description'] == ('word' if scenario == 'invalid-tag' else 'Guide')
+            command_info = next((c for c in commands['data']['commands'] if c['name'] == 'skill:guide'), None)
+            if scenario == 'malformed-flow':
+                assert command_info is None, commands
+            else:
+                assert command_info and command_info['description'] == ('word' if scenario == 'invalid-tag' else 'Guide')
             if scenario == 'deleted-skill':
                 skill.unlink()
             send(dict(id='prompt', type='prompt', message='/skill:guide args'))
@@ -105,7 +110,7 @@ def replay(product, pi, native, root, output, scenario):
             users = [m['content'] for m in server.requests[0]['messages'] if m['role'] == 'user']
             content = users[-1]
             text = content if isinstance(content, str) else ''.join(p.get('text', '') for p in content if p.get('type') == 'text')
-            expected = '/skill:guide args' if failure else (
+            expected = '/skill:guide args' if failure or scenario == 'malformed-flow' else (
                 f'<skill name="guide" location="{skill}">\nReferences are relative to {skill.parent}.\n\nbody\n</skill>\n\nargs')
             assert text == expected, text
             process.stdin.close()
@@ -114,7 +119,7 @@ def replay(product, pi, native, root, output, scenario):
             return dict(errorBeforeResponse=True if failure else None, event=failure['event'] if failure else None,
                         error=failure['error'].replace(str(root / product), '<workspace>') if failure else None,
                         providerInput=text.replace(str(root / product), '<workspace>'), providerRequests=1,
-                        promptAccepted=True, commandDescription=command_info['description'])
+                        promptAccepted=True, commandDescription=command_info['description'] if command_info else None)
     finally:
         if process is not None:
             if process.poll() is None:
@@ -135,7 +140,7 @@ def main():
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag'], default='deleted-skill')
+    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow'], default='deleted-skill')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     args.output.parent.mkdir(parents=True, exist_ok=True)

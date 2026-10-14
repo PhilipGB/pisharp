@@ -31,7 +31,7 @@ foreach (var scenario in inputs.RootElement.EnumerateArray())
             diagnostics = catalog.Diagnostics.Select(d => new { type = d.Type, path = Path.GetRelativePath(root, d.Path!),
                 category = d.Message.StartsWith("name ", StringComparison.Ordinal) || d.Message.StartsWith("description ", StringComparison.Ordinal) ? d.Message : "parse warning" }).ToArray() };
     }
-    catch (Exception caught) when (caught is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException)
+    catch (Exception caught) when (caught is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException or InvalidOperationException)
     { error = caught.GetType().Name; }
     results.Add(new { id, result, error, warningMessages });
 }

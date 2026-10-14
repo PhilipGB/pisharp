@@ -107,7 +107,45 @@ if args.yaml_edges:
  'empty-doc-with-content': '---\nname: guide\ndescription: Guide',
  'block-header-invalid': 'name: guide\ndescription: |x\n  Guide',
  'block-sequence-indent': 'name: guide\ndescription:\n - first\n  - second',
+ 'duplicate-hex-key': 'name: guide\ndescription: Guide\n0x1: one\n1: two',
+ 'duplicate-float-key': 'name: guide\ndescription: Guide\n1: one\n1.0: two',
+ 'duplicate-null-key': 'name: guide\ndescription: Guide\n~: one\nnull: two',
+ 'duplicate-bool-key': 'name: guide\ndescription: Guide\ntrue: one\nTrue: two',
+ 'distinct-typed-key': 'name: guide\ndescription: Guide\n"1": one\n1: two',
+ 'alias-key-space': 'key: &key description\nname: guide\n*key : Guide',
+ 'repeated-alias-key': 'key: &key description\nname: guide\n*key : Guide\n*key : Other',
+ 'repeated-complex-key': 'name: guide\ndescription: Guide\n? [one]\n: one\n? [one]\n: two',
+ 'complex-description-key': 'name: guide\n? [description]\n: Guide',
+ 'complex-name-key': '? [name]\n: guide\ndescription: Guide',
+ 'duplicate-quoted-key': 'name: guide\ndescription: Guide\n"description": Other',
+ 'duplicate-nan-key': 'name: guide\ndescription: Guide\n.nan: one\n.nan: two',
+ 'unknown-alias-before-syntax': 'name: guide\ndescription: *missing\nunused: [bad',
+ 'unknown-alias-after-syntax': 'name: guide\nunused: [bad\ndescription: *missing',
+ 'alias-redefined': 'name: guide\ndescription: &same One\nunused: &same Two\nargument-hint: *same',
+ 'alias-self-collection': 'name: guide\ndescription: Guide\nunused: &self [*self]',
+ 'root-explicit-map': '!!map {name: guide, description: Guide}',
+ 'root-explicit-sequence-tag-map': '!!seq {name: guide, description: Guide}',
+ 'root-explicit-set-invalid': '!!set {name: guide, description: Guide}',
+ 'root-explicit-set-valid': '!!set {guide: null}',
+ 'value-explicit-set-invalid': 'name: guide\ndescription: Guide\nunused: !!set {one: Two}',
+ 'value-explicit-set-valid': 'name: guide\ndescription: Guide\nunused: !!set {one: null}',
+ 'prototype-map': 'name: guide\n__proto__: {description: Guide}',
+ 'alias-key-unknown': 'name: guide\n*missing : Guide',
+ 'alias-name-colon': 'name: guide\ndescription: &guide Guide\nunused: *guide:',
+ 'empty-flow-map': '{}',
+ 'duplicate-collection-description': 'name: guide\ndescription: [one]\ndescription: [two]',
+ 'flow-escape-unicode': 'name: guide\ndescription: "bad\\uZZZZ"',
+ 'flow-escape-unicode-long': 'name: guide\ndescription: "bad\\UZZZZZZZZ"',
+ 'root-mapping-trailing-garbage': '{name: guide, description: Guide} garbage',
+ 'block-duplicate-indicator': 'name: guide\ndescription: |++\n  Guide',
  })
+ for count in [1, 98, 99, 100, 101]:
+  vectors[f'alias-scalar-count-{count}']='name: guide\ndescription: &guide Guide\nunused: ['+', '.join(['*guide']*count)+']'
+ for fanout, levels in [(2, 2), (2, 4), (3, 3), (4, 3)]:
+  yaml='name: guide\ndescription: &a0 Guide'
+  for level in range(1, levels+1):
+   yaml+=f'\nlevel{level}: &a{level} ['+', '.join([f'*a{level-1}']*fanout)+']'
+  vectors[f'alias-nested-{fanout}-{levels}']=yaml
 if args.yaml_edges or args.yaml_tags:
  for tag, values in {
   'int': ['word', '1.2', '1e2', '0123', '0x10', '0o10', '"123"', '"word"'],
