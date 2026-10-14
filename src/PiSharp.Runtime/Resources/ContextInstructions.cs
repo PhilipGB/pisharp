@@ -12,40 +12,66 @@ public static class ContextInstructions
     private static readonly StringComparer s_pathComparer = OperatingSystem.IsWindows()
         ? StringComparer.OrdinalIgnoreCase
         : StringComparer.Ordinal;
-    private const int MaxFileBytes = 64 * 1024;
-    private const int MaxTotalBytes = 256 * 1024;
-
     public static async Task<string> LoadAsync(string workingDirectory, string agentDirectory,
-        CancellationToken cancellationToken = default, ICollection<string>? loadedFiles = null)
+        CancellationToken cancellationToken = default, ICollection<string>? loadedFiles = null,
+        Action<ResourceDiagnostic>? reportDiagnostic = null)
     {
-        var folders = new List<string> { Path.GetFullPath(agentDirectory) };
-        var parents = new Stack<string>();
-        for (var folder = new DirectoryInfo(Path.GetFullPath(workingDirectory)); folder is not null; folder = folder.Parent)
-            parents.Push(folder.FullName);
-        while (parents.TryPop(out var directory))
-            if (!folders.Contains(directory, StringComparer.Ordinal)) folders.Add(directory);
-        var contents = new StringBuilder();
+        cancellationToken.ThrowIfCancellationRequested();
+        var files = new List<ContextFile>();
         var seenPaths = new HashSet<string>(s_pathComparer);
-        var shadowedContextFile = FindShadowedContextFile(workingDirectory);
-        foreach (var folder in folders)
+        var global = await ReadContextFileAsync(Path.GetFullPath(agentDirectory), cancellationToken, reportDiagnostic);
+        if (global is not null)
+        {
+            files.Add(global);
+            seenPaths.Add(global.Path);
+        }
+        var shadowedContextFile = await FindShadowedContextFileAsync(workingDirectory, cancellationToken, reportDiagnostic);
+        var ancestors = new Stack<ContextFile>();
+        for (var folder = new DirectoryInfo(Path.GetFullPath(workingDirectory)); folder is not null; folder = folder.Parent)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var file = s_names.Select(name => Path.Combine(folder, name)).FirstOrDefault(File.Exists);
-            if (file is null) continue;
+            var contextFile = await ReadContextFileAsync(folder.FullName, cancellationToken, reportDiagnostic);
+            if (contextFile is null) continue;
             var isShadowed = shadowedContextFile is not null &&
-                PathsEqual(Path.Combine(CanonicalDirectoryPath.Resolve(folder), Path.GetFileName(file)), shadowedContextFile);
-            if (isShadowed || !seenPaths.Add(file)) continue;
-            var info = new FileInfo(file);
-            if (info.Length > MaxFileBytes) throw new InvalidDataException($"Instruction file exceeds 64KB: {file}");
-            var text = await File.ReadAllTextAsync(file, cancellationToken);
-            if (Encoding.UTF8.GetByteCount(text) > MaxFileBytes) throw new InvalidDataException($"Instruction file exceeds 64KB: {file}");
-            var section = $"<project_instructions path=\"{XmlEscape(file)}\">\n{text.TrimStart('\uFEFF')}\n</project_instructions>\n\n";
-            if (Encoding.UTF8.GetByteCount(contents.ToString()) + Encoding.UTF8.GetByteCount(section) > MaxTotalBytes)
-                throw new InvalidDataException("Combined context instructions exceed 256KB.");
+                PathsEqual(Path.Combine(CanonicalDirectoryPath.Resolve(folder.FullName), Path.GetFileName(contextFile.Path)), shadowedContextFile);
+            if (isShadowed || !seenPaths.Add(contextFile.Path)) continue;
+            ancestors.Push(contextFile);
+        }
+        files.AddRange(ancestors);
+        var contents = new StringBuilder();
+        foreach (var (file, text) in files)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var section = $"<project_instructions path=\"{XmlEscape(file)}\">\n{text}\n</project_instructions>\n\n";
             contents.Append(section);
             loadedFiles?.Add(file);
         }
         return contents.ToString();
+    }
+
+    private sealed record ContextFile(string Path, string Content);
+
+    private static async Task<ContextFile?> ReadContextFileAsync(string directory, CancellationToken cancellationToken,
+        Action<ResourceDiagnostic>? reportDiagnostic)
+    {
+        foreach (var name in s_names)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var path = Path.Combine(directory, name);
+            if (!File.Exists(path)) continue;
+            try
+            {
+                if (!LocalResourceFileType.IsRegularFile(path)) continue;
+                var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
+                var text = Encoding.UTF8.GetString(bytes);
+                return new(path, text.StartsWith('\uFEFF') ? text[1..] : text);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                reportDiagnostic?.Invoke(new("warning", $"Warning: Could not read {path}: {error.Message}", path));
+            }
+        }
+        return null;
     }
 
     private sealed record GitPaths(string RepositoryDirectory, string CommonGitDirectory);
@@ -55,7 +81,8 @@ public static class ContextInstructions
     /// the nested worktree has an instruction file, the main worktree's same-named file
     /// is a duplicate; ancestor directories above the main repo remain independent.
     /// </summary>
-    private static string? FindShadowedContextFile(string workingDirectory)
+    private static async Task<string?> FindShadowedContextFileAsync(string workingDirectory,
+        CancellationToken cancellationToken, Action<ResourceDiagnostic>? reportDiagnostic)
     {
         var gitPaths = FindGitPaths(Path.GetFullPath(workingDirectory));
         if (gitPaths is null) return null;
@@ -71,10 +98,10 @@ public static class ContextInstructions
         if (!PathsEqual(CanonicalDirectoryPath.Resolve(Path.Combine(mainRepositoryRoot, ".git")), commonGitDirectory))
             return null;
 
-        var worktreeContextFile = FindContextFilePath(worktreeRoot);
+        var worktreeContextFile = await ReadContextFileAsync(worktreeRoot, cancellationToken, reportDiagnostic);
         return worktreeContextFile is null
             ? null
-            : Path.Combine(mainRepositoryRoot, Path.GetFileName(worktreeContextFile));
+            : Path.Combine(mainRepositoryRoot, Path.GetFileName(worktreeContextFile.Path));
     }
 
     private static GitPaths? FindGitPaths(string workingDirectory)
@@ -124,9 +151,6 @@ public static class ContextInstructions
             directory = parent;
         }
     }
-
-    private static string? FindContextFilePath(string directory) =>
-        s_names.Select(name => Path.Combine(directory, name)).FirstOrDefault(File.Exists);
 
     private static bool IsDescendantPath(string path, string parent)
     {

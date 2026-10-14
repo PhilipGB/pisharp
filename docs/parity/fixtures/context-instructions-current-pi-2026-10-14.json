@@ -1,0 +1,741 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "f8a353742b44df118a6a4d0b807c23c9a78aaedd",
+  "implementation": "ContextInstructions reads complete UTF8 text, strips exactly one leading BOM, reports read warnings and tries the next priority candidate instead of ending startup. Global lookup occurs first; diagnostic order then follows child-to-ancestor traversal, while final context remains global/ancestor/child. Nested worktree shadowing uses the actually readable candidate. CLI startup forwards warnings. LocalResourceFileType checks regular file identity before reading a pipe or device.",
+  "characterization": {
+    "initialDifferences": [
+      "two-boms",
+      "file-over-64k",
+      "combined-over-256k",
+      "unreadable-priority-falls-back",
+      "unreadable-ancestor-does-not-stop-child"
+    ],
+    "path": "artifacts/parity/resources-current-pi-2026-10-14/context-instructions-fail-first.json",
+    "sha256": "47f9cb64eded4b12f31b5a8df3237a929f296aae9633f5de9e5de073436314fa",
+    "unitFailFirst": {
+      "failed": 4,
+      "passed": 1,
+      "skipped": 0,
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/context-loading-fail-first-tests.log",
+      "sha256": "22ed66dd3bbc9d63f6fd5eac8b86225a47ef9dd30dfc39d8f78fee7e5c43227c"
+    },
+    "warningOrder": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/context-warning-order-comparison.json",
+      "sha256": "8865b49175f8183e87a0636a935806e5eb44dac48cedf0e73d395905507353fc"
+    },
+    "namedPipeHang": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/context-fifo-fail-first.json",
+      "sha256": "4e843bc43e518e217204b99fae73c308d2af5466a2ea65f53c48009c7ced5f07"
+    }
+  },
+  "comparison": "Exact loaded path/warning order and SHA256 of full file contents in the native project-instructions envelope. Only isolated workspace prefixes are normalized; large text, BOMs, invalid UTF8 replacement, linked-worktree shadowing and read-failure continuation are retained.",
+  "scenarios": [
+    {
+      "id": "global-ancestor-override-order",
+      "cwd": "project/child",
+      "agent": "agent",
+      "files": {
+        "agent/CLAUDE.md": {
+          "bytes": 6,
+          "denied": false,
+          "fifo": false
+        },
+        "AGENTS.md": {
+          "bytes": 8,
+          "denied": false,
+          "fifo": false
+        },
+        "project/AGENTS.md": {
+          "bytes": 8,
+          "denied": false,
+          "fifo": false
+        },
+        "project/AGENTS.override.md": {
+          "bytes": 8,
+          "denied": false,
+          "fifo": false
+        },
+        "project/child/AGENTS.MD": {
+          "bytes": 5,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "agent-also-ancestor",
+      "cwd": "project/child",
+      "agent": "project",
+      "files": {
+        "project/AGENTS.md": {
+          "bytes": 4,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "uppercase-claude",
+      "cwd": "project",
+      "agent": "agent",
+      "files": {
+        "project/CLAUDE.MD": {
+          "bytes": 9,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "one-bom",
+      "cwd": "project",
+      "agent": "agent",
+      "files": {
+        "project/AGENTS.md": {
+          "bytes": 6,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "two-boms",
+      "cwd": "project",
+      "agent": "agent",
+      "files": {
+        "project/AGENTS.md": {
+          "bytes": 9,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "file-over-64k",
+      "cwd": "project",
+      "agent": "agent",
+      "files": {
+        "project/AGENTS.md": {
+          "bytes": 66560,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "combined-over-256k",
+      "cwd": "project/child",
+      "agent": "agent",
+      "files": {
+        "agent/AGENTS.md": {
+          "bytes": 143360,
+          "denied": false,
+          "fifo": false
+        },
+        "project/AGENTS.md": {
+          "bytes": 143360,
+          "denied": false,
+          "fifo": false
+        },
+        "project/child/AGENTS.md": {
+          "bytes": 143360,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "utf8-replacement",
+      "cwd": "project",
+      "agent": "agent",
+      "files": {
+        "project/AGENTS.md": {
+          "bytes": 13,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "unreadable-priority-falls-back",
+      "cwd": "project",
+      "agent": "agent",
+      "files": {
+        "project/AGENTS.override.md": {
+          "bytes": 6,
+          "denied": true,
+          "fifo": false
+        },
+        "project/AGENTS.md": {
+          "bytes": 8,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "unreadable-ancestor-does-not-stop-child",
+      "cwd": "project/child",
+      "agent": "agent",
+      "files": {
+        "project/AGENTS.md": {
+          "bytes": 6,
+          "denied": true,
+          "fifo": false
+        },
+        "project/child/AGENTS.md": {
+          "bytes": 5,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "warning-order-is-global-then-child-to-ancestor",
+      "cwd": "project/child",
+      "agent": "agent",
+      "files": {
+        "agent/AGENTS.override.md": {
+          "bytes": 13,
+          "denied": true,
+          "fifo": false
+        },
+        "agent/AGENTS.md": {
+          "bytes": 6,
+          "denied": false,
+          "fifo": false
+        },
+        "project/AGENTS.override.md": {
+          "bytes": 15,
+          "denied": true,
+          "fifo": false
+        },
+        "project/AGENTS.md": {
+          "bytes": 8,
+          "denied": false,
+          "fifo": false
+        },
+        "project/child/AGENTS.override.md": {
+          "bytes": 12,
+          "denied": true,
+          "fifo": false
+        },
+        "project/child/AGENTS.md": {
+          "bytes": 5,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "named-pipe-is-skipped-before-reading",
+      "cwd": "project",
+      "agent": "agent",
+      "files": {
+        "project/AGENTS.override.md": {
+          "bytes": 0,
+          "denied": false,
+          "fifo": true
+        },
+        "project/AGENTS.md": {
+          "bytes": 8,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "unreadable-worktree-context-inherits-main",
+      "cwd": "main/worktrees/feature/child",
+      "agent": "agent",
+      "files": {
+        "main/.git/HEAD": {
+          "bytes": 21,
+          "denied": false,
+          "fifo": false
+        },
+        "main/.git/worktrees/feature/HEAD": {
+          "bytes": 24,
+          "denied": false,
+          "fifo": false
+        },
+        "main/.git/worktrees/feature/commondir": {
+          "bytes": 6,
+          "denied": false,
+          "fifo": false
+        },
+        "main/worktrees/feature/.git": {
+          "bytes": 0,
+          "denied": false,
+          "fifo": false
+        },
+        "main/AGENTS.md": {
+          "bytes": 4,
+          "denied": false,
+          "fifo": false
+        },
+        "main/worktrees/feature/AGENTS.md": {
+          "bytes": 6,
+          "denied": true,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "unreadable-worktree-override-shadows-by-fallback-name",
+      "cwd": "main/worktrees/feature/child",
+      "agent": "agent",
+      "files": {
+        "main/.git/HEAD": {
+          "bytes": 21,
+          "denied": false,
+          "fifo": false
+        },
+        "main/.git/worktrees/feature/HEAD": {
+          "bytes": 24,
+          "denied": false,
+          "fifo": false
+        },
+        "main/.git/worktrees/feature/commondir": {
+          "bytes": 6,
+          "denied": false,
+          "fifo": false
+        },
+        "main/worktrees/feature/.git": {
+          "bytes": 0,
+          "denied": false,
+          "fifo": false
+        },
+        "main/AGENTS.md": {
+          "bytes": 4,
+          "denied": false,
+          "fifo": false
+        },
+        "main/worktrees/feature/AGENTS.override.md": {
+          "bytes": 6,
+          "denied": true,
+          "fifo": false
+        },
+        "main/worktrees/feature/AGENTS.md": {
+          "bytes": 8,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    },
+    {
+      "id": "readable-worktree-context-shadows-main",
+      "cwd": "main/worktrees/feature/child",
+      "agent": "agent",
+      "files": {
+        "main/.git/HEAD": {
+          "bytes": 21,
+          "denied": false,
+          "fifo": false
+        },
+        "main/.git/worktrees/feature/HEAD": {
+          "bytes": 24,
+          "denied": false,
+          "fifo": false
+        },
+        "main/.git/worktrees/feature/commondir": {
+          "bytes": 6,
+          "denied": false,
+          "fifo": false
+        },
+        "main/worktrees/feature/.git": {
+          "bytes": 0,
+          "denied": false,
+          "fifo": false
+        },
+        "main/AGENTS.md": {
+          "bytes": 4,
+          "denied": false,
+          "fifo": false
+        },
+        "main/worktrees/feature/AGENTS.md": {
+          "bytes": 8,
+          "denied": false,
+          "fifo": false
+        }
+      }
+    }
+  ],
+  "pi": [
+    {
+      "id": "global-ancestor-override-order",
+      "paths": [
+        "agent/CLAUDE.md",
+        "AGENTS.md",
+        "project/AGENTS.override.md",
+        "project/child/AGENTS.MD"
+      ],
+      "hash": "a0b9a75cb5cb4c0917d33be497f7db7a5a4992a2c43e2e90d24cad26a779f73e",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "agent-also-ancestor",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "e1e3433b3fe6541e68e3ae7f185874c42ec543812d771015b664779302aff317",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "uppercase-claude",
+      "paths": [
+        "project/CLAUDE.MD"
+      ],
+      "hash": "c1f32af2d72e7cad399b2510473acbeca9eb561521fdf6d42274968bf70aa231",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "one-bom",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "4765fb160329cee955d3e81d19ea7209f34c3adc2f3c3f4973653336f008187d",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "two-boms",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "c5961bc28c001939667395e8e7519f93be95e047b2f2a5951af61c4c0fc6ab69",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "file-over-64k",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "4979b3f0c2db729077699fd3a27eba83cc4041145bfefe94feac402cd978e3eb",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "combined-over-256k",
+      "paths": [
+        "agent/AGENTS.md",
+        "project/AGENTS.md",
+        "project/child/AGENTS.md"
+      ],
+      "hash": "c92abf6f6376aa2d3f8e9cc46035a264f5ee3a821f37534973344573be90544c",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "utf8-replacement",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "6d1b2cebcd5fa0ce593754f80c59f01a346e142fc5285c469691eac59e853608",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "unreadable-priority-falls-back",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "b8b3beed7955b9c2187a875a32738621e38b2de0901487f3e4959367933ea813",
+      "error": null,
+      "warnings": [
+        "project/AGENTS.override.md"
+      ]
+    },
+    {
+      "id": "unreadable-ancestor-does-not-stop-child",
+      "paths": [
+        "project/child/AGENTS.md"
+      ],
+      "hash": "3f271309d4a5839a296e9a7035b98679cad626666fbee892a2e329c7aed12c2e",
+      "error": null,
+      "warnings": [
+        "project/AGENTS.md"
+      ]
+    },
+    {
+      "id": "warning-order-is-global-then-child-to-ancestor",
+      "paths": [
+        "agent/AGENTS.md",
+        "project/AGENTS.md",
+        "project/child/AGENTS.md"
+      ],
+      "hash": "27a666423a71cee981de8b5772d95720a15597c552da1a7994d3829bbbc73e9e",
+      "error": null,
+      "warnings": [
+        "agent/AGENTS.override.md",
+        "project/child/AGENTS.override.md",
+        "project/AGENTS.override.md"
+      ]
+    },
+    {
+      "id": "named-pipe-is-skipped-before-reading",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "b8b3beed7955b9c2187a875a32738621e38b2de0901487f3e4959367933ea813",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "unreadable-worktree-context-inherits-main",
+      "paths": [
+        "main/AGENTS.md"
+      ],
+      "hash": "90a40cb3cdf5735c8214cbe93d6369de79fad34d361845a165db347ef3f6127e",
+      "error": null,
+      "warnings": [
+        "main/worktrees/feature/AGENTS.md",
+        "main/worktrees/feature/AGENTS.md"
+      ]
+    },
+    {
+      "id": "unreadable-worktree-override-shadows-by-fallback-name",
+      "paths": [
+        "main/worktrees/feature/AGENTS.md"
+      ],
+      "hash": "24ad284dc67cd95e42daf069e0204682daefc4a0f701803a78a75f8f477cb756",
+      "error": null,
+      "warnings": [
+        "main/worktrees/feature/AGENTS.override.md",
+        "main/worktrees/feature/AGENTS.override.md"
+      ]
+    },
+    {
+      "id": "readable-worktree-context-shadows-main",
+      "paths": [
+        "main/worktrees/feature/AGENTS.md"
+      ],
+      "hash": "24ad284dc67cd95e42daf069e0204682daefc4a0f701803a78a75f8f477cb756",
+      "error": null,
+      "warnings": []
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "global-ancestor-override-order",
+      "paths": [
+        "agent/CLAUDE.md",
+        "AGENTS.md",
+        "project/AGENTS.override.md",
+        "project/child/AGENTS.MD"
+      ],
+      "hash": "a0b9a75cb5cb4c0917d33be497f7db7a5a4992a2c43e2e90d24cad26a779f73e",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "agent-also-ancestor",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "e1e3433b3fe6541e68e3ae7f185874c42ec543812d771015b664779302aff317",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "uppercase-claude",
+      "paths": [
+        "project/CLAUDE.MD"
+      ],
+      "hash": "c1f32af2d72e7cad399b2510473acbeca9eb561521fdf6d42274968bf70aa231",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "one-bom",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "4765fb160329cee955d3e81d19ea7209f34c3adc2f3c3f4973653336f008187d",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "two-boms",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "c5961bc28c001939667395e8e7519f93be95e047b2f2a5951af61c4c0fc6ab69",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "file-over-64k",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "4979b3f0c2db729077699fd3a27eba83cc4041145bfefe94feac402cd978e3eb",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "combined-over-256k",
+      "paths": [
+        "agent/AGENTS.md",
+        "project/AGENTS.md",
+        "project/child/AGENTS.md"
+      ],
+      "hash": "c92abf6f6376aa2d3f8e9cc46035a264f5ee3a821f37534973344573be90544c",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "utf8-replacement",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "6d1b2cebcd5fa0ce593754f80c59f01a346e142fc5285c469691eac59e853608",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "unreadable-priority-falls-back",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "b8b3beed7955b9c2187a875a32738621e38b2de0901487f3e4959367933ea813",
+      "error": null,
+      "warnings": [
+        "project/AGENTS.override.md"
+      ]
+    },
+    {
+      "id": "unreadable-ancestor-does-not-stop-child",
+      "paths": [
+        "project/child/AGENTS.md"
+      ],
+      "hash": "3f271309d4a5839a296e9a7035b98679cad626666fbee892a2e329c7aed12c2e",
+      "error": null,
+      "warnings": [
+        "project/AGENTS.md"
+      ]
+    },
+    {
+      "id": "warning-order-is-global-then-child-to-ancestor",
+      "paths": [
+        "agent/AGENTS.md",
+        "project/AGENTS.md",
+        "project/child/AGENTS.md"
+      ],
+      "hash": "27a666423a71cee981de8b5772d95720a15597c552da1a7994d3829bbbc73e9e",
+      "error": null,
+      "warnings": [
+        "agent/AGENTS.override.md",
+        "project/child/AGENTS.override.md",
+        "project/AGENTS.override.md"
+      ]
+    },
+    {
+      "id": "named-pipe-is-skipped-before-reading",
+      "paths": [
+        "project/AGENTS.md"
+      ],
+      "hash": "b8b3beed7955b9c2187a875a32738621e38b2de0901487f3e4959367933ea813",
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "unreadable-worktree-context-inherits-main",
+      "paths": [
+        "main/AGENTS.md"
+      ],
+      "hash": "90a40cb3cdf5735c8214cbe93d6369de79fad34d361845a165db347ef3f6127e",
+      "error": null,
+      "warnings": [
+        "main/worktrees/feature/AGENTS.md",
+        "main/worktrees/feature/AGENTS.md"
+      ]
+    },
+    {
+      "id": "unreadable-worktree-override-shadows-by-fallback-name",
+      "paths": [
+        "main/worktrees/feature/AGENTS.md"
+      ],
+      "hash": "24ad284dc67cd95e42daf069e0204682daefc4a0f701803a78a75f8f477cb756",
+      "error": null,
+      "warnings": [
+        "main/worktrees/feature/AGENTS.override.md",
+        "main/worktrees/feature/AGENTS.override.md"
+      ]
+    },
+    {
+      "id": "readable-worktree-context-shadows-main",
+      "paths": [
+        "main/worktrees/feature/AGENTS.md"
+      ],
+      "hash": "24ad284dc67cd95e42daf069e0204682daefc4a0f701803a78a75f8f477cb756",
+      "error": null,
+      "warnings": []
+    }
+  ],
+  "match": true,
+  "rawComparison": {
+    "path": "artifacts/parity/resources-current-pi-2026-10-14/context-instructions-filetype-reviewed.json",
+    "sha256": "56574c69c0fd0227d9ff6ec104f088c7154caddb32740f90a9cf39c9eaf38085"
+  },
+  "verification": {
+    "focusedPassed": 29,
+    "failed": 0,
+    "skipped": 0,
+    "sourcePassed": 53,
+    "sourceFailed": 0,
+    "sourceSkipped": 0,
+    "sourceCommand": "cd /tmp/pisharp-parity-audit-pi/packages/coding-agent && npx --cache /tmp/pisharp-npm-cache vitest run test/resource-loader.test.ts --reporter=json --outputFile=/tmp/pisharp-current-resource-loader-package-source-tests.json",
+    "focused": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/context-filetype-controls.log",
+      "sha256": "89a885a1c893f4d9057dc3a0b870dfaf138336b5b8c694d2139ee29c735bd63e"
+    },
+    "fullWorkingTreePassed": 1647,
+    "full": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/context-final-full-tests.log",
+      "sha256": "c2dbb61fdaa9f739ed5e05b94ad4759f29bdcaaa3be33e39d18e49fa3c2b5e2a"
+    },
+    "build": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/context-final-build.log",
+      "sha256": "4dd43800cf502ac0c100924fc33e62b06cd8f69e2b904e04afa233eb0f4d7397"
+    },
+    "format": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/context-final-format-verification.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "formatVerified": true
+  },
+  "testContractCorrections": [
+    "The existing 65-KiB instruction scenario remains, with exact complete-content equality replacing the incompatible rejection expectation after the real source oracle proved Pi accepts it. The CLI trust/config test keeps its untrusted/trusted invalid-settings gates and same oversized instruction file; this now reaches the unauthenticated-provider gate instead of a size error.",
+    "The first BOM Contains assertion used a culture-sensitive comparison and passed despite an omitted BOM. The independent SHA256 oracle exposed the mismatch; that assertion now uses ordinal comparison.",
+    "The first resource-loader source run used the monorepo cwd: fifty passed and three failed while opening package-relative theme fixtures. Running unchanged source tests from packages/coding-agent passes all fifty-three. Both source reports remain retained."
+  ],
+  "nativeFileTypeSources": [
+    {
+      "source": "Installed /usr/include/linux/stat.h",
+      "scope": "Fixed 256-byte statx structure; mode at byte 28; STATX_TYPE bit 1."
+    },
+    {
+      "source": "https://raw.githubusercontent.com/dotnet/runtime/v10.0.12/src/libraries/System.Private.CoreLib/src/System/IO/FileStatus.Unix.cs",
+      "scope": "File.Exists classifies non-directories as files and FileAttributes does not expose Unix regular-file type."
+    },
+    {
+      "source": "https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/bsd/sys/stat.h",
+      "scope": "Darwin 64-bit inode ABI mode offset follows dev_t; macOS code is source-reviewed only."
+    }
+  ],
+  "platform": "Ubuntu 24.04 x64, actual UID 1000",
+  "reproduce": "python3 tools/parity/context-instructions-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/resources-current-pi-2026-10-14/context-instructions-filetype-reviewed.json",
+  "limitations": "Real non-root Linux file, permission and FIFO behavior is measured. macOS/Windows execution, exact native error text/color, filesystem races, extreme file sizes, complete context/startup/reload/trust presentation and full resource capability parity remain open. Native regular-file checking follows symlink targets; Linux uses the fixed statx ABI, macOS uses its 64-bit inode stat ABI.",
+  "nextSourceFinding": {
+    "owner": "ProjectPrompts and CliPromptOverrides",
+    "source": "packages/coding-agent/src/core/resource-loader.ts: discoverAppendSystemPromptFile/resolvePromptInput",
+    "finding": "A trusted project APPEND_SYSTEM.md replaces global discovery, not concatenation; prompt-file size caps, UTF8/BOM handling and read-error fallback still differ. These are mapped to existing resource/instruction/CLI requirements and remain open for the next slice."
+  }
+}

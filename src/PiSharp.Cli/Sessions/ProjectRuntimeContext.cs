@@ -158,7 +158,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
         contextFiles.AddRange(promptResources.AppendPaths);
         var prompts = (promptResources.System, promptResources.Append);
         var instructions = arguments.NoContextFiles ? "" :
-            await ContextInstructions.LoadAsync(cwd, agentDirectory, cancellationToken, contextFiles);
+            await ContextInstructions.LoadAsync(cwd, agentDirectory, cancellationToken, contextFiles,
+                diagnostic => Console.Error.WriteLine(diagnostic.Message));
         var sessionDirectory = sessionDirectoryOverride ?? arguments.SessionDirectory ?? configuredSessionDirectory ??
             configuration.Settings.SessionDirectory;
         if (sessionDirectory is not null) sessionDirectory = Path.GetFullPath(sessionDirectory, cwd);
