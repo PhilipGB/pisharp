@@ -76,19 +76,9 @@ public sealed class TerminalEditor
             return _input;
         }
         _input = TerminalInput.OpenConsole();
-        _input.TerminalColorReceived += HandleTerminalColorResponse;
-        _input.TerminalDeviceAttributesReceived += HandleTerminalDeviceAttributes;
-        _input.TerminalColorSchemeReceived += HandleTerminalColorScheme;
         _screen?.AttachTerminalInput(_input);
         return _input;
     }
-
-    private void HandleTerminalColorResponse(TerminalColorResponse response) =>
-        _screen?.HandleTerminalColorResponse(response);
-
-    private void HandleTerminalDeviceAttributes() => _screen?.HandleTerminalDeviceAttributes();
-
-    private void HandleTerminalColorScheme(string appearance) => _screen?.HandleTerminalColorScheme(appearance);
 
     internal void CompleteInitialTerminalColorQuery()
     {

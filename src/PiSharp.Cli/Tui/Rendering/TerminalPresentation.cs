@@ -70,9 +70,9 @@ internal sealed class TerminalPresentation : IDisposable
             _terminalMode = _editor is null ? null : TerminalMode.Enter(_terminalScreen);
             ConfigureMcpAuthorizationUrlPresenter(_projectBinding.Runtime);
             _editor?.AttachScreen(_terminalScreen);
-            _editor?.CompleteInitialTerminalColorQuery();
             _terminalScreen?.SetFooter(IdleFooter(providerCount: 1), render: false);
             _terminalScreen?.RenderInitial();
+            _editor?.CompleteInitialTerminalColorQuery();
             LoadSessionTranscript();
             var startupTrustNotice = !_projectBinding.Trusted && ProjectTrust.HasProtectedResources(_projectBinding.WorkingDirectory)
                 ? "This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp."

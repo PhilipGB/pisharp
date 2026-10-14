@@ -1,0 +1,136 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "76c7a01e68d24e307d271f8c81e84c13a0f3c9d7",
+  "scope": "Valid Kitty flags, DA fallback, late flags, mode restoration, input subscription ownership and initial rendering before terminal-reply completion.",
+  "characterization": {
+    "originalThemePair": {
+      "differences": 66,
+      "renderDifferences": 63
+    },
+    "nativeFailFirst": {
+      "failed": 3,
+      "passed": 1,
+      "skipped": 0
+    },
+    "afterNegotiation": {
+      "differences": 62,
+      "renderDifferences": 62,
+      "cause": "The initial mode-0 render was still missing because startup waited for terminal replies before rendering."
+    },
+    "earlyTestSetup": "The first new test compilation omitted the required theme constructor argument; corrected test compilation exposes three behavior failures and one control."
+  },
+  "implementation": [
+    "TerminalKeyboardProtocol owns request/fallback/late-Kitty/mode release state. TerminalProtocolInputBinding owns idempotent attachment and detaches old readers; TerminalInput forwards parsed flags instead of dropping them.",
+    "TerminalScreen serializes keyboard controls and consumes the keyboard DA fence separately from the color-query fence. Suspend/resume/shutdown restore and renegotiate protocol state; TerminalEditor delegates subscriptions to this owner.",
+    "TerminalPresentation renders the initial configured footer before completing terminal replies, as Pi starts the UI before awaiting reported colors. Header/context presentation still follows color completion."
+  ],
+  "verification": {
+    "focusedPassed": 86,
+    "newNativeRows": 7,
+    "fullSuite": {
+      "passed": 1934,
+      "failed": 0,
+      "skipped": 0
+    },
+    "packageThemeCalibrationFrames": 4,
+    "packageThemePairs": [
+      {
+        "match": true,
+        "comparedRenderFrameCount": 4,
+        "differences": 0,
+        "renderDifferences": 0,
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawMatch": false
+      },
+      {
+        "match": true,
+        "comparedRenderFrameCount": 4,
+        "differences": 0,
+        "renderDifferences": 0,
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawMatch": false
+      }
+    ],
+    "kittyOriginalWorkspace": {
+      "match": true,
+      "comparedRenderFrameCount": 15,
+      "differences": 0,
+      "renderDifferences": 0,
+      "scenarioErrors": {},
+      "httpMatch": true,
+      "rawMatch": false
+    },
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed"
+  },
+  "retainedRelocatedWorkspace": {
+    "differences": 4,
+    "renderDifferences": 0,
+    "firstDifferences": [
+      {
+        "path": "$.frames[7].state.buffers.alternate.lines[39].cells[2].chars",
+        "pi": "5",
+        "pisharp": "4"
+      },
+      {
+        "path": "$.frames[7].state.viewport[39].cells[2].chars",
+        "pi": "5",
+        "pisharp": "4"
+      },
+      {
+        "path": "$.frames[8].state.buffers.alternate.lines[39].cells[2].chars",
+        "pi": "5",
+        "pisharp": "4"
+      },
+      {
+        "path": "$.frames[8].state.viewport[39].cells[2].chars",
+        "pi": "5",
+        "pisharp": "4"
+      }
+    ],
+    "scope": "Same Kitty fixture at the longer isolated workspace path: four busy context-percentage cells differ; all 15 render frames match. The original workspace replay passes. Exact estimator cause remains unproven and is retained for its audit."
+  },
+  "sourcePaths": [
+    "packages/tui/src/terminal.ts: keyboard query, flags/DA fallback, late Kitty response, stop/restoration.",
+    "packages/coding-agent/src/modes/interactive/interactive-mode.ts: start UI before terminal color completion."
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "keyboard-kitty-original-workspace.log": "e13cd782b3ea3d8a38521c6df6db898dd2bf4fe28fa671673f255d0239f4ffe9",
+    "keyboard-fallback-focused-recovery.log": "86082f73bc01a1886435baebf3cf4c197155149a463d986d9b752c1e036603d1",
+    "keyboard-fallback-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "keyboard-fallback-final-fresh-build.log": "9a113564326a5649a02bae2ada15f4fad5175a695512793b72de29cdc965391e",
+    "keyboard-kitty-original-workspace/report.json": "e6fb6cd7c1b89fc4fd30aa9f99ebb454cd9a712b69d6f851d671eb85f9df92c0",
+    "keyboard-fallback-final-focused.log": "17e173fd38a91c6693783fd2c14ac0df27196996fcedd54ce7240667dd37b047",
+    "keyboard-fallback-startup-focused.log": "86082f73bc01a1886435baebf3cf4c197155149a463d986d9b752c1e036603d1",
+    "keyboard-kitty-regression.log": "5c053acecb4a35c4ec7fb3ee0001de92367565c6d28c225eb5d54273cba737fa",
+    "keyboard-fallback-native-first-corrected.log": "75c94f9987fedc2c82d0a3faf84e6757e0bd9c30ad2cb945b86510ad7410d98a",
+    "keyboard-fallback-native-first.log": "e9914c56d10ea0944a3c2619337fa1bde8b53f86657ec89af8dbafdd0ee11fa4",
+    "keyboard-kitty-regression/report.json": "fe72f5bdd8779389c05cb22a0a0125d4f96f5ffee050fd358e6f5165fc4e45c0",
+    "keyboard-fallback-fresh-build.log": "d8070ccb33d7800e5da3271ffabff84eeb0c152c04261ccf3c526eb662e60991",
+    "keyboard-fallback-lifecycle-focused.log": "34bf8f09224722a3e43bbd31fbb69fdc4599840b68201bf041b38c0894630f2b",
+    "keyboard-fallback-final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-theme-terminal-startup-order.log": "2e978523eae05754f198d4a52961d2d975f568a70dc5b571c67237dfda4b425c",
+    "package-theme-terminal-pair/report.json": "e54cf265fe596780980b2889e9b501e4a623e3922edc3ad7eea7436cf138c8f0",
+    "package-theme-terminal-startup-order-repeat.log": "2e978523eae05754f198d4a52961d2d975f568a70dc5b571c67237dfda4b425c",
+    "package-theme-terminal-keyboard-recovery.log": "8e14e81bde9c6da98082b3e84a7beb2897f86073f793a6559199d3cc35952e8a",
+    "package-theme-terminal-keyboard-recovery/report.json": "57193be524a5d99148f587444170fe0e994aa5dfd7e3b9c195e95a75b65be175",
+    "package-theme-terminal-calibration/report.json": "e419a02f8c6c0d6822c672de65ddb3ffdd4eccf598abf7c57d017603c1704475",
+    "package-theme-terminal-startup-order/report.json": "75f778669f0797310613a20ba372d543b4e1c4bc532b96b70bfc24bba5699593",
+    "package-theme-terminal-calibration.log": "6335ff97fafc7f563fcb6f60cd9a4d7b43031be03193ffd663670d84baacb3e3",
+    "package-theme-terminal-isolated-calibration.log": "2e978523eae05754f198d4a52961d2d975f568a70dc5b571c67237dfda4b425c",
+    "package-theme-terminal-isolated-calibration/report.json": "74b88b7e99520f69daad483143f2d5836b64977056b92032458c2d30f438284c",
+    "package-theme-terminal-pair.log": "fc96a62266538f2b6e984dfa64f37d1496b103a7ed48f3644559a056108692ff",
+    "package-theme-terminal-startup-order-repeat/report.json": "92c28c2e9d18ab3fa914f3712dde5bf2d00487e558b5a75e49cff4cfffb70672",
+    "keyboard-fallback-full.log": "9cbcd85073c48fda07d75c27a0236cbb098b3a72cfef5921b0255f098dfb3bf4"
+  },
+  "limits": [
+    "Named valid negotiation/lifecycle and 120x40 dark fullscreen cases only; malformed/fragmented reply and other terminal-platform/protocol boundaries remain open.",
+    "The relocated workspace footer mismatch is not normalized away or claimed resolved; earlier quiet-startup/source calibration timing concerns remain separately retained.",
+    "Full package theme metadata/errors/extensions, managed sources, CLI package operations and resources/trust/reload remain in_progress."
+  ]
+}

@@ -20,6 +20,7 @@ public sealed class TerminalInput
     internal event Action<TerminalColorResponse>? TerminalColorReceived;
     internal event Action? TerminalDeviceAttributesReceived;
     internal event Action<string>? TerminalColorSchemeReceived;
+    internal event Action<int>? TerminalKeyboardFlagsReceived;
 
     public TerminalInput(Stream input) => _input = input;
     private TerminalInput() => _standardInput = true;
@@ -179,7 +180,12 @@ public sealed class TerminalInput
                 if (value is >= 0x40 and <= 0x7E) break;
             }
             var code = sequence.ToString();
-            if (code.StartsWith('?') && code.EndsWith('u')) return new(null, null);
+            if (code.StartsWith('?') && code.EndsWith('u'))
+            {
+                if (int.TryParse(code.AsSpan(1, code.Length - 2), NumberStyles.None, CultureInfo.InvariantCulture, out var flags))
+                    TerminalKeyboardFlagsReceived?.Invoke(flags);
+                return new(null, null);
+            }
             if (code.StartsWith('?') && code.EndsWith('c'))
             {
                 TerminalDeviceAttributesReceived?.Invoke();
@@ -509,12 +515,6 @@ public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text, Termi
 {
     public static TerminalInputEvent EndOfStream { get; } = new(null, null, IsEndOfStream: true);
     internal bool IsControl => !IsEndOfStream && Key is null && Text is null && Mouse is null;
-}
-
-internal static class TerminalKeyboardMode
-{
-    public const string Enable = "\u001b[>7u\u001b[?u";
-    public const string Disable = "\u001b[<u";
 }
 
 /// <summary>SGR mouse report coordinates are one-based terminal columns and rows.</summary>

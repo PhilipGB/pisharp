@@ -25,6 +25,8 @@ public sealed class TerminalScreen : IDisposable
     private TerminalColorState _terminalColors;
     private TerminalColorQueryController? _terminalColorQuery;
     private TerminalInput? _terminalInput;
+    private readonly TerminalKeyboardProtocol _keyboardProtocol = new();
+    private readonly TerminalProtocolInputBinding _protocolInput;
     private Func<TerminalColorState, TerminalTheme>? _themeResolver;
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
@@ -96,6 +98,8 @@ public sealed class TerminalScreen : IDisposable
         ArgumentNullException.ThrowIfNull(theme);
         _originalOut = originalOut;
         _originalError = originalError;
+        _protocolInput = new(HandleTerminalColorResponse, HandleProtocolDeviceAttributes,
+            HandleTerminalColorScheme, HandleKeyboardFlags);
         _images = imageRenderer;
         _useAlternateScreen = useAlternateScreen;
         _theme = theme;
@@ -116,7 +120,7 @@ public sealed class TerminalScreen : IDisposable
         _error = new(this, isError: true);
         try
         {
-            _originalOut.Write(TerminalKeyboardMode.Enable + (_useAlternateScreen
+            _originalOut.Write(_keyboardProtocol.Begin() + (_useAlternateScreen
                 ? "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable
                 : "\u001b[?25l"));
             lock (_gate) _render.Request(immediate: true);
@@ -128,7 +132,7 @@ public sealed class TerminalScreen : IDisposable
             _originalOut.Write((_useAlternateScreen
                     ? TerminalMouseMode.Disable + "\u001b[?7h"
                     : "") + "\u001b[?25h" + (_useAlternateScreen ? "\u001b[?1049l" : "") +
-                TerminalKeyboardMode.Disable);
+                _keyboardProtocol.End());
             _originalOut.Flush();
             _active = false;
             _toolTimers.Dispose();
@@ -182,7 +186,7 @@ public sealed class TerminalScreen : IDisposable
             _originalOut.Write(_images.HidePlacements() + (_useAlternateScreen
                     ? TerminalMouseMode.Disable + "\u001b[?7h"
                     : "") + "\u001b[?25h" + (_useAlternateScreen ? "\u001b[?1049l" : "") +
-                TerminalKeyboardMode.Disable);
+                _keyboardProtocol.End());
             _originalOut.Flush();
             _suspended = true;
         }
@@ -193,7 +197,7 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active || !_suspended) return;
-            _originalOut.Write(TerminalKeyboardMode.Enable + (_useAlternateScreen
+            _originalOut.Write(_keyboardProtocol.Begin() + (_useAlternateScreen
                 ? "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable
                 : "\u001b[?25l"));
             _suspended = false;
@@ -208,7 +212,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active || !_useAlternateScreen || _suspended) return false;
             if (_terminalModeShutdownPrepared) return true;
-            _originalOut.Write(TerminalKeyboardMode.Disable);
+            _originalOut.Write(_keyboardProtocol.End());
             _originalOut.Flush();
             _terminalModeShutdownPrepared = true;
             _render.Request(immediate: true);
@@ -453,7 +457,33 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate) _themeResolver = resolver;
     }
 
-    internal void AttachTerminalInput(TerminalInput input) => _terminalInput = input;
+    internal void AttachTerminalInput(TerminalInput input)
+    {
+        _terminalInput = input;
+        _protocolInput.Attach(input);
+    }
+
+    private void HandleKeyboardFlags(int flags)
+    {
+        lock (_gate)
+        {
+            if (!_active || _suspended) return;
+            _originalOut.Write(_keyboardProtocol.HandleFlags(flags));
+            _originalOut.Flush();
+        }
+    }
+
+    private void HandleProtocolDeviceAttributes()
+    {
+        lock (_gate)
+        {
+            var reply = _keyboardProtocol.HandleDeviceAttributes();
+            if (_active && !_suspended) _originalOut.Write(reply.Control);
+            _originalOut.Flush();
+            if (reply.Consumed) return;
+        }
+        HandleTerminalDeviceAttributes();
+    }
 
     internal void CompleteInitialTerminalColorQuery(TerminalInput input) =>
         _terminalColorQuery?.CompletePendingReplies(input, disableFollowAppearance: false);
@@ -983,16 +1013,12 @@ public sealed class TerminalScreen : IDisposable
             {
                 var input = _terminalInput ?? TerminalInput.OpenConsole();
                 using var mode = TerminalMode.Enter(this);
-                if (_terminalInput is null)
-                {
-                    input.TerminalColorReceived += query.HandleColorResponse;
-                    input.TerminalDeviceAttributesReceived += query.HandleDeviceAttributes;
-                }
+                AttachTerminalInput(input);
                 query.CompletePendingReplies(input);
             }
         }
         catch (IOException) { }
-        finally { _terminalColorQuery?.Dispose(); }
+        finally { _terminalColorQuery?.Dispose(); _protocolInput.Dispose(); }
         IReadOnlyList<TerminalTranscriptBuffer.CapturedChunk> captured;
         bool truncated;
         IReadOnlyList<string>? documentRows = null;
@@ -1014,7 +1040,7 @@ public sealed class TerminalScreen : IDisposable
                     ? TerminalMouseMode.Disable + "\u001b[?7h"
                     : "") + (_useAlternateScreen ? "\u001b[?2026l" : ""));
             _originalOut.Flush();
-            _originalOut.Write("\u001b[?25h" + (terminalModeShutdownPrepared ? "" : TerminalKeyboardMode.Disable));
+            _originalOut.Write("\u001b[?25h" + (terminalModeShutdownPrepared ? "" : _keyboardProtocol.End()));
             _originalOut.Flush();
             if (_useAlternateScreen && _conversationPresentation.HasContent)
             {

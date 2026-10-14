@@ -39,7 +39,20 @@
     "imageExecutions": 60,
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
-    "format": "passed"
+    "format": "passed",
+    "exactCi": {
+      "sha": "76c7a01e68d24e307d271f8c81e84c13a0f3c9d7",
+      "run": 38629279578,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38629279578",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1927,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "reproduction": "python3 tools/parity/codemode-shutdown-differential.py --pi <configured-clean-checkout> --output artifacts/parity/<run>/shutdown.json",
   "sourcePaths": [
@@ -76,7 +89,9 @@
     "codemode-shutdown-images-repeat-6.log": "b137c144dba33204fed751d1d446403ec921bb103662a52ed57f02b9c6ce385e",
     "codemode-shutdown-images-repeat-8.log": "bb159c06d0907a38ca9241aa4b1bd150d439b73627ca12b2fca22bc2ecb3433a",
     "codemode-shutdown-images-repeat-5.log": "3bb522692ce2dd418df399a1dacf03708dbe85df0a7ae84537a090bc5f6eca69",
-    "codemode-shutdown-images-repeats.json": "561fd505c256fe5a25b2e56c6baad680ad82c046f31b70d12a01759ab0b7ef79"
+    "codemode-shutdown-images-repeats.json": "561fd505c256fe5a25b2e56c6baad680ad82c046f31b70d12a01759ab0b7ef79",
+    "codemode-shutdown-exact-ci.log": "1cbe194bb5a2fab248502db05d9fac5bf76d805efe130df149b5184620b265e4",
+    "codemode-shutdown-docs.log": "ec90e586e1b094bde85ef404b7c42c22e29f47fa85c31139bb667b01a5bb5a12"
   },
   "limits": [
     "The controlled cleanup-pool barrier establishes the native/source request-order mismatch and its repair; the original CI log lacks scheduling/exit traces, so its exact failed interleaving is not proven.",
