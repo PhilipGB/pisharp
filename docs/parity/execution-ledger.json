@@ -395,7 +395,8 @@
         "Anthropic workload identity coverage in ProviderModelRuntimeTests and ProviderChatClientFactoryTests verifies required/optional federation fields, explicit token/key precedence, partial-config fail-closed behavior, other-provider isolation, SDK bearer exchange, cached reuse, 401 refresh and rereading a rotated identity-token file. The focused Anthropic suite passes 18/18; final exact-head source 3b4d0da48f0d9ed83c6948a7d5cd2123ebba0ad8 passed Linux CI 36789619687 with 1,036/1,036 tests and zero skips.",
         "AnthropicOAuthTests passes 8/8 with loopback token fixtures for browser callback, copy-code and redirect-URL input, PKCE/state validation, cancellation, malformed responses, private persistence and refresh-token rotation. The full local suite passes 1,047/1,047 with zero skips; format and warnings-as-errors build pass. Exact-head CI for this OAuth slice is pending; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
         "The llama.cpp subset of model selection/catalogs/credentials is verified at Pi 42a3497d / PiSharp 386644ea: login/env/stored/default precedence, router discovery and model properties, load/unload and sleeping/preset eligibility, /model integration, Hugging Face access/download flows, and cached context reload match current Pi in process and PTY evidence. The broader models capability remains in progress for other providers, auth, selection and catalog gaps. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-42a3497d-386644ea06/evidence.json.",
-        "Current Pi ee409a85 OpenRouter catalog differential: authenticated GET /models/user filters chat models to those accessible to the key and supplies key-specific context length, max output, and prices while preserving image/classifier models and caching the combined catalog. PiSharp current source uses generic ModelCatalog.ListAsync /models for OpenRouter and has no personalized catalog path. Current Pi packages/ai and coding-agent targeted suites pass 56/56. See docs/parity/fixtures/upstream-delta-audit-2026-10-12.md."
+        "Current Pi ee409a85 OpenRouter catalog differential: authenticated GET /models/user filters chat models to those accessible to the key and supplies key-specific context length, max output, and prices while preserving image/classifier models and caching the combined catalog. PiSharp current source uses generic ModelCatalog.ListAsync /models for OpenRouter and has no personalized catalog path. Current Pi packages/ai and coding-agent targeted suites pass 56/56. See docs/parity/fixtures/upstream-delta-audit-2026-10-12.md.",
+        "Startup flags network investigation demonstrates that ModelCatalog.ListAsync reads the body after ResponseHeadersRead with the caller token; the startup HttpClient header timeout does not bound that later body read. A loopback sends headers and stalls the body, causing the 12-second startup fixture deadline. The fixture is repaired with explicit offline scope; production catalogue body cancellation/error parity remains open. See docs/parity/fixtures/startup-flags-network-isolation-2026-10-14.json."
       ],
       "dependencies": []
     },
@@ -741,7 +742,8 @@
         "Current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e source and installed Pi 0.87.1 process: a valid session header without cwd loads in the invocation directory. PiSharp adds an explicit fallback parameter that preserves a present header cwd; unit and Linux RPC process tests verify missing-cwd get_messages output and source immutability. Current local format verification and warnings-as-errors build pass; the full suite passes 655/655. Exact-head CI for forward-parent commit 000fb5dcb56d3aad84833d6338ce0336c36556fc failed the OpenAI Completions pre-content overflow loopback test twice (652/653 each); the current working-tree diagnostics have not yet run in CI.",
         "Paired installed Pi 0.87.1 / PiSharp CLI crash-process differential at current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e: both continuation requests now contain an assistant tool call followed by tool result \"No result provided\"; PiSharp additionally sends its durable Outcome UNKNOWN warning and does not replay the side effect. Both processes leave one x marker and restart with exit 0; RPC get_messages and the durable PiSharp session omit the synthetic result. See docs/parity/fixtures/session-crash-recovery-baseline.md. A fail-first test reproduced same-process lock bypass on Linux; ConcurrentSessionLeasesInOneProcessWaitForTheCurrentWriter, ConcurrentProcessSaveWaitsForTheSessionLeaseAndPersistsTheToolOutcome and ConcurrentStoresRejectStaleWrites pass after adding the in-process gate. A second fail-first Linux test reproduced the same-process gate bypass through a symlinked session-directory alias; ConcurrentSessionLeaseAliasesWaitForTheCurrentWriter now confirms both aliases wait on the same gate. The three focused lease/stale-write tests pass 3/3. Exact-head source 84aa91b2da8174f1c67318f65529a56549098ec1 passed Linux CI run 36349575501: restore, format, warnings-as-errors build with 0 warnings/errors, and 674/674 tests (0 skipped). The macOS-specific path compiles and its process test is enabled, but native macOS execution has not been available.",
         "Current Pi main 6f7551516b84278eb9da1c340c8e7bc66be1a6ba CLI crash replay on 2026-09-28 used the same crash-window-fixture Bash side effect as CrashRecoveryProcessTests.CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool: the first process persisted the user and assistant tool call but no result, was killed after writing one x marker, and the resumed provider request was system,user,assistant,tool,user with synthetic No result provided immediately after the orphan call; the restarted CLI exited 0 with empty stderr and did not repeat the side effect. The matching PiSharp process test additionally verifies durable run_recovered/Outcome UNKNOWN warning and that the provider-only result is absent from RPC and session history. Two current-Pi SessionManager.open processes released together appended valid sibling rows under the same parent with no writer lock; PiSharp serializes saves and rejects stale snapshots. Current Pi file-operations.test.ts plus agent-session-concurrent.test.ts passed 40/40; PiSharp recovery/lock/JSONL focused tests passed 7/7, ConcurrentStoresRejectStaleWrites passed 1/1, and the full suite at source commit 56f0659d9061c448a1837529804493c2e83d1e3e passed exact-head Linux CI run 36394452133 with 692/692. Native macOS lock execution and wider session-manager behavior remain open.",
-        "Current-Pi share differential exposed a canonical snapshot restoring the previous branch after explicit null selection. Fail-first Core clone and retained-history share cases confirm it; Clone now preserves the explicit selected head after copying entries. Eight Core controls and two empty-share cases pass, as does the 1636-test full working tree with zero skips. Evidence: docs/parity/fixtures/current-pi-refresh-2026-10-13/null-selection-clone.json. Wider session parity remains in progress."
+        "Current-Pi share differential exposed a canonical snapshot restoring the previous branch after explicit null selection. Fail-first Core clone and retained-history share cases confirm it; Clone now preserves the explicit selected head after copying entries. Eight Core controls and two empty-share cases pass, as does the 1636-test full working tree with zero skips. Evidence: docs/parity/fixtures/current-pi-refresh-2026-10-13/null-selection-clone.json. Wider session parity remains in progress.",
+        "Startup flags process fixture at bbb0a21606 fails exact Linux CI 38618979075 after its 12-second exit wait (1910 passed / one failed / zero skipped). A controlled /models response-body stall deterministically fails the same fixture; slow headers and eight concurrent slow-header controls pass while still making catalogue requests. Explicit offline mode and isolated HOME/agent configuration remove the irrelevant network dependency; eight stable concurrent recovery runs pass with zero HTTP requests and all original session/model/conflict assertions/deadlines retained. See docs/parity/fixtures/startup-flags-network-isolation-2026-10-14.json. Exact historical CI cause is not proven; quiet-startup/PTY calibration concerns remain separately open."
       ],
       "dependencies": []
     },
@@ -5968,7 +5970,31 @@
       "full_passed": 1911,
       "failed": 0,
       "skipped": 0,
-      "status": "bounded evidence; full capability remains in_progress"
+      "status": "bounded evidence; full capability remains in_progress",
+      "exact_ci": {
+        "sha": "bbb0a2160670d17fa5f102ab7b900f1b67f54a63",
+        "run": 38618979075,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38618979075",
+        "jobs": "test failed; MCP passed",
+        "dotnet": {
+          "passed": 1910,
+          "failed": 1,
+          "skipped": 0
+        },
+        "failure": "TerminalPtyTests.StartupModelAndNameArePersistedAndConflictingResumeIsRejected timed out at WaitForExitAsync after 12 seconds. Separate fixture investigation is active; local green run is not resolution evidence."
+      }
+    },
+    "startup_flags_network_isolation_checkpoint": {
+      "fixture": "docs/parity/fixtures/startup-flags-network-isolation-2026-10-14.json",
+      "retained_ci_failure": 38618979075,
+      "stalled_catalog_body_fail_first": 1,
+      "recovery_concurrent_runs": 8,
+      "recovery_catalog_requests": 0,
+      "original_ci_exact_schedule_proven": false,
+      "status": "deterministic network coupling repaired; historical schedule attribution limited",
+      "full_passed": 1911,
+      "failed": 0,
+      "skipped": 0
     }
   }
 }

@@ -59,7 +59,19 @@
     "originalLocalPackageRpcControl": "matched",
     "pythonPassed": 50,
     "nodePassed": 24,
-    "docs": "132 documents / 499 references"
+    "docs": "132 documents / 499 references",
+    "exactCi": {
+      "sha": "bbb0a2160670d17fa5f102ab7b900f1b67f54a63",
+      "run": 38618979075,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38618979075",
+      "jobs": "test failed; MCP passed",
+      "dotnet": {
+        "passed": 1910,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failure": "TerminalPtyTests.StartupModelAndNameArePersistedAndConflictingResumeIsRejected timed out at WaitForExitAsync after 12 seconds. Separate fixture investigation is active; local green run is not resolution evidence."
+    }
   },
   "newScenarioIds": [
     "package-padded-source",
@@ -90,7 +102,8 @@
     "package-source-full.log": "e71e275488a6dbddcc5202d2fb94b8597c9cdf8f8b1fa4262f4fe6b6d95d94f0",
     "package-source-python.log": "4c740713d3f22a33773d714c9d79fd1b6a36cce370f2394daea6a96070e81ab3",
     "package-source-node.log": "0325078ebed71ee26cc6b4e8b874ffa0a68aa4129f04c8cc9be8af8adf0b7b59",
-    "package-source-docs.log": "9cde57f79d2c6bd8a1299935ab94f798279f96cc2f47fcd19b55b8f7f183cc49"
+    "package-source-docs.log": "9cde57f79d2c6bd8a1299935ab94f798279f96cc2f47fcd19b55b8f7f183cc49",
+    "package-source-exact-ci-failed.log": "0d2cd9141d879388167a3bb2b976958319b6a9b482ffbac96f17f7063d054a5c"
   },
   "limits": [
     "Bounded local skill/prompt evidence; package extensions/themes, managed npm/git, package CLI operations and wider trust/reload remain open.",

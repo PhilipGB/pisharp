@@ -1384,6 +1384,8 @@ public sealed class TerminalPtyTests
         {
             var cli = typeof(CliArguments).Assembly.Location;
             var folder = Path.Combine(cwd, "sessions");
+            var agent = Path.Combine(cwd, "agent");
+            Directory.CreateDirectory(agent);
             async Task<(int ExitCode, string Error)> Run(params string[] arguments)
             {
                 var start = new ProcessStartInfo("dotnet")
@@ -1394,7 +1396,10 @@ public sealed class TerminalPtyTests
                     RedirectStandardError = true
                 };
                 start.ArgumentList.Add(cli);
+                start.ArgumentList.Add("--offline");
                 foreach (var arg in arguments) start.ArgumentList.Add(arg);
+                start.Environment["PISHARP_AGENT_DIR"] = agent;
+                start.Environment["HOME"] = cwd;
                 using var process = Process.Start(start);
                 Assert.NotNull(process);
                 var stdout = process.StandardOutput.ReadToEndAsync();
@@ -1402,7 +1407,13 @@ public sealed class TerminalPtyTests
                 process.StandardInput.Close();
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
                 try { await process.WaitForExitAsync(timeout.Token); }
-                catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+                catch (OperationCanceledException)
+                {
+                    process.Kill(entireProcessTree: true);
+                    await process.WaitForExitAsync();
+                    throw new TimeoutException($"Startup flags process timed out for {string.Join(' ', arguments)}. " +
+                        $"stdout: {await stdout}; stderr: {await stderr}");
+                }
                 _ = await stdout;
                 return (process.ExitCode, await stderr);
             }
