@@ -5,6 +5,57 @@ namespace PiSharp.Tests;
 public sealed class ResourcePackageLoadingTests
 {
     [Theory]
+    [InlineData(".hidden/*.md", false)]
+    [InlineData(".hidden/secret.md", true)]
+    public async Task ManifestGlobsHideDotPathsWhileExactEntriesCanSelectThem(string entry, bool expected)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-package-hidden-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var package = Path.Combine(root, "package");
+        var path = Path.Combine(package, ".hidden", "secret.md");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        try
+        {
+            await File.WriteAllTextAsync(path, "Hidden prompt");
+            await File.WriteAllTextAsync(Path.Combine(package, "package.json"),
+                System.Text.Json.JsonSerializer.Serialize(new { pi = new { prompts = new[] { entry } } }));
+
+            var catalog = await ResourceCatalog.LoadAsync(root, agent, false, discoverSkills: false,
+                userPackages: [new("../package")]);
+
+            Assert.Equal(expected, catalog.Prompts.Any(prompt => prompt.Path == path));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task DisabledProjectPackageEntryWinsCanonicalIdentityBeforeEnabledPersonalAlias()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-package-canonical-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        var package = Path.Combine(root, "package");
+        var path = Path.Combine(package, "skills", "guide", "SKILL.md");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.Combine(project, ".pi"));
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        try
+        {
+            await File.WriteAllTextAsync(path, "---\nname: canonical-package-guide\ndescription: Guide\n---\nbody");
+            Directory.CreateSymbolicLink(Path.Combine(root, "alias-package"), package);
+
+            var catalog = await ResourceCatalog.LoadAsync(project, agent, true,
+                userPackages: [new("../alias-package")],
+                projectPackages: [new("../../package", Skills: [], HasFilter: true)]);
+
+            Assert.DoesNotContain(catalog.Skills, skill => skill.Name == "canonical-package-guide");
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public async Task PersonalPackageLoadsDeclaredSkillAndPromptWithPackageProvenance(bool manifest)

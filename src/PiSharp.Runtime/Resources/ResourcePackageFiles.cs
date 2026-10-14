@@ -57,6 +57,8 @@ internal sealed class ResourcePackageFiles
                 }
             }
         }
+        RetainCanonicalEntries(result.Skills);
+        RetainCanonicalEntries(result.Prompts);
         return result;
     }
 
@@ -90,6 +92,8 @@ internal sealed class ResourcePackageFiles
                 var separator = path.LastIndexOf(Path.DirectorySeparatorChar, first);
                 var searchRoot = separator == 0 ? Path.DirectorySeparatorChar.ToString() : path[..separator];
                 foreach (var match in VisiblePaths(searchRoot, token).Where(candidate =>
+                             Path.GetRelativePath(root, candidate).Split(Path.DirectorySeparatorChar)
+                                 .All(segment => segment == ".." || !segment.StartsWith('.')) &&
                              LocalResourcePathRules.GlobMatch(candidate.Replace('\\', '/'), path.Replace('\\', '/')))
                              .Order(StringComparer.Ordinal))
                     result.AddRange(Collect(match, kind, token));
@@ -100,6 +104,12 @@ internal sealed class ResourcePackageFiles
 
     private static IReadOnlyList<string> Collect(string path, string kind, CancellationToken token) =>
         ResourceFileDiscovery.Enumerate(path, kind == "skills" ? ResourceDiscoveryKind.Skills : ResourceDiscoveryKind.ConfiguredPrompts, token);
+
+    private static void RetainCanonicalEntries(List<PackageResourceFile> files)
+    {
+        var seen = new HashSet<string>(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        files.RemoveAll(file => !seen.Add(ResourcePathIdentity.Canonicalize(file.Path)));
+    }
 
     private static IEnumerable<string> VisiblePaths(string root, CancellationToken token)
     {

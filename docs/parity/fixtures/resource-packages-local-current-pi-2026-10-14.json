@@ -131,7 +131,19 @@
       },
       "match": true
     },
-    "exactHeadCi": "Pending publication.",
+    "exactHeadCi": {
+      "sha": "3a2add26f8812f9e36badd68c2e5b1fe5d2cc124",
+      "run": 38608677579,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38608677579",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1904,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    },
     "deletedSkillRegression": {
       "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
       "scenario": "deleted-skill",
@@ -185,7 +197,19 @@
         "skipped": 0
       },
       "format": "passed",
-      "exactCi": "Pending publication."
+      "exactCi": {
+        "sha": "3a2add26f8812f9e36badd68c2e5b1fe5d2cc124",
+        "run": 38608677579,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38608677579",
+        "jobs": "both pass",
+        "dotnet": {
+          "passed": 1904,
+          "failed": 0,
+          "skipped": 0
+        },
+        "nodePassed": 24,
+        "pythonPassed": 50
+      }
     }
   },
   "scenarioIds": [
@@ -291,7 +315,8 @@
     "package-exact-ci-failed.log": "adad631b4f27ac7689f71b2fca207aa0616c7ab5db2b79e168e7e934e9347694",
     "package-nullable-fresh-build.log": "1df20c482a4e74db6cbf185a40ec74b19a61f04aa1d5d7bd26b0209df6b66363",
     "package-nullable-focused.log": "3b4dcce4c69df4c02b5ffab124d420dccf5d31a8815e2aa6bf7accb383605f0b",
-    "package-nullable-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "package-nullable-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-nullable-exact-ci.log": "5561e49ecfe147002544e52c029913db14047b41eeca209b2a89d2cb64534be4"
   },
   "processArtifacts": {
     "local-package-after-settings-pi.http.json": "ac585767000c1a48f94677a2b8c9e0824bde07879a059f7fd3143b5fa0c589f5",

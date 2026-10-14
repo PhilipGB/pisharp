@@ -63,7 +63,19 @@
       "skipped": 0,
       "scope": "Includes pending package-filesystem changes/three new rows; fixture-only head has 1904 tests."
     },
-    "exactHeadCi": "Pending publication."
+    "exactHeadCi": {
+      "sha": "391cb8ac638517ae2baff657253c317cab722e90",
+      "run": 38614693502,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38614693502",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1904,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "limits": [
     "Collection isolation is a mitigation supported by the reproduced contention sensitivity. No claim is made that the previously failed quiet-startup schedule was exactly reproduced or that independent eight-runner overload has been repaired.",
@@ -105,6 +117,7 @@
     "process-timing-collection-build.log": "1ea6ab820d46c0dd7918f50456b6d1dbcf2aef2339ae6194273e092759719f02",
     "process-timing-collection-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "process-timing-collection-full.log": "4c3bc5f07c807100567f12005820878d2a1d67a93fd443dfaa70741670120598",
-    "package-filesystem-full.log": "54e9e5664659348ed94ced5ec443ddb519e20a8b25ce96d4c77c94746249908c"
+    "package-filesystem-full.log": "54e9e5664659348ed94ced5ec443ddb519e20a8b25ce96d4c77c94746249908c",
+    "process-timing-isolation-exact-ci.log": "483ff860bb807a4e68860364e8565b1ec27a45e16f8ac09a7d6ea0e0cd1318c4"
   }
 }

@@ -1024,7 +1024,8 @@
       "evidence": [
         "The current goal supersedes the earlier Pi Packages exclusion; normal CLI package-resource operations are in scope.",
         "Current Pi 3daa2028 normal RPC/provider local package fail-first: Pi loads Guide skill and Package review prompt and expands /skill:guide args. PiSharp 1542322b exits 2 before any RPC/provider input: packages must be a string. See current_pi_refresh.resource_package_characterization. No package behavior has been implemented or verified yet.",
-        "Current Pi 3daa2028 local package slice: normal CLI startup rejects valid package arrays at fail-first; three settings and two loading native rows fail first. Initial 57 loader cases match, then three added lowercase-alias cases expose three source mismatches and three native failures/three controls. Final 60 source comparisons and normal RPC/provider package invocation now match; deleted-skill replay remains matched. 143 focused and full 1904 tests pass with zero skips/warnings; Python 50 pass. See docs/parity/fixtures/resource-packages-local-current-pi-2026-10-14.json. Package extension/theme/npm-git/CLI operations and further resource/trust/reload boundaries remain open; status in_progress."
+        "Current Pi 3daa2028 local package slice: normal CLI startup rejects valid package arrays at fail-first; three settings and two loading native rows fail first. Initial 57 loader cases match, then three added lowercase-alias cases expose three source mismatches and three native failures/three controls. Final 60 source comparisons and normal RPC/provider package invocation now match; deleted-skill replay remains matched. 143 focused and full 1904 tests pass with zero skips/warnings; Python 50 pass. See docs/parity/fixtures/resource-packages-local-current-pi-2026-10-14.json. Package extension/theme/npm-git/CLI operations and further resource/trust/reload boundaries remain open; status in_progress.",
+        "Current Pi 3daa2028 filesystem follow-up: two of 63 loader cases and two native regressions fail first; exact hidden-file control passes. Manifest glob dot filtering and canonical disabled-entry retention now match all 63 full-loader cases; 101 focused and full 1907 native tests pass with zero skips. The original two full-run process failures are retained with dedicated scheduling/diagnostic evidence at 391cb8ac63, exact CI 38614693502. The quiet-startup exact failed schedule remains unexplained and independent overload is not claimed repaired. See docs/parity/fixtures/resource-packages-filesystem-current-pi-2026-10-14.json. Full package/resource/trust/reload boundaries remain open."
       ],
       "dependencies": []
     },
@@ -5812,8 +5813,135 @@
           "skipped": 0
         },
         "format": "passed",
-        "exactCi": "Pending publication."
+        "exactCi": {
+          "sha": "3a2add26f8812f9e36badd68c2e5b1fe5d2cc124",
+          "run": 38608677579,
+          "url": "https://github.com/PhilipGB/pisharp/actions/runs/38608677579",
+          "jobs": "both pass",
+          "dotnet": {
+            "passed": 1904,
+            "failed": 0,
+            "skipped": 0
+          },
+          "nodePassed": 24,
+          "pythonPassed": 50
+        }
+      },
+      "exact_ci": {
+        "sha": "3a2add26f8812f9e36badd68c2e5b1fe5d2cc124",
+        "run": 38608677579,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38608677579",
+        "jobs": "both pass",
+        "dotnet": {
+          "passed": 1904,
+          "failed": 0,
+          "skipped": 0
+        },
+        "nodePassed": 24,
+        "pythonPassed": 50
       }
+    },
+    "resource_package_filesystem_characterization": {
+      "pi": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "pi_sharp": "3a2add26f8812f9e36badd68c2e5b1fe5d2cc124",
+      "cases": 63,
+      "fail_first_mismatches": [
+        "package-hidden-glob",
+        "package-disabled-first-canonical-alias"
+      ],
+      "native_fail_first": {
+        "failed": 2,
+        "passed": 1,
+        "skipped": 0
+      },
+      "working_recovery": {
+        "loader_mismatches": 0,
+        "focused_passed": 101,
+        "failed": 0,
+        "skipped": 0
+      },
+      "implementation": "Exclude lexical dot path components from manifest glob matches; retain first canonical package entry before filtering enabled entries, including disabled declarations. Exact dot-file entries remain supported.",
+      "raw_first": "artifacts/parity/resources-current-pi-2026-10-14/package-filesystem-edges-first.json",
+      "raw_first_sha256": "f5c7d8d9a353756a41b3f4ce33d78ace373702a6f3d8864d8228c328fe83fa26",
+      "raw_recovery": "artifacts/parity/resources-current-pi-2026-10-14/package-filesystem-edges-recovery.json",
+      "raw_recovery_sha256": "ad5f5ff6830625ee475ed482a3e1db31cc06f9c0cace1c1572735a02fffb7ded",
+      "next": "Investigate provider fixture deadline stages and under-load timeout-before-transport behavior; quiet-startup original timeout remains unreproduced. Do not publish resources as fully validated or infer repair from passing full runs.",
+      "full_suite_concern": {
+        "test": "QuietStartupTests.TerminalStartupVisibilityFollowsQuietStartup(false, verbose:true, header:true, details:true)",
+        "observed": "TaskCanceledException in Process.WaitForExitAsync after 12 seconds, line 135. New failed run retained; cause and repair not established.",
+        "log": "artifacts/parity/resources-current-pi-2026-10-14/package-filesystem-full.log",
+        "next": "Inspect/reproduce exit timing before publication or substantial resource expansion. Do not treat an unrelated later green run as resolution.",
+        "additional_failure": {
+          "test": "ProviderTimeoutProcessTests.SavedProviderTimeoutStopsARealCliRequest",
+          "observed": "TaskCanceledException waiting for process exit at 12 seconds, line 80; no cause or repair established."
+        }
+      },
+      "running_handles": {
+        "full": "5493",
+        "format": "18774"
+      },
+      "diagnostic_full_rerun": {
+        "passed": 1907,
+        "failed": 0,
+        "skipped": 0,
+        "log": "artifacts/parity/resources-current-pi-2026-10-14/new-process-diagnostics-full.log",
+        "scope": "Only timeout output capture and owned child cleanup added; original deadlines/assertions remain. Passing rerun does not resolve the retained two failures."
+      },
+      "process_stress_characterization": {
+        "invalid_msbuild_trial": "Four concurrent solution commands hit MSBuild socket conflicts; two reached/passed seven fixture tests, but the trial cannot support the intended stress conclusion. Logs retained.",
+        "compiled_assembly_four_runs": {
+          "passed": 28,
+          "failed": 0,
+          "skipped": 0
+        },
+        "compiled_assembly_eight_runs": {
+          "passed": 48,
+          "failed": 8,
+          "skipped": 0
+        },
+        "observed_provider_failures": "Five process-exit timeouts before any provider request; one after requests=1 with the correct one-second provider timeout already printed; one zero-request count assertion; one timed-out server cleanup. All six quiet-startup cases passed in each stress run.",
+        "next": "Retain deadlines/assertions, isolate provider fixture HOME, fresh-build then repeat the same eight-run compiled-assembly workload. Quiet-startup historical timeout remains unreproduced/unresolved.",
+        "isolated_home_eight_runs": {
+          "passed": 49,
+          "failed": 7,
+          "skipped": 0,
+          "outcome": "HOME isolation alone is insufficient: six zero-request assertions, one process timeout before first request, one passing provider case. Original provider deadline and assertions retained."
+        }
+      }
+    },
+    "process_timing_isolation_checkpoint": {
+      "fixture": "docs/parity/fixtures/process-timing-isolation-2026-10-14.json",
+      "full_candidate_passed": 1907,
+      "failed": 0,
+      "skipped": 0,
+      "provider_contention_reproduced": true,
+      "quiet_startup_exact_cause_established": false,
+      "scope": "Capture failures/terminate children/isolate HOME and schedule short-deadline fixtures outside other suite classes. Original timing/output/request-count assertions retained; independent overload remains outside mitigation.",
+      "exact_ci": {
+        "sha": "391cb8ac638517ae2baff657253c317cab722e90",
+        "run": 38614693502,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38614693502",
+        "jobs": "both pass",
+        "dotnet": {
+          "passed": 1904,
+          "failed": 0,
+          "skipped": 0
+        },
+        "nodePassed": 24,
+        "pythonPassed": 50
+      }
+    },
+    "resource_package_filesystem_checkpoint": {
+      "fixture": "docs/parity/fixtures/resource-packages-filesystem-current-pi-2026-10-14.json",
+      "loader_cases": 63,
+      "loader_mismatches": 0,
+      "native_fail_first": 2,
+      "native_controls": 1,
+      "focused_passed": 101,
+      "full_passed": 1907,
+      "failed": 0,
+      "skipped": 0,
+      "status": "bounded evidence; full capability remains in_progress"
     }
   }
 }

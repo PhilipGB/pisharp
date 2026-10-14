@@ -88,7 +88,7 @@ def scenarios():
 
 
 
-def package_scenarios():
+def package_scenarios(edges=False):
     base = {'outside/package/skills/guide/SKILL.md': skill(body='package body'),
             'outside/package/prompts/review.md': '---\ndescription: Package review\n---\nReview $1',
             'outside/package/prompts/nested/detail.md': 'Nested detail'}
@@ -137,6 +137,14 @@ def package_scenarios():
         skillPaths=['outside/package/skills/guide/SKILL.md'], discover=False)
     add('local-before-package', trusted=True, files={'project/.pi/skills/guide/SKILL.md': skill(body='local winner')})
     add('personal-auto-before-package', files={'agent/skills/guide/SKILL.md': skill(body='personal winner')})
+    if edges:
+        add('hidden-glob', package_manifest={'pi': {'prompts': ['.hidden/*.md']}},
+            files={'outside/package/.hidden/secret.md': 'Hidden prompt'})
+        add('hidden-exact-file', package_manifest={'pi': {'prompts': ['.hidden/secret.md']}},
+            files={'outside/package/.hidden/secret.md': 'Hidden prompt'})
+        add('disabled-first-canonical-alias', declaration='../outside/alias-package',
+            project={'packages': [{'source': '../../outside/package', 'skills': []}]}, trusted=True,
+            links={'outside/alias-package': 'package'})
     return cases
 
 def main():
@@ -144,11 +152,12 @@ def main():
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--packages', action='store_true', help='Include local package settings/manifest/filter/scope comparisons')
+    parser.add_argument('--package-edges', action='store_true', help='Include additional package filesystem edge characterization')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     cases = scenarios()
-    if args.packages:
-        cases.extend(package_scenarios())
+    if args.packages or args.package_edges:
+        cases.extend(package_scenarios(args.package_edges))
     with tempfile.TemporaryDirectory(prefix='pisharp-resource-selection-') as directory:
         root = Path(directory)
         home = root / 'home'
