@@ -162,6 +162,30 @@
         }
       },
       "match": true
+    },
+    "failedExactHeadCi": {
+      "sha": "68e98f81ff3f1569ac48d61cad5b90cb67d02f18",
+      "run": 38607877544,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38607877544",
+      "testJob": "failed warnings-as-errors build: CS8602 at ResourcePackageLoadingTests diagnostic.Path predicate",
+      "mcpConformance": "passed",
+      "cause": "The nullable Path predicate produced a compiler warning during the focused test build. The subsequent local incremental warnings-as-errors build reused that output; it did not prove a fresh warning-free compilation.",
+      "repair": "Use a null-safe package-path predicate and force --no-incremental --warnaserror before publication."
+    },
+    "historicalBuildLimit": "The recorded zero-warning incremental build did not recompile the warning-producing test. The failed exact CI is retained; fresh compilation is required for the repair.",
+    "nullableTestRepair": {
+      "freshBuild": {
+        "command": "dotnet build PiSharp.slnx --no-restore --no-incremental --warnaserror",
+        "warnings": 0,
+        "errors": 0
+      },
+      "focused": {
+        "passed": 81,
+        "failed": 0,
+        "skipped": 0
+      },
+      "format": "passed",
+      "exactCi": "Pending publication."
     }
   },
   "scenarioIds": [
@@ -263,7 +287,11 @@
     "package-selection-first-matrix.json": "6350b395994fcd56a5d72f53eb59fc7d580fa02b0402127279f65fdba524ffdb",
     "package-selection-first-matrix.log": "6e8f946899d62f7602d8be07dfd76db3117833bb999c388f3476878fea01b81a",
     "package-settings-fail-first.log": "58b310136b4d2b7bd421557bbbc6be4f92a68ed314b753d7b1af21779f06d36f",
-    "package-settings-first-recovery.log": "9ca09c619eeaddae54baaa122ca976e2504cf21bd7d0b962d077b061fecafd88"
+    "package-settings-first-recovery.log": "9ca09c619eeaddae54baaa122ca976e2504cf21bd7d0b962d077b061fecafd88",
+    "package-exact-ci-failed.log": "adad631b4f27ac7689f71b2fca207aa0616c7ab5db2b79e168e7e934e9347694",
+    "package-nullable-fresh-build.log": "1df20c482a4e74db6cbf185a40ec74b19a61f04aa1d5d7bd26b0209df6b66363",
+    "package-nullable-focused.log": "3b4dcce4c69df4c02b5ffab124d420dccf5d31a8815e2aa6bf7accb383605f0b",
+    "package-nullable-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "processArtifacts": {
     "local-package-after-settings-pi.http.json": "ac585767000c1a48f94677a2b8c9e0824bde07879a059f7fd3143b5fa0c589f5",

@@ -5790,7 +5790,30 @@
       "full_skipped": 0,
       "new_native_rows": 12,
       "normal_rpc_provider_match": true,
-      "remaining": "Package extension/theme loading, installed npm/git, CLI package operations, malformed/glob/filesystem edges and full terminal/trust/reload remain required."
+      "remaining": "Package extension/theme loading, installed npm/git, CLI package operations, malformed/glob/filesystem edges and full terminal/trust/reload remain required.",
+      "failed_exact_ci": {
+        "sha": "68e98f81ff3f1569ac48d61cad5b90cb67d02f18",
+        "run": 38607877544,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38607877544",
+        "testJob": "failed warnings-as-errors build: CS8602 at ResourcePackageLoadingTests diagnostic.Path predicate",
+        "mcpConformance": "passed",
+        "cause": "The nullable Path predicate produced a compiler warning during the focused test build. The subsequent local incremental warnings-as-errors build reused that output; it did not prove a fresh warning-free compilation.",
+        "repair": "Use a null-safe package-path predicate and force --no-incremental --warnaserror before publication."
+      },
+      "nullable_test_repair": {
+        "freshBuild": {
+          "command": "dotnet build PiSharp.slnx --no-restore --no-incremental --warnaserror",
+          "warnings": 0,
+          "errors": 0
+        },
+        "focused": {
+          "passed": 81,
+          "failed": 0,
+          "skipped": 0
+        },
+        "format": "passed",
+        "exactCi": "Pending publication."
+      }
     }
   }
 }

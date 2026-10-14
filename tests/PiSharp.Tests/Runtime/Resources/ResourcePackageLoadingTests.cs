@@ -36,7 +36,7 @@ public sealed class ResourcePackageLoadingTests
             Assert.Equal("Review $1", loadedPrompt.Template);
             Assert.Equal(new ResourceSourceInfo(skill, "../package", "user", "package", package), loadedSkill.SourceInfo);
             Assert.Equal(new ResourceSourceInfo(prompt, "../package", "user", "package", package), loadedPrompt.SourceInfo);
-            Assert.DoesNotContain(catalog.Diagnostics, diagnostic => diagnostic.Path.StartsWith(package, StringComparison.Ordinal));
+            Assert.DoesNotContain(catalog.Diagnostics, diagnostic => diagnostic.Path?.StartsWith(package, StringComparison.Ordinal) == true);
         }
         finally { Directory.Delete(root, true); }
     }
