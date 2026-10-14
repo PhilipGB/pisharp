@@ -43,7 +43,19 @@
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
     "format": "passed",
-    "cli": "Original explicit theme/no-themes PTY case retained as control; new package-only selection renders its custom dim palette and exits cleanly."
+    "cli": "Original explicit theme/no-themes PTY case retained as control; new package-only selection renders its custom dim palette and exits cleanly.",
+    "exactCi": {
+      "sha": "b1271ad9869b9b6bfd318b5432bd0393483d22dc",
+      "run": 38625569590,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38625569590",
+      "jobs": "test failed; MCP passed",
+      "dotnet": {
+        "passed": 1926,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failure": "CodemodeImagesUseDetectedTypeAndNormalizeWrappedBase64 reached the two-worker admission limit; dedicated shutdown ordering investigation is active."
+    }
   },
   "terminal": {
     "calibrationMatch": true,
@@ -83,7 +95,8 @@
     "package-themes-first.log": "6333ab297857284c79abd94b7864aeba2fb2aa6eeac476221a91e2274aaf2c35",
     "package-themes-expanded-first.json": "033596211f6adb0f4a37fc2e71bd2b01a90cae8581639a4e19c6696cf6d7a53e",
     "package-theme-terminal-pair.log": "fc96a62266538f2b6e984dfa64f37d1496b103a7ed48f3644559a056108692ff",
-    "package-themes-expanded-recovery.log": "a49e4e4e13620ff2fc8ab066f05ba2a29e0e7e33e64734ce6d8a724642bd14c8"
+    "package-themes-expanded-recovery.log": "a49e4e4e13620ff2fc8ab066f05ba2a29e0e7e33e64734ce6d8a724642bd14c8",
+    "package-themes-exact-ci-failed.log": "c66bfe3d5aa8863f6f743f83b323fd9dcc12bb44488fe442f95c366584dc84d0"
   },
   "limits": [
     "Theme SDK comparisons cover available custom names and accent output, not complete metadata/provenance/diagnostic/collision/order semantics.",

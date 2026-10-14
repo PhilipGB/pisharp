@@ -3789,7 +3789,8 @@
         "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 014873d7, b6d505cd, 3daa2028 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
         "Misplaced // @options: lines now fail before worker launch with the exact line-number error, including blank/indented/CRLF/repeated directives. The source parser preserves valid optionsx/string/standalone-CR controls. Eight real current-Pi source comparisons match; 20 focused source tests pass (four fail-first cases plus controls). See docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-source.json, tools/parity/codemode-source-differential.py, tests/PiSharp.Tests/Runtime/Codemode/CodemodeSourceTests.cs. This closes the named current-source delta, not the broader capability.",
         "Codemode abort/timeout and session cancellation settle without waiting for host cleanup or process exit, preserve partial text/images and discard failed store writes. Two shared process slots remain occupied until actual exit and failed starts return their reservation. Public AIFunction marshaling preserves the canceled error contract. Original host-hang checks failed at about 2.02 seconds with lost output; a further builtin test exposed canceled-token serialization. Ten new tests, including a six-call concurrent burst and non-interruptible guest work, pass. Six real Pi/Node and native PiSharp process comparisons match lifecycle/admission predicates; upstream lifetime/admission tests pass 16 with three explicit unavailable Bun cases. Full suite 1494/1494, zero skips and zero-warning build. Broader output formatting, options/memory ceilings and nested-call details remain open. See docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-lifetime.json, tools/parity/codemode-lifetime-differential.py, tests/PiSharp.Tests/Runtime/Codemode/CodemodeWorkerLifecycleTests.cs. This closes the named current-source delta, not the broader capability.",
-        "Codemode publishes initial progress before nested calls. Screen-owned row timers show Elapsed with one-second redraws and Took with the recorded monotonic execution duration, retained through native/Pi persistence and reload. Completion/error/interruption/replacement/disposal stop timers, concurrent calls retain independent clocks, and collapsed output keeps the timing footer. Two initial rendering tests and four cleanup/preview controls failed first. Thirteen new timer/runtime cases pass; 143 exact duration vectors and live/final/reload checkpoints match Pi, as do seven real-worker predicates using a native Pi runtime/renderer and a PiSharp MAF run under a PTY. Pi renderer tests pass 5/5. Full suite 1553/1553, zero skips and zero-warning build. Broader layout, preview counts and nested-call/cost presentation remain open. See docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-timer.json, tools/parity/codemode-timer-differential.py, tests/PiSharp.Tests/Cli/Tui/Rendering/CodemodeTimerTests.cs, tests/PiSharp.Tests/Runtime/Codemode/CodemodeDurationTests.cs. This closes the named current-source delta, not the broader capability."
+        "Codemode publishes initial progress before nested calls. Screen-owned row timers show Elapsed with one-second redraws and Took with the recorded monotonic execution duration, retained through native/Pi persistence and reload. Completion/error/interruption/replacement/disposal stop timers, concurrent calls retain independent clocks, and collapsed output keeps the timing footer. Two initial rendering tests and four cleanup/preview controls failed first. Thirteen new timer/runtime cases pass; 143 exact duration vectors and live/final/reload checkpoints match Pi, as do seven real-worker predicates using a native Pi runtime/renderer and a PiSharp MAF run under a PTY. Pi renderer tests pass 5/5. Full suite 1553/1553, zero skips and zero-warning build. Broader layout, preview counts and nested-call/cost presentation remain open. See docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-timer.json, tools/parity/codemode-timer-differential.py, tests/PiSharp.Tests/Cli/Tui/Rendering/CodemodeTimerTests.cs, tests/PiSharp.Tests/Runtime/Codemode/CodemodeDurationTests.cs. This closes the named current-source delta, not the broader capability.",
+        "Exact Linux CI b1271ad986 / 38625569590 fails the unchanged six-image Codemode loop at the two-worker limit (1926 passed / one failed / zero skipped). Source host.stop requests Worker.terminate before result resolution; native Reap deferred the kill request to Task.Run. Controlled blocked-cleanup-pool native probe fails first while real pinned source requests termination before returning. Immediate native termination request now matches; detached exit accounting and two-worker capacity remain unchanged. 88 focused tests, all six real lifecycle/admission comparisons, ten original image-test repetitions (60 image executions) and the full 1927 native suite pass with zero skips/warnings; format passes. See docs/parity/fixtures/codemode-shutdown-order-2026-10-14.json. The exact historical CI schedule is not proven; wider formatting/options/memory/nested/provider boundaries remain open."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -6050,7 +6051,31 @@
       "skipped": 0,
       "terminal_pair_match": false,
       "terminal_differences": 66,
-      "status": "bounded theme loading evidence; keyboard fallback dependency remains open; full capability in_progress"
+      "status": "bounded theme loading evidence; keyboard fallback dependency remains open; full capability in_progress",
+      "exact_ci": {
+        "sha": "b1271ad9869b9b6bfd318b5432bd0393483d22dc",
+        "run": 38625569590,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38625569590",
+        "jobs": "test failed; MCP passed",
+        "dotnet": {
+          "passed": 1926,
+          "failed": 1,
+          "skipped": 0
+        },
+        "failure": "CodemodeImagesUseDetectedTypeAndNormalizeWrappedBase64 reached the two-worker admission limit; dedicated shutdown ordering investigation is active."
+      }
+    },
+    "codemode_shutdown_order_checkpoint": {
+      "fixture": "docs/parity/fixtures/codemode-shutdown-order-2026-10-14.json",
+      "retained_ci_failure": 38625569590,
+      "shutdown_source_native_match": true,
+      "focused_passed": 88,
+      "lifecycle_admission_comparisons": 6,
+      "original_ci_exact_schedule_proven": false,
+      "status": "bounded immediate termination boundary repaired; exact-head CI pending",
+      "full_passed": 1927,
+      "failed": 0,
+      "skipped": 0
     }
   }
 }

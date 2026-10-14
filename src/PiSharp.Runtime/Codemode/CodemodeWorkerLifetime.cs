@@ -33,13 +33,15 @@ internal sealed class CodemodeWorkerLifetime
     }
 
     internal void Reap(Process process, CancellationTokenSource deadline, SemaphoreSlim writeGate,
-        Task<string> stderr, IReadOnlyList<Task> outstanding) =>
+        Task<string> stderr, IReadOnlyList<Task> outstanding)
+    {
+        // Request termination before settling, as Pi does; disposal can wait on the cleanup pool.
+        try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+        catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception) { }
         _ = Task.Run(async () =>
         {
             try
             {
-                try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
-                catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception) { }
                 await _exit;
             }
             catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception) { }
@@ -52,4 +54,5 @@ internal sealed class CodemodeWorkerLifetime
                 process.Dispose();
             }
         });
+    }
 }
