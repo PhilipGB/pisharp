@@ -62,11 +62,6 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             {
                 screen?.SetFooter(getFooter(), render: false);
             }
-            if (update.Type is "turn_completed" or "turn_interrupted" or "turn_failed" or "prompt_rejected")
-            {
-                screen?.SetWorkingStatus(null, render: false);
-                screen?.SetFooter(getFooter(), render: false);
-            }
             transcript.Render(update);
             Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);
         }

@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-14",
+  "scope": "Linux active-to-idle terminal input ownership and immediate /quit; no whole TUI or Resources capability completion.",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "pisharpBase": "7d375730577d9968a17a5d97418c49f2f04ae0c7",
+  "candidate": "Base plus the focused terminal production/test/fixture changes in this commit; captured harness SHA is the pre-commit HEAD, with working-tree changes.",
+  "productionDiffSha256": "25ae0b0f4f0937584aeb9746e84a6cd96c7195597a2c0f91a429cbfe81b688a4",
+  "originalCi": {
+    "run": 38498196050,
+    "sha": "9ea23c82c09385861ff0c1593df39051b7b2e25d",
+    "test": "ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal",
+    "result": "1693 passed / 1 failed / 0 skipped; /quit remained as editor draft"
+  },
+  "cause": [
+    "Turn completion removed Working before the active input monitor had stopped. Return could be consumed as steering after the run queue closed, restoring /quit to the draft.",
+    "Cancellation during a blocking input poll did not return the completed key event to the idle reader. Existing pushback also appended before later retained events were drained."
+  ],
+  "fix": [
+    "Retain Working until the existing stop-monitor/save/idle transition completes.",
+    "Check activity cancellation before and after polling; prepend any completed event to retained input for the idle consumer."
+  ],
+  "failFirst": {
+    "tests": 7,
+    "failed": 5,
+    "passed": 2,
+    "method": "TryReadActive forwarded to the unchanged TryRead and existing enqueue-style pushback. Cancellation/read and ordering cases fail deterministically; active controls still pass."
+  },
+  "verification": {
+    "focusedPassed": 47,
+    "fullPassed": 1732,
+    "fullFailed": 0,
+    "fullSkipped": 0,
+    "pythonPassed": 49,
+    "format": "passed",
+    "buildWarnings": 0,
+    "buildErrors": 0
+  },
+  "fixture": "tools/parity/terminal/fixtures/input-run-idle-handoff.json",
+  "comparisons": [
+    {
+      "path": "input-handoff-owned-home-calibration/report.json",
+      "calibration": true,
+      "case": "120x40-dark-fullscreen",
+      "terminalMatch": true,
+      "renderFrames": 6,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "rawMatch": false,
+      "scenarioErrors": {},
+      "sha256": "b4e92dfb318f6c9487ccb857aa18fcd380ec33331b39cf3e3b1d7008232e73e3"
+    },
+    {
+      "path": "input-handoff-owned-home-paired/report.json",
+      "calibration": false,
+      "case": "120x40-dark-fullscreen",
+      "terminalMatch": true,
+      "renderFrames": 6,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "rawMatch": false,
+      "scenarioErrors": {},
+      "sha256": "1b0d7e003bc9130aef8b7fb929b1c3565a122ab55079277f7b0f78ff08c72019"
+    }
+  ],
+  "retainedAttempts": [
+    {
+      "path": "input-handoff-calibration/report.json",
+      "result": "Initial same-Pi fullscreen calibration matched."
+    },
+    {
+      "path": "input-handoff-paired/report.json",
+      "result": "Native exited before startup when HOME pointed to an absent directory; retained separate startup gap, not an input handoff result. Both fixtures now create their isolated HOME before launch."
+    },
+    {
+      "path": "input-handoff-regular-calibration/report.json",
+      "result": "Same-Pi regular calibration has two Working spinner phase differences and zero render differences. No regular-mode exact parity claim."
+    }
+  ],
+  "limits": [
+    "Linux 120x40 dark fullscreen with no tools and gated loopback provider; broader dimensions, platforms, tool/queue/abort and regular-mode presentation remain open.",
+    "Canonical comparison uses existing harness normalization. Raw PTY/control bytes differ, and paired raw HTTP differs only at three generated documentation roots; these are retained.",
+    "A later unrelated green run did not resolve the original failure. Exact commit CI is pending at publication.",
+    "Raw captures are Git ignored and require a separate backup for long-term retention."
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-path-ci-first-failure.log": "96e880f62f5b9586c57307ba74d1a124ccdca51a22d5516b8bd0e3cd85b1884e",
+    "input-handoff-fail-first-tests.log": "35b1250cda5d97ce88d04d8f10015186ad0d5d495a97cdc8402ef820e366ba5a",
+    "input-handoff-recovery-tests.log": "be822ba1fb32a5059c16d055c9a9e085551c27b1e4cc34a05139d339092f90d4",
+    "input-handoff-final-full-tests.log": "3547c160f078b6a5c7ac1033dda62d36be53abe5a2baef6e73b3d2589bf7ed03",
+    "input-handoff-python-tests.log": "dab5f640518cede3c1f140ee459602149265b47c51e5a02a11bbfea447253122",
+    "input-handoff-final-build.log": "c7025e8d8ed8fa10b39b73ef790ee7a1b74c75f5f639fe6fd3d33dba231edf4c",
+    "input-handoff-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

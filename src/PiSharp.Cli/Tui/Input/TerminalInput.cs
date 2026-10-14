@@ -76,6 +76,16 @@ public sealed class TerminalInput
         return value;
     }
 
+    internal bool TryReadActive(int timeoutMilliseconds, CancellationToken activityEnded, out TerminalInputEvent value)
+    {
+        value = new(null, null);
+        if (activityEnded.IsCancellationRequested || !TryRead(timeoutMilliseconds, out value)) return false;
+        if (!activityEnded.IsCancellationRequested) return true;
+        PushBack(value);
+        value = new(null, null);
+        return false;
+    }
+
     internal string ReadAvailableText(TerminalInputEvent first, out TerminalInputEvent? following)
     {
         var text = new StringBuilder();
@@ -110,7 +120,13 @@ public sealed class TerminalInput
         return false;
     }
 
-    internal void PushBack(TerminalInputEvent value) => _retainedEvents.Enqueue(value);
+    internal void PushBack(TerminalInputEvent value)
+    {
+        var following = _retainedEvents.ToArray();
+        _retainedEvents.Clear();
+        _retainedEvents.Enqueue(value);
+        foreach (var item in following) _retainedEvents.Enqueue(item);
+    }
 
     internal void CompletePendingReplies(Func<bool> hasPendingReplies, int timeoutMilliseconds)
     {

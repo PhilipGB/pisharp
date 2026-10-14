@@ -280,7 +280,8 @@
         "python3 -Werror::ResourceWarning -m unittest discover -s tools/autonomy -p 'test_*.py' -v => 8 passed.",
         "Current Pi d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/coding-agent/docs/rpc-commands.md and settings-manager.ts were inspected: both defaults are one-at-a-time, all-mode drains the queue at the defined provider/turn boundaries, project/user precedence is supported, and RPC setters update active settings. PiSharp AgentLifecycleTests, UserSettingsTests/UserSettingsWriterTests, RpcModeTests and RpcModelProcessTests cover local behavior and CLI persistence; this is not a Pi process differential.",
         "Exact source head 4a56c8224bf37e7471492b00ba02ea97a4a9a7a8 passed Linux CI run 36228794249: format verification, warnings-as-errors build with 0 warnings/errors, and 595 tests (0 failed, 0 skipped).",
-        "Scope note: local behavior is covered for both modes; broad current-Pi behavioral differentials remain open, so the capability is in progress."
+        "Scope note: local behavior is covered for both modes; broad current-Pi behavioral differentials remain open, so the capability is in progress.",
+        "Active-to-idle input race repair: five deterministic cancellation/order tests fail against old behavior, seven pass after repair; 47 focused tests and isolated full 1732 tests pass with zero skips. Same-Pi and Pi/native gated fullscreen replay each match six canonical render frames, terminal checkpoints and normalized HTTP, including immediate /quit. Working now clears only after monitor shutdown; a completed key read after cancellation returns to the idle reader in order. Historical failed CI 38498196050 remains recorded; exact repair CI pending. See docs/parity/fixtures/input-handoff-current-pi-2026-10-14.json. No regular-mode/raw-byte/full-TUI claim."
       ],
       "dependencies": []
     },
@@ -668,7 +669,8 @@
         "Clipboard image tests cover Linux Wayland MIME reads, WSL PowerShell fallback, private file permissions and Ctrl+V PTY insertion. Exact code commit 17d682c2d7206a052b8a65ca24cf9c514166e39e passed Linux CI run 36166108417: format, warnings-as-errors build and 480/480 tests.",
         "InteractiveBashExecutorTests covers command parsing; TerminalPtyTests.BangCommandsUseTheConfiguredPrefixAndDoubleBangExcludesContext exercises both forms over Linux PTY with saved session assertions. Broader active-run PTY and extension interception differentials remain open.",
         "Pi 65117e31f242daa8e0a17dbd2810f7bb92bf4087 adds leading-whitespace slash completion. A fail-first theory reproduced missing candidates for spaces, repeated spaces and tabs; EditorCompletionTests passes 10/10 after the fix, including preserved indentation and the existing mid-sentence boundary. Restore, format verification (0 of 409 files formatted), warnings-as-errors build (0 warnings/errors), and all 1,039 tests pass with zero skips locally; the suite was rerun with test-collection parallelism disabled after three process/PTY timeouts in the initial parallel run, and all three passed individually. Exact-head Linux CI run 36795625551 passes restore, format, build and 1,039/1,039 tests with zero skips on 884a69b07743e57e135a50ce03e65f11c74cdd39.",
-        "Exact path-head CI 38498196050 at 9ea23c82 fails one existing active-PTY exit test (1693 passed/1 failed/0 skipped). /quit remains an editor draft after a reply: idle-looking output can precede run-monitor shutdown. Failure retained in artifacts/parity/resources-current-pi-2026-10-14/resource-path-ci-first-failure.log; queued for cancellation/read and presentation handoff repair, not classified as baseline. Current local combined full 1725 tests passes; timing concern remains until focused repair and exact-head CI."
+        "Exact path-head CI 38498196050 at 9ea23c82 fails one existing active-PTY exit test (1693 passed/1 failed/0 skipped). /quit remains an editor draft after a reply: idle-looking output can precede run-monitor shutdown. Failure retained in artifacts/parity/resources-current-pi-2026-10-14/resource-path-ci-first-failure.log; queued for cancellation/read and presentation handoff repair, not classified as baseline. Current local combined full 1725 tests passes; timing concern remains until focused repair and exact-head CI.",
+        "Active-to-idle input race repair: five deterministic cancellation/order tests fail against old behavior, seven pass after repair; 47 focused tests and isolated full 1732 tests pass with zero skips. Same-Pi and Pi/native gated fullscreen replay each match six canonical render frames, terminal checkpoints and normalized HTTP, including immediate /quit. Working now clears only after monitor shutdown; a completed key read after cancellation returns to the idle reader in order. Historical failed CI 38498196050 remains recorded; exact repair CI pending. See docs/parity/fixtures/input-handoff-current-pi-2026-10-14.json. No regular-mode/raw-byte/full-TUI claim."
       ],
       "dependencies": []
     },
@@ -2282,7 +2284,8 @@
       ],
       "evidence": [
         "EditorCompletionTests, TerminalInputTests and TerminalPtyTests cover editor input and completion; ExternalEditorTests and Linux PTY cover Ctrl+G child-process handoff and terminal restoration.",
-        "TerminalClipboardTests and TerminalPtyTests cover Linux image paste and WSL PowerShell image fallback; exact code commit 17d682c2d7206a052b8a65ca24cf9c514166e39e passed Linux CI run 36166108417 with 480/480 tests."
+        "TerminalClipboardTests and TerminalPtyTests cover Linux image paste and WSL PowerShell image fallback; exact code commit 17d682c2d7206a052b8a65ca24cf9c514166e39e passed Linux CI run 36166108417 with 480/480 tests.",
+        "Active-to-idle input race repair: five deterministic cancellation/order tests fail against old behavior, seven pass after repair; 47 focused tests and isolated full 1732 tests pass with zero skips. Same-Pi and Pi/native gated fullscreen replay each match six canonical render frames, terminal checkpoints and normalized HTTP, including immediate /quit. Working now clears only after monitor shutdown; a completed key read after cancellation returns to the idle reader in order. Historical failed CI 38498196050 remains recorded; exact repair CI pending. See docs/parity/fixtures/input-handoff-current-pi-2026-10-14.json. No regular-mode/raw-byte/full-TUI claim."
       ],
       "dependencies": []
     },
@@ -5280,6 +5283,7 @@
   "execution_policy": {
     "updated": "2026-10-14",
     "priority": [
+      "Before substantially expanding Resources, reproduce and eliminate the RPC clone preflight timeout and active-PTY exit race, or establish deterministic evidence for their causes. An unrelated later green run does not resolve either failure.",
       "Resume Resources / Instructions / Trust and finish all 194 required capabilities.",
       "Perform final bounded upstream refresh, fresh source audit, architecture regression review and clean-checkout full verification."
     ],
@@ -5451,6 +5455,16 @@
       },
       "comparison_cases": 98,
       "next": "Repair retained active-to-idle input handoff race, then directory discovery/ignore/order/limits and skill invocation boundaries."
+    },
+    "input_handoff_checkpoint": {
+      "fixture": "docs/parity/fixtures/input-handoff-current-pi-2026-10-14.json",
+      "dotnet": {
+        "passed": 1732,
+        "failed": 0,
+        "skipped": 0
+      },
+      "focused": 47,
+      "next": "Finish RPC settlement/save race repair and exact-head CI for both flakes before further Resources expansion."
     }
   }
 }

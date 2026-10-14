@@ -196,7 +196,7 @@ public sealed class TerminalEditor
             Render();
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (!input.TryRead(50, out var next))
+                if (!input.TryReadActive(50, cancellationToken, out var next))
                 {
                     _screen?.RefreshIfResized();
                     await Task.Delay(10, CancellationToken.None);
