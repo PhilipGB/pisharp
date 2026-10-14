@@ -25,7 +25,12 @@ for (const scenario of JSON.parse(fs.readFileSync(process.argv[3], 'utf8'))) {
     noExtensions: true, noThemes: true, noContextFiles: true,
     additionalSkillPaths: (scenario.skillPaths || []).map(p => path.join(root, p)),
     additionalPromptTemplatePaths: (scenario.promptPaths || []).map(p => path.join(root, p)) });
-  await loader.reload();
+  try { await loader.reload(); }
+  catch (error) {
+    if (!scenario.expectPathError) throw error;
+    results.push({id: scenario.id, pathError: error.message});
+    continue;
+  }
   const extensionPaths = paths => (paths || []).map(p => ({ path: path.join(root, p),
     metadata: { source: 'fixture-extension', scope: 'user', origin: 'package', baseDir: path.join(root, 'outside') } }));
   loader.extendResources({ skillPaths: extensionPaths(scenario.extensionSkillPaths),

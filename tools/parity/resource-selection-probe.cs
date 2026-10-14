@@ -17,14 +17,23 @@ foreach (var scenario in input.RootElement.EnumerateArray())
     var trusted = scenario.TryGetProperty("trusted", out var trust) && trust.GetBoolean();
     var userSettings = await UserSettings.LoadAsync(agent, _ => null);
     var projectSettings = await UserSettings.LoadProjectAsync(cwd);
-    var catalog = await ResourceCatalog.LoadAsync(cwd, agent, trusted,
-        discoverSkills: discover, discoverPrompts: discover,
-        additionalSkills: Paths("skillPaths"), additionalPrompts: Paths("promptPaths"),
-        userSkills: Settings("user", "skills"), userPrompts: Settings("user", "prompts"),
-        projectSkills: Settings("project", "skills"), projectPrompts: Settings("project", "prompts"),
-        extensionResources: new ExtensionResourceDiscovery(ExtensionPaths("extensionSkillPaths"),
-            ExtensionPaths("extensionPromptPaths"), [], []),
-        userPackages: userSettings.Packages, projectPackages: projectSettings?.Packages);
+    ResourceCatalog catalog;
+    try
+    {
+        catalog = await ResourceCatalog.LoadAsync(cwd, agent, trusted,
+            discoverSkills: discover, discoverPrompts: discover,
+            additionalSkills: Paths("skillPaths"), additionalPrompts: Paths("promptPaths"),
+            userSkills: Settings("user", "skills"), userPrompts: Settings("user", "prompts"),
+            projectSkills: Settings("project", "skills"), projectPrompts: Settings("project", "prompts"),
+            extensionResources: new ExtensionResourceDiscovery(ExtensionPaths("extensionSkillPaths"),
+                ExtensionPaths("extensionPromptPaths"), [], []),
+            userPackages: userSettings.Packages, projectPackages: projectSettings?.Packages);
+    }
+    catch (Exception error) when (scenario.TryGetProperty("expectPathError", out var expectedError) && expectedError.GetBoolean())
+    {
+        results.Add(new { id, pathError = error.Message });
+        continue;
+    }
     var skills = new List<object>();
     foreach (var skill in catalog.Skills)
     {

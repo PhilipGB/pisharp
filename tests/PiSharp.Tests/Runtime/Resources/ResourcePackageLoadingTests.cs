@@ -5,7 +5,55 @@ namespace PiSharp.Tests;
 public sealed class ResourcePackageLoadingTests
 {
     [Theory]
+    [InlineData("file://remote/tmp/package", "File URL host must be \"localhost\" or empty on linux")]
+    [InlineData("file:///tmp/package%2fchild", "File URL path must not include encoded / characters")]
+    [InlineData("file:///tmp/bad%", "URI malformed")]
+    [InlineData("file:///tmp/%E0%A4", "URI malformed")]
+    public async Task InvalidFileUrlPackageSourcesReportSourcePathErrors(string source, string message)
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-package-url-error-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var error = await Assert.ThrowsAsync<InvalidDataException>(() => ResourceCatalog.LoadAsync(root, root,
+                false, userPackages: [new(source)]));
+            Assert.Equal(message, error.Message);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Theory]
+    [InlineData("", "", "package")]
+    [InlineData("localhost", "", "package")]
+    [InlineData("", "?ignored#fragment", "package space")]
+    [InlineData("", "?bad%#%E0%A4", "package π%")]
+    public async Task FileUrlPackageSourcesLoadDecodedLocalPaths(string host, string suffix, string directory)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-package-url-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var package = Path.Combine(root, directory);
+        var path = Path.Combine(package, "prompts", "review.md");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        try
+        {
+            await File.WriteAllTextAsync(path, "Review URL package");
+            var source = new UriBuilder(new Uri(package + Path.DirectorySeparatorChar)) { Host = host }.Uri.AbsoluteUri + suffix;
+
+            var catalog = await ResourceCatalog.LoadAsync(root, agent, false,
+                discoverSkills: false, userPackages: [new(source)]);
+
+            var prompt = Assert.Single(catalog.Prompts);
+            Assert.Equal(path, prompt.Path);
+            Assert.Equal(new ResourceSourceInfo(path, source, "user", "package", package), prompt.SourceInfo);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Theory]
     [InlineData("../package")]
+    [InlineData("../package/")]
     [InlineData(" \t../package\r\n")]
     [InlineData("\uFEFF\u00A0../package\u2029\uFEFF")]
     [InlineData(" \t\r\n")]

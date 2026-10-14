@@ -27,7 +27,7 @@ class RpcEndedBeforeCheckpoint(Exception):
 
 
 def replay(product, pi, native, root, output, scenario):
-    package_scenario = scenario in ['local-package', 'padded-local-package']
+    package_scenario = scenario in ['local-package', 'padded-local-package', 'file-url-package']
     agent = root / product / 'agent'
     home = root / product / 'home'
     skill = root / product / ('package/skills/guide/SKILL.md' if package_scenario else 'guide/SKILL.md')
@@ -42,6 +42,8 @@ def replay(product, pi, native, root, output, scenario):
         (package / 'prompts/review.md').write_text('---\ndescription: Package review\n---\nReview $1')
         (package / 'package.json').write_text(json.dumps(dict(pi=dict(skills=['skills'], prompts=['prompts/review.md']))))
         source = '\uFEFF \t../package\r\n\uFEFF' if scenario == 'padded-local-package' else '../package'
+        if scenario == 'file-url-package':
+            source = package.as_uri() + '?ignored#fragment'
         (agent / 'settings.json').write_text(json.dumps(dict(packages=[source])))
     if scenario == 'malformed-flow':
         skill.write_text('---\nname: guide\nunused: [bad\ndescription: *missing\n---\nbody')
@@ -168,7 +170,7 @@ def main():
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package'], default='deleted-skill')
+    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package'], default='deleted-skill')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     args.output.parent.mkdir(parents=True, exist_ok=True)

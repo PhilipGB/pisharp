@@ -60,7 +60,20 @@
     },
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
-    "format": "passed"
+    "format": "passed",
+    "exactCi": {
+      "sha": "4b3837b19a91649231d0198b0a65ee86836d25f3",
+      "run": 38622219705,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38622219705",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1911,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "reproduction": "python3 tools/parity/startup-flags-network-probe.py --workers 8 --output artifacts/parity/<run>/startup-flags-network.json (build first; never rebuild concurrently with the probe)",
   "mechanism": "Unknown explicit local model IDs cause online /models discovery. ModelCatalog.ListAsync uses ResponseHeadersRead and reads the response body with the caller token; the catalogue HttpClient 10-second header timeout does not bound that subsequent body read. A loopback sends headers immediately and delays the body 16 seconds, exceeding the unchanged fixture deadline.",
@@ -110,6 +123,8 @@
     "startup-flags-stalled-body-stable-recovery.json": "ba742e7d126a8bc412f1e10e74d1ab791adaf59d76372eb712702bb4a13a135e",
     "startup-flags-full.log": "79e6f08ad9879aa1f96a19f5418f56b99c42c42f12ffac5e7c0cc86bfb54ff22",
     "startup-flags-stalled-body-stable-recovery-6.log": "c00910865bc12b75d2d5b0510ee12902af483b110be21b5e5eb878293f92517f",
-    "package-source-exact-ci-failed.log": "0d2cd9141d879388167a3bb2b976958319b6a9b482ffbac96f17f7063d054a5c"
+    "package-source-exact-ci-failed.log": "0d2cd9141d879388167a3bb2b976958319b6a9b482ffbac96f17f7063d054a5c",
+    "startup-flags-exact-ci.log": "d83bacf7fc5b3d593fc1b8a31c86e426a59193b141be15a7aa419cac53af1aae",
+    "startup-flags-docs.log": "b85b4243ac3276ed7c9a60a68a334541c954796a6f2b5dc0db8f982769ad6b52"
   }
 }

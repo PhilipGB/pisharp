@@ -1,0 +1,125 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "4b3837b19a91649231d0198b0a65ee86836d25f3",
+  "scope": "Local package file URL paths, escaped Unicode/percent names, ignored query/fragment text, trailing separator identity and named malformed URL errors.",
+  "characterization": {
+    "firstLoaderCases": 77,
+    "firstMismatches": [
+      "package-trailing-separator-source",
+      "package-file-url-source",
+      "package-file-url-localhost-source",
+      "package-file-url-query-source",
+      "package-file-url-encoded-space-source"
+    ],
+    "uriNativeFailFirst": 3,
+    "trailingSeparatorNativeFailFirst": 1,
+    "trailingSeparatorControls": 4,
+    "errorLoaderCases": 81,
+    "errorMismatches": [
+      "package-file-url-remote-host-error",
+      "package-file-url-encoded-slash-error",
+      "package-file-url-invalid-escape-error",
+      "package-file-url-invalid-utf8-error"
+    ],
+    "errorNativeFailFirst": 4
+  },
+  "implementation": [
+    "ResourcePackagePath owns source whitespace, home/URL expansion and lexical full-path resolution. Trailing separators normalize before package identity/provenance; original source strings remain intact.",
+    "Localhost file URLs decode to local paths, without a UNC localhost prefix on Linux. Query and fragment contents do not affect file paths.",
+    "Reject nonlocal Unix file URL hosts, encoded path separators, malformed escapes and invalid escaped UTF8 with the measured source error messages. Valid UTF8 and literal percent escapes remain supported."
+  ],
+  "verification": {
+    "loaderCases": 83,
+    "mismatches": 0,
+    "focusedPassed": 97,
+    "newNativeRows": 9,
+    "fullSuite": {
+      "passed": 1920,
+      "failed": 0,
+      "skipped": 0
+    },
+    "format": "passed",
+    "rpcProvider": {
+      "pi": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/package/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/package/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": "Package review"
+      },
+      "pisharp": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/package/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/package/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": "Package review"
+      }
+    },
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "docs": "Documentation paths verified: 132 documents, 500 references"
+  },
+  "newScenarioIds": [
+    "package-trailing-separator-source",
+    "package-trailing-dot-source",
+    "package-file-url-source",
+    "package-file-url-localhost-source",
+    "package-file-url-query-source",
+    "package-file-url-encoded-space-source",
+    "package-file-url-encoded-unicode-source",
+    "package-file-url-query-escape-control",
+    "package-file-url-remote-host-error",
+    "package-file-url-encoded-slash-error",
+    "package-file-url-invalid-escape-error",
+    "package-file-url-invalid-utf8-error"
+  ],
+  "comparison": "Actual pinned SettingsManager/DefaultResourceLoader versus UserSettings/ResourceCatalog: exact metadata/order/sourceInfo/body hashes and UTF16 lengths/raw diagnostics. Explicit error scenarios compare exception messages; other scenarios still propagate exceptions. Normal CLI RPC/provider URL replay compares commands, expansion, request count, acknowledgement and settlement.",
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "package-source-uri-errors-recovery.log": "fc6033947a7c95e39c0da87711ad87b775babc83dc1f718564775deda2238c91",
+    "package-source-uri-all-focused.log": "92b7e2e78606b066696b93673f36417f2939255fbb36c34ea543bde17f24b237",
+    "package-source-uri-rpc-pi.http.json": "45ed128e30cf6c00ec3910160ead5864bc655c79de8aff6e24161d50e9d1f57b",
+    "package-source-uri-expanded-first.log": "a5e6951e3d9247c05ee5528ca7224fd26a48df92fd0f57847f303a49ceb24544",
+    "package-source-uri-recovery.log": "3c290f01cc9b2ca6435ab35c1ec0788323aa9ef9ec62f62b819aa9f57e979218",
+    "package-source-uri-rpc.log": "84e2dcf4048e22350dee56ef83328155873ed74d2cf12b65e9839f3237d37bad",
+    "package-source-uri-rpc-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-source-uri-fresh-build.log": "0541581d71eba9d9a1d0bac01922a6ecae8490e99d2ab59f33dd0f885796b693",
+    "package-source-uri-rpc-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-source-uri-rpc-pisharp.records.json": "4e083802b49e1f74276716179ce698f9a32c82d028d31bd779960973d9d1d0b9",
+    "package-source-uri-errors-first.json": "5e5004f3259971592b5d614ed071c6b70803e8138a2f3b37cf694a127424b8d3",
+    "package-source-uri-errors-recovery.json": "6ea821045d3ecfe1c853ed969d0d2fe5f925e06c1e3eeb7e4962b57ad3af543b",
+    "package-source-uri-recovery.json": "c0acb463d37aecc2c155ea72ff0dba9dcf4132ee79b877073bb7ec468d65a897",
+    "package-source-uri-focused.log": "91b3e7ec97ff86e0acdd5a3aba640c7fdef83f3b607fc883142ced5544436a37",
+    "package-source-uri-expanded-first.json": "9b76dad27cbdd0f40f63911df29a1cafedcc05fc7ae357d64057ec19ef16910c",
+    "package-source-uri-first.json": "744101b90eb9f74391a91baf12d136a2f7739da236f9fc26ca0bba84b45a7b5b",
+    "package-source-uri-final.log": "702cd2994d52563870dd1ce37c49f8b818c1e560c7d17ddcde64fd86826c7c46",
+    "package-source-uri-first.log": "70f0d1c9de1e294ad34e542184c6a8006ed53a7b776b6255a81697a8d6ebec10",
+    "package-source-uri-native-first.log": "05ae05ebb02df6610462cd780e3f158655235458fd9ceb8bd1fdaed436dea969",
+    "package-source-uri-errors-first.log": "ffe28fe4f4f44024389264905c7671b74bdb054ec50e42ebe131e9ad04b773d2",
+    "package-source-uri-rpc.json": "efd60ffa55dccda4a9ce6ed9eaf0983a6b5ce09bc44a2ee08d121ba1d3d67b9b",
+    "package-source-uri-rpc-pisharp.http.json": "382f11a342f90df4afd58de50d030c0639085a163d2f5ca3b90f99b18677d05c",
+    "package-source-uri-complete.log": "3bde3138a27c97796635db1e7f9d8d4174dd8a827fc62232faae902b0f03447a",
+    "package-source-uri-focused-final.log": "c4d2696e3cf64d0ec1f23ac537caa727bb59cdc857124467a72b82b2560c70df",
+    "package-source-uri-complete.json": "ff2272ea6267588dba09fc9cb79db62ef250ea7cea97833c1269690006ba6d46",
+    "package-source-uri-errors-native-first.log": "478a9000dc50c0f2d79967a4382989acae97c852aff71d74efec933b02e70ad5",
+    "package-source-uri-final.json": "e272592c8636d19e9e3a6c69c8b2fc1307ad87be76f8a3b11ad0e4eda23cea2e",
+    "package-source-uri-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-source-uri-rpc-pi.records.json": "106cb27e1d9c5d2a5175e1f05a301b59646f9622953fff1083b928440f40320a",
+    "package-source-uri-full.log": "8e9ecd8289a6ea4138e7ed3ef0686ad11aaa5154fa8477c1fc86c105d401971e",
+    "package-source-uri-docs.log": "b85b4243ac3276ed7c9a60a68a334541c954796a6f2b5dc0db8f982769ad6b52"
+  },
+  "limits": [
+    "Linux evidence covers the named valid URL/error scenarios; additional path and malformed URL edge cases remain required. Windows/macOS differential coverage is not established by these Linux runs.",
+    "Package extensions/themes, managed npm/git, package CLI operations and whole resources/trust/reload remain open.",
+    "The independent startup-flags CI failure and repair are retained in startup-flags-network-isolation-2026-10-14.json; resource checks do not establish timing resolution."
+  ]
+}

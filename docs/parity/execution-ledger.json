@@ -968,7 +968,8 @@
         "Current Pi 3daa2028 YAML scalar slice: eight fail-first native tests/four controls and complete 231-case characterization reveal invalid explicit tag mismatches. Per-tag repair removes 28 metadata differences; final bounded 181-case matrix matches, including 50 tag pairs and 131 previous regressions. Real normal RPC CLI/provider !!int word case matches loaded description, skill expansion, settlement and suppressed warning/error boundary. Sixty focused and full 1849 tests pass, zero skips/warnings. See docs/parity/fixtures/resource-yaml-scalars-current-pi-2026-10-14.json. The full 231-case edge probe deliberately remains failing with four alias/numeric-key metadata differences and 26 raw diagnostic differences; no resource status change.",
         "Current Pi 3daa2028 resource YAML document slice: 255-case characterization exposes 20 metadata/42 raw warning differences; 13 diagnostic and eight mapping native fail-first failures are repaired. Alias expansion adds four native failures and a real scanner-abort case; scanner regression reproduces the untyped library exception. Set/trailing-scalar cases add three failures. The complete expanded 311-case probe now matches all metadata/body/diagnostic comparisons; 96 focused and full 1886 native tests pass with zero skips/warnings. Real normal RPC/provider replay proves malformed-flow startup skip and original unknown-skill input recovery. Separate fixture repairs 79b2b5e4f7 eliminate the retained port retry and dumb-terminal setup failures with deterministic/isolated evidence, exact CI 38564664115. See docs/parity/fixtures/resource-yaml-document-current-pi-2026-10-14.json. Other YAML/package/ignore/settings and whole terminal/trust/reload boundaries remain open; status remains in_progress.",
         "Skill invocation error terminal slice at Pi 3daa2028: fail-first 54,943 terminal/render differences; native context row regression fails first. Two paired 120x40 dark fullscreen runs and six-frame same-Pi calibration now match complete normalized state/render/provider behavior, with original /skill:guide args reaching the provider. Six new native rows, 67 focused and full 1892 tests pass with zero skips/warnings; Python 50 pass. See docs/parity/fixtures/skill-invocation-error-terminal-current-pi-2026-10-14.json. Repeated source-only reply/settlement calibration failures and failed active-resize calibration remain retained and unexplained; later successful calibration does not resolve them. No Resources status change.",
-        "Current Pi 3daa2028 local package source whitespace: two of 67 loader cases and three native rows fail first; one native control passes. ECMAScript trimming, blank scope roots and original source provenance now match all 71 full-loader cases, with U+FEFF/U+0085 and configured/canonical precedence controls retained. Padded and original local package RPC/provider replays match; 88 focused and full 1911 native tests pass with zero skips/warnings, Node 24 and Python 50 pass. See docs/parity/fixtures/resource-package-source-whitespace-current-pi-2026-10-14.json. Full package/resources/trust/reload remain in_progress; passing resource runs do not resolve retained historical timing failures."
+        "Current Pi 3daa2028 local package source whitespace: two of 67 loader cases and three native rows fail first; one native control passes. ECMAScript trimming, blank scope roots and original source provenance now match all 71 full-loader cases, with U+FEFF/U+0085 and configured/canonical precedence controls retained. Padded and original local package RPC/provider replays match; 88 focused and full 1911 native tests pass with zero skips/warnings, Node 24 and Python 50 pass. See docs/parity/fixtures/resource-package-source-whitespace-current-pi-2026-10-14.json. Full package/resources/trust/reload remain in_progress; passing resource runs do not resolve retained historical timing failures.",
+        "Current Pi 3daa2028 local package URL slice: five loader mismatches across 77 cases (four valid URLs and trailing separator provenance), plus four malformed URL differences across 81 cases and eight native fail-first rows. ResourcePackagePath resolves local/localhost file URLs, exact escaped UTF8 and source path errors, query/fragment exclusion and lexical trailing-separator identity. Expanded 83 full-loader cases and normal file-URL RPC/provider replay match; 97 focused and full 1920 native checks pass with zero skips/warnings; format verification passes. See docs/parity/fixtures/resource-package-file-urls-current-pi-2026-10-14.json. Full package extension/theme/managed sources/CLI operations and other path/error/trust/reload boundaries remain open."
       ],
       "dependencies": []
     },
@@ -1029,7 +1030,8 @@
         "Current Pi 3daa2028 normal RPC/provider local package fail-first: Pi loads Guide skill and Package review prompt and expands /skill:guide args. PiSharp 1542322b exits 2 before any RPC/provider input: packages must be a string. See current_pi_refresh.resource_package_characterization. No package behavior has been implemented or verified yet.",
         "Current Pi 3daa2028 local package slice: normal CLI startup rejects valid package arrays at fail-first; three settings and two loading native rows fail first. Initial 57 loader cases match, then three added lowercase-alias cases expose three source mismatches and three native failures/three controls. Final 60 source comparisons and normal RPC/provider package invocation now match; deleted-skill replay remains matched. 143 focused and full 1904 tests pass with zero skips/warnings; Python 50 pass. See docs/parity/fixtures/resource-packages-local-current-pi-2026-10-14.json. Package extension/theme/npm-git/CLI operations and further resource/trust/reload boundaries remain open; status in_progress.",
         "Current Pi 3daa2028 filesystem follow-up: two of 63 loader cases and two native regressions fail first; exact hidden-file control passes. Manifest glob dot filtering and canonical disabled-entry retention now match all 63 full-loader cases; 101 focused and full 1907 native tests pass with zero skips. The original two full-run process failures are retained with dedicated scheduling/diagnostic evidence at 391cb8ac63, exact CI 38614693502. The quiet-startup exact failed schedule remains unexplained and independent overload is not claimed repaired. See docs/parity/fixtures/resource-packages-filesystem-current-pi-2026-10-14.json. Full package/resource/trust/reload boundaries remain open.",
-        "Current Pi 3daa2028 local package source whitespace: two of 67 loader cases and three native rows fail first; one native control passes. ECMAScript trimming, blank scope roots and original source provenance now match all 71 full-loader cases, with U+FEFF/U+0085 and configured/canonical precedence controls retained. Padded and original local package RPC/provider replays match; 88 focused and full 1911 native tests pass with zero skips/warnings, Node 24 and Python 50 pass. See docs/parity/fixtures/resource-package-source-whitespace-current-pi-2026-10-14.json. Full package/resources/trust/reload remain in_progress; passing resource runs do not resolve retained historical timing failures."
+        "Current Pi 3daa2028 local package source whitespace: two of 67 loader cases and three native rows fail first; one native control passes. ECMAScript trimming, blank scope roots and original source provenance now match all 71 full-loader cases, with U+FEFF/U+0085 and configured/canonical precedence controls retained. Padded and original local package RPC/provider replays match; 88 focused and full 1911 native tests pass with zero skips/warnings, Node 24 and Python 50 pass. See docs/parity/fixtures/resource-package-source-whitespace-current-pi-2026-10-14.json. Full package/resources/trust/reload remain in_progress; passing resource runs do not resolve retained historical timing failures.",
+        "Current Pi 3daa2028 local package URL slice: five loader mismatches across 77 cases (four valid URLs and trailing separator provenance), plus four malformed URL differences across 81 cases and eight native fail-first rows. ResourcePackagePath resolves local/localhost file URLs, exact escaped UTF8 and source path errors, query/fragment exclusion and lexical trailing-separator identity. Expanded 83 full-loader cases and normal file-URL RPC/provider replay match; 97 focused and full 1920 native checks pass with zero skips/warnings; format verification passes. See docs/parity/fixtures/resource-package-file-urls-current-pi-2026-10-14.json. Full package extension/theme/managed sources/CLI operations and other path/error/trust/reload boundaries remain open."
       ],
       "dependencies": []
     },
@@ -5993,6 +5995,31 @@
       "original_ci_exact_schedule_proven": false,
       "status": "deterministic network coupling repaired; historical schedule attribution limited",
       "full_passed": 1911,
+      "failed": 0,
+      "skipped": 0,
+      "exact_ci": {
+        "sha": "4b3837b19a91649231d0198b0a65ee86836d25f3",
+        "run": 38622219705,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38622219705",
+        "jobs": "both pass",
+        "dotnet": {
+          "passed": 1911,
+          "failed": 0,
+          "skipped": 0
+        },
+        "nodePassed": 24,
+        "pythonPassed": 50
+      }
+    },
+    "resource_package_file_url_checkpoint": {
+      "fixture": "docs/parity/fixtures/resource-package-file-urls-current-pi-2026-10-14.json",
+      "loader_cases": 83,
+      "loader_mismatches": 0,
+      "native_fail_first": 8,
+      "new_native_rows": 9,
+      "focused_passed": 97,
+      "status": "bounded evidence; full capability remains in_progress",
+      "full_passed": 1920,
       "failed": 0,
       "skipped": 0
     }

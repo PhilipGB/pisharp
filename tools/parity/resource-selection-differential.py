@@ -138,6 +138,20 @@ def package_scenarios(edges=False):
     add('local-before-package', trusted=True, files={'project/.pi/skills/guide/SKILL.md': skill(body='local winner')})
     add('personal-auto-before-package', files={'agent/skills/guide/SKILL.md': skill(body='personal winner')})
     if edges:
+        add('trailing-separator-source', declaration='../outside/package/')
+        add('trailing-dot-source', declaration='../outside/package/.')
+        add('file-url-source', sourceUriPath='outside/package')
+        add('file-url-localhost-source', sourceUriPath='outside/package', sourceUriHost='localhost')
+        add('file-url-query-source', sourceUriPath='outside/package', sourceUriSuffix='?ignored#fragment')
+        add('file-url-encoded-space-source', sourceUriPath='outside/package space', package_manifest=None,
+            files={'outside/package space/prompts/review.md': 'Encoded space path'})
+        add('file-url-encoded-unicode-source', sourceUriPath='outside/package π%', package_manifest=None,
+            files={'outside/package π%/prompts/review.md': 'Unicode and literal percent path'})
+        add('file-url-query-escape-control', sourceUriPath='outside/package', sourceUriSuffix='?bad%#%E0%A4')
+        add('file-url-remote-host-error', declaration='file://remote/tmp/package', expectPathError=True)
+        add('file-url-encoded-slash-error', declaration='file:///tmp/package%2fchild', expectPathError=True)
+        add('file-url-invalid-escape-error', declaration='file:///tmp/bad%', expectPathError=True)
+        add('file-url-invalid-utf8-error', declaration='file:///tmp/%E0%A4', expectPathError=True)
         add('padded-source', declaration=' \t../outside/package\n')
         add('padded-project-source', declaration=None,
             project={'packages': [' \t../../outside/package\n']}, trusted=True)
@@ -192,6 +206,11 @@ def main():
                 link = work / name
                 link.parent.mkdir(parents=True, exist_ok=True)
                 link.symlink_to(target)
+            if 'sourceUriPath' in case:
+                source_uri = (work / case['sourceUriPath']).as_uri()
+                if case.get('sourceUriHost'):
+                    source_uri = source_uri.replace('file:///', 'file://' + case['sourceUriHost'] + '/', 1)
+                case['user']['packages'] = [source_uri + case.get('sourceUriSuffix', '')]
             for scope, path in [('user', work / 'agent/settings.json'), ('project', work / case.get('cwd', 'project') / '.pi/settings.json')]:
                 path.write_text(json.dumps(case.get(scope, {})))
         inputs = root / 'inputs.json'
