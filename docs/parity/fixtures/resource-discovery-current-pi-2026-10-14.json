@@ -1,0 +1,203 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "ad7c0d8f46a9bf2f5527b4091138cf7e027ec0f4",
+  "candidate": "Base plus focused discovery production/tests in this commit; comparisons captured against the working tree before publication.",
+  "comparison": "Real loadSkills/loadPromptTemplates with includeDefaults:false and one explicit directory. Exact skill/prompt metadata/order, relative paths, complete body UTF16 length/SHA256 and raw diagnostic type/path/text/order. SourceInfo, full DefaultResourceLoader/configuration and terminal rendering are outside this comparison.",
+  "match": true,
+  "cases": 17,
+  "results": [
+    {
+      "id": "root-declaration",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "ef22cfccab9c520b17e7d502fd7fc68c9e67099a5e2368f808f66c03c2a3629e"
+    },
+    {
+      "id": "root-missing-description",
+      "skills": 0,
+      "prompts": 0,
+      "diagnostics": [
+        {
+          "type": "warning",
+          "path": "scan/SKILL.md",
+          "category": "description is required"
+        }
+      ],
+      "resultSha256": "280a5e0d8c6c004f79bfb2ea8a2edd55402da9f8b96caf4cf5cf15b923896166"
+    },
+    {
+      "id": "root-invalid-yaml",
+      "skills": 0,
+      "prompts": 0,
+      "diagnostics": [
+        {
+          "type": "warning",
+          "path": "scan/SKILL.md",
+          "category": "Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 21:\n\ndescription: [broken\n                    ^\n"
+        }
+      ],
+      "resultSha256": "bdb87d5fa808bb7b693ce40e9314a5d5cd891cc7bb22c642c6366600c533a839"
+    },
+    {
+      "id": "root-aliases",
+      "skills": 3,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "db2f12a38b00cb32cb495fdb970f2f456b41fc6b1d460572dd2319dbe2a69613"
+    },
+    {
+      "id": "nested-alias-only",
+      "skills": 0,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "ca400ae7cf430e54ae3a30419794e55916b6e87205d598a4596fc6abd776485d"
+    },
+    {
+      "id": "case-sensitive-skills",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "8f972359fb5fc7474108152c606030771084b2c82c98fe729390ba03cd88c82a"
+    },
+    {
+      "id": "depth-first-order",
+      "skills": 3,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "a6afe4cca9c5328aec3902bee33d4521e45ed584b575d1d2bd22d8393f216483"
+    },
+    {
+      "id": "hidden-skills",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "548d86263b7056e906bf49540973f6726c3c3712aa171fb6b24adec14039c1f5"
+    },
+    {
+      "id": "root-declaration-link",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "83472f97d8d42eeab0c7742669f2bcd3e71d7ada245ff4b8053dcfc668850465"
+    },
+    {
+      "id": "broken-root-link",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "eaec98e6448eea438f8581d246a622e8af4dd69c1e931f74c1c651beb95791e6"
+    },
+    {
+      "id": "directory-link",
+      "skills": 1,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "1cf05bf7adcfbc4ce8506a6ef7bf7b85248337e34ab6c64f97fcefbbb97cd701"
+    },
+    {
+      "id": "prompt-direct-files",
+      "skills": 0,
+      "prompts": 1,
+      "diagnostics": [],
+      "resultSha256": "c4b4022f4b5b68c24ed1340eae3135a05de5cdd7408d482725064fc0f9915455"
+    },
+    {
+      "id": "prompt-hidden-file",
+      "skills": 0,
+      "prompts": 2,
+      "diagnostics": [],
+      "resultSha256": "c73e7ec24bcdeb6ce3e0f08ea81bb1ae5cab7f89c8f9f4778084f97e95e9b32c"
+    },
+    {
+      "id": "prompt-case-sensitive",
+      "skills": 0,
+      "prompts": 1,
+      "diagnostics": [],
+      "resultSha256": "0fbf5f39e76f56401ea03a015335577c63c4c1d1cd9e24bd6269ced1b9a05a6b"
+    },
+    {
+      "id": "prompt-file-link",
+      "skills": 0,
+      "prompts": 1,
+      "diagnostics": [],
+      "resultSha256": "21a60b59493deb462941ae0b3b3f72226ea07fc098c34cbbb42d6c688bb3eb33"
+    },
+    {
+      "id": "prompt-directory-link",
+      "skills": 0,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "e5ff5aff9ce0d7dfbaa11a5c141cbf8fd38aabab211012dd87b3424159851a7f"
+    },
+    {
+      "id": "over-one-thousand-skills",
+      "skills": 1002,
+      "prompts": 0,
+      "diagnostics": [],
+      "resultSha256": "844d6ef58f5633f3534a00400f049b6c66de46afff4cfc7fa40f4961d1d6fb70"
+    }
+  ],
+  "characterization": {
+    "initialSourceMismatches": 11,
+    "mismatchCases": [
+      "root-declaration",
+      "root-missing-description",
+      "root-invalid-yaml",
+      "root-aliases",
+      "case-sensitive-skills",
+      "depth-first-order",
+      "root-declaration-link",
+      "directory-link",
+      "prompt-hidden-file",
+      "prompt-case-sensitive",
+      "over-one-thousand-skills"
+    ],
+    "nativeFailFirst": {
+      "failed": 8,
+      "passed": 0,
+      "skipped": 0
+    }
+  },
+  "implementation": [
+    "ResourceFileDiscovery owns direct files and ordered directory traversal; ResourceCatalog delegates discovery for automatic/configured/extension/CLI roots.",
+    "A regular, exact SKILL.md stops child/alias traversal even if its later metadata read/parse fails. Without a declaration, only the scan root admits other .md skills; nested directories admit declarations. Hidden skill entries and node_modules are skipped.",
+    "Prompt directories admit all regular case-sensitive .md children, including hidden names, without recursion. File/directory links are followed; broken/nonregular files are excluded.",
+    "File/directory caps removed. Branch-local ancestor identities stop linked cycles without truncating unrelated paths; the cycle guard has native-only evidence."
+  ],
+  "verification": {
+    "focusedPassed": 71,
+    "fullPassed": 1745,
+    "fullFailed": 0,
+    "fullSkipped": 0,
+    "sourceTestsPassed": 124,
+    "cliProviderCasesAdded": 2,
+    "format": "passed",
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "exactHeadCi": "pending at publication"
+  },
+  "limits": [
+    "The 1002-skill comparison proves behavior above the former 1000-file cap. No 10000-directory-scale performance or long-path/platform claim.",
+    "Ignore-file semantics (.gitignore/.ignore/.fdignore), nested ignore precedence, canonical symlink deduplication, name collision/diagnostic order, default/configured application-source order and invocation errors remain open.",
+    "The native ancestor-cycle control is not a Pi cycle differential; noncyclic directory and file links are compared. Non-Linux coverage remains open.",
+    "Two real CLI/provider controls prove directory-selected skill alias and hidden prompt expansion with discovery disabled. Full trust/reload/presentation is not established.",
+    "All Resources capabilities remain in progress; all 194 required capabilities and the final audit remain required."
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-discovery-fail-first.json": "bca7a8c7e14c3223ab5e42f3ae82cdd79b69d8106faf39ba862f815844f5d38d",
+    "resource-discovery-fail-first.log": "d969138f1aa50600c3e7fb9672ad1d10239e98e6d966caecc8ca466eaf1cdb45",
+    "resource-discovery-fail-first-tests.log": "bd57ed1d4f67efaf419e57f02a0ee706d914c29cb41ea957573207781faff8dc",
+    "resource-discovery-recovery.json": "377ea21b393aa711111d3f2c1702d16c4e20d724d71d392650f047eb2c86f9e7",
+    "resource-discovery-recovery.log": "9c05287f00e3c620a5dadc77c345fc6d801259d0a368e4420fd36a6e2d91e66a",
+    "resource-discovery-final-focused-tests.log": "dfd05a94ca4584a322ec76ee92a3067c3c090fc0869f7865a1cf649e21dbd389",
+    "resource-discovery-full-tests.log": "200b5eb2f80bc85b11987f24d2923092b3b3ee800b265a36e6169e333bae8080",
+    "resource-discovery-build.log": "85adab55b6338f5c3761bf86a797d783ce7d4098da10e95124ad7d9098bf9863",
+    "resource-discovery-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "resource-discovery-source-tests.log": "9efdd75276a4dcd623c50d829fc08fb6a8a23fed1d37470c463ffe1d8caf4baf"
+  },
+  "reproduce": "python3 tools/parity/resource-discovery-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-discovery.json",
+  "next": "Characterize and match .gitignore/.ignore/.fdignore traversal filtering, then collisions/precedence and invocation errors."
+}

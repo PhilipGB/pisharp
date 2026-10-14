@@ -164,7 +164,7 @@ public sealed class ResourceCatalog
                     continue;
                 }
                 IReadOnlyList<string> paths;
-                if (Directory.Exists(selected)) paths = EnumerateResourceFiles(selected, isSkill ? "skills" : "prompts");
+                if (Directory.Exists(selected)) paths = ResourceFileDiscovery.Enumerate(selected, isSkill, cancellationToken);
                 else if (LocalResourceFileType.IsRegularFile(selected) && selected.EndsWith(".md", StringComparison.Ordinal)) paths = [selected];
                 else
                 {
@@ -183,8 +183,7 @@ public sealed class ResourceCatalog
         {
             var fullBase = Path.GetFullPath(baseDirectory);
             var candidates = LocalResourcePathRules.GetPaths(entries)
-                .SelectMany(entry => EnumerateResourceFiles(LocalResourcePathRules.ResolvePath(entry, fullBase), kind,
-                    recursive: kind == "prompts"))
+                .SelectMany(entry => ResourceFileDiscovery.Enumerate(LocalResourcePathRules.ResolvePath(entry, fullBase), kind == "skills", cancellationToken))
                 .Distinct(PathComparer()).ToArray();
             foreach (var path in LocalResourcePathRules.ApplyOverrides(candidates, entries, fullBase, skillPaths: kind == "skills"))
             {
@@ -197,7 +196,7 @@ public sealed class ResourceCatalog
             List<(string Path, ResourceSourceInfo Source)> target, HashSet<string> seen, bool skillPaths = false)
         {
             var fullBase = Path.GetFullPath(baseDirectory);
-            var candidates = EnumerateResourceFiles(root, kind);
+            var candidates = ResourceFileDiscovery.Enumerate(root, kind == "skills", cancellationToken);
             foreach (var path in LocalResourcePathRules.ApplyOverrides(candidates, entries, fullBase, skillPaths))
             {
                 var source = ProjectSourceInfo(path, root, kind, cwd, agentDirectory, explicitRoot: false);
@@ -217,68 +216,11 @@ public sealed class ResourceCatalog
         {
             foreach (var entry in entries ?? [])
             {
-                var files = EnumerateResourceFiles(entry.Path, kind, recursive: kind == "prompts");
+                var files = ResourceFileDiscovery.Enumerate(entry.Path, kind == "skills", cancellationToken);
                 foreach (var path in files)
                     AddPath(target, seen, path, entry.SourceInfo);
             }
         }
-    }
-
-    private static IReadOnlyList<string> EnumerateResourceFiles(string path, string kind, bool recursive = false)
-    {
-        if (File.Exists(path))
-        {
-            try { if (!LocalResourceFileType.IsRegularFile(path)) return []; }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return []; }
-            var valid = kind switch
-            {
-                "skills" => Path.GetFileName(path).Equals("SKILL.md", StringComparison.OrdinalIgnoreCase),
-                "prompts" => Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase),
-                _ => false
-            };
-            return valid ? [Path.GetFullPath(path)] : [];
-        }
-        if (!Directory.Exists(path)) return [];
-
-        var result = new List<string>();
-        var pending = new Stack<string>();
-        var visitedDirectories = 0;
-        pending.Push(Path.GetFullPath(path));
-        while (pending.Count > 0 && result.Count < 1000 && visitedDirectories++ < 10_000)
-        {
-            var directory = pending.Pop();
-            string[] entries;
-            try { entries = Directory.GetFileSystemEntries(directory).Order(StringComparer.Ordinal).ToArray(); }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
-            foreach (var entry in entries)
-            {
-                var name = Path.GetFileName(entry);
-                if (name.StartsWith(".", StringComparison.Ordinal) || name.Equals("node_modules", StringComparison.Ordinal))
-                    continue;
-                FileAttributes attributes;
-                try { attributes = File.GetAttributes(entry); }
-                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
-                if ((attributes & FileAttributes.Directory) != 0)
-                {
-                    if ((attributes & FileAttributes.ReparsePoint) == 0 && (kind == "skills" || recursive))
-                        pending.Push(entry);
-                    continue;
-                }
-                var match = kind switch
-                {
-                    "skills" => name.Equals("SKILL.md", StringComparison.OrdinalIgnoreCase),
-                    "prompts" => Path.GetExtension(name).Equals(".md", StringComparison.OrdinalIgnoreCase),
-                    _ => false
-                };
-                if (match)
-                {
-                    try { if (LocalResourceFileType.IsRegularFile(entry)) result.Add(Path.GetFullPath(entry)); }
-                    catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
-                }
-                if (result.Count == 1000) break;
-            }
-        }
-        return result.Order(StringComparer.Ordinal).ToArray();
     }
 
     private static StringComparer PathComparer() => OperatingSystem.IsWindows()

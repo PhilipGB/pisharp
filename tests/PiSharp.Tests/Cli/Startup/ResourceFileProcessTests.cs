@@ -26,7 +26,14 @@ public sealed class ResourceFileProcessTests
     public Task InvalidYamlResourceDoesNotBlockCliExpansion(bool skill) =>
         RunAsync(skill, unreadable: false, namedPipe: false, invalidYaml: true);
 
-    private static async Task RunAsync(bool skill, bool unreadable, bool namedPipe, bool invalidYaml = false)
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public Task DirectorySelectedMarkdownAliasReachesProvider(bool skill) =>
+        RunAsync(skill, unreadable: false, namedPipe: false, directory: true);
+
+    private static async Task RunAsync(bool skill, bool unreadable, bool namedPipe, bool invalidYaml = false,
+        bool directory = false)
     {
         if ((unreadable || namedPipe) && OperatingSystem.IsWindows()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resource-file-process-" + Guid.NewGuid().ToString("N"));
@@ -34,7 +41,9 @@ public sealed class ResourceFileProcessTests
         Directory.CreateDirectory(agent);
         Directory.CreateDirectory(Path.Combine(root, "guide"));
         Directory.CreateDirectory(Path.Combine(root, "denied"));
-        var path = Path.Combine(root, "guide", skill ? "SKILL.md" : "guide.md");
+        var fileName = skill ? "SKILL.md" : "guide.md";
+        if (directory) fileName = skill ? "guide.md" : ".guide.md";
+        var path = Path.Combine(root, "guide", fileName);
         var denied = Path.Combine(root, "denied", skill ? "SKILL.md" : "denied.md");
         var expected = "BEGIN\n" + new string('x', 66560) + "\ninvalid \uFFFD tail\nEND";
         var bytes = Encoding.UTF8.GetBytes("---\nname: guide\ndescription: Guide\n---\nBEGIN\n" + new string('x', 66560) + "\ninvalid ")
@@ -95,10 +104,10 @@ public sealed class ResourceFileProcessTests
                 };
                 foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--model", "fixture-model",
                     "--no-approve", "--no-session", "--no-tools", "--offline", "--no-extensions", "--no-skills", "--no-prompt-templates",
-                    "--no-context-files", "--print", skill ? "/skill:guide" : "/guide" }) start.ArgumentList.Add(argument);
+                    "--no-context-files", "--print", skill ? "/skill:guide" : directory ? "/.guide" : "/guide" }) start.ArgumentList.Add(argument);
                 if (unreadable || namedPipe || invalidYaml) { start.ArgumentList.Add(skill ? "--skill" : "--prompt-template"); start.ArgumentList.Add(denied); }
                 start.ArgumentList.Add(skill ? "--skill" : "--prompt-template");
-                start.ArgumentList.Add(path);
+                start.ArgumentList.Add(directory ? Path.GetDirectoryName(path)! : path);
                 foreach (var name in new[] { "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_MODEL",
                     "PISHARP_SETTINGS_PATH", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy" }) start.Environment.Remove(name);
                 start.Environment["NO_PROXY"] = "127.0.0.1,localhost";
