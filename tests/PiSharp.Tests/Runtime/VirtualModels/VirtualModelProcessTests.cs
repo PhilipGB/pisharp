@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
 using System.Text.Json;
 using PiSharp.Cli;
 using PiSharp.Runtime.Extensions;
@@ -18,13 +16,8 @@ public sealed class VirtualModelProcessTests
         Directory.CreateDirectory(agentDirectory);
         var sessionPath = Path.Combine(root, "session.json");
         var routeLog = Path.Combine(root, "routes.jsonl");
-        using var probe = new TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        var port = ((IPEndPoint)probe.LocalEndpoint).Port;
-        probe.Stop();
-        using var listener = new HttpListener();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        var (startedListener, port) = TestLoopbackListener.Start();
+        using var listener = startedListener;
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         Process? process = null;
         var provider = Task.Run(async () =>

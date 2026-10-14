@@ -5671,6 +5671,17 @@
         "sha": "79b2b5e4f78475d1399afa5a4a9d090a7cc16c0f",
         "run": 38564664115,
         "jobs": "both pass"
+      },
+      "additional_virtual_model_collision": {
+        "fixture": "docs/parity/fixtures/process-fixture-recovery-2026-10-14.json",
+        "observed_full_failed": 1,
+        "focused_passed": 2,
+        "cause": "Private one-attempt TCP reservation/HttpListener bind; repaired by shared tested collision retry.",
+        "full_candidate": {
+          "passed": 1892,
+          "failed": 0,
+          "skipped": 0
+        }
       }
     },
     "resource_yaml_document_checkpoint": {
