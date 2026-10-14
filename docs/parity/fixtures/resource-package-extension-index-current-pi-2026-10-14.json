@@ -50,7 +50,20 @@
     },
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
-    "format": "passed"
+    "format": "passed",
+    "exactCi": {
+      "sha": "fd30e4dec77f0b192202619d222aad070719582c",
+      "run": 38650603945,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38650603945",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1942,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "comparison": "Normal CLI bootstrap/trust trace, skill metadata/expansion, provider input/request count and settlement match in all seven entry-point/filter flows. Native test fails on two loaded resources before repair and expects one afterward; no-extensions control stays empty.",
   "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
@@ -131,7 +144,9 @@
     "package-extension-index-file-regression-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "package-extension-index-file-regression.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
     "package-extension-index-sibling-first.log": "1a4453f10ed0b153491b448d2f5e10dc7ec484e08cd06498e301ac772bc41042",
-    "package-extension-index-sibling-first-pisharp.records.json": "d863226de819d18ae1167b6dbcc455a1bc97be9c3ab38143c309d44bb3bbb1c9"
+    "package-extension-index-sibling-first-pisharp.records.json": "d863226de819d18ae1167b6dbcc455a1bc97be9c3ab38143c309d44bb3bbb1c9",
+    "package-extension-index-exact-ci.log": "0160ccbdde29f5f93efe5f968b17ab2d876cc632b892312872d5e23c7add7012",
+    "package-extension-index-docs.log": "ec90e586e1b094bde85ef404b7c42c22e29f47fa85c31139bb667b01a5bb5a12"
   },
   "limits": [
     "This checkpoint proves root index precedence. Manifest-declared entry discovery, ignore files, aliases/collisions, missing/error/reload/project scope semantics and managed package/CLI workflows remain open.",

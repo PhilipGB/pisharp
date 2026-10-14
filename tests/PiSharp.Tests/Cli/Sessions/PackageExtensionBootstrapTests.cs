@@ -18,6 +18,14 @@ public sealed class PackageExtensionBootstrapTests
     [InlineData(true, "root")]
     [InlineData(false, "index-with-sibling")]
     [InlineData(true, "index-with-sibling")]
+    [InlineData(false, "nested-manifest")]
+    [InlineData(true, "nested-manifest")]
+    [InlineData(false, "ignored-sibling")]
+    [InlineData(true, "ignored-sibling")]
+    [InlineData(false, "hidden-sibling")]
+    [InlineData(true, "hidden-sibling")]
+    [InlineData(false, "node-modules-sibling")]
+    [InlineData(true, "node-modules-sibling")]
     public async Task PersonalPackageTrustHandlersLoadBeforeTheHeadlessProjectDecision(bool noExtensions, string mode)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-package-bootstrap-" + Guid.NewGuid().ToString("N"));
@@ -33,6 +41,24 @@ public sealed class PackageExtensionBootstrapTests
             File.Copy(typeof(ResourceDiscoveryFixture).Assembly.Location, extension);
             if (mode == "index-with-sibling")
                 File.Copy(extension, Path.Combine(Path.GetDirectoryName(extension)!, "sibling.dll"));
+            if (mode is "nested-manifest" or "ignored-sibling" or "hidden-sibling" or "node-modules-sibling")
+            {
+                var directory = Path.GetDirectoryName(extension)!;
+                var original = extension;
+                extension = Path.Combine(directory, "guide.dll");
+                File.Move(original, extension);
+                var sibling = Path.Combine(directory, mode == "hidden-sibling" ? ".hidden.dll" : "blocked.dll");
+                if (mode == "node-modules-sibling")
+                {
+                    sibling = Path.Combine(directory, "node_modules", "index.dll");
+                    Directory.CreateDirectory(Path.GetDirectoryName(sibling)!);
+                }
+                File.Copy(extension, sibling);
+                if (mode == "nested-manifest")
+                    await File.WriteAllTextAsync(Path.Combine(directory, "package.json"), "{\"pi\":{\"extensions\":[\"guide.dll\"]}}");
+                if (mode == "ignored-sibling")
+                    await File.WriteAllTextAsync(Path.Combine(directory, ".ignore"), "blocked.*\n");
+            }
             await File.WriteAllTextAsync(Path.Combine(package, "package.json"), "{\"pi\":{\"extensions\":[\"extensions\"]}}");
             if (mode == "root")
             {

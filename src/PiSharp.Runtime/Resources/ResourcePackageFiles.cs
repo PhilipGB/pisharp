@@ -1,6 +1,3 @@
-using System.Text.Json;
-using PiSharp.Runtime.Extensions;
-
 namespace PiSharp.Runtime.Resources;
 
 internal sealed record PackageResourceFile(string Path, ResourceSourceInfo Source, bool Enabled);
@@ -41,11 +38,11 @@ internal sealed class ResourcePackageFiles
                 continue;
             }
             if (!Directory.Exists(root)) continue;
-            var manifest = ReadManifest(root);
+            var manifest = ResourcePackageManifest.Read(root);
             if (manifest is null && !package.HasFilter &&
                 !new[] { "extensions", "skills", "prompts", "themes" }.Any(kind => Directory.Exists(Path.Combine(root, kind))))
             {
-                foreach (var path in ExtensionCatalog.EnumerateConfiguredAssemblies(root))
+                foreach (var path in ResourceExtensionFiles.Enumerate(root))
                     if (extensionPaths.Add(path)) result.Extensions.Add(new(path,
                         new(path, package.Source, declaration.Scope, "package", root), true));
             }
@@ -83,23 +80,6 @@ internal sealed class ResourcePackageFiles
         return result;
     }
 
-    private static Dictionary<string, IReadOnlyList<string>>? ReadManifest(string root)
-    {
-        try
-        {
-            using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "package.json")));
-            if (document.RootElement.ValueKind != JsonValueKind.Object ||
-                !document.RootElement.TryGetProperty("pi", out var pi) || pi.ValueKind != JsonValueKind.Object) return null;
-            var result = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-            foreach (var kind in new[] { "skills", "prompts", "themes", "extensions" })
-                if (pi.TryGetProperty(kind, out var entries) && entries.ValueKind == JsonValueKind.Array &&
-                    entries.EnumerateArray().All(entry => entry.ValueKind == JsonValueKind.String))
-                    result[kind] = entries.EnumerateArray().Select(entry => entry.GetString()!).ToArray();
-            return result;
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException) { return null; }
-    }
-
     private static IReadOnlyList<string> Entries(IReadOnlyList<string> entries, string root, string kind, CancellationToken token)
     {
         var result = new List<string>();
@@ -131,7 +111,7 @@ internal sealed class ResourcePackageFiles
             try
             {
                 if (File.Exists(path)) return Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase) ? [Path.GetFullPath(path)] : [];
-                return Directory.Exists(path) ? ExtensionCatalog.FindAssemblies(path).ToArray() : [];
+                return ResourceExtensionFiles.Enumerate(path);
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return []; }
         }
