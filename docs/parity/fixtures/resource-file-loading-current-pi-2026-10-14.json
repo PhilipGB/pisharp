@@ -435,7 +435,11 @@
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "exitCode": 0
     },
-    "exactHeadCi": "pending publication"
+    "exactHeadCi": {
+      "sha": "5f2a23f03ee634b0d3cf886964096a950234c3f3",
+      "run": 38497342247,
+      "conclusion": "success"
+    }
   },
   "testContractCorrection": "Preserved original 65537 zero-byte and invalid UTF8 [C3,28] cases plus discovery-disabled assertion. Complete text/replacement equality replaces the unmatched fail-closed policy.",
   "limitations": [

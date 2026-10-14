@@ -9,13 +9,21 @@ internal static class LocalResourceFileType
     private const int TypeMask = 0xf000;
     private const int RegularFile = 0x8000;
 
-    internal static bool IsRegularFile(string path)
+    internal static bool IsRegularFile(string path) => GetFileType(path) == RegularFile;
+
+    internal static bool ExistsFollowingLinks(string path)
+    {
+        try { _ = GetFileType(path); return true; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    private static int GetFileType(string path)
     {
         if (OperatingSystem.IsLinux())
         {
             // statx has a fixed ABI across Linux architectures; mode is at byte 28.
             if (Statx(-100, path, 0, 1, out var status) != 0) throw StatError(path);
-            return (status.Mode & TypeMask) == RegularFile;
+            return status.Mode & TypeMask;
         }
         if (OperatingSystem.IsMacOS())
         {
@@ -25,11 +33,15 @@ internal static class LocalResourceFileType
                 var result = RuntimeInformation.ProcessArchitecture == Architecture.X64
                     ? DarwinStat64(path, buffer) : DarwinStat(path, buffer);
                 if (result != 0) throw StatError(path);
-                return (Marshal.ReadInt16(buffer, 4) & TypeMask) == RegularFile;
+                return Marshal.ReadInt16(buffer, 4) & TypeMask;
             }
             finally { Marshal.FreeHGlobal(buffer); }
         }
-        return File.Exists(path) && (File.GetAttributes(path) & FileAttributes.Device) == 0;
+        var attributes = File.GetAttributes(path);
+        if ((attributes & FileAttributes.ReparsePoint) != 0 && File.ResolveLinkTarget(path, returnFinalTarget: true) is { } target)
+            attributes = File.GetAttributes(target.FullName);
+        if ((attributes & FileAttributes.Directory) != 0) return 0x4000;
+        return (attributes & FileAttributes.Device) == 0 ? RegularFile : 0;
     }
 
     private static IOException StatError(string path)

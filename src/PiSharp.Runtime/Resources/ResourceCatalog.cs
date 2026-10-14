@@ -125,7 +125,6 @@ public sealed class ResourceCatalog
         {
             cancellationToken.ThrowIfCancellationRequested();
             var name = Path.GetFileNameWithoutExtension(path);
-            if (!Regex.IsMatch(name, "^[a-zA-Z0-9_-]+$", RegexOptions.CultureInvariant)) continue;
             var existing = prompts.FirstOrDefault(item => item.Name == name);
             if (existing is not null)
             {
@@ -149,20 +148,25 @@ public sealed class ResourceCatalog
             foreach (var root in roots ?? [])
             {
                 var selected = LocalResourcePathRules.ResolvePath(root, baseDirectory);
-                if (!Directory.Exists(selected) && !File.Exists(selected))
-                    throw new FileNotFoundException($"Explicit {description} path does not exist.", selected);
-                var paths = EnumerateResourceFiles(selected, description == "skill" ? "skills" : "prompts").ToArray();
-                if (paths.Length == 0 && File.Exists(selected))
-                    throw new InvalidDataException(description == "skill"
-                        ? "Explicit skill file must be named SKILL.md."
-                        : "Explicit prompt template must be a .md file.");
+                var isSkill = description == "skill";
+                var source = new ResourceSourceInfo(Path.GetFullPath(selected), "local", "temporary", "top-level",
+                    Path.GetDirectoryName(Path.GetFullPath(selected)));
+                if (!LocalResourceFileType.ExistsFollowingLinks(selected))
+                {
+                    if (isSkill) skillDiagnostics.Add(new("warning", "skill path does not exist", selected, SourceInfo: source));
+                    continue;
+                }
+                IReadOnlyList<string> paths;
+                if (Directory.Exists(selected)) paths = EnumerateResourceFiles(selected, isSkill ? "skills" : "prompts");
+                else if (LocalResourceFileType.IsRegularFile(selected) && selected.EndsWith(".md", StringComparison.Ordinal)) paths = [selected];
+                else
+                {
+                    if (isSkill) skillDiagnostics.Add(new("warning", "skill path is not a markdown file", selected, SourceInfo: source));
+                    continue;
+                }
                 foreach (var path in paths)
                 {
-                    if (description == "skill" && !Path.GetFileName(path).Equals("SKILL.md", StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidDataException("Explicit skill file must be named SKILL.md.");
-                    var source = new ResourceSourceInfo(Path.GetFullPath(path), "local", "temporary", "top-level",
-                        Path.GetDirectoryName(Path.GetFullPath(path)));
-                    AddPath(target, seen, path, source);
+                    AddPath(target, seen, path, source with { Path = Path.GetFullPath(path), BaseDir = Path.GetDirectoryName(Path.GetFullPath(path)) });
                 }
             }
         }
@@ -217,6 +221,8 @@ public sealed class ResourceCatalog
     {
         if (File.Exists(path))
         {
+            try { if (!LocalResourceFileType.IsRegularFile(path)) return []; }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return []; }
             var valid = kind switch
             {
                 "skills" => Path.GetFileName(path).Equals("SKILL.md", StringComparison.OrdinalIgnoreCase),
@@ -257,7 +263,11 @@ public sealed class ResourceCatalog
                     "prompts" => Path.GetExtension(name).Equals(".md", StringComparison.OrdinalIgnoreCase),
                     _ => false
                 };
-                if (match) result.Add(Path.GetFullPath(entry));
+                if (match)
+                {
+                    try { if (LocalResourceFileType.IsRegularFile(entry)) result.Add(Path.GetFullPath(entry)); }
+                    catch (Exception error) when (error is IOException or UnauthorizedAccessException) { continue; }
+                }
                 if (result.Count == 1000) break;
             }
         }

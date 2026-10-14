@@ -1,0 +1,516 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "scenarios": [
+    {
+      "id": "skill-normal",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "normal"
+    },
+    {
+      "id": "skill-alias",
+      "kind": "skill",
+      "paths": [
+        "alias.md"
+      ],
+      "variant": "alias"
+    },
+    {
+      "id": "skill-wrong-extension",
+      "kind": "skill",
+      "paths": [
+        "guide.txt"
+      ],
+      "variant": "wrong-extension"
+    },
+    {
+      "id": "skill-uppercase",
+      "kind": "skill",
+      "paths": [
+        "GUIDE.MD"
+      ],
+      "variant": "uppercase"
+    },
+    {
+      "id": "skill-missing",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "missing"
+    },
+    {
+      "id": "skill-fifo",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "fifo"
+    },
+    {
+      "id": "skill-symlink",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "symlink"
+    },
+    {
+      "id": "skill-broken-link",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "broken-link"
+    },
+    {
+      "id": "skill-empty-directory",
+      "kind": "skill",
+      "paths": [
+        "SKILL.md"
+      ],
+      "variant": "empty-directory"
+    },
+    {
+      "id": "prompt-normal",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "normal"
+    },
+    {
+      "id": "prompt-alias",
+      "kind": "prompt",
+      "paths": [
+        "alias.md"
+      ],
+      "variant": "alias"
+    },
+    {
+      "id": "prompt-wrong-extension",
+      "kind": "prompt",
+      "paths": [
+        "guide.txt"
+      ],
+      "variant": "wrong-extension"
+    },
+    {
+      "id": "prompt-uppercase",
+      "kind": "prompt",
+      "paths": [
+        "GUIDE.MD"
+      ],
+      "variant": "uppercase"
+    },
+    {
+      "id": "prompt-missing",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "missing"
+    },
+    {
+      "id": "prompt-fifo",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "fifo"
+    },
+    {
+      "id": "prompt-symlink",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "symlink"
+    },
+    {
+      "id": "prompt-broken-link",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "broken-link"
+    },
+    {
+      "id": "prompt-empty-directory",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ],
+      "variant": "empty-directory"
+    },
+    {
+      "id": "prompt-spaces-name",
+      "kind": "prompt",
+      "paths": [
+        "space name.md"
+      ],
+      "variant": "normal"
+    }
+  ],
+  "match": true,
+  "piSharpBaseSha": "5f2a23f03ee634b0d3cf886964096a950234c3f3",
+  "matchedResults": [
+    {
+      "id": "skill-normal",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "SKILL.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "skill-alias",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "alias.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "skill-wrong-extension",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "guide.txt",
+            "category": "skill path is not a markdown file"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "id": "skill-uppercase",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "GUIDE.MD",
+            "category": "skill path is not a markdown file"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "id": "skill-missing",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "SKILL.md",
+            "category": "skill path does not exist"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "id": "skill-fifo",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "SKILL.md",
+            "category": "skill path is not a markdown file"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "id": "skill-symlink",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "SKILL.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "skill-broken-link",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "SKILL.md",
+            "category": "skill path does not exist"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "id": "skill-empty-directory",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-normal",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-alias",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "alias",
+            "description": "Guide",
+            "path": "alias.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-wrong-extension",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-uppercase",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-missing",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-fifo",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-symlink",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-broken-link",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-empty-directory",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-spaces-name",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "space name",
+            "description": "Guide",
+            "path": "space name.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    }
+  ],
+  "rawComparison": {
+    "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-path-final.json",
+    "sha256": "c6e5bb3d88f18b205c684458dae13625581160a9fb4473bb45043d9275b573bd"
+  },
+  "comparison": "Exact metadata, order, complete body SHA256/UTF16 length and diagnostic messages/types/paths/order from real pinned loadSkills/loadPromptTemplates. Each native case runs in a separate bounded process; named-pipe stalls are retained as TimeoutAfter4Seconds mismatches, never treated as a skip.",
+  "implementation": "LocalResourceFileType follows links for existence and regular-file classification using the existing native stat owner. Explicit .md skill aliases load; missing/invalid skill paths warn while missing/invalid prompt paths are ignored. Extension checks are case-sensitive and prompt names retain filename characters. Nonregular discovered files are filtered before reading. Runtime capability ownership and dependency direction are preserved.",
+  "characterization": {
+    "original": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-path-first.json",
+      "sha256": "e8997247f92175a3b28e84de4a94b7254e5bf0b9dedea7be20fb9cc6c55157b8",
+      "mismatches": 12,
+      "cases": 19
+    },
+    "reviewedDriver": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-path-reviewed-first.json",
+      "sha256": "fa5a8d3b4dd3e04fd52d2baac500d0011fbec6091d1fc1683fb28d1e861700f4",
+      "mismatches": 12,
+      "cases": 19
+    },
+    "native": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-path-fail-first-tests.log",
+      "sha256": "d41f5c385e93e33f9e206d032dce26bfb2d1def1ef35fc583676711e1230de75",
+      "failed": 11,
+      "passed": 1,
+      "skipped": 0
+    },
+    "originalProbeArchive": [
+      {
+        "path": "artifacts/parity/resources-current-pi-2026-10-14/first-pisharp-resource-path-differential.py",
+        "sha256": "f292aa9e1418de623d06d50d571355dc3cca16fb78b61c97498a3fe6d95a30cd"
+      },
+      {
+        "path": "artifacts/parity/resources-current-pi-2026-10-14/first-pisharp-resource-path-probe.cs",
+        "sha256": "28698de171ffe4f77b5171c711ac8a4fc6b18b08c8726e99bb9815ce971fef6b"
+      },
+      {
+        "path": "artifacts/parity/resources-current-pi-2026-10-14/first-pisharp-resource-path-probe.mjs",
+        "sha256": "3e8974ee729ad1bdfd83c85a27d09b616c31e1477359a98d466c0672f78cfe1b"
+      }
+    ]
+  },
+  "verification": {
+    "focused": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-path-final-focused.log",
+      "sha256": "738653e3ec3f049780a5003f4eef0c351b3d087951242558ff3e5bbff288109d",
+      "passed": 45,
+      "failed": 0,
+      "skipped": 0
+    },
+    "namedPipeCliProviderChecks": 2,
+    "build": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-path-final-build.log",
+      "sha256": "7946f4a496b9ffad357b820056bee54b0cbe4bf05e7e15854f5ebc6692bd858c",
+      "warnings": 0,
+      "errors": 0
+    },
+    "format": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-path-verify-format.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    "full": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-path-final-full-tests.log",
+      "sha256": "6edc397080014c5c48cbae02b42e4337ba94ceb5489f7d9291f2771399450b30",
+      "passed": 1694,
+      "failed": 0,
+      "skipped": 0
+    },
+    "exactHeadCi": "pending publication"
+  },
+  "testContractCorrection": "Preserved the original missing-skill path and surrounding trust/collision/reload scenarios; asserts the source-equivalent skill path does not exist warning instead of terminating discovery. Missing CLI flag-value parser assertion remains unchanged.",
+  "limitations": [
+    "These 19 exact comparisons use Linux statx and real files/links/FIFOs. macOS ABI remains source-reviewed; other OS runtime evidence is unavailable.",
+    "Two real CLI/provider cases prove pipes do not block native command expansion; complete Pi CLI/terminal request comparisons remain separate.",
+    "Broader recursive directory discovery/root skill preference/ignore rules/order/limits, YAML grammar and typed metadata, collisions, path races, later invocation errors, resources/trust/reload/startup remain open."
+  ],
+  "nextSourceFinding": "Native ResourceCatalog still parses frontmatter with a handwritten string parser: inline comments, YAML escaped strings/types/flow maps/anchors/duplicates/errors and per-file parse recovery require characterization. Directory discovery and skill invocation failure behavior also remain in the active family. Initial 78-case real-loader frontmatter comparison exposes 49 mismatches, retained in artifacts/parity/resources-current-pi-2026-10-14/resource-frontmatter-first.json.",
+  "reproduce": [
+    "python3 tools/parity/resource-path-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/resources-current-pi-2026-10-14/resource-path-final.json",
+    "dotnet test PiSharp.slnx --filter \"FullyQualifiedName~ResourcePathTests|FullyQualifiedName~LocalResourceFileTypeTests|FullyQualifiedName~ResourceCatalogTests|FullyQualifiedName~ResourceFileProcessTests|FullyQualifiedName~ResourceFileLoadingTests\"",
+    "dotnet format PiSharp.slnx --verify-no-changes --no-restore",
+    "dotnet build PiSharp.slnx --warnaserror --no-restore",
+    "dotnet test PiSharp.slnx --no-build --no-restore"
+  ]
+}

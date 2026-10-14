@@ -143,8 +143,10 @@ public sealed class ResourceCatalogTests
             Assert.Contains("Wrong skill", await chosen.InvokeSkillAsync("project-secret", ""));
             Assert.DoesNotContain("Run a script", await chosen.InvokeSkillAsync("project-secret", ""));
             File.Delete(Path.Combine(collidingSkill, "SKILL.md"));
-            await Assert.ThrowsAsync<FileNotFoundException>(() => ResourceCatalog.LoadAsync(project, agent, false,
-                discoverSkills: false, additionalSkills: ["missing-skill"]));
+            var missing = await ResourceCatalog.LoadAsync(project, agent, false,
+                discoverSkills: false, additionalSkills: ["missing-skill"]);
+            Assert.Contains(missing.SkillDiagnostics, diagnostic => diagnostic.Message == "skill path does not exist" &&
+                diagnostic.Path == Path.Combine(project, "missing-skill"));
             Assert.Throws<ArgumentException>(() => PiSharp.Cli.CliArguments.Parse(["--skill"]));
             var trusted = await ResourceCatalog.LoadAsync(project, agent, true);
             Assert.Contains(trusted.Skills, skill => skill.Name == "project-secret");

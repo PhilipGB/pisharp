@@ -12,9 +12,17 @@ public sealed class ResourceFileProcessTests
     [InlineData(false, false)]
     [InlineData(true, true)]
     [InlineData(false, true)]
-    public async Task CompleteExpandedResourceReachesProviderAfterOptionalReadFailure(bool skill, bool unreadable)
+    public Task CompleteExpandedResourceReachesProviderAfterOptionalReadFailure(bool skill, bool unreadable) =>
+        RunAsync(skill, unreadable, namedPipe: false);
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public Task NamedPipeResourceDoesNotBlockCliExpansion(bool skill) => RunAsync(skill, unreadable: false, namedPipe: true);
+
+    private static async Task RunAsync(bool skill, bool unreadable, bool namedPipe)
     {
-        if (unreadable && OperatingSystem.IsWindows()) return;
+        if ((unreadable || namedPipe) && OperatingSystem.IsWindows()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resource-file-process-" + Guid.NewGuid().ToString("N"));
         var agent = Path.Combine(root, "agent");
         Directory.CreateDirectory(agent);
@@ -32,7 +40,15 @@ public sealed class ResourceFileProcessTests
             try
             {
                 await File.WriteAllBytesAsync(path, bytes);
-                await File.WriteAllTextAsync(denied, "---\nname: denied\ndescription: Denied\n---\nunreadable resource");
+                if (namedPipe)
+                {
+                    var pipeStart = new ProcessStartInfo("mkfifo");
+                    pipeStart.ArgumentList.Add(denied);
+                    using var createPipe = Process.Start(pipeStart)!;
+                    await createPipe.WaitForExitAsync(deadline.Token);
+                    Assert.Equal(0, createPipe.ExitCode);
+                }
+                else await File.WriteAllTextAsync(denied, "---\nname: denied\ndescription: Denied\n---\nunreadable resource");
                 if (unreadable && !OperatingSystem.IsWindows()) File.SetUnixFileMode(denied, UnixFileMode.None);
                 await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), JsonSerializer.Serialize(new
                 {
@@ -72,7 +88,7 @@ public sealed class ResourceFileProcessTests
                 foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--model", "fixture-model",
                     "--no-approve", "--no-session", "--no-tools", "--offline", "--no-extensions", "--no-skills", "--no-prompt-templates",
                     "--no-context-files", "--print", skill ? "/skill:guide" : "/guide" }) start.ArgumentList.Add(argument);
-                if (unreadable) { start.ArgumentList.Add(skill ? "--skill" : "--prompt-template"); start.ArgumentList.Add(denied); }
+                if (unreadable || namedPipe) { start.ArgumentList.Add(skill ? "--skill" : "--prompt-template"); start.ArgumentList.Add(denied); }
                 start.ArgumentList.Add(skill ? "--skill" : "--prompt-template");
                 start.ArgumentList.Add(path);
                 foreach (var name in new[] { "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_MODEL",
