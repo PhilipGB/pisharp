@@ -8,7 +8,7 @@ public sealed record ResourceSourceInfo(string Path, string Source, string Scope
 public sealed record SkillResource(string Name, string Description, string Path, bool ExplicitOnly, ResourceSourceInfo SourceInfo);
 public sealed record PromptResource(string Name, string Description, string Template, string Path, ResourceSourceInfo SourceInfo);
 
-/// <summary>Discovers bounded user resources; project auto-discovery requires trust, while explicit paths are caller-selected.</summary>
+/// <summary>Discovers user resources; project auto-discovery requires trust, while explicit paths are caller-selected.</summary>
 public sealed class ResourceCatalog
 {
     public IReadOnlyList<SkillResource> Skills { get; }
@@ -84,7 +84,9 @@ public sealed class ResourceCatalog
         foreach (var (path, source) in skillFiles)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var (metadata, _) = Parse(await ReadBoundedAsync(path, cancellationToken));
+            var text = await ReadResourceAsync(path, source, skillDiagnostics, cancellationToken);
+            if (text is null) continue;
+            var (metadata, _) = Parse(text);
             var name = metadata.GetValueOrDefault("name");
             if (string.IsNullOrEmpty(name))
                 name = Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
@@ -131,7 +133,9 @@ public sealed class ResourceCatalog
                     new("prompt", name, existing.Path, path, existing.SourceInfo, source), source));
                 continue;
             }
-            var (metadata, body) = Parse(await ReadBoundedAsync(path, cancellationToken));
+            var text = await ReadResourceAsync(path, source, promptDiagnostics, cancellationToken);
+            if (text is null) continue;
+            var (metadata, body) = Parse(text);
             var description = metadata.GetValueOrDefault("description");
             if (string.IsNullOrEmpty(description)) description = PromptDescription(body);
             prompts.Add(new(name, description, body, path, source));
@@ -298,7 +302,7 @@ public sealed class ResourceCatalog
     public async Task<string> InvokeSkillAsync(string name, string arguments, CancellationToken cancellationToken = default)
     {
         var skill = Skills.SingleOrDefault(item => item.Name == name) ?? throw new ArgumentException($"Unknown skill: {name}");
-        var (_, body) = Parse(await ReadBoundedAsync(skill.Path, cancellationToken));
+        var (_, body) = Parse(await ReadTextAsync(skill.Path, cancellationToken));
         var skillDirectory = Path.GetDirectoryName(skill.Path) ?? Path.GetFullPath(".");
         var skillBlock = $"<skill name=\"{skill.Name}\" location=\"{skill.Path}\">\n" +
             $"References are relative to {skillDirectory}.\n\n{body.Trim()}\n</skill>";
@@ -399,7 +403,8 @@ public sealed class ResourceCatalog
     private static (Dictionary<string, string> Metadata, string Body) Parse(string text)
     {
         var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal).TrimStart('\uFEFF');
+        var normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        if (normalized.StartsWith('\uFEFF')) normalized = normalized[1..];
         if (!normalized.StartsWith("---\n", StringComparison.Ordinal)) return (metadata, normalized);
         var end = normalized.IndexOf("\n---", 4, StringComparison.Ordinal);
         if (end < 0) return (metadata, normalized);
@@ -478,17 +483,18 @@ public sealed class ResourceCatalog
         return value.ToString();
     }
 
-    private static async Task<string> ReadBoundedAsync(string path, CancellationToken token)
+    private static async Task<string?> ReadResourceAsync(string path, ResourceSourceInfo source,
+        List<ResourceDiagnostic> diagnostics, CancellationToken token)
     {
-        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous);
-        const int maxBytes = 64 * 1024;
-        if (stream.Length > maxBytes) throw new InvalidDataException($"Resource exceeds 64KB: {path}");
-        var buffer = new byte[maxBytes + 1];
-        var count = 0;
-        int read;
-        while (count < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(count), token)) > 0)
-            count += read;
-        if (count > maxBytes) throw new InvalidDataException($"Resource exceeds 64KB: {path}");
-        return new UTF8Encoding(false, true).GetString(buffer.AsSpan(0, count));
+        try { return await ReadTextAsync(path, token); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            token.ThrowIfCancellationRequested();
+            diagnostics.Add(new("warning", error.Message, path, SourceInfo: source));
+            return null;
+        }
     }
+
+    private static async Task<string> ReadTextAsync(string path, CancellationToken token) =>
+        Encoding.UTF8.GetString(await File.ReadAllBytesAsync(path, token));
 }

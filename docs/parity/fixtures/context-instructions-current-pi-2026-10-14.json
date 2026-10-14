@@ -750,6 +750,13 @@
     "log": {
       "path": "artifacts/parity/resources-current-pi-2026-10-14/prior-ci-rpc-clone-timeout.log",
       "sha256": "3d1f40198e4b4cd0a7abd28e79852d6a7b5cc25d3b034ea6d41e9dc9ff95050d"
+    },
+    "focusedRecheck": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/prior-ci-rpc-clone-focused-recheck.log",
+      "sha256": "26faf402ce7777bfbb158a0fd358777e79be47d1df75a47b5e626b4599e5ec99",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
     }
   }
 }

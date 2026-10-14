@@ -1,0 +1,455 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "scenarios": [
+    {
+      "id": "skill-normal",
+      "kind": "skill",
+      "paths": [
+        "guide/SKILL.md"
+      ]
+    },
+    {
+      "id": "skill-large",
+      "kind": "skill",
+      "paths": [
+        "guide/SKILL.md"
+      ]
+    },
+    {
+      "id": "skill-utf8",
+      "kind": "skill",
+      "paths": [
+        "guide/SKILL.md"
+      ]
+    },
+    {
+      "id": "skill-one-bom",
+      "kind": "skill",
+      "paths": [
+        "guide/SKILL.md"
+      ]
+    },
+    {
+      "id": "skill-two-boms",
+      "kind": "skill",
+      "paths": [
+        "guide/SKILL.md"
+      ]
+    },
+    {
+      "id": "skill-bare-cr",
+      "kind": "skill",
+      "paths": [
+        "guide/SKILL.md"
+      ]
+    },
+    {
+      "id": "skill-denied-then-valid",
+      "kind": "skill",
+      "paths": [
+        "guide/SKILL.md",
+        "second/SKILL.md"
+      ]
+    },
+    {
+      "id": "prompt-normal",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ]
+    },
+    {
+      "id": "prompt-large",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ]
+    },
+    {
+      "id": "prompt-utf8",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ]
+    },
+    {
+      "id": "prompt-one-bom",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ]
+    },
+    {
+      "id": "prompt-two-boms",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ]
+    },
+    {
+      "id": "prompt-bare-cr",
+      "kind": "prompt",
+      "paths": [
+        "guide.md"
+      ]
+    },
+    {
+      "id": "prompt-denied-then-valid",
+      "kind": "prompt",
+      "paths": [
+        "guide.md",
+        "second.md"
+      ]
+    }
+  ],
+  "match": true,
+  "comparison": "Exact metadata/order, full body SHA256/UTF16 length and diagnostic type/path/order; native platform read-error text is classified as read warning.",
+  "piSharpBaseSha": "23fbbfbdca8b75d8151a85e48f55a4e5e26fd168",
+  "matchedResults": [
+    {
+      "id": "skill-normal",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide/SKILL.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "skill-large",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide/SKILL.md",
+            "body": {
+              "hash": "feb2900ff3315a9a5dba7b73b771c2880d0f28b9de45d2abfa54dcaf1632892c",
+              "characters": 66560
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "skill-utf8",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide/SKILL.md",
+            "body": {
+              "hash": "f531e791ba41cf041555c3f11473697a71bbb8c16fc378096663fb143884192d",
+              "characters": 10
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "skill-one-bom",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide/SKILL.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "skill-two-boms",
+      "result": {
+        "skills": [],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "guide/SKILL.md",
+            "category": "description is required"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "id": "skill-bare-cr",
+      "result": {
+        "skills": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide/SKILL.md",
+            "body": {
+              "hash": "b945542fff9b220c10debf54a1bb8d7d8344c6a3875812127fface67dff22e6d",
+              "characters": 11
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "skill-denied-then-valid",
+      "result": {
+        "skills": [
+          {
+            "name": "second",
+            "description": "Guide",
+            "path": "second/SKILL.md",
+            "body": {
+              "hash": "c6c1c9a9c8543f1e4cd980064cf1625eeb61a90703b2464fff039f21682508b3",
+              "characters": 4
+            }
+          }
+        ],
+        "prompts": [],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "guide/SKILL.md",
+            "category": "read warning"
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-normal",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-large",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide.md",
+            "body": {
+              "hash": "feb2900ff3315a9a5dba7b73b771c2880d0f28b9de45d2abfa54dcaf1632892c",
+              "characters": 66560
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-utf8",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide.md",
+            "body": {
+              "hash": "f531e791ba41cf041555c3f11473697a71bbb8c16fc378096663fb143884192d",
+              "characters": 10
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-one-bom",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide.md",
+            "body": {
+              "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-two-boms",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "\ufeff---",
+            "path": "guide.md",
+            "body": {
+              "hash": "56bd68c1094b98ad44ee62b68f3ce201330b1d5b6728c3ff52cf2d923d6f1e10",
+              "characters": 44
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-bare-cr",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "guide",
+            "description": "Guide",
+            "path": "guide.md",
+            "body": {
+              "hash": "b945542fff9b220c10debf54a1bb8d7d8344c6a3875812127fface67dff22e6d",
+              "characters": 11
+            }
+          }
+        ],
+        "diagnostics": []
+      },
+      "error": null
+    },
+    {
+      "id": "prompt-denied-then-valid",
+      "result": {
+        "skills": [],
+        "prompts": [
+          {
+            "name": "second",
+            "description": "Guide",
+            "path": "second.md",
+            "body": {
+              "hash": "c6c1c9a9c8543f1e4cd980064cf1625eeb61a90703b2464fff039f21682508b3",
+              "characters": 4
+            }
+          }
+        ],
+        "diagnostics": [
+          {
+            "type": "warning",
+            "path": "guide.md",
+            "category": "read warning"
+          }
+        ]
+      },
+      "error": null
+    }
+  ],
+  "rawComparison": {
+    "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-file-loading-recovery.json",
+    "sha256": "ef70890d7cd5d9d0ebb2349485ac564ad5b46cc0eb0002aceca6d273979eba04"
+  },
+  "implementation": "ResourceCatalog reads complete replacement-decoded UTF8 text, removes one leading BOM and normalizes CRLF/lone CR before frontmatter parsing. Per-file read errors become source-linked diagnostics and discovery continues. Skill invocation reuses complete decoding. Runtime retains capability ownership; no production dependencies changed.",
+  "characterization": {
+    "comparison": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-file-loading-first.json",
+      "sha256": "9c765e2375674d86b1e7de8ef2fa7a97459a14f6c6d7b932b4b569cf5d0c1b48",
+      "mismatches": 10,
+      "cases": 14
+    },
+    "native": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-file-loading-fail-first-tests.log",
+      "sha256": "828387f3bdc2fcb861197064afd9472a115993490f250382e99cb8c7775f9f25",
+      "failed": 10,
+      "passed": 0,
+      "skipped": 0
+    }
+  },
+  "verification": {
+    "focused": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-file-loading-final-focused.log",
+      "sha256": "208b49309d34a4874e4c55c5aef172c01e1d6d9c91e023936eea26780794d1f9",
+      "passed": 26,
+      "failed": 0,
+      "skipped": 0
+    },
+    "cliProviderChecks": 4,
+    "source": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/source-resource-file-loading-tests.json",
+      "sha256": "ad53ce0545126f7d3fc0d87793927fa3d25d7416f653d12113c92ff2a399f393",
+      "passed": 129,
+      "failed": 0,
+      "skipped": 0
+    },
+    "build": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-file-loading-final-build.log",
+      "sha256": "c6b2db8cb559ea73d8f159ab1e32a994124a10163c6f5fee8a71831a3d683708",
+      "warnings": 0,
+      "errors": 0
+    },
+    "full": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-file-loading-final-full-tests.log",
+      "sha256": "59d769f2e466b168db6a1adb5ef0cc2efe8f2a82d9f7d629f957fd12f74a7762",
+      "passed": 1680,
+      "failed": 0,
+      "skipped": 0
+    },
+    "format": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-file-loading-verify-format.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    "exactHeadCi": "pending publication"
+  },
+  "testContractCorrection": "Preserved original 65537 zero-byte and invalid UTF8 [C3,28] cases plus discovery-disabled assertion. Complete text/replacement equality replaces the unmatched fail-closed policy.",
+  "limitations": [
+    "Exact full loaded metadata/body and diagnostic type/path/order match only these 14 non-root Linux file cases. Read-error wording is classified rather than normalized into an exact message claim.",
+    "Four CLI/provider checks establish native composition, not full Pi CLI request or terminal differential equivalence.",
+    "Broader YAML grammar/typed frontmatter, collisions, discovery ordering/globs/limits, explicit non-SKILL paths/missing paths/nonregular files, later skill invocation errors, platform semantics, and full resources/trust/reload/startup parity remain open."
+  ],
+  "nextSourceFinding": "Pi checks regular-file identity before reading explicit or discovered skill/template files; ResourceCatalog still uses File.Exists and directory attributes, which may admit a named pipe and block startup. Explicit missing/path-kind diagnostics and markdown skill aliases also differ. Characterize the path boundary next.",
+  "reproduce": [
+    "python3 tools/parity/resource-file-loading-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/resources-current-pi-2026-10-14/resource-file-loading-recovery.json",
+    "dotnet test PiSharp.slnx --filter \"FullyQualifiedName~ResourceFileProcessTests|FullyQualifiedName~ResourceFileLoadingTests|FullyQualifiedName~ResourceCatalogTests\"",
+    "cd /tmp/pisharp-parity-audit-pi/packages/coding-agent && npx --cache /tmp/pisharp-npm-cache vitest run test/skills.test.ts test/prompt-templates.test.ts test/frontmatter.test.ts",
+    "dotnet format PiSharp.slnx --verify-no-changes --no-restore",
+    "dotnet build PiSharp.slnx --warnaserror --no-restore",
+    "dotnet test PiSharp.slnx --no-build --no-restore"
+  ]
+}

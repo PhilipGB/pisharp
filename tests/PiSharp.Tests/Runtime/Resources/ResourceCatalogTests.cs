@@ -228,7 +228,7 @@ public sealed class ResourceCatalogTests
     }
 
     [Fact]
-    public async Task OversizedAndInvalidUtf8ResourcesFailClosed()
+    public async Task OversizedAndInvalidUtf8ResourcesPreserveCompleteDecodedText()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resources-" + Guid.NewGuid().ToString("N"));
         var prompts = Path.Combine(root, "prompts");
@@ -237,11 +237,13 @@ public sealed class ResourceCatalogTests
         try
         {
             await File.WriteAllBytesAsync(path, new byte[64 * 1024 + 1]);
-            await Assert.ThrowsAsync<InvalidDataException>(() => ResourceCatalog.LoadAsync(root, root, false));
+            var large = await ResourceCatalog.LoadAsync(root, root, false);
+            Assert.Equal(new string('\0', 64 * 1024 + 1), Assert.Single(large.Prompts).Template);
             var ignored = await ResourceCatalog.LoadAsync(root, root, false, discoverPrompts: false);
             Assert.Empty(ignored.Prompts);
             await File.WriteAllBytesAsync(path, [0xC3, 0x28]);
-            await Assert.ThrowsAsync<System.Text.DecoderFallbackException>(() => ResourceCatalog.LoadAsync(root, root, false));
+            var replaced = await ResourceCatalog.LoadAsync(root, root, false);
+            Assert.Equal("\uFFFD(", Assert.Single(replaced.Prompts).Template);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
