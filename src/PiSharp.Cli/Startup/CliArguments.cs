@@ -114,12 +114,12 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                     scopedModels = ParseToolNames(arguments, ref i, "--models");
                     break;
                 case "--system-prompt":
-                    if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
+                    if (++i >= arguments.Length)
                         throw new ArgumentException("--system-prompt requires text or a file path.");
                     systemPrompt = arguments[i];
                     break;
                 case "--append-system-prompt":
-                    if (++i >= arguments.Length || string.IsNullOrWhiteSpace(arguments[i]) || arguments[i].StartsWith('-'))
+                    if (++i >= arguments.Length)
                         throw new ArgumentException("--append-system-prompt requires text or a file path.");
                     appendSystemPrompts.Add(arguments[i]);
                     break;
@@ -172,7 +172,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         if (local && provider is not null && !provider.Equals("local", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("--local cannot be combined with a provider other than local.");
         return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource,
-            provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths, extensionPaths, listModelsFilter, verbose,
+            provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts.Count == 0 ? null : appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths, extensionPaths, listModelsFilter, verbose,
             themePaths, useTheme, noThemes);
     }
 }

@@ -32,8 +32,8 @@ public sealed class ProjectTrustTests
             var trusted = await ProjectPrompts.LoadWithSourcesAsync(project, agent, projectTrusted: true);
             Assert.Equal("PROJECT SYSTEM", trusted.System);
             Assert.Equal(Path.Combine(project, ".pi", "SYSTEM.md"), trusted.SystemPath);
-            Assert.Equal("USER APPEND\n\nPROJECT APPEND", trusted.Append);
-            Assert.Equal([Path.Combine(agent, "APPEND_SYSTEM.md"), Path.Combine(project, ".pi", "APPEND_SYSTEM.md")],
+            Assert.Equal("PROJECT APPEND", trusted.Append);
+            Assert.Equal([Path.Combine(project, ".pi", "APPEND_SYSTEM.md")],
                 trusted.AppendPaths);
         }
         finally { Directory.Delete(root, true); }

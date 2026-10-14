@@ -150,10 +150,9 @@ internal sealed class ProjectRuntimeContext : IDisposable
     {
         var cwd = configuration.WorkingDirectory;
         var contextFiles = new List<string>();
-        var discoveredPrompts = await ProjectPrompts.LoadWithSourcesAsync(cwd, agentDirectory,
-            configuration.Trusted, cancellationToken);
-        var promptResources = await CliPromptOverrides.ResolveWithSourcesAsync(arguments, discoveredPrompts, cwd,
-            cancellationToken);
+        var promptResources = await ProjectPrompts.LoadWithSourcesAsync(cwd, agentDirectory,
+            configuration.Trusted, cancellationToken, diagnostic => Console.Error.WriteLine(diagnostic.Message),
+            arguments.SystemPrompt, arguments.AppendSystemPrompts);
         if (promptResources.SystemPath is { } systemPath) contextFiles.Add(systemPath);
         contextFiles.AddRange(promptResources.AppendPaths);
         var prompts = (promptResources.System, promptResources.Append);

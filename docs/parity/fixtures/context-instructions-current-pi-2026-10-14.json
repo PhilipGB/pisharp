@@ -709,7 +709,12 @@
     },
     "buildWarnings": 0,
     "buildErrors": 0,
-    "formatVerified": true
+    "formatVerified": true,
+    "exactHeadCi": {
+      "sha": "aaac7fd8b5f82c8c979a0d4f190859336e6852f2",
+      "run": 38493952555,
+      "conclusion": "success"
+    }
   },
   "testContractCorrections": [
     "The existing 65-KiB instruction scenario remains, with exact complete-content equality replacing the incompatible rejection expectation after the real source oracle proved Pi accepts it. The CLI trust/config test keeps its untrusted/trusted invalid-settings gates and same oversized instruction file; this now reaches the unauthenticated-provider gate instead of a size error.",
@@ -737,5 +742,14 @@
     "owner": "ProjectPrompts and CliPromptOverrides",
     "source": "packages/coding-agent/src/core/resource-loader.ts: discoverAppendSystemPromptFile/resolvePromptInput",
     "finding": "A trusted project APPEND_SYSTEM.md replaces global discovery, not concatenation; prompt-file size caps, UTF8/BOM handling and read-error fallback still differ. These are mapped to existing resource/instruction/CLI requirements and remain open for the next slice."
+  },
+  "priorEvidenceCiFailure": {
+    "sha": "3a4476cca304ae3d557fd071662fd11e5a302bff",
+    "run": 38493836105,
+    "failure": "RpcClonePreflightProcessTests timed out waiting for blocked-run partial text at line138; 1635 passed/1 failed/0 skipped. Retained without classifying as baseline; subsequent exact aaac7 CI and local full 1666 pass.",
+    "log": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/prior-ci-rpc-clone-timeout.log",
+      "sha256": "3d1f40198e4b4cd0a7abd28e79852d6a7b5cc25d3b034ea6d41e9dc9ff95050d"
+    }
   }
 }
