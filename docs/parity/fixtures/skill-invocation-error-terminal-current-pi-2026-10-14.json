@@ -64,7 +64,19 @@
     "buildWarnings": 0,
     "buildErrors": 0,
     "format": "passed",
-    "exactHeadCi": "Pending publication.",
+    "exactHeadCi": {
+      "sha": "ce6185a8df6e4bea14d6364266451bc91356ce15",
+      "run": 38601266462,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38601266462",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1892,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    },
     "promptHintRegression": {
       "match": true,
       "differences": 0,
@@ -307,7 +319,8 @@
     "skill-error-screen-final-focused.log": "b95a40fb3d81ad5934f0332b0b65c7ce305d7b81827739b0f09e0a2356766ca3",
     "skill-error-settled-pair.log": "e1da36d50c6ce3cdf881f62527091e0cb41656003499ac455c3186dd4c35c017",
     "skill-error-unwrapped-expectation-fixture.json": "2219faaf0d68d471547da22ad18c8760273f1299e7da7cb0f1fa2ba17fb74018",
-    "skill-error-hint-regression.log": "e13cd782b3ea3d8a38521c6df6db898dd2bf4fe28fa671673f255d0239f4ffe9"
+    "skill-error-hint-regression.log": "e13cd782b3ea3d8a38521c6df6db898dd2bf4fe28fa671673f255d0239f4ffe9",
+    "skill-error-exact-ci.log": "11ac0b56b0fdd638ef1cb1149038f2561e57170eded7e214cb5677f53abd2160"
   },
   "next": "Finish active-resize/reply calibration diagnostics and the remaining package/settings/discovery/trust/reload resource boundaries; all 194 ledger capabilities and final audits remain required.",
   "fixtureCollisionRepair": "d917edb98c",

@@ -5714,7 +5714,20 @@
       "full_failed": 0,
       "full_skipped": 0,
       "python_passed": 50,
-      "remaining": "Repeated source-only calibration stalls, active-resize calibration and wider resources/package/settings/trust/reload remain open."
+      "remaining": "Repeated source-only calibration stalls, active-resize calibration and wider resources/package/settings/trust/reload remain open.",
+      "exact_ci": {
+        "sha": "ce6185a8df6e4bea14d6364266451bc91356ce15",
+        "run": 38601266462,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38601266462",
+        "jobs": "both pass",
+        "dotnet": {
+          "passed": 1892,
+          "failed": 0,
+          "skipped": 0
+        },
+        "nodePassed": 24,
+        "pythonPassed": 50
+      }
     }
   }
 }
