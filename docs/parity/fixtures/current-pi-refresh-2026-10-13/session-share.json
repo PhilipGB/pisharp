@@ -507,5 +507,12 @@
     "The gist CLI fixture initially used a saved null endpoint while requesting the explicit local endpoint; the startup gate correctly rejected it. The fixture now records the actual local endpoint, isolates session/config paths and retains the diagnostic log."
   ],
   "reproduce": "python3 tools/parity/session-share-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/current-pi-deltas-2026-10-13/session-share-html-final-comparison.json",
-  "limitations": "Pi uses its real source session/settings/share owners, with a fixture fetch response; PiSharp uses its real share owner and HttpMessageHandler fixture. The fake gh is a real isolated process. Full terminal row layout, all HTML visual rendering, paid live Radius/GitHub publication, native Windows execution and the broader output/share capability remain open. Source metadata compares imported sessions and current runtime loadout controls; all native-only auxiliary entry rendering and theme-specific HTML presentation remain wider ledger work. No live session was published."
+  "limitations": "Pi uses its real source session/settings/share owners, with a fixture fetch response; PiSharp uses its real share owner and HttpMessageHandler fixture. The fake gh is a real isolated process. Full terminal row layout, all HTML visual rendering, paid live Radius/GitHub publication, native Windows execution and the broader output/share capability remain open. Source metadata compares imported sessions and current runtime loadout controls; all native-only auxiliary entry rendering and theme-specific HTML presentation remain wider ledger work. No live session was published.",
+  "publishedVerification": {
+    "piSharpSha": "99802237dcdfcc1e92f75e485992b80f135086ce",
+    "ciRun": 38492115615,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38492115615",
+    "conclusion": "success",
+    "scope": "Exact published head passed Linux test and MCP jobs; independently recorded later changes are not attributed to this head."
+  }
 }

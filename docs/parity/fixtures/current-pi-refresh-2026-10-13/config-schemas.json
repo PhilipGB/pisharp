@@ -79,5 +79,12 @@
     "scope": "Combined working tree includes the independently recorded share implementation and null selection fix.",
     "log": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-schema-full-tests.log",
     "sha256": "3d19c7013797b05ab79c5461efe21c2a4bd98f29b37c47caaa1f656560964f86"
+  },
+  "publishedVerification": {
+    "piSharpSha": "d7f8bd5c2d55e395f4ccd8417aca85eee2ceab3e",
+    "ciRun": 38491915385,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38491915385",
+    "conclusion": "success",
+    "scope": "Exact published head passed Linux test and MCP jobs; independently recorded later changes are not attributed to this head."
   }
 }

@@ -36,5 +36,11 @@
     "path": "artifacts/parity/resources-current-pi-2026-10-14/trust-selector-paired/report.json",
     "sha256": "82418c5f0a069be97cdcc207891903ac4ee939d726844efd47d8c45497f2a678"
   },
-  "limitations": "Only the named 120x40 dark fullscreen trust-selector case was rerun. Startup branding/colors, other terminal/state/render differences and broader fixture matrices remain open. This proves the runner reaches the real current CLI and measures differences; it does not declare terminal parity."
+  "limitations": "Only the named 120x40 dark fullscreen trust-selector case was rerun. Startup branding/colors, other terminal/state/render differences and broader fixture matrices remain open. This proves the runner reaches the real current CLI and measures differences; it does not declare terminal parity.",
+  "publishedVerification": {
+    "piSharpSha": "f8a353742b44df118a6a4d0b807c23c9a78aaedd",
+    "ciRun": 38492462330,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38492462330",
+    "conclusion": "success"
+  }
 }
