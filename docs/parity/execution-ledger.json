@@ -5666,7 +5666,12 @@
       },
       "focused": 6,
       "scope": "Loopback retry and theme caller-environment dependency repaired independently of pending YAML behavior.",
-      "next": "Verify exact fixture commit CI; finish characterized YAML set/error/recovery and resource presentation boundaries."
+      "next": "Verify exact fixture commit CI; finish characterized YAML set/error/recovery and resource presentation boundaries.",
+      "exact_head_ci": {
+        "sha": "79b2b5e4f78475d1399afa5a4a9d090a7cc16c0f",
+        "run": 38564664115,
+        "jobs": "both pass"
+      }
     },
     "resource_yaml_document_checkpoint": {
       "fixture": "docs/parity/fixtures/resource-yaml-document-current-pi-2026-10-14.json",
@@ -5678,7 +5683,12 @@
       "comparison_cases": 311,
       "focused": 96,
       "real_rpc_recovery": true,
-      "next": "Finish skill-invocation error terminal rendering, then full startup/discovery/settings/package/trust/reload presentation and remaining required ledger work."
+      "next": "Finish skill-invocation error terminal rendering, then full startup/discovery/settings/package/trust/reload presentation and remaining required ledger work.",
+      "exact_head_ci": {
+        "sha": "018337d80611ee729759ef0393b80ff5de27c7b1",
+        "run": 38566270534,
+        "jobs": "both pass"
+      }
     }
   }
 }

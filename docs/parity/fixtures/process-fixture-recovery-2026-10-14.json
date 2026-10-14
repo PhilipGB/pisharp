@@ -59,7 +59,19 @@
       "skipped": 0,
       "scope": "Pending resource parser candidate; these totals are not the fixture-only commit count."
     },
-    "exactHeadCi": "Pending publication."
+    "exactHeadCi": {
+      "sha": "79b2b5e4f78475d1399afa5a4a9d090a7cc16c0f",
+      "run": 38564664115,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38564664115",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1850,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
   },
   "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
   "logs": {
@@ -76,7 +88,8 @@
     "process-fixtures-isolated-final-tests.log": "8cb5e0479736c02e7dbda30c9eac29120e76f5002744889801c126b00bb51533",
     "process-fixtures-isolated-final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "process-fixtures-working-final-tests.log": "8d329f2edf345b6e3933e716ac007b33d7e25b885a1654b75c9e9f57dfa84461",
-    "resource-yaml-document-after-loopback-tests.log": "2a0ec88ee03b4da30d999a1c472a5564ae17fc10ad22bbac4b7106b6edb51a06"
+    "resource-yaml-document-after-loopback-tests.log": "2a0ec88ee03b4da30d999a1c472a5564ae17fc10ad22bbac4b7106b6edb51a06",
+    "process-fixtures-exact-ci.log": "a8d58bf1be9ffb419fdccbdaf0fc12620a3f31d0173639e3d887450c9f8bee58"
   },
   "limits": [
     "The port regression deterministically proves retry cleanup after a bind collision; it does not infer resolution of unrelated process or PTY timing failures from a later green run.",

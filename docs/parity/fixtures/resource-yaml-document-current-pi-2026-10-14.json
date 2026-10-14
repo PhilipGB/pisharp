@@ -109,7 +109,19 @@
       "match": true
     },
     "realProcessScope": "The formerly aborting malformed skill warns/skips at startup, is absent from get_commands, and original /skill:guide args reaches the loopback provider and settles with successful exit in both products.",
-    "exactHeadCi": "Pending publication; fixture-only head 79b2b5e4f7 passes both jobs in run 38564664115."
+    "exactHeadCi": {
+      "sha": "018337d80611ee729759ef0393b80ff5de27c7b1",
+      "run": 38566270534,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38566270534",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1886,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
   },
   "caseIds": [
     "skill-duplicate",
@@ -213,7 +225,8 @@
     "resource-yaml-document-expanded-process-pi.records.json": "1296b193569bced6534f1132f5f31a7dd5f1c4c360824f5a04872d538fd664dc",
     "resource-yaml-document-expanded-process-pisharp.records.json": "1731520269f03260842859fb48a27a63ee3b2e2d639b9f8c0c65a41992f1ae8c",
     "resource-yaml-document-expanded-process-pi.http.json": "7f78235a4f0191c88f5220dad97e5b172f1ed4f3cae3db49795a56f593fa3f7d",
-    "resource-yaml-document-expanded-process-pisharp.http.json": "3c0c1da3ad800e923a8c1fb72ab4b9d6d9c1ddc33a09a81972ece355d19ebc5b"
+    "resource-yaml-document-expanded-process-pisharp.http.json": "3c0c1da3ad800e923a8c1fb72ab4b9d6d9c1ddc33a09a81972ece355d19ebc5b",
+    "resource-yaml-document-exact-ci.log": "b9c99d615fbb27fcf9cde53045a8d008ae1ffb06c04219fde48bcea09be90c4e"
   },
   "limits": [
     "This corpus does not establish arbitrary YAML grammar/schema/tag/filename/depth behavior. Remaining error combinations, package/settings/ignore edges and all wider Resources / Instructions / Trust boundaries remain open.",
