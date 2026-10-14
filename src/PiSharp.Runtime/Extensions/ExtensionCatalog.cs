@@ -604,10 +604,14 @@ public sealed class ExtensionCatalog : IDisposable
                 ignoreCase: false));
     }
 
-    internal static IEnumerable<string> FindAssemblies(string root) =>
-        Directory.EnumerateFiles(root, "*.dll", SearchOption.TopDirectoryOnly)
+    internal static IEnumerable<string> FindAssemblies(string root)
+    {
+        var index = Path.Combine(root, "index.dll");
+        if (File.Exists(index)) return [Path.GetFullPath(index)];
+        return Directory.EnumerateFiles(root, "*.dll", SearchOption.TopDirectoryOnly)
             .Concat(Directory.EnumerateDirectories(root).Select(path => Path.Combine(path, "index.dll"))
                 .Where(File.Exists)).Order(StringComparer.Ordinal).Take(100).Select(Path.GetFullPath).ToArray();
+    }
 
     internal static IEnumerable<string> EnumerateConfiguredAssemblies(string root)
     {

@@ -71,6 +71,11 @@ export default function(pi) {
             else:
                 shutil.copyfile(ROOT / 'tests/ResourceDiscoveryExtension/bin/Debug/net10.0/dynamic-resources.dll', extension / 'index.dll')
             (package / 'package.json').write_text(json.dumps(dict(pi=dict(extensions=['extensions']))))
+            if extension_mode == 'index-with-sibling':
+                if product == 'pi':
+                    (extension / 'sibling.ts').write_text("export default function(){throw new Error('A sibling beside index must not load');}\n")
+                else:
+                    shutil.copyfile(extension / 'index.dll', extension / 'sibling.dll')
             if extension_mode == 'conventions':
                 (package / 'package.json').unlink()
             if extension_mode == 'disabled':
@@ -221,7 +226,7 @@ def main():
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package', 'package-extension'], default='deleted-skill')
-    parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root'], default='manifest')
+    parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root', 'index-with-sibling'], default='manifest')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -16,6 +16,8 @@ public sealed class PackageExtensionBootstrapTests
     [InlineData(true, "file")]
     [InlineData(false, "root")]
     [InlineData(true, "root")]
+    [InlineData(false, "index-with-sibling")]
+    [InlineData(true, "index-with-sibling")]
     public async Task PersonalPackageTrustHandlersLoadBeforeTheHeadlessProjectDecision(bool noExtensions, string mode)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-package-bootstrap-" + Guid.NewGuid().ToString("N"));
@@ -29,6 +31,8 @@ public sealed class PackageExtensionBootstrapTests
         try
         {
             File.Copy(typeof(ResourceDiscoveryFixture).Assembly.Location, extension);
+            if (mode == "index-with-sibling")
+                File.Copy(extension, Path.Combine(Path.GetDirectoryName(extension)!, "sibling.dll"));
             await File.WriteAllTextAsync(Path.Combine(package, "package.json"), "{\"pi\":{\"extensions\":[\"extensions\"]}}");
             if (mode == "root")
             {

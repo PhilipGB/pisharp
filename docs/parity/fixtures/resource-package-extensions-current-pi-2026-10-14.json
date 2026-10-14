@@ -268,7 +268,20 @@
     "loaderMismatches": 0,
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
-    "format": "passed"
+    "format": "passed",
+    "exactCi": {
+      "sha": "bf4565da181230f72d1d43cfad5985a8b221efe6",
+      "run": 38634912868,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38634912868",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1940,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
   "logs": {
@@ -363,7 +376,9 @@
     "package-extension-disabled-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "package-extension-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "package-extension-first-ready-pi.stderr.log": "0a187997aa8f072832147b0b1ae700cc44018b3a718a2bf6f816d0188f2ee401",
-    "package-extension-full.log": "05590e9b2e7406212d15871c75fef551882973d953ffadbbd4f589672ed51855"
+    "package-extension-full.log": "05590e9b2e7406212d15871c75fef551882973d953ffadbbd4f589672ed51855",
+    "package-extension-exact-ci.log": "acd991539e1f0f353114e0d72e26d1dc7a78ed06be5055569a6ae496d1902fb8",
+    "package-extension-docs.log": "ec90e586e1b094bde85ef404b7c42c22e29f47fa85c31139bb667b01a5bb5a12"
   },
   "limits": [
     "Entry point comparisons are .NET-equivalent .dll/IPiSharpExtension versus .ts Pi extension registration; literal source filenames/implementation language are not claimed identical. Resource command/expansion/provider input and configuration/trust traces are exact after generated workspace path normalization.",
