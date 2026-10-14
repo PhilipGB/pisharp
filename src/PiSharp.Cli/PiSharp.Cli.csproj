@@ -20,6 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Configuration\Schemas\*.schema.json" LogicalName="PiSharp.Cli.Configuration.Schemas.%(Filename)%(Extension)" />
+    <Content Include="Configuration\Schemas\*.schema.json" Link="schemas\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Configuration\Schemas\UPSTREAM-LICENSE.txt" Link="schemas\UPSTREAM-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Tui\Themes\*.json" LogicalName="PiSharp.Cli.Tui.Themes.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Providers\Data\image-models.json" LogicalName="PiSharp.Cli.Providers.Data.image-models.json" />
     <EmbeddedResource Include="Providers\Data\classifier-models.json" LogicalName="PiSharp.Cli.Providers.Data.classifier-models.json" />

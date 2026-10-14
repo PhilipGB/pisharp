@@ -133,6 +133,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         foreach (var property in document.RootElement.EnumerateObject())
         {
             if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json contains duplicate property '{property.Name}'.");
+            if (property.Name == "$schema") continue;
             if (property.Name == "httpIdleTimeoutMs")
             {
                 httpIdleTimeoutMs = ParseIdleTimeout(property.Value);

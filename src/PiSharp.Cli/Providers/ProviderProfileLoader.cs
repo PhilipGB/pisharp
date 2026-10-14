@@ -30,6 +30,9 @@ internal static class ProviderProfileLoader
             length += read;
         if (length > maxBytes) throw new InvalidDataException("models.json exceeds 1MB.");
         using var document = JsonDocument.Parse(buffer.AsMemory(0, length));
+        if (document.RootElement.ValueKind == JsonValueKind.Object &&
+            document.RootElement.TryGetProperty("$schema", out var schema) && schema.ValueKind != JsonValueKind.String)
+            throw new InvalidDataException("models.json $schema must be a string.");
         if (document.RootElement.ValueKind != JsonValueKind.Object ||
             !document.RootElement.TryGetProperty("providers", out var configured) || configured.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("models.json must contain a providers object.");

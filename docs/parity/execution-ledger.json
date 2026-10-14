@@ -4426,7 +4426,7 @@
     {
       "id": "feature-config-schemas-publication",
       "title": "Publish configuration JSON schemas with the coding-agent package",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "earendil-works/pi@7f9e1198f2f7a8cf5ea18d5010ba081d4d60c333: packages/coding-agent/schemas/{settings,models,keybindings,theme}.schema.json; packages/coding-agent/scripts/generate-schemas.ts; packages/coding-agent/test/config-schemas.test.ts.",
       "acceptance": [
         "Publish settings, model/provider compatibility, keybindings, and theme JSON schemas as normal package resources with stable discoverable paths.",
@@ -4434,12 +4434,16 @@
         "Verify generated schema files are current and present in the shipped package, including settings/theme variants and keybinding aliases."
       ],
       "implementation": [
-        "src/PiSharp.Cli/PiSharp.Cli.csproj",
-        "src/PiSharp.Cli/ConfigSchemaCatalog.cs",
-        "tests/PiSharp.Tests/ConfigurationSchemaPublicationTests.cs"
+        "src/PiSharp.Cli/Configuration/ConfigSchemaCatalog.cs",
+        "src/PiSharp.Cli/Configuration/Schemas: four byte-identical audited Pi target schemas and original MIT license, embedded and published in schemas/.",
+        "src/PiSharp.Cli/PiSharp.Cli.csproj: embedded and output/publish artifact declarations.",
+        "src/PiSharp.Cli/Configuration/UserSettings.cs and src/PiSharp.Cli/Providers/ProviderProfileLoader.cs: settings/models schema-reference metadata boundaries.",
+        "tests/PiSharp.Tests/Cli/Configuration/ConfigurationSchemaPublicationTests.cs",
+        "tests/PiSharp.Tests/Cli/Configuration/ConfigurationSchemaMetadataTests.cs"
       ],
       "evidence": [
-        "Added by the 2026-10-08 source audit: current Pi publishes four configuration schemas and tests package contents/generation; PiSharp has no verified equivalent resources."
+        "Added by the 2026-10-08 source audit: current Pi publishes four configuration schemas and tests package contents/generation; PiSharp has no verified equivalent resources.",
+        "The configured Pi 3daa2028 artifacts match byte for byte, including sessionShareDestination auto/gist/radius. Five native resource/output tests, two metadata regression tests, real publish inspection and fifteen source schema tests pass. Combined full worktree 1636 tests passes with zero skips. docs/parity/fixtures/current-pi-refresh-2026-10-13/config-schemas.json records hashes and scope. Runtime validation alignment, unsupported fields, unknown-key preservation, aliases and theme variants remain open; publication alone is not full capability verification."
       ],
       "dependencies": [
         "feature-security-settings-and-authentication",
