@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -26,11 +27,13 @@ class RpcEndedBeforeCheckpoint(Exception):
     pass
 
 
-def replay(product, pi, native, root, output, scenario):
-    package_scenario = scenario in ['local-package', 'padded-local-package', 'file-url-package']
+def replay(product, pi, native, root, output, scenario, extension_mode='manifest'):
+    package_scenario = scenario in ['local-package', 'padded-local-package', 'file-url-package', 'package-extension']
     agent = root / product / 'agent'
     home = root / product / 'home'
     skill = root / product / ('package/skills/guide/SKILL.md' if package_scenario else 'guide/SKILL.md')
+    if scenario == 'package-extension':
+        skill = root / product / '.pi/extension-resources/startup/skills/guide/SKILL.md'
     agent.mkdir(parents=True)
     home.mkdir()
     skill.parent.mkdir(parents=True)
@@ -38,13 +41,50 @@ def replay(product, pi, native, root, output, scenario):
     skill.write_text(f'---\nname: guide\ndescription: {description}\n---\nbody')
     if package_scenario:
         package = root / product / 'package'
-        (package / 'prompts').mkdir()
+        (package / 'prompts').mkdir(parents=True)
         (package / 'prompts/review.md').write_text('---\ndescription: Package review\n---\nReview $1')
         (package / 'package.json').write_text(json.dumps(dict(pi=dict(skills=['skills'], prompts=['prompts/review.md']))))
         source = '\uFEFF \t../package\r\n\uFEFF' if scenario == 'padded-local-package' else '../package'
         if scenario == 'file-url-package':
             source = package.as_uri() + '?ignored#fragment'
         (agent / 'settings.json').write_text(json.dumps(dict(packages=[source])))
+        if scenario == 'package-extension':
+            (root / product / '.pi/settings.json').write_text('{}')
+            (root / product / '.pi/project-trust-extension.json').write_text('{"decision":"yes","remember":true}')
+            extension = package / 'extensions'
+            extension.mkdir()
+            if product == 'pi':
+                (extension / 'index.ts').write_text("""import {appendFileSync} from 'node:fs';
+import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+export default function(pi) {
+ const trace = value => appendFileSync(process.env.PISHARP_TEST_EXTENSION_LOAD_LOG, value+'\\n');
+ trace('configured');
+ pi.on('project_trust', (_event,ctx) => {trace(`trust-undecided:${ctx.hasUI}`);});
+ pi.on('project_trust', (_event,ctx) => {trace(`trust-decision:${ctx.hasUI}`);return {trusted:'yes',remember:true};});
+ pi.on('resources_discover', ({cwd}) => {
+  const base=join(cwd,'.pi','extension-resources','startup');
+  return {skillPaths:[pathToFileURL(join(base,'skills')).href],promptPaths:[join(base,'prompts')],themePaths:[join(base,'themes')]};
+ });
+}
+""")
+            else:
+                shutil.copyfile(ROOT / 'tests/ResourceDiscoveryExtension/bin/Debug/net10.0/dynamic-resources.dll', extension / 'index.dll')
+            (package / 'package.json').write_text(json.dumps(dict(pi=dict(extensions=['extensions']))))
+            if extension_mode == 'conventions':
+                (package / 'package.json').unlink()
+            if extension_mode == 'disabled':
+                (agent / 'settings.json').write_text(json.dumps(dict(packages=[dict(source='../package', extensions=[])])))
+            if extension_mode == 'file':
+                suffix = 'ts' if product == 'pi' else 'dll'
+                (agent / 'settings.json').write_text(json.dumps(dict(packages=[f'../package/extensions/index.{suffix}'])))
+            if extension_mode == 'root':
+                suffix = 'ts' if product == 'pi' else 'dll'
+                (extension / f'index.{suffix}').rename(package / f'index.{suffix}')
+                extension.rmdir()
+                (package / 'prompts/review.md').unlink()
+                (package / 'prompts').rmdir()
+                (package / 'package.json').unlink()
     if scenario == 'malformed-flow':
         skill.write_text('---\nname: guide\nunused: [bad\ndescription: *missing\n---\nbody')
     server = ThreadingHTTPServer(('127.0.0.1', 0), shared.Provider)
@@ -61,12 +101,17 @@ def replay(product, pi, native, root, output, scenario):
     env.update(HOME=str(home), PI_CODING_AGENT_DIR=str(agent), PISHARP_AGENT_DIR=str(agent),
                PISHARP_FIXTURE_KEY='fixture-only-key', PI_OFFLINE='1', TERM='xterm-256color',
                DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1', **thread_limit_environment())
+    if scenario == 'package-extension':
+        env.update(PISHARP_TEST_RESOURCE_DISCOVERY='true',
+                   PISHARP_TEST_EXTENSION_LOAD_LOG=str(root / product / 'extension-load.log'))
     common = ['--mode', 'rpc', '--provider', 'fixture', '--model', 'fixture-model', '--offline', '--no-session',
               '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools', '--skill', str(skill)]
     if package_scenario:
         common = common[:-2]
         common.remove('--no-skills')
         common.remove('--no-prompt-templates')
+    if scenario == 'package-extension' and extension_mode != 'no-extensions':
+        common.remove('--no-extensions')
     command = (['node', '--import', (pi / 'packages/coding-agent/src/experimental/source-resolver.ts').as_uri(),
                 str(pi / 'packages/coding-agent/src/cli.ts')] if product == 'pi' else ['dotnet', str(native)]) + common
     records = []
@@ -109,6 +154,8 @@ def replay(product, pi, native, root, output, scenario):
             command_info = next((c for c in commands['data']['commands'] if c['name'] == 'skill:guide'), None)
             if scenario == 'malformed-flow':
                 assert command_info is None, commands
+            elif scenario == 'package-extension' and extension_mode in ['disabled', 'no-extensions']:
+                assert command_info is None, commands
             elif not package_scenario or product == 'pi':
                 assert command_info and command_info['description'] == ('word' if scenario == 'invalid-tag' else 'Guide')
             if scenario == 'deleted-skill':
@@ -143,6 +190,9 @@ def replay(product, pi, native, root, output, scenario):
                 result['startupAccepted'] = True
                 result['packagePrompt'] = next((c['description'] for c in commands['data']['commands']
                                                 if c['name'] == 'review'), None)
+            if scenario == 'package-extension':
+                log = root / product / 'extension-load.log'
+                result['extensionLoadTrace'] = log.read_text().splitlines() if log.exists() else []
             return result
     except RpcEndedBeforeCheckpoint:
         if not package_scenario or product != 'pisharp' or records:
@@ -170,12 +220,13 @@ def main():
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package'], default='deleted-skill')
+    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package', 'package-extension'], default='deleted-skill')
+    parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root'], default='manifest')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='pisharp-resource-invocation-process-') as directory:
-        results = {product: replay(product, args.pi.resolve(), args.pisharp.resolve(), Path(directory), args.output, args.scenario)
+        results = {product: replay(product, args.pi.resolve(), args.pisharp.resolve(), Path(directory), args.output, args.scenario, args.extension_mode)
                    for product in ['pi', 'pisharp']}
     if args.scenario == 'invalid-tag':
         for product in results:
@@ -186,6 +237,8 @@ def main():
         dependencyAssemblySha256={name: hashlib.sha256(args.pisharp.with_name(name).read_bytes()).hexdigest()
                                   for name in ['PiSharp.Runtime.dll', 'PiSharp.Core.dll']},
         results=results, match=results['pi'] == results['pisharp'])
+    if args.scenario == 'package-extension':
+        result['extensionMode'] = args.extension_mode
     args.output.write_text(json.dumps(result, indent=2) + '\n')
     assert result['match'], result
     print(f'Matched {args.scenario} RPC/provider input, metadata and error boundary.')

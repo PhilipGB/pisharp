@@ -9,6 +9,7 @@ using Microsoft.Extensions.AI;
 
 namespace PiSharp.Tests;
 
+[Collection("Extension environment")]
 public sealed class ProjectRuntimeContextTests
 {
     [Fact]

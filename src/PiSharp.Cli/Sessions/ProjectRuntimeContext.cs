@@ -59,7 +59,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                         "builtin:", StringComparison.Ordinal)).ToArray();
                 bootstrapExtensions = ExtensionCatalog.Load(agentDirectory, cwd, projectTrusted: false,
                     discover: !arguments.NoExtensions, additionalPaths: cliExtensions,
-                    userPaths: userExtensions, builtins: []);
+                    userPaths: userExtensions, builtins: [], userPackages: baseSettings.Packages);
             }
 
             var trusted = trustedOverride ?? await trustStore.ResolveAsync(cwd, arguments.ProjectTrustOverride,
@@ -85,6 +85,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         if ((arguments.ExtensionPaths ?? []).Any(path => !path.StartsWith("builtin:", StringComparison.Ordinal)))
             return true;
         if (arguments.NoExtensions) return false;
+        if (baseSettings.Packages is { Count: > 0 }) return true;
         if (baseSettings.Extensions?.Any(path => !path.TrimStart('!', '+', '-').StartsWith(
                 "builtin:", StringComparison.Ordinal)) == true)
             return true;
@@ -175,7 +176,9 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 projectPaths: projectExtensionPaths,
                 builtins: [ToolSearchBuiltin.Definition, CodemodeBuiltin.Definition,
                     McpBuiltin.CreateDefinition(mcpManager)],
-                preloaded: configuration.TakeBootstrapExtensions());
+                preloaded: configuration.TakeBootstrapExtensions(),
+                userPackages: configuration.BaseUserSettings.Packages,
+                projectPackages: configuration.ProjectSettings?.Packages);
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
             var effectiveMcpServers = McpRuntime.SelectEffectiveServers(mcp.Servers,
                 extensions.Registration.McpServers);

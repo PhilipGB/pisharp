@@ -471,7 +471,8 @@ public sealed class ExtensionCatalog : IDisposable
     public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted, bool discover = true,
         IReadOnlyList<string>? additionalPaths = null, IReadOnlyList<string>? userPaths = null,
         IReadOnlyList<string>? projectPaths = null, IReadOnlyList<BuiltinExtensionDefinition>? builtins = null,
-        ExtensionCatalog? preloaded = null)
+        ExtensionCatalog? preloaded = null,
+        IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null)
     {
         var catalog = preloaded ?? new ExtensionCatalog();
         try
@@ -482,6 +483,9 @@ public sealed class ExtensionCatalog : IDisposable
             var seenBuiltins = new HashSet<string>(StringComparer.Ordinal);
             var seenPaths = new HashSet<string>(catalog._loadedExtensions.Select(extension => extension.Path),
                 OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+            var packageFiles = discover ? ResourcePackageFiles.Load(cwd, agentDirectory, projectTrusted,
+                userPackages, projectPackages, CancellationToken.None).Extensions : [];
+            var packagePaths = packageFiles.Select(file => file.Path).ToHashSet(seenPaths.Comparer);
             foreach (var entry in additionalPaths ?? [])
             {
                 if (entry.StartsWith("builtin:", StringComparison.Ordinal))
@@ -510,14 +514,16 @@ public sealed class ExtensionCatalog : IDisposable
                     if (Directory.Exists(projectRoot))
                         foreach (var path in LocalResourcePathRules.ApplyOverrides(FindAssemblies(projectRoot), projectPaths,
                             Path.GetFullPath(Path.Combine(cwd, ".pi"))))
-                            AddPath(path, new(Path.GetFullPath(path), "auto", "project", "top-level",
+                            if (!packagePaths.Contains(path)) AddPath(path, new(Path.GetFullPath(path), "auto", "project", "top-level",
                                 Path.GetFullPath(Path.Combine(cwd, ".pi"))));
                 }
                 var userRoot = Path.Combine(agentDirectory, "extensions");
                 if (Directory.Exists(userRoot))
                     foreach (var path in LocalResourcePathRules.ApplyOverrides(FindAssemblies(userRoot), userPaths,
                         Path.GetFullPath(agentDirectory)))
-                        AddPath(path, new(Path.GetFullPath(path), "auto", "user", "top-level", Path.GetFullPath(agentDirectory)));
+                        if (!packagePaths.Contains(path)) AddPath(path, new(Path.GetFullPath(path), "auto", "user", "top-level", Path.GetFullPath(agentDirectory)));
+                foreach (var file in packageFiles)
+                    if (file.Enabled) AddPath(file.Path, file.Source);
             }
             foreach (var (path, sourceInfo) in selectedPaths)
             {
@@ -575,7 +581,7 @@ public sealed class ExtensionCatalog : IDisposable
                     .SelectMany(entry => EnumerateConfiguredAssemblies(LocalResourcePathRules.ResolvePath(entry, fullBase)))
                     .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal).ToArray();
                 foreach (var path in LocalResourcePathRules.ApplyOverrides(candidates, entries, fullBase))
-                    AddPath(path, new(Path.GetFullPath(path), "local", scope, "top-level", fullBase));
+                    if (!packagePaths.Contains(path)) AddPath(path, new(Path.GetFullPath(path), "local", scope, "top-level", fullBase));
                 foreach (var entry in LocalResourcePathRules.GetPaths(entries).Where(entry =>
                     entry.StartsWith("builtin:", StringComparison.Ordinal)))
                     if (IsBuiltinEnabled(entry["builtin:".Length..], userPaths, projectTrusted ? projectPaths : null))
@@ -598,12 +604,12 @@ public sealed class ExtensionCatalog : IDisposable
                 ignoreCase: false));
     }
 
-    private static IEnumerable<string> FindAssemblies(string root) =>
+    internal static IEnumerable<string> FindAssemblies(string root) =>
         Directory.EnumerateFiles(root, "*.dll", SearchOption.TopDirectoryOnly)
             .Concat(Directory.EnumerateDirectories(root).Select(path => Path.Combine(path, "index.dll"))
                 .Where(File.Exists)).Order(StringComparer.Ordinal).Take(100).Select(Path.GetFullPath).ToArray();
 
-    private static IEnumerable<string> EnumerateConfiguredAssemblies(string root)
+    internal static IEnumerable<string> EnumerateConfiguredAssemblies(string root)
     {
         if (File.Exists(root))
             return Path.GetExtension(root).Equals(".dll", StringComparison.OrdinalIgnoreCase) ? [Path.GetFullPath(root)] : [];

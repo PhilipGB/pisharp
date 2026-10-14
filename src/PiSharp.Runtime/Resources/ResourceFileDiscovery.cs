@@ -103,7 +103,7 @@ internal static class ResourceFileDiscovery
         return second.MoveNext() ? -1 : 0;
     }
 
-    private static bool IsRegularFile(string path)
+    internal static bool IsRegularFile(string path)
     {
         try { return LocalResourceFileType.IsRegularFile(path); }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return false; }

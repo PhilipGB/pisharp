@@ -1,0 +1,373 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "bebd7ebab047d1bb990f3a5ad9a5b68fc6f7137f",
+  "scope": "Local .NET-equivalent package extension entry points and user package trust bootstrap; real normal RPC/provider skill discovery and invocation.",
+  "characterization": {
+    "firstManifest": {
+      "pi": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": null,
+        "extensionLoadTrace": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "pisharp": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "/skill:guide args",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": null,
+        "startupAccepted": true,
+        "packagePrompt": null,
+        "extensionLoadTrace": []
+      }
+    },
+    "nativeBootstrapFailFirst": {
+      "failed": 1,
+      "passed": 1,
+      "skipped": 0
+    },
+    "fileAndRootSourceMismatches": [
+      "file",
+      "root"
+    ],
+    "nativeFileRootFailFirst": {
+      "failed": 2,
+      "passed": 4,
+      "skipped": 0
+    },
+    "fixtureEnvironmentFailure": "The newly separate bootstrap test class overlapped the existing trust test process-wide extension load-log environment variable; extra headless traces appeared in the interactive test. Existing trace/assertion scenarios remain unchanged; both classes now run in an isolated Extension environment collection.",
+    "probeSetup": "The new extension scenario initially had no package parent directory after moving its skill fixture outside the package. Parent creation is corrected; setup-only failing logs retained."
+  },
+  "implementation": [
+    "ResourcePackageFiles extends shared scoped manifest/convention/filter/delta/canonical selection to extension assemblies, direct file declarations and root directory entry points. ExtensionCatalog preserves package metadata and disabled raw-path ownership before configured/automatic loading.",
+    "ProjectRuntimeConfiguration detects personal package sources and loads their trust handlers before resolving a protected project. The full runtime receives separate user/trusted-project package declarations and reuses bootstrap extensions without reconfiguration.",
+    "The existing extension fixture assembly and .NET contracts are reused; no new production/test fixture project is added. The source fixture is an equivalent TypeScript extension using project_trust/resources_discover hooks."
+  ],
+  "verification": {
+    "normalCliCases": 6,
+    "caseModes": [
+      "manifest",
+      "conventions",
+      "disabled",
+      "no-extensions",
+      "file",
+      "root"
+    ],
+    "match": true,
+    "results": {
+      "manifest": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        }
+      },
+      "conventions": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": "Package review",
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": "Package review",
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        }
+      },
+      "disabled": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": null,
+          "startupAccepted": true,
+          "packagePrompt": "Package review",
+          "extensionLoadTrace": []
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": null,
+          "startupAccepted": true,
+          "packagePrompt": "Package review",
+          "extensionLoadTrace": []
+        }
+      },
+      "no-extensions": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": null,
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": []
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": null,
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": []
+        }
+      },
+      "file": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        }
+      },
+      "root": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        }
+      }
+    },
+    "focusedPassed": 41,
+    "newNativeRows": 6,
+    "fullSuite": {
+      "passed": 1940,
+      "failed": 0,
+      "skipped": 0
+    },
+    "existingLoaderRegressionCases": 95,
+    "loaderMismatches": 0,
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed"
+  },
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "package-extension-root-recovery-pisharp.records.json": "8be4b8a7de5996a133238e46b7ae422a3c73fc05bf3ab46883f0aaaee2b66ef5",
+    "package-extension-focused-isolated.log": "5939bfa7a301a2ccbe2ba8933c6e2845c3fecee002a86bd47e61feb1c8bc8e59",
+    "package-extension-conventions-recovery-pi.records.json": "e8ffc736e93a133917c9f890c77c354a238fd9e10dce5c17745dc52f61ed78d9",
+    "package-extension-loader-regression.log": "a43d2c4b0f9e0a0dfaea74593754febe87985d5bb97852f2f92b86a808f75b76",
+    "package-extension-root-recovery-pi.http.json": "1bcfbb8bfab8039a74f9802ab600c57d839521131e4f2f827ea9cb11ddd0288a",
+    "package-extension-no-extensions-recovery-pi.records.json": "6f8a84c3081126d9b9c3856057da9abb25fdf03dd4bb9dbe2e8e85dfe83464fb",
+    "package-extension-file-recovery-pisharp.records.json": "133b2e9a0e1e360db645307aba6602b61414522140f272d41c3017557017a35d",
+    "package-extension-file-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-manifest-recovery-pi.http.json": "77a0558019d8a9921cd27ba5709e2622e43299a86c559712e7385c90871f796f",
+    "package-extension-root-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-disabled-recovery-pisharp.records.json": "1b11ea7294d71746c894f3f925ff5a5524d236c9ca879d3e91451c3734403d38",
+    "package-extension-conventions-recovery-pisharp.http.json": "0b256ccef095840c2edd5cb094bd27f4cdcc98b32caabfa14046573700f2558a",
+    "package-extension-disabled-recovery-pi.http.json": "eb7b45625953ed180382e82469a33358c85c59ab19523a09a98261a56d35ceae",
+    "package-extension-file-recovery-pi.records.json": "0e0d41dc55728a0d715e7e42e22e0da6025e5d83cdd7983c16853f6b18d4dbf6",
+    "package-extension-conventions-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-root-first-pisharp.records.json": "b60971932bbeb91794938a81f8cb4b1320039ae0de2a9243aa67254d82a84b62",
+    "package-extension-conventions-recovery-pi.http.json": "73b2870e9ca283d194a6ce82181b72a77207a7bb0ac0e2e15e2f865340cd10a0",
+    "package-extension-file-first.json": "9aadd33f965d779797ac26052a8748befcbdfeb08d2191a079c1af827b39665f",
+    "package-extension-file-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-recovery-pi.records.json": "d591e72f3a3c020891a8616d46f8e8a486d92ace62532777a1ab0b69d2812909",
+    "package-extension-file-first-pi.stderr.log": "3a4c02e6cbfab6e2c35796e62bd36a68a3b94706860478f0ef7fb48de7cd8415",
+    "package-extension-manifest-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-manifest-recovery.json": "c10b0aa068be15c0e29636058a544b08da2b7b1689467c17e3599ed96d51bcaa",
+    "package-extension-file-first.log": "f4a8816c3f86bdfe69ca9a053e8d89a99b08c553bc1b93a99fb77cb4a4c98b06",
+    "package-extension-file-first-pi.records.json": "343dfaa27ca6382bf424aab39bab96bf65c9182d22bb1cf88173a60d6e857b90",
+    "package-extension-file-first-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-file-root-native-first.log": "f90d5efca9b2fb0cc07275facbff87b7e0ca32e15296f2fd4243f04f68e51ca2",
+    "package-extension-first-ready-pisharp.records.json": "ecb5d3f8d0cfb25d5614fb13416b56fe53a8891050c39cc60af13d6b865f369d",
+    "package-extension-disabled-recovery-pisharp.http.json": "d33248ea4e727ac4d8a5b3ff9517a004e960910e08fb4ccaaf2b062ab516d760",
+    "package-extension-first-ready-pi.records.json": "3fa56fc302f37bcc8006b08148c0a8ff516e742b69b207bf68cb96adcbdbf31a",
+    "package-extension-file-root-focused-recovery.log": "d40fc6ec8ddebc168a013f2a1bf8ae0666c3c6424c3b7fc4c32751d388670498",
+    "package-extension-root-recovery-pi.stderr.log": "f324c917e460185ca83d248984f1b7edcc50c6b2b03e513fdd0c8788b2c0db61",
+    "package-extension-file-first-pisharp.http.json": "1f7894cdce342ffbf18df2162646e28e5a89abe3e800da9ed96c5c4b0ff686fb",
+    "package-extension-recovery.json": "8ac3d3aba362fd67cdf71e770683f465cef81f9fdd73e10d49b55816e49180c7",
+    "package-extension-root-recovery-pisharp.http.json": "517cc8f56a67e8bb54b2d86924188a03ff93606a6cebddeb58df257b859ff1ed",
+    "package-extension-root-first-pi.records.json": "6b5ba2594bb8c80526c51e74df8be51f3b4ccd4d7454f02b6c9617a0b71bd2b5",
+    "package-extension-root-first.log": "f4a8816c3f86bdfe69ca9a053e8d89a99b08c553bc1b93a99fb77cb4a4c98b06",
+    "package-extension-root-first-pisharp.http.json": "ad46fbcba1ebb66159a04ef656e9b34cab2dbe8c653eec9345008aab3d5861f3",
+    "package-extension-recovery-pi.stderr.log": "3cf5b12a25bf14c4ffba546e3f5815663d0608fc9a4ff6616ba27f1fffcdc785",
+    "package-extension-disabled-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-manifest-recovery-pi.records.json": "9ea4f4bf252bece76215751a833ba79220148bd7a4ada4643d6ca63da5e62677",
+    "package-extension-first-ready-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-native-first.log": "fd7b7f145f4a99706a5a02050962fc2badcb51d74c6aa92de9c010218207b3d1",
+    "package-extension-conventions-recovery-pi.stderr.log": "931c627fc5f94b8035830d828eeac9807f7e1e684ee674ade2bfe0f95b61acd8",
+    "package-extension-recovery-pisharp.records.json": "b2208c2fe4c538ea7849d45c3a2123c4c901b9bb7ac808cde75cb42e5a666ac6",
+    "package-extension-first-corrected.log": "6535dfaef888f4070af8b47b4b5bde2f5f94126be8d51390269947ab2285acf7",
+    "package-extension-no-extensions-recovery.json": "0999d897d5bf3cc26b5a1d0b6ab5d11877275b124e854dfcc26a91c076eb6c70",
+    "package-extension-disabled-recovery-pi.records.json": "5597925b73437b368a2b8c829e2c3bf3c74190886710cd12ed935cd70a766230",
+    "package-extension-no-extensions-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-root-first-pi.http.json": "817fa8a49bd7fac3432f8709109159e6b644dd6cadec66e49c8e0ec69c14741b",
+    "package-extension-file-recovery-pisharp.http.json": "8beae1b4a25da840287e33b2c383ecee079ebeacaa26f6a0caf40eb98dd92b47",
+    "package-extension-first-ready-pi.http.json": "ba4feaec3ad5269683dd2dc61ce8b2c548c66318ac513d508ef30c5c367b80dc",
+    "package-extension-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-focused-recovery.log": "b7a16319b7eb262311354e2f9cdbd4a91da2cc5160252b592f9cd20bff4ddb75",
+    "package-extension-root-first.json": "9aadd33f965d779797ac26052a8748befcbdfeb08d2191a079c1af827b39665f",
+    "package-extension-root-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-disabled-recovery.json": "90d386769a5c15fd61a7a410561ac902d921d1217f86f40e68601eddde2d84c1",
+    "package-extension-manifest-recovery-pi.stderr.log": "5b51853042dc22038b6bfdd8dc2ede3744e88b7e13442e4edde3b9750ab3b7e1",
+    "package-extension-conventions-recovery.json": "dd57b8bab7d0bf8f9faadd462525d8898b48456d6fc1383fdc28cff232703c55",
+    "package-extension-first.log": "dd5b6ec7c5b30498e9d97b1630ec414b7bde1a1c51cdf0c9fccc6d98de6c5829",
+    "package-extension-manifest-recovery-pisharp.http.json": "6112f0034ca6e6223a76f9adcbc50d86f6035da6af6af72dcde0b67534d9a29c",
+    "package-extension-root-first-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-conventions-recovery-pisharp.records.json": "dd0b2d8c58d4134c9549bc2e4b2e10f1e18d043b72914ed787349a0155f7b655",
+    "package-extension-file-first-pisharp.records.json": "317a7221f5993b52339193fde3932f1fc0d2735cea2346555850a93608f0078f",
+    "package-extension-first-ready.json": "3fbadfa94b47ecc882e06bff0843a4cb07e7f74fc2dc6e4b58451073908214ff",
+    "package-extension-first-ready.log": "44c2ebd2e275dddf037e735945ab0672909617f961a73a23b14550a9b592a3b3",
+    "package-extension-no-extensions-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-no-extensions-recovery-pisharp.http.json": "00acc16a85dbd48491ce28187cee818473a1a3e96866bf0a3ce12a393a4d4f92",
+    "package-extension-disabled-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-conventions-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-root-recovery.json": "c10b0aa068be15c0e29636058a544b08da2b7b1689467c17e3599ed96d51bcaa",
+    "package-extension-no-extensions-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-file-first-pi.http.json": "d9be941cb10b8958f809d06d2a92639b4d18a07706b06e0014fa05cceb466a8d",
+    "package-extension-first-ready-pisharp.http.json": "9cf3093f93accf3bedeaf29bda6b2dd5305ae914a4bed4a738f1f44936ef9d28",
+    "package-extension-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-loader-regression.json": "0c091568fecdb1eab2db97dc8d6d12d709db485e1bb0c612017dba799bf9581f",
+    "package-extension-file-recovery-pi.stderr.log": "c4e650dd74bbbc01b09f9e306934d4142ff458ada3ec8970459f1eb85c087da8",
+    "package-extension-no-extensions-recovery-pisharp.records.json": "4c85c58b0bc130e804a5afc427fc17e888acb4f15f7b5c0ebc048f4076f596f9",
+    "package-extension-manifest-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-recovery-pi.http.json": "d3cb150d31fcea51ef69285b909ec058ff1839ba135d984da5e3d6d91181c137",
+    "package-extension-recovery-pisharp.http.json": "2aa743b7d1e585dda8c9d39834f2f4618fbc2e93da3ae7c2391187d5b07f1c92",
+    "package-extension-file-recovery.json": "c10b0aa068be15c0e29636058a544b08da2b7b1689467c17e3599ed96d51bcaa",
+    "package-extension-no-extensions-recovery-pi.http.json": "56567a13b4954dc53aced85f91e5d82d62d1a69b51de2c3d9b9a94ae92036e82",
+    "package-extension-fresh-build.log": "072eee5ab5edc0c76e5f6e1cfbcd5772e057e6fc2167c3b468458ab5e5be32a1",
+    "package-extension-root-first-pi.stderr.log": "e40b05765c56fbec5ffc70ab72d698dce1226d89a1e18730cb527b07ab7f7b2f",
+    "package-extension-file-recovery-pi.http.json": "1baee635d5b48dabe5b993e0df93be503e0a6ec44d1078c262b6444d906972f2",
+    "package-extension-root-recovery-pi.records.json": "ec52c485fd73a0a9fdda622e38753764b0fec33974d9c755e1f0585c74e73e34",
+    "package-extension-manifest-recovery-pisharp.records.json": "8bf2ed7bc80f619d5eb6fedac88983de2da46e730dcbc8a252c9d2329717c175",
+    "package-extension-disabled-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-first-ready-pi.stderr.log": "0a187997aa8f072832147b0b1ae700cc44018b3a718a2bf6f816d0188f2ee401",
+    "package-extension-full.log": "05590e9b2e7406212d15871c75fef551882973d953ffadbbd4f589672ed51855"
+  },
+  "limits": [
+    "Entry point comparisons are .NET-equivalent .dll/IPiSharpExtension versus .ts Pi extension registration; literal source filenames/implementation language are not claimed identical. Resource command/expansion/provider input and configuration/trust traces are exact after generated workspace path normalization.",
+    "Manifest/convention/filter/alias/ignore/discovery/error/reload/project override semantics outside these six named flows remain open; no package/resource/extension capability is marked verified.",
+    "Managed npm/git sources and normal package CLI operations remain required and open. Historical timing/source calibration/relocated context-footer concerns remain recorded independently."
+  ]
+}

@@ -65,7 +65,20 @@
     },
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
-    "format": "passed"
+    "format": "passed",
+    "exactCi": {
+      "sha": "bebd7ebab047d1bb990f3a5ad9a5b68fc6f7137f",
+      "run": 38631575616,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38631575616",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1934,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "retainedRelocatedWorkspace": {
     "differences": 4,
@@ -126,7 +139,9 @@
     "package-theme-terminal-isolated-calibration/report.json": "74b88b7e99520f69daad483143f2d5836b64977056b92032458c2d30f438284c",
     "package-theme-terminal-pair.log": "fc96a62266538f2b6e984dfa64f37d1496b103a7ed48f3644559a056108692ff",
     "package-theme-terminal-startup-order-repeat/report.json": "92c28c2e9d18ab3fa914f3712dde5bf2d00487e558b5a75e49cff4cfffb70672",
-    "keyboard-fallback-full.log": "9cbcd85073c48fda07d75c27a0236cbb098b3a72cfef5921b0255f098dfb3bf4"
+    "keyboard-fallback-full.log": "9cbcd85073c48fda07d75c27a0236cbb098b3a72cfef5921b0255f098dfb3bf4",
+    "keyboard-fallback-exact-ci.log": "8f6d7ccbd3f905efd08cdd86b31bceba73ba55dcf1e268a102443735fe701e5b",
+    "keyboard-fallback-docs.log": "ec90e586e1b094bde85ef404b7c42c22e29f47fa85c31139bb667b01a5bb5a12"
   },
   "limits": [
     "Named valid negotiation/lifecycle and 120x40 dark fullscreen cases only; malformed/fragmented reply and other terminal-platform/protocol boundaries remain open.",

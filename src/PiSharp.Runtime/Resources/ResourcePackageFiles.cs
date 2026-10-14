@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Runtime.Resources;
 
@@ -9,6 +10,7 @@ internal sealed class ResourcePackageFiles
     internal List<PackageResourceFile> Skills { get; } = [];
     internal List<PackageResourceFile> Prompts { get; } = [];
     internal List<PackageResourceFile> Themes { get; } = [];
+    internal List<PackageResourceFile> Extensions { get; } = [];
 
     internal static ResourcePackageFiles Load(string cwd, string agentDirectory, bool trusted,
         IReadOnlyList<ResourcePackageSource>? user, IReadOnlyList<ResourcePackageSource>? project, CancellationToken token)
@@ -20,6 +22,7 @@ internal sealed class ResourcePackageFiles
         var skillPaths = new HashSet<string>(StringComparer.Ordinal);
         var promptPaths = new HashSet<string>(StringComparer.Ordinal);
         var themePaths = new HashSet<string>(StringComparer.Ordinal);
+        var extensionPaths = new HashSet<string>(StringComparer.Ordinal);
         foreach (var declaration in declarations)
         {
             token.ThrowIfCancellationRequested();
@@ -31,11 +34,25 @@ internal sealed class ResourcePackageFiles
             if (selected.TryGetValue(root, out var prior) &&
                 !(prior.Scope == "project" && !prior.Package.Autoload && declaration.Scope == "user")) continue;
             selected.TryAdd(root, declaration);
+            if (ResourceFileDiscovery.IsRegularFile(root))
+            {
+                if (extensionPaths.Add(root)) result.Extensions.Add(new(root,
+                    new(root, package.Source, declaration.Scope, "package", Path.GetDirectoryName(root)!), true));
+                continue;
+            }
             if (!Directory.Exists(root)) continue;
             var manifest = ReadManifest(root);
+            if (manifest is null && !package.HasFilter &&
+                !new[] { "extensions", "skills", "prompts", "themes" }.Any(kind => Directory.Exists(Path.Combine(root, kind))))
+            {
+                foreach (var path in ExtensionCatalog.EnumerateConfiguredAssemblies(root))
+                    if (extensionPaths.Add(path)) result.Extensions.Add(new(path,
+                        new(path, package.Source, declaration.Scope, "package", root), true));
+            }
             Add("skills", package.Skills, result.Skills, skillPaths);
             Add("prompts", package.Prompts, result.Prompts, promptPaths);
             Add("themes", package.Themes, result.Themes, themePaths);
+            Add("extensions", package.Extensions, result.Extensions, extensionPaths);
 
             void Add(string kind, IReadOnlyList<string>? filter, List<PackageResourceFile> target, HashSet<string> seen)
             {
@@ -62,6 +79,7 @@ internal sealed class ResourcePackageFiles
         RetainCanonicalEntries(result.Skills);
         RetainCanonicalEntries(result.Prompts);
         RetainCanonicalEntries(result.Themes);
+        RetainCanonicalEntries(result.Extensions);
         return result;
     }
 
@@ -73,7 +91,7 @@ internal sealed class ResourcePackageFiles
             if (document.RootElement.ValueKind != JsonValueKind.Object ||
                 !document.RootElement.TryGetProperty("pi", out var pi) || pi.ValueKind != JsonValueKind.Object) return null;
             var result = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-            foreach (var kind in new[] { "skills", "prompts", "themes" })
+            foreach (var kind in new[] { "skills", "prompts", "themes", "extensions" })
                 if (pi.TryGetProperty(kind, out var entries) && entries.ValueKind == JsonValueKind.Array &&
                     entries.EnumerateArray().All(entry => entry.ValueKind == JsonValueKind.String))
                     result[kind] = entries.EnumerateArray().Select(entry => entry.GetString()!).ToArray();
@@ -105,13 +123,25 @@ internal sealed class ResourcePackageFiles
         return result.Distinct(StringComparer.Ordinal).ToArray();
     }
 
-    private static IReadOnlyList<string> Collect(string path, string kind, CancellationToken token) =>
-        ResourceFileDiscovery.Enumerate(path, kind switch
+    private static IReadOnlyList<string> Collect(string path, string kind, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (kind == "extensions")
+        {
+            try
+            {
+                if (File.Exists(path)) return Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase) ? [Path.GetFullPath(path)] : [];
+                return Directory.Exists(path) ? ExtensionCatalog.FindAssemblies(path).ToArray() : [];
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return []; }
+        }
+        return ResourceFileDiscovery.Enumerate(path, kind switch
         {
             "skills" => ResourceDiscoveryKind.Skills,
             "themes" => ResourceDiscoveryKind.ConfiguredThemes,
             _ => ResourceDiscoveryKind.ConfiguredPrompts
         }, token);
+    }
 
     private static void RetainCanonicalEntries(List<PackageResourceFile> files)
     {
