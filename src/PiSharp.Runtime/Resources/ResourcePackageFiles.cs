@@ -27,7 +27,7 @@ internal sealed class ResourcePackageFiles
             if (package.Source.StartsWith("npm:", StringComparison.Ordinal) ||
                 package.Source.StartsWith("git:", StringComparison.Ordinal)) continue;
             var baseDirectory = declaration.Scope == "project" ? Path.Combine(cwd, ".pi") : agentDirectory;
-            var root = ResourcePackagePath.Resolve(package.Source, baseDirectory);
+            var root = ResourceLocalPath.Resolve(package.Source, baseDirectory);
             if (selected.TryGetValue(root, out var prior) &&
                 !(prior.Scope == "project" && !prior.Package.Autoload && declaration.Scope == "user")) continue;
             selected.TryAdd(root, declaration);

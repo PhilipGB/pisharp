@@ -153,6 +153,18 @@ export default function(pi) {
     if scenario == 'package-extension' and extension_mode == 'missing-explicit':
         suffix = 'ts' if product == 'pi' else 'dll'
         common.extend(['--extension', str(root / product / f'missing.{suffix}')])
+    if scenario == 'package-extension' and extension_mode in ['padded-explicit', 'file-url-explicit', 'canonical-explicit-alias']:
+        suffix = 'ts' if product == 'pi' else 'dll'
+        selected = root / product / 'package/extensions' / f'index.{suffix}'
+        if extension_mode == 'canonical-explicit-alias':
+            alias = root / product / f'alias.{suffix}'
+            alias.symlink_to(selected)
+            value = str(alias)
+        elif extension_mode == 'file-url-explicit':
+            value = selected.as_uri()
+        else:
+            value = '\uFEFF \t' + str(selected) + '\r\n\uFEFF'
+        common.extend(['--extension', value])
     command = (['node', '--import', (pi / 'packages/coding-agent/src/experimental/source-resolver.ts').as_uri(),
                 str(pi / 'packages/coding-agent/src/cli.ts')] if product == 'pi' else ['dotnet', str(native)]) + common
     records = []
@@ -238,9 +250,9 @@ export default function(pi) {
                     result['partialCommandPresent'] = any(c['name'] == 'partial_command' for c in commands['data']['commands'])
             return result
     except RpcEndedBeforeCheckpoint:
-        if not package_scenario or records or product != 'pisharp' and extension_mode not in ['throwing-sibling', 'missing-explicit']:
+        if not package_scenario or records or product != 'pisharp' and extension_mode not in ['throwing-sibling', 'missing-explicit', 'padded-explicit']:
             raise
-        if extension_mode in ['throwing-sibling', 'missing-explicit']:
+        if extension_mode in ['throwing-sibling', 'missing-explicit', 'padded-explicit']:
             stderr = output.with_name(output.stem + f'-{product}.stderr.log').read_text()
             return dict(startupAccepted=False, exitCode=process.wait(timeout=10), providerRequests=len(server.requests),
                         configurationFailureReported='fixture extension configuration failure' in stderr,
@@ -248,6 +260,7 @@ export default function(pi) {
                         diagnostics=[line.replace(str(root / product), '<workspace>')
                             .replace('/bad.ts', '/bad.<module>').replace('/bad.dll', '/bad.<module>')
                             .replace('/missing.ts', '/missing.<module>').replace('/missing.dll', '/missing.<module>')
+                            .replace('/index.ts', '/index.<module>').replace('/index.dll', '/index.<module>')
                             .replace('using "pi -ne"', 'using "<app> -ne"')
                             .replace('using "pisharp -ne"', 'using "<app> -ne"')
                             for line in stderr.splitlines() if line])
@@ -275,7 +288,7 @@ def main():
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package', 'package-extension'], default='deleted-skill')
-    parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root', 'index-with-sibling', 'nested-manifest', 'ignored-sibling', 'hidden-sibling', 'node-modules-sibling', 'throwing-sibling', 'missing-explicit'], default='manifest')
+    parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root', 'index-with-sibling', 'nested-manifest', 'ignored-sibling', 'hidden-sibling', 'node-modules-sibling', 'throwing-sibling', 'missing-explicit', 'padded-explicit', 'file-url-explicit', 'canonical-explicit-alias'], default='manifest')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     args.output.parent.mkdir(parents=True, exist_ok=True)

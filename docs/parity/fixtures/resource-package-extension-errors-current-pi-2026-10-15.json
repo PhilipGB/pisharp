@@ -147,7 +147,20 @@
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
     "format": "passed",
-    "docs": "132 documents / 502 references"
+    "docs": "132 documents / 502 references",
+    "exactCi": {
+      "sha": "100ade618b84e6e9687139fd6675ff3316578849",
+      "run": 38654065946,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38654065946",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1954,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "comparison": "Exact diagnostics for the controlled factory failure/missing path after normalizing only generated workspace roots, .ts/.dll implementation suffix and pi/pisharp executable names. Native corrupted assembly/dependency-manifest controls retain their CLR error details and are not described as identical TypeScript error text. SDK compares loaded module IDs, full failure message and absence of partial commands/tools.",
   "sourcePaths": [
@@ -345,7 +358,8 @@
     "package-extension-errors-format-correction.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "package-extension-errors-format-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "package-extension-errors-full.log": "b4dcfc30676c06259e40a216ccbecb70b1cb6fe3579d5ecc20dc1c45da0d9f72",
-    "package-extension-errors-docs.log": "10e0f8488f7281415e82ade05e6af1970e6b7f05f9b9ad4c7d916380938a867d"
+    "package-extension-errors-docs.log": "10e0f8488f7281415e82ade05e6af1970e6b7f05f9b9ad4c7d916380938a867d",
+    "package-extension-errors-exact-ci.log": "467f6064a4405e64b5efc21798a98af94385a36b3eabc323b5602fb4500386f2"
   },
   "limits": [
     "The named SDK/CLI boundaries and native corrupt-module controls do not establish complete builtin/custom-type/constructor/alias/collision/Unicode/path/error/reload semantics or every external side effect of plugin code.",

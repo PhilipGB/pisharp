@@ -485,11 +485,12 @@ public sealed class ExtensionCatalog : IDisposable
             var builtinByName = (builtins ?? []).ToDictionary(builtin => builtin.Name, StringComparer.Ordinal);
             var seenBuiltins = new HashSet<string>(StringComparer.Ordinal);
             var seenPaths = new HashSet<string>(catalog._loadedExtensions.Select(extension => extension.Path)
-                    .Concat(catalog._loadErrors.Select(error => error.Path)),
+                    .Concat(catalog._loadErrors.Select(error => error.Path)).Select(ResourcePathIdentity.Canonicalize),
                 OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             var packageFiles = discover ? ResourcePackageFiles.Load(cwd, agentDirectory, projectTrusted,
                 userPackages, projectPackages, CancellationToken.None).Extensions : [];
             var packagePaths = packageFiles.Select(file => file.Path).ToHashSet(seenPaths.Comparer);
+            var packageMetadata = packageFiles.ToDictionary(file => file.Path, file => file.Source, seenPaths.Comparer);
             foreach (var entry in additionalPaths ?? [])
             {
                 if (entry.StartsWith("builtin:", StringComparison.Ordinal))
@@ -497,14 +498,14 @@ public sealed class ExtensionCatalog : IDisposable
                     AddBuiltin(entry);
                     continue;
                 }
-                var path = Path.GetFullPath(entry, cwd);
+                var path = ResourceLocalPath.Resolve(entry, cwd);
                 IEnumerable<string> paths;
                 if (Directory.Exists(path)) paths = FindAssemblies(path);
                 else if (File.Exists(path) && Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase))
                     paths = [path];
                 else
                 {
-                    if (seenPaths.Add(path)) catalog._loadErrors.Add(new(path, File.Exists(path)
+                    if (seenPaths.Add(ResourcePathIdentity.Canonicalize(path))) catalog._loadErrors.Add(new(path, File.Exists(path)
                         ? "Explicit extension must be a .dll file or an existing directory."
                         : "Extension path does not exist: " + path));
                     continue;
@@ -574,7 +575,8 @@ public sealed class ExtensionCatalog : IDisposable
             void AddPath(string path, ResourceSourceInfo sourceInfo)
             {
                 var fullPath = Path.GetFullPath(path);
-                if (seenPaths.Add(fullPath)) selectedPaths.Add((fullPath, sourceInfo with { Path = fullPath }));
+                sourceInfo = packageMetadata.GetValueOrDefault(fullPath, sourceInfo);
+                if (seenPaths.Add(ResourcePathIdentity.Canonicalize(fullPath))) selectedPaths.Add((fullPath, sourceInfo with { Path = fullPath }));
             }
 
             void AddConfiguredPaths(IReadOnlyList<string>? entries, string baseDirectory, string scope)

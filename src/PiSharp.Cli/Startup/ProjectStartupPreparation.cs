@@ -19,6 +19,7 @@ internal static class ProjectStartupPreparation
             configuredSessionDirectory = Environment.GetEnvironmentVariable("PISHARP_SESSION_DIR");
             if (configuredSessionDirectory is not null)
                 configuredSessionDirectory = Path.GetFullPath(configuredSessionDirectory, invocationDirectory);
+            cli = ExtensionCliPaths.Resolve(cli, invocationDirectory);
             var startupTarget = PiSessionStartupTarget.Resolve(invocationDirectory, cli);
             cli = startupTarget.Arguments;
             Environment.CurrentDirectory = startupTarget.WorkingDirectory;

@@ -3,7 +3,7 @@ using System.Text;
 
 namespace PiSharp.Runtime.Resources;
 
-internal static class ResourcePackagePath
+internal static class ResourceLocalPath
 {
     // ECMAScript trim removes FEFF and preserves NEL, unlike the .NET whitespace set.
     private static readonly char[] s_whitespace = ['\t', '\n', '\v', '\f', '\r', ' ', '\u00A0', '\u1680',
@@ -11,9 +11,16 @@ internal static class ResourcePackagePath
         '\u2008', '\u2009', '\u200A', '\u2028', '\u2029', '\u202F', '\u205F', '\u3000', '\uFEFF'];
     private static readonly UTF8Encoding s_utf8 = new(false, true);
 
-    internal static string Resolve(string source, string baseDirectory)
+    internal static bool IsLocal(string source)
     {
-        var path = source.Trim(s_whitespace);
+        var trimmed = source.Trim(s_whitespace);
+        return !new[] { "npm:", "git:", "github:", "http:", "https:", "ssh:", "builtin:" }
+            .Any(prefix => trimmed.StartsWith(prefix, StringComparison.Ordinal));
+    }
+
+    internal static string Resolve(string source, string baseDirectory, bool trim = true)
+    {
+        var path = trim ? source.Trim(s_whitespace) : source;
         if (path.StartsWith("file://", StringComparison.Ordinal)) path = FileUrlPath(path);
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         if (path == "~") path = home;
@@ -21,7 +28,7 @@ internal static class ResourcePackagePath
                  OperatingSystem.IsWindows() && path.StartsWith("~\\", StringComparison.Ordinal))
             path = Path.Combine(home, path[2..]);
         return Path.TrimEndingDirectorySeparator(path.Length == 0
-            ? Path.GetFullPath(baseDirectory) : Path.GetFullPath(path, baseDirectory));
+            ? Path.GetFullPath(baseDirectory) : Path.GetFullPath(path, Path.GetFullPath(baseDirectory)));
     }
 
     private static string FileUrlPath(string source)

@@ -1,0 +1,380 @@
+{
+  "date": "2026-10-15",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "100ade618b84e6e9687139fd6675ff3316578849",
+  "scope": "Explicit extension file URLs, canonical alias deduplication, first lexical path with package/CLI provenance, and CLI-before-loader resolution preserving padded argument diagnostics.",
+  "characterization": {
+    "fileUrlFirst": {
+      "pi": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": null,
+        "extensionLoadTrace": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "pisharp": {
+        "startupAccepted": false,
+        "exitCode": 1,
+        "error": "Error: Failed to load extension \"/tmp/pisharp-resource-invocation-process-5fhajljb/pisharp/file:/tmp/pisharp-resource-invocation-process-5fhajljb/pisharp/package/extensions/index.dll\": Extension path does not exist: /tmp/pisharp-resource-invocation-process-5fhajljb/pisharp/file:/tmp/pisharp-resource-invocation-process-5fhajljb/pisharp/package/extensions/index.dll\nHint: Start without extensions using \"pisharp -ne\".",
+        "providerRequests": 0
+      }
+    },
+    "aliasFirstTraces": {
+      "pi": [
+        "configured",
+        "trust-undecided:false",
+        "trust-decision:false"
+      ],
+      "pisharp": [
+        "configured",
+        "configured",
+        "trust-undecided:false",
+        "trust-decision:false"
+      ]
+    },
+    "paddedFirst": {
+      "pi": {
+        "startupAccepted": false,
+        "exitCode": 1,
+        "providerRequests": 0,
+        "configurationFailureReported": false,
+        "recoveryHint": true,
+        "diagnostics": [
+          "Error: Failed to load extension \"<workspace>/\ufeff \t<workspace>/package/extensions/index.<module>\": Extension path does not exist: <workspace>/\ufeff \t<workspace>/package/extensions/index.<module>",
+          "Hint: Start without extensions using \"<app> -ne\"."
+        ]
+      },
+      "pisharp": {
+        "startupAccepted": false,
+        "exitCode": 1,
+        "providerRequests": 0,
+        "configurationFailureReported": false,
+        "recoveryHint": true,
+        "diagnostics": [
+          "Error: Failed to load extension \"<workspace>/\ufeff \t<workspace>/package/extensions/index.<module>",
+          "\ufeff\": Extension path does not exist: <workspace>/\ufeff \t<workspace>/package/extensions/index.<module>",
+          "\ufeff",
+          "Hint: Start without extensions using \"<app> -ne\"."
+        ]
+      }
+    },
+    "nativeFailFirst": {
+      "failed": 2,
+      "passed": 1,
+      "skipped": 0
+    },
+    "intermediateUrlFailure": "The first URL repair still failed in normal CLI because PiSessionStartupTarget had already converted the raw URL into a filesystem path. Extension CLI normalization moved before session-target resolution; prior failing capture retained.",
+    "paddedProbeCorrection": "Pi rejects a padded absolute argument after first resolving it relative to the invocation directory; the driver originally required source startup success and aborted. It now retains and compares the actual source rejection and complete normalized diagnostic. No trimming turns this invalid CLI argument into an accepted path.",
+    "metadataCorrection": "The initial native expectation that all explicit paths retained CLI metadata was wrong. Actual DefaultResourceLoader metadata proves exact plain/URL package-file overlap keeps package provenance; a distinct canonical alias keeps CLI provenance. Corrected expectations exposed two native failures and one alias control before the metadata overlay repair.",
+    "nativeMetadataFailFirst": {
+      "failed": 2,
+      "passed": 1,
+      "skipped": 0
+    }
+  },
+  "implementation": [
+    "ResourceLocalPath shares package/explicit-extension file URL/home/ECMAScript resolution, with an explicit trim choice. Package path resolution remains unchanged; other resource setting matchers are not broadened.",
+    "ExtensionCliPaths resolves local raw arguments against the original invocation directory before session-target processing, without trimming them. ExtensionCatalog trims the resolved loader input, preserving Pi two-stage CLI behavior and exact named errors.",
+    "ExtensionCatalog canonicalizes successful/failed/selected file identities for deduplication and retains the first lexical path. Exact package-file matches receive package provenance; a distinct lexical alias retains CLI provenance. The same physical assembly configures once."
+  ],
+  "verification": {
+    "normalCliCases": 16,
+    "mismatches": 0,
+    "newPathResults": {
+      "padded-explicit": {
+        "pi": {
+          "startupAccepted": false,
+          "exitCode": 1,
+          "providerRequests": 0,
+          "configurationFailureReported": false,
+          "recoveryHint": true,
+          "diagnostics": [
+            "Error: Failed to load extension \"<workspace>/\ufeff \t<workspace>/package/extensions/index.<module>\": Extension path does not exist: <workspace>/\ufeff \t<workspace>/package/extensions/index.<module>",
+            "Hint: Start without extensions using \"<app> -ne\"."
+          ]
+        },
+        "pisharp": {
+          "startupAccepted": false,
+          "exitCode": 1,
+          "providerRequests": 0,
+          "configurationFailureReported": false,
+          "recoveryHint": true,
+          "diagnostics": [
+            "Error: Failed to load extension \"<workspace>/\ufeff \t<workspace>/package/extensions/index.<module>\": Extension path does not exist: <workspace>/\ufeff \t<workspace>/package/extensions/index.<module>",
+            "Hint: Start without extensions using \"<app> -ne\"."
+          ]
+        }
+      },
+      "file-url-explicit": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        }
+      },
+      "canonical-explicit-alias": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": null,
+          "extensionLoadTrace": [
+            "configured",
+            "trust-undecided:false",
+            "trust-decision:false"
+          ]
+        }
+      }
+    },
+    "focusedPassed": 58,
+    "startupFocusedPassed": 9,
+    "newNativeRows": 3,
+    "fullSuite": {
+      "passed": 1957,
+      "failed": 0,
+      "skipped": 0
+    },
+    "existingLoaderRegressionCases": 95,
+    "loaderMismatches": 0,
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "metadataDifferential": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "pi": [
+        {
+          "id": "plain",
+          "errors": [],
+          "loaded": [
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ]
+        },
+        {
+          "id": "file-url",
+          "errors": [],
+          "loaded": [
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ]
+        },
+        {
+          "id": "alias",
+          "errors": [],
+          "loaded": [
+            {
+              "path": "alias.<module>",
+              "sourceInfo": {
+                "path": "alias.<module>",
+                "source": "cli",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": null
+              }
+            }
+          ]
+        }
+      ],
+      "pisharp": [
+        {
+          "id": "plain",
+          "errors": [],
+          "loaded": [
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ]
+        },
+        {
+          "id": "file-url",
+          "errors": [],
+          "loaded": [
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ]
+        },
+        {
+          "id": "alias",
+          "errors": [],
+          "loaded": [
+            {
+              "path": "alias.<module>",
+              "sourceInfo": {
+                "path": "alias.<module>",
+                "source": "cli",
+                "scope": "temporary",
+                "origin": "top-level",
+                "baseDir": null
+              }
+            }
+          ]
+        }
+      ],
+      "match": true,
+      "scope": "Actual DefaultResourceLoader/SettingsManager versus ExtensionCatalog: one loaded module, errors and all five source-info fields for plain/URL/package overlap and a canonical alias. Only generated root paths and .ts/.dll module suffixes normalize."
+    },
+    "fullSuiteBeforeMetadataCorrection": {
+      "passed": 1957,
+      "failed": 0,
+      "skipped": 0,
+      "limitation": "Intermediate candidate only; final metadata-aware suite is recorded separately."
+    },
+    "documentation": {
+      "documents": 132,
+      "references": 503
+    },
+    "nodePassed": 24,
+    "pythonPassed": 50,
+    "postMetadataCliCases": 3
+  },
+  "sourcePaths": [
+    "packages/coding-agent/src/main.ts: resolveCliPaths resolves local arguments without trim before service creation.",
+    "packages/coding-agent/src/core/resource-loader.ts: mergePaths canonical deduplication and resolveResourcePath with trim.",
+    "packages/coding-agent/src/utils/paths.ts: local prefix classification, URL/home/trim semantics.",
+    "packages/coding-agent/src/core/resource-loader.ts: raw-path metadata map overlays package provenance before canonical path selection; full SettingsManager/DefaultResourceLoader probe verifies all five source fields."
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-15",
+  "logs": {
+    "package-extension-paths-padded-explicit-final.json": "8938bdc387173250e47d08ab7fc6586afc31f363cd7b3b2b8f675a97b9b46f50",
+    "package-extension-paths-canonical-explicit-alias-recovery.json": "924605aedc87ea163b6d5b92e6cbf10e9d55909d80875577b1a83e7f31ba72a6",
+    "package-extension-paths-ignored-sibling-regression.json": "baa92f9b5dccc26094515f287db8e14378dea9179cba8893b1ebdc89df487c69",
+    "package-extension-paths-fresh-build.log": "1ea3912322200d19f68fd8b4150193924e8cf98a531d4a9abeeab500be06297e",
+    "package-extension-paths-root-regression.json": "41f04880e643cb55972e4f6209490caf9e5c43326e0af1ef0708e7bcc79096c1",
+    "package-extension-paths-file-url-explicit-regression.json": "1c3e282439cc5fcddeb40a7aa922c50bb3954260ed4274ca6594b7c6c62dd24b",
+    "package-extension-paths-focused-recovery.log": "1874f5d81c2d400a9d470c373682949dd9d588f61a4af753816cbfaf670ce288",
+    "package-extension-paths-canonical-explicit-alias-final.json": "c296690b9b8762e26cf3d190eb9bd10dd2a4e85f5c0841075ba1fe469788aad8",
+    "package-extension-paths-missing-explicit-regression.json": "f1d98a32a396c37b9cd726f92663601c6efc285ffac6142700d99faa8f2c9e8d",
+    "package-extension-paths-loader-regression.json": "83d80232a1cdc8891ab25f0f52e27a10014ab6bc9a1b44fb9dea79ce6142ffa3",
+    "package-extension-paths-padded-corrected-first.json": "a55b068b1c33c9ee2c095f1a9cb7f1a7c9dacffb8b3e5f807b9524618c113087",
+    "package-extension-paths-throwing-sibling-regression.json": "8258dce76efeb7f9af080939b30a5193a109fec13ad653c2ef0c1d07e1822388",
+    "package-extension-paths-file-url-explicit-recovery.json": "92711111315945b4a90cab698a63551acca8ac91d4ee63de63c1eeed5e8bf0ce",
+    "package-extension-paths-padded-explicit-regression.json": "8938bdc387173250e47d08ab7fc6586afc31f363cd7b3b2b8f675a97b9b46f50",
+    "package-extension-paths-canonical-explicit-alias-regression.json": "c296690b9b8762e26cf3d190eb9bd10dd2a4e85f5c0841075ba1fe469788aad8",
+    "package-extension-paths-file-url-explicit-final.json": "1c3e282439cc5fcddeb40a7aa922c50bb3954260ed4274ca6594b7c6c62dd24b",
+    "package-extension-paths-startup-focused.log": "60f62cd47b1efcc5b599bbb02aa600133451d3b6cac8acf3985fb2d62e154f7d",
+    "package-extension-paths-index-with-sibling-regression.json": "744321c20ee93bc8f5c476de465295b115fb3f27e0c015ad14490280346a110a",
+    "package-extension-paths-disabled-regression.json": "3ad4882440ca2b800bb7c130f5e5bbedc77b6e56a0275a55ef3155415dbc7d69",
+    "package-extension-paths-nested-manifest-regression.json": "d2f7b1b06ba08bd5e7cebbff0c0c552306e0497e0223e158a1e800b705e2bea7",
+    "package-extension-paths-file-url-explicit-first.json": "b0117ac337128b0edff4dc5236ac38d9bfbf95631a003b40fd88788a474ea1d9",
+    "package-extension-paths-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-paths-hidden-sibling-regression.json": "90debee9aaa380079b9f345f4f6a29c36f5c3bc0cb97491a280268dad48d19de",
+    "package-extension-paths-manifest-regression.json": "421e82725ee2a1cf2a73a4e07e7f149a7d7401078b181a3f1d9d6b59f182970a",
+    "package-extension-paths-padded-explicit-recovery.json": "2968b2017f50039ca8da33f09b2119b571be0f49a57c01b8e776f6e5abdcaebe",
+    "package-extension-paths-native-first.log": "240ceda670ef104c0aa3dc548a51e1bc04be7ca1f5bc37c23ffe310e715ae590",
+    "package-extension-paths-conventions-regression.json": "9f4c96a966e95563cde35dd008cfbfd59e954152141f84c544ec310db8a25cb2",
+    "package-extension-paths-file-regression.json": "0615b60787941db8c7dd1b3e23fe8e256974c859e31018dbc222ea09f33d163e",
+    "package-extension-paths-node-modules-sibling-regression.json": "95f7f340c75aacc19e853bde05de73ce03803a2a371a1fe032098d53bf935f4e",
+    "package-extension-paths-canonical-explicit-alias-first.json": "36477e7f50bf07c3a3b5dd7ed59113a7061ba5f01d076171ac0de5ecd84a38d7",
+    "package-extension-paths-no-extensions-regression.json": "73b841f9149d5ef46dd968aa9cc23cf7a627b0c2cc06ef3ffadcc17aa32400af",
+    "package-extension-path-source-metadata.json": "e2d3131fc73e4ead7cde98d0e64d807d583ee6a1d61d85504a2a6f1f45006bff",
+    "package-extension-metadata-native-first.log": "c888601de67019561426d55ef9fd96e55a2b914dd19bef21a7d57f0b7cdd390b",
+    "package-extension-paths-source-metadata-recovery.log": "76c77ce51895f92bbd1953564e6687e695f5869f5e2b2d4dd65ae26eae49f5ad",
+    "package-extension-paths-metadata-focused.log": "1874f5d81c2d400a9d470c373682949dd9d588f61a4af753816cbfaf670ce288",
+    "package-extension-paths-source-metadata-recovery.json": "d8dd651a417371d4484a86059b6ff5c4b7c1915836b6fd6ff436b8728bf8d435",
+    "package-extension-paths-final-build.log": "16002bfc40033e28f0abf9d7d5861fcfc1f857b5ef3e7bbe165b792fe10bb7e9",
+    "package-extension-paths-final-full.log": "5ce856d57bbfacb32c5f82eb554842205546f41785adef1d8d99e46fa5d66c0c",
+    "package-extension-paths-final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-paths-node.log": "8eb6a2986f649010ce12f1466f8cbba0d3587f3806c7be08cbe500f3e8fe7eac",
+    "package-extension-paths-python.log": "7228b39bb58c0744c4ece5b53dd35a14bcda3f9eb3d563e0f2608add7569e2de",
+    "package-extension-paths-canonical-explicit-alias-metadata-final.json": "0fee3d3eec8daec76f16f43c2c61bc6fe4ab871c9cfd8ba84201edbd9c01e3c7",
+    "package-extension-paths-file-url-explicit-metadata-final.json": "287cdb1c68380507a094e8e6c17a6c3a8af790547c10164712c54f587e28392b",
+    "package-extension-paths-padded-explicit-metadata-final.json": "06cd1c3286dd083a324b4fb2c1ca118dd9f66f27dcccdd0d790e7968a80ba0fe"
+  },
+  "limits": [
+    "Named Linux file URL/alias/padded paths and original 13 flows only; broader configured paths, directory/file alias precedence, malformed URLs, Unicode/path/collision/error/reload/project scope remain open.",
+    "Raw implementation suffixes and executable names normalize only where their .NET/TypeScript difference is intrinsic to the fixture; failed captures and complete normalized error lines are retained.",
+    "Managed package sources/CLI operations and full resource/extension/trust capability remain in_progress; earlier timing/calibration/context-footer concerns remain separately recorded."
+  ],
+  "reproduction": [
+    "python3 tools/parity/extension-path-metadata-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/extension-metadata.json",
+    "python3 tools/parity/resource-invocation-process-differential.py --help"
+  ]
+}
