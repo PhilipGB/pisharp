@@ -33,7 +33,19 @@
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
     "format": "passed",
-    "exactCi": "Pending publication.",
+    "exactCi": {
+      "sha": "cc1720f1ff0bbf7b47527551cf75fe1dc5a13248",
+      "run": 38616495243,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38616495243",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1907,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    },
     "fixtureTimingEvidence": "docs/parity/fixtures/process-timing-isolation-2026-10-14.json"
   },
   "originalFullFailure": {
@@ -60,7 +72,8 @@
     "package-filesystem-edges-recovery.json": "ad5f5ff6830625ee475ed482a3e1db31cc06f9c0cace1c1572735a02fffb7ded",
     "process-timing-collection-build.log": "1ea6ab820d46c0dd7918f50456b6d1dbcf2aef2339ae6194273e092759719f02",
     "process-timing-collection-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "process-timing-collection-full.log": "4c3bc5f07c807100567f12005820878d2a1d67a93fd443dfaa70741670120598"
+    "process-timing-collection-full.log": "4c3bc5f07c807100567f12005820878d2a1d67a93fd443dfaa70741670120598",
+    "package-filesystem-exact-ci.log": "4638b1251a8dd9220981208089df0d9539068709c401052bf8aa215efc6f107b"
   },
   "limits": [
     "The three added cases and original 60 comparisons cover their named local skill/prompt selection behavior; complete package extension/theme loading, managed npm/git, CLI package operations and other path/alias/error semantics remain open.",

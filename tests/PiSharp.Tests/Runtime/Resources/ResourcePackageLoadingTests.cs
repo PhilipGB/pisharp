@@ -5,6 +5,32 @@ namespace PiSharp.Tests;
 public sealed class ResourcePackageLoadingTests
 {
     [Theory]
+    [InlineData("../package")]
+    [InlineData(" \t../package\r\n")]
+    [InlineData("\uFEFF\u00A0../package\u2029\uFEFF")]
+    [InlineData(" \t\r\n")]
+    public async Task PackageSourceTrimsJavaScriptWhitespaceAndRetainsDeclaredProvenance(string source)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-package-source-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var package = string.IsNullOrWhiteSpace(source) ? agent : Path.Combine(root, "package");
+        var path = Path.Combine(package, "prompts", "review.md");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        try
+        {
+            await File.WriteAllTextAsync(path, "Review package");
+
+            var catalog = await ResourceCatalog.LoadAsync(root, agent, false,
+                discoverSkills: false, userPackages: [new(source)]);
+            var prompt = Assert.Single(catalog.Prompts);
+            Assert.Equal(path, prompt.Path);
+            Assert.Equal(new ResourceSourceInfo(path, source, "user", "package", package), prompt.SourceInfo);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Theory]
     [InlineData(".hidden/*.md", false)]
     [InlineData(".hidden/secret.md", true)]
     public async Task ManifestGlobsHideDotPathsWhileExactEntriesCanSelectThem(string entry, bool expected)

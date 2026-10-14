@@ -138,12 +138,28 @@ def package_scenarios(edges=False):
     add('local-before-package', trusted=True, files={'project/.pi/skills/guide/SKILL.md': skill(body='local winner')})
     add('personal-auto-before-package', files={'agent/skills/guide/SKILL.md': skill(body='personal winner')})
     if edges:
+        add('padded-source', declaration=' \t../outside/package\n')
+        add('padded-project-source', declaration=None,
+            project={'packages': [' \t../../outside/package\n']}, trusted=True)
+        add('unicode-padded-source', declaration='\uFEFF\u00A0../outside/package\u2029\uFEFF')
+        add('nel-preserved-source', declaration='../outside/\u0085package\u0085', package_manifest=None,
+            files={'outside/\u0085package\u0085/prompts/review.md': 'NEL path'})
+        add('blank-source', declaration=' \t\r\n', package_manifest=None,
+            files={'agent/prompts/review.md': 'Scope root package'})
+        add('empty-source', declaration='', package_manifest=None,
+            files={'agent/prompts/review.md': 'Scope root package'})
         add('hidden-glob', package_manifest={'pi': {'prompts': ['.hidden/*.md']}},
             files={'outside/package/.hidden/secret.md': 'Hidden prompt'})
         add('hidden-exact-file', package_manifest={'pi': {'prompts': ['.hidden/secret.md']}},
             files={'outside/package/.hidden/secret.md': 'Hidden prompt'})
         add('disabled-first-canonical-alias', declaration='../outside/alias-package',
             project={'packages': [{'source': '../../outside/package', 'skills': []}]}, trusted=True,
+            links={'outside/alias-package': 'package'})
+        add('configured-file-before-package-directory',
+            project={'skills': ['../../outside/package/skills/guide/SKILL.md']}, trusted=True)
+        add('configured-prompt-before-disabled-package-alias',
+            declaration={'source': '../outside/package', 'prompts': []},
+            project={'prompts': ['../../outside/alias-package/prompts/review.md']}, trusted=True,
             links={'outside/alias-package': 'package'})
     return cases
 
