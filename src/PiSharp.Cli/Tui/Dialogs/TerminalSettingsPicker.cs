@@ -23,6 +23,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("images.blockImages", "Block images", "Replace provider-bound images with text while preserving saved history."),
         new("compaction.enabled", "Automatic compaction", "Summarize older whole turns before a prompt when the context budget is known."),
         new("quietStartup", "Quiet startup", "Disable verbose printing at startup (header: keep only the startup header)"),
+        new("sessionShareDestination", "Session share destination", "Where to upload sessions with /share (auto prefers Radius when authenticated, otherwise GitHub Gist)"),
         new("steeringMode", "Steering mode", "How queued steering messages are delivered during an agent turn."),
         new("followUpMode", "Follow-up mode", "How queued follow-up messages are delivered after an agent turn."),
         new("httpIdleTimeoutMs", "HTTP idle timeout", "Maximum wait for provider response headers or body data; 0 disables this idle limit."),
@@ -144,6 +145,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "images.blockImages" => settings.BlockImages?.ToString().ToLowerInvariant(),
         "compaction.enabled" => settings.Compaction?.Enabled?.ToString().ToLowerInvariant(),
         "quietStartup" => settings.QuietStartup?.ToSettingValue(),
+        "sessionShareDestination" => settings.ShareDestination,
         "steeringMode" => settings.SteeringMode?.ToSettingValue(),
         "followUpMode" => settings.FollowUpMode?.ToSettingValue(),
         "retry.provider.maxRetries" => settings.Retry?.Provider?.MaxRetries?.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -183,6 +185,13 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
             values.Add(("true", "true", "true", "Hide the startup header and details."));
             values.Add(("header", "header", "header", "Keep only the startup header."));
             values.Add(("false", "false", "false", "Show the startup header and details."));
+        }
+        else if (setting.Id == "sessionShareDestination")
+        {
+            values.Clear();
+            values.Add(("auto", "auto", "auto", "Use Radius when authenticated, otherwise GitHub Gist."));
+            values.Add(("gist", "gist", "gist", "Always create a private GitHub Gist."));
+            values.Add(("radius", "radius", "radius", "Upload to Radius; sign in with /login radius first."));
         }
         else if (setting.Id == "defaultProjectTrust")
         {

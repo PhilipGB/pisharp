@@ -1,0 +1,511 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "implementation": [
+    "CLI SessionShare owns isolated private temp directories, real gh auth/create subprocesses and Radius HTTP requests. Explicit gist bypasses Radius auth; forced Radius without a credential reports the source message; a handled Radius error never falls back.",
+    "UserSettings loads and overlays sessionShareDestination; invalid values fall back to auto, including project overrides. Writer/selector persist auto/gist/radius and use the current effective setting for upload routing.",
+    "Runtime SessionShareExport projects only the selected branch and rewrites parents sequentially before appending pi.share system/tool presentation. Gist HTML embeds Pi-compatible base64 viewer data with every branch and selected leaf.",
+    "TerminalSessionShare uses existing concrete progress/editor owners, aborts on Escape/Ctrl+C without confirmation, terminates gist children, disposes progress and restores the editor. Provider credentials reuse the existing five-minute OAuth validity/refresh owner."
+  ],
+  "characterization": {
+    "missingIntegration": {
+      "failed": 3,
+      "passed": 0,
+      "skipped": 0,
+      "finding": "PiSharp rejected the setting, refused persistence and omitted /share completion.",
+      "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-settings-fail-first.log",
+      "sha256": "094ccf4c498eb8e2e5be85f1532fddedb4596937a61ad25bb4ded07253f8fb34"
+    },
+    "firstComparison": {
+      "differences": [
+        {
+          "section": "flows",
+          "id": "radius-zero-artifact"
+        },
+        {
+          "section": "flows",
+          "id": "radius-empty-artifact"
+        },
+        {
+          "section": "flows",
+          "id": "radius-null-url"
+        },
+        {
+          "section": "flows",
+          "id": "radius-numeric-error"
+        },
+        {
+          "section": "branches",
+          "id": null
+        }
+      ],
+      "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-first-comparison.json",
+      "sha256": "efe0f852ffcede38904b3db22575e13b8d7e55e2ef13fbca20c51afa57bfd902",
+      "finding": "Retained-history null branch snapshots restored the previous branch; falsey Radius artifacts and null/numeric presentation values disagreed. The core snapshot correction is separately recorded."
+    }
+  },
+  "comparison": "Exact parsed branch/metadata records, HTML-embedded viewer data, settings precedence and persisted global JSON; semantic upload result/error, destination lookup, progress labels, actual private-gh arguments, cancellation/child exit and temporary export cleanup. Only generated share IDs/timestamps and unique temporary export paths are normalized.",
+  "flows": [
+    {
+      "id": "forced-gist",
+      "match": true,
+      "isError": false,
+      "message": "Share URL: https://pi.dev/session/#fixture-id\nGist: https://gist.github.com/fixture/fixture-id",
+      "credentialReads": 0,
+      "privateGistInvoked": true,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "forced-radius-without-auth",
+      "match": true,
+      "isError": true,
+      "message": "Radius authentication is not configured. Run '/login radius' first.",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "auto-without-auth",
+      "match": true,
+      "isError": false,
+      "message": "Share URL: https://pi.dev/session/#fixture-id\nGist: https://gist.github.com/fixture/fixture-id",
+      "credentialReads": 1,
+      "privateGistInvoked": true,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "auto-with-auth",
+      "match": true,
+      "isError": false,
+      "message": "Share URL: https://radius.example/shared",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "forced-radius-with-auth",
+      "match": true,
+      "isError": false,
+      "message": "Share URL: https://radius.example/shared",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "viewer-override",
+      "match": true,
+      "isError": false,
+      "message": "Share URL: https://viewer.example/session/#fixture-id\nGist: https://gist.github.com/fixture/fixture-id",
+      "credentialReads": 0,
+      "privateGistInvoked": true,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-rejected",
+      "match": true,
+      "isError": true,
+      "message": "Failed to upload Radius artifact: denied",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-broken-json",
+      "match": true,
+      "isError": true,
+      "message": "Failed to upload Radius artifact: OK",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-no-artifact",
+      "match": true,
+      "isError": true,
+      "message": "Failed to upload Radius artifact: OK",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-null-artifact",
+      "match": true,
+      "isError": true,
+      "message": "Failed to upload Radius artifact: OK",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-false-artifact",
+      "match": true,
+      "isError": true,
+      "message": "Failed to upload Radius artifact: OK",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-zero-artifact",
+      "match": true,
+      "isError": true,
+      "message": "Failed to upload Radius artifact: OK",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-empty-artifact",
+      "match": true,
+      "isError": true,
+      "message": "Failed to upload Radius artifact: OK",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-empty-object-artifact",
+      "match": true,
+      "isError": false,
+      "message": "Share URL: undefined",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-null-url",
+      "match": true,
+      "isError": false,
+      "message": "Share URL: null",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-numeric-error",
+      "match": true,
+      "isError": true,
+      "message": "Failed to upload Radius artifact: 123",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-network-error",
+      "match": true,
+      "isError": true,
+      "message": "Failed to upload Radius artifact: fixture network error",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "radius-cancel",
+      "match": true,
+      "isError": false,
+      "message": "Share cancelled",
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 1,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "gist-cancel",
+      "match": true,
+      "isError": false,
+      "message": "Share cancelled",
+      "credentialReads": 0,
+      "privateGistInvoked": true,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "export-failed",
+      "match": true,
+      "isError": true,
+      "message": "Failed to export session: fixture export failed",
+      "credentialReads": 0,
+      "privateGistInvoked": false,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "html-failed",
+      "match": true,
+      "isError": true,
+      "message": "Failed to export session: fixture html failed",
+      "credentialReads": 0,
+      "privateGistInvoked": false,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "github-auth-failed",
+      "match": true,
+      "isError": true,
+      "message": "GitHub CLI is not logged in. Run 'gh auth login' first.",
+      "credentialReads": 0,
+      "privateGistInvoked": false,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "github-missing",
+      "match": true,
+      "isError": true,
+      "message": "GitHub CLI is not logged in. Run 'gh auth login' first.",
+      "credentialReads": 0,
+      "privateGistInvoked": false,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "gist-failed",
+      "match": true,
+      "isError": true,
+      "message": "Failed to create gist: fixture gist failed",
+      "credentialReads": 0,
+      "privateGistInvoked": true,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "gist-failed-empty-error",
+      "match": true,
+      "isError": true,
+      "message": "Failed to create gist: Unknown error",
+      "credentialReads": 0,
+      "privateGistInvoked": true,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "gist-empty-output",
+      "match": true,
+      "isError": true,
+      "message": "Failed to parse gist ID from gh output",
+      "credentialReads": 0,
+      "privateGistInvoked": true,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "gist-trailing-slash",
+      "match": true,
+      "isError": true,
+      "message": "Failed to parse gist ID from gh output",
+      "credentialReads": 0,
+      "privateGistInvoked": true,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    },
+    {
+      "id": "credential-failed",
+      "match": true,
+      "isError": false,
+      "message": null,
+      "credentialReads": 1,
+      "privateGistInvoked": false,
+      "radiusRequests": 0,
+      "cleaned": true,
+      "cancelledChildExited": true
+    }
+  ],
+  "branchViewerExports": [
+    {
+      "head": null,
+      "branchRecordCount": 2,
+      "viewerEntryCount": 3,
+      "match": true
+    },
+    {
+      "head": "root",
+      "branchRecordCount": 3,
+      "viewerEntryCount": 3,
+      "match": true
+    },
+    {
+      "head": "selected",
+      "branchRecordCount": 4,
+      "viewerEntryCount": 3,
+      "match": true
+    },
+    {
+      "head": "inactive",
+      "branchRecordCount": 4,
+      "viewerEntryCount": 3,
+      "match": true
+    }
+  ],
+  "settings": [
+    {
+      "id": "absent",
+      "initial": "auto",
+      "afterSave": "radius",
+      "match": true
+    },
+    {
+      "id": "user-gist",
+      "initial": "gist",
+      "afterSave": "radius",
+      "match": true
+    },
+    {
+      "id": "project-radius",
+      "initial": "radius",
+      "afterSave": "radius",
+      "match": true
+    },
+    {
+      "id": "project-0",
+      "initial": "auto",
+      "afterSave": "auto",
+      "match": true
+    },
+    {
+      "id": "project-1",
+      "initial": "gist",
+      "afterSave": "gist",
+      "match": true
+    },
+    {
+      "id": "project-2",
+      "initial": "radius",
+      "afterSave": "radius",
+      "match": true
+    },
+    {
+      "id": "project-3",
+      "initial": "auto",
+      "afterSave": "auto",
+      "match": true
+    },
+    {
+      "id": "project-4",
+      "initial": "auto",
+      "afterSave": "auto",
+      "match": true
+    },
+    {
+      "id": "project-5",
+      "initial": "auto",
+      "afterSave": "auto",
+      "match": true
+    },
+    {
+      "id": "project-6",
+      "initial": "auto",
+      "afterSave": "auto",
+      "match": true
+    },
+    {
+      "id": "project-7",
+      "initial": "auto",
+      "afterSave": "auto",
+      "match": true
+    },
+    {
+      "id": "project-8",
+      "initial": "auto",
+      "afterSave": "auto",
+      "match": true
+    }
+  ],
+  "rawComparison": {
+    "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-html-final-comparison.json",
+    "sha256": "8c51d2f3e3fc9b50ab73ce30080bf17744dd1f7783798703b58692becb391a1f"
+  },
+  "match": true,
+  "sourceVerification": {
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "command": "npx --cache /tmp/pisharp-npm-cache vitest run packages/coding-agent/test/session-share.test.ts packages/coding-agent/test/settings-selector.test.ts --reporter=json --outputFile=/tmp/pisharp-current-session-share-source-tests.json"
+  },
+  "nativeVerification": {
+    "shareTests": 47,
+    "relatedCoreProgressControls": 9,
+    "schemaControls": 7,
+    "fullWorkingTreePassed": 1636,
+    "failed": 0,
+    "skipped": 0,
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "formatVerified": true,
+    "full": {
+      "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-schema-full-tests.log",
+      "sha256": "3d19c7013797b05ab79c5461efe21c2a4bd98f29b37c47caaa1f656560964f86"
+    },
+    "focused": {
+      "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-final-controls.log",
+      "sha256": "a5ac2ae79e9c4466d575d7014be9b17fdfc0122cd56e1228fe48fa511c205eef"
+    },
+    "build": {
+      "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-schema-final-build.log",
+      "sha256": "585ca87a103120707d34d30c1310c81615959df0356ee43a595f588e3b57375a"
+    },
+    "format": {
+      "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-schema-final-format.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "realHttpScenarios": [
+      "Radius success",
+      "Radius rejection",
+      "Radius cancellation"
+    ],
+    "realCliPtyScenarios": [
+      "Selector persists forced Radius; missing-auth share invokes no gh",
+      "Escape cancels hanging gist without confirmation; child exits; temp directory removed; editor accepts quit"
+    ]
+  },
+  "fixtureCorrections": [
+    "The presentation control now asserts the actual runtime prompt including its cwd section, rather than assuming a bare custom prompt.",
+    "The gist CLI fixture initially used a saved null endpoint while requesting the explicit local endpoint; the startup gate correctly rejected it. The fixture now records the actual local endpoint, isolates session/config paths and retains the diagnostic log."
+  ],
+  "reproduce": "python3 tools/parity/session-share-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/current-pi-deltas-2026-10-13/session-share-html-final-comparison.json",
+  "limitations": "Pi uses its real source session/settings/share owners, with a fixture fetch response; PiSharp uses its real share owner and HttpMessageHandler fixture. The fake gh is a real isolated process. Full terminal row layout, all HTML visual rendering, paid live Radius/GitHub publication, native Windows execution and the broader output/share capability remain open. Source metadata compares imported sessions and current runtime loadout controls; all native-only auxiliary entry rendering and theme-specific HTML presentation remain wider ledger work. No live session was published."
+}

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits classified: {'OUT_OF_SCOPE': 19, 'MATCHED': 17, 'NO_BEHAVIOR_CHANGE': 13, 'NEEDS_WORK': 1}. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resolve current_pi_refresh before resuming Resources / Instructions / Trust. Architecture refactor is merged; bounded final regression review and full source audit remain open.",
+  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits reconciled: 19 OUT_OF_SCOPE, 13 NO_BEHAVIOR_CHANGE, 18 MATCHED, zero NEEDS_WORK. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resume Resources / Instructions / Trust. Configuration schema publication moved to in_progress with runtime alignment still open; current totals 7 verified, 148 in_progress, 39 not_started. Architecture refactor is merged; bounded final regression review, final upstream refresh, full source audit and clean-checkout final verification remain open.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -1070,7 +1070,11 @@
       "implementation": [
         "src/PiSharp.Cli/Program.cs: /export; src/PiSharp.Runtime/Sessions/SessionExport.cs: private HTML writer",
         "src/PiSharp.Cli/Program.cs: /copy copies the latest active-branch assistant text to the system clipboard and reports helper errors; Ctrl+X dispatches the same named action.",
-        "src/PiSharp.Cli/Program.cs and src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: /export-jsonl [path] writes a Pi v3 session tree without replacing existing files (user-only file mode on Unix)."
+        "src/PiSharp.Cli/Program.cs and src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs: /export-jsonl [path] writes a Pi v3 session tree without replacing existing files (user-only file mode on Unix).",
+        "src/PiSharp.Cli/Sessions/SessionShare.cs",
+        "src/PiSharp.Cli/Sessions/TerminalSessionShare.cs",
+        "src/PiSharp.Runtime/Sessions/SessionShareExport.cs",
+        "src/PiSharp.Cli/Configuration/UserSettings.cs: sessionShareDestination load/fallback/overlay/persistence/selector runtime effect."
       ],
       "evidence": [
         "tests/PiSharp.Tests/Runtime/Sessions/SessionExportTests.cs: escaping, branch, failure and no-overwrite fixtures; tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs: export fixture",
@@ -1078,7 +1082,8 @@
         "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending. Follow-up commit b27a4b7bb8b3e9333a398e770b9e1801c675da46 updates ProcessTestHelpers to treat procfs disappearance after File.Exists as process exit while preserving the process-tree assertion; exact-head Linux CI run 36150182304 passed format verification, warnings-as-errors build and all 447 tests.",
         "PiJsonlSessionInterchangeTests cover all-branch v3 export, active-head restoration, exclusive file creation and cancellation cleanup; TerminalPtyTests covers /export-jsonl. Exact implementation commit 2a10535814e102d17ba4aaefc8bf3512a0a87432 passed Linux CI run 36188382176 with all 526 tests.",
         "Current-Pi refresh 2026-10-13 source audit maps unresolved new deltas 3e477eab, cea25743 to this existing requirement; see docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json. This adds no verified status or behavior claim.",
-        "PI_CLIPBOARD_OSC52=1 now emits the exact UTF-8 OSC52 payload after a successful native copy on macOS, Windows and Linux. Other values do not force emission. Three cases failed before the fix; the clipboard/retry focused run passes 30/30 and twelve real-Pi comparisons match native-write/terminal ordering with injected platform writers. Native OS clipboard availability remains separately unverified. See docs/parity/fixtures/current-pi-refresh-2026-10-13/clipboard-force.json, tools/parity/clipboard-force-differential.py, tests/PiSharp.Tests/Cli/Tui/Clipboard/TerminalClipboardTests.cs. This closes the named current-source delta, not the broader capability."
+        "PI_CLIPBOARD_OSC52=1 now emits the exact UTF-8 OSC52 payload after a successful native copy on macOS, Windows and Linux. Other values do not force emission. Three cases failed before the fix; the clipboard/retry focused run passes 30/30 and twelve real-Pi comparisons match native-write/terminal ordering with injected platform writers. Native OS clipboard availability remains separately unverified. See docs/parity/fixtures/current-pi-refresh-2026-10-13/clipboard-force.json, tools/parity/clipboard-force-differential.py, tests/PiSharp.Tests/Cli/Tui/Clipboard/TerminalClipboardTests.cs. This closes the named current-source delta, not the broader capability.",
+        "Current Pi cea25743 share destination contract matches 28 real-source share flows, four branch/HTML viewer-data exports and twelve settings persistence/precedence vectors. Three integration cases failed first; five direct comparison mismatches were retained and corrected. Forty-seven native share tests include real Radius HTTP and CLI PTY selector/cancellation/child exit, with eight upstream tests passing; full combined tree 1636 tests, zero skips. Published pinned settings schema includes the choices. docs/parity/fixtures/current-pi-refresh-2026-10-13/session-share.json records comparison definitions and limits. Full terminal/HTML appearance, native Windows, live paid publication, /bug and broader output/share requirements remain open; status stays in_progress."
       ],
       "dependencies": []
     },
@@ -5365,13 +5370,13 @@
     "commit_count": 50,
     "classifications": {
       "OUT_OF_SCOPE": 19,
-      "MATCHED": 17,
+      "MATCHED": 18,
       "NO_BEHAVIOR_CHANGE": 13,
-      "NEEDS_WORK": 1
+      "NEEDS_WORK": 0
     },
     "audit_complete": true,
     "pin_advanced": true,
-    "delta_resolved": false,
+    "delta_resolved": true,
     "fixture": "docs/parity/fixtures/current-pi-refresh-2026-10-13/upstream-audit.json",
     "baseline_complete": true
   }

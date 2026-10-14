@@ -60,6 +60,7 @@ internal static class UserSettingsWriter
             "retry.provider.timeoutMs" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var providerTimeout) && providerTimeout >= 0,
             "terminal.trueColor" => value is null or "auto" or "true" or "false",
+            "sessionShareDestination" => value is null or "auto" or "gist" or "radius",
             "markdown.codeBlockIndent" => true,
             "httpIdleTimeoutMs" => value is null || string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase) ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var idleTimeout) && idleTimeout >= 0,

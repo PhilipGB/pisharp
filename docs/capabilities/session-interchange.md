@@ -7,6 +7,12 @@ APIs. Persistent application history belongs to `ConversationSession`; MAF
 `AgentSession` objects are reconstructed execution state, not the interchange
 format.
 
+[SessionShareExport](../../src/PiSharp.Runtime/Sessions/SessionShareExport.cs)
+projects the current branch for Radius with a trailing export-only `pi.share`
+record. Its presentation includes the current system prompt and declared tool
+schemas. Gist HTML embeds Pi-compatible base64 viewer data with all branches and
+the selected leaf. Share projections do not mutate canonical history.
+
 ## Ownership and flow
 
 - [PiJsonlSessionImporter](../../src/PiSharp.Runtime/Sessions/PiJsonlSessionImporter.cs)

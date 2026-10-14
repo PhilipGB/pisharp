@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Extensions;
@@ -50,6 +51,20 @@ public sealed class PiAgent
         _toolTranscripts.GetValue(session, _ => new());
 
     public string SystemInstructions { get; }
+    internal JsonElement GetSharePresentation(AgentSession session)
+    {
+        var loadout = GetToolLoadout(session).Snapshot;
+        return JsonSerializer.SerializeToElement(new
+        {
+            systemPrompt = BuildSystemPrompt(loadout.Declared, loadout.ActiveToolNames).Text,
+            tools = loadout.Declared.Select(tool => new
+            {
+                name = tool.Registration.Function.Name,
+                description = tool.Description,
+                parameters = tool.Registration.Function.JsonSchema
+            })
+        });
+    }
     public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => _toolCatalog.ToolDeclarations;
     internal bool RestoresRecordedToolLoadout => _toolCatalog.RestoresRecordedToolLoadout;
     /// <summary>Gets the independent tool loadout associated with one agent session.</summary>

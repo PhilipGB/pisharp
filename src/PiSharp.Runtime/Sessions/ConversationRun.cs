@@ -44,6 +44,8 @@ public sealed class ConversationRun
     public IReadOnlyList<string> ActiveToolNames =>
         _agent.GetToolLoadout(_execution).Snapshot.ActiveToolNames;
     public string? SessionFile => _sessionFile;
+    public JsonElement SharePresentation => _agent.GetSharePresentation(_execution);
+    public string ExportForShare() => SessionShareExport.ExportBranch(Conversation, SharePresentation);
     public Task PersistAsync(CancellationToken cancellationToken = default) =>
         _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
     public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;

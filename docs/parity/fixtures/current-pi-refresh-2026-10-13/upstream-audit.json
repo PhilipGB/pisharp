@@ -7,9 +7,9 @@
   "commit_count": 50,
   "classifications": {
     "OUT_OF_SCOPE": 19,
-    "MATCHED": 17,
+    "MATCHED": 18,
     "NO_BEHAVIOR_CHANGE": 13,
-    "NEEDS_WORK": 1
+    "NEEDS_WORK": 0
   },
   "commits": [
     {
@@ -1091,19 +1091,29 @@
         "packages/coding-agent/test/session-share.test.ts",
         "packages/coding-agent/test/settings-selector.test.ts"
       ],
-      "classification": "NEEDS_WORK",
+      "classification": "MATCHED",
       "finding": "sessionShareDestination selects auto/gist/radius; gist bypasses Radius, forced radius reports missing auth without gist fallback; selector persists the choice. PiSharp lacks this setting and broader Radius share parity.",
       "capability_ids": [
         "commands-output-share"
       ],
       "pisharp_sources": [
-        "src/PiSharp.Cli/Sessions",
-        "src/PiSharp.Cli/Configuration",
-        "src/PiSharp.Cli/Tui/Dialogs"
+        "src/PiSharp.Cli/Sessions/SessionShare.cs",
+        "src/PiSharp.Cli/Sessions/TerminalSessionShare.cs",
+        "src/PiSharp.Cli/Configuration/UserSettings.cs",
+        "src/PiSharp.Runtime/Sessions/SessionShareExport.cs"
       ],
       "implementation_plan": "Integrate setting loading/precedence/persistence/selector and share routing into the existing concrete share owner.",
       "differential_plan": "Deterministic fake gh and Radius loopback, missing auth, concurrent exports and selector restart; paid upload remains separately unavailable.",
-      "resolved": false
+      "resolved": true,
+      "resolution": "sessionShareDestination now loads with Pi fallback/project precedence, persists and presents auto/gist/radius choices. /share uploads branch JSONL plus pi.share metadata to Radius or private viewer-compatible HTML through gh; forced gist skips Radius auth, forced Radius without credentials has no fallback, handled upload errors stay on their destination, and cancellation cleans isolated exports/terminates the gist child/restores editor. The published pinned settings schema includes this field. Three initial integration cases failed first, and the direct oracle exposed five further mismatches now corrected (including the independently recorded null snapshot). Twenty-eight actual share flows, four branch/HTML metadata exports and twelve settings/persistence vectors match Pi; eight upstream tests and forty-seven native share tests pass, including real HTTP and CLI PTY. Full combined suite 1636/1636, zero skips/warnings. Full terminal/HTML visual rendering, live paid publication and Windows remain open under the broader share capability.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/session-share.json",
+        "tools/parity/session-share-differential.py",
+        "tests/PiSharp.Tests/Cli/Sessions/SessionShareTests.cs",
+        "tests/PiSharp.Tests/Cli/Sessions/SessionShareHttpTests.cs",
+        "tests/PiSharp.Tests/Cli/Sessions/SessionShareTuiTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/SessionShareExportTests.cs"
+      ]
     },
     {
       "sha": "34a8bb38b2592c61bbae69413c89b720366b533c",

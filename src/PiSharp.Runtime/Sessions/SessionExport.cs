@@ -8,7 +8,7 @@ namespace PiSharp.Runtime.Sessions;
 public static class SessionExport
 {
     public static async Task ExportHtmlAsync(ConversationSession session, string path,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, JsonElement? sharePresentation = null)
     {
         var target = Path.GetFullPath(path);
         var folder = Path.GetDirectoryName(target)!;
@@ -90,6 +90,8 @@ public static class SessionExport
                         await Line($"<h2>Recovered interrupted run</h2><pre>{Html(node.Payload.ToString())}</pre>");
                     await Line("</article>");
                 }
+                if (sharePresentation is { } presentation)
+                    await Line($"<script id=\"session-data\" type=\"application/json\">{SessionShareExport.ViewerDataBase64(session, presentation)}</script>");
                 await Line("</html>");
                 await writer.FlushAsync(cancellationToken);
                 stream.Flush(flushToDisk: true);

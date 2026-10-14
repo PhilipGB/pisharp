@@ -11,7 +11,7 @@ internal sealed class TerminalProgressDisplay(EditorKeymap keymap, Func<Terminal
     public async Task<TerminalProgressOutcome<T>> RunProgressAsync<T>(string title, string subject,
         string cancelTitle, string cancelMessage,
         Func<CancellationToken, Action<TerminalProgressState>, Task<T>> run, Func<Task> cancelOperation,
-        Func<Task>? afterCancelled = null)
+        Func<Task>? afterCancelled = null, bool confirmCancellation = true)
     {
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(cancelOperation);
@@ -95,9 +95,8 @@ internal sealed class TerminalProgressDisplay(EditorKeymap keymap, Func<Terminal
                 if (TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                 if (next.Key is not { } key ||
                     !keymap.Matches("app.interrupt", key) && !keymap.Matches("app.clear", key)) continue;
-                var confirmation = dialogs.ShowInlineSelectionList(confirmationTitle, cancelOptions, [""],
-                    confirmationFooter, preservePanelAfterSelection: true);
-                if (confirmation?.Option.Value != true)
+                if (confirmCancellation && dialogs.ShowInlineSelectionList(confirmationTitle, cancelOptions, [""],
+                    confirmationFooter, preservePanelAfterSelection: true)?.Option.Value != true)
                 {
                     Update(state);
                     continue;

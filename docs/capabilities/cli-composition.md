@@ -75,6 +75,15 @@ routes editor shortcuts to those concrete owners and retains shortcut error/foot
 settlement. Provider, project, import, resource and session command owners retain
 their existing capability workflows.
 
+[TerminalSessionShare](../../src/PiSharp.Cli/Sessions/TerminalSessionShare.cs) binds
+`/share` to the current conversation and effective settings. It owns terminal
+progress, cancellation and editor restoration.
+[SessionShare](../../src/PiSharp.Cli/Sessions/SessionShare.cs) owns isolated temporary
+exports, destination selection, Radius HTTP upload and the GitHub CLI child lifetime.
+Explicit gist selection bypasses Radius authentication; forced Radius without a
+credential fails before GitHub is invoked. Handled Radius failures do not fall back.
+Credential resolution reuses the existing provider OAuth refresh window.
+
 ## Active state and transitions
 
 [ActiveModelRuntime](../../src/PiSharp.Cli/Composition/ActiveModelRuntime.cs),

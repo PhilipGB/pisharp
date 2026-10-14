@@ -88,7 +88,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? TerminalTrueColor = null,
     bool? EnableSkillCommands = null, IReadOnlyList<string>? Extensions = null,
     IReadOnlyList<string>? Skills = null, IReadOnlyList<string>? Prompts = null,
-    IReadOnlyList<string>? Themes = null, string? ShellCommandPrefix = null)
+    IReadOnlyList<string>? Themes = null, string? ShellCommandPrefix = null, string? SessionShareDestination = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -101,6 +101,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     };
 
     public bool SkillCommandsEnabled => EnableSkillCommands ?? true;
+    public string ShareDestination => SessionShareDestination is "gist" or "radius" ? SessionShareDestination : "auto";
 
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -129,11 +130,18 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? markdownCodeBlockIndent = null;
         string? terminalTrueColor = null;
         string? shellCommandPrefix = null;
+        string? sessionShareDestination = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
             if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json contains duplicate property '{property.Name}'.");
             if (property.Name == "$schema") continue;
+            if (property.Name == "sessionShareDestination")
+            {
+                var candidate = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
+                sessionShareDestination = candidate is "gist" or "radius" ? candidate : "auto";
+                continue;
+            }
             if (property.Name == "httpIdleTimeoutMs")
             {
                 httpIdleTimeoutMs = ParseIdleTimeout(property.Value);
@@ -322,7 +330,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
             modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
-            enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix);
+            enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -360,7 +368,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         MergeResourcePaths(Skills, project.Skills),
         MergeResourcePaths(Prompts, project.Prompts),
         MergeResourcePaths(Themes, project.Themes),
-        project.ShellCommandPrefix ?? ShellCommandPrefix);
+        project.ShellCommandPrefix ?? ShellCommandPrefix,
+        project.SessionShareDestination ?? SessionShareDestination);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

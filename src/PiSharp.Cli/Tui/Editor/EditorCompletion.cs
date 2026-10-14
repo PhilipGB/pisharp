@@ -42,6 +42,7 @@ public sealed class EditorCompletion
         "/settings",
         "/compact",
         "/export",
+        "/share",
         "/export-jsonl",
         "/session",
         "/trust",

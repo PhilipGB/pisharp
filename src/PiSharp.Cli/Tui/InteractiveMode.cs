@@ -27,6 +27,8 @@ internal static class InteractiveMode
         var modelSelection = new TerminalModelSelectionCommands(modelRuntime, modelRuntimeController, projectBinding, modelBinding,
             modelTransitions, presentation, settingsCommands);
         var inputActions = new TerminalInputActions(projectBinding, conversationBinding, presentation);
+        var sessionShare = editor is null ? null : new TerminalSessionShare(modelRuntime, catalogHttp, editor,
+            () => conversationBinding.Run, () => projectBinding.Settings);
         var applicationActions = new TerminalApplicationActions(settingsCommands, modelSelection, sessionNavigation, inputActions, presentation);
         Task HandleEditorApplicationAction(string action) => applicationActions.HandleAsync(action);
         var terminalTrustPicker = editor is null ? null : new TerminalTrustPicker(editor);
@@ -91,6 +93,9 @@ internal static class InteractiveMode
                     {
                         switch (command)
                         {
+                            case "/share":
+                                await sessionShare!.ShowAsync(argument);
+                                break;
                             case "/import":
                                 await terminalSessionImport!.ImportAsync(argument);
                                 break;

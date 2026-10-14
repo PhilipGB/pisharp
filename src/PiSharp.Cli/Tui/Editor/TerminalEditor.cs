@@ -163,8 +163,8 @@ public sealed class TerminalEditor
     internal Task<TerminalProgressOutcome<T>> RunProgressAsync<T>(string title, string subject,
         string cancelTitle, string cancelMessage,
         Func<CancellationToken, Action<TerminalProgressState>, Task<T>> run, Func<Task> cancelOperation,
-        Func<Task>? afterCancelled = null) =>
-        _progress.RunProgressAsync(title, subject, cancelTitle, cancelMessage, run, cancelOperation, afterCancelled);
+        Func<Task>? afterCancelled = null, bool confirmCancellation = true) =>
+        _progress.RunProgressAsync(title, subject, cancelTitle, cancelMessage, run, cancelOperation, afterCancelled, confirmCancellation);
 
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
     public void Prefill(string text) => _buffer.SetText(text);
