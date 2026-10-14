@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-14",
+  "piSharpBaseSha": "6cec6f7104da67790810eb81fef33e32dfa9f995",
+  "candidate": "Base plus only TestLoopbackListener, its occupied-port regression and CliThemeProcessTests environment isolation. Unpublished YAML parser work remains separate.",
+  "scope": "Native process-test infrastructure recovery; no product parity status change.",
+  "characterization": [
+    {
+      "test": "PrintModeTruncationProcessTests.OutputLimitKeepsPartialTextAndOnlyTextModeWarns(json, stop, 0)",
+      "fullWorkingTree": {
+        "passed": 1881,
+        "failed": 1,
+        "skipped": 0
+      },
+      "cause": "HttpListener.Start fails after a loopback port collision and disposes the object. The catch handler then accesses listener.Prefixes, masking the original bind error and preventing retry.",
+      "deterministicFailFirst": {
+        "passed": 0,
+        "failed": 1,
+        "skipped": 0
+      }
+    },
+    {
+      "test": "CliThemeProcessTests.ExplicitThemePathAndUseThemeApplyThroughLinuxPtyWithNoThemes",
+      "isolatedFull": {
+        "passed": 1849,
+        "failed": 1,
+        "skipped": 0
+      },
+      "focusedReproduction": {
+        "passed": 0,
+        "failed": 1,
+        "skipped": 0
+      },
+      "cause": "The isolated shell supplies TERM=dumb. TerminalColorMode correctly disables color before checking COLORTERM, so the RGB checkpoint never appears. The visual fixture inherited an incompatible terminal type."
+    }
+  ],
+  "implementation": [
+    "Close the failed listener without accessing its disposed Prefixes. Every retry uses a new listener and port; the first-port parameter provides deterministic collision injection in test infrastructure. The regression holds an occupied TCP port, checks fallback to a different port and completes an actual HTTP request.",
+    "The theme PTY fixture explicitly sets TERM, COLORTERM and PI_TRUE_COLOR, clears NO_COLOR, and uses offline catalog startup. Its assertions and original 12-second deadline remain unchanged."
+  ],
+  "verification": {
+    "focusedPassed": 6,
+    "focusedFailed": 0,
+    "focusedSkipped": 0,
+    "hostileParentEnvironment": {
+      "TERM": "dumb",
+      "PI_TRUE_COLOR": "0"
+    },
+    "isolatedFullPassed": 1850,
+    "isolatedFullFailed": 0,
+    "isolatedFullSkipped": 0,
+    "isolatedWorktree": "/tmp/pisharp-loopback-port-retry",
+    "isolatedRestore": "passed",
+    "isolatedBuildWarnings": 0,
+    "isolatedBuildErrors": 0,
+    "isolatedFormat": "passed",
+    "workingYamlCandidate": {
+      "passed": 1883,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Pending resource parser candidate; these totals are not the fixture-only commit count."
+    },
+    "exactHeadCi": "Pending publication."
+  },
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-yaml-document-full-tests.log": "3cf813c648419542e7f92aac90c453f0e02c7f6eb85105c12945ffc51c7c8845",
+    "loopback-port-retry-fail-first-tests.log": "0a5f19336926b56a8f7c32e8d6e93aa9c1220207bc32de593759cfe5d1226f9d",
+    "loopback-port-retry-focused-tests.log": "6c987576bb2fcbed6bc3b8569fcc090180bf6fab893455c7fbe2b76952822a59",
+    "loopback-port-retry-isolated-restore.log": "0473fefa7458bfcc64b555e20f19c09435ad72a0f2b142ddbe66a38ccbcab0f3",
+    "loopback-port-retry-isolated-build.log": "51aa1b1923e2ef8c580ecfbe529cbc9e176cca77cf1ce3c1d1a241e26fe127cf",
+    "loopback-port-retry-isolated-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "loopback-port-retry-isolated-full-tests.log": "2ea2e41abf1ace71fca5842da6c4d1f564a0b41c0c689b4bbeddde692279d0f1",
+    "loopback-isolated-theme-reproduction.log": "9144b87bae60c787086eb21c8f936bbb71f6ec2ca1bc78c588e47b3cc0f94c89",
+    "loopback-theme-environment-cause.json": "c7cf5ced74494dc55984b62d19dc9defb65be0b1130dffd55b0bfe8aa841b451",
+    "loopback-and-theme-isolated-focused-tests.log": "12bce4c9136e8a0b06665656971bb56068c93c6052dd40be4980bcada7bbcc74",
+    "process-fixtures-isolated-final-tests.log": "8cb5e0479736c02e7dbda30c9eac29120e76f5002744889801c126b00bb51533",
+    "process-fixtures-isolated-final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "process-fixtures-working-final-tests.log": "8d329f2edf345b6e3933e716ac007b33d7e25b885a1654b75c9e9f57dfa84461",
+    "resource-yaml-document-after-loopback-tests.log": "2a0ec88ee03b4da30d999a1c472a5564ae17fc10ad22bbac4b7106b6edb51a06"
+  },
+  "limits": [
+    "The port regression deterministically proves retry cleanup after a bind collision; it does not infer resolution of unrelated process or PTY timing failures from a later green run.",
+    "Validation here is Linux/.NET 10. The original RPC settlement and terminal input-handoff repairs retain their own cause/regression/CI evidence. All 194 capability statuses remain unchanged."
+  ],
+  "reproduce": [
+    "dotnet test PiSharp.slnx --filter FullyQualifiedName~TestLoopbackListenerTests",
+    "TERM=dumb PI_TRUE_COLOR=0 dotnet test PiSharp.slnx --filter FullyQualifiedName~CliThemeProcessTests",
+    "dotnet test PiSharp.slnx"
+  ]
+}

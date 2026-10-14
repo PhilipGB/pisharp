@@ -38,10 +38,12 @@ public sealed class CliThemeProcessTests
             start.ArgumentList.Add("-q");
             start.ArgumentList.Add("-e");
             start.ArgumentList.Add("-c");
-            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --no-session --no-tools --theme themes/custom.json --use-theme cli-custom --no-themes");
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --no-session --no-tools --theme themes/custom.json --use-theme cli-custom --no-themes");
             start.ArgumentList.Add("/dev/null");
             start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["TERM"] = "xterm-256color";
             start.Environment["COLORTERM"] = "truecolor";
+            start.Environment["PI_TRUE_COLOR"] = "1";
             start.Environment.Remove("NO_COLOR");
             process = Process.Start(start);
             Assert.NotNull(process);

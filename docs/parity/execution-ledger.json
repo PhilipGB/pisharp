@@ -5647,7 +5647,24 @@
         "metadata_differences": 4,
         "raw_warning_differences": 26
       },
-      "next": "Repair alias-key/semantic duplicate-key grammar and source error locations/messages; keep remaining Resources / Instructions / Trust boundaries active."
+      "next": "Repair alias-key/semantic duplicate-key grammar and source error locations/messages; keep remaining Resources / Instructions / Trust boundaries active.",
+      "exact_head_ci": {
+        "sha": "6cec6f7104da67790810eb81fef33e32dfa9f995",
+        "run": 38557804529,
+        "jobs": "both pass"
+      }
+    },
+    "process_fixture_recovery_checkpoint": {
+      "fixture": "docs/parity/fixtures/process-fixture-recovery-2026-10-14.json",
+      "isolated_base": "6cec6f7104da67790810eb81fef33e32dfa9f995",
+      "isolated_dotnet": {
+        "passed": 1850,
+        "failed": 0,
+        "skipped": 0
+      },
+      "focused": 6,
+      "scope": "Loopback retry and theme caller-environment dependency repaired independently of pending YAML behavior.",
+      "next": "Verify exact fixture commit CI; finish characterized YAML set/error/recovery and resource presentation boundaries."
     }
   }
 }

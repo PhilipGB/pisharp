@@ -67,7 +67,19 @@
       "match": true
     },
     "warningBoundary": "The real Pi CLI setup replaces process.emitWarning with a no-op before loading resources. Both normal RPC processes load description !!int word as word, expand the skill body into the provider request, emit no extension error or YAMLWarning and settle. The direct SDK probe prints Node YAML tag warnings; their raw stderr is retained and not conflated with resource diagnostics.",
-    "exactHeadCi": "Pending publication. Hint source 42ae67c471 passes both jobs in run 38556219134."
+    "exactHeadCi": {
+      "sha": "6cec6f7104da67790810eb81fef33e32dfa9f995",
+      "run": 38557804529,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38557804529",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1849,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
   },
   "results": [
     {
@@ -317,7 +329,8 @@
     "resource-yaml-scalars-full-tests.log": "894a82a9421f79df57eb19db6ca2f11ffb502607975561c34b1df4bc6857ab6e",
     "resource-yaml-scalars-build.log": "621be727b5e0d315f15fa6fd1147c812f7c508fb1f00afea465902941a30594e",
     "resource-yaml-scalars-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "resource-yaml-error-marks.json": "15ac5b40b2542563a41371ca314b40db23220c27ce7b1d651dfb48a7f6320307"
+    "resource-yaml-error-marks.json": "15ac5b40b2542563a41371ca314b40db23220c27ce7b1d651dfb48a7f6320307",
+    "resource-yaml-scalars-exact-ci.log": "8a65f7c300d312eae29f57c24a4fc1cb1664310c97a18476b3ebc46e3a5ef97a"
   },
   "limits": [
     "The complete 231-case probe still exposes alias-key grammar and semantic numeric-key duplicates plus 26 syntax/alias/key diagnostic text differences. These remain required work.",

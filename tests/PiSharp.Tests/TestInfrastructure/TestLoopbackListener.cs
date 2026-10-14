@@ -5,17 +5,12 @@ namespace PiSharp.Tests;
 
 internal static class TestLoopbackListener
 {
-    public static (HttpListener Listener, int Port) Start()
+    public static (HttpListener Listener, int Port) Start(int? firstPort = null)
     {
         HttpListenerException? lastError = null;
         for (var attempt = 0; attempt < 10; attempt++)
         {
-            int port;
-            using (var reservation = new TcpListener(IPAddress.Loopback, 0))
-            {
-                reservation.Start();
-                port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-            }
+            var port = firstPort is { } initial && attempt == 0 ? initial : ReservePort();
 
             var listener = new HttpListener();
             listener.Prefixes.Add($"http://127.0.0.1:{port}/");
@@ -26,7 +21,6 @@ internal static class TestLoopbackListener
             }
             catch (HttpListenerException error)
             {
-                listener.Prefixes.Clear();
                 listener.Close();
                 lastError = error;
             }
@@ -34,5 +28,12 @@ internal static class TestLoopbackListener
 
         throw new InvalidOperationException("Could not start a loopback HTTP test listener after retrying port collisions.",
             lastError);
+    }
+
+    private static int ReservePort()
+    {
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        return ((IPEndPoint)reservation.LocalEndpoint).Port;
     }
 }
