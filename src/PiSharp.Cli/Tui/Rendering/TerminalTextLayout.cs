@@ -192,10 +192,10 @@ internal static class TerminalTextLayout
             foreach (var atom in token.Atoms) AppendAtom(atom);
         }
 
-        void PreserveBackgroundPadding()
+        void PreserveStyledPadding()
         {
             if (!pendingWhitespace.Any(token => token.Atoms.Any(atom =>
-                    HasBackgroundColor(atom.Prefix) || HasBackgroundColor(atom.Suffix))))
+                    HasExplicitColor(atom.Prefix) || HasExplicitColor(atom.Suffix))))
                 return;
 
             foreach (var whitespace in pendingWhitespace) AppendToken(whitespace);
@@ -233,7 +233,7 @@ internal static class TerminalTextLayout
             if (token.Kind == WrapKind.Newline)
             {
                 var newline = token.Atoms[0];
-                PreserveBackgroundPadding();
+                PreserveStyledPadding();
                 FinishLine(newline.SourceEnd);
                 ProcessSkippedWhitespace();
                 ProcessState(newline.Prefix);
@@ -309,7 +309,7 @@ internal static class TerminalTextLayout
         }
 
         // Wrapping whitespace is deliberately omitted at the end, as it is before a soft wrap.
-        PreserveBackgroundPadding();
+        PreserveStyledPadding();
         if (line.Length > 0 || rows.Count == 0 || text[^1] is '\r' or '\n')
         {
             if (activeHyperlinkClose is not null) line.Append(activeHyperlinkClose);
@@ -612,7 +612,7 @@ internal static class TerminalTextLayout
         return false;
     }
 
-    private static bool HasBackgroundColor(string value)
+    private static bool HasExplicitColor(string value)
     {
         for (var offset = 0; offset < value.Length;)
         {
@@ -624,7 +624,7 @@ internal static class TerminalTextLayout
 
             if (kind == EscapeKind.Sgr && payload.Split(';').Any(parameter =>
                     int.TryParse(parameter, NumberStyles.None, CultureInfo.InvariantCulture, out var code) &&
-                    code is >= 40 and <= 47 or >= 100 and <= 107 or 48))
+                    code is >= 30 and <= 37 or >= 40 and <= 47 or >= 90 and <= 97 or >= 100 and <= 107 or 38 or 39 or 48 or 49))
                 return true;
             offset += length;
         }

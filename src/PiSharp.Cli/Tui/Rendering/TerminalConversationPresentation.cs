@@ -121,6 +121,15 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         return true;
     }
 
+    public void AppendExtensionError(string path, string error)
+    {
+        var message = TerminalExtensionErrorText.Message(path, error);
+        string Render(TerminalTheme theme) => TerminalExtensionErrorText.Render(message, columns(), theme);
+        var rendered = Render(getTheme());
+        transcript.AppendThemed(rendered, isError: true, isToolResult: false, Render, rendered);
+        _hasConversationContent = true;
+    }
+
     public bool SetToolExpandKeyLabel(string safe)
     {
         if (_toolExpandKeyLabel.Equals(safe, StringComparison.Ordinal)) return false;

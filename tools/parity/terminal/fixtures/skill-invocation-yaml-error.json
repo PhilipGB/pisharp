@@ -1,0 +1,156 @@
+{
+  "id": "skill-invocation-yaml-error",
+  "settings": {
+    "quietStartup": true
+  },
+  "environment": {
+    "pi": {
+      "HOME": "{agent}/isolated-home"
+    },
+    "pisharp": {
+      "HOME": "{agent}/isolated-home"
+    }
+  },
+  "files": {
+    "pi": {
+      "isolated-home/.pisharp-terminal-harness": "owned fixture home"
+    },
+    "pisharp": {
+      "isolated-home/.pisharp-terminal-harness": "owned fixture home"
+    }
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "error-request"
+    ],
+    "chatResponseContentGates": [
+      "error-content"
+    ],
+    "chatResponseFinishGates": [
+      "error-finish"
+    ],
+    "chatResponseContentByRequest": [
+      "ERROR_RECOVERED_REPLY"
+    ]
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model",
+      "allowStaticFrame": true,
+      "renderMatch": true,
+      "quietMs": 0
+    },
+    {
+      "id": "invalidate-loaded-skill",
+      "writeFiles": {
+        "workspace": {
+          "skill-error-project/guide/SKILL.md": "---\ndescription: [broken\n---\nbody"
+        }
+      },
+      "allowStaticFrame": true
+    },
+    {
+      "id": "skill-error-active",
+      "send": "/skill:guide args\r",
+      "waitGatesAfter": [
+        "error-request"
+      ],
+      "expect": [
+        "Flow sequence",
+        "sufficiently indented",
+        "Working"
+      ],
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "reply-active",
+      "releaseGates": [
+        "error-content"
+      ],
+      "expect": [
+        "ERROR_RECOVERED_REPLY",
+        "Working"
+      ],
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "reply-idle",
+      "releaseGates": [
+        "error-finish"
+      ],
+      "expect": [
+        "ERROR_RECOVERED_REPLY",
+        "\u219110 \u21933"
+      ],
+      "notExpect": "Working",
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "workingDirectory": "skill-error-project",
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--skill",
+      "guide/SKILL.md",
+      "--no-approve"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--skill",
+      "guide/SKILL.md",
+      "--no-approve",
+      "--no-context-files"
+    ]
+  },
+  "projectFiles": {
+    "skill-error-project/guide/SKILL.md": "---\nname: guide\ndescription: Guide\n---\nbody"
+  },
+  "assertionFrames": [
+    "startup",
+    "skill-error-active",
+    "reply-active",
+    "reply-idle"
+  ]
+}

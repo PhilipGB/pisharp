@@ -1,0 +1,359 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpProductBaseSha": "018337d80611ee729759ef0393b80ff5de27c7b1",
+  "candidate": "Base plus skill invocation error transcript rendering, source margins/style/reset/blank rows, deferred prompt error frame and ordered idle footer in this commit. Evidence-only head 9c53e761 does not change product behavior.",
+  "scope": "Normal interactive fullscreen 120x40 dark; malformed loaded skill YAML is reread at invocation and recovers by submitting the original input to a local provider. Six native rows additionally cover widths 1/40/80/120, tabs, retained theme/width rerender and one combined screen frame.",
+  "sourcePaths": [
+    "packages/coding-agent/src/modes/interactive/interactive-mode.ts: showExtensionError",
+    "packages/tui/src/components/text.ts: Text.render",
+    "packages/tui/src/utils.ts: wrapTextWithAnsi"
+  ],
+  "characterization": {
+    "failFirstTerminalDifferences": 54943,
+    "failFirstRenderDifferences": 29779,
+    "nativeBlankRowFailFirst": {
+      "failed": 1,
+      "passed": 4,
+      "skipped": 0
+    }
+  },
+  "implementation": [
+    "InteractivePromptExecution projects invocation errors into the active screen transcript; initial error rendering is batched with accepted input, while queued errors request rendering immediately. Redirected/non-screen error output retains its protocol owner.",
+    "TerminalExtensionErrorText matches the quoted source caption, three-space tab expansion, one-cell horizontal margins, wrapped foreground styling and full-width trailing context row. TerminalConversationPresentation retains the error outside conversation persistence and makes subsequent user spacing reflect existing chat content.",
+    "TerminalTextLayout retains padding carrying explicit color/reset controls. Width changes rerender retained themed transcript segments. Final usage footer is prepared before clearing the Working state, preventing a visible stale idle footer.",
+    "The PTY driver accepts an optional isolated fixture root while preserving owned-directory checks and locks. One native Python regression prevents captured default workspace paths from ignoring that selected root."
+  ],
+  "verification": {
+    "paired": {
+      "run": "skill-error-isolated-wrapped-pair",
+      "calibration": false,
+      "match": true,
+      "differences": 0,
+      "renderDifferences": 0,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "42530bc5795d85961fb25e17633f268214ada8a300b2a1ae6c5ffed4ae67363d"
+    },
+    "calibration": {
+      "run": "skill-error-gate-trace-calibration",
+      "calibration": true,
+      "match": true,
+      "differences": 0,
+      "renderDifferences": 0,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "8c2e5c461a5dbe19a10f9f9eec9440e4cfc90e96f93a0135984ff8c9f52de125"
+    },
+    "behaviorAssertions": {
+      "behaviorMatch": true,
+      "calibrationMatch": true,
+      "terminalMatch": true,
+      "renderDifferences": 0,
+      "httpMatch": true,
+      "scenarioErrors": {}
+    },
+    "focusedPassed": 67,
+    "fullSuite": {
+      "passed": 1892,
+      "failed": 0,
+      "skipped": 0
+    },
+    "newNativeRows": 6,
+    "pythonPassed": 50,
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "format": "passed",
+    "exactHeadCi": "Pending publication.",
+    "promptHintRegression": {
+      "match": true,
+      "differences": 0,
+      "renderDifferences": 0,
+      "scenarioErrors": {},
+      "comparedRenderFrameCount": 15,
+      "httpMatch": true,
+      "reportSha256": "3a9544adca665c24953d613bf1c1f5c0b56b2fa93100e94f180e62b39ac9f43b"
+    }
+  },
+  "retainedRuns": [
+    {
+      "run": "skill-error-batched-pair",
+      "calibration": false,
+      "match": true,
+      "differences": 0,
+      "renderDifferences": 0,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "d683168b946bbb179ea42663932e2ab9a9bafd637dd519d80a4802da08977e62"
+    },
+    {
+      "run": "skill-error-calibration",
+      "calibration": true,
+      "match": false,
+      "differences": 1,
+      "renderDifferences": 0,
+      "canonicalFrames": 1,
+      "scenarioErrors": {
+        "pi": "Terminal did not settle at 'fixture-model' (expected=False, absent=True, output=False, renderMatch=False).",
+        "pisharp": "Terminal did not settle at 'fixture-model' (expected=False, absent=True, output=False, renderMatch=False)."
+      },
+      "reportSha256": "cb40c9b5487efd9e5500835d893200ea6f9a6fe44de34557b1c7b148b2dcbc8a"
+    },
+    {
+      "run": "skill-error-calibration-ready",
+      "calibration": true,
+      "match": false,
+      "differences": 1,
+      "renderDifferences": 0,
+      "canonicalFrames": 1,
+      "scenarioErrors": {
+        "pi": "Terminal did not settle at ['Flow sequence in block collection', 'Working'] (expected=False, absent=True, output=True, renderMatch=True).",
+        "pisharp": "Terminal did not settle at ['Flow sequence in block collection', 'Working'] (expected=False, absent=True, output=True, renderMatch=True)."
+      },
+      "reportSha256": "968a9eb5773ba4a6b732f3a58798a2ef8e216eb4187766aaa33e6d870933f483"
+    },
+    {
+      "run": "skill-error-calibration-repeat",
+      "calibration": true,
+      "match": false,
+      "differences": 1,
+      "renderDifferences": 0,
+      "canonicalFrames": 1,
+      "scenarioErrors": {
+        "pi": "Terminal did not settle at ['Flow sequence in block collection', 'Working'] (expected=False, absent=True, output=True, renderMatch=True).",
+        "pisharp": "Terminal did not settle at ['Flow sequence in block collection', 'Working'] (expected=False, absent=True, output=True, renderMatch=True)."
+      },
+      "reportSha256": "968a9eb5773ba4a6b732f3a58798a2ef8e216eb4187766aaa33e6d870933f483"
+    },
+    {
+      "run": "skill-error-calibration-wrapped",
+      "calibration": true,
+      "match": true,
+      "differences": 0,
+      "renderDifferences": 0,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "a04f6867fc64724733efd53dca9d7f457613fc2581be855d35a78ebddeaefc57"
+    },
+    {
+      "run": "skill-error-context-recovery-pair",
+      "calibration": false,
+      "match": false,
+      "differences": 14445,
+      "renderDifferences": 14401,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "e868a49d87d4747cecd393bb86fb6fee2954a1d57330306c146e1ec4949a36f7"
+    },
+    {
+      "run": "skill-error-fail-first-pair",
+      "calibration": false,
+      "match": false,
+      "differences": 54943,
+      "renderDifferences": 29779,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "701d9b85b9417ee08f44d560e9fa3931f7822c4fb2a2279a5a75e4b626d2bdc9"
+    },
+    {
+      "run": "skill-error-final-calibration",
+      "calibration": true,
+      "match": false,
+      "differences": 315,
+      "renderDifferences": 0,
+      "canonicalFrames": 1,
+      "scenarioErrors": {
+        "pi": "Terminal did not settle at ['ERROR_RECOVERED_REPLY', '\u219110 \u21933'] (expected=False, absent=False, output=True, renderMatch=True).",
+        "pisharp": "Terminal did not settle at ['ERROR_RECOVERED_REPLY', 'Working'] (expected=False, absent=True, output=True, renderMatch=True)."
+      },
+      "reportSha256": "64b6febaea7509485d53a0f3e963539330216f0fb06b580f8a0db2ba2f6e942f"
+    },
+    {
+      "run": "skill-error-final-padding-pair",
+      "calibration": false,
+      "match": false,
+      "differences": 33871,
+      "renderDifferences": 20943,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "7d4e4ff239e0c029cf7d9fd830d40d0369f01992ef28a2fc5f23c51878ce5a95"
+    },
+    {
+      "run": "skill-error-first-recovery-pair",
+      "calibration": false,
+      "match": false,
+      "differences": 8968,
+      "renderDifferences": 1,
+      "canonicalFrames": 1,
+      "scenarioErrors": {
+        "pi": "Terminal did not settle at ['ERROR_RECOVERED_REPLY', 'Working'] (expected=False, absent=True, output=True, renderMatch=True)."
+      },
+      "reportSha256": "68085d5677482bca5ed714203a67ddc5d5bd00114699835d6fb30277968d4e76"
+    },
+    {
+      "run": "skill-error-gate-trace-calibration",
+      "calibration": true,
+      "match": true,
+      "differences": 0,
+      "renderDifferences": 0,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "8c2e5c461a5dbe19a10f9f9eec9440e4cfc90e96f93a0135984ff8c9f52de125"
+    },
+    {
+      "run": "skill-error-isolated-pair",
+      "calibration": false,
+      "match": false,
+      "differences": 362,
+      "renderDifferences": 0,
+      "canonicalFrames": 1,
+      "scenarioErrors": {
+        "pi": "Terminal did not settle at ['Flow sequence in block', 'collection must be sufficiently indented', 'Working'] (expected=False, absent=True, output=True, renderMatch=True).",
+        "pisharp": "Terminal did not settle at ['Flow sequence in block', 'collection must be sufficiently indented', 'Working'] (expected=False, absent=True, output=True, renderMatch=True)."
+      },
+      "reportSha256": "a9c52fbd1a15df89bcb80db5ecf8d61ffe6fa6020df5f4d14eb0046128098ba3"
+    },
+    {
+      "run": "skill-error-isolated-wrapped-pair",
+      "calibration": false,
+      "match": true,
+      "differences": 0,
+      "renderDifferences": 0,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "42530bc5795d85961fb25e17633f268214ada8a300b2a1ae6c5ffed4ae67363d"
+    },
+    {
+      "run": "skill-error-padding-recovery-pair",
+      "calibration": false,
+      "match": false,
+      "differences": 33393,
+      "renderDifferences": 20421,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "7b21d03481d826eeb3042d6a551281a6f307819f1f3203ff67543e35b90caeca"
+    },
+    {
+      "run": "skill-error-resize-calibration",
+      "calibration": true,
+      "match": false,
+      "differences": 6642,
+      "renderDifferences": 1,
+      "canonicalFrames": 1,
+      "scenarioErrors": {
+        "pi": "Terminal did not settle at ['ERROR_RECOVERED_REPLY', '\u219110 \u21933'] (expected=False, absent=False, output=True, renderMatch=True)."
+      },
+      "reportSha256": "1c4c8d80bc65243619cb43720ef0297b6e371985f0d1da1313424110bace19e5"
+    },
+    {
+      "run": "skill-error-settled-pair",
+      "calibration": false,
+      "match": false,
+      "differences": 14401,
+      "renderDifferences": 14401,
+      "canonicalFrames": 6,
+      "scenarioErrors": {},
+      "reportSha256": "b29eb9eb8b865e89c65ffed2a1cbaa0a146ba608ddf35d97064509835e9dbff1"
+    }
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "limits": [
+    "Complete normalized terminal/render/provider matches apply only to the named bounded flow; raw PTY byte streams differ and remain captured. Full resources/trust/reload/startup presentation remains open.",
+    "Repeated same-Pi reply/settlement calibration stalls and a failed active-resize calibration are retained. Gate instrumentation proves both content and finish gates were released and consumed in the successful trace, but does not establish the cause or elimination of those failed runs. No resolution is inferred from the later green calibration. Live active-resize parity remains open; native rerender checks prove only their covered behavior.",
+    "The initial checkpoint failures due to observing already-rendered startup output and requiring a title across a physical line wrap are fixture defects. Stable checkpoint expectations changed; complete terminal/render comparison was preserved.",
+    "The final full suite exposed a separately recorded virtual-model fixture bind collision; its repair uses the existing forced-collision-tested shared listener. See process-fixture-recovery-2026-10-14.json. Other private listener fixtures have not all been audited."
+  ],
+  "logs": {
+    "skill-error-batched-pair.log": "6417a2f51001dbac8bba6f9e02af21afa19598ca92d71dc966a88edfa21c6254",
+    "skill-error-batched-tests.log": "744d41f9d52485e170ebb61e433be6e20e2d1eeeeef91c08d70d5a42e6073696",
+    "skill-error-behavior-assertions.json": "a0530815a3dc0716b6b9d2c1dfe6c31caa298455b2e9153123a9cfac7e3ecf3a",
+    "skill-error-build.log": "6942ee69205ddf112620d37773a76615503e1635649d4cc88536542ac90190ea",
+    "skill-error-calibration-ready.log": "6335ff97fafc7f563fcb6f60cd9a4d7b43031be03193ffd663670d84baacb3e3",
+    "skill-error-calibration-repeat.log": "6335ff97fafc7f563fcb6f60cd9a4d7b43031be03193ffd663670d84baacb3e3",
+    "skill-error-calibration-wrapped.log": "6417a2f51001dbac8bba6f9e02af21afa19598ca92d71dc966a88edfa21c6254",
+    "skill-error-calibration.log": "6335ff97fafc7f563fcb6f60cd9a4d7b43031be03193ffd663670d84baacb3e3",
+    "skill-error-clean-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "skill-error-context-recovery-pair.log": "12b3d5f0b97d9845c69b35904ecb3acf626702a865d3753a0ab815590132dbbd",
+    "skill-error-context-recovery-tests.log": "814014f44135b9340e9d75c4f72a6dcb39c11816ca2fbf165087c0f6ec27bb1b",
+    "skill-error-fail-first-pair.log": "1117b7b2d910fc3b2c9f9b933016d89276f6adac3a34237b08b5fb85ae7e60cd",
+    "skill-error-final-build.log": "ff2a287d0fde76bfca0ded559df949d48e4c612662f22d7fbdff4bc361192900",
+    "skill-error-final-calibration.log": "c3ceb762227d990a05683358750425e2856276b0abf3632837c926456f265209",
+    "skill-error-final-focused.log": "2a1407a366b1d64992e7f240970f48a1c5d73a8d46422476dc3bb8a8f6b1fefc",
+    "skill-error-final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "skill-error-final-full.log": "b661d9e5143ca42d76782ecc8d1fbf6ced939b8425ffce437e96131c44f4c709",
+    "skill-error-final-padding-pair.log": "1117b7b2d910fc3b2c9f9b933016d89276f6adac3a34237b08b5fb85ae7e60cd",
+    "skill-error-final-padding-tests.log": "9078b36b36e01e9b567a9df0bf8e0ac2f5cdc943d5023b373a9fa8abfcecb9c7",
+    "skill-error-first-recovery-pair.log": "a65440a6412ba86fa90fa336b452ff0fc7bdb437aa987bbe3b6226d5b38fec8f",
+    "skill-error-first-recovery-tests.log": "7a4f8c925a54a8eea53e4e87d1f5e78455703bb4e145756ed60f2cf7cc04401a",
+    "skill-error-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "skill-error-full.log": "7a217a7758fbb7e686f4a340b07400c2709f2d38fe07d0707be67f362b0490f9",
+    "skill-error-gate-trace-assertions.json": "a0530815a3dc0716b6b9d2c1dfe6c31caa298455b2e9153123a9cfac7e3ecf3a",
+    "skill-error-gate-trace-calibration.log": "b844535c9ecdc7ad3230d74a69806c2fc009e3a7d578c586c93e050d02166073",
+    "skill-error-initial-fixture.json": "51d9da8ca864743292d3d08abec7f060fc4ecd8aa914bf7ceaddbef7f8015c23",
+    "skill-error-isolated-pair.log": "c3ceb762227d990a05683358750425e2856276b0abf3632837c926456f265209",
+    "skill-error-isolated-python.log": "2348d0a33b4171b13b503711832ad6fdd1e27f20edfa28c682334aa3e34cc315",
+    "skill-error-isolated-wrapped-pair.log": "6417a2f51001dbac8bba6f9e02af21afa19598ca92d71dc966a88edfa21c6254",
+    "skill-error-padding-recovery-pair.log": "1117b7b2d910fc3b2c9f9b933016d89276f6adac3a34237b08b5fb85ae7e60cd",
+    "skill-error-padding-recovery-tests.log": "a8129d54c5ae5857bd363ef7d6813327035b13aa59d5b3d65ef115312423d743",
+    "skill-error-port-recovery-build.log": "f1760bfbfa7e4bafb93bd86b16e9c09d904dffa333c3ee4eb782a7399db0db1a",
+    "skill-error-port-recovery-full.log": "90f9e18938ab95a1ac7abcd8b0dcaee501528aef21882a4bcce846e8a6e17d6b",
+    "skill-error-presentation-tests.log": "76e0ac396dfb794309a372a63f0224809d081f85f0fa4b1b405556e7ea4f8bb5",
+    "skill-error-publish-build.log": "48bc6224e59b9ed8ec8e8dcde6e452d2d2d99d7b3bb6ad02a734a80c9b6e4211",
+    "skill-error-publish-format.log": "a4569b9712cb61ed81025b0644664d3cc61602c38de47ef42d8f2b3cc25fdfe7",
+    "skill-error-publish-full.log": "f99c53e3501e7155bf1b25d00737bc64c9c14fe1830ebd2c49cd81b55d3176f0",
+    "skill-error-python.log": "8e3d999ef2225606e00c39e0312e56266fb5287539d0b54bc98cec12b69c7e89",
+    "skill-error-resize-calibration.log": "a65440a6412ba86fa90fa336b452ff0fc7bdb437aa987bbe3b6226d5b38fec8f",
+    "skill-error-root-final-python.log": "35de678d88277cd51f2a77e8edef910a72817a40bffc5d59b7a56fa84b55aab7",
+    "skill-error-screen-final-focused.log": "b95a40fb3d81ad5934f0332b0b65c7ce305d7b81827739b0f09e0a2356766ca3",
+    "skill-error-settled-pair.log": "e1da36d50c6ce3cdf881f62527091e0cb41656003499ac455c3186dd4c35c017",
+    "skill-error-unwrapped-expectation-fixture.json": "2219faaf0d68d471547da22ad18c8760273f1299e7da7cb0f1fa2ba17fb74018",
+    "skill-error-hint-regression.log": "e13cd782b3ea3d8a38521c6df6db898dd2bf4fe28fa671673f255d0239f4ffe9"
+  },
+  "next": "Finish active-resize/reply calibration diagnostics and the remaining package/settings/discovery/trust/reload resource boundaries; all 194 ledger capabilities and final audits remain required.",
+  "fixtureCollisionRepair": "d917edb98c",
+  "fixture": "tools/parity/terminal/fixtures/skill-invocation-yaml-error.json",
+  "assertionDriver": "tools/parity/terminal/assert_skill_invocation_error.py",
+  "rawEvidence": {
+    "skill-error-fail-first-pair/120x40-dark-fullscreen.assertions.json.gz": "8c67a4e2280cb35fcf0754e4be1b63d5f8cdfffc7c2e36094f2ef65fa2b86cb9",
+    "skill-error-fail-first-pair/120x40-dark-fullscreen.json.gz": "4ecc34083e93d1673b3f7fadea64501531c75eb52b33c3f4841fc582f9b47d0d",
+    "skill-error-fail-first-pair/120x40-dark-fullscreen.pi.frames.jsonl.gz": "1b007daabe1ea81ba76741d9dfde6bc02edc125634aa35ef579eacfeee048e11",
+    "skill-error-fail-first-pair/120x40-dark-fullscreen.pi.renders.jsonl.gz": "34915949a59a9a299920710fd53373ec6bee3ca4ec07260b946e5f040e301d0a",
+    "skill-error-fail-first-pair/120x40-dark-fullscreen.pisharp.frames.jsonl.gz": "3a66f53c8bec51d6aebedb04b7103cc5f3384c36646e8e04df1719a58f245077",
+    "skill-error-fail-first-pair/120x40-dark-fullscreen.pisharp.renders.jsonl.gz": "32e469fb3af805194b4c8200071755d726e4fb1006cbb8ddb6b4e86fca24c5c4",
+    "skill-error-batched-pair/120x40-dark-fullscreen.assertions.json.gz": "8be3380cc7ebd74b8a562911543f2f791ec1f04ba81da3fdb24bbf3b203c6848",
+    "skill-error-batched-pair/120x40-dark-fullscreen.json.gz": "8569882a71d77ef5bb77d69550cb1e3053efac2c12af6a02b002f0dcdfb404c7",
+    "skill-error-batched-pair/120x40-dark-fullscreen.pi.frames.jsonl.gz": "0b623ba1905f872558173026be6e67ec5230edf2042ba6532d82d49cb5b63f57",
+    "skill-error-batched-pair/120x40-dark-fullscreen.pi.renders.jsonl.gz": "b59b9fbf8b520950f9f6611ceebd02717066451dd7afcfba94f270316c28d7d0",
+    "skill-error-batched-pair/120x40-dark-fullscreen.pisharp.frames.jsonl.gz": "c80e9d4ce5c395af3bcbdc007c309587c7ff40810f5e4cf59ba7678df31f3084",
+    "skill-error-batched-pair/120x40-dark-fullscreen.pisharp.renders.jsonl.gz": "68005d545963a99591f1ed400ab0e75d86212e8d6e5e0663c1de21efec8aab90",
+    "skill-error-isolated-wrapped-pair/120x40-dark-fullscreen.assertions.json.gz": "3a8551d4316b02e176eb863d683387045549bb097e3a4b5673b57719bf73efe9",
+    "skill-error-isolated-wrapped-pair/120x40-dark-fullscreen.json.gz": "067492861c654ef2cd55038a90ab0f47a7a3db293883fad0019ce329b30191d7",
+    "skill-error-isolated-wrapped-pair/120x40-dark-fullscreen.pi.frames.jsonl.gz": "f2d4be05ceb279d1e83956429f16922b723d8e7d0647372836e49224074b1fca",
+    "skill-error-isolated-wrapped-pair/120x40-dark-fullscreen.pi.renders.jsonl.gz": "ae84fac4b922bf2efb030c05ff80faf9c40104c3d3510e0c2dcf00eacacd0888",
+    "skill-error-isolated-wrapped-pair/120x40-dark-fullscreen.pisharp.frames.jsonl.gz": "3a229397556e7a672c9254a0ec5e1e70a134c95635905c52388d476c8853bb18",
+    "skill-error-isolated-wrapped-pair/120x40-dark-fullscreen.pisharp.renders.jsonl.gz": "4a7da5baf8d5889fef1fa3863259620d5f0b587cd0a44d316774186b1dd9c902",
+    "skill-error-gate-trace-calibration/120x40-dark-fullscreen.assertions.json.gz": "0b12674d5564190b753f004ec9fa7b2b53303b4ba66670d93ba0def3451da356",
+    "skill-error-gate-trace-calibration/120x40-dark-fullscreen.json.gz": "8e17c4c1fa3d9b6a64b5005924d5ccd1eecd645495efec724cde54b44134442f",
+    "skill-error-gate-trace-calibration/120x40-dark-fullscreen.pi.frames.jsonl.gz": "b5624e352ae85ef0dad62652cb09cf323886a41a362f8744902c0fe50aa26577",
+    "skill-error-gate-trace-calibration/120x40-dark-fullscreen.pi.renders.jsonl.gz": "1cd47f3546fe29f69c020c1f8b98a806a7e4b24ef179f650941d3879f734e788",
+    "skill-error-gate-trace-calibration/120x40-dark-fullscreen.pisharp.frames.jsonl.gz": "81d9fcd33636a458c06c8869c3a0169942916ab495448c96cd16e794b7165221",
+    "skill-error-gate-trace-calibration/120x40-dark-fullscreen.pisharp.renders.jsonl.gz": "06a0b08968719ad7de4c3785e4356b25f4ab449f696f3b48dd906186e7337ef8",
+    "skill-error-final-calibration/120x40-dark-fullscreen.assertions.json.gz": "ee35d9945b748594649080e514ff8109108ba39dd961df9f3b58e676ffe87e69",
+    "skill-error-final-calibration/120x40-dark-fullscreen.json.gz": "316b9032f908797ebb2882dc5982af2f907cbcb2869da8f0d5c8cf7f28c514a8",
+    "skill-error-final-calibration/120x40-dark-fullscreen.pi.frames.jsonl.gz": "de5b44945e796755d94b4399c23209a0d02275963b79f2325528f01221adea72",
+    "skill-error-final-calibration/120x40-dark-fullscreen.pi.renders.jsonl.gz": "31652941efbbbe9bf0dc0443af4c8aa6fb60a82d66662b442e930a227c295aaa",
+    "skill-error-final-calibration/120x40-dark-fullscreen.pisharp.frames.jsonl.gz": "21111e9a8f74399caa296afbd378c070e9fb42e659015a42b398b6723969653d",
+    "skill-error-final-calibration/120x40-dark-fullscreen.pisharp.renders.jsonl.gz": "cd7ccf22db949313d4c234acc182b30c3a69816eeafeff44dc96e5090a3e1407",
+    "skill-error-resize-calibration/120x40-dark-fullscreen.assertions.json.gz": "b1f69555e228e070f48880c2a79087dd4482d71114721f42885909fc2e82773c",
+    "skill-error-resize-calibration/120x40-dark-fullscreen.json.gz": "361dd8aa5bc5e922a4c363607140888df6bb715d7124dd52b025ac56a2e64b25",
+    "skill-error-resize-calibration/120x40-dark-fullscreen.pi.frames.jsonl.gz": "262a5ce2156bc48317d8ffadc1b1a7ef7aa9e8a55fff7e91326ab3a412f07ab6",
+    "skill-error-resize-calibration/120x40-dark-fullscreen.pi.renders.jsonl.gz": "127509a6d640c5b8abc8005631b105947358f7400b52156caa6d9a86e2d43bef",
+    "skill-error-resize-calibration/120x40-dark-fullscreen.pisharp.frames.jsonl.gz": "792d0b4f5c13d7933f0b457220fac9266e24f3c5ddccf68b7a6665192d705288",
+    "skill-error-resize-calibration/120x40-dark-fullscreen.pisharp.renders.jsonl.gz": "2391c6e1bb1205791fbe8d01de7f7c49a6761603ad203c79b451e1468dd0cf42"
+  },
+  "assemblySha256": {
+    "PiSharp.Cli": "857b869736ba4837e38e1f2ace2381b78b9903c827ada907198bede90e3c8013",
+    "PiSharp.Runtime": "db527345184cafe75a0484028f26b9befdc6d3499a1388ad9cbe69e5fa46fbd3",
+    "PiSharp.Core": "e7a8032dfcb2c646c09bf9e7419d698cac87ae492a7644586d6bdf712f6d344d"
+  }
+}

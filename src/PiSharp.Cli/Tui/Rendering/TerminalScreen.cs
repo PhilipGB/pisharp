@@ -354,6 +354,16 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal void AppendExtensionError(string path, string error, bool render = true)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _conversationPresentation.AppendExtensionError(path, error);
+            if (render) _render.Request();
+        }
+    }
+
     internal void ShowReloadProgressPanel(string message)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
@@ -1067,6 +1077,8 @@ public sealed class TerminalScreen : IDisposable
     {
         var columns = Columns();
         var rows = Rows();
+        if (_lastColumns != 0 && _lastColumns != columns)
+            _transcript.ReRenderThemedSegments(_theme);
         if (_startupPanelActive)
         {
             var panel = _editorPanel ?? [];

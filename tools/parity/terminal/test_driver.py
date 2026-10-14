@@ -151,6 +151,14 @@ class DriverTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 prepare_workspace({'workingDirectory': '../outside'}, workspace)
 
+    def test_default_workspace_uses_the_selected_fixture_root_at_execution_time(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary) / 'workspace'
+            with patch('run.WORKSPACE', workspace):
+                working = prepare_workspace({'workingDirectory': 'project'})
+            self.assertEqual(workspace / 'project', working)
+            self.assertTrue((workspace / '.pisharp-terminal-harness').is_file())
+
     def test_fixture_can_load_a_native_extension_only_in_the_pisharp_process(self):
         with tempfile.TemporaryDirectory() as temporary:
             extension = Path(temporary) / 'dynamic-resources.dll'
