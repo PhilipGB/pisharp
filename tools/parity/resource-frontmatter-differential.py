@@ -10,6 +10,8 @@ parser.add_argument('--pi',type=Path,required=True)
 parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--argument-hints',action='store_true',help='Extend the original YAML cases with typed prompt argument-hint metadata.')
 parser.add_argument('--repository-prompt',action='store_true',help='Verify and load the repository dup prompt against the pinned Pi asset.')
+parser.add_argument('--yaml-edges',action='store_true',help='Compare additional explicit scalar tags, alias/map keys and syntax errors.')
+parser.add_argument('--yaml-tags',action='store_true',help='Compare only the additional explicit scalar-tag matrix.')
 args=parser.parse_args()
 repo=Path(__file__).resolve().parents[2]; pi=args.pi.resolve();pi_sha=verify_pi_checkout(pi)
 vectors={
@@ -78,6 +80,43 @@ if args.argument_hints:
  'hint-quoted-number': 'name: guide\ndescription: Guide\nargument-hint: "123"',
  'hint-unicode': 'name: guide\ndescription: Guide\nargument-hint: "🌍 \uFEFF"',
  })
+if args.yaml_edges:
+ vectors.update({
+ 'flow-map-unclosed': 'name: guide\ndescription: {bad',
+ 'flow-map-colon': 'name: guide\ndescription: {one: two other: three}',
+ 'flow-sequence-comma': 'name: guide\ndescription: [one two,]',
+ 'single-quote-unclosed': "name: guide\ndescription: 'broken",
+ 'double-quote-unclosed': 'name: guide\ndescription: "broken',
+ 'double-quote-invalid-escape': 'name: guide\ndescription: "bad\\q"',
+ 'double-quote-invalid-hex': 'name: guide\ndescription: "bad\\xZZ"',
+ 'unknown-alias': 'name: guide\ndescription: *missing',
+ 'anchor-redeclared': 'name: &same guide\ndescription: &same Guide',
+ 'complex-key': '? [name, description]\n: Guide',
+ 'root-alias': '&root {name: guide, description: Guide}',
+ 'indent-tab': 'name: guide\n\tdescription: Guide',
+ 'indent-scalar': 'name: guide\ndescription: |\n text\n  deeper\n not deeper',
+ 'directive-version': '%YAML 1.1\n---\nname: guide\ndescription: yes',
+ 'nonstring-tag': 'name: guide\ndescription: !!int word',
+ 'bool-tag-false': 'name: guide\ndescription: !!bool no',
+ 'custom-tag': 'name: guide\ndescription: !custom Guide',
+ 'explicit-null-tag': 'name: guide\ndescription: !!null text',
+ 'key-alias': 'key: &key description\nname: guide\n*key: Guide',
+ 'numeric-key': 'name: guide\ndescription: Guide\n1: one\n01: two',
+ 'long-quote-error': 'name: guide\ndescription: "' + ('x' * 100),
+ 'nested-flow-error': 'name: guide\ndescription: Guide\nunused: {one: [one two}',
+ 'empty-doc-with-content': '---\nname: guide\ndescription: Guide',
+ 'block-header-invalid': 'name: guide\ndescription: |x\n  Guide',
+ 'block-sequence-indent': 'name: guide\ndescription:\n - first\n  - second',
+ })
+if args.yaml_edges or args.yaml_tags:
+ for tag, values in {
+  'int': ['word', '1.2', '1e2', '0123', '0x10', '0o10', '"123"', '"word"'],
+  'float': ['word', '1', '1.2', '1e2', '.inf', '"1.2"'],
+  'bool': ['no', 'yes', 'true', 'false', '"true"', 'tRuE'],
+  'null': ['text', '0', 'null', '~', '""'],
+ }.items():
+  for index, value in enumerate(values):
+   vectors[f'tag-{tag}-{index:02d}']=f'name: guide\ndescription: !!{tag} {value}'
 cases=[]
 for kind in ['skill','prompt']:
  for identifier, yaml in vectors.items():

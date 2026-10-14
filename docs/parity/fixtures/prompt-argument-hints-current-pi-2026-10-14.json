@@ -73,7 +73,19 @@
       },
       "fixture": "tools/parity/terminal/fixtures/prompt-argument-hints.json"
     },
-    "exactHeadCi": "Pending publication; base invocation commit passes both jobs in run 38554053384."
+    "exactHeadCi": {
+      "sha": "42ae67c471fe572d3a8b01c40328865f6a5d1ce2",
+      "run": 38556219134,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38556219134",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1836,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
   },
   "results": [
     {
@@ -450,7 +462,8 @@
     "prompt-hints-final-calibration/report.json": "5f2fde95ae0be7b9ec62d5a7c47292cc6fdfa3e8a372a50b9e03d4b41d4dfa65",
     "prompt-hints-final-assertions.json": "a0530815a3dc0716b6b9d2c1dfe6c31caa298455b2e9153123a9cfac7e3ecf3a",
     "resource-yaml-edges-characterization.json": "5891e1e9748c61e41df27f509549dd44702a538fe9947055d6edc87ab6916453",
-    "resource-yaml-edges-characterization.log": "7708e49c2a9bab02413c055f46725272eadd00d783177aaca319d46b4b3aa296"
+    "resource-yaml-edges-characterization.log": "7708e49c2a9bab02413c055f46725272eadd00d783177aaca319d46b4b3aa296",
+    "resource-hints-exact-ci.log": "707cacedfbbc0be841c1add2a7198d20e40608101a7c02be2cebe9472a0e68b9"
   },
   "limits": [
     "One Linux 120x40 dark fullscreen PTY flow proves these hint/empty/multiline/provider and active/idle checkpoints; narrow screens, other palettes/dimensions, arbitrary labels/control characters and wider completion behavior remain open. Raw PTY bytes differ and are retained.",

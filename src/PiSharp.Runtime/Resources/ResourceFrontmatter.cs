@@ -9,7 +9,8 @@ internal sealed record ResourceFrontmatter(string? Name, string? Description, bo
     string? ArgumentHint = null)
 {
     private static readonly char[] BodyWhitespace = "\t\n\v\f\r \u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000\uFEFF".ToCharArray();
-    private const string NumericScalar = @"^(?:[-+]?[0-9]+|0o[0-7]+|0x[0-9a-fA-F]+|[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*|(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+)|[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$";
+    private const string IntegerScalar = @"^(?:[-+]?[0-9]+|0o[0-7]+|0x[0-9a-fA-F]+)$";
+    private const string FloatScalar = @"^(?:[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*|(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+)|[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$";
 
     internal static ResourceFrontmatter Parse(string text)
     {
@@ -74,14 +75,26 @@ internal sealed record ResourceFrontmatter(string? Name, string? Description, bo
     {
         if (node is not YamlScalarNode scalar) return null;
         var tag = scalar.Tag.ToString();
-        if (!scalar.Tag.IsEmpty)
-            return tag is "tag:yaml.org,2002:bool" or "tag:yaml.org,2002:int" or "tag:yaml.org,2002:float" or "tag:yaml.org,2002:null"
-                ? null : scalar.Value;
-        if (scalar.Style != ScalarStyle.Plain) return scalar.Value;
         var value = scalar.Value ?? "";
-        return value is "" or "~" or "null" or "Null" or "NULL" or "true" or "True" or "TRUE" or "false" or "False" or "FALSE" ||
-            Regex.IsMatch(value, NumericScalar, RegexOptions.CultureInvariant) ? null : value;
+        if (!scalar.Tag.IsEmpty)
+        {
+            var typed = tag switch
+            {
+                "tag:yaml.org,2002:bool" => IsBoolean(value),
+                "tag:yaml.org,2002:null" => IsNull(value),
+                "tag:yaml.org,2002:int" => Regex.IsMatch(value, IntegerScalar, RegexOptions.CultureInvariant),
+                "tag:yaml.org,2002:float" => Regex.IsMatch(value, FloatScalar, RegexOptions.CultureInvariant),
+                _ => false
+            };
+            return typed ? null : scalar.Value;
+        }
+        if (scalar.Style != ScalarStyle.Plain) return scalar.Value;
+        return IsNull(value) || IsBoolean(value) || Regex.IsMatch(value, IntegerScalar, RegexOptions.CultureInvariant) ||
+            Regex.IsMatch(value, FloatScalar, RegexOptions.CultureInvariant) ? null : value;
     }
+
+    private static bool IsNull(string value) => value is "" or "~" or "null" or "Null" or "NULL";
+    private static bool IsBoolean(string value) => value is "true" or "True" or "TRUE" or "false" or "False" or "FALSE";
 
     private static bool BooleanTrue(YamlNode? node) => node is YamlScalarNode scalar &&
         (scalar.Tag.ToString() == "tag:yaml.org,2002:bool" || scalar.Tag.IsEmpty && scalar.Style == ScalarStyle.Plain) &&
