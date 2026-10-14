@@ -5,6 +5,7 @@ using PiSharp.Cli;
 
 namespace PiSharp.Tests;
 
+[Collection("Process timing")]
 public sealed class ProviderTimeoutProcessTests
 {
     [Fact]
@@ -66,6 +67,7 @@ public sealed class ProviderTimeoutProcessTests
                 "fixture-model", "--print", "hello", "--no-tools", "--no-session", "--offline" })
                 start.ArgumentList.Add(argument);
             start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+            start.Environment["HOME"] = root;
             start.Environment["PISHARP_FIXTURE_KEY"] = "timeout-fixture-key";
             foreach (var name in new[] { "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy" })
                 start.Environment.Remove(name);
@@ -77,7 +79,13 @@ public sealed class ProviderTimeoutProcessTests
             process.StandardInput.Close();
             var stdout = process.StandardOutput.ReadToEndAsync();
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync(deadline.Token);
+            try { await process.WaitForExitAsync(deadline.Token); }
+            catch (OperationCanceledException failure)
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+                throw new TimeoutException($"Provider-timeout CLI did not exit within 12 seconds; requests={requests}.\nstdout:\n{await stdout}\nstderr:\n{await stderr}", failure);
+            }
             stopServer.Cancel();
             listener.Close();
             await server.WaitAsync(deadline.Token);
