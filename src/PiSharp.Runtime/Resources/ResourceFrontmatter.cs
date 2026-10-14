@@ -34,6 +34,7 @@ internal sealed record ResourceFrontmatter(string? Name, string? Description, bo
     }
 
     internal static string TrimBody(string text) => text.Trim(BodyWhitespace);
+    internal static bool IsWhitespace(char value) => Array.IndexOf(BodyWhitespace, value) >= 0;
 
     private static string FormatError(string yaml, YamlException error)
     {

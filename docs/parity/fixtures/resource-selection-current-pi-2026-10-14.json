@@ -49,7 +49,18 @@
     "explicitPathRegressionCases": 19,
     "basicDiscoveryRegressionCases": 17,
     "ignoreRegressionCases": 60,
-    "exactHeadCi": "pending at publication"
+    "exactHeadCi": {
+      "sha": "0672b794ac060a967ee4be1e5a43df20452fc5ca",
+      "run": 38546090541,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38546090541",
+      "jobs": "both pass",
+      "dotnetPassed": 1778,
+      "failed": 0,
+      "skipped": 0,
+      "nodePassed": 24,
+      "pythonPassed": 49,
+      "documentation": "132 documents / 486 references"
+    }
   },
   "existingScenarioChanges": [
     "Configured source baseDir assertions now require absence, and explicit project/user scope assertions use the current full-loader observations. All original trust, selection, invocation and collision checks remain.",
@@ -370,7 +381,8 @@
     "resource-selection-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "resource-path-full-loader-regression.json": "b72dd1a06a04a3babd6e40f4b476e821aecd1cf9199e22c9bbe0d0c669578707",
     "resource-selection-basic-regression.json": "377ea21b393aa711111d3f2c1702d16c4e20d724d71d392650f047eb2c86f9e7",
-    "resource-selection-ignore-regression.json": "ab81c906a1c35f0a2d73753397f45a7bebeafb6d03d0115c12206a588fcc722a"
+    "resource-selection-ignore-regression.json": "ab81c906a1c35f0a2d73753397f45a7bebeafb6d03d0115c12206a588fcc722a",
+    "resource-selection-exact-ci.log": "a6b02b9b7eaca04fcbe0e19524f8422060bbc3a43e5339d90204e5767c91e423"
   },
   "limits": [
     "Thirty-two controlled local SDK cases do not establish all package manifest/source installation, malformed settings/YAML/ignore edge cases, resource reload/trust UI and terminal presentation boundaries.",

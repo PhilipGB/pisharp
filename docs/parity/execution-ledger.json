@@ -925,7 +925,8 @@
         "CliArguments parses repeatable `--theme`, `--use-theme`, and `--no-themes`; TerminalThemeCatalog resolves explicit file/directory paths from the invocation cwd and keeps them available while discovery/configured theme paths are disabled. Program applies `--use-theme` for the interactive run, retains it across appearance/reload refresh, and relinquishes it when a theme is explicitly saved.",
         "TerminalSystemTheme caps generated palette/foreground chroma at source chroma times the existing falloff. TerminalColorSpace shares OKLCH conversion with theme parsing; ANSI-256 gray selection chooses the lower entry on ties as Pi does.",
         "ExtensionRegistration.AddResourceDiscoveryHandler provides ordered asynchronous startup/reload callbacks; ProjectRuntimeContext loads discovered skills/prompts into ResourceCatalog and passes themes to TerminalThemeCatalog.",
-        "src/PiSharp.Runtime/Resources/LocalResourcePathRules.cs applies path-segment matching with globstar, hidden-component rules, brace lists/ranges, and bounded minimatch extglobs; this is a tested subset, with POSIX escapes implemented and complete minimatch grammar still open."
+        "src/PiSharp.Runtime/Resources/LocalResourcePathRules.cs applies path-segment matching with globstar, hidden-component rules, brace lists/ranges, and bounded minimatch extglobs; this is a tested subset, with POSIX escapes implemented and complete minimatch grammar still open.",
+        "Resource input resolution now preserves unknown skills and recovers read/YAML failures through per-call diagnostics. PromptTemplateExpansion owns JavaScript whitespace/quote/literal-backslash/default/index/slice/single-pass semantics; protocol owners project the diagnostic without a shared event bus."
       ],
       "evidence": [
         "TerminalThemeTests cover built-in/user/project discovery, content names, precedence, automatic appearance selection and malformed JSON skipping; Linux PTY settings flow selects a theme. CLI theme flags are implemented and covered by CliThemeArgumentsTests, TerminalThemeTests, and CliThemeProcessTests; custom HTML-export theme CSS remains open.",
@@ -955,7 +956,8 @@
         "Current configured Pi 3daa2028 resource frontmatter: all 98 real-loader cases match retained metadata/body SHA256/UTF16 length, consumed YAML 1.2 scalar types and every diagnostic message/type/path/order in this set. Initial 49/78 mismatches, 22 native fail-first failures, block clip/keep newline corrections, three whitespace mismatches and six syntax-warning differences are retained. Native YamlDotNet 18.1.0 AST parsing replaces the handwritten parser in a concrete Runtime resource owner; common warning locations/context match. Seventy-one focused native checks, two actual CLI/provider invalid-YAML recovery cases, format, zero-warning build and full 1725 tests pass with zero skips. Evidence: docs/parity/fixtures/resource-frontmatter-current-pi-2026-10-14.json. Other YAML error/tag/alias/extreme cases, argument hints, full discovery/invocation, platforms and trust/terminal remain open; no status changes.",
         "Directory discovery slice: 17 real current-Pi loader comparisons expose 11 differences before repair and now match exact metadata/order/paths/full body hashes/diagnostic text. Eight fail-first native rows now pass; 71 focused tests, 124 unchanged source tests and full 1745 native tests pass, zero skips and warnings. ResourceFileDiscovery owns root SKILL.md stopping, root-only aliases, case-sensitive suffixes, depth-first ordering, direct hidden prompt files, file/directory links and removed file/directory caps. 1002 skills compare without truncation; native-only ancestor-cycle guard. Two CLI/provider cases verify directory-selected alias/hidden prompt expansion. Ignore files, canonical symlink deduplication, default/configuration-source and name precedence, invocation failures and terminal presentation remain open. See docs/parity/fixtures/resource-discovery-current-pi-2026-10-14.json; no Resources capability status change.",
         "Skill ignore-file slice: 21 initial real-Pi comparisons expose 17 mismatches; expanded 50-case grammar finds four POSIX/literal-] differences and 60-case matrix finds one separator/punctuation difference, all repaired. Final 60/60 ignore and retained 17/17 discovery comparisons match exact metadata/order/body hashes/raw warnings. Native fail-first stages are 7 failed/2 controls, then four class failures, then one separator failure. 87 focused tests and full 1761 tests pass with zero skips/warnings; two CLI/provider cases prove ignored invalid root recovery and prompt independence. ResourceIgnoreRules owns per-directory .gitignore/.ignore/.fdignore order, shared root-prefixed scope, parent exclusion, case folding and bounded glob/class projection. Full configuration/default-source precedence, canonical duplicate/collision ordering, malformed/Unicode ignore edges, invocation errors and terminal presentation remain open. See docs/parity/fixtures/resource-ignore-current-pi-2026-10-14.json; no resource capability status changes.",
-        "Full resource-loader selection slice: actual DefaultResourceLoader reload/extendResources and settings/trust/source metadata reveal 18 differences in 21 cases, then 26 in 29; eleven native fail-first rows expose root/canonical/read/metadata/collision failures. Final 32 cases match all retained bodies/order/sourceInfo/raw warnings/collision paths after two additional missing-root order corrections. Seventeen native rows added; focused 108 and full 1778 tests pass with zero skips/warnings. Canonical roots merge before reads, canonical skill files dedupe after per-read validation, warnings precede collisions, and prompt missing errors follow them. Automatic/configured/direct/agents/ancestor/extension discovery contexts and Unicode ordering now have full-loader evidence. The 19 explicit-path probe is strengthened to full-loader app diagnostics; separate original lower-loader probes retain 17 discovery/60 ignore matches. Configured absent-baseDir and explicit scope/disabled-default assertions are corrected to current Pi while logical scenarios remain. See docs/parity/fixtures/resource-selection-current-pi-2026-10-14.json. Invocation, remaining YAML/ignore/settings/package and terminal/trust/reload boundaries remain open; no resource status changes."
+        "Full resource-loader selection slice: actual DefaultResourceLoader reload/extendResources and settings/trust/source metadata reveal 18 differences in 21 cases, then 26 in 29; eleven native fail-first rows expose root/canonical/read/metadata/collision failures. Final 32 cases match all retained bodies/order/sourceInfo/raw warnings/collision paths after two additional missing-root order corrections. Seventeen native rows added; focused 108 and full 1778 tests pass with zero skips/warnings. Canonical roots merge before reads, canonical skill files dedupe after per-read validation, warnings precede collisions, and prompt missing errors follow them. Automatic/configured/direct/agents/ancestor/extension discovery contexts and Unicode ordering now have full-loader evidence. The 19 explicit-path probe is strengthened to full-loader app diagnostics; separate original lower-loader probes retain 17 discovery/60 ignore matches. Configured absent-baseDir and explicit scope/disabled-default assertions are corrected to current Pi while logical scenarios remain. See docs/parity/fixtures/resource-selection-current-pi-2026-10-14.json. Invocation, remaining YAML/ignore/settings/package and terminal/trust/reload boundaries remain open; no resource status changes.",
+        "Current Pi 3daa2028 invocation slice: initial 13/24 mismatches and 10 native fail-first failures, then 9/44 expanded-template differences and 3/47 Unicode-index differences are repaired. All 47 exact text/hash/error comparisons match. Real normal RPC CLI/provider deletion replay matches error-before-ack and original user input. Prompt/steer/follow_up native integration and JSON stderr/original-input settlement/cancellation controls pass; 49 focused and full 1811 native tests pass, zero skips/warnings. See docs/parity/fixtures/resource-invocation-current-pi-2026-10-14.json. Interactive error presentation, other YAML/error races, argument hints/built-in prompts, trust and reload remain open; status stays in_progress."
       ],
       "dependencies": []
     },
@@ -5560,7 +5562,42 @@
       },
       "comparison_cases": 32,
       "focused": 108,
-      "next": "Characterize skill invocation unknown/read/parse/queue failure behavior and prompt argument-hint/remaining YAML metadata/error semantics; continue full Resources / Instructions / Trust presentation and reload boundaries."
+      "next": "Characterize skill invocation unknown/read/parse/queue failure behavior and prompt argument-hint/remaining YAML metadata/error semantics; continue full Resources / Instructions / Trust presentation and reload boundaries.",
+      "exact_head_ci": {
+        "run": 38546090541,
+        "sha": "0672b794ac060a967ee4be1e5a43df20452fc5ca",
+        "jobs": "both pass"
+      }
+    },
+    "resource_invocation_characterization": {
+      "source_cases": 24,
+      "mismatches": 13,
+      "native_fail_first": {
+        "failed": 10,
+        "passed": 1,
+        "skipped": 0
+      },
+      "artifact": "artifacts/parity/resources-current-pi-2026-10-14/resource-invocation-fail-first.json",
+      "next": "Characterization repaired and evidenced by resource_invocation_checkpoint. Historical fail-first scaffold observation retained."
+    },
+    "resource_invocation_checkpoint": {
+      "fixture": "docs/parity/fixtures/resource-invocation-current-pi-2026-10-14.json",
+      "dotnet": {
+        "passed": 1811,
+        "failed": 0,
+        "skipped": 0
+      },
+      "comparison_cases": 47,
+      "focused": 49,
+      "real_rpc_provider_recovery": true,
+      "next": "Finish prompt argument metadata/built-in prompts and remaining YAML/error semantics, then full resource/trust/reload terminal boundaries."
+    },
+    "resource_argument_hint_characterization": {
+      "source_cases": 130,
+      "mismatches": 9,
+      "warning_text_mismatches": 0,
+      "artifact": "artifacts/parity/resources-current-pi-2026-10-14/resource-hints-characterization.json",
+      "next": "Preserve optional typed nonempty argument-hint strings from actual YAML in prompt metadata; then characterize completion integration and the built-in dup prompt."
     }
   }
 }

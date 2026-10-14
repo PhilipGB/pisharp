@@ -21,7 +21,7 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
         if (images is { Count: > 0 } && settings.BlockImages != true && selection.Model.Input is { } modalities &&
             !modalities.Contains("image", StringComparer.Ordinal))
             throw new InvalidOperationException($"Model '{selection.Model.Id}' is not declared image-capable; refusing to send image attachments.");
-        var expanded = await getResources().ResolveInputAsync(input, cancellation.Token);
+        var expanded = await getResources().ResolveInputAsync(input, cancellation.Token, ReportResourceErrorAsync);
         var contents = new List<AIContent> { new TextContent(expanded) };
         if (images is not null) contents.AddRange(images);
         void ProcessRunUpdate(AgentLifecycleEvent update)
@@ -44,7 +44,7 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
                             await executeBash(command, excludeFromContext, token);
                             return true;
                         }
-                        var queued = await getResources().ResolveInputAsync(text, token);
+                        var queued = await getResources().ResolveInputAsync(text, token, ReportResourceErrorAsync);
                         var accepted = followUp ? getRun().TryFollowUp(queued) : getRun().TrySteer(queued);
                         if (accepted) getError().WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
                         return accepted;
@@ -78,6 +78,9 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
         try { await _monitor; }
         catch (OperationCanceledException) { }
     }
+
+    private Task ReportResourceErrorAsync(ResourceExpansionError error) =>
+        getError().WriteLineAsync($"Extension error ({error.ExtensionPath}): {error.Error}");
 
     public void Dispose() => _monitorStop.Dispose();
 }

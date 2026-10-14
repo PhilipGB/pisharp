@@ -96,7 +96,8 @@ public sealed class ResourceCatalogTests
             Assert.Equal("Review API compatibility and security: API compatibility", await untrusted.ResolveInputAsync("/review \"API compatibility\""));
             Assert.Contains("Use references/guide.md", await untrusted.ResolveInputAsync("/skill:unit-guide focus"));
             Assert.Equal("ordinary text", await untrusted.ResolveInputAsync("ordinary text"));
-            await Assert.ThrowsAsync<ArgumentException>(() => untrusted.ResolveInputAsync("/skill:project-secret"));
+            Assert.Equal("/skill:project-secret", await untrusted.ResolveInputAsync("/skill:project-secret"));
+            await Assert.ThrowsAsync<ArgumentException>(() => untrusted.InvokeSkillAsync("project-secret", ""));
             Assert.True(PiSharp.Cli.CliArguments.Parse(["-ns"]).NoSkills);
             Assert.True(PiSharp.Cli.CliArguments.Parse(["--no-skills"]).NoSkills);
             Assert.True(PiSharp.Cli.CliArguments.Parse(["-np"]).NoPromptTemplates);
@@ -105,7 +106,8 @@ public sealed class ResourceCatalogTests
             Assert.Empty(withoutSkills.Skills);
             Assert.Empty(withoutSkills.SystemInstructions());
             Assert.NotEmpty(withoutSkills.Prompts);
-            await Assert.ThrowsAsync<ArgumentException>(() => withoutSkills.ResolveInputAsync("/skill:unit-guide"));
+            Assert.Equal("/skill:unit-guide", await withoutSkills.ResolveInputAsync("/skill:unit-guide"));
+            await Assert.ThrowsAsync<ArgumentException>(() => withoutSkills.InvokeSkillAsync("unit-guide", ""));
             var withoutPrompts = await ResourceCatalog.LoadAsync(project, agent, true, discoverPrompts: false);
             Assert.Empty(withoutPrompts.Prompts);
             Assert.Equal("/review x", await withoutPrompts.ResolveInputAsync("/review x"));

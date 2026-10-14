@@ -167,7 +167,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             {
                                 var activeResources = CurrentResources;
                                 expanded = activeResources is null ? message.GetString()! :
-                                await activeResources.ResolveInputAsync(message.GetString()!, cancellationToken);
+                                await activeResources.ResolveInputAsync(message.GetString()!, cancellationToken, ReportResourceErrorAsync);
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
@@ -223,7 +223,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             {
                                 var activeResources = CurrentResources;
                                 queuedExpanded = activeResources is null ? queuedMessage! :
-                                    await activeResources.ResolveInputAsync(queuedMessage!, cancellationToken);
+                                    await activeResources.ResolveInputAsync(queuedMessage!, cancellationToken, ReportResourceErrorAsync);
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
@@ -523,6 +523,15 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         public CancellationTokenSource Cancellation { get; } = cancellation;
         public TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
+
+    private Task ReportResourceErrorAsync(PiSharp.Runtime.Resources.ResourceExpansionError error) =>
+        _writer.EmitAsync(new
+        {
+            type = "extension_error",
+            extensionPath = error.ExtensionPath,
+            @event = error.Event,
+            error = error.Error
+        }, CancellationToken.None);
 
     private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) => success
         ? _writer.EmitAsync(new { id, type = "response", command, success = true })

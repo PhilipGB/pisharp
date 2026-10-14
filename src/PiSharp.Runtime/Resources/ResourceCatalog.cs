@@ -166,51 +166,50 @@ public sealed class ResourceCatalog
         var skillDirectory = Path.GetDirectoryName(skill.Path) ?? Path.GetFullPath(".");
         var skillBlock = $"<skill name=\"{skill.Name}\" location=\"{skill.Path}\">\n" +
             $"References are relative to {skillDirectory}.\n\n{ResourceFrontmatter.TrimBody(body)}\n</skill>";
-        var trimmedArguments = arguments.Trim();
+        var trimmedArguments = ResourceFrontmatter.TrimBody(arguments);
         return trimmedArguments.Length == 0 ? skillBlock : $"{skillBlock}\n\n{trimmedArguments}";
     }
 
-    public async Task<string> ResolveInputAsync(string input, CancellationToken cancellationToken = default)
+    public async Task<string> ResolveInputAsync(string input, CancellationToken cancellationToken = default,
+        Func<ResourceExpansionError, Task>? reportError = null)
     {
         if (!input.StartsWith('/')) return input;
-        var separator = input.IndexOfAny([' ', '\n', '\t']);
+        if (input.StartsWith("/skill:", StringComparison.Ordinal))
+        {
+            var space = input.IndexOf(' ');
+            var name = space < 0 ? input[7..] : input[7..space];
+            var skill = Skills.FirstOrDefault(item => item.Name == name);
+            if (skill is not null)
+            {
+                try { return await InvokeSkillAsync(name, space < 0 ? "" : input[(space + 1)..], cancellationToken); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException or YamlException)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (reportError is not null)
+                    {
+                        var message = error switch
+                        {
+                            FileNotFoundException or DirectoryNotFoundException => $"ENOENT: no such file or directory, open '{skill.Path}'",
+                            UnauthorizedAccessException => $"EACCES: permission denied, open '{skill.Path}'",
+                            _ => error.Message
+                        };
+                        await reportError(new(skill.Path, "skill_expansion", message));
+                    }
+                }
+            }
+        }
+        var separator = -1;
+        for (var index = 1; index < input.Length; index++)
+            if (ResourceFrontmatter.IsWhitespace(input[index])) { separator = index; break; }
         var command = separator < 0 ? input : input[..separator];
-        var arguments = separator < 0 ? "" : input[(separator + 1)..].Trim();
-        if (command.StartsWith("/skill:", StringComparison.Ordinal))
-            return await InvokeSkillAsync(command[7..], arguments, cancellationToken);
+        var arguments = separator < 0 ? "" : input[(separator + 1)..];
         return Prompts.Any(prompt => "/" + prompt.Name == command) ? ExpandPrompt(command[1..], arguments) : input;
     }
 
     public string ExpandPrompt(string name, string arguments)
     {
         var prompt = Prompts.SingleOrDefault(item => item.Name == name) ?? throw new ArgumentException($"Unknown template: {name}");
-        var parts = Tokenize(arguments);
-        var all = string.Join(' ', parts);
-        return Regex.Replace(prompt.Template, @"\$\{(@|\d+)(?::-(.*?))?\}|\$(ARGUMENTS|@|[1-9]\d*)", match =>
-        {
-            var key = match.Groups[1].Success ? match.Groups[1].Value : match.Groups[3].Value;
-            var result = key is "@" or "ARGUMENTS" ? all : int.TryParse(key, out var index) && index > 0 && index <= parts.Count ? parts[index - 1] : "";
-            return result.Length > 0 ? result : match.Groups[2].Value;
-        });
-    }
-
-    private static List<string> Tokenize(string arguments)
-    {
-        var result = new List<string>();
-        var word = new StringBuilder();
-        char quote = '\0';
-        for (var i = 0; i < arguments.Length; i++)
-        {
-            var c = arguments[i];
-            if (c == '\\' && i + 1 < arguments.Length) { word.Append(arguments[++i]); continue; }
-            if (c is '\'' or '"') { if (quote == c) quote = '\0'; else if (quote == '\0') quote = c; else word.Append(c); continue; }
-            if (char.IsWhiteSpace(c) && quote == '\0')
-            { if (word.Length > 0) { result.Add(word.ToString()); word.Clear(); } }
-            else word.Append(c);
-        }
-        if (quote != '\0') throw new ArgumentException("Unclosed quote in template arguments.");
-        if (word.Length > 0) result.Add(word.ToString());
-        return result;
+        return PromptTemplateExpansion.Expand(prompt.Template, arguments);
     }
 
     private static string PromptDescription(string body)
