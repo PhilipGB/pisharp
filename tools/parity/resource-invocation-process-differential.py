@@ -60,7 +60,7 @@ import {pathToFileURL} from 'node:url';
 export default function(pi) {
  const trace = value => appendFileSync(process.env.PISHARP_TEST_EXTENSION_LOAD_LOG, value+'\\n');
  trace('configured');
- pi.on('project_trust', (_event,ctx) => {trace(`trust-undecided:${ctx.hasUI}`);});
+ pi.on('project_trust', (_event,ctx) => {trace(`trust-undecided:${ctx.hasUI}`);return {trusted:'undecided'};});
  pi.on('project_trust', (_event,ctx) => {trace(`trust-decision:${ctx.hasUI}`);return {trusted:'yes',remember:true};});
  pi.on('resources_discover', ({cwd}) => {
   const base=join(cwd,'.pi','extension-resources','startup');
@@ -93,6 +93,20 @@ export default function(pi) {
                     (extension / 'package.json').write_text(json.dumps(dict(pi=dict(extensions=[f'guide.{suffix}']))))
                 if extension_mode == 'ignored-sibling':
                     (extension / '.ignore').write_text('blocked.*\n')
+            if extension_mode == 'throwing-sibling':
+                suffix = 'ts' if product == 'pi' else 'dll'
+                entry = extension / f'guide.{suffix}'
+                (extension / f'index.{suffix}').rename(entry)
+                if product == 'pi':
+                    (extension / 'bad.ts').write_text("""import {appendFileSync} from 'node:fs';
+export default function(pi) {
+ appendFileSync(process.env.PISHARP_TEST_EXTENSION_LOAD_LOG,'configured\\n');
+ pi.registerCommand('partial_command',{description:'Uncommitted extension command',handler:async()=>{}});
+ throw new Error('fixture extension configuration failure');
+}
+""")
+                else:
+                    shutil.copyfile(entry, extension / 'bad.dll')
             if extension_mode == 'conventions':
                 (package / 'package.json').unlink()
             if extension_mode == 'disabled':
@@ -126,6 +140,8 @@ export default function(pi) {
     if scenario == 'package-extension':
         env.update(PISHARP_TEST_RESOURCE_DISCOVERY='true',
                    PISHARP_TEST_EXTENSION_LOAD_LOG=str(root / product / 'extension-load.log'))
+        if extension_mode == 'throwing-sibling':
+            env['PISHARP_TEST_EXTENSION_PARTIAL_FAILURE'] = 'true'
     common = ['--mode', 'rpc', '--provider', 'fixture', '--model', 'fixture-model', '--offline', '--no-session',
               '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools', '--skill', str(skill)]
     if package_scenario:
@@ -134,6 +150,9 @@ export default function(pi) {
         common.remove('--no-prompt-templates')
     if scenario == 'package-extension' and extension_mode != 'no-extensions':
         common.remove('--no-extensions')
+    if scenario == 'package-extension' and extension_mode == 'missing-explicit':
+        suffix = 'ts' if product == 'pi' else 'dll'
+        common.extend(['--extension', str(root / product / f'missing.{suffix}')])
     command = (['node', '--import', (pi / 'packages/coding-agent/src/experimental/source-resolver.ts').as_uri(),
                 str(pi / 'packages/coding-agent/src/cli.ts')] if product == 'pi' else ['dotnet', str(native)]) + common
     records = []
@@ -215,10 +234,23 @@ export default function(pi) {
             if scenario == 'package-extension':
                 log = root / product / 'extension-load.log'
                 result['extensionLoadTrace'] = log.read_text().splitlines() if log.exists() else []
+                if extension_mode == 'throwing-sibling':
+                    result['partialCommandPresent'] = any(c['name'] == 'partial_command' for c in commands['data']['commands'])
             return result
     except RpcEndedBeforeCheckpoint:
-        if not package_scenario or product != 'pisharp' or records:
+        if not package_scenario or records or product != 'pisharp' and extension_mode not in ['throwing-sibling', 'missing-explicit']:
             raise
+        if extension_mode in ['throwing-sibling', 'missing-explicit']:
+            stderr = output.with_name(output.stem + f'-{product}.stderr.log').read_text()
+            return dict(startupAccepted=False, exitCode=process.wait(timeout=10), providerRequests=len(server.requests),
+                        configurationFailureReported='fixture extension configuration failure' in stderr,
+                        recoveryHint='-ne' in stderr,
+                        diagnostics=[line.replace(str(root / product), '<workspace>')
+                            .replace('/bad.ts', '/bad.<module>').replace('/bad.dll', '/bad.<module>')
+                            .replace('/missing.ts', '/missing.<module>').replace('/missing.dll', '/missing.<module>')
+                            .replace('using "pi -ne"', 'using "<app> -ne"')
+                            .replace('using "pisharp -ne"', 'using "<app> -ne"')
+                            for line in stderr.splitlines() if line])
         return dict(startupAccepted=False, exitCode=process.wait(timeout=10),
                     error=output.with_name(output.stem + f'-{product}.stderr.log').read_text().strip(),
                     providerRequests=len(server.requests))
@@ -243,7 +275,7 @@ def main():
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package', 'package-extension'], default='deleted-skill')
-    parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root', 'index-with-sibling', 'nested-manifest', 'ignored-sibling', 'hidden-sibling', 'node-modules-sibling'], default='manifest')
+    parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root', 'index-with-sibling', 'nested-manifest', 'ignored-sibling', 'hidden-sibling', 'node-modules-sibling', 'throwing-sibling', 'missing-explicit'], default='manifest')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     args.output.parent.mkdir(parents=True, exist_ok=True)

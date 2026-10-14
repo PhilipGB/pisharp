@@ -38,6 +38,22 @@ public sealed class VirtualModelRegistry
         get { lock (_gate) return _models.Values.ToArray(); }
     }
 
+    internal Action CreateConfigurationCheckpoint()
+    {
+        lock (_gate)
+        {
+            var saved = new Dictionary<(string Provider, string Id), RegisteredVirtualModel>(_models);
+            return () =>
+            {
+                lock (_gate)
+                {
+                    _models.Clear();
+                    foreach (var pair in saved) _models.Add(pair.Key, pair.Value);
+                }
+            };
+        }
+    }
+
     public void Register(VirtualModelDefinition definition, string extensionPath)
     {
         ArgumentNullException.ThrowIfNull(definition);

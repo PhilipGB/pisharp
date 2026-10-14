@@ -73,8 +73,8 @@ try
 }
 catch (Exception e) when (e is not OperationCanceledException)
 {
-    Console.Error.WriteLine($"Could not load project runtime: {e.Message}");
-    Environment.ExitCode = 2;
+    Console.Error.WriteLine(e is ExtensionStartupFailure ? e.Message : $"Could not load project runtime: {e.Message}");
+    Environment.ExitCode = e is ExtensionStartupFailure ? 1 : 2;
     return;
 }
 

@@ -73,6 +73,23 @@ public sealed class ResourceDiscoveryFixture : IPiSharpExtension
     }
 }
 
+public sealed class PartialRegistrationFailureFixture : IPiSharpExtension
+{
+    public void Configure(ExtensionRegistration registration)
+    {
+        if (Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_PARTIAL_FAILURE") != "true" ||
+            Path.GetFileName(GetType().Assembly.Location) != "bad.dll") return;
+        registration.AddCommand("partial_command", (_, _) => Task.FromResult("Must not remain registered"),
+            "Uncommitted extension command");
+        registration.AddTool(AIFunctionFactory.Create(() => "Must not remain registered", name: "partial_tool"));
+        using var mcp = JsonDocument.Parse("{\"command\":\"false\"}");
+        registration.RegisterMcpServer("partial_mcp", mcp.RootElement);
+        registration.RegisterVirtualModel(new("partial", "model", "Uncommitted virtual model",
+            (_, _) => Task.FromResult(new PiSharp.Runtime.VirtualModels.VirtualModelRoute("fixture", "model", "off"))));
+        throw new InvalidOperationException("fixture extension configuration failure");
+    }
+}
+
 public sealed class HiddenSkillReaderFixture : IPiSharpExtension
 {
     public void Configure(ExtensionRegistration registration)

@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
@@ -30,7 +29,7 @@ public sealed record ExtensionMcpServerRegistration(McpServerConfiguration Confi
 public sealed record BuiltinExtensionDefinition(string Name, Action<ExtensionRegistration> Configure,
     bool AutoEnable = true, Func<ExtensionRegistration, bool>? ShouldAutoEnable = null);
 
-public sealed class ExtensionRegistration
+public sealed partial class ExtensionRegistration
 {
     private static readonly HashSet<string> s_reserved = new(StringComparer.Ordinal)
     {
@@ -384,16 +383,20 @@ public sealed class ExtensionLease(ExtensionCatalog initial) : IDisposable
     public void Dispose() => Current.Dispose();
 }
 
+public sealed record ExtensionLoadError(string Path, string Error);
+
 /// <summary>Loads personal and trust-gated project assemblies, plus caller-selected paths, in isolated contexts for reload.</summary>
 public sealed class ExtensionCatalog : IDisposable
 {
     private readonly List<AssemblyLoadContext> _contexts = [];
     private readonly List<IAsyncDisposable> _ownedConnections = [];
     private readonly List<ResourceSourceInfo> _loadedExtensions = [];
+    private readonly List<ExtensionLoadError> _loadErrors = [];
     private readonly HashSet<string> _loadedBuiltins = new(StringComparer.Ordinal);
     public ExtensionRegistration Registration { get; } = new();
     public IReadOnlySet<string> LoadedBuiltins => _loadedBuiltins;
     public IReadOnlyList<ResourceSourceInfo> LoadedExtensions => _loadedExtensions.ToArray();
+    public IReadOnlyList<ExtensionLoadError> LoadErrors => _loadErrors.ToArray();
 
     public async Task<ExtensionResourceDiscovery> DiscoverResourcesAsync(string workingDirectory,
         ExtensionResourceDiscoveryReason reason, CancellationToken cancellationToken = default)
@@ -481,7 +484,8 @@ public sealed class ExtensionCatalog : IDisposable
             var selectedBuiltins = new List<BuiltinExtensionDefinition>();
             var builtinByName = (builtins ?? []).ToDictionary(builtin => builtin.Name, StringComparer.Ordinal);
             var seenBuiltins = new HashSet<string>(StringComparer.Ordinal);
-            var seenPaths = new HashSet<string>(catalog._loadedExtensions.Select(extension => extension.Path),
+            var seenPaths = new HashSet<string>(catalog._loadedExtensions.Select(extension => extension.Path)
+                    .Concat(catalog._loadErrors.Select(error => error.Path)),
                 OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             var packageFiles = discover ? ResourcePackageFiles.Load(cwd, agentDirectory, projectTrusted,
                 userPackages, projectPackages, CancellationToken.None).Extensions : [];
@@ -498,7 +502,13 @@ public sealed class ExtensionCatalog : IDisposable
                 if (Directory.Exists(path)) paths = FindAssemblies(path);
                 else if (File.Exists(path) && Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase))
                     paths = [path];
-                else throw new FileNotFoundException("Explicit extension must be a .dll file or an existing directory.", path);
+                else
+                {
+                    if (seenPaths.Add(path)) catalog._loadErrors.Add(new(path, File.Exists(path)
+                        ? "Explicit extension must be a .dll file or an existing directory."
+                        : "Extension path does not exist: " + path));
+                    continue;
+                }
                 foreach (var assemblyPath in paths)
                     AddPath(assemblyPath, new(Path.GetFullPath(assemblyPath), "cli", "temporary", "top-level",
                         null));
@@ -527,18 +537,12 @@ public sealed class ExtensionCatalog : IDisposable
             }
             foreach (var (path, sourceInfo) in selectedPaths)
             {
-                catalog._loadedExtensions.Add(sourceInfo with { Path = path });
-                var context = new PluginLoadContext(path);
-                catalog._contexts.Add(context);
-                var assembly = context.LoadFromAssemblyPath(path);
-                foreach (var type in assembly.GetExportedTypes().Where(type =>
-                    typeof(IPiSharpExtension).IsAssignableFrom(type) && !type.IsAbstract && !type.IsInterface))
+                var loaded = ExtensionAssemblyLoader.Load(path, sourceInfo, catalog.Registration);
+                if (loaded.Error is { } error) catalog._loadErrors.Add(new(path, error));
+                else
                 {
-                    if (Activator.CreateInstance(type) is not IPiSharpExtension extension)
-                        throw new InvalidDataException($"Extension {type.FullName} needs a public parameterless constructor.");
-                    catalog.Registration.SetCurrentSourceInfo(sourceInfo);
-                    try { extension.Configure(catalog.Registration); }
-                    finally { catalog.Registration.SetCurrentSourceInfo(null); }
+                    catalog._loadedExtensions.Add(sourceInfo with { Path = path });
+                    catalog._contexts.Add(loaded.Context!);
                 }
             }
             if (discover)
@@ -625,15 +629,4 @@ public sealed class ExtensionCatalog : IDisposable
         _contexts.Clear();
     }
 
-    private sealed class PluginLoadContext(string path) : AssemblyLoadContext(isCollectible: true)
-    {
-        private readonly AssemblyDependencyResolver _resolver = new(path);
-        protected override Assembly? Load(AssemblyName name)
-        {
-            if (Default.Assemblies.Any(assembly => AssemblyName.ReferenceMatchesDefinition(assembly.GetName(), name)))
-                return null; // Share PiSharp and MEAI contracts with the host.
-            var resolved = _resolver.ResolveAssemblyToPath(name);
-            return resolved is null ? null : LoadFromAssemblyPath(resolved);
-        }
-    }
 }

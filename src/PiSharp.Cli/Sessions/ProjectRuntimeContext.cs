@@ -6,6 +6,7 @@ using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
+using PiSharp.Cli.Startup;
 
 namespace PiSharp.Cli.Sessions;
 
@@ -230,6 +231,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts,
                 extensionResources: extensionResources,
                 userPackages: configuration.BaseUserSettings.Packages, projectPackages: configuration.ProjectSettings?.Packages);
+            if (extensions.LoadErrors.Count > 0) throw new ExtensionStartupFailure(extensions.LoadErrors);
             return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
                 resources, extensions, extensionResources, store, sessionImport, mcpManager, effectiveMcpServers);
         }

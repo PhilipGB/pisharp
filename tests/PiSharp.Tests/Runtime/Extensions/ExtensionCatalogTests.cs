@@ -158,8 +158,9 @@ public sealed class ExtensionCatalogTests
             using (var deduplicated = ExtensionCatalog.Load(agent, cwd, false,
                 additionalPaths: [Path.Combine(agent, "extensions", "fixture.dll")]))
                 Assert.Single(deduplicated.Registration.Tools);
-            Assert.Throws<FileNotFoundException>(() => ExtensionCatalog.Load(agent, cwd, false, discover: false,
-                additionalPaths: ["missing.dll"]));
+            using var missing = ExtensionCatalog.Load(agent, cwd, false, discover: false, additionalPaths: ["missing.dll"]);
+            Assert.Equal("Extension path does not exist: " + Path.Combine(cwd, "missing.dll"),
+                Assert.Single(missing.LoadErrors).Error);
             Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--extension"]));
             using var personal = ExtensionCatalog.Load(agent, cwd, false);
             Assert.Single(personal.Registration.Tools);
@@ -167,7 +168,9 @@ public sealed class ExtensionCatalogTests
             Assert.Equal("auto", personalCommand.SourceInfo.Source);
             Assert.Equal("user", personalCommand.SourceInfo.Scope);
             Assert.Equal(agent, personalCommand.SourceInfo.BaseDir);
-            Assert.Throws<ArgumentException>(() => ExtensionCatalog.Load(agent, cwd, true)); // duplicate names fail closed
+            using var conflicted = ExtensionCatalog.Load(agent, cwd, true);
+            Assert.Single(conflicted.Registration.Tools);
+            Assert.Contains("Duplicate extension tool", Assert.Single(conflicted.LoadErrors).Error);
         }
         finally { Directory.Delete(cwd, true); }
     }

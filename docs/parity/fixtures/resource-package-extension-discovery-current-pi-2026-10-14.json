@@ -207,7 +207,20 @@
     },
     "freshBuildWarnings": 0,
     "freshBuildErrors": 0,
-    "format": "passed"
+    "format": "passed",
+    "exactCi": {
+      "sha": "2c911341c4fca6d42ac885ee62b7171e893eb7bd",
+      "run": 38651424268,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38651424268",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1950,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
   "logs": {
@@ -337,7 +350,8 @@
     "package-extension-discovery-native-first.log": "b44e65a06924bf9003e3adb662fda30d97b2a649cf224eee6ecb7dc0715a78e9",
     "package-extension-discovery-file-recovery.json": "b58dfbd8628b1ddd6c8e4f1410d24a5ab052b7a32178e8c6228b1941ba19b39c",
     "package-extension-discovery-nested-manifest-first-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "package-extension-discovery-full.log": "4dd99fb2ebab0d2b277b2a6a776b35c0cfe161301f0d36ddaf295361d4c05623"
+    "package-extension-discovery-full.log": "4dd99fb2ebab0d2b277b2a6a776b35c0cfe161301f0d36ddaf295361d4c05623",
+    "../resources-current-pi-2026-10-15/package-extension-discovery-exact-ci.log": "34f2cb4643ae0d54418a9c0aeb5856755f74b4e12135c936ec779b949e0e9de7"
   },
   "limits": [
     "These paired flows prove which fixtures configure, trust, discover and expand; they do not establish complete extension diagnostic, partial-registration recovery, aliases/collisions, Unicode ordering, arbitrary directory/cardinality or reload behavior.",

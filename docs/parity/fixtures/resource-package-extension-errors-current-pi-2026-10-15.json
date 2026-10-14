@@ -1,0 +1,355 @@
+{
+  "date": "2026-10-15",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "2c911341c4fca6d42ac885ee62b7171e893eb7bd",
+  "scope": "Extension SDK failure diagnostics/discarded registration plus normal CLI startup refusal, exact named configuration/missing-path diagnostics, recovery hint, exit code and no provider request.",
+  "characterization": {
+    "configurationCliFirst": {
+      "pi": {
+        "startupAccepted": false,
+        "exitCode": 1,
+        "providerRequests": 0,
+        "configurationFailureReported": true,
+        "recoveryHint": true
+      },
+      "pisharp": {
+        "startupAccepted": false,
+        "exitCode": -6,
+        "providerRequests": 0,
+        "configurationFailureReported": true,
+        "recoveryHint": false
+      }
+    },
+    "missingCliFirst": {
+      "pi": {
+        "startupAccepted": false,
+        "exitCode": 1,
+        "providerRequests": 0,
+        "configurationFailureReported": false,
+        "recoveryHint": true,
+        "diagnostics": [
+          "Error: Failed to load extension \"<workspace>/missing.<module>\": Extension path does not exist: <workspace>/missing.<module>",
+          "Hint: Start without extensions using \"<app> -ne\"."
+        ]
+      },
+      "pisharp": {
+        "startupAccepted": false,
+        "exitCode": 2,
+        "providerRequests": 0,
+        "configurationFailureReported": false,
+        "recoveryHint": false,
+        "diagnostics": [
+          "Explicit extension must be a .dll file or an existing directory."
+        ]
+      }
+    },
+    "nativeFailFirst": {
+      "configuration": 1,
+      "missingPath": 1,
+      "dependencyResolver": 1
+    },
+    "earlyProbeCorrection": "Source CLI failed on extension errors, correcting the earlier lower-loader-only recovery assumption. Source undecided trust fixture also returned undefined rather than a valid undecided result; corrected fixture retains configuration/trust ordering and removes its setup warning.",
+    "legacyExpectationCorrections": "Original duplicate-name and missing-explicit-extension scenarios stay intact; source loader records diagnostics while main.ts rejects the runtime at exit 1. Native SDK assertions now require diagnostics and retained valid registrations instead of a thrown exception. The partial candidate failed the old duplicate throw assertion before this evidenced correction.",
+    "formatCorrection": "First verification found checkpoint nested-lock indentation; targeted whitespace formatting corrected it and final full format verification completed successfully."
+  },
+  "implementation": [
+    "ExtensionAssemblyLoader handles context creation, assembly import/type construction/configuration and diagnostics. Failed registration restores tools/renderers/metadata/owned names, commands, hooks, resource/trust handlers, MCP registrations and virtual model state, then unloads the failed context.",
+    "ExtensionCatalog exposes per-path LoadErrors and retains successful siblings; failed pre-trust paths are not loaded again during final runtime creation. Missing explicit paths use the source diagnostic rather than an unrelated generic path exception.",
+    "ProjectRuntimeContext raises a focused ExtensionStartupFailure after loading resources. The explicit Program boundary writes source-shaped diagnostics and the pisharp -ne recovery hint and exits 1. Source normal CLI also refuses startup; SDK recovery is not treated as permission to continue CLI execution.",
+    "The existing extension fixture gains a named partially registered failure mode; no new fixture project/framework dependency is added."
+  ],
+  "verification": {
+    "focusedPassed": 76,
+    "newNativeRows": 4,
+    "fullSuite": {
+      "passed": 1954,
+      "failed": 0,
+      "skipped": 0
+    },
+    "normalCliCases": 13,
+    "mismatches": 0,
+    "sourceSdk": {
+      "loaded": [
+        "guide"
+      ],
+      "errors": [
+        {
+          "module": "bad",
+          "error": "Failed to load extension: fixture extension configuration failure"
+        }
+      ],
+      "partialCommandPresent": false,
+      "partialToolPresent": false
+    },
+    "nativeSdk": {
+      "loaded": [
+        "guide"
+      ],
+      "errors": [
+        {
+          "module": "bad",
+          "error": "Failed to load extension: fixture extension configuration failure"
+        }
+      ],
+      "partialCommandPresent": false,
+      "partialToolPresent": false
+    },
+    "throwingCli": {
+      "pi": {
+        "startupAccepted": false,
+        "exitCode": 1,
+        "providerRequests": 0,
+        "configurationFailureReported": true,
+        "recoveryHint": true,
+        "diagnostics": [
+          "Error: Failed to load extension \"<workspace>/package/extensions/bad.<module>\": Failed to load extension: fixture extension configuration failure",
+          "Hint: Start without extensions using \"<app> -ne\"."
+        ]
+      },
+      "pisharp": {
+        "startupAccepted": false,
+        "exitCode": 1,
+        "providerRequests": 0,
+        "configurationFailureReported": true,
+        "recoveryHint": true,
+        "diagnostics": [
+          "Error: Failed to load extension \"<workspace>/package/extensions/bad.<module>\": Failed to load extension: fixture extension configuration failure",
+          "Hint: Start without extensions using \"<app> -ne\"."
+        ]
+      }
+    },
+    "missingCli": {
+      "pi": {
+        "startupAccepted": false,
+        "exitCode": 1,
+        "providerRequests": 0,
+        "configurationFailureReported": false,
+        "recoveryHint": true,
+        "diagnostics": [
+          "Error: Failed to load extension \"<workspace>/missing.<module>\": Extension path does not exist: <workspace>/missing.<module>",
+          "Hint: Start without extensions using \"<app> -ne\"."
+        ]
+      },
+      "pisharp": {
+        "startupAccepted": false,
+        "exitCode": 1,
+        "providerRequests": 0,
+        "configurationFailureReported": false,
+        "recoveryHint": true,
+        "diagnostics": [
+          "Error: Failed to load extension \"<workspace>/missing.<module>\": Extension path does not exist: <workspace>/missing.<module>",
+          "Hint: Start without extensions using \"<app> -ne\"."
+        ]
+      }
+    },
+    "existingLoaderRegressionCases": 95,
+    "loaderMismatches": 0,
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "docs": "132 documents / 502 references"
+  },
+  "comparison": "Exact diagnostics for the controlled factory failure/missing path after normalizing only generated workspace roots, .ts/.dll implementation suffix and pi/pisharp executable names. Native corrupted assembly/dependency-manifest controls retain their CLR error details and are not described as identical TypeScript error text. SDK compares loaded module IDs, full failure message and absence of partial commands/tools.",
+  "sourcePaths": [
+    "packages/coding-agent/src/core/extensions/loader.ts: initializeExtension commit/discard and loadExtensionsInternal collects errors while keeping valid extensions.",
+    "packages/coding-agent/src/core/resource-loader.ts: failed preload deduplication, explicit missing path diagnostics and extension conflict errors.",
+    "packages/coding-agent/src/main.ts: runtime errors are reported, -ne recovery hint and process.exit(1)."
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-15",
+  "logs": {
+    "package-extension-errors-file-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-failure-focused-recovery.log": "7930b746c068ec2c34e5b3684b4163fd522106ffc49ef6c0b1b32114e0e43b5c",
+    "package-extension-configuration-failure-first.log": "06cf59f7c07f804614e7339fa08dd8e7675a932b5e9dca693137facc2bcd44fc",
+    "package-extension-errors-throwing-sibling-recovery-pi.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-configuration-cli-recovery.json": "f30f54f7368d64d9c14c6c4f4ff2c4bb666892cd05c3cd4513cac4b85d7421a9",
+    "package-extension-errors-conventions-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-configuration-cli-recovery-pi.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-ignored-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-error-owners-missing-explicit-pisharp.stderr.log": "fea3703c071ef68fdadcb85afee5a331a3d4399e4a90e6ff0414df5b999d2a97",
+    "package-extension-errors-file-recovery-pi.records.json": "3f4bf1f4410cab1f876cfd2eef2283b96dcbf241eb0a300a90cae30c817dbd45",
+    "package-extension-errors-no-extensions-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-throwing-sibling-recovery-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-sdk-owners.json": "b7afed36043e34807b56dfe3716c1d2c393321419b160d7b3960ffe588a25748",
+    "package-extension-error-owners-throwing-sibling-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-configuration-cli-first-pi.stderr.log": "53c412907aec5c15f27394f25041482ceccd1f157d15a01bee01dbd37853f84a",
+    "package-extension-errors-file-recovery-pi.http.json": "a9e6e88378d43b9d8439ded777ed7cf6743b71d64d191f9d8e675445dffd80e5",
+    "package-extension-error-owners-missing-explicit-pi.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-nested-manifest-recovery-pi.http.json": "c0cda8283d49d7aa124c02e89ec6e9e99e7d3a20288c1b3a14f3fe0f15bc9f48",
+    "package-extension-errors-missing-explicit-recovery.json": "df2c9ef8d4435648562ec544a420ff202af168844dc6eba9b37d4f388c7bedb6",
+    "package-extension-error-owners-throwing-sibling-pi.stderr.log": "1f1d73aced4fc832e95386de849c1a9e9783b0086d1184fce343b62ab203371d",
+    "package-extension-configuration-cli-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-manifest-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-configuration-cli-diagnostics-pisharp.stderr.log": "c9e4b27bc9b6dd269e842c53273f53c1206b7eebcc82e00de3036d22abac5721",
+    "package-extension-errors-conventions-recovery-pisharp.records.json": "ebcf746a8f4262ee33d4feb514db8cea0aaa1f64a145006d3fc174985a0e3df7",
+    "package-extension-errors-index-with-sibling-recovery-pi.http.json": "6b58936f991516092aa4ab33c225dcb312b9a0fed088f249b43556aa90f425e7",
+    "package-extension-configuration-cli-diagnostics-pi.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-error-owners-throwing-sibling-pisharp.stderr.log": "472f598820de256a702ee3e23dd42d0eade62276960930728511497e302816e8",
+    "package-extension-errors-throwing-sibling-recovery.json": "bf19315d51a3261941fb77fdf02860ef8548b259b3500a58f6b8b4242941f10e",
+    "package-extension-errors-fresh-build.log": "649ac11b6cf4e499177ac1ac739ad81777d8bd272a5734b83a806d141fc2f3c3",
+    "package-extension-sdk-final.json": "b7afed36043e34807b56dfe3716c1d2c393321419b160d7b3960ffe588a25748",
+    "package-extension-configuration-failure-first-pi.stderr.log": "ba750955423d015d64bc7413f85efd5cbdd44c8847394a43e931eb74b7a496b5",
+    "package-extension-errors-throwing-sibling-recovery-pi.stderr.log": "e1460c56926ac9879649890b5178985ce78ec211dafb8149e8dd03c821c73efc",
+    "package-extension-sdk-recovery.json": "b7afed36043e34807b56dfe3716c1d2c393321419b160d7b3960ffe588a25748",
+    "package-extension-errors-manifest-recovery-pisharp.records.json": "f21002efd6a65aa1854bdba29695ab8a35321e4222a69686f8107e418f0c8c58",
+    "package-extension-missing-cli-first-pi.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-error-owners-manifest-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-missing-native-first.log": "4ec6d1296fed5878376c8580b3783f3686114fb2b2951b3bd4f26e6456553982",
+    "package-extension-configuration-cli-recovery-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-throwing-sibling-recovery-pisharp.stderr.log": "c5cae923650dc2edb4f67172fea037e8d287b0d17fc878d908d3ebc90959a145",
+    "package-extension-errors-throwing-sibling-recovery-pi.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-configuration-cli-diagnostics-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-error-owners-missing-explicit-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-index-with-sibling-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-index-with-sibling-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-configuration-cli-first-pi.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-hidden-sibling-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-conventions-recovery-pisharp.http.json": "57a5c18162c2aca8407240640ebb1d1906158acd5866388f56e42dbf5352c759",
+    "package-extension-errors-no-extensions-recovery-pisharp.records.json": "f34ba5ba59992488c2a4cdaae392b88b4a944bb2dd76c16527e91b54e0930176",
+    "package-extension-error-owners-manifest-pi.records.json": "c9b0a39251021de2b210570f721f05274eb5f76b14db813bc9a8782bda63f5ef",
+    "package-extension-errors-conventions-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-error-focused-complete.log": "3dcca8510d6d6b1da6cd3d424ec850d2530fc1417e7ba9739c225e17fc227371",
+    "package-extension-errors-missing-explicit-recovery-pi.stderr.log": "b7eb7aef369d5b79c57d3cab0c02bb78cd75f46ebf9784ed5acf2a8a364c7997",
+    "package-extension-error-owners-throwing-sibling.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-root-recovery-pisharp.records.json": "508a0144ea0c869013218147c277b24bfe0a06bd4e3b59031f5093880b91b518",
+    "package-extension-errors-root-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-configuration-cli-first.json": "f41224a3278e295e958a2e9c6584c5f19a0a6bab4dc8ddef60d9c5d65ee42d84",
+    "package-extension-error-owners-manifest.json": "8a7800a43beaf919a97378ff6774b30a03578fc744a293a392c5901939d54d37",
+    "package-extension-errors-disabled-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-configuration-cli-first-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-nested-manifest-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-manifest-recovery-pi.http.json": "7cb473dfe93420bd4b8de7cf5d6ba3d29f15738c06818d98799afb1684a16081",
+    "package-extension-error-loader-regression.log": "7eb190e435c22ea7f2d60bbd7c9a8c149bfd6eb57ede8ad8efed0fcda7e7cc2d",
+    "package-extension-configuration-cli-first.log": "1b9880ad3d6e4b9a18527e1973e5349921d7d757854dbf437468b972c035b763",
+    "package-extension-errors-no-extensions-recovery-pi.http.json": "5a844b9c6b9c50f2eb65bd1df3742895c3ae4cd6706b5c31ef1d6dc1bff796cf",
+    "package-extension-errors-ignored-sibling-recovery.json": "03fc8d052b52d40db5ce5713c5717a697d559c00f9c5f06700e613ed4e2aea2e",
+    "package-extension-missing-cli-first-pisharp.stderr.log": "fdd99af40b6352c16b7d82f4b54002971092aa7e65f13ee683600ed100b4ddeb",
+    "package-extension-errors-node-modules-sibling-recovery-pisharp.records.json": "c97d7d79cc2b7acd58900adb023b24556a6449016dc57e46b1323ac91777a9c3",
+    "package-extension-errors-file-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-error-owners-manifest-pisharp.http.json": "44f0f418893044752e1a42670309c03ba658153712091d6df8963c899bb2bdd0",
+    "package-extension-errors-hidden-sibling-recovery-pi.http.json": "eab335600ef5fda04064ef5287ecaa11035df581b8f101ea12050f3303c3c2e2",
+    "package-extension-errors-manifest-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-sdk-owners.log": "6d91c704247f1a018edc4efca654601a91d4124a3e87fac6947d6b466b79dbd6",
+    "package-extension-error-owners-throwing-sibling-pi.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-conventions-recovery-pi.records.json": "6616fa9d036bee533b76bd0b3c0c236dce5cacb00d4e3949c469a1163b74123c",
+    "package-extension-errors-index-with-sibling-recovery-pisharp.records.json": "bd457f3f0ba1f271f553c6724206198edb7f4fee4ee3df21e2a2779142d32914",
+    "package-extension-error-owners-missing-explicit.json": "3f7fc0b820d8dbf1e1edab9ab0755a0ef1c6d1c6d840a04879ad2da6ed9629f1",
+    "package-extension-error-owners-throwing-sibling.json": "3a526063277c5e6f9cdcefa2b181f00b17b02ed78f35332194a7fca2d5fafc6f",
+    "package-extension-errors-root-recovery.json": "c2d6574e01e85a429c1eb2364dc768ab936b74c46d642d09209a0f5070bf7a62",
+    "package-extension-error-owners-manifest-pisharp.records.json": "82139593d2f2fd00be28fb9d26bee831569ef34a554403465809da3e8057613b",
+    "package-extension-errors-node-modules-sibling-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-configuration-cli-recovery-pi.stderr.log": "a4a5dbde91a7bffb1b537e9deab150f3279c867fbf88a7fc662f2b2c36562eda",
+    "package-extension-configuration-failure-first-pi.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-ignored-sibling-recovery-pisharp.records.json": "98779b9587dda59b9441666199c0983a712fe018df9a136f055f93b04a18d781",
+    "package-extension-configuration-cli-diagnostics.json": "194a43e0138863966b33ca8faeef005247b1c8704efa3cf1bb984aea19e956c3",
+    "package-extension-errors-no-extensions-recovery-pi.records.json": "e739a62848de6c20027a845d2487fc71cb0a527d818012b4c65877686df26ac8",
+    "package-extension-error-owners-missing-explicit-pi.stderr.log": "95b2c37e58ee48064713b8b21514d7988763f54fd3d5f93620e1b8ba790d7d47",
+    "package-extension-missing-cli-first-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-node-modules-sibling-recovery-pi.http.json": "d1a8137cec6dc350eb24dbd9c7aad8b553578ebc0ba0dacb2a92a1fd80dec42d",
+    "package-extension-errors-index-with-sibling-recovery.json": "38cba1e0c8262cb41cebd5dc601fd3bcb6521cc930735c88729850aea34b42f7",
+    "package-extension-errors-index-with-sibling-recovery-pisharp.http.json": "d59baf2da8e8f661a3bccf4cd264d836d062cc26c903440eb0a1362b1bb726dc",
+    "package-extension-errors-hidden-sibling-recovery-pi.records.json": "9b626d60b9eff033f4367376208f369bd41dbdd90ee7a994c16589e3cb0abefc",
+    "package-extension-errors-node-modules-sibling-recovery-pi.records.json": "aec6acf5dbec06b27451f4216dc5a3534e7faee1f2a9f861c3d88359be462c1f",
+    "package-extension-discovery-exact-ci.log": "34f2cb4643ae0d54418a9c0aeb5856755f74b4e12135c936ec779b949e0e9de7",
+    "package-extension-configuration-cli-recovery-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-nested-manifest-recovery-pisharp.http.json": "662bd311294928a03e569cb5d004044b404ab884256bef77b86f48b5a0ba0884",
+    "package-extension-error-owners-manifest.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-throwing-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-nested-manifest-recovery-pisharp.records.json": "0ca12120b94d0d0a0d0ebb5a56db228bf9b26371cc42af6f183d8d205ef61a86",
+    "package-extension-errors-node-modules-sibling-recovery.json": "841168bb8645fbc31a5dccaeb9bbf0ccd77206d39b8309a70223f2b1cd85f297",
+    "package-extension-errors-root-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-ignored-sibling-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-configuration-cli-recovery-pisharp.stderr.log": "954e6a802a15750a386509488e5b6d58e07d512eb5b1dbdf4483169c7faed53f",
+    "package-extension-error-owners-throwing-sibling-pi.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-configuration-cli-first-pisharp.stderr.log": "55dd40584e3309228f514261ab67b8edeb0b3d5b9ffe869f9358e60221acb3cc",
+    "package-extension-missing-cli-first-pi.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-index-with-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-missing-cli-first-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-nested-manifest-recovery-pi.records.json": "f4d013ce933abe2e1053aaff15c2c658e8fcda63cbde1d1717088545ae71ba84",
+    "package-extension-errors-file-recovery.json": "4b6882e7ad6346c6ba89243651ce6db3490b4835ee83c237c44e943a8bc529fc",
+    "package-extension-error-owners-missing-explicit-pi.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-hidden-sibling-recovery-pisharp.records.json": "b86af582a752947c6eaf64b147f38fcdae84c925ad54f684c2a4b1f8a4404bad",
+    "package-extension-errors-nested-manifest-recovery.json": "bbccb69ea2dcf636495539ea7418daead7b2432c2fa347de1a53ff043d007121",
+    "package-extension-errors-throwing-sibling-recovery-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-sdk-final.log": "6d91c704247f1a018edc4efca654601a91d4124a3e87fac6947d6b466b79dbd6",
+    "package-extension-errors-missing-explicit-recovery-pi.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-error-owners-manifest-pi.http.json": "b08ce878e0993d7131d9526aee0829e4ebd7b870b327ff65b2a36bd9f997b08c",
+    "package-extension-failure-focused-final.log": "f8276343ff8169b9f3cc1d207dd545cfe984a1d0567f4bd143bbf1c9862fdf5e",
+    "package-extension-error-owners-missing-explicit-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-error-owners-missing-explicit.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-configuration-failure-first-pi.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-manifest-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-file-recovery-pisharp.records.json": "2ac2438cf807b59c3616898fce142513f2f4e9a7c6f6c14801bcaddeddd979ac",
+    "package-extension-errors-ignored-sibling-recovery-pisharp.http.json": "bbc9cab99402fa34094c475e3ac858babf99c85936658c7a6b46f8d29d5b27fb",
+    "package-extension-errors-hidden-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-conventions-recovery.json": "6261b88a9cbab0d4d47662efb03917f17f7d327c42760a2c59c66a52db04f180",
+    "package-extension-errors-no-extensions-recovery-pisharp.http.json": "18b941f8111a03465c5f0ed7643f36b28da86768644f2cb92e6cf655ebe5ab89",
+    "package-extension-missing-cli-first.log": "f68e98064400e12b6ea7be8fb0c2f1fe49ff50862b0a2439d4c5d89f5bc90966",
+    "package-extension-errors-no-extensions-recovery.json": "c9345aeb5bbc67098b28a2335b69726e22966e2eb706734ae522e613ae8e683a",
+    "package-extension-missing-cli-first.json": "f47219413e3b68a05b3ec5ffebef6907bb712b0fba2eef94d125dee07b482ddc",
+    "package-extension-errors-index-with-sibling-recovery-pi.records.json": "b301b6621aeca9bc97d880ace98c3461527e546c937e786f40248877c439c94b",
+    "package-extension-errors-root-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-root-recovery-pisharp.http.json": "d3fb4cd90ff9daa9236f1fb6ae470bc539198b2232d77d8c0360238167587d59",
+    "package-extension-errors-ignored-sibling-recovery-pi.records.json": "6fbe4c4f1602ce5413d2cc48d101931fcb4f8dd305cc555a00de82302d79ed7b",
+    "package-extension-errors-hidden-sibling-recovery.json": "b1352afc2b87f2a2a31b19ac1b801055a79ed8d3cb8489c0778ee3723d11fdcf",
+    "package-extension-errors-hidden-sibling-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-missing-explicit-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-configuration-cli-recovery-pi.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-missing-explicit-recovery-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-conventions-recovery-pi.http.json": "8dd230d729c5429cc1fe6e081931c35c2956cf4cf7cc6348c43f5d97d85ea83b",
+    "package-extension-errors-root-recovery-pi.http.json": "be58344e893943aae82d006f2b626433f2fb6a83c536b624d31136a05f3e9c89",
+    "package-extension-assembly-error-control.log": "6bf9b713937280cee29f2f0b217a97d2a2a86013a5c1b253901fa6012ea1e3b2",
+    "package-extension-configuration-cli-diagnostics.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-disabled-recovery-pisharp.http.json": "ff2cf0fdeb138f750c7884ef99da9eb3d2e8d7b91b639f75a9606de50a17c9d2",
+    "package-extension-missing-cli-first-pi.stderr.log": "406edb888d9dfb4e362b074ddc57fb16c2e4e9ce67b10e1f15cd98732edb8dde",
+    "package-extension-dependency-manifest-native-first.log": "d3fcf7adb8ecd132cf565963db2754cb01ed3f27e4d9f285ffd165a8f90f25de",
+    "package-extension-errors-disabled-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-nested-manifest-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-node-modules-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-configuration-cli-first-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-node-modules-sibling-recovery-pisharp.http.json": "5912da86101f620eaffe0b23ee7c03ca952913fa81b0f916732f6e93f0402ca6",
+    "package-extension-errors-no-extensions-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-errors-disabled-recovery-pisharp.records.json": "b993f1909e00510a44f00904906411a79d8667d505dfe49852094a7388c43077",
+    "package-extension-errors-format.log": "da8f1094748da1e280d712df19e345216aca39628f73d2426ef0b775fad6ae66",
+    "package-extension-configuration-cli-diagnostics-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-conventions-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-error-owners-focused.log": "3dcca8510d6d6b1da6cd3d424ec850d2530fc1417e7ba9739c225e17fc227371",
+    "package-extension-errors-hidden-sibling-recovery-pisharp.http.json": "710aba66b8a2eb55c2d91dd72cc7ba738b7fce985b103acf0649d32c79757878",
+    "package-extension-failure-characterization-build.log": "0063a8211a5525bb199f5147cbad4378c97467e5a8217fad752225d3409d9327",
+    "package-extension-errors-nested-manifest-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-failure-focused-complete.log": "2568c47131ba267a462ab4e78e402d4478dc5f3168d8da31fd14990fcc37ee58",
+    "package-extension-errors-no-extensions-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-missing-explicit-recovery-pi.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-error-loader-regression.json": "01970449f10208e56bc0b702fbafb32bac6798a228d2b3e19a05aee0b8d25527",
+    "package-extension-error-owners-manifest-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-error-owners-throwing-sibling-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-manifest-recovery-pisharp.http.json": "b8ff81d4d25482861a542686144126bfa7acd944eee25046ca02f429a585798f",
+    "package-extension-errors-manifest-recovery.json": "0d3bfdb682dbe58c88828002c055502a9714e91fde38ad64ec8e81adfa127961",
+    "package-extension-sdk-recovery.log": "6d91c704247f1a018edc4efca654601a91d4124a3e87fac6947d6b466b79dbd6",
+    "package-extension-configuration-cli-diagnostics-pi.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-ignored-sibling-recovery-pi.http.json": "2679200bf0d2d871d27e9bec96cf678035cf91cb3a497ac176f303e6371f3c8a",
+    "package-extension-errors-missing-explicit-recovery-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-missing-explicit-recovery-pisharp.stderr.log": "5cc19ed861d6316fa7072795e964f70a13e409b87c4a3ce7044f03693c7fcd5a",
+    "package-extension-errors-disabled-recovery.json": "bdc1e1f1f8f7aa3bbcc2b5d51281bd51ee9c4061fa2a402465883088b999a566",
+    "package-extension-errors-file-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-configuration-cli-first-pi.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "package-extension-errors-ignored-sibling-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-manifest-recovery-pi.records.json": "f448eb48a87d0bf0aedc859098bbcab8e727efbd6d047b0d582cb21dd70bb83f",
+    "package-extension-errors-root-recovery-pi.records.json": "74ec7b5de874cea3d23bf5c7d40bffb1b0af142a29062c4ac1a3b29abed7c58b",
+    "package-extension-errors-node-modules-sibling-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-file-recovery-pisharp.http.json": "c7aa69240f73d3bdd32ed0d3753018e995c83ec599b6d151f7d442c1040d2d59",
+    "package-extension-configuration-cli-diagnostics-pi.stderr.log": "7c12097b0dddaf8ca3afc79d44245a4ce7fbfe8f40a673bbc788b2cd24e1389d",
+    "package-extension-errors-disabled-recovery-pi.http.json": "bf545367bbf48d8599e9484985d495d1b87a4d2ba07be35e338163e87c2ec910",
+    "package-extension-errors-disabled-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-configuration-failure-native-first.log": "4ee5650fde3383ffe575f1f648cef8ffde00641f2322d3d3f3640303afa1b416",
+    "package-extension-errors-disabled-recovery-pi.records.json": "ce2559f15047af350cf0c89155abe2acc6c487c17aa850e0449f76b8ef3c624e",
+    "package-extension-errors-format-correction.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-format-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-errors-full.log": "b4dcfc30676c06259e40a216ccbecb70b1cb6fe3579d5ecc20dc1c45da0d9f72",
+    "package-extension-errors-docs.log": "10e0f8488f7281415e82ade05e6af1970e6b7f05f9b9ad4c7d916380938a867d"
+  },
+  "limits": [
+    "The named SDK/CLI boundaries and native corrupt-module controls do not establish complete builtin/custom-type/constructor/alias/collision/Unicode/path/error/reload semantics or every external side effect of plugin code.",
+    "Existing duplicate-name scenario now remains diagnostic/fail-closed at CLI startup, but exact wider conflict message/precedence behavior is still part of the open extension audit.",
+    "Managed npm/git, normal package CLI operations, full resources/trust/reload and prior timing/calibration/footer concerns remain required and separately recorded."
+  ]
+}
