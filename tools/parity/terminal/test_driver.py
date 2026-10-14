@@ -23,6 +23,13 @@ apply_test_thread_limit()
 
 
 class DriverTests(unittest.TestCase):
+    def test_current_pin_launches_the_normal_coding_agent_cli_with_fixture_argument_overrides(self):
+        for scenario in ({}, {'arguments': {'pi': ['--no-session']}}, {'mockHuggingFace': True}):
+            command = commands(Path('/current-pi'), Path('/pisharp.dll'), scenario)['pi']
+            self.assertIn('/current-pi/packages/coding-agent/src/cli.ts', command)
+            self.assertNotIn('/current-pi/packages/coding-agent/src/experimental/cli.ts', command)
+            self.assertIn('file:///current-pi/packages/coding-agent/src/experimental/source-resolver.ts', command)
+
     def test_emulator_shutdown_drains_a_snapshot_larger_than_the_pipe(self):
         terminal = TerminalProcess([sys.executable, '-c', 'import time; time.sleep(30)'],
                                    Path('/tmp'), dict(os.environ), dict(columns=120, rows=40),

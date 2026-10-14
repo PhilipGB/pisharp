@@ -71,7 +71,7 @@ def commands(pi, pisharp, scenario, pisharp_extension=None):
     pi_command = ['node', '--import', resolver.as_uri()]
     if scenario.get('mockHuggingFace'):
         pi_command.extend(['--import', (ROOT / 'tools/parity/terminal/huggingface-preload.mjs').as_uri()])
-    result = dict(pi=[*pi_command, str(pi / 'packages/coding-agent/src/experimental/cli.ts'), *common],
+    result = dict(pi=[*pi_command, str(pi / 'packages/coding-agent/src/cli.ts'), *common],
                 pisharp=['dotnet', str(pisharp), *common, '--no-approve', '--no-context-files'])
     for product, arguments in scenario.get('arguments', {}).items():
         result[product] = result[product][:-len(common) - (2 if product == 'pisharp' else 0)] + arguments
