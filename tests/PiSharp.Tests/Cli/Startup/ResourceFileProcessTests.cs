@@ -20,7 +20,13 @@ public sealed class ResourceFileProcessTests
     [InlineData(false)]
     public Task NamedPipeResourceDoesNotBlockCliExpansion(bool skill) => RunAsync(skill, unreadable: false, namedPipe: true);
 
-    private static async Task RunAsync(bool skill, bool unreadable, bool namedPipe)
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public Task InvalidYamlResourceDoesNotBlockCliExpansion(bool skill) =>
+        RunAsync(skill, unreadable: false, namedPipe: false, invalidYaml: true);
+
+    private static async Task RunAsync(bool skill, bool unreadable, bool namedPipe, bool invalidYaml = false)
     {
         if ((unreadable || namedPipe) && OperatingSystem.IsWindows()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resource-file-process-" + Guid.NewGuid().ToString("N"));
@@ -48,7 +54,9 @@ public sealed class ResourceFileProcessTests
                     await createPipe.WaitForExitAsync(deadline.Token);
                     Assert.Equal(0, createPipe.ExitCode);
                 }
-                else await File.WriteAllTextAsync(denied, "---\nname: denied\ndescription: Denied\n---\nunreadable resource");
+                else await File.WriteAllTextAsync(denied, invalidYaml
+                    ? "---\nname: denied\ndescription: Denied\nignored: [broken\n---\nunreadable resource"
+                    : "---\nname: denied\ndescription: Denied\n---\nunreadable resource");
                 if (unreadable && !OperatingSystem.IsWindows()) File.SetUnixFileMode(denied, UnixFileMode.None);
                 await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), JsonSerializer.Serialize(new
                 {
@@ -88,7 +96,7 @@ public sealed class ResourceFileProcessTests
                 foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "fixture", "--model", "fixture-model",
                     "--no-approve", "--no-session", "--no-tools", "--offline", "--no-extensions", "--no-skills", "--no-prompt-templates",
                     "--no-context-files", "--print", skill ? "/skill:guide" : "/guide" }) start.ArgumentList.Add(argument);
-                if (unreadable || namedPipe) { start.ArgumentList.Add(skill ? "--skill" : "--prompt-template"); start.ArgumentList.Add(denied); }
+                if (unreadable || namedPipe || invalidYaml) { start.ArgumentList.Add(skill ? "--skill" : "--prompt-template"); start.ArgumentList.Add(denied); }
                 start.ArgumentList.Add(skill ? "--skill" : "--prompt-template");
                 start.ArgumentList.Add(path);
                 foreach (var name in new[] { "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_MODEL",

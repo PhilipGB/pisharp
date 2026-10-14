@@ -497,7 +497,21 @@
       "failed": 0,
       "skipped": 0
     },
-    "exactHeadCi": "pending publication"
+    "exactHeadCi": {
+      "sha": "9ea23c82c09385861ff0c1593df39051b7b2e25d",
+      "run": 38498196050,
+      "conclusion": "failure",
+      "dotnet": {
+        "passed": 1693,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failure": "ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal timed out after /quit was retained in the editor following a reply. Initial source review identifies early idle presentation while the run monitor still owns input, then possible late-read consumption during cancellation. Retained and queued for repair; not classified as baseline.",
+      "log": {
+        "path": "artifacts/parity/resources-current-pi-2026-10-14/resource-path-ci-first-failure.log",
+        "sha256": "96e880f62f5b9586c57307ba74d1a124ccdca51a22d5516b8bd0e3cd85b1884e"
+      }
+    }
   },
   "testContractCorrection": "Preserved the original missing-skill path and surrounding trust/collision/reload scenarios; asserts the source-equivalent skill path does not exist warning instead of terminating discovery. Missing CLI flag-value parser assertion remains unchanged.",
   "limitations": [

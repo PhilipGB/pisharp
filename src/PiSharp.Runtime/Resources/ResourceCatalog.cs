@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using PiSharp.Runtime.Extensions;
+using YamlDotNet.Core;
 
 namespace PiSharp.Runtime.Resources;
 
@@ -86,15 +87,18 @@ public sealed class ResourceCatalog
             cancellationToken.ThrowIfCancellationRequested();
             var text = await ReadResourceAsync(path, source, skillDiagnostics, cancellationToken);
             if (text is null) continue;
-            var (metadata, _) = Parse(text);
-            var name = metadata.GetValueOrDefault("name");
+            var declared = Path.GetFileName(path) == "SKILL.md";
+            var metadata = ParseResource(text, path, source, skillDiagnostics, declared);
+            if (metadata is null) continue;
+            var name = metadata.Name;
             if (string.IsNullOrEmpty(name))
                 name = Path.GetFileName(Path.GetDirectoryName(path)) ?? "";
-            var description = metadata.GetValueOrDefault("description") ?? "";
-            if (string.IsNullOrWhiteSpace(description))
+            var description = metadata.Description ?? "";
+            var hasDescription = ResourceFrontmatter.TrimBody(description).Length > 0;
+            if (!declared && !hasDescription) continue;
+            if (!hasDescription)
             {
                 skillDiagnostics.Add(new("warning", "description is required", path, SourceInfo: source));
-                continue;
             }
             if (description.Length > 1024)
                 skillDiagnostics.Add(new("warning", $"description exceeds 1024 characters ({description.Length})", path,
@@ -111,6 +115,7 @@ public sealed class ResourceCatalog
             if (name.Contains("--", StringComparison.Ordinal))
                 skillDiagnostics.Add(new("warning", "name must not contain consecutive hyphens", path,
                     SourceInfo: source));
+            if (!hasDescription) continue;
             var existing = skills.FirstOrDefault(item => item.Name == name);
             if (existing is not null)
             {
@@ -118,7 +123,7 @@ public sealed class ResourceCatalog
                     new("skill", name, existing.Path, path, existing.SourceInfo, source), source));
                 continue;
             }
-            skills.Add(new(name, description, path, metadata.GetValueOrDefault("disable-model-invocation") == "true", source));
+            skills.Add(new(name, description, path, metadata.DisableModelInvocation, source));
         }
 
         foreach (var (path, source) in promptFiles)
@@ -134,8 +139,10 @@ public sealed class ResourceCatalog
             }
             var text = await ReadResourceAsync(path, source, promptDiagnostics, cancellationToken);
             if (text is null) continue;
-            var (metadata, body) = Parse(text);
-            var description = metadata.GetValueOrDefault("description");
+            var metadata = ParseResource(text, path, source, promptDiagnostics, reportErrors: true);
+            if (metadata is null) continue;
+            var body = metadata.Body;
+            var description = metadata.Description;
             if (string.IsNullOrEmpty(description)) description = PromptDescription(body);
             prompts.Add(new(name, description, body, path, source));
         }
@@ -312,10 +319,10 @@ public sealed class ResourceCatalog
     public async Task<string> InvokeSkillAsync(string name, string arguments, CancellationToken cancellationToken = default)
     {
         var skill = Skills.SingleOrDefault(item => item.Name == name) ?? throw new ArgumentException($"Unknown skill: {name}");
-        var (_, body) = Parse(await ReadTextAsync(skill.Path, cancellationToken));
+        var body = ResourceFrontmatter.Parse(await ReadTextAsync(skill.Path, cancellationToken)).Body;
         var skillDirectory = Path.GetDirectoryName(skill.Path) ?? Path.GetFullPath(".");
         var skillBlock = $"<skill name=\"{skill.Name}\" location=\"{skill.Path}\">\n" +
-            $"References are relative to {skillDirectory}.\n\n{body.Trim()}\n</skill>";
+            $"References are relative to {skillDirectory}.\n\n{ResourceFrontmatter.TrimBody(body)}\n</skill>";
         var trimmedArguments = arguments.Trim();
         return trimmedArguments.Length == 0 ? skillBlock : $"{skillBlock}\n\n{trimmedArguments}";
     }
@@ -399,7 +406,7 @@ public sealed class ResourceCatalog
 
     private static string PromptDescription(string body)
     {
-        var firstLine = body.Split('\n').FirstOrDefault(line => !string.IsNullOrWhiteSpace(line)) ?? "";
+        var firstLine = body.Split('\n').FirstOrDefault(line => ResourceFrontmatter.TrimBody(line).Length > 0) ?? "";
         return firstLine.Length > 60 ? firstLine[..60] + "..." : firstLine;
     }
 
@@ -410,87 +417,15 @@ public sealed class ResourceCatalog
         .Replace("\"", "&quot;", StringComparison.Ordinal)
         .Replace("'", "&apos;", StringComparison.Ordinal);
 
-    private static (Dictionary<string, string> Metadata, string Body) Parse(string text)
+    private static ResourceFrontmatter? ParseResource(string text, string path, ResourceSourceInfo source,
+        List<ResourceDiagnostic> diagnostics, bool reportErrors)
     {
-        var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
-        if (normalized.StartsWith('\uFEFF')) normalized = normalized[1..];
-        if (!normalized.StartsWith("---\n", StringComparison.Ordinal)) return (metadata, normalized);
-        var end = normalized.IndexOf("\n---", 4, StringComparison.Ordinal);
-        if (end < 0) return (metadata, normalized);
-        var frontmatterLines = normalized[4..end].Split('\n');
-        for (var index = 0; index < frontmatterLines.Length; index++)
+        try { return ResourceFrontmatter.Parse(text); }
+        catch (YamlException error)
         {
-            var line = frontmatterLines[index];
-            var indentation = line.Length - line.TrimStart().Length;
-            if (indentation > 0) continue;
-            var separator = line.IndexOf(':');
-            if (separator <= 0) continue;
-            var key = line[..separator].Trim();
-            var value = line[(separator + 1)..].Trim();
-            if (value.Length > 0 && value[0] is '>' or '|')
-                metadata[key] = ParseBlockScalar(value, indentation, frontmatterLines, ref index);
-            else metadata[key] = value.Trim('"', '\'');
+            if (reportErrors) diagnostics.Add(new("warning", error.Message, path, SourceInfo: source));
+            return null;
         }
-        var bodyStart = end + 4;
-        if (bodyStart < normalized.Length && normalized[bodyStart] == '\n') bodyStart++;
-        return (metadata, normalized[bodyStart..].Trim());
-    }
-
-    private static string ParseBlockScalar(string header, int keyIndentation, string[] lines, ref int index)
-    {
-        var content = new List<string>();
-        var contentIndentation = -1;
-        for (var next = index + 1; next < lines.Length; next++)
-        {
-            var line = lines[next];
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                content.Add("");
-                index = next;
-                continue;
-            }
-
-            var indentation = line.Length - line.TrimStart().Length;
-            if (indentation <= keyIndentation) break;
-            contentIndentation = contentIndentation < 0 ? indentation : contentIndentation;
-            if (indentation < contentIndentation) break;
-            content.Add(line[contentIndentation..]);
-            index = next;
-        }
-
-        var trailingBreaks = 0;
-        while (content.Count > 0 && content[^1].Length == 0)
-        {
-            trailingBreaks++;
-            content.RemoveAt(content.Count - 1);
-        }
-
-        var value = header[0] == '|'
-            ? string.Join('\n', content)
-            : FoldBlockScalar(content);
-        var chomp = header.Contains('+') ? '+' : header.Contains('-') ? '-' : ' ';
-        var lineBreaks = chomp == '+' ? trailingBreaks + 1 : chomp == '-' ? 0 : 1;
-        return value + new string('\n', lineBreaks);
-    }
-
-    private static string FoldBlockScalar(IReadOnlyList<string> lines)
-    {
-        var value = new StringBuilder();
-        var priorLineWasBlank = false;
-        foreach (var line in lines)
-        {
-            if (line.Length == 0)
-            {
-                value.Append('\n');
-                priorLineWasBlank = true;
-                continue;
-            }
-            if (value.Length > 0 && !priorLineWasBlank) value.Append(' ');
-            value.Append(line);
-            priorLineWasBlank = false;
-        }
-        return value.ToString();
     }
 
     private static async Task<string?> ReadResourceAsync(string path, ResourceSourceInfo source,
