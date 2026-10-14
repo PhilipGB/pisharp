@@ -34,11 +34,12 @@ public sealed class ResourceCatalog
         IReadOnlyList<string>? additionalSkills = null, IReadOnlyList<string>? additionalPrompts = null,
         IReadOnlyList<string>? userSkills = null, IReadOnlyList<string>? projectSkills = null,
         IReadOnlyList<string>? userPrompts = null, IReadOnlyList<string>? projectPrompts = null,
-        ExtensionResourceDiscovery? extensionResources = null)
+        ExtensionResourceDiscovery? extensionResources = null,
+        IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null)
     {
         var selection = ResourcePathSelection.Create(cwd, agentDirectory, trusted, cancellationToken,
             discoverSkills, discoverPrompts, additionalSkills, additionalPrompts, userSkills, projectSkills,
-            userPrompts, projectPrompts, extensionResources);
+            userPrompts, projectPrompts, extensionResources, userPackages, projectPackages);
         var skills = new List<SkillResource>();
         var prompts = new List<PromptResource>();
         var skillDiagnostics = new List<ResourceDiagnostic>();

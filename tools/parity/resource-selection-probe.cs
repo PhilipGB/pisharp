@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using PiSharp.Cli;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Extensions;
 
@@ -14,13 +15,16 @@ foreach (var scenario in input.RootElement.EnumerateArray())
     var agent = Path.Combine(root, "agent");
     var discover = scenario.TryGetProperty("discover", out var defaults) && defaults.GetBoolean();
     var trusted = scenario.TryGetProperty("trusted", out var trust) && trust.GetBoolean();
+    var userSettings = await UserSettings.LoadAsync(agent, _ => null);
+    var projectSettings = await UserSettings.LoadProjectAsync(cwd);
     var catalog = await ResourceCatalog.LoadAsync(cwd, agent, trusted,
         discoverSkills: discover, discoverPrompts: discover,
         additionalSkills: Paths("skillPaths"), additionalPrompts: Paths("promptPaths"),
         userSkills: Settings("user", "skills"), userPrompts: Settings("user", "prompts"),
         projectSkills: Settings("project", "skills"), projectPrompts: Settings("project", "prompts"),
         extensionResources: new ExtensionResourceDiscovery(ExtensionPaths("extensionSkillPaths"),
-            ExtensionPaths("extensionPromptPaths"), [], []));
+            ExtensionPaths("extensionPromptPaths"), [], []),
+        userPackages: userSettings.Packages, projectPackages: projectSettings?.Packages);
     var skills = new List<object>();
     foreach (var skill in catalog.Skills)
     {

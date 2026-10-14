@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replay a deleted skill after RPC startup and compare provider input/error ordering."""
+"""Compare normal RPC resource loading, expansion, recovery and provider input."""
 import argparse
 import hashlib
 from http.server import ThreadingHTTPServer
@@ -22,15 +22,25 @@ shared = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(shared)
 
 
+class RpcEndedBeforeCheckpoint(Exception):
+    pass
+
+
 def replay(product, pi, native, root, output, scenario):
     agent = root / product / 'agent'
     home = root / product / 'home'
-    skill = root / product / 'guide/SKILL.md'
+    skill = root / product / ('package/skills/guide/SKILL.md' if scenario == 'local-package' else 'guide/SKILL.md')
     agent.mkdir(parents=True)
     home.mkdir()
-    skill.parent.mkdir()
+    skill.parent.mkdir(parents=True)
     description = '!!int word' if scenario == 'invalid-tag' else 'Guide'
     skill.write_text(f'---\nname: guide\ndescription: {description}\n---\nbody')
+    if scenario == 'local-package':
+        package = root / product / 'package'
+        (package / 'prompts').mkdir()
+        (package / 'prompts/review.md').write_text('---\ndescription: Package review\n---\nReview $1')
+        (package / 'package.json').write_text(json.dumps(dict(pi=dict(skills=['skills'], prompts=['prompts/review.md']))))
+        (agent / 'settings.json').write_text(json.dumps(dict(packages=['../package'])))
     if scenario == 'malformed-flow':
         skill.write_text('---\nname: guide\nunused: [bad\ndescription: *missing\n---\nbody')
     server = ThreadingHTTPServer(('127.0.0.1', 0), shared.Provider)
@@ -49,6 +59,10 @@ def replay(product, pi, native, root, output, scenario):
                DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1', **thread_limit_environment())
     common = ['--mode', 'rpc', '--provider', 'fixture', '--model', 'fixture-model', '--offline', '--no-session',
               '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools', '--skill', str(skill)]
+    if scenario == 'local-package':
+        common = common[:-2]
+        common.remove('--no-skills')
+        common.remove('--no-prompt-templates')
     command = (['node', '--import', (pi / 'packages/coding-agent/src/experimental/source-resolver.ts').as_uri(),
                 str(pi / 'packages/coding-agent/src/cli.ts')] if product == 'pi' else ['dotnet', str(native)]) + common
     records = []
@@ -80,7 +94,8 @@ def replay(product, pi, native, root, output, scenario):
                     record = incoming.get(timeout=30)
                     if isinstance(record, Exception):
                         raise record
-                    assert record is not None, 'RPC ended before the checkpoint'
+                    if record is None:
+                        raise RpcEndedBeforeCheckpoint('RPC ended before the checkpoint')
                     records.append(record)
                     if predicate(record):
                         return record
@@ -90,7 +105,7 @@ def replay(product, pi, native, root, output, scenario):
             command_info = next((c for c in commands['data']['commands'] if c['name'] == 'skill:guide'), None)
             if scenario == 'malformed-flow':
                 assert command_info is None, commands
-            else:
+            elif scenario != 'local-package' or product == 'pi':
                 assert command_info and command_info['description'] == ('word' if scenario == 'invalid-tag' else 'Guide')
             if scenario == 'deleted-skill':
                 skill.unlink()
@@ -110,16 +125,27 @@ def replay(product, pi, native, root, output, scenario):
             users = [m['content'] for m in server.requests[0]['messages'] if m['role'] == 'user']
             content = users[-1]
             text = content if isinstance(content, str) else ''.join(p.get('text', '') for p in content if p.get('type') == 'text')
-            expected = '/skill:guide args' if failure or scenario == 'malformed-flow' else (
+            expected = '/skill:guide args' if failure or scenario == 'malformed-flow' or command_info is None else (
                 f'<skill name="guide" location="{skill}">\nReferences are relative to {skill.parent}.\n\nbody\n</skill>\n\nargs')
             assert text == expected, text
             process.stdin.close()
             assert process.wait(timeout=10) == 0
             reader.join(timeout=5)
-            return dict(errorBeforeResponse=True if failure else None, event=failure['event'] if failure else None,
+            result = dict(errorBeforeResponse=True if failure else None, event=failure['event'] if failure else None,
                         error=failure['error'].replace(str(root / product), '<workspace>') if failure else None,
                         providerInput=text.replace(str(root / product), '<workspace>'), providerRequests=1,
                         promptAccepted=True, commandDescription=command_info['description'] if command_info else None)
+            if scenario == 'local-package':
+                result['startupAccepted'] = True
+                result['packagePrompt'] = next((c['description'] for c in commands['data']['commands']
+                                                if c['name'] == 'review'), None)
+            return result
+    except RpcEndedBeforeCheckpoint:
+        if scenario != 'local-package' or product != 'pisharp' or records:
+            raise
+        return dict(startupAccepted=False, exitCode=process.wait(timeout=10),
+                    error=output.with_name(output.stem + f'-{product}.stderr.log').read_text().strip(),
+                    providerRequests=len(server.requests))
     finally:
         if process is not None:
             if process.poll() is None:
@@ -140,7 +166,7 @@ def main():
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow'], default='deleted-skill')
+    parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package'], default='deleted-skill')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     args.output.parent.mkdir(parents=True, exist_ok=True)

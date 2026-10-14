@@ -81,7 +81,7 @@ public static class LocalResourcePathRules
         var name = Path.GetFileName(path);
         if (GlobMatch(relative, fullPattern) || GlobMatch(name, fullPattern) || GlobMatch(absolute, fullPattern))
             return true;
-        if (!skillPath || !Path.GetFileName(path).Equals("SKILL.md", StringComparison.OrdinalIgnoreCase))
+        if (!skillPath || !Path.GetFileName(path).Equals("SKILL.md", StringComparison.Ordinal))
             return false;
         var parent = Path.GetDirectoryName(path)!;
         return GlobMatch(Normalize(Path.GetRelativePath(fullBase, parent)), fullPattern) ||
@@ -100,14 +100,14 @@ public static class LocalResourcePathRules
         if (string.Equals(fullPath, target, s_pathComparison) ||
             string.Equals(Path.GetRelativePath(fullBase, fullPath), Normalize(expanded), s_pathComparison))
             return true;
-        if (!skillPath || !Path.GetFileName(fullPath).Equals("SKILL.md", StringComparison.OrdinalIgnoreCase))
+        if (!skillPath || !Path.GetFileName(fullPath).Equals("SKILL.md", StringComparison.Ordinal))
             return false;
         var parent = Path.GetDirectoryName(fullPath)!;
         return string.Equals(parent, target, s_pathComparison) ||
             string.Equals(Path.GetRelativePath(fullBase, parent), Normalize(expanded), s_pathComparison);
     }
 
-    private static bool GlobMatch(string value, string pattern)
+    internal static bool GlobMatch(string value, string pattern)
     {
         if (pattern.Length == 0 || pattern.Length > 4096) return false;
 

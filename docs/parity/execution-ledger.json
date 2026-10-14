@@ -1010,15 +1010,21 @@
     {
       "id": "feature-pi-packages",
       "title": "Pi Packages",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "docs/parity/feature-matrix.md:31",
       "acceptance": [
         "Match normal Pi CLI install/remove/update/list package-resource workflows and resource loading.",
         "Exclude only pure library APIs and experimental alternate runtimes unreachable from the normal executable."
       ],
-      "implementation": [],
+      "implementation": [
+        "PackageSettingsReader and ResourcePackageSource retain typed personal/project declarations and filters.",
+        "ResourcePackageFiles and ResourcePathSelection load local skill/prompt manifests and conventional folders, preserving package provenance, filters, project identity replacement/autoload deltas, trust and precedence.",
+        "LocalResourcePathRules treats lowercase skill.md aliases as ordinary files when applying parent overrides."
+      ],
       "evidence": [
-        "The current goal supersedes the earlier Pi Packages exclusion; normal CLI package-resource operations are in scope."
+        "The current goal supersedes the earlier Pi Packages exclusion; normal CLI package-resource operations are in scope.",
+        "Current Pi 3daa2028 normal RPC/provider local package fail-first: Pi loads Guide skill and Package review prompt and expands /skill:guide args. PiSharp 1542322b exits 2 before any RPC/provider input: packages must be a string. See current_pi_refresh.resource_package_characterization. No package behavior has been implemented or verified yet.",
+        "Current Pi 3daa2028 local package slice: normal CLI startup rejects valid package arrays at fail-first; three settings and two loading native rows fail first. Initial 57 loader cases match, then three added lowercase-alias cases expose three source mismatches and three native failures/three controls. Final 60 source comparisons and normal RPC/provider package invocation now match; deleted-skill replay remains matched. 143 focused and full 1904 tests pass with zero skips/warnings; Python 50 pass. See docs/parity/fixtures/resource-packages-local-current-pi-2026-10-14.json. Package extension/theme/npm-git/CLI operations and further resource/trust/reload boundaries remain open; status in_progress."
       ],
       "dependencies": []
     },
@@ -5728,6 +5734,63 @@
         "nodePassed": 24,
         "pythonPassed": 50
       }
+    },
+    "resource_package_characterization": {
+      "pi": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "pi_sharp": "1542322b2955d2ebd2c05f41c4481fe113413270",
+      "normal_cli_case": "Personal settings packages [../package]; local package.json declares skills and prompts; RPC get_commands and skill invocation replay with a loopback provider.",
+      "source_observed": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/package/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/package/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": "Package review"
+      },
+      "native_observed": {
+        "startupAccepted": false,
+        "exitCode": 2,
+        "error": "settings.json property 'packages' must be a string.",
+        "providerRequests": 0
+      },
+      "raw_artifact": "artifacts/parity/resources-current-pi-2026-10-14/local-package-startup-fail-first.json",
+      "sha256": "bf8cb42dc61a014dd8b96e40fcb843a5071fd80c7e7972395d86eca2f2a2cb52",
+      "next": "Implement typed package settings and source-equivalent local package resources, filters, identity and trust with expanded source comparisons. Full npm/git/package CLI operations remain required.",
+      "package_settings_fail_first": {
+        "failed": 3,
+        "passed": 1,
+        "skipped": 0
+      },
+      "package_settings_focused_recovery": {
+        "passed": 49,
+        "failed": 0,
+        "skipped": 0
+      },
+      "after_settings": "The real normal RPC replay now starts, but Guide/Package review are absent and /skill:guide args reaches the provider without expansion. Loading is still required.",
+      "native_loading_fail_first": {
+        "failed": 2,
+        "passed": 0,
+        "skipped": 0
+      },
+      "local_package_process_first_recovery": "Actual normal RPC/provider local package invocation now matches Guide/Package review, package skill expansion, request count and settlement. Full source matrix and remaining package workflows are still open.",
+      "loader_matrix_in_progress": "Original 32 loader cases plus 25 package manifest/filter/trust/identity/precedence cases; outcomes pending."
+    },
+    "resource_package_local_checkpoint": {
+      "fixture": "docs/parity/fixtures/resource-packages-local-current-pi-2026-10-14.json",
+      "loader_cases": 60,
+      "loader_mismatches": 0,
+      "original_loader_cases": 32,
+      "package_cases": 28,
+      "focused_passed": 143,
+      "full_passed": 1904,
+      "full_failed": 0,
+      "full_skipped": 0,
+      "new_native_rows": 12,
+      "normal_rpc_provider_match": true,
+      "remaining": "Package extension/theme loading, installed npm/git, CLI package operations, malformed/glob/filesystem edges and full terminal/trust/reload remain required."
     }
   }
 }

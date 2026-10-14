@@ -225,7 +225,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 additionalSkills: arguments.SkillPaths, additionalPrompts: arguments.PromptTemplatePaths,
                 userSkills: configuration.BaseUserSettings.Skills, projectSkills: configuration.ProjectSettings?.Skills,
                 userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts,
-                extensionResources: extensionResources);
+                extensionResources: extensionResources,
+                userPackages: configuration.BaseUserSettings.Packages, projectPackages: configuration.ProjectSettings?.Packages);
             return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
                 resources, extensions, extensionResources, store, sessionImport, mcpManager, effectiveMcpServers);
         }

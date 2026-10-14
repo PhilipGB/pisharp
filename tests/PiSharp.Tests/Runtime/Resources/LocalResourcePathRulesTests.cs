@@ -5,6 +5,21 @@ namespace PiSharp.Tests;
 public sealed class LocalResourcePathRulesTests
 {
     [Theory]
+    [InlineData("SKILL.md", "!skills/guide", false)]
+    [InlineData("skill.md", "!skills/guide", true)]
+    [InlineData("SKILL.md", "!*.md|+skills/guide", true)]
+    [InlineData("skill.md", "!*.md|+skills/guide", false)]
+    [InlineData("SKILL.md", "+skills/guide|-skills/guide", false)]
+    [InlineData("skill.md", "+skills/guide|-skills/guide", true)]
+    public void ParentOverridesApplyOnlyToTheExactSkillDeclarationFilename(string file, string rules, bool expected)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-skill-declaration-case");
+        var path = Path.Combine(root, "skills", "guide", file);
+
+        Assert.Equal(expected, LocalResourcePathRules.IsEnabledByOverrides(path, rules.Split('|'), root, skillPath: true));
+    }
+
+    [Theory]
     [InlineData("extensions/plugin.dll", "extensions/*.dll", false)]
     [InlineData("prompts/review.md", "prompts/*.md", false)]
     [InlineData("themes/custom.json", "themes/*.json", false)]

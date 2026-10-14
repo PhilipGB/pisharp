@@ -5,7 +5,8 @@ namespace PiSharp.Runtime.Resources;
 internal sealed record ResourceFileSelection(string Path, ResourceSourceInfo Source, ResourceDiagnostic? Diagnostic = null);
 
 /// <summary>Selects canonical roots and source metadata before file validation and name resolution.</summary>
-internal sealed class ResourcePathSelection(string cwd, string agentDirectory, bool trusted, CancellationToken token)
+internal sealed class ResourcePathSelection(string cwd, string agentDirectory, bool trusted, CancellationToken token,
+    ResourcePackageFiles packages)
 {
     internal List<ResourceFileSelection> SkillFiles { get; } = [];
     internal List<ResourceFileSelection> PromptFiles { get; } = [];
@@ -16,9 +17,11 @@ internal sealed class ResourcePathSelection(string cwd, string agentDirectory, b
     internal static ResourcePathSelection Create(string cwd, string agentDirectory, bool trusted, CancellationToken token,
         bool discoverSkills, bool discoverPrompts, IReadOnlyList<string>? additionalSkills, IReadOnlyList<string>? additionalPrompts,
         IReadOnlyList<string>? userSkills, IReadOnlyList<string>? projectSkills,
-        IReadOnlyList<string>? userPrompts, IReadOnlyList<string>? projectPrompts, ExtensionResourceDiscovery? extensions)
+        IReadOnlyList<string>? userPrompts, IReadOnlyList<string>? projectPrompts, ExtensionResourceDiscovery? extensions,
+        IReadOnlyList<ResourcePackageSource>? userPackages, IReadOnlyList<ResourcePackageSource>? projectPackages)
     {
-        var result = new ResourcePathSelection(cwd, agentDirectory, trusted, token);
+        var packages = ResourcePackageFiles.Load(cwd, agentDirectory, trusted, userPackages, projectPackages, token);
+        var result = new ResourcePathSelection(cwd, agentDirectory, trusted, token, packages);
         var skills = result.Defaults(true, userSkills, projectSkills);
         var prompts = result.Defaults(false, userPrompts, projectPrompts);
         result.Select(true, discoverSkills ? skills : [], additionalSkills, extensions?.SkillPaths);
@@ -31,6 +34,8 @@ internal sealed class ResourcePathSelection(string cwd, string agentDirectory, b
         var selected = new List<string>();
         var seen = new HashSet<string>(PathComparer);
         var kind = skills ? "skills" : "prompts";
+        var packagePaths = skills ? packages.Skills : packages.Prompts;
+        foreach (var file in packagePaths) _metadata.TryAdd(file.Path, file.Source);
         if (trusted)
         {
             Configured(projectEntries, Path.Combine(cwd, ".pi"), "project");
@@ -50,6 +55,7 @@ internal sealed class ResourcePathSelection(string cwd, string agentDirectory, b
             var homeAgents = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agents");
             Automatic(Path.Combine(homeAgents, "skills"), userEntries, homeAgents, "user", agents: true);
         }
+        selected.AddRange(packagePaths.Where(file => file.Enabled).Select(file => file.Path));
         return selected;
 
         void Configured(IReadOnlyList<string>? entries, string baseDirectory, string scope)
@@ -76,6 +82,7 @@ internal sealed class ResourcePathSelection(string cwd, string agentDirectory, b
             {
                 token.ThrowIfCancellationRequested();
                 var full = Path.GetFullPath(path);
+                if (packagePaths.Any(file => PathComparer.Equals(file.Path, full))) continue;
                 if (!seen.Add(full)) continue;
                 _metadata.TryAdd(full, new(full, source, scope, "top-level", sourceBase is null ? null : Path.GetFullPath(sourceBase)));
                 if (LocalResourcePathRules.IsEnabledByOverrides(full, entries, baseDirectory, skills)) selected.Add(full);

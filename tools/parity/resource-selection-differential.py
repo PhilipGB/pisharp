@@ -87,13 +87,68 @@ def scenarios():
     return cases
 
 
+
+def package_scenarios():
+    base = {'outside/package/skills/guide/SKILL.md': skill(body='package body'),
+            'outside/package/prompts/review.md': '---\ndescription: Package review\n---\nReview $1',
+            'outside/package/prompts/nested/detail.md': 'Nested detail'}
+    manifest = dict(pi=dict(skills=['skills'], prompts=['prompts']))
+    cases = []
+
+    def add(name, declaration='../outside/package', package_manifest=manifest, project=None, **options):
+        files = dict(base)
+        if package_manifest is not None:
+            files['outside/package/package.json'] = (package_manifest if isinstance(package_manifest, str)
+                                                    else json.dumps(package_manifest))
+        files.update(options.pop('files', {}))
+        cases.append(dict(id='package-' + name, files=files, skillPaths=options.pop('skillPaths', []),
+                          promptPaths=[], links=options.pop('links', {}), discover=options.pop('discover', True),
+                          user=dict(packages=[declaration]) if declaration is not None else {},
+                          project=project or {}, **options))
+
+    add('manifest')
+    add('conventions', package_manifest=None)
+    add('invalid-json-conventions', package_manifest='{bad')
+    add('invalid-pi-conventions', package_manifest={'pi': []})
+    add('empty-manifest', package_manifest={'pi': {}})
+    add('empty-manifest-object-fallback', declaration={'source': '../outside/package'}, package_manifest={'pi': {}})
+    add('empty-manifest-skills', package_manifest={'pi': {'skills': [], 'prompts': ['prompts']}})
+    add('empty-filter-skills', declaration={'source': '../outside/package', 'skills': []})
+    add('empty-filter-prompts', declaration={'source': '../outside/package', 'prompts': []})
+    add('positive-filter', declaration={'source': '../outside/package', 'prompts': ['review.md']})
+    add('negative-filter', declaration={'source': '../outside/package', 'prompts': ['!review.md']})
+    add('force-include', declaration={'source': '../outside/package', 'prompts': ['!*.md', '+prompts/review.md']})
+    add('force-exclude', declaration={'source': '../outside/package', 'skills': ['+skills/guide', '-skills/guide']})
+    add('filter-cannot-expose-undeclared', declaration={'source': '../outside/package', 'prompts': ['nested/*.md']},
+        package_manifest={'pi': {'skills': ['skills'], 'prompts': ['prompts/review.md']}})
+    add('manifest-glob', package_manifest={'pi': {'skills': ['skills/*'], 'prompts': ['prompts/**/*.md']}})
+    add('manifest-exclusion', package_manifest={'pi': {'skills': ['skills'], 'prompts': ['prompts', '!review.md']}})
+    for pattern in [['skills/guide'], ['!skills/guide'], ['!*.md', '+skills/guide']]:
+        add('lowercase-skill-alias-' + str(len(cases)), declaration={'source': '../outside/package', 'skills': pattern},
+            package_manifest={'pi': {'skills': ['skills/guide/skill.md']}},
+            files={'outside/package/skills/guide/skill.md': skill(body='lowercase alias body')})
+    add('project-trusted', declaration=None, project={'packages': ['../../outside/package']}, trusted=True)
+    add('project-untrusted', declaration=None, project={'packages': ['../../outside/package']}, trusted=False)
+    add('project-replaces-personal', project={'packages': [{'source': '../../outside/package', 'skills': []}]}, trusted=True)
+    add('project-delta', project={'packages': [{'source': '../../outside/package', 'autoload': False, 'skills': ['-skills/guide']}]}, trusted=True)
+    add('delta-without-personal', declaration=None, project={'packages': [{'source': '../../outside/package', 'autoload': False, 'prompts': ['+prompts/review.md']}]}, trusted=True)
+    add('disabled-discovery', discover=False)
+    add('explicit-disabled-package-file', declaration={'source': '../outside/package', 'skills': []},
+        skillPaths=['outside/package/skills/guide/SKILL.md'], discover=False)
+    add('local-before-package', trusted=True, files={'project/.pi/skills/guide/SKILL.md': skill(body='local winner')})
+    add('personal-auto-before-package', files={'agent/skills/guide/SKILL.md': skill(body='personal winner')})
+    return cases
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--packages', action='store_true', help='Include local package settings/manifest/filter/scope comparisons')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     cases = scenarios()
+    if args.packages:
+        cases.extend(package_scenarios())
     with tempfile.TemporaryDirectory(prefix='pisharp-resource-selection-') as directory:
         root = Path(directory)
         home = root / 'home'
@@ -117,7 +172,7 @@ def main():
         inputs = root / 'inputs.json'
         inputs.write_text(json.dumps(cases))
         (root / 'Program.cs').write_text((ROOT / 'tools/parity/resource-selection-probe.cs').read_text())
-        (root / 'probe.csproj').write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup><ItemGroup><ProjectReference Include="{ROOT}/src/PiSharp.Runtime/PiSharp.Runtime.csproj" /></ItemGroup></Project>')
+        (root / 'probe.csproj').write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup><ItemGroup><ProjectReference Include="{ROOT}/src/PiSharp.Cli/PiSharp.Cli.csproj" /></ItemGroup></Project>')
         env = dict(os.environ, NUGET_HTTP_CACHE_PATH='/tmp/pisharp-nuget-http', NUGET_PACKAGES='/tmp/pisharp-nuget-packages')
         build = subprocess.run(['dotnet', 'build', str(root / 'probe.csproj'), '--warnaserror', '-m:1',
             '-p:UseSharedCompilation=false', f'-p:RestoreFallbackFolders={Path.home() / ".nuget/packages"}'],
