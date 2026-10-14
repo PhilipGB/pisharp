@@ -23,9 +23,10 @@ with tempfile.TemporaryDirectory(prefix='pisharp-resource-path-oracle-') as dire
  root=Path(directory)
  (root/'Program.cs').write_text((repo / 'tools/parity/resource-path-probe.cs').read_text())
  (root/'probe.csproj').write_text(f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup><ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Runtime/PiSharp.Runtime.csproj" /></ItemGroup></Project>')
- env=dict(os.environ,NUGET_HTTP_CACHE_PATH='/tmp/pisharp-nuget-http')
- build=subprocess.run(['dotnet','build',str(root/'probe.csproj'),'--warnaserror','-m:1','-p:UseSharedCompilation=false'],env=env,capture_output=True,text=True,timeout=120)
+ env=dict(os.environ,NUGET_HTTP_CACHE_PATH='/tmp/pisharp-nuget-http',NUGET_PACKAGES='/tmp/pisharp-nuget-packages')
+ build=subprocess.run(['dotnet','build',str(root/'probe.csproj'),'--warnaserror','-m:1','-p:UseSharedCompilation=false',f'-p:RestoreFallbackFolders={Path.home() / ".nuget/packages"}'],env=env,capture_output=True,text=True,timeout=120)
  if build.returncode:raise RuntimeError(build.stdout+build.stderr)
+ home=root/'home';home.mkdir();env.update(HOME=str(home))
  for case in cases:
   work=root/case['id'];work.mkdir();target=work/case['paths'][0];variant=case['variant']
   if variant=='fifo':os.mkfifo(target)

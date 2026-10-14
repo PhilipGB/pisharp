@@ -526,5 +526,10 @@
     "dotnet format PiSharp.slnx --verify-no-changes --no-restore",
     "dotnet build PiSharp.slnx --warnaserror --no-restore",
     "dotnet test PiSharp.slnx --no-build --no-restore"
-  ]
+  ],
+  "fullLoaderFollowup": {
+    "fixture": "docs/parity/fixtures/resource-selection-current-pi-2026-10-14.json",
+    "cases": 19,
+    "result": "All 19 pass against actual DefaultResourceLoader after strengthening the source entry point. Missing/broken prompt paths now have an app-level error. Historical direct-loader captures and their narrower diagnostic claim remain retained."
+  }
 }

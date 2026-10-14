@@ -49,6 +49,13 @@ public sealed class ResourcePathTests
                 Assert.Equal(path, warning.Path);
                 Assert.Equal(kind is "missing" or "broken-link" ? "skill path does not exist" : "skill path is not a markdown file", warning.Message);
             }
+            else if (kind is "missing" or "broken-link")
+            {
+                var error = Assert.Single(catalog.Diagnostics);
+                Assert.Equal("error", error.Type);
+                Assert.Equal("Prompt template path does not exist", error.Message);
+                Assert.Equal(path, error.Path);
+            }
             else Assert.Empty(catalog.Diagnostics);
         }
         finally { Directory.Delete(root, true); }

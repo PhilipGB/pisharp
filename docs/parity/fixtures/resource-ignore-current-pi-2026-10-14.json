@@ -59,7 +59,18 @@
     "buildWarnings": 0,
     "buildErrors": 0,
     "cliProviderCasesAdded": 2,
-    "exactHeadCi": "pending at publication"
+    "exactHeadCi": {
+      "sha": "9bf391b90025309d7af64e8e4abab65987c0d9e9",
+      "run": 38538502785,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38538502785",
+      "jobs": "both pass",
+      "dotnetPassed": 1761,
+      "failed": 0,
+      "skipped": 0,
+      "nodePassed": 24,
+      "pythonPassed": 49,
+      "documentation": "132 documents / 484 references"
+    }
   },
   "matchedResults": [
     {
@@ -498,7 +509,8 @@
     "resource-ignore-final-all-focused-tests.log": "34588c353dbaa61c3cf97f7dfff98e2f70142700dda214da4c46199b547a32b1",
     "resource-ignore-full-tests.log": "de00cc8ffa20190b040260a1d716340ac805b50494825bb7fb7e72e301a70d75",
     "resource-ignore-build.log": "c8e3ec219ba5ebb4a3345d74e8be29d01ec1fc8c559a9ec1b51436857ab0340d",
-    "resource-ignore-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    "resource-ignore-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "resource-ignore-exact-ci.log": "1a112a52d1292990350ed6d6cf09902fe3fe91284eba720b588359b3d6337857"
   },
   "limits": [
     "Sixty controlled Linux file-loader cases cover the retained ignore rules/patterns, not every malformed/pathological rule, Unicode fold, arbitrary byte filename, whitespace envelope or native platform.",

@@ -118,8 +118,8 @@ public sealed class ResourceCatalogTests
             Assert.Single(explicitResources.Skills);
             Assert.Equal("project-secret", explicitResources.Skills[0].Name);
             Assert.Single(explicitResources.Prompts);
-            Assert.Equal("temporary", explicitResources.Skills[0].SourceInfo.Scope);
-            Assert.Equal("temporary", explicitResources.Prompts[0].SourceInfo.Scope);
+            Assert.Equal("project", explicitResources.Skills[0].SourceInfo.Scope);
+            Assert.Equal("user", explicitResources.Prompts[0].SourceInfo.Scope);
             Assert.Contains("Review value", await explicitResources.ResolveInputAsync("/review value"));
             Assert.Equal(
                 $"<skill name=\"project-secret\" location=\"{Path.Combine(projectSkill, "SKILL.md")}\">\n" +
@@ -212,7 +212,7 @@ public sealed class ResourceCatalogTests
             var userSource = Assert.Single(untrusted.Skills, skill => skill.Name == "user-configured").SourceInfo;
             Assert.Equal("local", userSource.Source);
             Assert.Equal("user", userSource.Scope);
-            Assert.Equal(Path.GetFullPath(agent), userSource.BaseDir);
+            Assert.Null(userSource.BaseDir);
             var autoSource = Assert.Single(untrusted.Skills, skill => skill.Name == "user-auto-keep").SourceInfo;
             Assert.Equal("auto", autoSource.Source);
 
@@ -224,7 +224,7 @@ public sealed class ResourceCatalogTests
             var projectSource = Assert.Single(trusted.Skills, skill => skill.Name == "project-configured").SourceInfo;
             Assert.Equal("local", projectSource.Source);
             Assert.Equal("project", projectSource.Scope);
-            Assert.Equal(Path.Combine(Path.GetFullPath(project), ".pi"), projectSource.BaseDir);
+            Assert.Null(projectSource.BaseDir);
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
@@ -361,6 +361,7 @@ public sealed class ResourceCatalogTests
 
             var resources = await ResourceCatalog.LoadAsync(project, agent, trusted: true,
                 discoverSkills: false, discoverPrompts: false,
+                additionalSkills: [projectSkill, userSkill], additionalPrompts: [projectPrompt, userPrompt],
                 userSkills: [Path.Combine(agent, "skills")],
                 projectSkills: [Path.Combine(project, ".pi", "skills")],
                 userPrompts: [Path.Combine(agent, "prompts")],
@@ -433,7 +434,7 @@ public sealed class ResourceCatalogTests
             await WriteSkill(userShared, "shared");
             await WriteSkill(temporaryShared, "shared");
 
-            var resources = await ResourceCatalog.LoadAsync(project, agent, trusted: true, discoverSkills: false,
+            var resources = await ResourceCatalog.LoadAsync(project, agent, trusted: true,
                 additionalSkills: [Path.Combine(root, "temporary")], userSkills: ["custom-skills"],
                 projectSkills: ["custom-skills"]);
 

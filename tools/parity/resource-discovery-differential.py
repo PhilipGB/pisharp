@@ -139,7 +139,7 @@ def main():
         inputs = root / 'inputs.json'
         inputs.write_text(json.dumps(cases))
         expected = json.loads(subprocess.check_output(['node', '--experimental-transform-types',
-            str(ROOT / 'tools/parity/resource-path-probe.mjs'), str(args.pi.resolve()), str(inputs), str(root)], env=env, timeout=60))
+            str(ROOT / 'tools/parity/resource-file-loader-probe.mjs'), str(args.pi.resolve()), str(inputs), str(root)], env=env, timeout=60))
         actual = json.loads(subprocess.check_output(['dotnet', str(root / 'bin/Debug/net10.0/probe.dll'),
                                                      str(inputs), str(root)], env=env, timeout=60))
     differences = [dict(id=p['id'], pi=p, pisharp=n) for p, n in zip(expected, actual, strict=True) if p != n]

@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace PiSharp.Runtime.Resources;
 
-/// <summary>Applies skill-directory ignore files in their discovery order and root-relative scope.</summary>
+/// <summary>Applies resource-directory ignore files in their discovery order and root-relative scope.</summary>
 internal sealed class ResourceIgnoreRules(string root)
 {
     private readonly List<(Regex Pattern, bool Negated)> _rules = [];
