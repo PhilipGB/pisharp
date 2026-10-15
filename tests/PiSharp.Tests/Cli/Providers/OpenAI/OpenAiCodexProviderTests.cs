@@ -647,6 +647,7 @@ public sealed class OpenAiCodexProviderTests
             var fallback = await listener.GetContextAsync();
             fallback.Response.ContentType = "text/event-stream";
             await using var writer = new StreamWriter(fallback.Response.OutputStream);
+            for (var index = 0; index < 1_024; index++) await writer.WriteLineAsync();
             await writer.WriteLineAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_grammar_sse\",\"object\":\"response\",\"created_at\":1,\"model\":\"gpt-5.5\",\"status\":\"in_progress\",\"output\":[]}}");
             await writer.WriteLineAsync();
             await writer.WriteLineAsync("data: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"ctc_grammar_sse\",\"type\":\"custom_tool_call\",\"status\":\"in_progress\",\"call_id\":\"call_grammar_sse\",\"name\":\"constrained_echo\",\"input\":\"\"}}");

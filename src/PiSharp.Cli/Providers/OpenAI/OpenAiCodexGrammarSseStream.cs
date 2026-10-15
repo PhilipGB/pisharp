@@ -77,51 +77,58 @@ internal static class OpenAiCodexGrammarSseStream
 
         private async Task<string?> ReadFrameAsync(CancellationToken cancellationToken)
         {
-            var lines = new List<string>();
-            var reachedEnd = false;
             while (true)
             {
-                var line = await _reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-                if (line is null)
+                var lines = new List<string>();
+                var reachedEnd = false;
+                while (true)
                 {
-                    reachedEnd = true;
-                    break;
+                    var line = await _reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                    if (line is null)
+                    {
+                        reachedEnd = true;
+                        break;
+                    }
+                    if (line.Length == 0) break;
+                    lines.Add(line);
                 }
-                if (line.Length == 0) break;
-                lines.Add(line);
-            }
 
-            if (lines.Count == 0) return reachedEnd ? null : await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
-            var dataIndexes = lines.Select((line, index) => (line, index))
-                .Where(item => item.line.StartsWith("data:", StringComparison.Ordinal))
-                .Select(item => item.index).ToArray();
-            if (dataIndexes.Length == 0) return string.Join('\n', lines) + "\n\n";
-
-            var data = string.Join('\n', dataIndexes.Select(index =>
-            {
-                var value = lines[index][5..];
-                return value.StartsWith(' ') ? value[1..] : value;
-            }));
-            var eventName = lines.FirstOrDefault(line => line.StartsWith("event:", StringComparison.Ordinal))?[6..].Trim();
-            var projectedData = ProjectData(data, eventName);
-            if (string.Equals(data, projectedData, StringComparison.Ordinal))
-                return string.Join('\n', lines) + "\n\n";
-
-            var newLines = new List<string>(lines.Count);
-            var firstData = true;
-            foreach (var line in lines)
-            {
-                if (line.StartsWith("data:", StringComparison.Ordinal))
+                if (lines.Count == 0)
                 {
-                    if (!firstData) continue;
-                    newLines.Add($"data: {projectedData}");
-                    firstData = false;
+                    if (reachedEnd) return null;
+                    continue;
                 }
-                else if (line.StartsWith("event:", StringComparison.Ordinal))
-                    newLines.Add($"event: {GetEventType(projectedData) ?? eventName}");
-                else newLines.Add(line);
+                var dataIndexes = lines.Select((line, index) => (line, index))
+                    .Where(item => item.line.StartsWith("data:", StringComparison.Ordinal))
+                    .Select(item => item.index).ToArray();
+                if (dataIndexes.Length == 0) return string.Join('\n', lines) + "\n\n";
+
+                var data = string.Join('\n', dataIndexes.Select(index =>
+                {
+                    var value = lines[index][5..];
+                    return value.StartsWith(' ') ? value[1..] : value;
+                }));
+                var eventName = lines.FirstOrDefault(line => line.StartsWith("event:", StringComparison.Ordinal))?[6..].Trim();
+                var projectedData = ProjectData(data, eventName);
+                if (string.Equals(data, projectedData, StringComparison.Ordinal))
+                    return string.Join('\n', lines) + "\n\n";
+
+                var newLines = new List<string>(lines.Count);
+                var firstData = true;
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith("data:", StringComparison.Ordinal))
+                    {
+                        if (!firstData) continue;
+                        newLines.Add($"data: {projectedData}");
+                        firstData = false;
+                    }
+                    else if (line.StartsWith("event:", StringComparison.Ordinal))
+                        newLines.Add($"event: {GetEventType(projectedData) ?? eventName}");
+                    else newLines.Add(line);
+                }
+                return string.Join('\n', newLines) + "\n\n";
             }
-            return string.Join('\n', newLines) + "\n\n";
         }
 
         private string ProjectData(string data, string? eventName)
