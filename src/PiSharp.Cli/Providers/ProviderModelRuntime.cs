@@ -194,7 +194,7 @@ public sealed class ProviderModelRuntime
                 {
                     var refreshed = await RadiusModelCatalog.LoadAsync(_http, provider.Id, provider.Endpoint,
                         auth.Authenticated ? auth.Key : null, cancellationToken).ConfigureAwait(false);
-                    providerModels = RadiusModelCatalog.Merge(provider.Models, refreshed);
+                    providerModels = refreshed;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
                 catch (Exception error) when (error is HttpRequestException or TaskCanceledException or InvalidDataException or JsonException)

@@ -12,7 +12,12 @@ internal sealed class RadiusLoginServer : IAsyncDisposable
     private readonly Task _serve;
     private readonly bool _holdToken;
     public TaskCompletionSource TokenRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public TaskCompletionSource TokenFormRead { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     public string Origin { get; }
+    public string? TokenGrantType { get; private set; }
+    public string? TokenCode { get; private set; }
+    public string? TokenRedirectUri { get; private set; }
+    public string? TokenCodeVerifier { get; private set; }
 
     public RadiusLoginServer(bool holdToken = false)
     {
@@ -36,6 +41,9 @@ internal sealed class RadiusLoginServer : IAsyncDisposable
                 string body;
                 switch (context.Request.Url!.AbsolutePath)
                 {
+                    case "/v1/oauth":
+                        body = JsonSerializer.Serialize(new { authorizationEndpoint = Origin + "/authorize" });
+                        break;
                     case "/v1/oauth/device":
                         body = JsonSerializer.Serialize(new
                         {
@@ -49,6 +57,16 @@ internal sealed class RadiusLoginServer : IAsyncDisposable
                     case "/v1/oauth/token":
                         TokenRequested.TrySetResult();
                         if (_holdToken) await Task.Delay(Timeout.Infinite, _shutdown.Token);
+                        using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
+                        {
+                            var form = System.Web.HttpUtility.ParseQueryString(
+                                await reader.ReadToEndAsync(_shutdown.Token));
+                            TokenGrantType = form["grant_type"];
+                            TokenCode = form["code"];
+                            TokenRedirectUri = form["redirect_uri"];
+                            TokenCodeVerifier = form["code_verifier"];
+                        }
+                        TokenFormRead.TrySetResult();
                         body = """{"access_token":"fixture-radius-access","refresh_token":"fixture-radius-refresh","expires_in":3600}""";
                         break;
                     default:

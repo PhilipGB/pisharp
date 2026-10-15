@@ -1,5 +1,5 @@
 {
-  "sourcePiRevision": "fd889a2741891ee45116cb6131052d7fad220886",
+  "sourcePiRevision": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "models": [
     {
       "id": "balanced",
@@ -25,6 +25,46 @@
         "input": 3,
         "output": 15,
         "cacheRead": 0.3,
+        "cacheWrite": 0
+      },
+      "api": "pi-messages",
+      "baseUrl": "https://radius.pi.dev/v1",
+      "inputLimits": {
+        "images": {
+          "resize": {
+            "maxWidth": 2000,
+            "maxHeight": 2000,
+            "maxBytes": 4718592,
+            "jpegQuality": 80
+          }
+        }
+      },
+      "enabled": true
+    },
+    {
+      "id": "cheap",
+      "name": "Cheap",
+      "lab": "DeepSeek",
+      "reasoning": true,
+      "thinkingLevelMap": {
+        "off": "none",
+        "minimal": null,
+        "low": "low",
+        "medium": null,
+        "high": "high",
+        "xhigh": null,
+        "max": "max"
+      },
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1000000,
+      "maxTokens": 32768,
+      "cost": {
+        "input": 0.3,
+        "output": 1.2,
+        "cacheRead": 0.006,
         "cacheWrite": 0
       },
       "api": "pi-messages",
@@ -118,7 +158,6 @@
       "name": "Claude Haiku 4.5",
       "lab": "Anthropic",
       "reasoning": true,
-      "thinkingLevelMap": null,
       "input": [
         "text",
         "image"
@@ -146,11 +185,59 @@
       "enabled": true
     },
     {
+      "id": "claude-haiku-5-5",
+      "name": "Claude Haiku 5.5",
+      "lab": "Anthropic",
+      "reasoning": true,
+      "thinkingLevelMap": {
+        "off": null,
+        "minimal": null,
+        "low": "low",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh",
+        "max": "max"
+      },
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1000000,
+      "maxTokens": 128000,
+      "cost": {
+        "input": 0.1,
+        "output": 0.5,
+        "cacheRead": 0.01,
+        "cacheWrite": 0.125,
+        "tiers": [
+          {
+            "inputTokensAbove": 100000,
+            "input": 0.5,
+            "output": 2.5,
+            "cacheRead": 0.05,
+            "cacheWrite": 0.625
+          }
+        ]
+      },
+      "api": "pi-messages",
+      "baseUrl": "https://radius.pi.dev/v1",
+      "inputLimits": {
+        "images": {
+          "resize": {
+            "maxWidth": 2000,
+            "maxHeight": 2000,
+            "maxBytes": 4718592,
+            "jpegQuality": 80
+          }
+        }
+      },
+      "enabled": true
+    },
+    {
       "id": "claude-opus-4-5",
       "name": "Claude Opus 4.5",
       "lab": "Anthropic",
       "reasoning": true,
-      "thinkingLevelMap": null,
       "input": [
         "text",
         "image"
@@ -293,12 +380,11 @@
       "name": "Claude Sonnet 4.5",
       "lab": "Anthropic",
       "reasoning": true,
-      "thinkingLevelMap": null,
       "input": [
         "text",
         "image"
       ],
-      "contextWindow": 1000000,
+      "contextWindow": 200000,
       "maxTokens": 64000,
       "cost": {
         "input": 3,
@@ -356,6 +442,46 @@
       "enabled": true
     },
     {
+      "id": "claude-sonnet-5-5",
+      "name": "Claude Sonnet 5.5",
+      "lab": "Anthropic",
+      "reasoning": true,
+      "thinkingLevelMap": {
+        "off": null,
+        "minimal": null,
+        "low": "low",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh",
+        "max": "max"
+      },
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1000000,
+      "maxTokens": 128000,
+      "cost": {
+        "input": 2,
+        "output": 10,
+        "cacheRead": 0.2,
+        "cacheWrite": 2.5
+      },
+      "api": "pi-messages",
+      "baseUrl": "https://radius.pi.dev/v1",
+      "inputLimits": {
+        "images": {
+          "resize": {
+            "maxWidth": 2000,
+            "maxHeight": 2000,
+            "maxBytes": 4718592,
+            "jpegQuality": 80
+          }
+        }
+      },
+      "enabled": true
+    },
+    {
       "id": "deepseek-v4.1-flash",
       "name": "DeepSeek V4.1 Flash",
       "lab": "DeepSeek",
@@ -376,9 +502,9 @@
       "contextWindow": 1000000,
       "maxTokens": 32768,
       "cost": {
-        "input": 0.22,
-        "output": 0.66,
-        "cacheRead": 0.007,
+        "input": 0.3,
+        "output": 1.2,
+        "cacheRead": 0.006,
         "cacheWrite": 0
       },
       "api": "pi-messages",
@@ -401,7 +527,7 @@
       "lab": "Z.ai",
       "reasoning": true,
       "thinkingLevelMap": {
-        "off": "none",
+        "off": null,
         "minimal": "minimal",
         "low": "low",
         "medium": "medium",
@@ -422,7 +548,6 @@
       },
       "api": "pi-messages",
       "baseUrl": "https://radius.pi.dev/v1",
-      "inputLimits": null,
       "enabled": true
     },
     {
@@ -452,7 +577,6 @@
       },
       "api": "pi-messages",
       "baseUrl": "https://radius.pi.dev/v1",
-      "inputLimits": null,
       "enabled": true
     },
     {
@@ -910,6 +1034,55 @@
             "output": 15,
             "cacheRead": 0.4,
             "cacheWrite": 5
+          }
+        ]
+      },
+      "api": "pi-messages",
+      "baseUrl": "https://radius.pi.dev/v1",
+      "inputLimits": {
+        "images": {
+          "resize": {
+            "maxWidth": 2000,
+            "maxHeight": 2000,
+            "maxBytes": 4718592,
+            "jpegQuality": 80
+          }
+        }
+      },
+      "enabled": true
+    },
+    {
+      "id": "grok-4.7",
+      "name": "Grok 4.7",
+      "lab": "xAI",
+      "reasoning": true,
+      "thinkingLevelMap": {
+        "off": null,
+        "minimal": null,
+        "low": "low",
+        "medium": "medium",
+        "high": "high",
+        "xhigh": "xhigh",
+        "max": null
+      },
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 500000,
+      "maxTokens": 500000,
+      "cost": {
+        "input": 2,
+        "output": 6,
+        "cacheRead": 0.5,
+        "cacheWrite": 0,
+        "tiers": [
+          {
+            "inputTokensAbove": 200000,
+            "input": 4,
+            "output": 12,
+            "cacheRead": 1,
+            "cacheWrite": 0
           }
         ]
       },
