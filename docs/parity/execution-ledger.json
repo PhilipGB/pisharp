@@ -7112,7 +7112,7 @@
       ],
       "evidence": [
         "Current Pi pins @modelcontextprotocol/conformance@0.2.0-alpha.11 and runs modes 2025-03-26, 2025-06-18 and 2025-11-25. Its runner compares each check against a committed baseline. PiSharp has no equivalent harness or baseline yet.",
-        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi\u2019s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp\u2019s equivalent runner and baseline remain to be implemented and classified.",
+        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi’s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp’s equivalent runner and baseline remain to be implemented and classified.",
         "PiSharp candidate based on 10ce13a3: the executable official-suite harness drives production McpRuntime, real registered tools and the OAuth loopback callback. Full run against @modelcontextprotocol/conformance@0.2.0-alpha.11 matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across all 26 scenarios and three protocol modes: 261 checks pass and the same eight known checks fail, each classified. The run verifies selected protocol fallback, SSE reconnect/resume, OAuth scope step-up, tool calls and JSON Schema 2020-12 preservation. Focused MCP tests pass 76/76; terminal tests 24/24; Python tests 38/38; dotnet format passes; warnings-as-errors build has zero warnings/errors; full .NET suite passes 1,343/1,343 with zero skips. See tools/parity/mcp-conformance/README.md.",
         "Exact-head Linux CI run 38212383263 passes on PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d: standard job passes terminal 24/24, Python 38/38, format, warnings-as-errors build and .NET 1,343/1,343 with zero skips; the dedicated official MCP conformance job builds and passes the full three-mode suite. Current Pi remained at 4270522473e677ddba7b093caa0064a3df51d459 after a fresh fetch. The MCP conformance capability is verified; the overall parity gate remains open.",
         "Exact-head Linux CI 38222962860 on PiSharp e92d592b818cb5655046b98abafbd288a5e375d5 passes the official 26-scenario conformance suite across all three protocol modes with 261 passing checks, the same eight documented failures, and no baseline regressions."
@@ -7607,7 +7607,7 @@
       "status": "verified",
       "source": "earendil-works/pi@eba849739511223c51a62bbd7e3f1c00f99fb1d0: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
-        "Audit and match Download model\u2026, repository search, quantization selection and exact owner/repository[:quant] input.",
+        "Audit and match Download model…, repository search, quantization selection and exact owner/repository[:quant] input.",
         "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
         "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
       ],
@@ -11184,5 +11184,48 @@
       "NO_BEHAVIOR_CHANGE": 2
     },
     "policy": "All 24 commits classified before pin advance. P1 repairs are the active implementation slice; P2/P3 remain deferred below feature completion. MATCHED entries require the final verification receipt, not this source inspection alone."
+  },
+  "sol_orchestration": {
+    "starting_sha": "77caa3290a0300e2e02d61039b306260f127872a",
+    "base_sha": "77caa3290a0300e2e02d61039b306260f127872a",
+    "queue_position": 1,
+    "milestone": "Managed packages: queue 1–3; acquisition boundary established before dependent git/CLI work",
+    "mode": "serialized",
+    "isolation_gates": {
+      "two_worker": "not run",
+      "three_worker": "not run"
+    },
+    "environment_fingerprint": {
+      "os": "Linux",
+      "architecture": "x86_64",
+      "toolchain_identity": "dotnet 10.0.112; Node 24.21.0; Python 3.14.4",
+      "logical_cpus": 24,
+      "memory_class": "32 GiB",
+      "worker_profile_base": "/tmp/pisharp-sol-orchestration-20261015"
+    },
+    "fingerprint_comparison": "No previous orchestration fingerprint; serialized startup required",
+    "specialist_probes": {
+      "luna-worker": "gpt-6-luna/xhigh: returned starting SHA",
+      "sol-advisor": "gpt-6.1-sol/ultra: returned starting SHA"
+    },
+    "preflight": "External worktree and worker branch create/remove; isolated dotnet version command; push dry-run passed. Initial checkpoint push follows.",
+    "ssh_workaround": "Per-command GIT_SSH_COMMAND=ssh -F /dev/null; system SSH configuration untouched",
+    "ci_access": "Unauthenticated public GitHub REST API; gh has no credentials",
+    "latest_exact_head_ci": {
+      "sha": "77caa3290a0300e2e02d61039b306260f127872a",
+      "run": 38664773270,
+      "conclusion": "success"
+    },
+    "upstream_observed": "dc939913f6142adce7c09da5707fdd6451b37fb0",
+    "upstream_policy": "Pin retained at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6; bounded delta review pending",
+    "worker_state": "No orphaned worktrees or worker branches at startup; preflight worker removed",
+    "last_full_verification": {
+      "product_sha": "df163a4704f3a498f40046ae6a289b870a2b8af9",
+      "receipt": "docs/parity/fixtures/luna-handover-2026-10-15/verification.json",
+      "result": "green handover receipt; no product changes through starting SHA"
+    },
+    "milestones_since_full_verification": 0,
+    "authorship": [],
+    "advisor_escalations": []
   }
 }

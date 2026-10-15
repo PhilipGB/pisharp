@@ -1,5 +1,36 @@
 # Continuation — PiSharp capability parity
 
+## Sol orchestration startup — 2026-10-15
+
+Base SHA: `77caa3290a0300e2e02d61039b306260f127872a`. This active parity goal
+continues the handover queue below; full parity remains incomplete. Queue position
+is **1**, starting with managed npm packages, then pinned git and package CLI
+(tasks 1–3). Capability counts remain **10 verified / 146 in progress / 38 not started**.
+No P0/P1 is newly established. Deferred findings remain in the handover ledger.
+
+Concurrency mode is **serialized**, both gates not run. The environment fingerprint
+is Linux x86_64; .NET 10.0.112, Node 24.21.0, Python 3.14.4; 24 logical CPUs,
+32 GiB memory class; profile base `/tmp/pisharp-sol-orchestration-20261015`.
+No prior orchestration fingerprint exists. Both requested model probes responded:
+Luna worker at xhigh and Sol advisor at ultra. External worktree/branch lifecycle
+and isolated profile application passed preflight. No orphaned worker state exists.
+
+Local and origin heads match the base SHA, and its exact-head CI
+[38664773270](https://github.com/PhilipGB/pisharp/actions/runs/38664773270) is green.
+Push dry-run succeeds with per-command `GIT_SSH_COMMAND='ssh -F /dev/null'`;
+the system SSH include has an ownership error, so retain this established workaround.
+Use the public GitHub REST API for CI reads; `gh` is unauthenticated.
+The initial checkpoint is pushed before feature mutation.
+
+Configured Pi remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` in
+`/tmp/pisharp-luna-pi`; observed upstream is now
+`dc939913f6142adce7c09da5707fdd6451b37fb0`. Review bounded upstream changes
+without advancing the pin. Last full verification is the green handover receipt
+at product `df163a4704f3a498f40046ae6a289b870a2b8af9`; milestones since that
+verification: **0**. No advisor escalation or feature task completed yet.
+Detailed live orchestration state is `sol_orchestration` in the execution ledger.
+
+
 ## Sol-to-Luna handover — 2026-10-15
 
 This checkpoint supersedes the older next-action paragraphs below. This Sol goal
