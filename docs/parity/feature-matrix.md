@@ -1,17 +1,21 @@
 ## Current integration checkpoint and priority reset — 2026-10-15
 
 Current integrated product source is
-`8f4ab85b8e6160abef93c75a03a5dd21b128a614` on
+`b1394fe65f01fd1efd62dcc69605dd0693422622` on
 `parity/current-pi-completion`; configured Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Codex coverage now includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
 account/session WebSocket reuse, cached continuation deltas, full MAF tool
-loops, JSON-aware function-call cache matching, first-event cancellation and
-pre-output SSE fallback. The llama router preserves loaded models when one
-optional `/props` lookup fails. The full local suite passes **2,070/2,070**
-with zero skips; full solution format and the warnings-as-errors build pass
-with zero warnings. Exact-head CI for this source is pending; the last green
-branch checkpoint was docs-only `c7b8a304` at
+loops, JSON-aware function-call cache matching, inline PNG images, completed
+usage, visible stream failures, cancellation before and after output, and
+resumed-history requests with refreshed credentials and saved Codex affinity.
+The llama router preserves loaded models when optional `/props` lookups fail;
+bare names select exact active catalog entries, and session resume restores the
+saved llama model. Steering queued during the first checkpoint reaches the
+first provider request while preserving later turns. The full local suite
+passes **2,076/2,076** with zero skips; full solution format and the
+warnings-as-errors build pass with zero warnings. Exact-head CI for this source
+is pending; the last green branch checkpoint was docs-only `c7b8a304` at
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 
 All 194 capability IDs remain tracked: **12 verified, 147 in progress, 35 not
@@ -23,8 +27,9 @@ download/context-reload, and twelve-flow terminal receipts should be reused;
 they do not by themselves prove the remaining end-to-end local-model scenario.
 Codex browser/device/manual OAuth, account-scoped Responses streaming,
 WebSocket/cached continuation, function-call tool loops and pre-output SSE
-fallback are implemented. Broader image/usage/error differentials,
-post-output cancellation and authenticated session-resume evidence remain open.
+fallback are implemented. Local fixtures now cover images, usage, errors,
+post-output cancellation and resumed-history requests; live authenticated
+account acceptance and wider current-Pi differentials remain open.
 
 Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi,
 OpenCode, Together, Cloudflare, gateway and unrelated catalog parity is

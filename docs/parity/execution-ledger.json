@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Feature-first functional goal on parity/current-pi-completion. Product source checkpoint 8f4ab85b8e6160abef93c75a03a5dd21b128a614; keep configured Pi pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 12 verified, 147 in progress, 35 not started. Prior queue order is inventory, not current execution priority. Codex subscription and llama.cpp paths lead, followed by core agent/session/tool, TUI/editor and user-facing application behavior. Broad secondary-provider parity is deferred for this goal; full parity remains incomplete.",
+  "source_note": "Feature-first functional goal on parity/current-pi-completion. Product source checkpoint b1394fe65f01fd1efd62dcc69605dd0693422622; keep configured Pi pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 12 verified, 147 in progress, 35 not started. Prior queue order is inventory, not current execution priority. Codex subscription and llama.cpp paths lead, followed by core agent/session/tool, TUI/editor and user-facing application behavior. Broad secondary-provider parity is deferred for this goal; full parity remains incomplete.",
   "feature_first_goal": {
     "updated": "2026-10-15",
     "priority_current_goal_families": [
@@ -40,15 +40,22 @@
     "global_inventory_policy": "Keep required_ids and all per-task statuses. The recorded counts remain 12 verified, 147 in progress and 35 not started until evidence supports status changes. These scope labels do not close or remove any capability.",
     "mixed_row_policy": "Split Codex, llama.cpp or shared core behavior from unrelated provider-specific behavior. Implement the priority portion and leave deferred provider acceptance tracked in its existing task.",
     "provider_freeze": "Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi, OpenCode, Together, Cloudflare, gateway and unrelated catalog work is intentionally deferred unless a P0/P1 regression or shared Codex/llama contract requires a fix.",
-    "source_checkpoint": "8f4ab85b8e6160abef93c75a03a5dd21b128a614",
+    "source_checkpoint": "b1394fe65f01fd1efd62dcc69605dd0693422622",
     "latest_integrated_evidence": {
       "commits": [
         "1cce9abd Preserve Codex tool continuation over WebSocket",
-        "8f4ab85b Keep llama models available when props fail"
+        "8f4ab85b Keep llama models available when props fail",
+        "babc567f Cover Codex WebSocket inline images",
+        "2cd837aa Surface Codex streaming errors and cancellation",
+        "faad9aa2 Switch bare llama model names within provider",
+        "cdecada9 Use retrying loopback test listener",
+        "e0cd5c35 Apply steering queued before the first provider request",
+        "e32c8a1b Resume saved llama sessions across models",
+        "b1394fe6 Keep Codex affinity out of provider conversation ID"
       ],
-      "verification": ".NET 2,070/2,070 with zero skips; full solution format verification and warnings-as-errors build pass with zero warnings.",
-      "scope": "Codex WebSocket function-call streaming, full MAF tool-loop cached continuation with JSON-aware argument matching, cancellation before the first WebSocket event, and fail-soft llama router props metadata.",
-      "remaining": "Codex image/usage/error differentials, cancellation after output, authenticated session-resume evidence, and the end-to-end local llama.cpp model scenario remain open. Exact-head CI is pending."
+      "verification": ".NET 2,076/2,076 with zero skips; focused Codex/session/llama regressions 37/37; full solution format verification and warnings-as-errors build pass with zero warnings.",
+      "scope": "Codex WebSocket MAF tool-loop continuation with JSON-aware argument matching, image/usage/error and post-output-cancellation fixtures, resumed history with refreshed credentials and saved session affinity; fail-soft llama props, exact catalog model switching and cross-model resume; steering queued during the first checkpoint; retrying loopback test listener.",
+      "remaining": "Live authenticated-account acceptance, wider current-Pi Codex differentials, and an end-to-end local llama.cpp model scenario remain open. Exact-head CI is pending."
     }
   },
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",

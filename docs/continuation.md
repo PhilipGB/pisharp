@@ -11,21 +11,23 @@ user-facing application features. Keep the configured Pi checkout pinned at
 The last green exact-head checkpoint was the docs-only `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 Current integrated product source is
-`8f4ab85b8e6160abef93c75a03a5dd21b128a614` on
-`parity/current-pi-completion`. It includes Codex manual
+`b1394fe65f01fd1efd62dcc69605dd0693422622` on
+`parity/current-pi-completion`. Codex coverage includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
-account/session WebSocket reuse, cached `previous_response_id` deltas, and
-full MAF tool-loop continuation. Cached function-call arguments compare as JSON
-values despite serialization whitespace; cancellation before the first
-WebSocket event propagates. Stale cached responses retry once with full
-context; connection-limit failures retry once and then fall back to SSE before
-output. WebSocket events still flow through the Responses SDK reader, and the
-cached socket expires after five idle minutes. The llama router keeps models
-available when an optional per-model `/props` request fails, while retaining
-metadata from successful peers. The full local suite passes **2,070/2,070**
-with zero skips; full solution format and the warnings-as-errors build pass
-with zero warnings. Exact-head CI for `8f4ab85b` is pending; the last green
-exact-head checkpoint remains docs-only `c7b8a304` at run
+account/session WebSocket reuse, cached `previous_response_id` deltas, MAF
+tool-loop continuation with JSON-aware argument matching, inline PNG images,
+completed usage, visible stream failures, and cancellation after output begins.
+Resumed requests carry the saved Codex session ID as private provider metadata
+while MAF still sends the saved user and assistant history in `input`; the
+focused test also checks refreshed credentials and session headers. The llama
+router keeps models available when optional `/props` requests fail, bare model
+names switch to exact active catalog items, and resuming a session restores its
+saved llama model. Steering queued during the initial checkpoint reaches the
+first provider request without consuming the next queued turn. The full local
+suite passes **2,076/2,076** with zero skips; full solution format and the
+warnings-as-errors build pass with zero warnings. Exact-head CI for this product
+source is pending; the last green exact-head checkpoint remains docs-only
+`c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 
 All 194 capability IDs remain in the global inventory at **12 verified, 147 in
@@ -42,12 +44,15 @@ Current execution priority is:
    Browser PKCE, device login, private credentials, the current model catalog,
    account-scoped Responses streaming, cached WebSocket continuation,
    function-call tool loops and pre-output SSE fallback are implemented.
-   Broader image/usage/error differentials, cancellation after output begins,
-   and end-to-end authenticated session-resume scenarios remain open.
+   Local request fixtures cover inline images, completed usage, stream errors,
+   post-output cancellation and resumed history with refreshed credentials.
+   Live authenticated-account acceptance and wider current-Pi behavior
+   differentials remain open.
 2. **llama.cpp path:** reuse the verified router configuration, model
    discovery/selection, Hugging Face download, load/unload, context reload,
-   twelve current-Pi paired terminal flows, and fail-soft optional `/props`
-   metadata. Those deterministic receipts do not substitute for the remaining
+   twelve current-Pi paired terminal flows, fail-soft optional `/props`
+   metadata, exact catalog-name model switching, and cross-model session
+   resume. Those deterministic receipts do not substitute for the remaining
    end-to-end local model acceptance. No `llama-server` or test endpoint is
    configured in this environment, so a live model smoke test has not run.
 3. **Core and interactive use:** agent/tool loops, prompt queues, cancellation,
