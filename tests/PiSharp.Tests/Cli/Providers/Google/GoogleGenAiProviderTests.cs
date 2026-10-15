@@ -85,8 +85,10 @@ public sealed class GoogleGenAiProviderTests
         }
     }
 
-    [Fact]
-    public async Task GoogleGenAiUsesItsRealSseHttpProtocolAndProjectsMafOptionsAndUsage()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GoogleAndVertexUseTheirRealSseProtocolsAndProjectMafOptionsAndUsage(bool vertex)
     {
         using var listener = StartListener(out var port);
         string? requestPath = null;
@@ -113,10 +115,15 @@ public sealed class GoogleGenAiProviderTests
         });
 
         var endpoint = new Uri($"http://127.0.0.1:{port}/v1beta");
-        var model = GoogleModel("gemini-3.5-flash") with { BaseUrl = endpoint.ToString() };
-        var provider = new ProviderProfile("google", "Google", endpoint,
-            true, false, "GEMINI_API_KEY", null, [model], Api: "google-generative-ai");
-        var selection = new ModelSelection(provider, model, "fixture-gemini-key", true, "fixture");
+        var model = GoogleModel("gemini-3.5-flash", vertex) with { BaseUrl = endpoint.ToString() };
+        var provider = vertex
+            ? new ProviderProfile("google-vertex", "Google Vertex AI", endpoint, true, false,
+                "GOOGLE_CLOUD_API_KEY", null, [model], Api: "google-vertex",
+                GoogleVertex: new GoogleVertexProviderOptions("fixture-project", "us-central1", null))
+            : new ProviderProfile("google", "Google", endpoint, true, false,
+                "GEMINI_API_KEY", null, [model], Api: "google-generative-ai");
+        var selection = new ModelSelection(provider, model, "fixture-gemini-key", true,
+            vertex ? "GOOGLE_CLOUD_API_KEY" : "GEMINI_API_KEY");
         var echo = AIFunctionFactory.Create((string text) => "echo:" + text, name: "echo");
         var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/bX8AAAAASUVORK5CYII=");
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -136,7 +143,8 @@ public sealed class GoogleGenAiProviderTests
             updates.Add(update);
         await server.WaitAsync(deadline.Token);
 
-        Assert.Equal("/v1beta/models/gemini-3.5-flash:streamGenerateContent", requestPath);
+        Assert.Equal(vertex ? "/v1beta/publishers/google/models/gemini-3.5-flash:streamGenerateContent" :
+            "/v1beta/models/gemini-3.5-flash:streamGenerateContent", requestPath);
         Assert.Equal("?alt=sse", query);
         Assert.Equal("fixture-gemini-key", apiKey);
         Assert.Null(authorization);
@@ -164,7 +172,7 @@ public sealed class GoogleGenAiProviderTests
         Assert.Equal("echo", functionCall.Name);
         Assert.Equal("tool_calls", updates[^1].FinishReason?.ToString());
         var usage = Assert.Single(updates.SelectMany(update => update.Contents).OfType<UsageContent>()).Details;
-        Assert.Equal(100, usage.InputTokenCount);
+        Assert.Equal(80, usage.InputTokenCount);
         Assert.Equal(40, usage.OutputTokenCount);
         Assert.Equal(20, usage.CachedInputTokenCount);
         Assert.Equal(10, usage.ReasoningTokenCount);
@@ -280,10 +288,107 @@ public sealed class GoogleGenAiProviderTests
         Assert.Equal("image read", geminiTwoContents[2]!["parts"]![0]!["functionResponse"]!["response"]!["output"]!.GetValue<string>());
         Assert.Equal("Tool result image:", geminiTwoContents[3]!["parts"]![0]!["text"]!.GetValue<string>());
         Assert.Equal("image/png", geminiTwoContents[3]!["parts"]![1]!["inlineData"]!["mimeType"]!.GetValue<string>());
+
+        using var gemmaFour = new GoogleGenAiChatClient(new HttpClient(), new Uri("https://example.test/v1beta"), "key",
+            GoogleModel("gemma-4-26b-a4b-it"));
+        var gemmaFourContents = gemmaFour.BuildRequest(messages, null)["contents"]!.AsArray();
+        Assert.Equal(3, gemmaFourContents.Count);
+        Assert.Equal("image/png", gemmaFourContents[2]!["parts"]![0]!["functionResponse"]!["parts"]![0]!["inlineData"]!["mimeType"]!.GetValue<string>());
+
+        using var geminiLive = new GoogleGenAiChatClient(new HttpClient(), new Uri("https://example.test/v1beta"), "key",
+            GoogleModel("gemini-3.5-flash") with { Id = "gemini-live-3-pro" });
+        var liveCall = geminiLive.BuildRequest(messages, null)["contents"]![1]!["parts"]![1]!["functionCall"]!;
+        Assert.Equal("call_one", liveCall["id"]!.GetValue<string>());
     }
 
-    private static ModelDescriptor GoogleModel(string id) =>
-        GoogleGenAiModelCatalog.Load().Single(model => model.Id == id);
+    [Fact]
+    public void GoogleHistoryRejectsMalformedBase64ThoughtSignatures()
+    {
+        var signed = new TextReasoningContent("")
+        {
+            ProtectedData = "A===",
+            AdditionalProperties = SignatureProperties("gemini-3.5-flash", "A===")
+        };
+        using var client = new GoogleGenAiChatClient(new HttpClient(), new Uri("https://example.test/v1beta"), "key",
+            GoogleModel("gemini-3.5-flash"));
+
+        var contents = client.BuildRequest([
+            new ChatMessage(ChatRole.User, "continue"),
+            new ChatMessage(ChatRole.Assistant, [signed])
+        ], null)["contents"]!.AsArray();
+
+        Assert.Single(contents);
+        Assert.DoesNotContain("A===", contents.ToJsonString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(false, "SAFETY")]
+    [InlineData(false, "PROHIBITED_CONTENT")]
+    [InlineData(true, "IMAGE_SAFETY")]
+    [InlineData(true, "MALFORMED_FUNCTION_CALL")]
+    public async Task GoogleAndVertexTreatPinnedPiErrorFinishReasonsAsErrors(bool vertex, string finishReason)
+    {
+        using var listener = StartListener(out var port);
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            request.Response.ContentType = "text/event-stream";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync($"data: {{\"responseId\":\"error-1\",\"candidates\":[{{\"finishReason\":\"{finishReason}\"}}]}}\n\n");
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        var endpoint = new Uri($"http://127.0.0.1:{port}/v1beta");
+        var model = GoogleModel("gemini-3.5-flash") with { BaseUrl = endpoint.ToString() };
+        using var client = new GoogleGenAiChatClient(new HttpClient(), endpoint, "key", model,
+            vertex ? new GoogleVertexRequestOptions(null, null, false) : null);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var updates = new List<ChatResponseUpdate>();
+        await foreach (var update in client.GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "hello")],
+                           cancellationToken: deadline.Token))
+            updates.Add(update);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("error", updates[^1].FinishReason?.ToString());
+        Assert.Equal(finishReason, Assert.IsType<string>(updates[^1].AdditionalProperties!["pisharp.google.rawFinishReason"]));
+    }
+
+    [Theory]
+    [InlineData(false, "Google GenAI")]
+    [InlineData(true, "Google Vertex")]
+    public async Task GoogleAndVertexRedactKeysFromProviderHttpErrors(bool vertex, string service)
+    {
+        using var listener = StartListener(out var port);
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            request.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("{\"error\":{\"message\":\"quota rejected secret-google-key\"}}");
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        var endpoint = new Uri($"http://127.0.0.1:{port}/v1beta");
+        var model = GoogleModel("gemini-3.5-flash") with { BaseUrl = endpoint.ToString() };
+        using var client = new GoogleGenAiChatClient(new HttpClient(), endpoint, "secret-google-key", model,
+            vertex ? new GoogleVertexRequestOptions(null, null, false) : null);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetResponseAsync(
+            [new ChatMessage(ChatRole.User, "hello")], cancellationToken: deadline.Token));
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, exception.StatusCode);
+        Assert.Contains(service, exception.Message, StringComparison.Ordinal);
+        Assert.Contains("quota rejected [redacted]", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-google-key", exception.Message, StringComparison.Ordinal);
+    }
+
+    private static ModelDescriptor GoogleModel(string id, bool vertex = false) => vertex
+        ? GoogleVertexModelCatalog.Load().Single(model => model.Id == id)
+        : GoogleGenAiModelCatalog.Load().Single(model => model.Id == id);
 
     private static AdditionalPropertiesDictionary SignatureProperties(string modelId, string signature) => new()
     {
