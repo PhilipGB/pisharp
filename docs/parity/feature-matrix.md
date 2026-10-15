@@ -1,7 +1,7 @@
 ## Current integration checkpoint and priority reset — 2026-10-15
 
 Current integrated product source is
-`b1394fe65f01fd1efd62dcc69605dd0693422622` on
+`7e09c26f16adfec94b8a88e4a2f45e136204f7e4` on
 `parity/current-pi-completion`; configured Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Codex coverage now includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
@@ -9,17 +9,24 @@ account/session WebSocket reuse, cached continuation deltas, full MAF tool
 loops, JSON-aware function-call cache matching, inline PNG images, completed
 usage, visible stream failures, cancellation before and after output, and
 resumed-history requests with refreshed credentials and saved Codex affinity.
+Supported models declare grammar tools as Responses custom tools, with
+WebSocket/SSE event projection, cached replay and ordinary Responses provider
+switching covered by deterministic fixtures.
 The llama router preserves loaded models when optional `/props` lookups fail;
 bare names select exact active catalog entries, and session resume restores the
-saved llama model. Steering queued during the first checkpoint reaches the
-first provider request while preserving later turns. The full local suite
-passes **2,076/2,076** with zero skips; full solution format and the
+saved llama model. Normal interactive fixtures execute the local `read` tool,
+continue with its result, and cancel streamed output without replay. Core tests
+cover steering-aware compaction, retry settlement after context restoration
+failure, and RPC prevalidation before active-run cancellation. The full local
+suite passes **2,083/2,083** with zero skips; full solution format and the
 warnings-as-errors build pass with zero warnings. Exact-head CI for this source
 is pending; the last green branch checkpoint was docs-only `c7b8a304` at
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 
-All 194 capability IDs remain tracked: **12 verified, 147 in progress, 35 not
-started**. The old queue order is inventory, not current execution priority.
+All 194 capability IDs remain tracked: **12 verified, 148 in progress, 34 not
+started**. The grammar/custom Responses slice moved from not started to in
+progress based on its new deterministic implementation evidence. The old queue
+order is inventory, not current execution priority.
 This goal prioritizes Codex subscription usability and llama.cpp/local-model
 usability, then core agent/session/tool behavior, TUI/editor/navigation, and
 normal CLI/RPC and application features. Existing llama router, model,
@@ -28,8 +35,9 @@ they do not by themselves prove the remaining end-to-end local-model scenario.
 Codex browser/device/manual OAuth, account-scoped Responses streaming,
 WebSocket/cached continuation, function-call tool loops and pre-output SSE
 fallback are implemented. Local fixtures now cover images, usage, errors,
-post-output cancellation and resumed-history requests; live authenticated
-account acceptance and wider current-Pi differentials remain open.
+post-output cancellation, resumed-history requests and grammar/custom tools;
+live authenticated account acceptance and wider current-Pi differentials
+remain open.
 
 Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi,
 OpenCode, Together, Cloudflare, gateway and unrelated catalog parity is

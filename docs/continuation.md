@@ -11,28 +11,37 @@ user-facing application features. Keep the configured Pi checkout pinned at
 The last green exact-head checkpoint was the docs-only `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 Current integrated product source is
-`b1394fe65f01fd1efd62dcc69605dd0693422622` on
+`7e09c26f16adfec94b8a88e4a2f45e136204f7e4` on
 `parity/current-pi-completion`. Codex coverage includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
 account/session WebSocket reuse, cached `previous_response_id` deltas, MAF
 tool-loop continuation with JSON-aware argument matching, inline PNG images,
 completed usage, visible stream failures, and cancellation after output begins.
+Supported Codex models now declare grammar tools as Responses custom tools;
+WebSocket and SSE custom-input events map into MAF function calls, custom call
+outputs replay correctly, and switching to a standard Responses provider sends
+ordinary function items.
 Resumed requests carry the saved Codex session ID as private provider metadata
 while MAF still sends the saved user and assistant history in `input`; the
 focused test also checks refreshed credentials and session headers. The llama
 router keeps models available when optional `/props` requests fail, bare model
 names switch to exact active catalog items, and resuming a session restores its
-saved llama model. Steering queued during the initial checkpoint reaches the
-first provider request without consuming the next queued turn. The full local
-suite passes **2,076/2,076** with zero skips; full solution format and the
+saved llama model. Normal interactive llama fixtures now execute a local
+`read` tool and continue with its result; another fixture cancels after visible
+streamed text, settles the run and accepts a later prompt without replay. Core
+fixtures verify steering reaches the first request, compaction retains trailing
+steering after a completed tool result, retry restoration failures settle, and
+RPC validates a replacement provider before cancelling the active run. The
+full local suite passes **2,083/2,083** with zero skips; full solution format and the
 warnings-as-errors build pass with zero warnings. Exact-head CI for this product
 source is pending; the last green exact-head checkpoint remains docs-only
 `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 
-All 194 capability IDs remain in the global inventory at **12 verified, 147 in
-progress, and 35 not started**. Do not change those totals simply because this
-goal reprioritizes work. The existing ordered queue remains useful inventory;
+All 194 capability IDs remain in the global inventory at **12 verified, 148 in
+progress, and 34 not started**. Change those totals only when evidence supports
+a status change, not simply because this goal reprioritizes work. The existing
+ordered queue remains useful inventory;
 queue 13 is no longer an instruction to implement Anthropic alongside Codex.
 Split mixed work and leave unrelated provider requirements tracked.
 
@@ -45,16 +54,19 @@ Current execution priority is:
    account-scoped Responses streaming, cached WebSocket continuation,
    function-call tool loops and pre-output SSE fallback are implemented.
    Local request fixtures cover inline images, completed usage, stream errors,
-   post-output cancellation and resumed history with refreshed credentials.
+   post-output cancellation, resumed history with refreshed credentials, and
+   grammar/custom calls across WebSocket, SSE fallback and provider switching.
    Live authenticated-account acceptance and wider current-Pi behavior
    differentials remain open.
 2. **llama.cpp path:** reuse the verified router configuration, model
    discovery/selection, Hugging Face download, load/unload, context reload,
    twelve current-Pi paired terminal flows, fail-soft optional `/props`
    metadata, exact catalog-name model switching, and cross-model session
-   resume. Those deterministic receipts do not substitute for the remaining
-   end-to-end local model acceptance. No `llama-server` or test endpoint is
-   configured in this environment, so a live model smoke test has not run.
+   resume, local read-tool execution and streamed cancellation through the
+   interactive route. Those deterministic receipts do not substitute for the
+   remaining end-to-end local model acceptance. No `llama-server` or test
+   endpoint is configured in this environment, so a live model smoke test has
+   not run.
 3. **Core and interactive use:** agent/tool loops, prompt queues, cancellation,
    retries, durable session lifecycle, compaction/context, built-in tools,
    TUI/editor/navigation, normal CLI/RPC, settings/resources/extensions, MCP,

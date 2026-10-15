@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Feature-first functional goal on parity/current-pi-completion. Product source checkpoint b1394fe65f01fd1efd62dcc69605dd0693422622; keep configured Pi pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 12 verified, 147 in progress, 35 not started. Prior queue order is inventory, not current execution priority. Codex subscription and llama.cpp paths lead, followed by core agent/session/tool, TUI/editor and user-facing application behavior. Broad secondary-provider parity is deferred for this goal; full parity remains incomplete.",
+  "source_note": "Feature-first functional goal on parity/current-pi-completion. Product source checkpoint 7e09c26f16adfec94b8a88e4a2f45e136204f7e4; keep configured Pi pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 12 verified, 148 in progress, 34 not started. Prior queue order is inventory, not current execution priority. Codex subscription and llama.cpp paths lead, followed by core agent/session/tool, TUI/editor and user-facing application behavior. Broad secondary-provider parity is deferred for this goal; full parity remains incomplete.",
   "feature_first_goal": {
     "updated": "2026-10-15",
     "priority_current_goal_families": [
@@ -37,10 +37,10 @@
       "provider-api-azure-foundry-chat-completions",
       "provider-api-mistral-conversations"
     ],
-    "global_inventory_policy": "Keep required_ids and all per-task statuses. The recorded counts remain 12 verified, 147 in progress and 35 not started until evidence supports status changes. These scope labels do not close or remove any capability.",
+    "global_inventory_policy": "Keep required_ids and all per-task statuses. Current counts are 12 verified, 148 in progress and 34 not started; change them only when evidence supports a status change. Priority labels do not close or remove any capability.",
     "mixed_row_policy": "Split Codex, llama.cpp or shared core behavior from unrelated provider-specific behavior. Implement the priority portion and leave deferred provider acceptance tracked in its existing task.",
     "provider_freeze": "Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi, OpenCode, Together, Cloudflare, gateway and unrelated catalog work is intentionally deferred unless a P0/P1 regression or shared Codex/llama contract requires a fix.",
-    "source_checkpoint": "b1394fe65f01fd1efd62dcc69605dd0693422622",
+    "source_checkpoint": "7e09c26f16adfec94b8a88e4a2f45e136204f7e4",
     "latest_integrated_evidence": {
       "commits": [
         "1cce9abd Preserve Codex tool continuation over WebSocket",
@@ -51,11 +51,17 @@
         "cdecada9 Use retrying loopback test listener",
         "e0cd5c35 Apply steering queued before the first provider request",
         "e32c8a1b Resume saved llama sessions across models",
-        "b1394fe6 Keep Codex affinity out of provider conversation ID"
+        "b1394fe6 Keep Codex affinity out of provider conversation ID",
+        "1b52982b Cover llama tool use through interactive route",
+        "f0d09ba6 Compact active tool turns with trailing steering",
+        "e57dfbee Finalize retries when context restoration fails",
+        "10158127 Validate switch provider before cancelling active run",
+        "f5cd0bb5 Test cancellation of local llama streams",
+        "7e09c26f Add Codex grammar tool response support"
       ],
-      "verification": ".NET 2,076/2,076 with zero skips; focused Codex/session/llama regressions 37/37; full solution format verification and warnings-as-errors build pass with zero warnings.",
-      "scope": "Codex WebSocket MAF tool-loop continuation with JSON-aware argument matching, image/usage/error and post-output-cancellation fixtures, resumed history with refreshed credentials and saved session affinity; fail-soft llama props, exact catalog model switching and cross-model resume; steering queued during the first checkpoint; retrying loopback test listener.",
-      "remaining": "Live authenticated-account acceptance, wider current-Pi Codex differentials, and an end-to-end local llama.cpp model scenario remain open. Exact-head CI is pending."
+      "verification": ".NET 2,083/2,083 with zero skips; Codex and llama provider/TUI regressions 25/25; context/compaction 65/65; retry/lifecycle 38/38; RPC session replacement 2/2; full solution format verification and warnings-as-errors build pass with zero warnings.",
+      "scope": "Codex WebSocket MAF tool-loop continuation, grammar/custom Responses declarations and SSE/WebSocket call projection/replay with provider-switch serialization, images, usage, errors, cancellation and resumed history; llama model switching/resume, local read-tool use and interactive stream cancellation; steering-aware in-flight compaction, retry settlement after restore failure, and provider validation before RPC session-switch cancellation.",
+      "remaining": "Live authenticated-account acceptance, a real local llama.cpp server/model end-to-end run, broader current-Pi differentials, and remaining TUI/CLI/RPC/resources/MCP/Codemode workflows remain open. Exact-head CI is pending."
     }
   },
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
@@ -309,7 +315,8 @@
         "RPC settlement race repair: two barrier regressions fail deterministically against old code (settled before save and next prompt rejected while marker writer still completing). Three new tests pass, including save-failure ordering/recovery; 40 focused RPC checks and full 1735 tests pass with zero skips. Both original Linux clone/PTY cases pass ten repetitions each alongside the full suite; existing timeouts unchanged. RPC persists before public settlement, separates logical active state from task cleanup, and joins cleanup before the next run. Clone process test now asserts its active-prompt acknowledgement. Historical failed CI 38493836105 is retained; its exact schedule is unavailable, but the reproduced race explains the pipe-wait symptom. See docs/parity/fixtures/rpc-settlement-current-pi-2026-10-14.json. Exact repair CI pending; broad RPC parity remains open.",
         "Both focused timing repair commits pass exact-head Linux CI: terminal d462f4ae865d97bb167558f94df8a68082129e5d / run 38532839354 / 1732 tests; RPC bac3f6645feaf156d40b3761caab972a46c1e569 / run 38533106677 / 1735 tests. Both jobs pass, zero skips; Node 24 and Python 49 pass. Five persisted immediate post-settlement Pi/native RPC turns match prompt acknowledgements, provider/settlement counts and final idle state. Original failures remain historical evidence. Deterministic fail-first regressions plus ten repetitions of each original test and six paired fullscreen checkpoints support resolving the characterized races. Whole lifecycle/TUI/RPC parity remains open.",
         "Current configured Pi b06c1f2c: 175 partial JSON inputs and 18 native provider calls match; five SDK fail-first rows and native Bedrock cases protect rejection, with real MAF proving zero function invocations. See Luna contracts/verification receipts.",
-        "Current Pi packages/ai/src/utils/retry.ts marks subscription_sharing_usage_unavailable and subscription_sharing_user_unavailable retryable, while subscription_sharing_usage_limit_exceeded is terminal. AgentRunRetryPolicy now covers those three Codex subscription cases; CapacityRetryTests exercises each. Focused retry tests pass 10/10 and the integrated solution warnings-as-errors build passes with zero warnings at source 2bf3d989. This is not full retry parity or a live Codex service differential."
+        "Current Pi packages/ai/src/utils/retry.ts marks subscription_sharing_usage_unavailable and subscription_sharing_user_unavailable retryable, while subscription_sharing_usage_limit_exceeded is terminal. AgentRunRetryPolicy now covers those three Codex subscription cases; CapacityRetryTests exercises each. Focused retry tests pass 10/10 and the integrated solution warnings-as-errors build passes with zero warnings at source 2bf3d989. This is not full retry parity or a live Codex service differential.",
+        "AgentRunRetryPolicyTests.FailedContextRestoreEndsScheduledRetryAndFailsTheTurn verifies that retry context-restore failure returns Failed, emits one unsuccessful auto_retry_end with the restore error, and does not start a retry attempt. Retry plus lifecycle tests pass 38/38."
       ],
       "dependencies": [],
       "handover_review": {
@@ -437,7 +444,8 @@
         "RpcActiveModelSelectionProcessTests.RpcModelSelectionAndCycleDuringBlockedToolTurnChangeTheNextProviderRequest now also changes active models during a blocked Bash turn, then manually compacts and verifies the selected model's one-token retention override drives the persisted summary boundary. This closes the active model-override propagation check for this slice; it does not establish settings editing while busy.",
         "PiSharp local validation after the current-main compaction/default changes: `dotnet format PiSharp.slnx --verify-no-changes --no-restore` passed; `dotnet build PiSharp.slnx --artifacts-path /tmp/pisharp-ci-characterization --no-restore --warnaserror` succeeded with 0 warnings/errors; focused compaction/settings/runtime/process tests passed 91/91; full `dotnet test` passed 692/692 with 0 skips. Source commit `56f0659d9061c448a1837529804493c2e83d1e3e` passed exact-head Linux CI run `36394452133`: restore, format, warnings-as-errors build, and 692/692 tests (0 skipped). In-flight multi-cycle/overflow projection, provider-usage projection, and exact token-estimate parity remain open, so this feature stays in progress.",
         "Fresh unchanged-product baseline at Pi ee409a85 / PiSharp 22eeb2a53d: all 33 terminal fixtures were run at one explicit case each, retaining startup/editor/settings/trust/Markdown/overlay differences and the thinking-toggle HTTP mismatch. Two setup defects were repaired with separate repetitions. See docs/parity/fixtures/current-pi-refresh-2026-10-13/baseline.json. Full matrices and capability completion remain open.",
-        "Keyboard regression at Pi 3daa2028: the existing Kitty prompt-hint fixture still matches 15 frames at its original owned workspace, but a longer isolated workspace path retains four named busy context-percentage cells (Pi 0.5 vs native 0.4) with identical 15 canonical render frames and matching normalized HTTP. No normalization removes these differences; precise estimator/path/usage cause remains open. See docs/parity/fixtures/terminal-keyboard-fallback-current-pi-2026-10-14.json."
+        "Keyboard regression at Pi 3daa2028: the existing Kitty prompt-hint fixture still matches 15 frames at its original owned workspace, but a longer isolated workspace path retains four named busy context-percentage cells (Pi 0.5 vs native 0.4) with identical 15 canonical render frames and matching normalized HTTP. No normalization removes these differences; precise estimator/path/usage cause remains open. See docs/parity/fixtures/terminal-keyboard-fallback-current-pi-2026-10-14.json.",
+        "InFlightContextBudgetTests.SteeringAfterOversizedToolResultDoesNotHideTheActiveTurnFromCompaction verifies that a large completed tool pair can be summarized while steering queued after the result remains in the projected request; raw tool history is not sent in the bounded projection. The context-budget plus compaction group passes 65/65."
       ],
       "dependencies": [],
       "handover_review": {
@@ -1044,7 +1052,8 @@
         "Paired installed Pi 0.87.1 / PiSharp CLI crash-process differential at current Pi 2b0a123de98318c2ff8069661721ce0c3794c34e: both continuation requests now contain an assistant tool call followed by tool result \"No result provided\"; PiSharp additionally sends its durable Outcome UNKNOWN warning and does not replay the side effect. Both processes leave one x marker and restart with exit 0; RPC get_messages and the durable PiSharp session omit the synthetic result. See docs/parity/fixtures/session-crash-recovery-baseline.md. A fail-first test reproduced same-process lock bypass on Linux; ConcurrentSessionLeasesInOneProcessWaitForTheCurrentWriter, ConcurrentProcessSaveWaitsForTheSessionLeaseAndPersistsTheToolOutcome and ConcurrentStoresRejectStaleWrites pass after adding the in-process gate. A second fail-first Linux test reproduced the same-process gate bypass through a symlinked session-directory alias; ConcurrentSessionLeaseAliasesWaitForTheCurrentWriter now confirms both aliases wait on the same gate. The three focused lease/stale-write tests pass 3/3. Exact-head source 84aa91b2da8174f1c67318f65529a56549098ec1 passed Linux CI run 36349575501: restore, format, warnings-as-errors build with 0 warnings/errors, and 674/674 tests (0 skipped). The macOS-specific path compiles and its process test is enabled, but native macOS execution has not been available.",
         "Current Pi main 6f7551516b84278eb9da1c340c8e7bc66be1a6ba CLI crash replay on 2026-09-28 used the same crash-window-fixture Bash side effect as CrashRecoveryProcessTests.CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool: the first process persisted the user and assistant tool call but no result, was killed after writing one x marker, and the resumed provider request was system,user,assistant,tool,user with synthetic No result provided immediately after the orphan call; the restarted CLI exited 0 with empty stderr and did not repeat the side effect. The matching PiSharp process test additionally verifies durable run_recovered/Outcome UNKNOWN warning and that the provider-only result is absent from RPC and session history. Two current-Pi SessionManager.open processes released together appended valid sibling rows under the same parent with no writer lock; PiSharp serializes saves and rejects stale snapshots. Current Pi file-operations.test.ts plus agent-session-concurrent.test.ts passed 40/40; PiSharp recovery/lock/JSONL focused tests passed 7/7, ConcurrentStoresRejectStaleWrites passed 1/1, and the full suite at source commit 56f0659d9061c448a1837529804493c2e83d1e3e passed exact-head Linux CI run 36394452133 with 692/692. Native macOS lock execution and wider session-manager behavior remain open.",
         "Current-Pi share differential exposed a canonical snapshot restoring the previous branch after explicit null selection. Fail-first Core clone and retained-history share cases confirm it; Clone now preserves the explicit selected head after copying entries. Eight Core controls and two empty-share cases pass, as does the 1636-test full working tree with zero skips. Evidence: docs/parity/fixtures/current-pi-refresh-2026-10-13/null-selection-clone.json. Wider session parity remains in progress.",
-        "Startup flags process fixture at bbb0a21606 fails exact Linux CI 38618979075 after its 12-second exit wait (1910 passed / one failed / zero skipped). A controlled /models response-body stall deterministically fails the same fixture; slow headers and eight concurrent slow-header controls pass while still making catalogue requests. Explicit offline mode and isolated HOME/agent configuration remove the irrelevant network dependency; eight stable concurrent recovery runs pass with zero HTTP requests and all original session/model/conflict assertions/deadlines retained. See docs/parity/fixtures/startup-flags-network-isolation-2026-10-14.json. Exact historical CI cause is not proven; quiet-startup/PTY calibration concerns remain separately open."
+        "Startup flags process fixture at bbb0a21606 fails exact Linux CI 38618979075 after its 12-second exit wait (1910 passed / one failed / zero skipped). A controlled /models response-body stall deterministically fails the same fixture; slow headers and eight concurrent slow-header controls pass while still making catalogue requests. Explicit offline mode and isolated HOME/agent configuration remove the irrelevant network dependency; eight stable concurrent recovery runs pass with zero HTTP requests and all original session/model/conflict assertions/deadlines retained. See docs/parity/fixtures/startup-flags-network-isolation-2026-10-14.json. Exact historical CI cause is not proven; quiet-startup/PTY calibration concerns remain separately open.",
+        "RpcSessionReplacementProcessTests.InvalidSwitchTargetDoesNotCancelAnActiveRun now also sends a valid native session whose provider is unknown; its failed switch leaves the active provider stream running and settles it normally after release. Session-replacement process tests pass 2/2."
       ],
       "dependencies": [],
       "handover_review": {
@@ -7236,15 +7245,19 @@
     {
       "id": "provider-responses-grammar-tools",
       "title": "Responses grammar/custom tools and switching",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "earendil-works/pi@bc2d8dc1c46c50f2c6a0f3237e6a2453817e51a1",
       "acceptance": [
         "Declare grammar tools, parse custom-tool streaming input, replay custom/function items with type-correct item IDs and preserve canonical call/result linkage across model/provider switches.",
         "Compare current-Pi request bodies, SSE events, errors and persisted replay through deterministic fixtures."
       ],
-      "implementation": [],
+      "implementation": [
+        "src/PiSharp.Cli/Providers/OpenAI/OpenAiCodexResponsesClientFactory.cs projects constrainedSampling grammar metadata into Codex custom tool declarations and maps canonical function call/output history back into custom Responses input items.",
+        "src/PiSharp.Cli/Providers/OpenAI/OpenAiCodexWebSocketBridgeHandler.cs and OpenAiCodexGrammarSseStream.cs normalize custom-tool input events from WebSocket and SSE into the function-call update shape consumed by MAF."
+      ],
       "evidence": [
-        "Current source inspected during the 2026-10-02 audit; PiSharp has no equivalent verified implementation."
+        "Current source inspected during the 2026-10-02 audit; PiSharp has no equivalent verified implementation.",
+        "OpenAiCodexProviderTests covers a supported Codex grammar declaration, streamed custom input and replay as custom_tool_call_output over cached WebSocket continuation, custom SSE events after WebSocket connection-limit fallback, and switch to an ordinary Responses provider with standard function_call/function_call_output items. Focused Codex provider tests pass 14/14; the combined Codex/llama provider groups pass 25/25; solution format and warnings-as-errors build pass. Deterministic local fixtures only."
       ],
       "dependencies": [],
       "handover_review": {
@@ -7256,7 +7269,7 @@
         ],
         "implemented_source": "implementation field on this task",
         "existing_evidence": "evidence field on this task",
-        "remaining_proof": "Close the explicit acceptance list for Responses grammar/custom tools and switching with the queue task completion conditions below. Existing implementation and evidence fields enumerate what is already present; no broader internal-equivalence criterion is added.",
+        "remaining_proof": "Request declaration, custom SSE/WebSocket updates, replay linkage and ordinary Responses provider switching now have deterministic local fixtures. Compare those request/event/error and persisted replay contracts against the configured Pi pin; preserve the capability as in_progress until the paired evidence is complete.",
         "queue_orders": [
           17
         ],
