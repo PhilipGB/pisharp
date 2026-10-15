@@ -28,6 +28,7 @@
     <EmbeddedResource Include="Providers\Data\classifier-models.json" LogicalName="PiSharp.Cli.Providers.Data.classifier-models.json" />
     <EmbeddedResource Include="Providers\Data\mistral-models.json" LogicalName="PiSharp.Cli.Providers.Data.mistral-models.json" />
     <EmbeddedResource Include="Providers\Data\azure-openai-responses-models.json" LogicalName="PiSharp.Cli.Providers.Data.azure-openai-responses-models.json" />
+    <EmbeddedResource Include="Providers\Data\azure-foundry-chat-completions-models.json" LogicalName="PiSharp.Cli.Providers.Data.azure-foundry-chat-completions-models.json" />
     <EmbeddedResource Include="Providers\Data\openai-codex-responses-models.json" LogicalName="PiSharp.Cli.Providers.Data.openai-codex-responses-models.json" />
     <EmbeddedResource Include="Providers\Data\google-generative-ai-models.json" LogicalName="PiSharp.Cli.Providers.Data.google-generative-ai-models.json" />
     <EmbeddedResource Include="Providers\Data\google-vertex-models.json" LogicalName="PiSharp.Cli.Providers.Data.google-vertex-models.json" />

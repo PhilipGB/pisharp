@@ -225,7 +225,7 @@ public sealed class ProviderModelRuntime
                 continue;
             }
             // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
-            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "huggingface" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock" or "radius")
+            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "huggingface" or "azure" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock" or "radius")
             {
                 result.AddRange(providerModels.Select(model => model with { Provider = provider.Id }));
                 result.AddRange(VirtualModelsFor(provider.Id));

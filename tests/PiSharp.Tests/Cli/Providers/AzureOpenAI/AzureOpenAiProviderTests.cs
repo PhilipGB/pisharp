@@ -12,6 +12,7 @@ public sealed class AzureOpenAiProviderTests
 {
     [Theory]
     [InlineData("https://marc-quicktests-resource.cognitiveservices.azure.com", "https://marc-quicktests-resource.cognitiveservices.azure.com/openai/v1")]
+    [InlineData("https://sample.services.ai.azure.com", "https://sample.services.ai.azure.com/openai/v1")]
     [InlineData("https://my-resource.openai.azure.com/openai", "https://my-resource.openai.azure.com/openai/v1")]
     [InlineData("https://my-resource.ai.azure.com/openai/v1/responses?api-version=old", "https://my-resource.ai.azure.com/openai/v1")]
     [InlineData("https://my-resource.openai.azure.com/openai/v1", "https://my-resource.openai.azure.com/openai/v1")]
@@ -43,7 +44,13 @@ public sealed class AzureOpenAiProviderTests
             var model = Assert.Single(models, item => item.Id == "gpt-4.1-mini");
             var selection = await runtime.ResolveAsync("azure-openai-responses", model.Id);
 
-            Assert.Equal(43, models.Count);
+            Assert.Equal(44, models.Count);
+            var latest = Assert.Single(models, item => item.Id == "gpt-6.1-sol");
+            Assert.Equal("GPT-6.1 Sol", latest.Name);
+            Assert.Equal(272_000, latest.ContextLength);
+            Assert.Equal(128_000, latest.MaxOutputTokens);
+            Assert.Equal(["text", "image"], latest.Input);
+            Assert.Equal(0.1m, latest.Pricing?.CachedInput);
             Assert.Equal("azure-openai-responses", model.Api);
             Assert.Equal(1_047_576, model.ContextLength);
             Assert.Equal(32_768, model.MaxOutputTokens);
@@ -79,7 +86,7 @@ public sealed class AzureOpenAiProviderTests
             await using var writer = new StreamWriter(request.Response.OutputStream);
             await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_azure\",\"object\":\"response\",\"created_at\":1,\"model\":\"deployment-gpt41mini\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
             await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"item_azure\",\"output_index\":0,\"content_index\":0,\"delta\":\"azure response\"}\n\n");
-            await writer.WriteAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_azure\",\"object\":\"response\",\"created_at\":1,\"model\":\"deployment-gpt41mini\",\"status\":\"completed\",\"output\":[]}}\n\n");
+            await writer.WriteAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_azure\",\"object\":\"response\",\"created_at\":1,\"model\":\"deployment-gpt41mini\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":11,\"output_tokens\":2,\"total_tokens\":13,\"input_tokens_details\":{\"cached_tokens\":4},\"output_tokens_details\":{\"reasoning_tokens\":1}}}}\n\n");
             await writer.WriteAsync("data: [DONE]\n\n");
             await writer.FlushAsync();
             request.Response.Close();
@@ -102,6 +109,7 @@ public sealed class AzureOpenAiProviderTests
             using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
             var output = new System.Text.StringBuilder();
+            var updates = new List<ChatResponseUpdate>();
             await foreach (var update in ProviderChatClientFactory.Create(selection).GetStreamingResponseAsync(
                 [new ChatMessage(ChatRole.User, "hello")], new ChatOptions
                 {
@@ -110,10 +118,18 @@ public sealed class AzureOpenAiProviderTests
                     Reasoning = ThinkingLevels.ToOptions("high")
                 },
                 deadline.Token))
+            {
+                updates.Add(update);
                 if (update.Text is { } text) output.Append(text);
+            }
             await server.WaitAsync(deadline.Token);
 
             Assert.Equal("azure response", output.ToString());
+            var usage = Assert.Single(updates.SelectMany(update => update.Contents).OfType<UsageContent>()).Details;
+            Assert.Equal(11, usage.InputTokenCount);
+            Assert.Equal(2, usage.OutputTokenCount);
+            Assert.Equal(4, usage.CachedInputTokenCount);
+            Assert.Equal(1, usage.ReasoningTokenCount);
             Assert.Equal("/openai/v1/responses", requestPath);
             Assert.Equal("preview", apiVersion);
             Assert.Equal("azure-key", apiKeyHeader);
@@ -127,6 +143,139 @@ public sealed class AzureOpenAiProviderTests
             Assert.Equal("auto", sent.RootElement.GetProperty("reasoning").GetProperty("summary").GetString());
             Assert.Contains("reasoning.encrypted_content", sent.RootElement.GetProperty("include").EnumerateArray()
                 .Select(item => item.GetString()));
+        }
+        finally
+        {
+            listener.Close();
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public async Task AzureResponsesToolContinuationKeepsApiKeyVersionAndDeploymentMapping()
+    {
+        using var listener = StartListener(out var port);
+        var requests = new List<string>();
+        var server = Task.Run(async () =>
+        {
+            for (var index = 0; index < 2; index++)
+            {
+                var request = await listener.GetContextAsync();
+                Assert.Equal("/openai/v1/responses", request.Request.Url?.AbsolutePath);
+                Assert.Equal("preview", request.Request.QueryString["api-version"]);
+                Assert.Equal("azure-key", request.Request.Headers["api-key"]);
+                Assert.Null(request.Request.Headers["Authorization"]);
+                using var reader = new StreamReader(request.Request.InputStream);
+                requests.Add(await reader.ReadToEndAsync());
+                request.Response.ContentType = "text/event-stream";
+                await using var writer = new StreamWriter(request.Response.OutputStream);
+                await writer.WriteAsync($"data: {{\"type\":\"response.created\",\"response\":{{\"id\":\"resp_{index}\",\"object\":\"response\",\"created_at\":1,\"model\":\"deployment-gpt5mini\",\"status\":\"in_progress\",\"output\":[]}}}}\n\n");
+                if (index == 0)
+                {
+                    await writer.WriteAsync("data: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"fc_1\",\"type\":\"function_call\",\"call_id\":\"call_1\",\"name\":\"echo_ext\",\"arguments\":\"\"}}\n\n");
+                    await writer.WriteAsync("data: {\"type\":\"response.function_call_arguments.done\",\"output_index\":0,\"item_id\":\"fc_1\",\"arguments\":\"{\\\"text\\\":\\\"ping\\\"}\"}\n\n");
+                    await writer.WriteAsync("data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"fc_1\",\"type\":\"function_call\",\"call_id\":\"call_1\",\"name\":\"echo_ext\",\"arguments\":\"{\\\"text\\\":\\\"ping\\\"}\"}}\n\n");
+                }
+                else
+                    await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0,\"delta\":\"done\"}\n\n");
+                await writer.WriteAsync($"data: {{\"type\":\"response.completed\",\"response\":{{\"id\":\"resp_{index}\",\"object\":\"response\",\"created_at\":1,\"model\":\"deployment-gpt5mini\",\"status\":\"completed\",\"output\":[]}}}}\n\n");
+                await writer.WriteAsync("data: [DONE]\n\n");
+                await writer.FlushAsync();
+                request.Response.Close();
+            }
+        });
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-azure-tool-continuation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var environment = new Dictionary<string, string>
+            {
+                ["AZURE_OPENAI_BASE_URL"] = $"http://127.0.0.1:{port}/openai/v1",
+                ["AZURE_OPENAI_API_VERSION"] = "preview",
+                ["AZURE_OPENAI_DEPLOYMENT_NAME_MAP"] = "gpt-5-mini=deployment-gpt5mini",
+                ["AZURE_OPENAI_API_KEY"] = "azure-key"
+            };
+            using var http = new HttpClient(new RejectUnexpectedRequestHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+            var selection = await runtime.ResolveAsync("azure-openai-responses", "gpt-5-mini");
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var echo = AIFunctionFactory.Create((string text) => "echo:" + text, name: "echo_ext");
+            var agent = new PiAgent(ProviderChatClientFactory.Create(selection, new ProviderRetrySettings(0, 10_000)),
+                new CodingTools(root), extensionTools: [echo]);
+            var session = await agent.CreateSessionAsync(deadline.Token);
+            var output = new System.Text.StringBuilder();
+            await foreach (var update in agent.RunStreamingAsync("use echo", session, deadline.Token))
+                if (update.Text is { } text) output.Append(text);
+            await server.WaitAsync(deadline.Token);
+
+            Assert.Equal("done", output.ToString());
+            Assert.Equal(2, requests.Count);
+            foreach (var requestBody in requests)
+            {
+                using var body = JsonDocument.Parse(requestBody);
+                Assert.Equal("deployment-gpt5mini", body.RootElement.GetProperty("model").GetString());
+            }
+            using var continuation = JsonDocument.Parse(requests[1]);
+            Assert.Contains(continuation.RootElement.GetProperty("input").EnumerateArray(), item =>
+                item.TryGetProperty("type", out var type) && type.GetString() == "function_call_output" &&
+                item.GetProperty("output").GetString() == "echo:ping");
+        }
+        finally
+        {
+            listener.Close();
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public async Task AzureResponsesErrorKeepsApiKeyAndConfiguredVersion()
+    {
+        using var listener = StartListener(out var port);
+        string? requestPath = null;
+        string? apiVersion = null;
+        string? apiKeyHeader = null;
+        string? authorizationHeader = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            requestPath = request.Request.Url?.AbsolutePath;
+            apiVersion = request.Request.QueryString["api-version"];
+            apiKeyHeader = request.Request.Headers["api-key"];
+            authorizationHeader = request.Request.Headers["Authorization"];
+            request.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("{\"error\":{\"message\":\"deployment was not found\",\"type\":\"invalid_request_error\",\"code\":\"deployment_not_found\"}}");
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-azure-response-error-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var environment = new Dictionary<string, string>
+            {
+                ["AZURE_OPENAI_BASE_URL"] = $"http://127.0.0.1:{port}/openai/v1",
+                ["AZURE_OPENAI_API_VERSION"] = "preview",
+                ["AZURE_OPENAI_API_KEY"] = "azure-key"
+            };
+            using var http = new HttpClient(new RejectUnexpectedRequestHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => environment.GetValueOrDefault(name), http);
+            var selection = await runtime.ResolveAsync("azure-openai-responses", "gpt-5-mini");
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var error = await Record.ExceptionAsync(async () => await ProviderChatClientFactory.Create(selection,
+                new ProviderRetrySettings(0, 10_000)).GetResponseAsync([new ChatMessage(ChatRole.User, "hello")],
+                cancellationToken: deadline.Token));
+            await server.WaitAsync(deadline.Token);
+
+            Assert.NotNull(error);
+            Assert.Contains("deployment_not_found", error.ToString(), StringComparison.Ordinal);
+            Assert.Equal("/openai/v1/responses", requestPath);
+            Assert.Equal("preview", apiVersion);
+            Assert.Equal("azure-key", apiKeyHeader);
+            Assert.Null(authorizationHeader);
         }
         finally
         {

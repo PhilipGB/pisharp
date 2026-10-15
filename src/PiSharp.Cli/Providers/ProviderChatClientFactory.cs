@@ -36,6 +36,12 @@ public static class ProviderChatClientFactory
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         if (protocol == "azure-openai-responses")
             _ = AzureOpenAiEndpoint.RequireConfigured(selection.Connection.Endpoint ?? selection.Provider.Endpoint);
+        if (selection.Provider.Id == "azure")
+        {
+            if (protocol != "openai-completions")
+                throw new NotSupportedException("The built-in azure provider uses Foundry Chat Completions; Azure Responses uses azure-openai-responses.");
+            _ = AzureOpenAiEndpoint.RequireConfigured(selection.Connection.Endpoint ?? selection.Provider.Endpoint);
+        }
         // The official OpenAI identity must never be redirected by catalog metadata to an alternate endpoint.
         if (selection.Provider.Id == "openai" && !ProviderModelRuntime.IsOfficialOpenAiEndpoint(selection.Provider.Endpoint))
             throw new InvalidOperationException("The built-in OpenAI identity requires the official endpoint.");
@@ -162,11 +168,18 @@ public static class ProviderChatClientFactory
                 }
                 else
                 {
-                    handler = new ProviderSamplingRequestHandler(samplingContext!,
-                        new OpenAiCompletionsRequestCompatibilityHandler(selection.Model,
-                            selection.Provider.Id, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
-                            selection.Provider.Compatibility,
-                            new ProviderWireActivityHandler(new HttpClientHandler())));
+                    var azureFoundry = selection.Provider.Id == "azure";
+                    HttpMessageHandler innerHandler = new OpenAiCompletionsRequestCompatibilityHandler(selection.Model,
+                        selection.Provider.Id, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
+                        selection.Provider.Compatibility,
+                        new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = !azureFoundry }));
+                    if (azureFoundry)
+                    {
+                        var azureOptions = selection.Provider.AzureOpenAi ??
+                            new AzureOpenAiProviderOptions("v1", new Dictionary<string, string>(StringComparer.Ordinal));
+                        innerHandler = new AzureFoundryChatCompletionsRequestHandler(azureOptions, innerHandler);
+                    }
+                    handler = new ProviderSamplingRequestHandler(samplingContext!, innerHandler);
                 }
                 toolCallCapture = new OpenAiToolCallDeltaCapture(handler);
                 options.Transport = toolCallCapture.Transport;

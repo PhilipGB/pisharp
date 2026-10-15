@@ -1314,6 +1314,51 @@
     }
   },
   {
+    "id": "gpt-6.1-sol",
+    "owner": "azure-openai-responses",
+    "contextLength": 272000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 2,
+      "output": 10,
+      "cachedInput": 0.1,
+      "cachedWrite": 2.5
+    },
+    "provider": "azure-openai-responses",
+    "name": "GPT-6.1 Sol",
+    "maxOutputTokens": 128000,
+    "input": [
+      "text",
+      "image"
+    ],
+    "api": "azure-openai-responses",
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    },
+    "thinkingLevelMap": {
+      "off": null,
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "promptCache": null,
+    "samplingParameters": null,
+    "compatibility": {
+      "supportsOpenAIGrammarTools": true
+    }
+  },
+  {
     "id": "gpt-daybreak-blue-latest",
     "owner": "azure-openai-responses",
     "contextLength": 1050000,

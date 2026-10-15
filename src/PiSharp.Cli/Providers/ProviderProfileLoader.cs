@@ -145,7 +145,13 @@ internal static class ProviderProfileLoader
                      StringComparison.OrdinalIgnoreCase) ||
                  models.Any(model => model.Api is not null && !string.Equals(model.Api, "openai-completions", StringComparison.Ordinal))))
                 throw new InvalidDataException("The built-in llama.cpp provider must retain its router protocol and credential environment.");
-            foreach (var reserved in providers.Values.Where(profile => ClassifierCatalog.IsBuiltinProvider(profile.Id) || profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "radius"))
+            if (existing?.Id == "azure" &&
+                (!string.Equals(api, "openai-completions", StringComparison.Ordinal) ||
+                 !string.Equals(apiKeyEnvironment ?? existing.ApiKeyEnvironment, existing.ApiKeyEnvironment,
+                     StringComparison.OrdinalIgnoreCase) ||
+                 models.Any(model => model.Api is not null && !string.Equals(model.Api, "openai-completions", StringComparison.Ordinal))))
+                throw new InvalidDataException("The built-in azure provider must retain the Foundry Chat Completions protocol and credential environment.");
+            foreach (var reserved in providers.Values.Where(profile => ClassifierCatalog.IsBuiltinProvider(profile.Id) || profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "radius"))
                 if (apiKeyEnvironment?.Equals(reserved.ApiKeyEnvironment, StringComparison.OrdinalIgnoreCase) == true &&
                     (!item.Name.Equals(reserved.Id, StringComparison.OrdinalIgnoreCase) || !SameEndpoint(endpoint, reserved.Endpoint)))
                     throw new InvalidDataException($"Provider '{item.Name}' cannot borrow {reserved.ApiKeyEnvironment}; use its own credential environment variable.");

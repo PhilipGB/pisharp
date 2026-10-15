@@ -1,0 +1,38 @@
+[
+  {
+    "id": "deepseek-v4-pro",
+    "owner": "azure",
+    "contextLength": 1000000,
+    "status": "pinned catalogue",
+    "reasoning": true,
+    "pricing": {
+      "input": 1.925,
+      "output": 3.828,
+      "cachedInput": 0.165,
+      "cachedWrite": 0
+    },
+    "provider": "azure",
+    "name": "DeepSeek V4 Pro",
+    "maxOutputTokens": 384000,
+    "input": [
+      "text"
+    ],
+    "api": "openai-completions",
+    "thinkingLevelMap": {
+      "minimal": null,
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": null,
+      "max": null
+    },
+    "compatibility": {
+      "supportsStrictMode": true,
+      "requiresReasoningContentOnAssistantMessages": true,
+      "thinkingFormat": "openai",
+      "supportsDeveloperRole": false,
+      "supportsMidConvoSystemMessages": true,
+      "supportsLongCacheRetention": false
+    }
+  }
+]
