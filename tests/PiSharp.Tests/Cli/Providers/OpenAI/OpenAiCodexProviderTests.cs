@@ -185,6 +185,69 @@ public sealed class OpenAiCodexProviderTests
     }
 
     [Fact]
+    public async Task CodexResumedConversationUsesPersistedSessionIdAndResolvedCredentialsForStreamRequest()
+    {
+        using var listener = StartListener(out var port);
+        string? authorization = null;
+        string? accountId = null;
+        string? sessionId = null;
+        string? requestId = null;
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync();
+            authorization = context.Request.Headers["Authorization"];
+            accountId = context.Request.Headers["chatgpt-account-id"];
+            sessionId = context.Request.Headers["session-id"];
+            requestId = context.Request.Headers["x-client-request-id"];
+            var accepted = await context.AcceptWebSocketAsync(null);
+            using var socket = accepted.WebSocket;
+            requestBody = await ReceiveWebSocketMessageAsync(socket);
+            await SendWebSocketResponseAsync(socket, "resp_resumed", "Resumed response");
+        });
+
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses");
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var refreshedToken = CreateToken("account-refreshed");
+        var resolverCalls = 0;
+        var selection = new ModelSelection(provider, model, CreateToken("account-expired"), true, "fixture token",
+            _ =>
+            {
+                Interlocked.Increment(ref resolverCalls);
+                return Task.FromResult((refreshedToken, "account-refreshed"));
+            });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var client = ProviderChatClientFactory.Create(selection);
+        var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()));
+        var conversation = new PiSharp.Runtime.Sessions.ConversationSession(Path.GetTempPath(), model.Id,
+            provider.Endpoint.ToString(), provider.Id);
+        conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User,
+            "Earlier question"));
+        conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant,
+            "Earlier answer"));
+        var run = await PiSharp.Runtime.Sessions.ConversationRun.OpenAsync(agent, conversation, deadline.Token,
+            provider: provider.Id, reasoningLevel: "off", autoCompactionEnabled: false,
+            providerApi: "openai-codex-responses");
+        var output = new StringBuilder();
+        await foreach (var update in run.RunStreamingAsync("Continue the resumed conversation", deadline.Token))
+            if (update.Text is { } text) output.Append(text);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("Resumed response", output.ToString());
+        Assert.Equal(1, resolverCalls);
+        Assert.Equal($"Bearer {refreshedToken}", authorization);
+        Assert.Equal("account-refreshed", accountId);
+        Assert.Equal(conversation.Id, sessionId);
+        Assert.Equal(conversation.Id, requestId);
+        using var sent = JsonDocument.Parse(requestBody!);
+        Assert.Equal(conversation.Id, sent.RootElement.GetProperty("prompt_cache_key").GetString());
+        Assert.Contains("Earlier question", sent.RootElement.GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task CodexResponsesFallsBackToAccountScopedSseWhenWebSocketClosesBeforeFirstEvent()
     {
         using var listener = StartListener(out var port);
