@@ -1,5 +1,7 @@
 # Detailed reference interface inventory — interfaces originally inventoried at 7c696c00 (current Pi pin 955cc666; TUI delta reviewed 2026-09-25)
 
+Current execution status and the ordered Luna queue are in [the handover](../continuation.md) and `sol_luna_handover` in [the ledger](execution-ledger.json). Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` is the audited cutoff; all 194 IDs remain required. Instruction/trust, defaultProjectTrust and enableSkillCommands have current bounded closure evidence. Historical descriptions below do not supersede those contracts.
+
 ## Current audit checkpoint — 2026-10-12
 
 Pi `origin/main` is `4270522473e677ddba7b093caa0064a3df51d459`; PiSharp product code is `65d045c5ff99e8c289b2cddb75cf6309a5879fdd`, with current evidence at `3043c4b185e594b989aab73ff7eff915f7beed8d`. Exact-head Linux CI [38205629517](https://github.com/PhilipGB/pisharp/actions/runs/38205629517) passes Node 24/24, Python 38/38, format verification, warnings-as-errors build and .NET 1,343/1,343 with zero skips. Python test/parity runners cap CPU affinity and common native worker pools at two; the child-process inheritance test passes.

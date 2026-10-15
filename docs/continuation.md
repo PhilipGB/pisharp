@@ -31,9 +31,11 @@ checked against this worktree and the configured Pi checkout.
   26 scenarios. Focused native checks: 130. Pi source suites: 35 provider and
   106 resource/settings/trust tests, zero skips. See
   [the verification receipt](parity/fixtures/luna-handover-2026-10-15/verification.json).
-- Product checkpoint SHA and final exact-head CI are recorded in the publication
-  receipt added after the verified checkpoint is pushed. The final docs-only
-  commit is resolved by the branch ref; no self-referential commit hash is invented.
+- Verified/pushed product checkpoint: `df163a4704f3a498f40046ae6a289b870a2b8af9`. Exact-head CI
+  [38664105111](https://github.com/PhilipGB/pisharp/actions/runs/38664105111) passes both jobs.
+  [The publication receipt](parity/fixtures/luna-handover-2026-10-15/publication.json)
+  records the thirteen-item stopping audit. Resolve the branch ref for the final
+  docs-only receipt commit; product source/tests/tools are unchanged by it.
 - Reviewed [contract evidence](parity/fixtures/luna-handover-2026-10-15/contracts.json)
   is committed; generated captures and TRX remain under
   `artifacts/parity/luna-handover-2026-10-15/` and are not durable backups.
@@ -231,7 +233,7 @@ Explicit staging paths exclude it and all unrelated user files.
 Luna readiness: the next 45 tasks have concrete ownership, state/lifetime,
 persistence/cancellation rules, source references, representative examples and
 verification/completion conditions. Stop architectural exploration and execute
-the queue. Publication and final CI status are recorded below once verified.
+the queue. The product checkpoint is pushed with exact-head CI green; the publication receipt records the stopping audit. **READY FOR LUNA HANDOVER**.
 
 ---
 

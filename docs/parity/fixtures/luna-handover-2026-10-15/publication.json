@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-15",
+  "branch": "parity/current-pi-completion",
+  "starting_sha": "cccbf3e069a3e98f5703709df5beec1363eb1c8e",
+  "product_checkpoint_sha": "df163a4704f3a498f40046ae6a289b870a2b8af9",
+  "main_sha": "22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed",
+  "configured_pi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "audited_upstream_cutoff": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "exact_head_ci": {
+    "run": 38664105111,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38664105111",
+    "status": "completed",
+    "conclusion": "success",
+    "exact_head": "df163a4704f3a498f40046ae6a289b870a2b8af9"
+  },
+  "local_verification": "verification.json",
+  "contracts": "contracts.json",
+  "queue": "docs/parity/execution-ledger.json: sol_luna_handover.queue",
+  "readiness": "READY FOR LUNA HANDOVER",
+  "stopping_audit": [
+    {
+      "requirement": "Current branch healthy",
+      "result": "passed",
+      "evidence": "Product checkpoint exact-head CI success, all local gates and source hashes in verification receipt."
+    },
+    {
+      "requirement": "Bounded classified upstream cutoff",
+      "result": "passed",
+      "evidence": "24 commits classified through b06c1f2c; configured pin and fresh remote source agree. Nine P2/two P3 delta items explicitly deferred."
+    },
+    {
+      "requirement": "Encountered P0/P1 resolved",
+      "result": "passed",
+      "evidence": "No P0. Strict completed arguments and Gemini 4 enabled thinking mapping fixed with fail-first, native and paired evidence."
+    },
+    {
+      "requirement": "P2/P3/P4 documented",
+      "result": "passed",
+      "evidence": "findings plus upstream-audit.json retain priority, evidence and deferred queue location."
+    },
+    {
+      "requirement": "Near-complete capabilities deliberately evaluated",
+      "result": "passed",
+      "evidence": "Three required contracts promoted; all 194 task records retain finite handover reviews and required IDs."
+    },
+    {
+      "requirement": "Useful capability progress",
+      "result": "passed",
+      "evidence": "Verified 7 -> 10; in_progress 149 -> 146; 38 genuinely not_started kept open and queued."
+    },
+    {
+      "requirement": "Remaining difficult architecture decisions made",
+      "result": "passed",
+      "evidence": "Continuation ownership/state/lifetime/persistence/cancellation table and 45 task-specific patterns."
+    },
+    {
+      "requirement": "Reusable implementation patterns exist",
+      "result": "passed",
+      "evidence": "Strict Core/SDK/native tool boundary and MAF rejection; shared Google/Vertex mapping; process/TUI/resource/RPC/MCP examples."
+    },
+    {
+      "requirement": "Ledger current",
+      "result": "passed",
+      "evidence": "194 unchanged required IDs; family status, closure/evidence, priority queue and source pin current."
+    },
+    {
+      "requirement": "Explicit Luna implementation queue",
+      "result": "passed",
+      "evidence": "45 ordered tasks have capability IDs, source/test references, existing owners, pattern, two verification levels and completion conditions; every path resolves."
+    },
+    {
+      "requirement": "Full required verification passes",
+      "result": "passed",
+      "evidence": "Restore/format/zero-warning build/1976 .NET zero skips/Node24/Python50/docs/MCP regression gate; affected current-source differentials and calibrated PTY."
+    },
+    {
+      "requirement": "Verified checkpoint pushed",
+      "result": "passed",
+      "evidence": "df163a47 is published and exact-head CI success. The final publication receipt is a docs-only commit; resolve branch ref for its SHA."
+    },
+    {
+      "requirement": "Handover sufficient for fresh Luna goal",
+      "result": "passed",
+      "evidence": "Next 45 tasks, architecture invariants, remaining family status, exact source/CI/test provenance, six pattern examples and known traps in durable docs."
+    }
+  ],
+  "documentation_commit": "This receipt is committed after the verified product checkpoint; resolve git rev-parse HEAD or the published branch ref for the final docs-only SHA. Product source/tests/tools are unchanged by this receipt commit.",
+  "limitations": "Full Pi parity is not claimed. 146 in_progress and 38 not_started required capability records remain, with explicit feature/deferred work. Existing expected MCP failures and supported Linux verification boundaries are retained."
+}
