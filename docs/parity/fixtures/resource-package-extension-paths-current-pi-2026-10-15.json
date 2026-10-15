@@ -313,7 +313,21 @@
     },
     "nodePassed": 24,
     "pythonPassed": 50,
-    "postMetadataCliCases": 3
+    "postMetadataCliCases": 3,
+    "exactCI": {
+      "sha": "5f9a1eef315bf28dc4806f6e3f2960982e6c8313",
+      "run": 38656618435,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38656618435",
+      "jobs": {
+        "test": "success",
+        "mcp-conformance": "success"
+      },
+      "passed": 1957,
+      "failed": 0,
+      "skipped": 0,
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
   },
   "sourcePaths": [
     "packages/coding-agent/src/main.ts: resolveCliPaths resolves local arguments without trim before service creation.",
@@ -366,7 +380,8 @@
     "package-extension-paths-python.log": "7228b39bb58c0744c4ece5b53dd35a14bcda3f9eb3d563e0f2608add7569e2de",
     "package-extension-paths-canonical-explicit-alias-metadata-final.json": "0fee3d3eec8daec76f16f43c2c61bc6fe4ab871c9cfd8ba84201edbd9c01e3c7",
     "package-extension-paths-file-url-explicit-metadata-final.json": "287cdb1c68380507a094e8e6c17a6c3a8af790547c10164712c54f587e28392b",
-    "package-extension-paths-padded-explicit-metadata-final.json": "06cd1c3286dd083a324b4fb2c1ca118dd9f66f27dcccdd0d790e7968a80ba0fe"
+    "package-extension-paths-padded-explicit-metadata-final.json": "06cd1c3286dd083a324b4fb2c1ca118dd9f66f27dcccdd0d790e7968a80ba0fe",
+    "package-extension-paths-exact-ci.log": "8eb3af78c8aea12736a0a3052e94d6423f99c5c1df2aaeaaf06c2f9c826dbd29"
   },
   "limits": [
     "Named Linux file URL/alias/padded paths and original 13 flows only; broader configured paths, directory/file alias precedence, malformed URLs, Unicode/path/collision/error/reload/project scope remain open.",

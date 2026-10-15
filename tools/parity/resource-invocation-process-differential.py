@@ -109,6 +109,9 @@ export default function(pi) {
                     shutil.copyfile(entry, extension / 'bad.dll')
             if extension_mode == 'conventions':
                 (package / 'package.json').unlink()
+            if extension_mode in ['project-disabled', 'project-enabled']:
+                (root / product / '.pi/settings.json').write_text(json.dumps(dict(packages=[
+                    dict(source='../package', extensions=[]) if extension_mode == 'project-disabled' else '../package'])))
             if extension_mode == 'disabled':
                 (agent / 'settings.json').write_text(json.dumps(dict(packages=[dict(source='../package', extensions=[])])))
             if extension_mode == 'file':
@@ -209,6 +212,9 @@ export default function(pi) {
                 assert command_info is None, commands
             elif scenario == 'package-extension' and extension_mode in ['disabled', 'no-extensions']:
                 assert command_info is None, commands
+            elif scenario == 'package-extension' and extension_mode == 'project-disabled':
+                if product == 'pi':
+                    assert command_info is None, commands
             elif not package_scenario or product == 'pi':
                 assert command_info and command_info['description'] == ('word' if scenario == 'invalid-tag' else 'Guide')
             if scenario == 'deleted-skill':
@@ -288,7 +294,7 @@ def main():
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--scenario', choices=['deleted-skill', 'invalid-tag', 'malformed-flow', 'local-package', 'padded-local-package', 'file-url-package', 'package-extension'], default='deleted-skill')
-    parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root', 'index-with-sibling', 'nested-manifest', 'ignored-sibling', 'hidden-sibling', 'node-modules-sibling', 'throwing-sibling', 'missing-explicit', 'padded-explicit', 'file-url-explicit', 'canonical-explicit-alias'], default='manifest')
+    parser.add_argument('--extension-mode', choices=['manifest', 'conventions', 'disabled', 'no-extensions', 'file', 'root', 'index-with-sibling', 'nested-manifest', 'ignored-sibling', 'hidden-sibling', 'node-modules-sibling', 'throwing-sibling', 'missing-explicit', 'padded-explicit', 'file-url-explicit', 'canonical-explicit-alias', 'project-disabled', 'project-enabled'], default='manifest')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     args.output.parent.mkdir(parents=True, exist_ok=True)

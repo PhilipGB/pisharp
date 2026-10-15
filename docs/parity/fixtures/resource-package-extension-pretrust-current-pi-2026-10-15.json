@@ -1,0 +1,301 @@
+{
+  "date": "2026-10-15",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "5f9a1eef315bf28dc4806f6e3f2960982e6c8313",
+  "scope": "Final extension selection following the pre-trust user/CLI pass: trusted project disabling, project provenance for enabled overlap, and untrusted-project control.",
+  "characterization": {
+    "normalCliFirst": {
+      "pi": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "/skill:guide args",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": null,
+        "startupAccepted": true,
+        "packagePrompt": "Package review",
+        "extensionLoadTrace": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "pisharp": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/.pi/extension-resources/startup/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/.pi/extension-resources/startup/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": "Package review",
+        "extensionLoadTrace": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      }
+    },
+    "sourceFullLoader": [
+      {
+        "id": "disabled",
+        "bootstrapCount": 1,
+        "configurationTrace": [
+          "configured"
+        ],
+        "errors": [],
+        "loaded": []
+      },
+      {
+        "id": "enabled",
+        "bootstrapCount": 1,
+        "configurationTrace": [
+          "configured"
+        ],
+        "errors": [],
+        "loaded": [
+          {
+            "path": "package/extensions/index.<module>",
+            "sourceInfo": {
+              "path": "package/extensions/index.<module>",
+              "source": "../../package",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "package"
+            }
+          }
+        ]
+      },
+      {
+        "id": "untrusted",
+        "bootstrapCount": 1,
+        "configurationTrace": [
+          "configured"
+        ],
+        "errors": [],
+        "loaded": [
+          {
+            "path": "package/extensions/index.<module>",
+            "sourceInfo": {
+              "path": "package/extensions/index.<module>",
+              "source": "../package",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "package"
+            }
+          }
+        ]
+      }
+    ],
+    "nativeFailFirst": {
+      "failed": 2,
+      "passed": 1,
+      "skipped": 0
+    },
+    "retainedProbeCorrections": [
+      "The first CLI characterization asserted missing native commands before writing the comparison. The corrected driver retains actual native output and writes JSON before mismatch assertion; original source expectations and earlier logical scenarios remain.",
+      "The first native test had an incorrect Bash namespace; the first repair build used the wrong trust-handler metadata property name. Those compilation failures are retained and are not behavioral fail-first evidence."
+    ]
+  },
+  "implementation": [
+    "ExtensionCatalogSelection reconciles the final canonical selection with preloaded modules, unloads deselected contexts and refreshes source metadata for retained instances without configuring them twice.",
+    "ExtensionRegistrationSelection removes a deselected module\u2019s commands, tools/renderers/source entries, hooks, transforms, discovery/trust handlers, MCP registrations and virtual models while preserving host/other-source registrations. Previously untagged handler lists now retain source ownership. Existing configuration rollback also captures the typed handler records."
+  ],
+  "verification": {
+    "fullLoaderMetadata": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "pi": [
+        {
+          "id": "disabled",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured"
+          ],
+          "errors": [],
+          "loaded": []
+        },
+        {
+          "id": "enabled",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured"
+          ],
+          "errors": [],
+          "loaded": [
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../../package",
+                "scope": "project",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ]
+        },
+        {
+          "id": "untrusted",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured"
+          ],
+          "errors": [],
+          "loaded": [
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ]
+        }
+      ],
+      "pisharp": [
+        {
+          "id": "disabled",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured"
+          ],
+          "errors": [],
+          "loaded": []
+        },
+        {
+          "id": "enabled",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured"
+          ],
+          "errors": [],
+          "loaded": [
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../../package",
+                "scope": "project",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ]
+        },
+        {
+          "id": "untrusted",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured"
+          ],
+          "errors": [],
+          "loaded": [
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ]
+        }
+      ],
+      "match": true,
+      "scope": "Actual DefaultResourceLoader.reload(resolveProjectTrust) versus bootstrap/final ExtensionCatalog selection: disabled/enabled/untrusted project package cases compare bootstrap count, configuration trace, errors, final loaded modules and all five source-info fields. Only generated root paths and .ts/.dll suffixes normalize."
+    },
+    "focusedPassed": 26,
+    "newNativeRows": 3,
+    "normalCliCases": 18,
+    "fullSuite": {
+      "passed": 1960,
+      "failed": 0,
+      "skipped": 0
+    },
+    "format": "passed",
+    "freshBuild": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "normalCliMismatches": 0,
+    "documentation": {
+      "documents": 132,
+      "references": 504
+    }
+  },
+  "sourcePaths": [
+    "packages/coding-agent/src/core/resource-loader.ts: reload(resolveProjectTrust), loadProjectTrustExtensions, loadFinalExtensionSet, applyExtensionSourceInfo.",
+    "packages/coding-agent/src/core/package-manager.ts: user/project package precedence and enabled resource filtering."
+  ],
+  "reproduction": [
+    "python3 tools/parity/extension-pretrust-selection-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/pretrust-selection.json",
+    "python3 tools/parity/resource-invocation-process-differential.py --pi /tmp/pisharp-parity-audit-pi --scenario package-extension --extension-mode project-disabled --output artifacts/parity/<run>/project-disabled.json"
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-15",
+  "logs": {
+    "package-extension-pretrust-project-disabled-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-canonical-explicit-alias-recovery.json": "3a6c941f9aa1d2557d4ba9fad36d6b62733fb29100a3e456ebd3cbf94c510d8c",
+    "package-extension-pretrust-focused.log": "534d48e0b4157f09c06485cc913705c605a1039e01d38f54f1559b571ed385ac",
+    "package-extension-pretrust-no-extensions-recovery.json": "4e2d26459b90588e219da6e3d0cb220c8f24fc9f9e68c8cb3cf2ed356baa4b35",
+    "package-extension-pretrust-native-characterized.log": "bc4239ef12780e852338912effd5e5bec7dd71ba114be55aab8f49f06e78d669",
+    "package-extension-pretrust-manifest-recovery.json": "08b6448962221d6e043af5f0d79d88b669792d87f7f5c2c06a3ba924bf5204d6",
+    "package-extension-pretrust-canonical-explicit-alias-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-project-disabled-recovery.json": "3a9628786afec7151be637643fde81f33f7d930b31a4675f1eb1d0bee185a70b",
+    "package-extension-pretrust-source-metadata.json": "2a4abe559106c71ad5b0e4342efd0c167d3dea1fee81f45f1584cf21e92e204c",
+    "package-extension-pretrust-native-first.log": "3cb8e21eed2201e1b1f19a28b8b4a8b3b0eeb02414cc0b3163118ed8c79d81cf",
+    "package-extension-pretrust-format-apply.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-pretrust-throwing-sibling-recovery.json": "5de05652c2ccc94c75de7b97b0120b6ba797f3dd2463301a9d767980b7efb22a",
+    "package-extension-pretrust-metadata-recovery.json": "96b578b210aab05a16f9bd503b8197c564fa75ed5d606c7d1ce59ef68fe43b57",
+    "package-extension-pretrust-manifest-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-no-extensions-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-project-enabled-recovery.json": "a774f7509ce76c4f0bdac834f63a3e2c9c9d6da6c379798ba7195cd48c9c7c06",
+    "package-extension-pretrust-conventions-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-project-enabled-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-metadata-recovery.log": "4ac1aba71fbcf9b06f7edba22ad12a314a198b50c82783275a9abdd801d624a5",
+    "package-extension-pretrust-throwing-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-focused-recovery.log": "3bd9783e6a9f5f55012c515eca67280885369cc76b161537560539b5ca944155",
+    "package-extension-project-disabled-characterized.log": "09ca0f2521fab70ffda4c965157baebc607bcdb0b1d8a53845f17f8aefe1617e",
+    "package-extension-project-disabled-first.log": "e45dffb8fbfe4cae9cae0b1c5a1c9ab4fc65b5a6fa3e3718e69729624903db7f",
+    "package-extension-project-enabled-control.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-project-enabled-control.json": "7ec9b767bfd72bf5c3b5e8c520ac154fb5e5f38041d88276fe387cb7d4fcad9d",
+    "package-extension-project-disabled-characterized.json": "001ffd30fedbf1f123c9155cb2d74a36907d2883078227a85abe2f4b19a4cec7",
+    "package-extension-pretrust-ignored-sibling-recovery.json": "541bf7f5e004ba938d9c1bac817586ef1173f2dfde9c993924e9d2da3927c5e3",
+    "package-extension-pretrust-padded-explicit-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-file-url-explicit-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-root-recovery.json": "90b361ff2c35af80c6f8c8b44546b2dd59178781860f7815db3efaa67eba5613",
+    "package-extension-pretrust-ignored-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-file-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-file-recovery.json": "0855805f6ff3d58827d44c78e9358a0269ce68d696b43c6abf4ec9b82c8ae819",
+    "package-extension-pretrust-file-url-explicit-recovery.json": "27c9033d0b73ac3cc1afb4fb974d8e5accbe9898abfd2ee6e212477d0434b128",
+    "package-extension-pretrust-index-with-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-index-with-sibling-recovery.json": "098159804033af60d71b02248e539cf64d933804df41fe0983301b593ee23544",
+    "package-extension-pretrust-hidden-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-missing-explicit-recovery.json": "3d5d226354acbfebf4fdc7b5ae751835c085e20b96af78aeeaeec01d9feed94a",
+    "package-extension-pretrust-padded-explicit-recovery.json": "9911bdf60afed4e4abeb4c99f925894e1cb80dd4aee87f75e7aac2676563379e",
+    "package-extension-pretrust-final-build.log": "d7095777b11482f21daa03ea762baabfac9f9bece5078af5ec1216075deb08d1",
+    "package-extension-pretrust-node-modules-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-conventions-recovery.json": "a1168a804f3cf116f3e17e4c16c30a5788fdc895ed9e99747251303971a6a06f",
+    "package-extension-pretrust-final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-pretrust-hidden-sibling-recovery.json": "9784189eb6fabae84529a4c776f24fbfad7b20e6694e7f6d3f906467a37879e9",
+    "package-extension-pretrust-disabled-recovery.json": "47d0d4fd9243cb9dce5afc4ba07b6895f93e0a1256a7de180f5a71db9a18ca2f",
+    "package-extension-pretrust-final-full.log": "940bb28b6c0de9f67f3d14420a7de823653c748ed2dfb89e985224afbdc30995",
+    "package-extension-pretrust-root-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-nested-manifest-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-node-modules-sibling-recovery.json": "2fb83c07db7bade000ccf10c9eff5f98e3bca5073ef47bd9fd9c7d2891d43080",
+    "package-extension-pretrust-disabled-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-missing-explicit-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-pretrust-nested-manifest-recovery.json": "19035e62fe362228e4f2f1cfd280093bd3cbf7c666350b3d33e87e37d2f0e62f"
+  },
+  "limits": [
+    "Three named full-loader and normal CLI project selection cases; broader package delta/alias/filter precedence, final module ordering/conflicts, builtins and reload remain open.",
+    "Native removal assertions cover native extension APIs; the full-loader oracle compares module selection, five source fields and configure-once behavior. It does not establish every cross-module mutation or dynamic registration behavior.",
+    "Managed package sources/CLI operations and whole Resources/Extensions/Trust capabilities remain in_progress. Earlier process/terminal calibration concerns and MCP classified failures remain separately recorded."
+  ]
+}

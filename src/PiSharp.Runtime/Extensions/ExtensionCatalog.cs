@@ -44,10 +44,10 @@ public sealed partial class ExtensionRegistration
     private readonly object _toolGate = new();
     private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _commands = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ExtensionCommandInfo> _commandInfo = new(StringComparer.Ordinal);
-    private readonly List<UserBashHandler> _userBashHandlers = [];
-    private readonly List<PiSharpToolCallHook> _toolCallHooks = [];
-    private readonly List<PiSharpToolResultHook> _toolResultHooks = [];
-    private readonly List<PiSharpContextTransform> _contextTransforms = [];
+    private readonly List<ExtensionHandlerRegistration<UserBashHandler>> _userBashHandlers = [];
+    private readonly List<ExtensionHandlerRegistration<PiSharpToolCallHook>> _toolCallHooks = [];
+    private readonly List<ExtensionHandlerRegistration<PiSharpToolResultHook>> _toolResultHooks = [];
+    private readonly List<ExtensionHandlerRegistration<PiSharpContextTransform>> _contextTransforms = [];
     private readonly List<RegisteredResourceDiscoveryHandler> _resourceDiscoveryHandlers = [];
     private readonly List<RegisteredProjectTrustHandler> _projectTrustHandlers = [];
     private readonly object _mcpGate = new();
@@ -69,10 +69,10 @@ public sealed partial class ExtensionRegistration
     }
     public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => _commands;
     public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => _commandInfo;
-    public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers;
-    public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks;
-    public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks;
-    public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.ToArray();
+    public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.Select(entry => entry.Handler).ToArray();
     internal IReadOnlyList<RegisteredResourceDiscoveryHandler> ResourceDiscoveryHandlers =>
         _resourceDiscoveryHandlers.ToArray();
     private IReadOnlyList<RegisteredProjectTrustHandler> ProjectTrustHandlers => _projectTrustHandlers.ToArray();
@@ -251,21 +251,21 @@ public sealed partial class ExtensionRegistration
     public void AddToolCallHook(PiSharpToolCallHook hook)
     {
         ArgumentNullException.ThrowIfNull(hook);
-        _toolCallHooks.Add(hook);
+        _toolCallHooks.Add(new(hook, _currentSourceInfo ?? SourceInfoFromHandler(hook)));
     }
 
     /// <summary>Registers an asynchronous result hook for model-issued and nested tool calls.</summary>
     public void AddToolResultHook(PiSharpToolResultHook hook)
     {
         ArgumentNullException.ThrowIfNull(hook);
-        _toolResultHooks.Add(hook);
+        _toolResultHooks.Add(new(hook, _currentSourceInfo ?? SourceInfoFromHandler(hook)));
     }
 
     /// <summary>Registers an asynchronous transform applied to provider-bound conversation context.</summary>
     public void AddContextTransform(PiSharpContextTransform transform)
     {
         ArgumentNullException.ThrowIfNull(transform);
-        _contextTransforms.Add(transform);
+        _contextTransforms.Add(new(transform, _currentSourceInfo ?? SourceInfoFromHandler(transform)));
     }
 
     /// <summary>Registers resources that become available after extension startup and each reload.</summary>
@@ -365,7 +365,7 @@ public sealed partial class ExtensionRegistration
     public void AddUserBashHandler(UserBashHandler handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
-        _userBashHandlers.Add(handler);
+        _userBashHandlers.Add(new(handler, _currentSourceInfo ?? SourceInfoFromHandler(handler)));
     }
 }
 
@@ -386,7 +386,7 @@ public sealed class ExtensionLease(ExtensionCatalog initial) : IDisposable
 public sealed record ExtensionLoadError(string Path, string Error);
 
 /// <summary>Loads personal and trust-gated project assemblies, plus caller-selected paths, in isolated contexts for reload.</summary>
-public sealed class ExtensionCatalog : IDisposable
+public sealed partial class ExtensionCatalog : IDisposable
 {
     private readonly List<AssemblyLoadContext> _contexts = [];
     private readonly List<IAsyncDisposable> _ownedConnections = [];
@@ -484,8 +484,7 @@ public sealed class ExtensionCatalog : IDisposable
             var selectedBuiltins = new List<BuiltinExtensionDefinition>();
             var builtinByName = (builtins ?? []).ToDictionary(builtin => builtin.Name, StringComparer.Ordinal);
             var seenBuiltins = new HashSet<string>(StringComparer.Ordinal);
-            var seenPaths = new HashSet<string>(catalog._loadedExtensions.Select(extension => extension.Path)
-                    .Concat(catalog._loadErrors.Select(error => error.Path)).Select(ResourcePathIdentity.Canonicalize),
+            var seenPaths = new HashSet<string>(catalog._loadErrors.Select(error => error.Path).Select(ResourcePathIdentity.Canonicalize),
                 OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             var packageFiles = discover ? ResourcePackageFiles.Load(cwd, agentDirectory, projectTrusted,
                 userPackages, projectPackages, CancellationToken.None).Extensions : [];
@@ -536,8 +535,12 @@ public sealed class ExtensionCatalog : IDisposable
                 foreach (var file in packageFiles)
                     if (file.Enabled) AddPath(file.Path, file.Source);
             }
+            catalog.SelectPreloadedExtensions(selectedPaths);
+            var retainedPaths = catalog._loadedExtensions.Select(extension => ResourcePathIdentity.Canonicalize(extension.Path))
+                .ToHashSet(seenPaths.Comparer);
             foreach (var (path, sourceInfo) in selectedPaths)
             {
+                if (retainedPaths.Contains(ResourcePathIdentity.Canonicalize(path))) continue;
                 var loaded = ExtensionAssemblyLoader.Load(path, sourceInfo, catalog.Registration);
                 if (loaded.Error is { } error) catalog._loadErrors.Add(new(path, error));
                 else
