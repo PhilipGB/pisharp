@@ -37,6 +37,47 @@ public sealed class ManagedGitPackageStoreTests
     }
 
     [Fact]
+    public async Task GitDependencyInstallUsesConfiguredManagerPoliciesAndUnknownFallback()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await using var fixture = new ManagedGitFixture();
+        await fixture.CreateAsync();
+        await fixture.SetRemoteDefaultBranchAsync(fixture.Version1);
+        var logPath = Path.Combine(fixture.Root, "git-manager-argv.log");
+        var shim = Path.Combine(fixture.Root, "npm-manager-wrapper");
+        await File.WriteAllTextAsync(shim,
+            "#!/bin/sh\nprintf 'CALL\\0' >> \"$PISHARP_TEST_NPM_ARGV\"\nprintf '%s\\0' \"$@\" >> \"$PISHARP_TEST_NPM_ARGV\"\n");
+        File.SetUnixFileMode(shim, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var environment = fixture.CreateProcessEnvironment();
+        environment["PISHARP_TEST_NPM_ARGV"] = logPath;
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory, environment);
+        var managers = new[] { "npm", "pnpm", "bun", "otherpm" };
+
+        foreach (var manager in managers)
+        {
+            store.ConfigureNpmCommand([shim, "exec", "node@20", "--", manager]);
+            await store.InstallSelectedAsync(fixture.ProjectDirectory, fixture.Source("v1"), "user");
+        }
+
+        var tokens = File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+        var expected = new List<string>();
+        foreach (var manager in managers)
+        {
+            expected.Add("CALL");
+            expected.AddRange(["exec", "node@20", "--", manager, "install"]);
+            expected.AddRange(manager switch
+            {
+                "bun" => ["--omit=dev", "--omit=peer"],
+                "pnpm" => ["--prod", "--config.auto-install-peers=false", "--config.strict-peer-dependencies=false",
+                    "--config.strict-dep-builds=false"],
+                "npm" => ["--omit=dev", "--legacy-peer-deps"],
+                _ => []
+            });
+        }
+        Assert.Equal(expected, tokens);
+    }
+
+    [Fact]
     public async Task ManagedGitLoadsResourcesAndNativeExtensionWithoutStartupFetchAndUpdatesConfiguredRef()
     {
         await using var fixture = new ManagedGitFixture();

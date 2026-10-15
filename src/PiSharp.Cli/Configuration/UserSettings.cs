@@ -90,7 +90,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     bool? EnableSkillCommands = null, IReadOnlyList<string>? Extensions = null,
     IReadOnlyList<string>? Skills = null, IReadOnlyList<string>? Prompts = null,
     IReadOnlyList<string>? Themes = null, string? ShellCommandPrefix = null, string? SessionShareDestination = null,
-    IReadOnlyList<ResourcePackageSource>? Packages = null)
+    IReadOnlyList<ResourcePackageSource>? Packages = null, IReadOnlyList<string>? NpmCommand = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -122,6 +122,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         IReadOnlyList<string>? tools = null, enabledModels = null;
         IReadOnlyList<string>? extensions = null, skills = null, prompts = null, themes = null;
         IReadOnlyList<ResourcePackageSource>? packages = null;
+        IReadOnlyList<string>? npmCommand = null;
         IReadOnlyDictionary<string, string>? modelThinkingLevels = null;
         CompactionSettings? compaction = null;
         RetrySettings? retry = null;
@@ -247,6 +248,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 packages = PackageSettingsReader.Read(property.Value);
                 continue;
             }
+            if (property.Name == "npmCommand")
+            {
+                npmCommand = PackageSettingsReader.ReadNpmCommand(property.Value);
+                continue;
+            }
             if (property.Name is "extensions" or "skills" or "prompts" or "themes")
             {
                 if (property.Name == "skills" && property.Value.ValueKind == JsonValueKind.Object)
@@ -338,7 +344,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
             modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
-            enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages);
+            enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
+            npmCommand);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -378,7 +385,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         MergeResourcePaths(Themes, project.Themes),
         project.ShellCommandPrefix ?? ShellCommandPrefix,
         project.SessionShareDestination ?? SessionShareDestination,
-        project.Packages ?? Packages);
+        project.Packages ?? Packages,
+        project.NpmCommand ?? NpmCommand);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

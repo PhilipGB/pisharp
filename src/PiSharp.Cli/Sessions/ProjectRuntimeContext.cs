@@ -53,6 +53,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         baseSettings.ApplyHttpProxyEnvironment(Environment.GetEnvironmentVariable, Environment.SetEnvironmentVariable);
         var offline = arguments.Offline || IsOfflineEnvironment();
         var packageStore = new ManagedResourcePackageStore(agentDirectory);
+        packageStore.ConfigureNpmCommand(baseSettings.NpmCommand);
         var managedPackageRoots = (await packageStore.ResolveAsync(cwd, trusted: false,
             userPackages: baseSettings.Packages, offline: offline, cancellationToken: cancellationToken)).ToList();
         ExtensionCatalog? bootstrapExtensions = null;
@@ -81,6 +82,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
             var projectSettings = trusted ? await UserSettings.LoadProjectAsync(cwd, cancellationToken) : null;
             if (projectSettings?.Packages is { Count: > 0 })
             {
+                packageStore.ConfigureNpmCommand(baseSettings.Overlay(projectSettings).NpmCommand);
                 managedPackageRoots = (await packageStore.ResolveAsync(cwd, trusted: true,
                     userPackages: baseSettings.Packages, projectPackages: projectSettings.Packages,
                     offline: offline, cancellationToken: cancellationToken)).ToList();

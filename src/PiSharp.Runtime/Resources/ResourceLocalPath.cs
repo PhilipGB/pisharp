@@ -3,7 +3,7 @@ using System.Text;
 
 namespace PiSharp.Runtime.Resources;
 
-internal static class ResourceLocalPath
+public static class ResourceLocalPath
 {
     // ECMAScript trim removes FEFF and preserves NEL, unlike the .NET whitespace set.
     private static readonly char[] s_whitespace = ['\t', '\n', '\v', '\f', '\r', ' ', '\u00A0', '\u1680',
@@ -18,7 +18,7 @@ internal static class ResourceLocalPath
             .Any(prefix => trimmed.StartsWith(prefix, StringComparison.Ordinal));
     }
 
-    internal static string Resolve(string source, string baseDirectory, bool trim = true)
+    public static string Resolve(string source, string baseDirectory, bool trim = true)
     {
         var path = trim ? source.Trim(s_whitespace) : source;
         if (path.StartsWith("file://", StringComparison.Ordinal)) path = FileUrlPath(path);

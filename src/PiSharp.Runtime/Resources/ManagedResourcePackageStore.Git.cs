@@ -208,7 +208,7 @@ public sealed partial class ManagedResourcePackageStore
             if (File.Exists(Path.Combine(stage, "package.json")))
             {
                 var (exitCode, output, errorOutput) = await RunNpmAsync(stage,
-                    ["install", "--omit=dev", "--legacy-peer-deps"], _processEnvironmentOverrides, cancellationToken);
+                    GetGitDependencyInstallArguments(), _processEnvironmentOverrides, cancellationToken);
                 if (exitCode != 0)
                 {
                     var details = string.IsNullOrWhiteSpace(errorOutput) ? output.Trim() : errorOutput.Trim();
@@ -297,7 +297,7 @@ public sealed partial class ManagedResourcePackageStore
         {
             var installSpec = spec.Version is null ? spec.Name + "@latest" : spec.InstallSpec;
             var (exitCode, output, errorOutput) = await RunNpmAsync(workingDirectory,
-                ["install", installSpec, "--prefix", installRoot, "--legacy-peer-deps"],
+                GetNpmInstallArguments(installSpec, installRoot),
                 _processEnvironmentOverrides, cancellationToken);
             if (exitCode != 0)
             {

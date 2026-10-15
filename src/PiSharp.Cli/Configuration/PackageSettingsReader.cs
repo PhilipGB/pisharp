@@ -5,6 +5,20 @@ namespace PiSharp.Cli;
 
 internal static class PackageSettingsReader
 {
+    internal static IReadOnlyList<string> ReadNpmCommand(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Array)
+            throw new InvalidDataException("settings.json npmCommand must be a string array.");
+        var command = new List<string>();
+        foreach (var item in value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.String || item.GetString() is not { } argument)
+                throw new InvalidDataException("settings.json npmCommand entries must be strings.");
+            command.Add(argument);
+        }
+        return command;
+    }
+
     internal static IReadOnlyList<ResourcePackageSource> Read(JsonElement value)
     {
         if (value.ValueKind != JsonValueKind.Array)

@@ -1,5 +1,7 @@
 namespace PiSharp.Cli.Startup;
 
+using PiSharp.Cli.Packages;
+
 internal static class CliStartupCommands
 {
     public static async Task<CliArguments?> ParseOrRunAsync(string[] args, string agentDirectory,
@@ -22,6 +24,9 @@ internal static class CliStartupCommands
             Environment.ExitCode = await SessionExportCommand.RunAsync(args[1..], output, error);
             return null;
         }
+        if (await ResourcePackageCommand.TryRunAsync(args, agentDirectory, Environment.CurrentDirectory,
+                Console.In, output, error, interactive: !Console.IsInputRedirected && !Console.IsOutputRedirected))
+            return null;
         CliArguments cli;
         try { cli = CliArguments.Parse(args); }
         catch (ArgumentException e)

@@ -249,6 +249,194 @@ public sealed class ManagedResourcePackageStoreTests
         Assert.Equal(pid.ToString(), await File.ReadAllTextAsync(pidPath));
     }
 
+    [Theory]
+    [InlineData("npm")]
+    [InlineData("pnpm")]
+    [InlineData("bun")]
+    public async Task ConfiguredNpmCommandUsesManagerSpecificInstallAndRemoveArgv(string manager)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var logPath = Path.Combine(fixture.Root, "npm-command-argv.log");
+        var shim = Path.Combine(fixture.Root, "npm-manager-wrapper");
+        await File.WriteAllTextAsync(shim, "#!/bin/sh\nprintf '%s\\0' \"$@\" >> \"$PISHARP_TEST_NPM_ARGV\"\n");
+        File.SetUnixFileMode(shim, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory,
+            new Dictionary<string, string?> { ["PISHARP_TEST_NPM_ARGV"] = logPath });
+        store.ConfigureNpmCommand([shim, "exec", "node@20", "--", manager]);
+        var source = "npm:fixture-package@1.2.3";
+        var installRoot = Path.Combine(fixture.AgentDirectory, "npm");
+
+        await store.InstallSelectedAsync(fixture.ProjectDirectory, source, "user");
+        Directory.CreateDirectory(Path.Combine(installRoot, "node_modules", "fixture-package"));
+        await store.RemoveAsync(fixture.ProjectDirectory, source, "user");
+
+        var prefix = new[] { "exec", "node@20", "--", manager };
+        var installArguments = manager switch
+        {
+            "bun" => new[] { "install", "fixture-package@1.2.3", "--cwd", installRoot, "--omit=peer" },
+            "pnpm" => new[] { "install", "fixture-package@1.2.3", "--prefix", installRoot,
+                "--config.auto-install-peers=false", "--config.strict-peer-dependencies=false", "--config.strict-dep-builds=false" },
+            _ => new[] { "install", "fixture-package@1.2.3", "--prefix", installRoot, "--legacy-peer-deps" }
+        };
+        var uninstallArguments = manager switch
+        {
+            "bun" => new[] { "uninstall", "fixture-package", "--cwd", installRoot },
+            "pnpm" => new[] { "uninstall", "fixture-package", "--prefix", installRoot },
+            _ => new[] { "uninstall", "fixture-package", "--prefix", installRoot, "--legacy-peer-deps" }
+        };
+
+        Assert.Equal(prefix.Concat(installArguments).Concat(prefix).Concat(uninstallArguments),
+            File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Fact]
+    public async Task LegacyGlobalUserLookupIsReadOnlyAndManagedInstallTakesPrecedence()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var legacyRoot = Path.Combine(fixture.Root, "legacy-global", "node_modules");
+        var legacyPackage = Path.Combine(legacyRoot, "legacy-control");
+        Directory.CreateDirectory(legacyPackage);
+        await File.WriteAllTextAsync(Path.Combine(legacyPackage, "package.json"),
+            "{\"name\":\"legacy-control\",\"version\":\"1.0.0\"}");
+        var logPath = Path.Combine(fixture.Root, "npm-command-argv.log");
+        var shim = Path.Combine(fixture.Root, "npm-manager-wrapper");
+        await File.WriteAllTextAsync(shim,
+            "#!/bin/sh\nprintf '%s\\0' \"$@\" >> \"$PISHARP_TEST_NPM_ARGV\"\n" +
+            "if [ \"$1\" = root ] && [ \"$2\" = -g ]; then printf '%s\\n' \"$PISHARP_TEST_GLOBAL_ROOT\"; exit 0; fi\n" +
+            "exit 0\n");
+        File.SetUnixFileMode(shim, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var environment = new Dictionary<string, string?>
+        {
+            ["PISHARP_TEST_NPM_ARGV"] = logPath,
+            ["PISHARP_TEST_GLOBAL_ROOT"] = legacyRoot
+        };
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory, environment);
+        store.ConfigureNpmCommand([shim]);
+
+        var legacy = await store.ResolveAsync(fixture.ProjectDirectory, trusted: false,
+            userPackages: [new("npm:legacy-control")], offline: true);
+        var legacyRootResult = Assert.Single(legacy);
+        Assert.Equal(legacyPackage, legacyRootResult.Path);
+        Assert.Equal(new[] { "root", "-g" }, File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries));
+
+        await store.RemoveAsync(fixture.ProjectDirectory, "npm:legacy-control", "user");
+        Assert.True(File.Exists(Path.Combine(legacyPackage, "package.json")));
+        Assert.Equal(new[] { "root", "-g" }, File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries));
+
+        var managedPath = Path.Combine(fixture.AgentDirectory, "npm", "node_modules", "managed-first");
+        Directory.CreateDirectory(managedPath);
+        await File.WriteAllTextAsync(Path.Combine(managedPath, "package.json"),
+            "{\"name\":\"managed-first\",\"version\":\"1.0.0\"}");
+        File.Delete(logPath);
+        var managed = await store.ResolveAsync(fixture.ProjectDirectory, trusted: false,
+            userPackages: [new("npm:managed-first")], offline: true);
+        Assert.Equal(managedPath, Assert.Single(managed).Path);
+        Assert.False(File.Exists(logPath));
+    }
+
+    [Theory]
+    [InlineData("pnpm")]
+    [InlineData("bun")]
+    public async Task LegacyAlternateManagerLookupsUseReadOnlyManagerSpecificPaths(string manager)
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var globalBin = Path.Combine(fixture.Root, "bun-home", ".bun", "bin");
+        var packagePath = manager == "pnpm"
+            ? Path.Combine(fixture.Root, "pnpm-global", "node_modules", "alternate-legacy-control")
+            : Path.Combine(Path.GetDirectoryName(globalBin)!, "install", "global", "node_modules", "alternate-legacy-control");
+        Directory.CreateDirectory(packagePath);
+        await File.WriteAllTextAsync(Path.Combine(packagePath, "package.json"),
+            "{\"name\":\"alternate-legacy-control\",\"version\":\"1.0.0\"}");
+        var logPath = Path.Combine(fixture.Root, "alternate-manager-argv.log");
+        var shim = Path.Combine(fixture.Root, "alternate-manager-wrapper");
+        var response = manager == "pnpm"
+            ? JsonSerializer.Serialize(new
+            {
+                dependencies = new Dictionary<string, object>
+                { ["alternate-legacy-control"] = new { path = packagePath } }
+            })
+            : globalBin;
+        var lookup = manager == "pnpm"
+            ? "if [ \"$1\" = list ]; then printf '%s\\n' \"$PISHARP_TEST_MANAGER_RESPONSE\"; exit 0; fi\n"
+            : "if [ \"$1\" = pm ]; then printf '%s\\n' \"$PISHARP_TEST_MANAGER_RESPONSE\"; exit 0; fi\n";
+        await File.WriteAllTextAsync(shim,
+            "#!/bin/sh\nprintf '%s\\0' \"$@\" >> \"$PISHARP_TEST_NPM_ARGV\"\nshift 4\n" + lookup + "exit 1\n");
+        File.SetUnixFileMode(shim, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory,
+            new Dictionary<string, string?>
+            {
+                ["PISHARP_TEST_NPM_ARGV"] = logPath,
+                ["PISHARP_TEST_MANAGER_RESPONSE"] = response
+            });
+        store.ConfigureNpmCommand([shim, "exec", "node@20", "--", manager]);
+
+        var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: false,
+            userPackages: [new("npm:alternate-legacy-control")], offline: true);
+
+        Assert.Equal(packagePath, Assert.Single(roots).Path);
+        var actual = File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+        var expected = manager == "pnpm"
+            ? new[] { "exec", "node@20", "--", manager, "list", "-g", "--depth", "0", "--json" }
+            : new[] { "exec", "node@20", "--", manager, "pm", "bin", "-g" };
+        Assert.Equal(expected, actual);
+        await store.RemoveAsync(fixture.ProjectDirectory, "npm:alternate-legacy-control", "user");
+        Assert.True(File.Exists(Path.Combine(packagePath, "package.json")));
+        Assert.Equal(expected, File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Fact]
+    public async Task MissingOrMalformedLegacyLookupFallsBackToManagedAcquisition()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var missingGlobalRoot = Path.Combine(fixture.Root, "missing-legacy-global");
+        var logPath = Path.Combine(fixture.Root, "npm-command-argv.log");
+        var shim = Path.Combine(fixture.Root, "npm-manager-wrapper");
+        await File.WriteAllTextAsync(shim,
+            "#!/bin/sh\nprintf '%s\\0' \"$@\" >> \"$PISHARP_TEST_NPM_ARGV\"\n" +
+            "if [ \"$1\" = root ] && [ \"$2\" = -g ]; then\n" +
+            "  if [ -n \"$PISHARP_TEST_MALFORMED_GLOBAL_ROOT\" ]; then printf 'bad\\000root\\n'; " +
+            "else printf '%s\\n' \"$PISHARP_TEST_GLOBAL_ROOT\"; fi\n  exit 0\nfi\n" +
+            "if [ \"$1\" = install ]; then\n" +
+            "  prefix=\n  spec=$2\n  shift 2\n  while [ $# -gt 0 ]; do if [ \"$1\" = --prefix ]; then shift; prefix=$1; fi; shift; done\n" +
+            "  name=${spec%@*}\n  mkdir -p \"$prefix/node_modules/$name\"\n" +
+            "  printf '{\"name\":\"%s\",\"version\":\"1.0.0\"}' \"$name\" > \"$prefix/node_modules/$name/package.json\"\n  exit 0\nfi\nexit 1\n");
+        File.SetUnixFileMode(shim, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var environment = new Dictionary<string, string?>
+        {
+            ["PISHARP_TEST_NPM_ARGV"] = logPath,
+            ["PISHARP_TEST_GLOBAL_ROOT"] = missingGlobalRoot
+        };
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory, environment);
+        store.ConfigureNpmCommand([shim]);
+
+        var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: false,
+            userPackages: [new("npm:managed-fallback@1.0.0")]);
+
+        var root = Assert.Single(roots);
+        Assert.Equal(Path.Combine(fixture.AgentDirectory, "npm", "node_modules", "managed-fallback"), root.Path);
+        var calls = File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Contains("root", calls);
+        Assert.Contains("install", calls);
+        Assert.False(Directory.Exists(Path.Combine(missingGlobalRoot, "managed-fallback")));
+
+        environment["PISHARP_TEST_MALFORMED_GLOBAL_ROOT"] = "1";
+        var malformedRoots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: false,
+            userPackages: [new("npm:malformed-fallback@1.0.0")]);
+        Assert.Equal(Path.Combine(fixture.AgentDirectory, "npm", "node_modules", "malformed-fallback"),
+            Assert.Single(malformedRoots).Path);
+        calls = File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(2, calls.Count(call => call == "root"));
+        Assert.Equal(2, calls.Count(call => call == "install"));
+    }
+
     private static async Task<ProjectRuntimeConfiguration> LoadConfigurationAsync(ManagedNpmFixture fixture,
         CliArguments arguments) => await ProjectRuntimeConfiguration.LoadAsync(fixture.ProjectDirectory,
         fixture.AgentDirectory, arguments, new ProjectTrust(fixture.AgentDirectory), interactiveTrust: false,

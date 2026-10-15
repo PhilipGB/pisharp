@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Globalization;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Cli;
 
@@ -42,6 +43,94 @@ internal static class UserSettingsWriter
         var bytes = System.Text.Encoding.UTF8.GetBytes(root.ToJsonString(s_jsonOptions) + "\n");
         if (bytes.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
         await ReplaceAsync(target, bytes, cancellationToken);
+    }
+
+    /// <summary>Replaces or removes one package declaration while preserving its filter and custom fields.</summary>
+    public static async Task<bool> UpdatePackageSourceAsync(string path, string source, string settingsSource,
+        string inputBaseDirectory, string scopeBaseDirectory, bool remove, bool userScope,
+        CancellationToken cancellationToken = default)
+    {
+        var target = Path.GetFullPath(path);
+        if (File.Exists(target)) target = new FileInfo(target).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? target;
+        var directory = Path.GetDirectoryName(target)!;
+        if (userScope && OperatingSystem.IsLinux())
+            Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        else
+            Directory.CreateDirectory(directory);
+
+        JsonObject root;
+        if (File.Exists(target))
+        {
+            var info = new FileInfo(target);
+            if (info.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
+            var text = await File.ReadAllTextAsync(target, cancellationToken);
+            root = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { MaxDepth = 16 }) as JsonObject
+                ?? throw new InvalidDataException("settings.json must contain a JSON object.");
+        }
+        else
+        {
+            root = new JsonObject();
+        }
+
+        JsonArray packages;
+        if (root["packages"] is JsonArray existing)
+        {
+            // Validate supported fields before a write, while JsonNode retains unknown custom fields.
+            using var document = JsonDocument.Parse(existing.ToJsonString());
+            _ = PackageSettingsReader.Read(document.RootElement);
+            packages = existing;
+        }
+        else if (root.ContainsKey("packages"))
+        {
+            throw new InvalidDataException("settings.json packages must be an array.");
+        }
+        else
+        {
+            packages = new JsonArray();
+            root["packages"] = packages;
+        }
+
+        var identity = PackageIdentity(source, inputBaseDirectory);
+        var matches = new List<int>();
+        for (var index = 0; index < packages.Count; index++)
+        {
+            var package = packages[index];
+            var configuredSource = package switch
+            {
+                JsonValue value when value.TryGetValue<string>(out var text) => text,
+                JsonObject item when item["source"] is JsonValue sourceValue && sourceValue.TryGetValue<string>(out var text) => text,
+                _ => null
+            };
+            if (configuredSource is not null && PackageIdentity(configuredSource, scopeBaseDirectory) == identity)
+                matches.Add(index);
+        }
+
+        if (remove)
+        {
+            foreach (var index in matches.AsEnumerable().Reverse()) packages.RemoveAt(index);
+            if (matches.Count == 0) return false;
+        }
+        else if (matches.Count > 0)
+        {
+            var match = packages[matches[0]];
+            if (match is JsonObject packageObject) packageObject["source"] = settingsSource;
+            else packages[matches[0]] = JsonValue.Create(settingsSource);
+        }
+        else
+        {
+            packages.Add(JsonValue.Create(settingsSource));
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(root.ToJsonString(s_jsonOptions) + "\n");
+        if (bytes.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
+        await ReplaceAsync(target, bytes, cancellationToken);
+        return true;
+    }
+
+    private static string PackageIdentity(string source, string baseDirectory)
+    {
+        if (ManagedResourcePackageStore.GetManagedPackageIdentity(source) is { } managed) return managed;
+        return "local:" + ResourceLocalPath.Resolve(source, baseDirectory);
     }
 
     private static void ValidateValue(IReadOnlyList<string> segments, string? value, bool userScope)

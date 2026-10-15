@@ -17,6 +17,7 @@ public sealed partial class ManagedResourcePackageStore
         '\u200A', '\u2028', '\u2029', '\u202F', '\u205F', '\u3000', '\uFEFF'];
     private readonly string _agentDirectory;
     private readonly IReadOnlyDictionary<string, string?> _processEnvironmentOverrides;
+    private IReadOnlyList<string> _npmCommand = [];
 
     public ManagedResourcePackageStore(string agentDirectory)
         : this(agentDirectory, null) { }
@@ -26,6 +27,110 @@ public sealed partial class ManagedResourcePackageStore
         ArgumentException.ThrowIfNullOrWhiteSpace(agentDirectory);
         _agentDirectory = Path.GetFullPath(agentDirectory);
         _processEnvironmentOverrides = processEnvironmentOverrides ?? new Dictionary<string, string?>();
+    }
+
+    /// <summary>Sets the configured package-manager command as an argv vector.</summary>
+    public void ConfigureNpmCommand(IReadOnlyList<string>? command) => _npmCommand = command?.ToArray() ?? [];
+
+    private string PackageManagerName
+    {
+        get
+        {
+            if (_npmCommand.Count == 0) return "npm";
+            var command = _npmCommand[0];
+            if (string.IsNullOrWhiteSpace(command))
+                throw new InvalidDataException("Invalid npmCommand: first array entry must be a non-empty command");
+            static string Normalize(string value) => Path.GetFileName(value.Replace('\\', '/')).Replace(".cmd", "", StringComparison.OrdinalIgnoreCase)
+                .Replace(".exe", "", StringComparison.OrdinalIgnoreCase);
+            var direct = Normalize(command);
+            var separator = _npmCommand.ToList().LastIndexOf("--");
+            if (separator >= 0)
+                return separator + 1 < _npmCommand.Count ? Normalize(_npmCommand[separator + 1]) : direct;
+            if (direct is "npm" or "pnpm" or "bun") return direct;
+            var managers = _npmCommand.Skip(1).Select(Normalize).Where(name => name is "npm" or "pnpm" or "bun")
+                .Distinct(StringComparer.Ordinal).ToArray();
+            if (managers.Length > 1)
+                throw new InvalidDataException($"Ambiguous npmCommand package managers: {string.Join(", ", managers)}");
+            return managers.FirstOrDefault() ?? direct;
+        }
+    }
+
+    private IReadOnlyList<string> GetNpmInstallArguments(string spec, string installRoot) => PackageManagerName switch
+    {
+        "bun" => ["install", spec, "--cwd", installRoot, "--omit=peer"],
+        "pnpm" => ["install", spec, "--prefix", installRoot, "--config.auto-install-peers=false",
+            "--config.strict-peer-dependencies=false", "--config.strict-dep-builds=false"],
+        _ => ["install", spec, "--prefix", installRoot, "--legacy-peer-deps"]
+    };
+
+    private IReadOnlyList<string> GetGitDependencyInstallArguments() => PackageManagerName switch
+    {
+        "bun" => ["install", "--omit=dev", "--omit=peer"],
+        "pnpm" => ["install", "--prod", "--config.auto-install-peers=false",
+            "--config.strict-peer-dependencies=false", "--config.strict-dep-builds=false"],
+        "npm" => ["install", "--omit=dev", "--legacy-peer-deps"],
+        _ => ["install"]
+    };
+
+    private IReadOnlyList<string> GetNpmUninstallArguments(string packageName, string installRoot) => PackageManagerName switch
+    {
+        "bun" => ["uninstall", packageName, "--cwd", installRoot],
+        "pnpm" => ["uninstall", packageName, "--prefix", installRoot],
+        _ => ["uninstall", packageName, "--prefix", installRoot, "--legacy-peer-deps"]
+    };
+
+    /// <summary>Returns the selected declaration's installed path without acquiring it.</summary>
+    public async Task<string?> GetInstalledPathAsync(string workingDirectory, string source, string scope,
+        CancellationToken cancellationToken = default)
+    {
+        var cwd = Path.GetFullPath(workingDirectory);
+        if (TryParseNpmSource(source, out var npm))
+        {
+            var root = Path.Combine(scope == "project" ? Path.Combine(cwd, ".pi") : _agentDirectory, "npm",
+                "node_modules", npm.Name.Replace('/', Path.DirectorySeparatorChar));
+            if (Directory.Exists(root)) return root;
+            if (scope != "user") return null;
+            return await GetLegacyGlobalNpmPathAsync(cwd, npm.Name, cancellationToken);
+        }
+        if (ManagedGitSource.TryParse(source, out var git))
+        {
+            var root = Path.Combine(scope == "project" ? Path.Combine(cwd, ".pi") : _agentDirectory, "git");
+            var path = GetGitPackageRoot(root, git);
+            return Directory.Exists(path) ? path : null;
+        }
+        var baseDirectory = scope == "project" ? Path.Combine(cwd, ".pi") : _agentDirectory;
+        var localPath = ResourceLocalPath.Resolve(source, baseDirectory);
+        return Directory.Exists(localPath) || File.Exists(localPath) ? localPath : null;
+    }
+
+    /// <summary>Removes one selected managed install. Local package sources are references and remain untouched.</summary>
+    public async Task RemoveAsync(string workingDirectory, string source, string scope,
+        CancellationToken cancellationToken = default)
+    {
+        var cwd = Path.GetFullPath(workingDirectory);
+        var installRoot = Path.Combine(scope == "project" ? Path.Combine(cwd, ".pi") : _agentDirectory, "npm");
+        if (TryParseNpmSource(source, out var npm))
+        {
+            var packageRoot = Path.GetFullPath(Path.Combine(installRoot, "node_modules", npm.Name.Replace('/', Path.DirectorySeparatorChar)));
+            var packagePrefix = Path.GetFullPath(Path.Combine(installRoot, "node_modules")) + Path.DirectorySeparatorChar;
+            if (!packageRoot.StartsWith(packagePrefix, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                throw new InvalidDataException($"Invalid npm package name in source '{source}'.");
+            if (Directory.Exists(packageRoot))
+            {
+                var (exitCode, output, error) = await RunNpmAsync(cwd, GetNpmUninstallArguments(npm.Name, installRoot),
+                    _processEnvironmentOverrides, cancellationToken, forwardStandardError: true);
+                if (exitCode != 0)
+                    throw new IOException($"Package manager uninstall failed for '{source}' (exit {exitCode}). " +
+                        (string.IsNullOrWhiteSpace(error) ? output.Trim() : error.Trim()));
+            }
+            return;
+        }
+        if (ManagedGitSource.TryParse(source, out var git))
+        {
+            var gitRoot = Path.Combine(scope == "project" ? Path.Combine(cwd, ".pi") : _agentDirectory, "git");
+            var packageRoot = GetGitPackageRoot(gitRoot, git);
+            if (Directory.Exists(packageRoot)) Directory.Delete(packageRoot, recursive: true);
+        }
     }
 
     /// <summary>Installs missing user packages and trusted project packages, returning roots for discovery.</summary>
@@ -78,6 +183,22 @@ public sealed partial class ManagedResourcePackageStore
         return roots;
     }
 
+    /// <summary>Performs the explicit package CLI install/reconcile operation in exactly one scope.</summary>
+    public async Task InstallSelectedAsync(string workingDirectory, string source, string scope,
+        CancellationToken cancellationToken = default)
+    {
+        var cwd = Path.GetFullPath(workingDirectory);
+        var scopeRoot = scope == "project" ? Path.Combine(cwd, ".pi") : _agentDirectory;
+        if (TryParseNpmSource(source, out var npm))
+        {
+            await InstallAsync(cwd, Path.Combine(scopeRoot, "npm"), source, npm,
+                _processEnvironmentOverrides, cancellationToken, force: true);
+            return;
+        }
+        if (ManagedGitSource.TryParse(source, out var git))
+            await ReconcileGitAsync(cwd, Path.Combine(scopeRoot, "git"), git, cancellationToken);
+    }
+
     private static IReadOnlyList<ResourcePackageSource> SelectScopeDeclarations(
         IReadOnlyList<ResourcePackageSource> packages, string scope)
     {
@@ -103,7 +224,46 @@ public sealed partial class ManagedResourcePackageStore
         return result;
     }
 
-    private static async Task ResolveScopeAsync(string workingDirectory, IReadOnlyList<ResourcePackageSource>? packages, string scope,
+    private async Task<string?> GetLegacyGlobalNpmPathAsync(string workingDirectory, string packageName,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            string globalRoot;
+            if (PackageManagerName == "pnpm")
+            {
+                var (code, output, _) = await RunNpmAsync(workingDirectory, ["list", "-g", "--depth", "0", "--json"],
+                    _processEnvironmentOverrides, cancellationToken);
+                if (code == 0 && TryGetPnpmGlobalPath(output, packageName) is { } pnpmPath && Directory.Exists(pnpmPath))
+                    return pnpmPath;
+            }
+            if (PackageManagerName == "bun")
+            {
+                var (code, output, _) = await RunNpmAsync(workingDirectory, ["pm", "bin", "-g"],
+                    _processEnvironmentOverrides, cancellationToken);
+                if (code != 0) return null;
+                globalRoot = Path.Combine(Path.GetDirectoryName(output.Trim()) ?? "", "install", "global", "node_modules");
+            }
+            else
+            {
+                var (code, output, _) = await RunNpmAsync(workingDirectory, ["root", "-g"],
+                    _processEnvironmentOverrides, cancellationToken);
+                if (code != 0) return null;
+                globalRoot = output.Trim();
+            }
+            var legacyPath = Path.GetFullPath(Path.Combine(globalRoot, packageName.Replace('/', Path.DirectorySeparatorChar)));
+            return Directory.Exists(legacyPath) ? legacyPath : null;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or
+                                       System.ComponentModel.Win32Exception or InvalidDataException or ArgumentException or
+                                       NotSupportedException)
+        {
+            // Legacy lookups are compatibility reads; they must not prevent managed acquisition.
+            return null;
+        }
+    }
+
+    private async Task ResolveScopeAsync(string workingDirectory, IReadOnlyList<ResourcePackageSource>? packages, string scope,
         string installRoot, List<ManagedResourcePackageRoot> roots, bool offline,
         IReadOnlyDictionary<string, string?> processEnvironmentOverrides, CancellationToken cancellationToken)
     {
@@ -119,6 +279,11 @@ public sealed partial class ManagedResourcePackageStore
             if (!await IsInstalledAsync(workingDirectory, installRoot, packageRoot, spec,
                     processEnvironmentOverrides, cancellationToken))
             {
+                if (scope == "user" && await GetLegacyGlobalNpmPathAsync(workingDirectory, spec.Name, cancellationToken) is { } legacyPath)
+                {
+                    roots.Add(new(package.Source, scope, legacyPath));
+                    continue;
+                }
                 if (offline) continue;
                 await InstallAsync(workingDirectory, installRoot, package.Source, spec,
                     processEnvironmentOverrides, cancellationToken);
@@ -129,7 +294,7 @@ public sealed partial class ManagedResourcePackageStore
         }
     }
 
-    private static async Task<bool> IsInstalledAsync(string workingDirectory, string installRoot, string packageRoot, NpmPackageSpec spec,
+    private async Task<bool> IsInstalledAsync(string workingDirectory, string installRoot, string packageRoot, NpmPackageSpec spec,
         IReadOnlyDictionary<string, string?> processEnvironmentOverrides,
         CancellationToken cancellationToken)
     {
@@ -165,9 +330,9 @@ public sealed partial class ManagedResourcePackageStore
         }
     }
 
-    private static async Task InstallAsync(string workingDirectory, string installRoot, string source, NpmPackageSpec spec,
+    private async Task InstallAsync(string workingDirectory, string installRoot, string source, NpmPackageSpec spec,
         IReadOnlyDictionary<string, string?> processEnvironmentOverrides,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool force = false)
     {
         var rootKey = Path.GetFullPath(installRoot);
         var installLock = s_installLocks.GetOrAdd(rootKey, _ => new SemaphoreSlim(1, 1));
@@ -182,14 +347,14 @@ public sealed partial class ManagedResourcePackageStore
                 await File.WriteAllTextAsync(projectManifest, "{\"name\":\"pi-extensions\",\"private\":true}\n", cancellationToken);
 
             // Another resolution may have populated this root while this call waited.
-            if (await IsInstalledAsync(workingDirectory, installRoot,
+            if (!force && await IsInstalledAsync(workingDirectory, installRoot,
                     Path.Combine(installRoot, "node_modules", spec.Name.Replace('/', Path.DirectorySeparatorChar)),
                     spec, processEnvironmentOverrides, cancellationToken)) return;
 
             cancellationToken.ThrowIfCancellationRequested();
             var (exitCode, output, errorOutput) = await RunNpmAsync(workingDirectory,
-                ["install", spec.InstallSpec, "--prefix", installRoot, "--legacy-peer-deps"],
-                processEnvironmentOverrides, cancellationToken);
+                GetNpmInstallArguments(spec.InstallSpec, installRoot),
+                processEnvironmentOverrides, cancellationToken, forwardStandardError: true);
             if (exitCode != 0)
             {
                 var details = string.IsNullOrWhiteSpace(errorOutput) ? output.Trim() : errorOutput.Trim();
@@ -217,16 +382,17 @@ public sealed partial class ManagedResourcePackageStore
         return true;
     }
 
-    private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunNpmAsync(
+    private async Task<(int ExitCode, string StandardOutput, string StandardError)> RunNpmAsync(
         string workingDirectory, IReadOnlyList<string> arguments,
-        IReadOnlyDictionary<string, string?> processEnvironmentOverrides, CancellationToken cancellationToken)
+        IReadOnlyDictionary<string, string?> processEnvironmentOverrides, CancellationToken cancellationToken,
+        bool forwardStandardError = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var process = new Process
         {
             StartInfo = new ProcessStartInfo
             {
-                FileName = "npm",
+                FileName = _npmCommand.Count == 0 ? "npm" : _npmCommand[0],
                 WorkingDirectory = workingDirectory,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -236,6 +402,7 @@ public sealed partial class ManagedResourcePackageStore
         };
         foreach (var (key, value) in processEnvironmentOverrides)
             process.StartInfo.Environment[key] = value;
+        foreach (var argument in _npmCommand.Skip(1)) process.StartInfo.ArgumentList.Add(argument);
         foreach (var argument in arguments) process.StartInfo.ArgumentList.Add(argument);
         try
         {
@@ -262,7 +429,14 @@ public sealed partial class ManagedResourcePackageStore
             throw;
         }
 
-        return (process.ExitCode, await standardOutput, await standardError);
+        var output = await standardOutput;
+        var standardErrorText = await standardError;
+        if (forwardStandardError && standardErrorText.Length > 0)
+        {
+            await Console.Error.WriteAsync(standardErrorText);
+            await Console.Error.FlushAsync();
+        }
+        return (process.ExitCode, output, standardErrorText);
     }
 
     private static async Task<string> ReadBoundedAsync(StreamReader reader)
@@ -333,6 +507,10 @@ public sealed partial class ManagedResourcePackageStore
         return TryGetGitIdentity(source, out identity);
     }
 
+    /// <summary>Returns a version-independent npm or canonical Git identity for a managed source.</summary>
+    public static string? GetManagedPackageIdentity(string source) =>
+        TryGetManagedPackageIdentity(source, out var identity) ? identity : null;
+
     private static bool IsValidPackageName(string name)
     {
         static bool SegmentIsSafe(string segment) => segment.Length > 0 && segment is not ("." or "..") &&
@@ -343,6 +521,27 @@ public sealed partial class ManagedResourcePackageStore
             return parts.Length == 2 && SegmentIsSafe(parts[0]) && SegmentIsSafe(parts[1]);
         }
         return !name.Contains('/') && SegmentIsSafe(name);
+    }
+
+    private static string? TryGetPnpmGlobalPath(string output, string packageName)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(output);
+            var entries = document.RootElement.ValueKind == JsonValueKind.Array
+                ? document.RootElement.EnumerateArray().ToArray()
+                : [document.RootElement];
+            foreach (var entry in entries)
+            {
+                if (entry.ValueKind == JsonValueKind.Object && entry.TryGetProperty("dependencies", out var dependencies) &&
+                    dependencies.ValueKind == JsonValueKind.Object && dependencies.TryGetProperty(packageName, out var dependency) &&
+                    dependency.ValueKind == JsonValueKind.Object && dependency.TryGetProperty("path", out var path) &&
+                    path.ValueKind == JsonValueKind.String)
+                    return path.GetString();
+            }
+        }
+        catch (JsonException) { }
+        return null;
     }
 
     private sealed record NpmPackageSpec(string Name, string? Version, string InstallSpec);
