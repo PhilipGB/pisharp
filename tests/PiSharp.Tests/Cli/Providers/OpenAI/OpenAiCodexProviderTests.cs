@@ -46,7 +46,7 @@ public sealed class OpenAiCodexProviderTests
     }
 
     [Fact]
-    public async Task CodexResponsesWebSocketProjectsInlinePngAsInputImage()
+    public async Task CodexResponsesWebSocketProjectsInlinePngAndCompletedUsage()
     {
         using var listener = StartListener(out var port);
         string? requestBody = null;
@@ -73,12 +73,21 @@ public sealed class OpenAiCodexProviderTests
             new Microsoft.Extensions.AI.DataContent(image, "image/png")
         ]);
         var output = new StringBuilder();
+        var updates = new List<Microsoft.Extensions.AI.ChatResponseUpdate>();
         await foreach (var update in client.GetStreamingResponseAsync([prompt],
             new Microsoft.Extensions.AI.ChatOptions { ConversationId = "codex-image-fixture" }, deadline.Token))
+        {
+            updates.Add(update);
             if (update.Text is { } text) output.Append(text);
+        }
         await server.WaitAsync(deadline.Token);
 
         Assert.Equal("image received", output.ToString());
+        var usage = Assert.Single(updates.SelectMany(update => update.Contents)
+            .OfType<Microsoft.Extensions.AI.UsageContent>()).Details;
+        Assert.Equal(12, usage.InputTokenCount);
+        Assert.Equal(3, usage.OutputTokenCount);
+        Assert.Equal(15, usage.TotalTokenCount);
         using var sent = JsonDocument.Parse(requestBody!);
         var content = sent.RootElement.GetProperty("input")[0].GetProperty("content").EnumerateArray().ToArray();
         Assert.Contains(content, item => item.GetProperty("type").GetString() == "input_text" &&
@@ -547,6 +556,129 @@ public sealed class OpenAiCodexProviderTests
         await server.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
+    [Fact]
+    public async Task CodexResponsesWebSocketSurfacesResponseFailure()
+    {
+        using var listener = StartListener(out var port);
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync();
+            var accepted = await context.AcceptWebSocketAsync(null);
+            using var socket = accepted.WebSocket;
+            _ = await ReceiveWebSocketMessageAsync(socket);
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.failed",
+                response = new
+                {
+                    id = "resp_failed",
+                    status = "failed",
+                    error = new { code = "invalid_prompt", message = "The requested prompt is invalid." }
+                }
+            });
+        });
+
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses");
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var selection = new ModelSelection(provider, model, CreateToken("account-fixture"), true, "fixture token");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        var error = await Record.ExceptionAsync(async () =>
+        {
+            await foreach (var _ in client.GetStreamingResponseAsync(
+                [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "bad request")],
+                cancellationToken: deadline.Token))
+            {
+            }
+        });
+        await server.WaitAsync(deadline.Token);
+
+        Assert.NotNull(error);
+        Assert.Contains("invalid_prompt", error.ToString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("requested prompt is invalid", error.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CodexResponsesWebSocketCancellationAfterOutputOpensFreshConnectionForNextTurn()
+    {
+        using var listener = StartListener(out var port);
+        var firstDeltaSent = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstRequest = (string?)null;
+        var secondRequest = (string?)null;
+        var server = Task.Run(async () =>
+        {
+            var firstContext = await listener.GetContextAsync();
+            var firstAccepted = await firstContext.AcceptWebSocketAsync(null);
+            using (var firstSocket = firstAccepted.WebSocket)
+            {
+                firstRequest = await ReceiveWebSocketMessageAsync(firstSocket);
+                await SendWebSocketEventAsync(firstSocket, new
+                {
+                    type = "response.created",
+                    response = new { id = "resp_cancelled", @object = "response", created_at = 1, model = "gpt-5.5", status = "in_progress", output = Array.Empty<object>() }
+                });
+                await SendWebSocketEventAsync(firstSocket, new
+                {
+                    type = "response.output_text.delta",
+                    item_id = "msg_cancelled",
+                    output_index = 0,
+                    content_index = 0,
+                    delta = "partial"
+                });
+                firstDeltaSent.TrySetResult();
+                await Task.Delay(TimeSpan.FromMilliseconds(300));
+            }
+
+            var secondContext = await listener.GetContextAsync();
+            var secondAccepted = await secondContext.AcceptWebSocketAsync(null);
+            using var secondSocket = secondAccepted.WebSocket;
+            secondRequest = await ReceiveWebSocketMessageAsync(secondSocket);
+            await SendWebSocketResponseAsync(secondSocket, "resp_after_cancel", "recovered");
+        });
+
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses");
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var selection = new ModelSelection(provider, model, CreateToken("account-fixture"), true, "fixture token");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var cancellation = new CancellationTokenSource();
+        var options = new Microsoft.Extensions.AI.ChatOptions { ConversationId = "codex-cancel-after-output" };
+        await using var updates = client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "first turn")], options,
+            cancellation.Token).GetAsyncEnumerator(cancellation.Token);
+        string? partial = null;
+        while (await updates.MoveNextAsync())
+        {
+            if (updates.Current.Text is { Length: > 0 } text)
+            {
+                partial = text;
+                break;
+            }
+        }
+
+        await firstDeltaSent.Task.WaitAsync(deadline.Token);
+        Assert.Equal("partial", partial);
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await updates.MoveNextAsync());
+
+        var recovered = await ReadTextAsync(client, "second turn", options, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("recovered", recovered);
+        using var first = JsonDocument.Parse(firstRequest!);
+        using var second = JsonDocument.Parse(secondRequest!);
+        Assert.Equal("response.create", first.RootElement.GetProperty("type").GetString());
+        Assert.Equal("response.create", second.RootElement.GetProperty("type").GetString());
+        Assert.False(second.RootElement.TryGetProperty("previous_response_id", out _));
+    }
+
     private static async Task<string> ReadTextAsync(Microsoft.Extensions.AI.IChatClient client, string prompt,
         Microsoft.Extensions.AI.ChatOptions options, CancellationToken cancellationToken)
         => await ReadMessagesAsync(client,
@@ -602,6 +734,7 @@ public sealed class OpenAiCodexProviderTests
                 created_at = 1,
                 model = "gpt-5.5",
                 status = "completed",
+                usage = new { input_tokens = 12, output_tokens = 3, total_tokens = 15 },
                 output = new object[]
                 {
                     new

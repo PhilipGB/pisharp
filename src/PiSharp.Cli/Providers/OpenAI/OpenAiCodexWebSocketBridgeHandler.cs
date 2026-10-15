@@ -202,20 +202,26 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
 
     private static string? GetCodexErrorCode(string eventJson)
     {
+        return GetCodexFailure(eventJson)?.Code;
+    }
+
+    private static CodexFailure? GetCodexFailure(string eventJson)
+    {
         using var document = JsonDocument.Parse(eventJson);
         var root = document.RootElement;
-        if (root.TryGetProperty("type", out var type) && type.GetString() == "response.failed" &&
-            root.TryGetProperty("response", out var response) && response.TryGetProperty("error", out var responseError) &&
-            responseError.TryGetProperty("code", out var responseCode))
-            return responseCode.GetString();
-        if (root.TryGetProperty("type", out type) && type.GetString() == "error")
-        {
-            if (root.TryGetProperty("code", out var code)) return code.GetString();
-            if (root.TryGetProperty("error", out var error) && error.TryGetProperty("code", out var nestedCode))
-                return nestedCode.GetString();
-        }
-        return null;
+        if (!root.TryGetProperty("type", out var type) || type.GetString() is not ("response.failed" or "error"))
+            return null;
+
+        var error = type.GetString() == "response.failed" && root.TryGetProperty("response", out var response) &&
+            response.TryGetProperty("error", out var responseError)
+            ? responseError
+            : root.TryGetProperty("error", out var rootError) ? rootError : root;
+        var code = error.TryGetProperty("code", out var codeElement) ? codeElement.GetString() : null;
+        var message = error.TryGetProperty("message", out var messageElement) ? messageElement.GetString() : null;
+        return new CodexFailure(code, message ?? "Codex Responses request failed.");
     }
+
+    private sealed record CodexFailure(string? Code, string Message);
 
     private static byte[] CreateResponseCreateMessage(byte[] requestBody)
     {
@@ -650,6 +656,13 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
                 var eventType = document.RootElement.TryGetProperty("type", out var typeElement)
                     ? typeElement.GetString()
                     : null;
+                if (GetCodexFailure(eventJson) is { } failure)
+                {
+                    var detail = failure.Code is { Length: > 0 }
+                        ? $"Codex Responses error '{failure.Code}': {failure.Message}"
+                        : failure.Message;
+                    throw new HttpRequestException(detail);
+                }
                 var successfulCompletion = eventType is "response.completed" or "response.done" or "response.incomplete";
                 var terminal = successfulCompletion || eventType is "error" or "response.failed" or "response.cancelled";
                 _sawSuccessfulCompletion = successfulCompletion;
