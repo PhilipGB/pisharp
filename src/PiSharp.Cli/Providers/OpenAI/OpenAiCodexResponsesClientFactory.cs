@@ -153,7 +153,8 @@ internal sealed class OpenAiCodexChatOptionsClient(IChatClient inner, OpenAiCode
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         using var scope = requestContext.Push(new(ResolveSessionId(options), ResolveGrammarTools(options)));
-        return await base.GetResponseAsync(messages, StripConversationSessionId(options), cancellationToken).ConfigureAwait(false);
+        var updates = base.GetStreamingResponseAsync(messages, StripConversationSessionId(options), cancellationToken);
+        return await updates.ToChatResponseAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(

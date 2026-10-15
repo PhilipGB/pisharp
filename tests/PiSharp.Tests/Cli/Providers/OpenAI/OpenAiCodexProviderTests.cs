@@ -97,6 +97,39 @@ public sealed class OpenAiCodexProviderTests
     }
 
     [Fact]
+    public async Task CodexResponsesAggregatesTheStreamingWireForNonStreamingSummaries()
+    {
+        using var listener = StartListener(out var port);
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync();
+            var accepted = await context.AcceptWebSocketAsync(null);
+            using var socket = accepted.WebSocket;
+            _ = await ReceiveWebSocketMessageAsync(socket);
+            await SendWebSocketResponseAsync(socket, "resp_summary", "Summary ready");
+        });
+
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses");
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var selection = new ModelSelection(provider, model, CreateToken("account-fixture"), true, "fixture token");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        var response = await client.GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "Summarize the transcript")],
+            cancellationToken: deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("Summary ready", response.Text);
+        Assert.Equal("resp_summary", response.ResponseId);
+        Assert.Equal(12, response.Usage?.InputTokenCount);
+        Assert.Equal(15, response.Usage?.TotalTokenCount);
+    }
+
+    [Fact]
     public async Task CodexResponsesUsesCachedAccountScopedWebSocketAndRealResponsesClient()
     {
         using var listener = StartListener(out var port);
