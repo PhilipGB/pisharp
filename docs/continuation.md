@@ -1,6 +1,35 @@
 # Continuation — PiSharp capability parity
 
-## User-requested stop — 2026-10-15
+## Resumed integration checkpoint — 2026-10-15
+
+Current product commit: `192f426832f42e01caf06905edeff2bbab4f2403` on
+`parity/current-pi-completion`, based on queue-3 exact-CI commit
+`548f8cd435c78801663a39ee1156ee34a595ed4c`. The configured Pi checkout remains
+at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+Queues 1–6, 9, and 12 are integrated; queues 4 and 5 cover extension conflict
+selection and the typed native extension context, lifecycle callbacks, shared UI
+adapter, and resource reload path. Queue 3's real Pi/PiSharp package CLI process
+pair is complete and exact-head CI run [38771357186](https://github.com/PhilipGB/pisharp/actions/runs/38771357186)
+passed **2,018/2,018 .NET tests, zero skips** on `548f8cd4`. Current integrated
+local verification passes **157 focused tests, zero skips**, a warnings-as-errors
+solution build with zero warnings/errors, and solution formatting. Pinned-Pi
+extension context/event/reload, conflict, ordering, pre-trust, provider sampling,
+tool argument, and Radius comparisons pass for their covered scopes. Exact-head CI
+for `192f4268` is pending.
+
+`feature-pi-packages` is promoted to verified; counts are **11 verified, 145 in
+progress, 38 not started**. Broader extension, provider, and package-resolution
+work remains in progress where the receipts retain uncovered behavior or
+observable differences. Next priority is queue 7, thinking budgets; inspect the
+next 6–10 ledger rows and schedule only independent ownership lanes. Keep the Pi
+pin fixed and preserve `test.pdf` and unrelated files. See the receipts listed in
+[the feature matrix](parity/feature-matrix.md) and the execution ledger.
+
+## Historical user-requested stop — 2026-10-15 (superseded by this resume)
+
+This prior stop record is preserved as history. Its queue-3 unintegrated state
+and stop instruction were superseded when the user resumed parity work.
 
 Base SHA: `21d5e47e5a4b2cf084ed01b0a0ee7cca9efbc538`. The user cleared the
 goal and requested **stop at the next suitable point**. Both specialists are idle;
@@ -30,7 +59,7 @@ advisor escalation. Last inspected exact-head CI for pre-stop main `21d5e47e`
 is successful, run **38756890943**. The checkpoint below describes the prior
 startup; this stop record supersedes its active-work instructions.
 
-## Sol orchestration checkpoint — 2026-10-15
+## Historical Sol orchestration checkpoint — 2026-10-15
 
 Base SHA: `a33e556b1fd88e5c935c9346ad286608f99f7384`; starting handover SHA:
 `77caa3290a0300e2e02d61039b306260f127872a`. Queues **1 and 2 are completed**;

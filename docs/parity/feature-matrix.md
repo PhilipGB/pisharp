@@ -1,12 +1,29 @@
-## Current post-merge checkpoint — 2026-10-15
+## Current integration checkpoint — 2026-10-15
 
-Managed npm and Git acquisition (queues1/2) feed the existing resource owners.
-Git cached startup, pinned/unchanged and explicit unpinned updates, dependency
-failure and cancellation have native and local-process evidence. Root full
-verification passes **1,997 .NET / 24 Node / 50 Python**, zero skips. Package CLI
-(queue3), configured npm commands and remaining package resolution proof stay
-required; no capability promotion. See [Git evidence](fixtures/managed-git-rpc-process.json)
-and [npm evidence](fixtures/managed-npm-local-tarball-2026-10-15.json).
+Product commit `192f426832f42e01caf06905edeff2bbab4f2403` integrates package CLI
+queues 1–3, extension conflict selection (4), typed extension context/lifecycle/UI
+(5), sampling options (6), Bedrock/Pi Messages tool-call validation (9), and the
+Radius catalog/OAuth setup slice (12). Queue 7, thinking budgets, is next. The
+configured Pi pin remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+The package CLI install/remove/update/list and resource invocation process pair
+matches; `feature-pi-packages` is verified with the Git progress and failed-fetch
+sidecar metadata differences bounded in its receipt. The current-Pi extension
+context comparison matches project/model/provider state, semantic tool event
+order, and startup/reload discovery. A real RPC process checks context/UI/events,
+and a Linux PTY checks `/reload`. The integrated focused suite passes **157/157**,
+the solution build has zero warnings/errors, and format verification passes.
+Exact-head CI for the current branch is pending. See the [package CLI receipt](fixtures/package-cli-real-process-2026-10-15.json),
+[extension conflict receipt](fixtures/extension-conflicts-current-pi-2026-10-15.json),
+[extension context receipt](fixtures/extension-context-runtime-current-pi-2026-10-15.json),
+[sampling receipt](fixtures/provider-sampling-options-current-pi-2026-10-15.json),
+[provider call receipt](fixtures/provider-tool-call-validation-current-pi-2026-10-15.json),
+and [Radius receipt](fixtures/radius-catalog-oauth-setup-current-pi-2026-10-15.json).
+
+All 194 required capability IDs remain tracked: **11 verified, 145 in progress,
+38 not started**. The broader extension and provider capabilities remain in
+progress because their remaining current-Pi contracts are not covered by these
+bounded queue slices. Full parity and the final source audit remain incomplete.
 
 ## Authoritative Sol-to-Luna checkpoint — 2026-10-15
 

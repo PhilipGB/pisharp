@@ -201,7 +201,9 @@
   ],
   "final_audit": {
     "complete": false,
-    "evidence": []
+    "evidence": [],
+    "closure_review_scope": "Every one of the 194 task records has a handover_review: eleven closed contracts, 145 implemented/incomplete or insufficiently proven acceptance contracts, and 38 genuinely missing implementations. The original acceptance/implementation/evidence are preserved. Each open record has finite observable criteria, a supported verification boundary and ordered queue references; no hypothetical parser permutations are required.",
+    "readiness": "ACTIVE PARITY EXECUTION; queue 7 (thinking budgets) is next."
   },
   "tasks": [
     {
@@ -1381,7 +1383,8 @@
       "implementation": [
         "ExtensionRegistration.AddTool(AIFunction, PiSharpToolRenderer) can attach per-tool call/result callbacks. PiSharpToolRenderView contains plain spans with semantic theme styles; render context includes tool-call ID, working directory, a JSON-safe argument snapshot, execution/result flags, details, images and error text.",
         "TerminalToolPresentation invokes callbacks at the lifecycle boundary, catches failures and uses the existing safe fallback; callbacks are synchronous and returned text/views are sanitized and bounded. TerminalScreen stores host-owned views for theme re-rendering instead of retaining plugin delegates, so extension catalog reload can release the prior load context.",
-        "ExtensionRegistration.AddResourceDiscoveryHandler adds ordered asynchronous startup/reload resource callbacks for skills, prompts, and themes; broader Pi extension compatibility remains open."
+        "ExtensionRegistration.AddResourceDiscoveryHandler adds ordered asynchronous startup/reload resource callbacks for skills, prompts, and themes; broader Pi extension compatibility remains open.",
+        "AddLifecycleHandler supplies typed event/context callbacks; PiSharpToolExecutionContext exposes the live read-only extension context; CLI adapts shared project-trust UI operations to headless stderr and active TUI status notifications."
       ],
       "evidence": [
         "ExtensionCatalogTests.RegistrationStoresSafeCallAndResultRenderersByToolName validates registration and lookup. InteractiveTranscriptTests cover safe text, stable call context and exception fallback; TerminalScreenTests cover palette re-rendering; ExtensionCatalogTests exercise a compiled trusted extension tool through PiAgent.RunEventsAsync and render both call/result events. Focused UI/extension tests pass 32/32 locally; TerminalPtyTests.ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal passes 1/1 against a loopback provider and Linux PTY. Local format verification, warnings-as-errors build and the 510/510 suite pass; Linux CI run 36182423444 passes all gates on exact code commit e50ea5786038f5657869e1a881ceaec028c263d0. No Pi component differential.",
@@ -1392,7 +1395,8 @@
         "Current Pi 3daa2028 extension SDK/CLI failure boundaries: native unhandled configuration failure exits -6 versus source exit 1 and recovery hint; missing explicit path exits 2 versus source exit 1/full path diagnostic/hint. Source SDK discards failed registrations and loads a valid sibling, while normal CLI refuses startup. Configuration/missing-path/dependency-resolver native tests fail first; corrupt assembly control and preload error dedup are retained. Focused ExtensionAssemblyLoader, registration checkpoint and ExtensionStartupFailure owners now match the SDK state/diagnostic and normal CLI controlled error text/exit/no-provider boundaries; all thirteen CLI cases and prior 95 loader cases match, 76 focused and full 1954 native checks pass with zero skips/warnings; format and docs validation pass. Original duplicate/missing logical scenarios are corrected from thrown SDK exceptions to diagnostics according to source loader/main.ts; no scenarios or assertions are removed. See docs/parity/fixtures/resource-package-extension-errors-current-pi-2026-10-15.json. Wider conflicts/builtins/errors/aliases/reload/project overrides and managed/CLI package workflows remain open.",
         "Current Pi 3daa2028 explicit extension URL/canonical/CLI path boundary: native rejects a valid file URL and configures a canonical CLI/package alias twice; two native failures/one control precede repair. Padded argument remains rejected by both CLIs; native leaked trailing CRLF/FEFF into error lines, and first URI repair was too late for the existing session-target resolver. ResourceLocalPath/ExtensionCliPaths now preserve original invocation resolution before loader trimming; canonical dedup retains the first lexical path. Actual full-loader metadata corrected the initial all-CLI expectation: exact plain/URL overlap keeps package provenance, while a distinct alias keeps CLI provenance. Two corrected native metadata assertions fail before the overlay repair; three paired full-loader metadata cases now match. All sixteen real CLI flows and prior 95 loader cases match; 58 focused and nine startup checks pass, as does the final full 1957-test suite with zero failures/skips. Fresh build has zero warnings; format, docs, Node 24 and Python 50 pass. See docs/parity/fixtures/resource-package-extension-paths-current-pi-2026-10-15.json. Configured paths/other aliases/malformed URLs/collisions/reload/project scope and managed/CLI package workflows remain open.",
         "Current Pi 3daa2028 final extension selection after pre-trust bootstrap: a trusted project disables its overlapping personal package extension, so Pi omits its Guide skill while native initially keeps it; a second native failure exposes stale user provenance on a project-enabled preload. Untrusted control passes. ExtensionCatalogSelection and ExtensionRegistrationSelection now remove deselected owned contributions, refresh retained metadata and preserve configured instances/host registrations. Three full-loader bootstrap/configuration/metadata comparisons and all eighteen normal CLI/provider flows match; 26 focused checks pass with three new native rows. Final full 1960 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-pretrust-current-pi-2026-10-15.json. Full module ordering/conflicts, broader filters/aliases/reload/cross-module mutations and managed package workflows remain open.",
-        "Current Pi 3daa2028 final extension order: a retained personal module plus a new project module configures once each in both products, but native initially orders modules and resources_discover callbacks personal-first while source is project-first. One native regression fails first with an untrusted control. Actual DefaultResourceLoader and ExtensionRunner with real in-memory session/model/auth owners characterize callback order. ExtensionCatalogSelection now keeps module/context pairs in final canonical selection order, and ExtensionRegistrationOrder stably orders owned dictionaries/callbacks without reconfiguring factories or changing within-owner order. The paired loader/runner case, prior three selection cases and eighteen normal CLI/provider flows match; 28 focused checks pass. Final full 1962 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json. Conflicts/replaceable builtins/dynamic registration/virtual-model ordering and broader filters/aliases/reload/managed workflows remain open."
+        "Current Pi 3daa2028 final extension order: a retained personal module plus a new project module configures once each in both products, but native initially orders modules and resources_discover callbacks personal-first while source is project-first. One native regression fails first with an untrusted control. Actual DefaultResourceLoader and ExtensionRunner with real in-memory session/model/auth owners characterize callback order. ExtensionCatalogSelection now keeps module/context pairs in final canonical selection order, and ExtensionRegistrationOrder stably orders owned dictionaries/callbacks without reconfiguring factories or changing within-owner order. The paired loader/runner case, prior three selection cases and eighteen normal CLI/provider flows match; 28 focused checks pass. Final full 1962 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json. Conflicts/replaceable builtins/dynamic registration/virtual-model ordering and broader filters/aliases/reload/managed workflows remain open.",
+        "docs/parity/fixtures/extension-context-runtime-current-pi-2026-10-15.json"
       ],
       "dependencies": [],
       "handover_remaining": {
@@ -1460,7 +1464,7 @@
     {
       "id": "feature-pi-packages",
       "title": "Pi Packages",
-      "status": "in_progress",
+      "status": "verified",
       "source": "docs/parity/feature-matrix.md:31",
       "acceptance": [
         "Match normal Pi CLI install/remove/update/list package-resource workflows and resource loading.",
@@ -1471,7 +1475,8 @@
         "ResourcePackageFiles and ResourcePathSelection load local skill/prompt manifests and conventional folders, preserving package provenance, filters, project identity replacement/autoload deltas, trust and precedence.",
         "LocalResourcePathRules treats lowercase skill.md aliases as ordinary files when applying parent overrides.",
         "Queue1: Runtime ManagedResourcePackageStore acquires named npm sources with scripts/peer policy, cached ranges/tags, offline/trust selection and kill+await cancellation. Resolved roots feed existing resource, extension and theme owners through async CLI startup/reload.",
-        "Queue2: Managed Git source identity/ref parsing, scoped cached startup without fetch, explicit staged InstallAsync/UpdateAsync, dependency script/peer policy and kill+await cancellation. npm explicit updates honor configured targets and only install newer versions; project delta metadata reuses the matching user root even offline."
+        "Queue2: Managed Git source identity/ref parsing, scoped cached startup without fetch, explicit staged InstallAsync/UpdateAsync, dependency script/peer policy and kill+await cancellation. npm explicit updates honor configured targets and only install newer versions; project delta metadata reuses the matching user root even offline.",
+        "Queue3 added supported user/project install, remove, update and list workflows through the managed store and existing settings persistence; local process differential also verifies discovered skill/prompt/extension resources."
       ],
       "evidence": [
         "The current goal supersedes the earlier Pi Packages exclusion; normal CLI package-resource operations are in scope.",
@@ -1489,7 +1494,8 @@
         "Current Pi 3daa2028 final extension selection after pre-trust bootstrap: a trusted project disables its overlapping personal package extension, so Pi omits its Guide skill while native initially keeps it; a second native failure exposes stale user provenance on a project-enabled preload. Untrusted control passes. ExtensionCatalogSelection and ExtensionRegistrationSelection now remove deselected owned contributions, refresh retained metadata and preserve configured instances/host registrations. Three full-loader bootstrap/configuration/metadata comparisons and all eighteen normal CLI/provider flows match; 26 focused checks pass with three new native rows. Final full 1960 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-pretrust-current-pi-2026-10-15.json. Full module ordering/conflicts, broader filters/aliases/reload/cross-module mutations and managed package workflows remain open.",
         "Current Pi 3daa2028 final extension order: a retained personal module plus a new project module configures once each in both products, but native initially orders modules and resources_discover callbacks personal-first while source is project-first. One native regression fails first with an untrusted control. Actual DefaultResourceLoader and ExtensionRunner with real in-memory session/model/auth owners characterize callback order. ExtensionCatalogSelection now keeps module/context pairs in final canonical selection order, and ExtensionRegistrationOrder stably orders owned dictionaries/callbacks without reconfiguring factories or changing within-owner order. The paired loader/runner case, prior three selection cases and eighteen normal CLI/provider flows match; 28 focused checks pass. Final full 1962 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json. Conflicts/replaceable builtins/dynamic registration/virtual-model ordering and broader filters/aliases/reload/managed workflows remain open.",
         "docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json: Luna implementation; root focused87 and default-profile full1980 tests, two managed paired drivers plus deleted-skill/local controls, terminal4-frame pair/calibration, all full gates green. npm registry/alternate commands and git/package CLI remain open.",
-        "docs/parity/fixtures/managed-git-rpc-process.json: Luna worker204f3f9b; root102 focused and full1997, four actual RPC/provider comparisons matched. Pi API update probe plus native Git update/failure/cancellation tests establish pinned/unchanged/unpinned and old-root preservation; package CLI/npmCommand/registry/legacy closure remain required."
+        "docs/parity/fixtures/managed-git-rpc-process.json: Luna worker204f3f9b; root102 focused and full1997, four actual RPC/provider comparisons matched. Pi API update probe plus native Git update/failure/cancellation tests establish pinned/unchanged/unpinned and old-root preservation; package CLI/npmCommand/registry/legacy closure remain required.",
+        "docs/parity/fixtures/package-cli-real-process-2026-10-15.json: real Pi/PiSharp CLI operations, persisted state, provider/resource invocation and lifecycle scripts match on local npm/Git sources; queue3 exact-head CI 38771357186 passes 2018/2018 with zero skips."
       ],
       "dependencies": [],
       "handover_remaining": {
@@ -1503,7 +1509,7 @@
         "note": "Implement the named required features; P2/P3/P4 residuals are tracked separately in the Sol handover findings and audited delta, not as a speculative open-ended blocker."
       },
       "handover_review": {
-        "decision": "required-contract-incomplete-or-not-yet-proven",
+        "decision": "required-contract-complete",
         "priority": "feature",
         "observable_completion_criteria": [
           "Match normal Pi CLI install/remove/update/list package-resource workflows and resource loading.",
@@ -1511,7 +1517,7 @@
         ],
         "implemented_source": "implementation field on this task",
         "existing_evidence": "evidence field on this task",
-        "remaining_proof": "Close the explicit acceptance list for Pi Packages with the queue task completion conditions below. Existing implementation and evidence fields enumerate what is already present; no broader internal-equivalence criterion is added.",
+        "remaining_proof": "The named normal CLI install/remove/update/list and package resource-loading criteria are satisfied by the paired process receipt plus queue1/2 receipts. Registry update variants and Git progress/FETCH_HEAD details remain bounded differences or focused-only coverage; broader package behavior is not inferred.",
         "queue_orders": [
           1,
           2,
@@ -1520,12 +1526,14 @@
         "deferred_policy": "P2/P3/P4 findings are separate in sol_luna_handover.findings and the upstream audit. They do not expand these required criteria."
       },
       "closure_review": {
-        "decision": "in_progress",
-        "required_remaining": "Normal package install/remove/update/list CLI and configured npmCommand/registry/legacy package resolution proof remain required. Complete queue3 and bounded package closure review.",
+        "decision": "complete",
+        "required_remaining": "None for the bounded normal Pi CLI package-resource acceptance criteria. Registry variants and observable Git progress/cache-metadata differences remain explicitly recorded in the receipts and findings.",
         "evidence": [
-          "docs/parity/fixtures/managed-git-rpc-process.json"
+          "docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json",
+          "docs/parity/fixtures/managed-git-rpc-process.json",
+          "docs/parity/fixtures/package-cli-real-process-2026-10-15.json"
         ],
-        "promoted": false
+        "promoted": true
       }
     },
     {
@@ -6366,10 +6374,12 @@
         "Paired current-Pi request/result differentials for material wire behavior"
       ],
       "implementation": [
-        "Implemented behind the Amazon Bedrock Converse SDK boundary with static model catalog and configured credential/bearer routes."
+        "Implemented behind the Amazon Bedrock Converse SDK boundary with static model catalog and configured credential/bearer routes.",
+        "Malformed completed Bedrock Converse tool arguments are rejected before exposing a tool call; errors and valid continuation behavior are preserved at the adapter boundary."
       ],
       "evidence": [
-        "BedrockProviderTests and BedrockModelCatalogTests are included in current PiSharp head 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e; exact-head Linux CI run 36487198225 passed 807/807 (0 skipped). Broad paired current-Pi provider differentials remain open."
+        "BedrockProviderTests and BedrockModelCatalogTests are included in current PiSharp head 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e; exact-head Linux CI run 36487198225 passed 807/807 (0 skipped). Broad paired current-Pi provider differentials remain open.",
+        "docs/parity/fixtures/provider-tool-call-validation-current-pi-2026-10-15.json"
       ],
       "dependencies": [],
       "handover_review": {
@@ -6400,10 +6410,12 @@
         "Paired current-Pi request/result differentials for material wire behavior"
       ],
       "implementation": [
-        "Implemented through a Pi Messages-specific request/response and streaming boundary; Radius consumes this API family."
+        "Implemented through a Pi Messages-specific request/response and streaming boundary; Radius consumes this API family.",
+        "Malformed completed Pi Messages tool arguments are rejected at the adapter boundary while argumentsError reporting is retained."
       ],
       "evidence": [
-        "PiMessagesProviderTests is included in current PiSharp head 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e; exact-head Linux CI run 36487198225 passed 807/807 (0 skipped). Current Pi focused Pi Messages/Radius provider suites passed 16/16 at the previous refreshed pin fd889a2741891ee45116cb6131052d7fad220886; rerun against 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e remains required."
+        "PiMessagesProviderTests is included in current PiSharp head 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e; exact-head Linux CI run 36487198225 passed 807/807 (0 skipped). Current Pi focused Pi Messages/Radius provider suites passed 16/16 at the previous refreshed pin fd889a2741891ee45116cb6131052d7fad220886; rerun against 8562bcf66a8eeefdf75ddd231ca9d7aa7d64f86e remains required.",
+        "docs/parity/fixtures/provider-tool-call-validation-current-pi-2026-10-15.json"
       ],
       "dependencies": [],
       "handover_review": {
@@ -6434,10 +6446,12 @@
         "Endpoint/key ownership and safe override behavior"
       ],
       "implementation": [
-        "Implemented Radius profile, embedded 25-model catalog snapshot, dynamic gateway catalog and configured gateway identity."
+        "Implemented Radius profile, embedded 25-model catalog snapshot, dynamic gateway catalog and configured gateway identity.",
+        "The embedded Radius catalog and runtime refresh data are updated from generated current-Pi catalog data."
       ],
       "evidence": [
-        "RadiusProviderTests is included in current PiSharp head 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e; exact-head Linux CI run 36487198225 passed 807/807 (0 skipped). Current Pi provider suites were previously 16/16 at fd889a274; rerun against current 8562bcf66 remains required."
+        "RadiusProviderTests is included in current PiSharp head 3a7cb31cea47d9c7df33ff70144c8dac4fa72b9e; exact-head Linux CI run 36487198225 passed 807/807 (0 skipped). Current Pi provider suites were previously 16/16 at fd889a274; rerun against current 8562bcf66 remains required.",
+        "docs/parity/fixtures/radius-catalog-oauth-setup-current-pi-2026-10-15.json"
       ],
       "dependencies": [
         "provider-api-pi-messages"
@@ -6471,13 +6485,15 @@
       ],
       "implementation": [
         "Implemented Radius browser/device OAuth and request-time token refresh.",
-        "TerminalProviderLogin and TerminalProviderOAuthInteraction compose existing OAuth/storage adapters with the terminal authentication menu. RadiusMcpSetup proposes only global MCP provider authentication, preserving server fields and replacing OAuth; accepting calls the existing resource reload path. Selected Radius labels use the current Pi shimmer, preserving fractional channels for 256-color quantization."
+        "TerminalProviderLogin and TerminalProviderOAuthInteraction compose existing OAuth/storage adapters with the terminal authentication menu. RadiusMcpSetup proposes only global MCP provider authentication, preserving server fields and replacing OAuth; accepting calls the existing resource reload path. Selected Radius labels use the current Pi shimmer, preserving fractional channels for 256-color quantization.",
+        "Radius OAuth setup adds local browser callback/PKCE, URL presentation, safe output and cancellation coverage; setup cancellation preserves MCP configuration."
       ],
       "evidence": [
         "RadiusProviderTests covers browser/device flows, persistence, shared refresh, request-time credentials and cancellation; included in exact-head Linux CI run 36487198225 (807/807, 0 skipped). No paired current-Pi OAuth process differential yet.",
         "2026-10-02 Radius slice: 59 focused checks pass, including seven loopback OAuth/PTY login/reload/cancellation cases and the initial menu. Current Pi b271b0a524b29e13c0c9e748aea0d34e1597f2db matches ten complete MCP configuration outcomes and 26 exact shimmer ANSI frames; current Pi Radius suites pass 8/8. See docs/parity/fixtures/radius-interactive-onboarding-2026-10-02.md. Overall authentication remains in progress: full dialog presentation/cursor, credential format/catalog synchronization and URL copy are not established by these fixtures.",
         "Final Radius local verification: full solution format check plus final fixture format check pass; warnings-as-errors build has zero warnings/errors; full serial suite passes 1132/1132, zero skips, in 53 seconds. The existing interactive secret-isolation test is extracted into ProviderLoginTuiTests. Publication/exact-head CI remain pending.",
-        "Published Radius slice c0b012ba7192afed65138dae7d10b5d15da77b67 passes exact-head Linux CI 37019190204: restore, full solution format verification, zero-warning/error build, all 1132 tests and zero skips. Full dialog/style/cursor, catalog synchronization and URL-copy parity remain open."
+        "Published Radius slice c0b012ba7192afed65138dae7d10b5d15da77b67 passes exact-head Linux CI 37019190204: restore, full solution format verification, zero-warning/error build, all 1132 tests and zero skips. Full dialog/style/cursor, catalog synchronization and URL-copy parity remain open.",
+        "docs/parity/fixtures/radius-catalog-oauth-setup-current-pi-2026-10-15.json"
       ],
       "dependencies": [
         "provider-profile-radius"
@@ -6898,7 +6914,8 @@
         "PiSharp ExtensionRegistration exposes native tools, commands, safe terminal renderers and direct RPC Bash handlers. PiSharpToolRegistration now also supplies exposure, namespace, default activation, loadout projection and nested invocation controls.",
         "PiSharpToolExecutionContext and the durable wrapper provide shared nested execution, lifecycle/persistence and call/result hooks with allow/block decisions. ExtensionCatalog now loads built-ins through ExtensionRegistration with builtin: source identity, trust-gated configured paths, explicit loading, disable rules and reload construction. ExtensionRegistration now exposes ordered asynchronous provider-context transforms, wired through PiAgent and ObservedChatClient after context projection and before provider-only repair and image preparation. Transforms receive copied messages and known mutable text/tool content, run on initial, tool-loop and context-overflow retry requests, and do not persist changes into conversation history. Registrations are captured when an agent is created. Native extensions now register ordered asynchronous startup/reload discovery callbacks for skills, prompts, and themes; resource behavior has paired current-Pi semantic evidence but full screen/request parity remains open. Extension state, late/dynamic registration, provider/model, MCP server, keybinding and interactive UI registration remain open.",
         "ExtensionRegistration.AddProjectTrustHandler exposes a native pre-trust decision hook and reuses user/global and CLI bootstrap instances after resolution. ProjectTrustExtensionContext currently exposes the working directory and HasUserInterface only; current Pi's project-trust select/confirm/input/notify UI methods remain open.",
-        "PiSharpToolRegistration now optionally declares ReachesTools; PiSharpToolCallContext carries reach and namespace metadata to hooks. MCP only auto-activates codemode/tool_search definitions that declare reach."
+        "PiSharpToolRegistration now optionally declares ReachesTools; PiSharpToolCallContext carries reach and namespace metadata to hooks. MCP only auto-activates codemode/tool_search definitions that declare reach.",
+        "The extension runtime now exposes typed lifecycle event callbacks with live PiSharpExtensionContext, project/session/model/provider/tool-loadout state and the shared UI contract; lifecycle callbacks are checkpointed, ordered and reconciled with extension selection. CLI configuration carries mode, trust, UI availability and the UI adapter through resource reload/session replacement."
       ],
       "evidence": [
         "Current Pi ExtensionAPI, AgentSession tool hooks, virtual-model registration, MCP server registration and builtin extension-resource loading were inspected at 4259686d9290c0d73ae7192b796aee3e530a9779. The current upstream targeted resource/OAuth tests pass 7/7.",
@@ -6907,7 +6924,8 @@
         "dotnet format PiSharp.slnx --verify-no-changes --no-restore and dotnet build PiSharp.slnx --no-restore -warnaserror pass (0 warnings/errors). Full local suite: 1,067/1,068 passed, zero skipped; CliThemeProcessTests.ExplicitThemePathAndUseThemeApplyThroughLinuxPtyWithNoThemes timed out and reproduced in isolation.",
         "At Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7 / PiSharp 7b1fb8a319a39d25f9ec683c2ca3048eacd07e2f, a paired PTY fixture returns skill, prompt, and theme paths at startup and reload, including a file-URL skill path. Both sides expand startup and reloaded skill/prompt content with four provider requests and zero scenario errors. Full pair differs by 212,720 terminal-state fields, 126,434 render fields, and HTTP/system-prompt traces; same-Pi calibration matches normalized terminal state and HTTP. Exact-head CI 37961269172 passes 1,220 tests with zero skips. See docs/parity/fixtures/extension-resource-discovery-current-pi-2026-10-09.md.",
         "At Pi 42a3497d03ad17e308a2299fa824727894f2c0ec / PiSharp e0bb42c6249d870e83086865047a451039615c38, the paired project-trust fixture now advertises the protected skill in both provider requests, records one ordered bootstrap load, and completes with no scenario errors. Same-Pi calibration matches terminal state, renders and HTTP; the full pair still has 28,323 state and 21,881 render differences plus HTTP/raw mismatches. Focused trust tests pass 2/2; format, warnings-as-errors build, Node 24/24, Python 24/24, and .NET 1,240/1,240 pass. Current Pi `extensions-runner.test.ts` project-trust test passes 1/1 with 108 unrelated cases filtered out. Exact-head CI 38013249666 is green. Pi startup trust UI methods and broader resource/startup parity remain open; see docs/parity/fixtures/project-trust-extension-current-pi-2026-10-10.md.",
-        "Current Pi a447ba11 adds before_agent_start for idle custom triggerTurn runs, including prompt-stability, queued-message, and abort-during-setup behavior. PiSharp still lacks an equivalent extension-facing custom-message run trigger and pre-agent-start contract; see the current source audit."
+        "Current Pi a447ba11 adds before_agent_start for idle custom triggerTurn runs, including prompt-stability, queued-message, and abort-during-setup behavior. PiSharp still lacks an equivalent extension-facing custom-message run trigger and pre-agent-start contract; see the current source audit.",
+        "docs/parity/fixtures/extension-context-runtime-current-pi-2026-10-15.json"
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -7778,7 +7796,7 @@
     {
       "id": "provider-thinking-level-sampling",
       "title": "Provider request sampling by effective thinking level",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "earendil-works/pi@76dfb88f63ce51ff2e3fe2ead4fcf1f65f71f121: packages/ai/src/api/simple-options.ts; packages/ai/src/types.ts; packages/ai/test/sampling-options.test.ts; packages/coding-agent/src/core/model-config.ts.",
       "acceptance": [
         "Resolve sampling parameters in current Pi order: provider/model defaults, effective clamped thinking-level parameters, then request overrides.",
@@ -7788,10 +7806,12 @@
       "implementation": [
         "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs",
         "src/PiSharp.Cli/Providers/ProviderProfileLoader.cs",
-        "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs"
+        "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs",
+        "Sampling metadata now resolves in Pi order (provider/model defaults, effective clamped thinking level, request samplingParams override), is projected on the supported OpenAI/Azure response APIs, and is omitted on unsupported adapters."
       ],
       "evidence": [
-        "Added by the 2026-10-08 source audit: PiSharp currently preserves sampling metadata in catalog/RPC projection, but has no verified per-thinking-level outbound resolution."
+        "Added by the 2026-10-08 source audit: PiSharp currently preserves sampling metadata in catalog/RPC projection, but has no verified per-thinking-level outbound resolution.",
+        "docs/parity/fixtures/provider-sampling-options-current-pi-2026-10-15.json"
       ],
       "dependencies": [
         "feature-models-selection-catalogs-and-credentials"
@@ -9733,8 +9753,8 @@
         "focused_verification": "CliArgumentsTests; PackageSettingsTests; new package process tests",
         "differential_verification": "Run real CLIs on local tarball/git fixtures, compare persisted source list and discovered resources",
         "completion_condition": "Commands work at supported user/project scope, errors leave settings/cache intact, exit status is paired.",
-        "status": "in_progress",
-        "checkpoint": {
+        "status": "completed",
+        "historical_stop_checkpoint": {
           "worker_branch": "worker/003-package-cli-a2",
           "worker_sha": "ea44cb08cbda35c2e2d152709a532192a13e82f0",
           "receipt": "docs/parity/fixtures/package-cli-user-stop-2026-10-15.json",
@@ -9742,6 +9762,27 @@
           "root_verified": false,
           "integrated": false,
           "stop_reason": "User cleared goal and requested a suitable stop point."
+        },
+        "evidence": [
+          "docs/parity/fixtures/package-cli-real-process-2026-10-15.json"
+        ],
+        "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+        "completion": {
+          "worker_sha": "ea44cb08cbda35c2e2d152709a532192a13e82f0",
+          "root_integration_sha": "548f8cd435c78801663a39ee1156ee34a595ed4c",
+          "root_verified": true,
+          "focused_tests": "21 passed, zero failures/skips; process differential matched package commands, settings, resources and lifecycle; full solution exact-head CI passed 2018/2018, zero skips.",
+          "exact_head_ci": {
+            "run": 38771357186,
+            "url": "https://github.com/PhilipGB/pisharp/actions/runs/38771357186",
+            "sha": "548f8cd435c78801663a39ee1156ee34a595ed4c",
+            "conclusion": "success"
+          },
+          "known_differences": [
+            "Pi streams Git fetch/checkout/dependency progress while PiSharp reports final update status.",
+            "Failed Pi fetch creates .git/FETCH_HEAD; PiSharp staged clone leaves cache metadata unchanged.",
+            "Registry range/latest and bulk --extensions update are not exercised by the paired fixture; configured-manager/legacy behavior has named focused coverage."
+          ]
         }
       },
       {
@@ -9765,7 +9806,17 @@
         "implementation_pattern": "Extend checkpoint/selection/order owners already proven by extension-pretrust-selection-differential. Preserve configure-once and final project-before-user ordering; do not rebuild a registry framework.",
         "focused_verification": "ExtensionCatalogTests; ResourcePackageLoadingTests",
         "differential_verification": "Extend extension-pretrust-selection-differential.py with supported conflicting tool/command cases",
-        "completion_condition": "Current-Pi supported conflict winners and diagnostics match; failed registrants leave no partial state."
+        "completion_condition": "Current-Pi supported conflict winners and diagnostics match; failed registrants leave no partial state.",
+        "status": "completed",
+        "evidence": [
+          "docs/parity/fixtures/extension-conflicts-current-pi-2026-10-15.json"
+        ],
+        "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+        "completion": {
+          "root_commit": "32cb9ad4",
+          "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+          "verification": "Pinned Pi conflict differential matched first tool winner, duplicate command aliases, conflict diagnostics and replaceable-builtin warning; focused extension suite, warnings-as-errors build and formatting passed."
+        }
       },
       {
         "order": 5,
@@ -9787,7 +9838,17 @@
         "implementation_pattern": "Add explicit typed callbacks to existing extension registration API; current conversation/model/project bindings are read at invocation. Runtime contracts exclude terminal dependencies; CLI adapts UI. TypeScript binary/source compatibility is not required.",
         "focused_verification": "ExtensionCatalogTests; RpcExtensionCommandProcessTests; TerminalPtyTests",
         "differential_verification": "Use fixture extension in both languages; compare callback-visible state, event order and resource reload",
-        "completion_condition": "Each supported action has native/public contract plus actual CLI process or PTY proof."
+        "completion_condition": "Each supported action has native/public contract plus actual CLI process or PTY proof.",
+        "status": "completed",
+        "evidence": [
+          "docs/parity/fixtures/extension-context-runtime-current-pi-2026-10-15.json"
+        ],
+        "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+        "completion": {
+          "root_commit": "192f426832f42e01caf06905edeff2bbab4f2403",
+          "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+          "verification": "Pinned Pi context/event/resource-reload differential matched; actual RPC process and Linux PTY reload tests passed; lifecycle registrations participate in checkpoint/order/reconcile."
+        }
       },
       {
         "order": 6,
@@ -9810,7 +9871,17 @@
         "implementation_pattern": "Add pure Runtime sampling merge helper and descriptor per-level metadata. CLI ProviderSamplingChatClient clones ChatOptions on both paths and supplies provider projection; preserve exact effective level string rather than reverse mapping MEAI effort. Prove Chat Completions and Google before repeating other APIs.",
         "focused_verification": "ProviderModelRuntimeTests plus loopback body tests",
         "differential_verification": "New paired request probe using Pi resolveSamplingParams/streamSimple; compare defaults, clamp and override",
-        "completion_condition": "Hardest supported metadata/override case and ordinary unset case match; remaining adapters enumerated explicitly."
+        "completion_condition": "Hardest supported metadata/override case and ordinary unset case match; remaining adapters enumerated explicitly.",
+        "status": "completed",
+        "evidence": [
+          "docs/parity/fixtures/provider-sampling-options-current-pi-2026-10-15.json"
+        ],
+        "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+        "completion": {
+          "worker_sha": "cc8f9e866d5b59458892c576559101260bf95789",
+          "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+          "verification": "Pinned Pi sampling suite 16/16 and native loopback body tests 102/102; supported adapters and omissions are listed in the receipt."
+        }
       },
       {
         "order": 7,
@@ -9875,7 +9946,18 @@
         "implementation_pattern": "Use ProviderToolArgumentChatClient.Normalize for raw completed JSON; preserve FunctionCallContent.Exception and let MAF reject it. Google/Pi Messages already receive object values: validate object shape at parsing boundary, never invent a streaming prefix.",
         "focused_verification": "BedrockProviderTests; PiMessages provider tests; ProviderToolArgumentRepairTests",
         "differential_verification": "Pair malformed call + successful tool continuation and image/reasoning usage with real adapters",
-        "completion_condition": "No tool side effect on malformed calls and normal tool/result/reasoning replay matches."
+        "completion_condition": "No tool side effect on malformed calls and normal tool/result/reasoning replay matches.",
+        "status": "completed",
+        "evidence": [
+          "docs/parity/fixtures/provider-tool-call-validation-current-pi-2026-10-15.json"
+        ],
+        "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+        "completion": {
+          "worker_sha": "a70c964d7a12493f0bca1d40906fce03723933be",
+          "root_integration_commit": "c4fde1b6",
+          "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+          "verification": "Focused provider tests 22/22, pinned Pi tests 21/21, zero-warning solution build and scoped format passed."
+        }
       },
       {
         "order": 10,
@@ -9937,7 +10019,18 @@
         "implementation_pattern": "Reuse existing Radius OAuth/MCP setup and terminal provider login owners; setup acceptance triggers existing project/runtime reload exactly once.",
         "focused_verification": "Radius OAuth/setup tests; TerminalPtyTests",
         "differential_verification": "Existing Radius process/terminal fixtures with local auth/callback endpoints",
-        "completion_condition": "Catalog/account selection and accept/cancel/copy/reload contracts have paired evidence."
+        "completion_condition": "Catalog/account selection and accept/cancel/copy/reload contracts have paired evidence.",
+        "status": "completed",
+        "evidence": [
+          "docs/parity/fixtures/radius-catalog-oauth-setup-current-pi-2026-10-15.json"
+        ],
+        "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+        "completion": {
+          "worker_sha": "94ade24b2924325d1ad48693eeb3ccbfe7489dfe",
+          "root_integration_commit": "7eef7cc7",
+          "integrated_product_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
+          "verification": "Focused Radius/OAuth tests 34/34; pinned Pi suites 18/18; shimmer 26 and MCP setup 10 scenarios matched; format passed."
+        }
       },
       {
         "order": 13,
@@ -10816,14 +10909,15 @@
       "mcp": "McpToolPublication/McpResourcePublication/McpClientConnection; pinned conformance gate with per-check failure classification and real process/HTTP fixtures."
     },
     "capability_counts": {
-      "in_progress": 146,
-      "verified": 10,
+      "in_progress": 145,
+      "verified": 11,
       "not_started": 38
     },
     "promoted_to_verified": [
       "feature-resources-instructions-and-trust",
       "settings-defaultprojecttrust",
-      "settings-enableskillcommands"
+      "settings-enableskillcommands",
+      "feature-pi-packages"
     ],
     "not_started_review": "All 38 not_started entries remain genuinely missing required behavior. Queue explicitly covers them; none promoted based solely on metadata, planned work or compatible transport. This session closes three already implemented contracts and fixes two P1 boundaries rather than scaffolding unused types.",
     "completion_audit": {
@@ -10855,6 +10949,16 @@
           "UserSettingsTests.SkillCommandsDefaultOnAndFollowTrustedProjectOverrides; EditorCompletionTests.SlashCompletionReadsDynamicSkillCommandRegistration; existing writer/PTY tests all pass in full 1976-test suite."
         ],
         "remaining": "No required setting behavior remains. Paired raw bytes differ with matching rendered state; P4 informational."
+      },
+      "feature-pi-packages": {
+        "status": "verified",
+        "contract": "Normal Pi CLI user/project install, remove, update, list and package resource invocation workflows are supported through managed npm/Git acquisition and existing resource owners.",
+        "evidence": [
+          "Queue 1 npm receipt.",
+          "Queue 2 Git/RPC receipt.",
+          "Queue 3 real CLI process differential and exact-head CI 38771357186 (2018/2018, zero skips)."
+        ],
+        "remaining": "No unimplemented behavior remains in the bounded acceptance criteria. Git update progress and failed-fetch metadata differ as explicitly recorded; registry variants are covered by focused native tests rather than the paired fixture."
       }
     },
     "family_status": {
@@ -11157,13 +11261,14 @@
       }
     },
     "closure_review_scope": "Every one of the 194 task records now has a handover_review: ten closed contracts, 146 implemented/incomplete or insufficiently proven acceptance contracts, and 38 genuinely missing implementations. The original acceptance/implementation/evidence are preserved. Each open record has finite observable criteria, a supported verification boundary and ordered queue references; no hypothetical parser permutations are required.",
-    "product_checkpoint_sha": "df163a4704f3a498f40046ae6a289b870a2b8af9",
+    "product_checkpoint_sha": "192f426832f42e01caf06905edeff2bbab4f2403",
     "product_checkpoint_ci": {
-      "run": 38664105111,
-      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38664105111",
+      "run": 38771357186,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38771357186",
       "status": "completed",
       "conclusion": "success",
-      "exact_head": "df163a4704f3a498f40046ae6a289b870a2b8af9"
+      "exact_head": "548f8cd435c78801663a39ee1156ee34a595ed4c",
+      "note": "Latest completed full exact-head CI before the integrated queues 4–6/9/12 and root queue 5; current wave CI is pending."
     },
     "readiness": "READY FOR LUNA HANDOVER",
     "stopping_audit": [
@@ -11252,9 +11357,9 @@
   "sol_orchestration": {
     "starting_sha": "77caa3290a0300e2e02d61039b306260f127872a",
     "base_sha": "21d5e47e5a4b2cf084ed01b0a0ee7cca9efbc538",
-    "queue_position": 3,
-    "milestone": "Managed packages: queue 1–3; npm and Git acquisition/update boundary verified, package CLI next",
-    "mode": "serialized",
+    "queue_position": 7,
+    "milestone": "Managed package CLI queues 1–3 completed and feature-pi-packages verified. Extension queues 4–5 and independent provider queues 6/9/12 integrated; queue 7 (thinking budgets) is next.",
+    "mode": "parallel-wave",
     "isolation_gates": {
       "two_worker": "not run",
       "three_worker": "not run"
@@ -11276,22 +11381,22 @@
     "ssh_workaround": "Per-command GIT_SSH_COMMAND=ssh -F /dev/null; system SSH configuration untouched",
     "ci_access": "Unauthenticated public GitHub REST API; gh has no credentials",
     "latest_exact_head_ci": {
-      "run": 38756890943,
-      "sha": "21d5e47e5a4b2cf084ed01b0a0ee7cca9efbc538",
-      "conclusion": "success"
+      "run": 38771357186,
+      "sha": "548f8cd435c78801663a39ee1156ee34a595ed4c",
+      "conclusion": "success",
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38771357186",
+      "note": "Exact-head full suite passed for queue 3 before current queues 4–6/9/12 and 5; current integrated wave CI is pending."
     },
     "upstream_observed": "5ab7fe74c400097b386662205cd93900695b8a71",
     "upstream_policy": "Configured pin retained at b06c1f2c. Original three-commit review plus resumed eight-commit review through5ab7fe74 are recorded. New error-result image placement is required P2 deferred to existing queue43; no P0/P1 interrupt.",
-    "worker_state": "User requested stop. Queue3 clean and committed through ea44cb08cbda35c2e2d152709a532192a13e82f0 on local worker/003-package-cli-a2; preserve worktree/profile and branch for resume. No integration; both specialists idle, no reported fixture processes.",
+    "worker_state": "Queues 6, 9 and 12 workers completed and their private worktrees are clean. Root integrated and verified queues 4–6/9/12 plus queue 5. Current source product commit is 192f426832f42e01caf06905edeff2bbab4f2403; exact-head CI for the integrated wave is pending. No worker processes remain.",
     "last_full_verification": {
-      "base_sha": "cc7c7f1ebf067c6594f318c17b883cda240910f8",
-      "worker_sha": "204f3f9bb6a2b46793a013c4dfdc1cbc60d57570",
-      "tested_source_digest": "8f5feed5d2899fa3b25fbdb8be7be4cc4d9b2e18ca265d9118aa35828f342dc7",
-      "receipt": "docs/parity/fixtures/managed-git-rpc-process.json",
-      "result": "1997 .NET / 24 Node / 50 Python; zero skips, six architecture checks, MCP 261/8 classified/no regressions; default-profile full run green",
-      "published_sha": "a33e556b1fd88e5c935c9346ad286608f99f7384"
+      "base_sha": "548f8cd435c78801663a39ee1156ee34a595ed4c",
+      "receipt": "docs/parity/fixtures/package-cli-real-process-2026-10-15.json",
+      "result": "Exact-head Linux CI run 38771357186 passed restore, format, warnings-as-errors build and all 2018 .NET tests, zero skips, at 548f8cd435c78801663a39ee1156ee34a595ed4c.",
+      "published_sha": "548f8cd435c78801663a39ee1156ee34a595ed4c"
     },
-    "milestones_since_full_verification": 0,
+    "milestones_since_full_verification": 5,
     "authorship": [
       {
         "queue_order": 1,
@@ -11312,6 +11417,51 @@
         "integration": "Root",
         "root_corrections": [],
         "review": "Root requested mechanical precommit fixes for staged dependency failure, unchanged-target lifecycle policy, delta selection, eligible target filtering, npm range/newer-only/@latest behavior and unsafe Git sources; Luna implemented them. Root independently reviewed and reran evidence."
+      },
+      {
+        "queue_order": 3,
+        "implementation": "Luna",
+        "worker_sha": "ea44cb08cbda35c2e2d152709a532192a13e82f0",
+        "integration": "Root",
+        "integrated_sha": "548f8cd435c78801663a39ee1156ee34a595ed4c",
+        "verification": "Root reviewed real Pi/PiSharp package CLI/resource process differential, ran 21 focused checks and obtained exact-head CI 38771357186 (2018 tests, zero skips)."
+      },
+      {
+        "queue_order": 4,
+        "implementation": "Root",
+        "product_commit": "32cb9ad4",
+        "integration": "Root",
+        "verification": "Conflict selection/warnings/aliases matched pinned Pi; focused tests, warnings-as-errors build and formatting passed."
+      },
+      {
+        "queue_order": 5,
+        "implementation": "Root",
+        "product_commit": "192f426832f42e01caf06905edeff2bbab4f2403",
+        "integration": "Root",
+        "verification": "Pinned context/event/resource reload differential matched; RPC process and PTY reload evidence passed."
+      },
+      {
+        "queue_order": 6,
+        "implementation": "Luna",
+        "worker_sha": "cc8f9e866d5b59458892c576559101260bf95789",
+        "integration": "Root",
+        "verification": "Pinned Pi suite 16/16 and native request-body suite 102/102 passed."
+      },
+      {
+        "queue_order": 9,
+        "implementation": "Luna",
+        "worker_sha": "a70c964d7a12493f0bca1d40906fce03723933be",
+        "integration": "Root",
+        "integrated_commit": "c4fde1b6",
+        "verification": "Focused provider 22/22 and Pi provider 21/21 passed; warnings-as-errors build/format passed."
+      },
+      {
+        "queue_order": 12,
+        "implementation": "Luna",
+        "worker_sha": "94ade24b2924325d1ad48693eeb3ccbfe7489dfe",
+        "integration": "Root",
+        "integrated_commit": "7eef7cc7",
+        "verification": "Focused Radius/OAuth 34/34, Pi tests 18/18, shimmer 26 and MCP setup 10 comparisons passed."
       }
     ],
     "advisor_escalations": [],

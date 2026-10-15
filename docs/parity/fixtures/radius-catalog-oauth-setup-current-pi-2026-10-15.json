@@ -1,0 +1,21 @@
+{
+  "fixture": "radius-catalog-and-oauth-setup-refresh",
+  "queue": 12,
+  "pins": {
+    "pi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "workerCommit": "94ade24b2924325d1ad48693eeb3ccbfe7489dfe",
+    "integratedProductSha": "192f426832f42e01caf06905edeff2bbab4f2403"
+  },
+  "contract": "Refresh the current pinned Radius model catalog and cover browser PKCE callback, safe URL presentation, and MCP setup cancellation without unintended config mutation.",
+  "verification": {
+    "focusedDotnet": "34 Radius/OAuth setup tests passed with warnings as errors.",
+    "pinnedPi": "18 focused OAuth/provider tests passed.",
+    "pinnedUiComparisons": "26 shimmer frames and 10 MCP setup scenarios matched.",
+    "format": "Formatting verification passed.",
+    "integratedFocused": "157/157 combined extension, provider, Radius and OAuth tests passed, zero skips."
+  },
+  "limitations": [
+    "Browser callback/copy behavior has a local C# PTY fixture and separate Pi tests, without a paired terminal differential.",
+    "The embedded catalog reflects generated Radius data at the configured Pi pin; that generated upstream file is not tracked."
+  ]
+}

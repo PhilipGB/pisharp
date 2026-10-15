@@ -1,0 +1,35 @@
+{
+  "fixture": "provider-thinking-level-sampling-options",
+  "queue": 6,
+  "pins": {
+    "pi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "workerCommit": "cc8f9e866d5b59458892c576559101260bf95789",
+    "integratedProductSha": "192f426832f42e01caf06905edeff2bbab4f2403"
+  },
+  "contract": "Resolve provider/model defaults, effective clamped thinking-level parameters, then request samplingParams overrides; strip internal metadata and omit unsupported fields.",
+  "supportedOutboundApis": [
+    "openai-completions",
+    "openai-responses",
+    "azure-openai-responses"
+  ],
+  "omittedApis": [
+    "anthropic",
+    "mistral-conversations",
+    "openai-codex-responses",
+    "google-genai",
+    "google-vertex",
+    "bedrock-converse",
+    "pi-messages"
+  ],
+  "verification": {
+    "pinnedPi": "packages/ai/test/sampling-options.test.ts: 16/16 passed.",
+    "focusedDotnet": "102/102 passed with IsTestProject enabled; loopback request bodies cover overrides, clamps, streaming, default-unset cases, and unsupported Anthropic omission.",
+    "integratedFocused": "Provider and extension integrated focused suite: 157/157, zero skips.",
+    "build": "Warnings-as-errors solution build: zero warnings/errors.",
+    "format": "Scoped dotnet format whitespace verification passed."
+  },
+  "limitations": [
+    "Other listed APIs intentionally omit sampling fields, matching their current Pi adapter behavior; broader provider semantics remain open.",
+    "No separate checked-in paired request differential was added; Pi source assertions and native concrete request-body fixtures provide the recorded evidence."
+  ]
+}
