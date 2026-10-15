@@ -413,6 +413,8 @@ public sealed class LlamaRouterManagerTuiTests
             var mark = terminal.Mark;
             await terminal.SendAsync("Read facts.txt and answer with its content.\n");
             await terminal.WaitTextAsync("LOCAL_TOOL_OK", mark);
+            await terminal.WaitFrameAsync(frame => frame.Contains("LOCAL_TOOL_OK", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), mark);
 
             var requests = server.Requests.Where(item => item.Method == "POST" &&
                 item.Path == "/v1/chat/completions").ToArray();
@@ -425,6 +427,57 @@ public sealed class LlamaRouterManagerTuiTests
             Assert.Contains("read-1", continuationBody.RootElement.GetProperty("messages").ToString());
             Assert.All(requests, request => Assert.Equal("qwen", JsonDocument.Parse(request.Body!).RootElement.GetProperty("model").GetString()));
             await terminal.QuitAsync();
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task CancellingLocalModelStreamAfterVisibleTextSettlesAndAcceptsNextPrompt()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-stream-cancel-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var sessions = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        await using var server = new RouterServer(chatResponse: "AFTER_CANCEL_OK", holdChatAfterPartial: true);
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+            sessionDirectory: sessions);
+        try
+        {
+            await terminal.WaitTextAsync("qwen");
+            var mark = terminal.Mark;
+            await terminal.SendAsync("cancel the partial local response\n");
+            await server.ChatPartialSent.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await terminal.WaitTextAsync("LLAMA_PARTIAL_VISIBLE", mark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("\u001b");
+            await terminal.WaitFrameAsync(frame => frame.Contains("Interrupted.", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), mark);
+            server.ReleaseChatStream();
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("continue after interruption\n");
+            await terminal.WaitTextAsync("AFTER_CANCEL_OK", mark);
+            await terminal.WaitFrameAsync(frame => frame.Contains("AFTER_CANCEL_OK", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), mark);
+            await terminal.QuitAsync();
+
+            var requests = server.Requests.Where(item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions").ToArray();
+            Assert.Equal(2, requests.Length);
+            Assert.Contains("cancel the partial local response", requests[0].Body, StringComparison.Ordinal);
+            Assert.Contains("continue after interruption", requests[1].Body, StringComparison.Ordinal);
+
+            var sessionPath = Assert.Single(Directory.EnumerateFiles(sessions, "*.session.json"));
+            var persisted = await new PiSharp.Runtime.Sessions.ConversationStore(root, sessions).LoadAsync(sessionPath);
+            Assert.Contains(persisted.Tree.Entries, entry => entry.Type == "interrupted" &&
+                entry.Payload.GetProperty("partialText").GetString() == "LLAMA_PARTIAL_VISIBLE");
+            Assert.Contains(persisted.Tree.Entries, entry => entry.Type == "run_finished" &&
+                entry.Payload.GetProperty("completed").GetBoolean());
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -469,14 +522,17 @@ public sealed class LlamaRouterManagerTuiTests
         private readonly bool _failFirstCatalog;
         private readonly string? _chatResponse;
         private readonly bool _readToolCallFirst;
+        private readonly bool _holdChatAfterPartial;
         private int _chatRequestCount;
         private readonly ConcurrentBag<Task> _background = [];
         private readonly TaskCompletionSource _downloadRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _loadProgressRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _chatRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _catalogRequests;
         public ConcurrentQueue<(string Method, string Path, string? Authorization, string? Body)> Requests { get; } = new();
         public TaskCompletionSource LoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource RestoreLoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ChatPartialSent { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _restoreLoadRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource DownloadRequested => _downloadRequested;
         public int CatalogRequests => Volatile.Read(ref _catalogRequests);
@@ -489,7 +545,7 @@ public sealed class LlamaRouterManagerTuiTests
 
         public RouterServer(bool holdLoad = false, bool failFirstCatalog = false, bool holdDownload = false,
             bool sleepingQwen = false, bool holdRestore = false, string? chatResponse = null,
-            bool readToolCallFirst = false)
+            bool readToolCallFirst = false, bool holdChatAfterPartial = false)
         {
             _holdLoad = holdLoad;
             _failFirstCatalog = failFirstCatalog;
@@ -497,6 +553,7 @@ public sealed class LlamaRouterManagerTuiTests
             _holdRestore = holdRestore;
             _chatResponse = chatResponse;
             _readToolCallFirst = readToolCallFirst;
+            _holdChatAfterPartial = holdChatAfterPartial;
             if (sleepingQwen) Statuses["qwen"] = "sleeping";
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
@@ -590,6 +647,35 @@ public sealed class LlamaRouterManagerTuiTests
                     }
                     else if (context.Request.HttpMethod == "GET" && path.StartsWith("/props", StringComparison.Ordinal))
                         response = "{}";
+                    else if (context.Request.HttpMethod == "POST" && path == "/v1/chat/completions" &&
+                             _holdChatAfterPartial && Interlocked.Increment(ref _chatRequestCount) == 1)
+                    {
+                        using var payload = JsonDocument.Parse(body!);
+                        var model = payload.RootElement.GetProperty("model").GetString()!;
+                        var first = new
+                        {
+                            id = "chatcmpl_local_cancel",
+                            @object = "chat.completion.chunk",
+                            created = 1,
+                            model,
+                            choices = new[] { new
+                            {
+                                index = 0,
+                                delta = new { role = "assistant", content = "LLAMA_PARTIAL_VISIBLE" },
+                                finish_reason = (string?)null
+                            } }
+                        };
+                        context.Response.ContentType = "text/event-stream";
+                        context.Response.SendChunked = true;
+                        var partialBytes = Encoding.UTF8.GetBytes($"data: {JsonSerializer.Serialize(first)}\n\n");
+                        await context.Response.OutputStream.WriteAsync(partialBytes, _shutdown.Token);
+                        await context.Response.OutputStream.FlushAsync(_shutdown.Token);
+                        ChatPartialSent.TrySetResult();
+                        await _chatRelease.Task.WaitAsync(_shutdown.Token);
+                        try { context.Response.Close(); }
+                        catch (Exception error) when (error is HttpListenerException or IOException or ObjectDisposedException) { }
+                        continue;
+                    }
                     else if (context.Request.HttpMethod == "POST" && path == "/v1/chat/completions" &&
                              (_chatResponse is not null || _readToolCallFirst))
                     {
@@ -712,9 +798,12 @@ public sealed class LlamaRouterManagerTuiTests
 
         public void ReleaseLoadProgress() => _loadProgressRelease.TrySetResult();
 
+        public void ReleaseChatStream() => _chatRelease.TrySetResult();
+
         public async ValueTask DisposeAsync()
         {
             _restoreLoadRelease.TrySetResult();
+            _chatRelease.TrySetResult();
             _shutdown.Cancel();
             _listener.Close();
             await _serve;
