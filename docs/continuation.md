@@ -1,26 +1,71 @@
 # Continuation — PiSharp capability parity
 
-## Resumed integration checkpoint — 2026-10-15
+## Feature-first functional goal — 2026-10-15
 
-Verified product source: `1cdb57f7cfd2723152a3d45b0dd1498052995231` on
-`parity/current-pi-completion`. The configured Pi checkout remains pinned at
+This checkpoint supersedes the old queue order as the active execution priority.
+The goal is a useful PiSharp for Codex subscriptions and llama.cpp, followed by
+core agent/session/tool behavior, the interactive experience, and other
+user-facing application features. Keep the configured Pi checkout pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-Bounded implementation slices for queues 1–12 are integrated. Thinking budgets
-are verified. Google GenAI/Vertex now match six pinned transcript-conversion
-cases. Azure Responses, Azure Foundry, and Mistral have expanded local transport
-coverage; their broader provider contracts remain in progress. The current local
-verification passes **2,057/2,057 .NET tests, zero skips**, a warnings-as-errors
-solution build with zero warnings, and formatting. Exact-head Linux CI run
-[38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300) for
-the product source passed.
+The current shared-branch source checkpoint is `1cdb57f7cfd2723152a3d45b0dd1498052995231`
+on `parity/current-pi-completion`. Its exact-head Linux CI passed at
+[38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300);
+the docs-only checkpoint at `c7b8a304` passed run
+[38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
+The recorded baseline is 2,057/2,057 .NET tests, zero skips, formatting, and a
+warnings-as-errors solution build with zero warnings. Re-run the focused and
+integrated checks for new changes.
 
-All 194 required capability IDs remain tracked: **12 verified, 147 in progress,
-35 not started**. Next ordered work is queue 13, covering Codex Responses/OAuth
-and Anthropic inline tool declarations. Full parity and the final source audit
-remain incomplete. Keep the Pi pin fixed and preserve `test.pdf` and unrelated
-files. See the receipts listed in [the feature matrix](parity/feature-matrix.md)
+All 194 capability IDs remain in the global inventory at **12 verified, 147 in
+progress, and 35 not started**. Do not change those totals simply because this
+goal reprioritizes work. The existing ordered queue remains useful inventory;
+queue 13 is no longer an instruction to implement Anthropic alongside Codex.
+Split mixed work and leave unrelated provider requirements tracked.
+
+Current execution priority is:
+
+1. **Codex subscription path:** finish normal ChatGPT/Codex sign-in, credential
+   refresh, model selection, Responses streaming and continuation, tool/image
+   handling, cancellation/retry, reasoning/usage, and session resume/switching.
+   Browser PKCE, device login, private credentials, account-scoped SSE, and a
+   model catalog are implemented. Manual-code fallback and WebSocket/cached
+   continuation with pre-output SSE fallback remain open.
+2. **llama.cpp path:** reuse the verified router configuration, model
+   discovery/selection, Hugging Face download, load/unload, context reload, and
+   twelve current-Pi paired terminal flows. Those deterministic receipts do not
+   substitute for the remaining end-to-end local model acceptance. No
+   `llama-server` or test endpoint is configured in this environment, so a live
+   model smoke test has not run.
+3. **Core and interactive use:** agent/tool loops, prompt queues, cancellation,
+   retries, durable session lifecycle, compaction/context, built-in tools,
+   TUI/editor/navigation, normal CLI/RPC, settings/resources/extensions, MCP,
+   and Codemode.
+
+Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi,
+OpenCode, Together, Cloudflare, gateway, and unrelated catalog work is
+**intentionally deferred provider backlog** for this functional goal. Keep its
+capability IDs and current statuses; do not spend implementation time there
+unless a P0/P1 regression or a shared Codex/llama contract requires a fix. Do
+not run the former broad provider freeze as part of this goal.
+
+The acceptance bar remains end-to-end: a normal user must sign in, select a
+Codex model, stream, use tools, steer/cancel/retry, compact, save, resume, switch
+settings/model, and continue; the local route must configure or discover a
+model, stream, use supported tools, cancel, save/resume, reload or switch, and
+work through the normal UI without cloud services. Semantic TUI behavior and
+understandable errors matter more than raw terminal-byte equality. Preserve
+`test.pdf` and unrelated files. See the receipts in [the feature matrix](parity/feature-matrix.md)
 and the execution ledger.
+
+## Prior integrated queue checkpoint — 2026-10-15
+
+Queues 1–12 had integrated implementation slices at the source checkpoint
+above. Thinking budgets were verified. Google GenAI/Vertex matched six pinned
+transcript-conversion cases. Azure Responses, Azure Foundry, and Mistral had
+expanded local transport coverage; their broader provider contracts remained
+in progress. These results are retained as evidence, while current priorities
+are defined by the feature-first goal above.
 
 ## Historical user-requested stop — 2026-10-15 (superseded by this resume)
 

@@ -1,20 +1,32 @@
-## Current integration checkpoint — 2026-10-15
+## Current integration checkpoint and priority reset — 2026-10-15
 
 Verified product source is `1cdb57f7cfd2723152a3d45b0dd1498052995231` on
 `parity/current-pi-completion`; configured Pi remains pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Bounded implementation slices for
-queues 1–12 are integrated. Thinking budgets are verified; Google GenAI/Vertex,
-Azure Responses, Azure Foundry, and Mistral remain in progress where broader
-provider contracts are still open.
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Exact-head Linux CI run
+[38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300)
+passed on that product source. The docs-only checkpoint at `c7b8a304` passed
+[38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
+The recorded full local baseline is 2,057/2,057 .NET tests, zero skips, format,
+and a warnings-as-errors solution build with zero warnings.
 
-The latest local verification passes **2,057/2,057 .NET tests, zero skips**, a
-warnings-as-errors solution build with zero warnings, and format verification.
-The six-case Google/Vertex transcript differential matches. Exact-head Linux CI
-run [38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300)
-passed on the product source. All 194 capability IDs remain tracked:
-**12 verified, 147 in progress, 35 not started**. Next ordered work is queue 13:
-Codex Responses/OAuth and Anthropic inline tool declarations. Full parity and the
-final source audit remain incomplete.
+All 194 capability IDs remain tracked: **12 verified, 147 in progress, 35 not
+started**. The old queue order is inventory, not current execution priority.
+This goal prioritizes Codex subscription usability and llama.cpp/local-model
+usability, then core agent/session/tool behavior, TUI/editor/navigation, and
+normal CLI/RPC and application features. Existing llama router, model,
+download/context-reload, and twelve-flow terminal receipts should be reused;
+they do not by themselves prove the remaining end-to-end local-model scenario.
+Codex browser/device OAuth and account-scoped SSE are implemented; manual-code
+fallback and WebSocket/cached continuation with pre-output SSE fallback remain
+open.
+
+Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi,
+OpenCode, Together, Cloudflare, gateway and unrelated catalog parity is
+**intentionally deferred provider backlog**. Preserve its task IDs and statuses;
+do not run queue 13's Anthropic slice or the former provider freeze during this
+goal unless a P0/P1 regression or shared Codex/llama contract requires work.
+See the active priority policy in [the continuation plan](../continuation.md)
+and the explicit current-goal/deferred-provider ID lists in the ledger.
 
 See the [thinking-budget receipt](fixtures/thinking-budgets-current-pi-2026-10-15.md),
 [Google/Vertex receipt](fixtures/google-genai-vertex-current-pi-2026-10-15.json),
