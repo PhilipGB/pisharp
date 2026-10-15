@@ -1,6 +1,7 @@
 using Amazon.BedrockRuntime;
 using Amazon.BedrockRuntime.Model;
 using Amazon.Runtime.EventStreams;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime.Providers;
@@ -38,6 +39,44 @@ public sealed class BedrockProviderTests
             Assert.Null(call.Exception);
             Assert.Equal(expected, call.Arguments!["text"]);
         }
+    }
+
+    [Fact]
+    public async Task BedrockMalformedToolCallIsRejectedBeforeValidToolContinuation()
+    {
+        var transport = new SequenceTransport(
+            ToolCallEvents("call_invalid", "{\"path\":\"prefix.txt\",\"content\":\"bad\", BROKEN}"),
+            ToolCallEvents("call_valid", "{\"path\":\"continued.txt\",\"content\":\"valid continuation\"}"),
+            [new MessageStartEvent { Role = ConversationRole.Assistant },
+                new ContentBlockDeltaEvent { ContentBlockIndex = 0, Delta = new ContentBlockDelta { Text = "completed" } },
+                new MessageStopEvent { StopReason = "end_turn" }]);
+        var model = BedrockModelCatalog.Load().Single(item => item.Id == "global.anthropic.claude-sonnet-4-6");
+        using var client = new BedrockConverseChatClient(transport, model, false, false, false, "us-east-1");
+        var invocations = new List<(string Path, string Content)>();
+        var agent = new ChatClientAgent(client, new ChatClientAgentOptions
+        {
+            ChatOptions = new ChatOptions
+            {
+                Tools = [AIFunctionFactory.Create((string path, string content) =>
+                {
+                    invocations.Add((path, content));
+                    return $"wrote {path}";
+                }, name: "fixture_tool")]
+            }
+        });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        await agent.RunAsync("continue after the malformed tool call", cancellationToken: deadline.Token);
+
+        Assert.Equal([("continued.txt", "valid continuation")], invocations);
+        Assert.Equal(3, transport.Requests.Count);
+        var failedResult = transport.Requests[1].Messages.SelectMany(message => message.Content)
+            .Select(content => content.ToolResult).Single(result => result?.ToolUseId == "call_invalid");
+        Assert.Equal(ToolResultStatus.Error, failedResult!.Status);
+        var successfulResult = transport.Requests[2].Messages.SelectMany(message => message.Content)
+            .Select(content => content.ToolResult).Single(result => result?.ToolUseId == "call_valid");
+        Assert.Equal(ToolResultStatus.Success, successfulResult!.Status);
+        Assert.Contains(successfulResult.Content, item => item.Text == "wrote continued.txt");
     }
 
     private static readonly byte[] s_png = Convert.FromBase64String(
@@ -203,6 +242,37 @@ public sealed class BedrockProviderTests
     private sealed class CallbackDisposable(Action callback) : IDisposable
     {
         public void Dispose() => callback();
+    }
+
+    private static IReadOnlyList<IEventStreamEvent> ToolCallEvents(string id, string arguments) =>
+    [
+        new MessageStartEvent { Role = ConversationRole.Assistant },
+        new ContentBlockStartEvent { ContentBlockIndex = 0, Start = new ContentBlockStart
+            { ToolUse = new ToolUseBlockStart { ToolUseId = id, Name = "fixture_tool" } } },
+        new ContentBlockDeltaEvent { ContentBlockIndex = 0, Delta = new ContentBlockDelta
+            { ToolUse = new ToolUseBlockDelta { Input = arguments } } },
+        new ContentBlockStopEvent { ContentBlockIndex = 0 },
+        new MessageStopEvent { StopReason = "tool_use" }
+    ];
+
+    private sealed class SequenceTransport(params IReadOnlyList<IEventStreamEvent>[] responses) : IBedrockConverseTransport
+    {
+        private int _index;
+        public List<ConverseStreamRequest> Requests { get; } = [];
+
+        public Task<BedrockConverseStreamResponse> SendAsync(ConverseStreamRequest request,
+            CancellationToken cancellationToken)
+        {
+            Requests.Add(request);
+            if (_index >= responses.Length)
+                throw new InvalidOperationException("The Bedrock fixture has no response for this request.");
+            var events = responses[_index++];
+            return Task.FromResult(new BedrockConverseStreamResponse(
+                new CancellableEventStream(events, cancellationToken, static () => { }, waitForCancellation: false),
+                $"bedrock-fixture-{_index}"));
+        }
+
+        public void Dispose() { }
     }
 
 }

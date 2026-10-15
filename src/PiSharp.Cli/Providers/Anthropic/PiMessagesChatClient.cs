@@ -314,11 +314,10 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
                     state.ToolCalls.TryGetValue(index, out var started);
                     var id = ReadString(toolCall, "id") ?? started?.Id ?? string.Empty;
                     var name = ReadString(toolCall, "name") ?? started?.Name ?? string.Empty;
-                    var arguments = toolCall.TryGetProperty("arguments", out var args) && args.ValueKind == JsonValueKind.Object
-                        ? JsonSerializer.Deserialize<Dictionary<string, object?>>(args.GetRawText(), s_jsonOptions) ?? []
-                        : new Dictionary<string, object?>();
+                    var arguments = ReadToolArguments(toolCall, out var argumentError);
                     state.ToolCalls.Remove(index);
-                    update = CreateUpdate([new FunctionCallContent(id, name, arguments)], headers);
+                    var call = new FunctionCallContent(id, name, arguments) { Exception = argumentError };
+                    update = CreateUpdate([call], headers);
                     return true;
                 }
             case "done":
@@ -514,6 +513,35 @@ internal sealed class PiMessagesChatClient(HttpClient http, Uri baseUri, ModelDe
 
     private static bool ReadBoolean(JsonElement value, string property) =>
         value.TryGetProperty(property, out var propertyValue) && propertyValue.ValueKind == JsonValueKind.True;
+
+    private static Dictionary<string, object?> ReadToolArguments(JsonElement toolCall, out Exception? error)
+    {
+        error = null;
+        if (toolCall.TryGetProperty("argumentsError", out var argumentsError))
+        {
+            if (argumentsError.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(argumentsError.GetString()))
+            {
+                error = new JsonException(argumentsError.GetString());
+                return [];
+            }
+            if (argumentsError.ValueKind != JsonValueKind.String)
+            {
+                error = new JsonException("Pi Messages tool call argumentsError must be a string.");
+                return [];
+            }
+        }
+
+        if (!toolCall.TryGetProperty("arguments", out var arguments))
+            return [];
+        if (arguments.ValueKind != JsonValueKind.Object)
+        {
+            error = new JsonException(
+                $"Tool arguments must be a JSON object.\n\nReceived arguments:\n{arguments.GetRawText()}");
+            return [];
+        }
+
+        return JsonSerializer.Deserialize<Dictionary<string, object?>>(arguments.GetRawText(), s_jsonOptions) ?? [];
+    }
 
     private static string TruncateDiagnostic(string value) => value.Length > 8192 ? value[..8192] + "…" : value;
 
