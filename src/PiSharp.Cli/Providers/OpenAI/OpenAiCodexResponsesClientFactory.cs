@@ -22,7 +22,8 @@ internal static class OpenAiCodexResponsesClientFactory
             RetryPolicy = new ClientRetryPolicy(0),
             Transport = new HttpClientPipelineTransport(new HttpClient(
                 new OpenAiCodexRequestHandler(selection.ApiKey, requestContext,
-                    new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false }),
+                    new ProviderWireActivityHandler(new OpenAiCodexWebSocketBridgeHandler(
+                        new HttpClientHandler { AllowAutoRedirect = false }, TimeSpan.FromSeconds(15))),
                     selection.OAuthCredentialResolver),
                 disposeHandler: true))
         };
@@ -217,6 +218,10 @@ internal sealed class OpenAiCodexRequestHandler : DelegatingHandler
                         writer.WriteString("instructions", property.Value.GetString());
                         instructionsWritten = true;
                     }
+                }
+                else if (property.NameEquals("previous_response_id"))
+                {
+                    // ConversationId is PiSharp's stable session affinity key, not a Responses id.
                 }
                 else property.WriteTo(writer);
             }
