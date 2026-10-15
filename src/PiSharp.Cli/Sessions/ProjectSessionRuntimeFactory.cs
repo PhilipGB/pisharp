@@ -18,8 +18,11 @@ internal sealed class ProjectSessionRuntimeFactory(
     public void ValidateExistingSwitchTarget(string sessionReference, string invocationDirectory)
     {
         var path = Path.GetFullPath(sessionReference, invocationDirectory);
-        if (File.Exists(path))
-            _ = PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory);
+        if (!File.Exists(path)) return;
+        _ = PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory);
+        if (path.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)) return;
+        var conversation = ConversationSession.Parse(File.ReadAllText(path));
+        _ = modelRuntime.GetProvider(ResolveProvider(conversation));
     }
 
     public async Task<ProjectSessionRuntime> OpenAsync(string sessionPath, string invocationDirectory,
