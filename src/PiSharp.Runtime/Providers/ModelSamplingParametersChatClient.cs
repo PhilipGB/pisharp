@@ -1,0 +1,144 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Microsoft.Extensions.AI;
+
+namespace PiSharp.Runtime.Providers;
+
+public sealed class SamplingParametersRequestContext
+{
+    private readonly AsyncLocal<JsonElement?> _current = new();
+
+    public JsonElement? Current => _current.Value;
+
+    public IDisposable Push(JsonElement? parameters)
+    {
+        var previous = _current.Value;
+        _current.Value = parameters;
+        return new Scope(this, previous);
+    }
+
+    private sealed class Scope(SamplingParametersRequestContext owner, JsonElement? previous) : IDisposable
+    {
+        private int _disposed;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 0) owner._current.Value = previous;
+        }
+    }
+}
+
+/// <summary>Applies Pi model and effective thinking-level sampling metadata before a provider request is serialized.</summary>
+public sealed class ModelSamplingParametersChatClient(IChatClient inner, ModelDescriptor model,
+    SamplingParametersRequestContext requestContext, bool providerSupportsSampling = true) : DelegatingChatClient(inner)
+{
+    public const string ThinkingLevelProperty = "pisharp.thinkingLevel";
+    public const string RequestSamplingParametersProperty = "samplingParams";
+
+    public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
+        ChatOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        var (requestOptions, parameters) = Prepare(options);
+        using var scope = requestContext.Push(parameters);
+        return await base.GetResponseAsync(messages, requestOptions, cancellationToken).ConfigureAwait(false);
+    }
+
+    public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+        IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var (requestOptions, parameters) = Prepare(options);
+        using var scope = requestContext.Push(parameters);
+        await foreach (var update in base.GetStreamingResponseAsync(messages, requestOptions, cancellationToken)
+            .WithCancellation(cancellationToken).ConfigureAwait(false))
+            yield return update;
+    }
+
+    private (ChatOptions? Options, JsonElement? Parameters) Prepare(ChatOptions? options)
+    {
+        var requestProperties = options?.AdditionalProperties;
+        var thinkingLevel = GetString(requestProperties, ThinkingLevelProperty) ?? GetThinkingLevel(options?.Reasoning);
+        var requestParameters = GetObject(requestProperties, RequestSamplingParametersProperty);
+        var parameters = providerSupportsSampling ? Resolve(model, thinkingLevel, requestParameters) : null;
+
+        if (requestProperties is null ||
+            (!requestProperties.ContainsKey(ThinkingLevelProperty) &&
+             !requestProperties.ContainsKey(RequestSamplingParametersProperty)))
+            return (options, parameters);
+
+        var requestOptions = options!.Clone();
+        var properties = requestProperties.Clone();
+        properties.Remove(ThinkingLevelProperty);
+        properties.Remove(RequestSamplingParametersProperty);
+        requestOptions.AdditionalProperties = properties.Count == 0 ? null : properties;
+        return (requestOptions, parameters);
+    }
+
+    private static JsonElement? Resolve(ModelDescriptor model, string thinkingLevel,
+        JsonElement? requestParameters)
+    {
+        var effectiveLevel = ClampThinkingLevel(model, thinkingLevel);
+        JsonElement? levelParameters = null;
+        if (model.SamplingParametersByThinkingLevel is { ValueKind: JsonValueKind.Object } levels &&
+            levels.TryGetProperty(effectiveLevel, out var selected) && selected.ValueKind == JsonValueKind.Object)
+            levelParameters = selected;
+
+        var merged = ModelMetadataJson.MergeObjects(levelParameters, model.SamplingParameters);
+        merged = ModelMetadataJson.MergeObjects(requestParameters, merged);
+        return merged;
+    }
+
+    private static string ClampThinkingLevel(ModelDescriptor model, string requested)
+    {
+        var levels = new[] { "off", "minimal", "low", "medium", "high", "xhigh", "max" };
+        string[] available;
+        if (model.Reasoning != true)
+        {
+            available = ["off"];
+        }
+        else
+        {
+            available = levels.Where(level =>
+            {
+                JsonElement? mapped = model.ThinkingLevelMap is { ValueKind: JsonValueKind.Object } map &&
+                    map.TryGetProperty(level, out var value) ? value : null;
+                if (mapped is { ValueKind: JsonValueKind.Null }) return false;
+                return level is not ("xhigh" or "max") || mapped is not null;
+            }).ToArray();
+        }
+
+        var normalized = requested.ToLowerInvariant();
+        var selected = Array.IndexOf(levels, normalized);
+        if (selected < 0) return available.FirstOrDefault() ?? "off";
+        for (var index = selected; index < levels.Length; index++)
+            if (available.Contains(levels[index], StringComparer.Ordinal)) return levels[index];
+        for (var index = selected - 1; index >= 0; index--)
+            if (available.Contains(levels[index], StringComparer.Ordinal)) return levels[index];
+        return available.FirstOrDefault() ?? "off";
+    }
+
+    private static string? GetString(AdditionalPropertiesDictionary? properties, string key) =>
+        properties?.TryGetValue(key, out var value) == true ? value as string : null;
+
+    private static string GetThinkingLevel(ReasoningOptions? reasoning) => reasoning?.Effort switch
+    {
+        ReasoningEffort.Low => "low",
+        ReasoningEffort.Medium => "medium",
+        ReasoningEffort.High => "high",
+        ReasoningEffort.ExtraHigh => "xhigh",
+        _ => "off"
+    };
+
+    private static JsonElement? GetObject(AdditionalPropertiesDictionary? properties, string key)
+    {
+        if (properties?.TryGetValue(key, out var value) != true || value is null) return null;
+        if (value is JsonElement element && element.ValueKind == JsonValueKind.Object) return element.Clone();
+        if (value is JsonNode node && node is JsonObject) return JsonSerializer.SerializeToElement(node);
+        if (value is IReadOnlyDictionary<string, object?> or IDictionary<string, object?>)
+        {
+            var parsed = JsonSerializer.SerializeToElement(value);
+            return parsed.ValueKind == JsonValueKind.Object ? parsed : null;
+        }
+        return null;
+    }
+}

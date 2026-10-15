@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 using PiSharp.Cli;
 using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime;
 
 namespace PiSharp.Tests;
@@ -51,13 +52,15 @@ public sealed class ProviderChatClientFactoryTests
     public async Task ExplicitResponsesProtocolStreamsThroughResponsesEndpoint()
     {
         using var listener = StartLoopbackListener(out var port);
+        string? requestBody = null;
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
             Assert.Equal("/v1/responses", request.Request.Url?.AbsolutePath);
             Assert.Equal("Bearer fixture-key", request.Request.Headers["Authorization"]);
             using var reader = new StreamReader(request.Request.InputStream);
-            Assert.Contains("fixture-model", await reader.ReadToEndAsync());
+            requestBody = await reader.ReadToEndAsync();
+            Assert.Contains("fixture-model", requestBody);
             request.Response.ContentType = "text/event-stream";
             await using var writer = new StreamWriter(request.Response.OutputStream);
             await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_1\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
@@ -67,12 +70,24 @@ public sealed class ProviderChatClientFactoryTests
             request.Response.Close();
         });
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var selection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-responses");
+        using var levelParameters = JsonDocument.Parse("""{"off":{"temperature":0.7,"top_p":0.9}}""");
+        var baseSelection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-responses");
+        var selection = baseSelection with
+        {
+            Model = baseSelection.Model with
+            {
+                SamplingParametersByThinkingLevel = levelParameters.RootElement.Clone()
+            }
+        };
         var agent = new PiAgent(ProviderChatClientFactory.Create(selection), new CodingTools(Path.GetTempPath()));
         var session = await agent.CreateSessionAsync(deadline.Token);
         var text = "";
         await foreach (var update in agent.RunStreamingAsync("say hello", session, deadline.Token)) text += update.Text;
         await server.WaitAsync(deadline.Token);
+        using var body = JsonDocument.Parse(requestBody!);
+        Assert.Equal(0.7, body.RootElement.GetProperty("temperature").GetDouble(), 3);
+        Assert.Equal(0.9, body.RootElement.GetProperty("top_p").GetDouble());
+        Assert.False(body.RootElement.TryGetProperty("top_k", out _));
         Assert.Equal("hello", text);
     }
 
@@ -702,6 +717,8 @@ public sealed class ProviderChatClientFactoryTests
             using var body = System.Text.Json.JsonDocument.Parse(await reader.ReadToEndAsync());
             Assert.Equal("fixture-model", body.RootElement.GetProperty("model").GetString());
             Assert.Equal(321, body.RootElement.GetProperty("max_tokens").GetInt32());
+            Assert.False(body.RootElement.TryGetProperty("temperature", out _));
+            Assert.False(body.RootElement.TryGetProperty("samplingParams", out _));
             Assert.Equal("hello", body.RootElement.GetProperty("messages")[0].GetProperty("content")[0]
                 .GetProperty("text").GetString());
             request.Response.ContentType = "application/json";
@@ -713,10 +730,18 @@ public sealed class ProviderChatClientFactoryTests
             request.Response.Close();
         });
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var modelSampling = JsonDocument.Parse("""{"temperature":0.1}""");
+        using var requestSampling = JsonDocument.Parse("""{"temperature":0.9}""");
         var selection = Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages");
-        var response = await ProviderChatClientFactory.Create(selection with { Model = selection.Model with { MaxOutputTokens = 321 } })
+        var options = new Microsoft.Extensions.AI.ChatOptions();
+        options.AdditionalProperties ??= new();
+        options.AdditionalProperties[ModelSamplingParametersChatClient.ThinkingLevelProperty] = "high";
+        options.AdditionalProperties[ModelSamplingParametersChatClient.RequestSamplingParametersProperty] =
+            requestSampling.RootElement.Clone();
+        var response = await ProviderChatClientFactory.Create(selection with
+        { Model = selection.Model with { MaxOutputTokens = 321, SamplingParameters = modelSampling.RootElement.Clone() } })
             .GetResponseAsync([new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
-                cancellationToken: deadline.Token);
+                options, deadline.Token);
         await server.WaitAsync(deadline.Token);
         Assert.Equal("native reply", response.Text);
         Assert.Equal(5, response.Usage?.InputTokenCount);
@@ -1153,6 +1178,8 @@ public sealed class ProviderChatClientFactoryTests
         using var body = JsonDocument.Parse(requestBody!);
         var root = body.RootElement;
         Assert.Equal(321, root.GetProperty("max_completion_tokens").GetInt32());
+        Assert.False(root.TryGetProperty("temperature", out _));
+        Assert.False(root.TryGetProperty("top_p", out _));
         Assert.False(root.TryGetProperty("max_tokens", out _));
         Assert.False(root.GetProperty("store").GetBoolean());
         Assert.False(root.TryGetProperty("tool_choice", out _));
@@ -1162,6 +1189,155 @@ public sealed class ProviderChatClientFactoryTests
         var textPart = Assert.Single(userMessage.GetProperty("content").EnumerateArray());
         Assert.Equal("text", textPart.GetProperty("type").GetString());
         Assert.Equal("hello", textPart.GetProperty("text").GetString());
+        Assert.Equal("ok", response.Text);
+    }
+
+    [Fact]
+    public async Task OpenAiCompletionsSerializesSamplingFieldsFromRequestAdditionalProperties()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            using var reader = new StreamReader(request.Request.InputStream);
+            requestBody = await reader.ReadToEndAsync();
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"chatcmpl_sampling","object":"chat.completion","created":1,"model":"fixture-model","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        using var modelDefaults = JsonDocument.Parse("""{"temperature":0.2,"top_p":0.95,"min_p":0.3}""");
+        using var levelParameters = JsonDocument.Parse("""{"xhigh":{"temperature":0.7,"top_k":48},"max":{"temperature":0.85,"top_k":64,"top_p":0.8}}""");
+        using var thinkingMap = JsonDocument.Parse("""{"xhigh":"high","max":"high"}""");
+        using var requestParameters = JsonDocument.Parse("""{"temperature":0.8,"top_p":0.45,"min_p":0}""");
+        var baseSelection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-completions");
+        var selection = baseSelection with
+        {
+            Model = baseSelection.Model with
+            {
+                Reasoning = true,
+                ThinkingLevelMap = thinkingMap.RootElement.Clone(),
+                SamplingParameters = modelDefaults.RootElement.Clone(),
+                SamplingParametersByThinkingLevel = levelParameters.RootElement.Clone()
+            }
+        };
+        var options = new Microsoft.Extensions.AI.ChatOptions { Temperature = 0.6f };
+        options.AdditionalProperties ??= new();
+        options.AdditionalProperties[ModelSamplingParametersChatClient.RequestSamplingParametersProperty] =
+            requestParameters.RootElement.Clone();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var routed = new RoutedChatClient(new MutableChatClient(ProviderChatClientFactory.Create(selection)), _ => { });
+        routed.SetThinkingLevel("max");
+        var observed = new ObservedChatClient(routed, _ => { }, ProviderRetryPolicy.None, _ => [],
+            getReasoning: () => ThinkingLevels.ToOptions("max", thinkingMap.RootElement), routedChatClient: routed);
+        var response = await observed.GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")], options, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        using var body = JsonDocument.Parse(requestBody!);
+        Assert.Equal(0.8, body.RootElement.GetProperty("temperature").GetDouble(), 3);
+        Assert.Equal(0.45, body.RootElement.GetProperty("top_p").GetDouble());
+        Assert.Equal(64, body.RootElement.GetProperty("top_k").GetInt32());
+        Assert.Equal(0, body.RootElement.GetProperty("min_p").GetInt32());
+        Assert.False(body.RootElement.TryGetProperty("samplingParams", out _));
+        Assert.Equal("ok", response.Text);
+    }
+
+    [Fact]
+    public async Task OpenAiCompletionsClampsUnavailableMaximumSamplingLevel()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            using var reader = new StreamReader(request.Request.InputStream);
+            requestBody = await reader.ReadToEndAsync();
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"chatcmpl_sampling_clamp","object":"chat.completion","created":1,"model":"fixture-model","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        using var levelParameters = JsonDocument.Parse("""{"high":{"temperature":0.73,"top_k":32}}""");
+        var baseSelection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-completions");
+        var selection = baseSelection with
+        {
+            Model = baseSelection.Model with
+            {
+                Reasoning = true,
+                SamplingParametersByThinkingLevel = levelParameters.RootElement.Clone()
+            }
+        };
+        var options = new Microsoft.Extensions.AI.ChatOptions { Temperature = 0.2f };
+        options.AdditionalProperties ??= new();
+        options.AdditionalProperties[ModelSamplingParametersChatClient.ThinkingLevelProperty] = "max";
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await ProviderChatClientFactory.Create(selection).GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")], options, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        using var body = JsonDocument.Parse(requestBody!);
+        Assert.Equal(0.73, body.RootElement.GetProperty("temperature").GetDouble(), 3);
+        Assert.Equal(32, body.RootElement.GetProperty("top_k").GetInt32());
+    }
+
+    [Fact]
+    public async Task OpenAiResponsesSerializesResolvedSamplingParameters()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            Assert.Equal("/v1/responses", request.Request.Url?.AbsolutePath);
+            using var reader = new StreamReader(request.Request.InputStream);
+            requestBody = await reader.ReadToEndAsync();
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"resp_sampling","object":"response","created_at":1,"model":"fixture-model","status":"completed","output":[{"id":"msg_1","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":"ok","annotations":[]}]}],"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        using var defaults = JsonDocument.Parse("""{"temperature":0.2,"top_p":0.9}""");
+        using var levelParameters = JsonDocument.Parse("""{"high":{"temperature":0.7,"top_k":64}}""");
+        using var requestParameters = JsonDocument.Parse("""{"temperature":0.8,"top_p":0.45,"min_p":0}""");
+        var baseSelection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-responses");
+        var selection = baseSelection with
+        {
+            Model = baseSelection.Model with
+            {
+                Reasoning = true,
+                SamplingParameters = defaults.RootElement.Clone(),
+                SamplingParametersByThinkingLevel = levelParameters.RootElement.Clone()
+            }
+        };
+        var options = new Microsoft.Extensions.AI.ChatOptions { Temperature = 0.2f };
+        options.AdditionalProperties ??= new();
+        options.AdditionalProperties[ModelSamplingParametersChatClient.ThinkingLevelProperty] = "high";
+        options.AdditionalProperties[ModelSamplingParametersChatClient.RequestSamplingParametersProperty] =
+            requestParameters.RootElement.Clone();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var response = await ProviderChatClientFactory.Create(selection).GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")], options, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        using var body = JsonDocument.Parse(requestBody!);
+        Assert.Equal(0.8, body.RootElement.GetProperty("temperature").GetDouble(), 3);
+        Assert.Equal(0.45, body.RootElement.GetProperty("top_p").GetDouble());
+        Assert.Equal(64, body.RootElement.GetProperty("top_k").GetInt32());
+        Assert.Equal(0, body.RootElement.GetProperty("min_p").GetInt32());
         Assert.Equal("ok", response.Text);
     }
 

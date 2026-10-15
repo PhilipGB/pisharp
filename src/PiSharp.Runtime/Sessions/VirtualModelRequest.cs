@@ -59,6 +59,7 @@ internal static class VirtualModelRequestHints
         if (copy.AdditionalProperties is { } existing)
             foreach (var (key, value) in existing) properties[key] = value;
         properties.Remove(PropertyName);
+        properties[ModelSamplingParametersChatClient.ThinkingLevelProperty] = route.ThinkingLevel;
         copy.AdditionalProperties = properties;
         copy.ModelId = route.Model.Id;
         copy.Reasoning = route.Reasoning;

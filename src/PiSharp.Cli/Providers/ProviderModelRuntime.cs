@@ -474,6 +474,8 @@ public sealed class ProviderModelRuntime
             ThinkingLevelMap = ModelMetadataJson.MergeObjects(configured?.ThinkingLevelMap, discovered.ThinkingLevelMap),
             PromptCache = ModelMetadataJson.MergeObjects(configured?.PromptCache, discovered.PromptCache),
             SamplingParameters = ModelMetadataJson.MergeObjects(configured?.SamplingParameters, discovered.SamplingParameters),
+            SamplingParametersByThinkingLevel = ModelMetadataJson.MergeSamplingParametersByThinkingLevel(
+                configured?.SamplingParametersByThinkingLevel, discovered.SamplingParametersByThinkingLevel),
             Compatibility = ModelMetadataJson.MergeCompatibility(configured?.Compatibility,
                 ModelMetadataJson.MergeCompatibility(discovered.Compatibility, provider.Compatibility)),
             Available = true,

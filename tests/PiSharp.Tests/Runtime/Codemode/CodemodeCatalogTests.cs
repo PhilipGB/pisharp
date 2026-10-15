@@ -13,7 +13,7 @@ public sealed class CodemodeCatalogTests
         {
             await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
                 {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:9999/v1","api":"openai-completions","apiKey":"host-key","models":[
-                {"id":"one","name":"chat name","contextWindow":4096,"maxTokens":512,"reasoning":true,"cost":{"input":1,"output":2,"cacheRead":0.5}},
+                {"id":"one","name":"chat name","contextWindow":4096,"maxTokens":512,"reasoning":true,"cost":{"input":1,"output":2,"cacheRead":0.5},"samplingParams":{"top_p":0.9},"samplingParamsByThinkingLevel":{"high":{"temperature":0.8,"top_k":64}}},
                 {"id":"one","type":"classifier","name":"classifier name","api":"typesafe-system-one","cost":{"input":3,"output":4}},
                 {"id":"one","type":"image","name":"image name","api":"openrouter-images","input":["text","image"],"output":["image"],"cost":{"input":5,"output":6}}]}}}
                 """);
@@ -26,6 +26,9 @@ public sealed class CodemodeCatalogTests
             Assert.Equal(0.5m, cost.GetProperty("cacheRead").GetDecimal());
             Assert.Equal(512, chat.GetProperty("maxTokens").GetInt32());
             Assert.Equal(4096, chat.GetProperty("contextWindow").GetInt32());
+            Assert.Equal(0.9, chat.GetProperty("samplingParams").GetProperty("top_p").GetDouble());
+            Assert.Equal(0.8, chat.GetProperty("samplingParamsByThinkingLevel").GetProperty("high").GetProperty("temperature").GetDouble());
+            Assert.Equal(64, chat.GetProperty("samplingParamsByThinkingLevel").GetProperty("high").GetProperty("top_k").GetInt32());
             Assert.Equal("chat", chat.GetProperty("type").GetString());
             var classifier = Assert.Single(runtime.GetModels("classifier", "fixture"));
             Assert.Equal("classifier", classifier.GetProperty("type").GetString());

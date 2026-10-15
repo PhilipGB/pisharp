@@ -36,6 +36,27 @@ public static class ModelMetadataJson
         return JsonSerializer.SerializeToElement(merged);
     }
 
+    public static JsonElement? MergeSamplingParametersByThinkingLevel(JsonElement? preferred, JsonElement? fallback)
+    {
+        if (preferred is null) return fallback?.Clone();
+        if (fallback is null) return preferred.Value.Clone();
+        if (preferred.Value.ValueKind != JsonValueKind.Object || fallback.Value.ValueKind != JsonValueKind.Object)
+            return preferred.Value.Clone();
+
+        var merged = JsonNode.Parse(fallback.Value.GetRawText())!.AsObject();
+        foreach (var level in preferred.Value.EnumerateObject())
+        {
+            if (level.Value.ValueKind == JsonValueKind.Object && merged[level.Name] is JsonObject fallbackParameters)
+            {
+                foreach (var parameter in level.Value.EnumerateObject())
+                    fallbackParameters[parameter.Name] = JsonNode.Parse(parameter.Value.GetRawText());
+            }
+            else
+                merged[level.Name] = JsonNode.Parse(level.Value.GetRawText());
+        }
+        return JsonSerializer.SerializeToElement(merged);
+    }
+
     public static JsonElement? MergeCompatibility(JsonElement? preferred, JsonElement? fallback)
     {
         var merged = MergeObjects(preferred, fallback);

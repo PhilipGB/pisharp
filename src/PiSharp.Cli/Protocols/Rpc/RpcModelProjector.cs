@@ -32,6 +32,7 @@ internal static class RpcModelProjector
             model.ContextLength ?? (model.Api == VirtualModelContract.Api ? 0 : 128000),
             model.MaxOutputTokens ?? (model.Api == VirtualModelContract.Api ? 0 : 16384),
             model.SamplingParameters is { } sampling ? SafeMetadata(sampling) : null,
+            SafeMetadata(model.SamplingParametersByThinkingLevel),
             SafeMetadata(model.Compatibility ?? provider?.Compatibility));
         return JsonSerializer.SerializeToElement(snapshot);
     }
@@ -96,6 +97,7 @@ internal static class RpcModelProjector
         [property: JsonPropertyName("contextWindow")] int ContextWindow,
         [property: JsonPropertyName("maxTokens")] int MaxTokens,
         [property: JsonPropertyName("samplingParams"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? SamplingParameters,
+        [property: JsonPropertyName("samplingParamsByThinkingLevel"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? SamplingParametersByThinkingLevel,
         [property: JsonPropertyName("compat"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Compatibility);
 
     private sealed record RpcModelCostSnapshot(

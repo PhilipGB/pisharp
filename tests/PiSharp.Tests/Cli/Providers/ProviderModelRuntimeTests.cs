@@ -62,13 +62,17 @@ public sealed class ProviderModelRuntimeTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
-                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","api":"openai-completions","models":[{"id":"reasoner","baseUrl":"https://fixture.test/v1/model-endpoint","api":"openai-responses","reasoning":true,"contextWindow":4096,"maxTokens":2048,"thinkingLevelMap":{"high":"extended"},"promptCache":{"short":300},"samplingParams":{"temperature":0.2},"compat":{"supportsStore":false}}]}}}
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","api":"openai-completions","apiKeyEnv":"PISHARP_API_KEY","models":[{"id":"reasoner","baseUrl":"https://fixture.test/v1/model-endpoint","api":"openai-responses","reasoning":true,"contextWindow":4096,"maxTokens":2048,"thinkingLevelMap":{"high":"extended"},"promptCache":{"short":300},"samplingParams":{"temperature":0.2,"top_p":0.9},"samplingParamsByThinkingLevel":{"high":{"top_k":64}},"compat":{"supportsStore":false}}]}}}
                 """);
-            using var http = new HttpClient(new ModelHandler());
+            var modelHandler = new ModelHandler("""
+                {"data":[{"id":"reasoner","reasoning":true,"samplingParams":{"frequency_penalty":0.1},"samplingParamsByThinkingLevel":{"high":{"top_p":0.75,"min_p":0.1},"low":{"top_p":0.4}}}]}
+                """);
+            using var http = new HttpClient(modelHandler);
             var runtime = await ProviderModelRuntime.CreateAsync(root, false,
-                name => name == "PISHARP_API_KEY" ? "fixture-key" : null, http, offline: true);
-            var selection = await runtime.ResolveAsync("fixture", "reasoner");
+                name => name == "PISHARP_API_KEY" ? "fixture-key" : null, http);
+            var selection = await runtime.ResolveAsync("fixture", "reason");
 
+            Assert.Equal("https://fixture.test/v1/models", modelHandler.Url);
             Assert.Equal("fixture", selection.Provider.Id);
             Assert.Equal("openai-completions", selection.Provider.Api);
             Assert.Equal("openai-responses", ProviderChatClientFactory.ResolveProtocol(selection));
@@ -78,6 +82,12 @@ public sealed class ProviderModelRuntimeTests
             Assert.Equal("extended", selection.Model.ThinkingLevelMap?.GetProperty("high").GetString());
             Assert.Equal(300, selection.Model.PromptCache?.GetProperty("short").GetInt32());
             Assert.Equal(0.2, selection.Model.SamplingParameters?.GetProperty("temperature").GetDouble());
+            Assert.Equal(0.9, selection.Model.SamplingParameters?.GetProperty("top_p").GetDouble());
+            Assert.Equal(0.1, selection.Model.SamplingParameters?.GetProperty("frequency_penalty").GetDouble());
+            Assert.Equal(64, selection.Model.SamplingParametersByThinkingLevel?.GetProperty("high").GetProperty("top_k").GetInt32());
+            Assert.Equal(0.75, selection.Model.SamplingParametersByThinkingLevel?.GetProperty("high").GetProperty("top_p").GetDouble());
+            Assert.Equal(0.1, selection.Model.SamplingParametersByThinkingLevel?.GetProperty("high").GetProperty("min_p").GetDouble());
+            Assert.Equal(0.4, selection.Model.SamplingParametersByThinkingLevel?.GetProperty("low").GetProperty("top_p").GetDouble());
             Assert.False(selection.Model.Compatibility?.GetProperty("supportsStore").GetBoolean());
         }
         finally { Directory.Delete(root, true); }

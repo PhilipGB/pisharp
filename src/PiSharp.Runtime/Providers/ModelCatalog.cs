@@ -11,7 +11,8 @@ public sealed record ModelDescriptor(string Id, string? Owner, int? ContextLengt
     int? MaxOutputTokens = null, IReadOnlyList<string>? Input = null, string? Api = null,
     ModelInputLimits? InputLimits = null, string? BaseUrl = null,
     JsonElement? ThinkingLevelMap = null, JsonElement? PromptCache = null,
-    JsonElement? SamplingParameters = null, JsonElement? Compatibility = null);
+    JsonElement? SamplingParameters = null, JsonElement? Compatibility = null,
+    JsonElement? SamplingParametersByThinkingLevel = null);
 
 /// <summary>Discover OpenAI-compatible model IDs without coupling model metadata to a specific SDK.</summary>
 public static class ModelCatalog
@@ -63,6 +64,7 @@ public static class ModelCatalog
                 ThinkingLevelMap: ModelMetadataJson.ReadObject(item, "thinkingLevelMap"),
                 PromptCache: ModelMetadataJson.ReadObject(item, "promptCache"),
                 SamplingParameters: ModelMetadataJson.ReadObject(item, "samplingParams"),
+                SamplingParametersByThinkingLevel: ModelMetadataJson.ReadObject(item, "samplingParamsByThinkingLevel"),
                 Compatibility: ModelMetadataJson.ReadObject(item, "compat")));
         }
         return models;

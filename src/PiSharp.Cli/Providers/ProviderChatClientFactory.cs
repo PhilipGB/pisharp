@@ -5,6 +5,7 @@ using Anthropic.Core;
 using Anthropic.Credentials;
 using Microsoft.Extensions.AI;
 using OpenAI;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.VirtualModels;
 
 namespace PiSharp.Cli;
@@ -53,6 +54,8 @@ public static class ProviderChatClientFactory
             throw new ArgumentOutOfRangeException(nameof(retrySettings), "Provider timeouts cannot be negative.");
         var requestTimeout = configuredTimeout ?? (idleTimeout == 0 ? int.MaxValue : idleTimeout);
         var sdkTimeout = TimeSpan.FromMilliseconds(requestTimeout);
+        var samplingSupported = protocol is "openai-completions" or "openai-responses" or "azure-openai-responses";
+        var samplingContext = new SamplingParametersRequestContext();
         IChatClient providerClient;
         ProviderToolCallDeltaCapture? argumentCapture = null;
         if (protocol == "bedrock-converse-stream")
@@ -132,7 +135,8 @@ public static class ProviderChatClientFactory
             else if (selection.Connection.Endpoint is not null) options.Endpoint = selection.Connection.Endpoint;
             if (protocol == "openai-responses")
                 options.Transport = new HttpClientPipelineTransport(
-                    new HttpClient(new ProviderWireActivityHandler(new HttpClientHandler()), disposeHandler: true));
+                    new HttpClient(new ProviderSamplingRequestHandler(samplingContext!,
+                        new ProviderWireActivityHandler(new HttpClientHandler())), disposeHandler: true));
             OpenAiToolCallDeltaCapture? toolCallCapture = null;
             MistralChatRequestContext? mistralContext = null;
             AzureOpenAiRequestContext? azureContext = null;
@@ -142,8 +146,9 @@ public static class ProviderChatClientFactory
                 var azureOptions = selection.Provider.AzureOpenAi ??
                     new AzureOpenAiProviderOptions("v1", new Dictionary<string, string>(StringComparer.Ordinal));
                 options.Transport = new HttpClientPipelineTransport(new HttpClient(
-                    new AzureOpenAiRequestHandler(selection.ApiKey, azureOptions, azureContext,
-                        new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false })),
+                    new ProviderSamplingRequestHandler(samplingContext!,
+                        new AzureOpenAiRequestHandler(selection.ApiKey, azureOptions, azureContext,
+                            new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false }))),
                     disposeHandler: true));
             }
             if (protocol is "openai-completions" or "mistral-conversations")
@@ -157,10 +162,11 @@ public static class ProviderChatClientFactory
                 }
                 else
                 {
-                    handler = new OpenAiCompletionsRequestCompatibilityHandler(selection.Model,
-                        selection.Provider.Id, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
-                        selection.Provider.Compatibility,
-                        new ProviderWireActivityHandler(new HttpClientHandler()));
+                    handler = new ProviderSamplingRequestHandler(samplingContext!,
+                        new OpenAiCompletionsRequestCompatibilityHandler(selection.Model,
+                            selection.Provider.Id, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
+                            selection.Provider.Compatibility,
+                            new ProviderWireActivityHandler(new HttpClientHandler())));
                 }
                 toolCallCapture = new OpenAiToolCallDeltaCapture(handler);
                 options.Transport = toolCallCapture.Transport;
@@ -179,6 +185,8 @@ public static class ProviderChatClientFactory
             if (azureContext is not null)
                 providerClient = new AzureOpenAiChatOptionsClient(providerClient, azureContext);
         }
+        providerClient = new ModelSamplingParametersChatClient(providerClient, selection.Model, samplingContext,
+            samplingSupported);
         var timeoutClient = new ProviderRequestTimeoutChatClient(new ProviderToolArgumentChatClient(providerClient, argumentCapture), requestTimeout, idleTimeout);
         return new ProviderRetryChatClient(timeoutClient, providerMaxRetries,
             retrySettings?.MaxRetryDelayMs ?? ProviderRetrySettings.DefaultMaxRetryDelayMs);

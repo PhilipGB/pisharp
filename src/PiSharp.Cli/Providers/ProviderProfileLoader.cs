@@ -101,6 +101,9 @@ internal static class ProviderProfileLoader
                         ThinkingLevelMap: ModelMetadataJson.MergeObjects(ModelMetadataJson.ReadObject(model, "thinkingLevelMap", source, strict: true), defaults?.ThinkingLevelMap),
                         PromptCache: ModelMetadataJson.MergeObjects(ModelMetadataJson.ReadObject(model, "promptCache", source, strict: true), defaults?.PromptCache),
                         SamplingParameters: ModelMetadataJson.MergeObjects(ModelMetadataJson.ReadObject(model, "samplingParams", source, strict: true), defaults?.SamplingParameters),
+                        SamplingParametersByThinkingLevel: ModelMetadataJson.MergeSamplingParametersByThinkingLevel(
+                            ModelMetadataJson.ReadObject(model, "samplingParamsByThinkingLevel", source, strict: true),
+                            defaults?.SamplingParametersByThinkingLevel),
                         Compatibility: ModelMetadataJson.MergeCompatibility(
                             ModelMetadataJson.ReadObject(model, "compat", source, strict: true),
                             ModelMetadataJson.MergeCompatibility(compatibility, defaults?.Compatibility))));

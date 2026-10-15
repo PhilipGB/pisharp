@@ -1,6 +1,7 @@
 using System.ClientModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
@@ -351,6 +352,12 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         if (getReasoning is null) return options;
         var requestOptions = options?.Clone() ?? new ChatOptions();
         requestOptions.Reasoning = getReasoning();
+        if (routedChatClient is not null)
+        {
+            requestOptions.AdditionalProperties ??= new();
+            requestOptions.AdditionalProperties[ModelSamplingParametersChatClient.ThinkingLevelProperty] =
+                routedChatClient.SelectedThinkingLevel;
+        }
         return requestOptions;
     }
 
