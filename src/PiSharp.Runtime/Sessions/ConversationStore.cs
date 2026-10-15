@@ -27,7 +27,7 @@ public sealed class ConversationStore(string workingDirectory, string? directory
                 var session = ConversationSession.Parse(File.ReadAllText(path));
                 if (WorkingDirectoriesMatch(session.WorkingDirectory, WorkingDirectory)) return path;
             }
-            catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException)
+            catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or KeyNotFoundException)
             {
                 // Pi's recent-session discovery skips unreadable candidates and checks the next file.
             }
