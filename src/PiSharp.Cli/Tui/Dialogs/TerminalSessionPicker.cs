@@ -7,25 +7,64 @@ namespace PiSharp.Cli.Tui;
 internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEditor editor)
 {
     public async Task<SessionListing?> ShowAsync(string? currentPath = null,
-        CancellationToken cancellationToken = default)
+        ConversationSession? currentConversation = null, CancellationToken cancellationToken = default)
     {
         var sessions = await SessionCatalog.ListAsync(store, cancellationToken);
         var sortByName = false;
         var options = ToOptions(sessions, currentPath, sortByName);
         var current = sessions.FirstOrDefault(session => PathsEqual(session.Path, currentPath));
         var sortKey = editor.GetDisplayKeys("app.session.toggleSort");
-        var chosen = editor.ShowSelectionList("Resume session · Recent", options,
-            current is null ? null : Key(current), emptyMessage: "No saved sessions in this project",
-            actionHint: sortKey is null ? null : $"{sortKey} sort",
-            handleInput: (list, input) =>
+        var renameKey = editor.GetDisplayKeys("app.session.rename");
+        var actionHint = string.Join(" · ", new[]
             {
-                if (input.Key is not { } key || !editor.MatchesKeybinding("app.session.toggleSort", key)) return false;
-                sortByName = !sortByName;
-                list.SetTitle($"Resume session · {(sortByName ? "Name" : "Recent")}");
-                list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName), scopedOptions: null);
+                sortKey is null ? null : $"{sortKey} sort",
+                renameKey is null ? null : $"{renameKey} rename"
+            }.Where(value => value is not null));
+        var chosen = await editor.ShowSelectionListAsync("Resume session · Recent", options,
+            current is null ? null : Key(current), emptyMessage: "No saved sessions in this project",
+            actionHint: actionHint.Length == 0 ? null : actionHint,
+            handleInput: async (list, input) =>
+            {
+                if (input.Key is not { } key) return false;
+                if (editor.MatchesKeybinding("app.session.toggleSort", key))
+                {
+                    sortByName = !sortByName;
+                    list.SetTitle($"Resume session · {(sortByName ? "Name" : "Recent")}");
+                    list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName), scopedOptions: null);
+                    return true;
+                }
+                if (!editor.MatchesKeybinding("app.session.rename", key)) return false;
+                var selected = list.Selected?.Option.Value;
+                if (selected is null) return true;
+                var refreshed = await RenameSessionAsync(selected, currentPath, currentConversation, cancellationToken);
+                if (refreshed is not null)
+                {
+                    sessions = refreshed;
+                    list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName), scopedOptions: null);
+                }
                 return true;
-            });
+            }, cancellationToken: cancellationToken);
         return chosen?.Option.Value;
+    }
+
+    private async Task<IReadOnlyList<SessionListing>?> RenameSessionAsync(SessionListing listing,
+        string? currentPath, ConversationSession? currentConversation, CancellationToken cancellationToken)
+    {
+        var entered = await editor.PromptSequenceAsync("Rename Session",
+            [("Session name", "A short descriptive name")], cancellationToken: cancellationToken,
+            initialValues: [listing.Name ?? ""]);
+        if (entered is not { Count: 1 } || string.IsNullOrWhiteSpace(entered[0])) return null;
+
+        var conversation = PathsEqual(listing.Path, currentPath) && currentConversation?.Id == listing.Id
+            ? currentConversation
+            : await store.LoadAsync(listing.Path, cancellationToken);
+        using (var nameChange = conversation.BeginSessionNameChange(entered[0]))
+        {
+            await store.SaveAsync(conversation, listing.Path, cancellationToken);
+            nameChange.Commit();
+        }
+
+        return await SessionCatalog.ListAsync(store, cancellationToken);
     }
 
     private static IReadOnlyList<TerminalSelectionOption<SessionListing>> ToOptions(

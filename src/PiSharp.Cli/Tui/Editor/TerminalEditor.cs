@@ -96,6 +96,16 @@ public sealed class TerminalEditor
         _dialogs.ShowSelectionList(title, options, selectedKey, scopedOptions, allLabel, scopedLabel, emptyMessage,
             actionHint, handleInput);
 
+    internal Task<TerminalSelection<T>?> ShowSelectionListAsync<T>(string title,
+        IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
+        IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
+        CancellationToken cancellationToken = default) =>
+        _dialogs.ShowSelectionListAsync(title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
+            emptyMessage, actionHint, handleInput, cancellationToken);
+
     internal TerminalSelection<T>? ShowModelSelectionList<T>(
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey, string hint,
         Func<T, string> modelName, IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
@@ -119,8 +129,10 @@ public sealed class TerminalEditor
     internal Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
         IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
         bool preservePanelOnCancel = false, CancellationToken cancellationToken = default,
-        bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null) =>
-        _dialogs.PromptSequenceAsync(title, prompts, preservePanelAfterSubmit, preservePanelOnCancel, cancellationToken, extensionDialog, dispatchApplicationAction);
+        bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null,
+        IReadOnlyList<string>? initialValues = null) =>
+        _dialogs.PromptSequenceAsync(title, prompts, preservePanelAfterSubmit, preservePanelOnCancel, cancellationToken,
+            extensionDialog, dispatchApplicationAction, initialValues);
 
     internal void DismissEditorPanel() => _screen?.SetEditorPanel(null);
 

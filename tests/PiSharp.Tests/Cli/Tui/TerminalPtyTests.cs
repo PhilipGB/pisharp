@@ -610,6 +610,10 @@ public sealed class TerminalPtyTests
                     await changed.WaitAsync(token);
                 }
             }
+            int OutputLength()
+            {
+                lock (outputLock) return output.Length;
+            }
             var stderr = process.StandardError.ReadToEndAsync();
             using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             await inputReady.Task.WaitAsync(limit.Token);
@@ -620,6 +624,29 @@ public sealed class TerminalPtyTests
                 .Single(session => session.Name == "first").Id[..12];
             var secondId = (await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store))
                 .Single(session => session.Name == "second").Id[..12];
+            var secondIdPrefix = secondId[..8];
+            await process.StandardInput.WriteAsync(secondIdPrefix);
+            await process.StandardInput.FlushAsync();
+            await WaitForOutputAsync(captured => captured.Contains($"Search: {secondIdPrefix}", StringComparison.Ordinal), limit.Token);
+            await process.StandardInput.WriteAsync("\u0012"); // Ctrl+R renames the selected session.
+            await process.StandardInput.FlushAsync();
+            await WaitForOutputAsync(captured => captured.Contains("Rename Session", StringComparison.Ordinal), limit.Token);
+            await process.StandardInput.WriteAsync("\u0001renamed \r"); // Keep the prefilled "second" suffix.
+            await process.StandardInput.FlushAsync();
+            await WaitForOutputAsync(captured => captured.Contains($"Search: {secondIdPrefix}", StringComparison.Ordinal) &&
+                captured.Contains($"renamed second · {secondId}", StringComparison.Ordinal), limit.Token);
+            Assert.Equal("renamed second", (await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store))
+                .Single(session => session.Id.StartsWith(secondId, StringComparison.Ordinal)).Name);
+            await process.StandardInput.WriteAsync("\r"); // The selected session remains selected after rename.
+            await process.StandardInput.FlushAsync();
+            await WaitForOutputAsync(captured => captured.Contains("Already in this session.", StringComparison.Ordinal), limit.Token);
+            var beforeReopen = OutputLength();
+            await process.StandardInput.WriteAsync("/resume\n");
+            await process.StandardInput.FlushAsync();
+            await WaitForOutputAsync(captured => captured.Length > beforeReopen &&
+                captured[beforeReopen..].Contains("Resume session · Recent", StringComparison.Ordinal), limit.Token);
+            await process.StandardInput.WriteAsync("\u0015"); // Clear search before checking name sort.
+            await process.StandardInput.FlushAsync();
             await process.StandardInput.WriteAsync("\u0013"); // Ctrl+S switches the picker to name order.
             await process.StandardInput.FlushAsync();
             await WaitForOutputAsync(captured => captured.Contains("Resume session · Name", StringComparison.Ordinal), limit.Token);
@@ -633,12 +660,14 @@ public sealed class TerminalPtyTests
             catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
             var capturedOutput = await stdout;
             var secondIds = (await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store))
-                .Where(session => session.Name == "second").Select(session => session.Id[..12]).ToHashSet();
+                .Where(session => session.Name == "renamed second").Select(session => session.Id[..12]).ToHashSet();
             var resumedIds = System.Text.RegularExpressions.Regex.Matches(capturedOutput, @"Resumed ([a-f0-9]{12})")
                 .Select(match => match.Groups[1].Value).ToArray();
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("Resumed", capturedOutput);
             Assert.Contains("Resume session · Name", capturedOutput);
+            Assert.Contains("Search: " + secondIdPrefix, capturedOutput);
+            Assert.Contains("renamed second · " + secondId, capturedOutput);
             Assert.Contains(firstId, resumedIds);
             Assert.Contains(resumedIds, id => secondIds.Contains(id));
             Assert.Matches(@"(?<!-)ixon\b", capturedOutput);

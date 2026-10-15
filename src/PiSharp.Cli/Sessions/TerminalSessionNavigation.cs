@@ -32,7 +32,7 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             Console.WriteLine("Use /sessions, then /resume <ID-prefix|exact-name> in interactive mode.");
             return;
         }
-        var listing = await _picker.ShowAsync(conversationBinding.Path);
+        var listing = await _picker.ShowAsync(conversationBinding.Path, conversationBinding.Conversation);
         if (listing is not null) await ResumeSessionAsync(listing);
     }
 

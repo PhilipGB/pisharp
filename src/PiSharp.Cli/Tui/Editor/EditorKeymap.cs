@@ -54,6 +54,7 @@ public sealed class EditorKeymap
         ["app.settings.open"] = new("Open settings", []),
         ["app.session.resume"] = new("Open session selector", []),
         ["app.session.fork"] = new("Open fork selector", []),
+        ["app.session.rename"] = new("Rename selected session", ["ctrl+r"]),
         ["app.session.toggleSort"] = new("Toggle session sort mode", ["ctrl+s"]),
         ["app.thinking.cycle"] = new("Cycle thinking level", ["shift+tab"]),
         ["app.thinking.toggle"] = new("Toggle thinking block visibility", ["ctrl+t"]),
