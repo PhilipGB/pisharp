@@ -7,8 +7,8 @@ namespace PiSharp.Runtime.Resources;
 /// <summary>A package source's installed root. Source remains the lexical settings value.</summary>
 public sealed record ManagedResourcePackageRoot(string Source, string Scope, string Path);
 
-/// <summary>Acquires npm resource packages into the Pi-compatible managed user or project cache.</summary>
-public sealed class ManagedResourcePackageStore
+/// <summary>Acquires managed npm and Git resource packages into user or project caches.</summary>
+public sealed partial class ManagedResourcePackageStore
 {
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> s_installLocks = new(
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
@@ -40,15 +40,22 @@ public sealed class ManagedResourcePackageStore
         var selectedUserPackages = SelectScopeDeclarations(userPackages ?? [], "user");
         await ResolveScopeAsync(cwd, selectedUserPackages, "user", Path.Combine(_agentDirectory, "npm"), roots,
             offline, _processEnvironmentOverrides, cancellationToken);
+        await ResolveGitScopeAsync(cwd, selectedUserPackages, "user", Path.Combine(_agentDirectory, "git"), roots,
+            offline, cancellationToken);
         if (trusted)
         {
             var projectPackagesToResolve = new List<ResourcePackageSource>();
             foreach (var projectPackage in SelectScopeDeclarations(projectPackages ?? [], "project"))
             {
-                if (!projectPackage.Autoload && TryGetNpmPackageName(projectPackage.Source, out var projectName))
+                if (!projectPackage.Autoload && TryGetManagedPackageIdentity(projectPackage.Source, out var projectIdentity))
                 {
                     var userPackage = selectedUserPackages.FirstOrDefault(candidate =>
-                        TryGetNpmPackageName(candidate.Source, out var userName) && userName == projectName);
+                        TryGetManagedPackageIdentity(candidate.Source, out var userIdentity) && userIdentity == projectIdentity);
+                    if (userPackage is null)
+                    {
+                        projectPackagesToResolve.Add(projectPackage);
+                        continue;
+                    }
                     var userRoot = userPackage is null ? null : roots.FirstOrDefault(candidate =>
                         candidate.Scope == "user" && candidate.Source == userPackage.Source);
                     if (userRoot is not null)
@@ -56,13 +63,17 @@ public sealed class ManagedResourcePackageStore
                         // Pi resolves an autoload:false project declaration from the matching user install,
                         // while retaining the project's lexical source and filter for resource metadata.
                         roots.Add(new(projectPackage.Source, "project", userRoot.Path));
-                        continue;
                     }
+                    // A matching project delta never acquires a separate project copy, including when
+                    // its user package is absent or intentionally unresolved offline.
+                    continue;
                 }
                 projectPackagesToResolve.Add(projectPackage);
             }
             await ResolveScopeAsync(cwd, projectPackagesToResolve, "project", Path.Combine(cwd, ".pi", "npm"), roots,
                 offline, _processEnvironmentOverrides, cancellationToken);
+            await ResolveGitScopeAsync(cwd, projectPackagesToResolve, "project", Path.Combine(cwd, ".pi", "git"), roots,
+                offline, cancellationToken);
         }
         return roots;
     }
@@ -71,17 +82,17 @@ public sealed class ManagedResourcePackageStore
         IReadOnlyList<ResourcePackageSource> packages, string scope)
     {
         var result = new List<ResourcePackageSource>();
-        var npmIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+        var managedIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var package in packages)
         {
-            if (!TryGetNpmPackageName(package.Source, out var name))
+            if (!TryGetManagedPackageIdentity(package.Source, out var identity))
             {
                 result.Add(package);
                 continue;
             }
-            if (!npmIndexes.TryGetValue(name, out var index))
+            if (!managedIndexes.TryGetValue(identity, out var index))
             {
-                npmIndexes.Add(name, result.Count);
+                managedIndexes.Add(identity, result.Count);
                 result.Add(package);
             }
             else if (scope == "project")
@@ -299,6 +310,27 @@ public sealed class ManagedResourcePackageStore
         }
         name = "";
         return false;
+    }
+
+    internal static bool TryGetGitIdentity(string source, out string identity)
+    {
+        if (ManagedGitSource.TryParse(source, out var git))
+        {
+            identity = git.Identity;
+            return true;
+        }
+        identity = "";
+        return false;
+    }
+
+    internal static bool TryGetManagedPackageIdentity(string source, out string identity)
+    {
+        if (TryGetNpmPackageName(source, out var name))
+        {
+            identity = $"npm:{name}";
+            return true;
+        }
+        return TryGetGitIdentity(source, out identity);
     }
 
     private static bool IsValidPackageName(string name)

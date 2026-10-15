@@ -25,9 +25,8 @@ internal sealed class ResourcePackageFiles
             token.ThrowIfCancellationRequested();
             var package = declaration.Package;
             var source = package.Source.Trim();
-            if (source.StartsWith("git:", StringComparison.Ordinal)) continue;
             string root;
-            if (ManagedResourcePackageStore.TryGetNpmPackageName(package.Source, out _))
+            if (ManagedResourcePackageStore.TryGetManagedPackageIdentity(package.Source, out _))
             {
                 var resolved = (managedRoots ?? []).FirstOrDefault(candidate =>
                     candidate.Scope == declaration.Scope && candidate.Source == package.Source);
@@ -36,6 +35,9 @@ internal sealed class ResourcePackageFiles
             }
             else
             {
+                // Keep the existing behavior for malformed git: declarations; a valid managed
+                // Git source is resolved above and never interpreted as a local filesystem path.
+                if (source.StartsWith("git:", StringComparison.Ordinal)) continue;
                 var baseDirectory = declaration.Scope == "project" ? Path.Combine(cwd, ".pi") : agentDirectory;
                 root = ResourceLocalPath.Resolve(package.Source, baseDirectory);
             }
@@ -95,18 +97,18 @@ internal sealed class ResourcePackageFiles
         IReadOnlyList<ResourcePackageSource> project, IReadOnlyList<ResourcePackageSource> user)
     {
         var result = new List<(ResourcePackageSource Package, string Scope)>();
-        var npmIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+        var managedIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var entry in project.Select(package => (Package: package, Scope: "project"))
                      .Concat(user.Select(package => (Package: package, Scope: "user"))))
         {
-            if (!ManagedResourcePackageStore.TryGetNpmPackageName(entry.Package.Source, out var name))
+            if (!ManagedResourcePackageStore.TryGetManagedPackageIdentity(entry.Package.Source, out var identity))
             {
                 result.Add(entry);
                 continue;
             }
-            if (!npmIndexes.TryGetValue(name, out var index))
+            if (!managedIndexes.TryGetValue(identity, out var index))
             {
-                npmIndexes.Add(name, result.Count);
+                managedIndexes.Add(identity, result.Count);
                 result.Add(entry);
                 continue;
             }

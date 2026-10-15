@@ -97,7 +97,7 @@ The current-Pi `defaultTools` modifier change is implemented in `UserSettings`: 
 | Network/retry/shell | `transport`, `httpProxy`, `httpIdleTimeoutMs`, `websocketConnectTimeoutMs`, `retry.enabled`, `retry.maxRetries`, `retry.baseDelayMs`, `retry.maxAgentDelayMs`, `retry.provider.timeoutMs`, `retry.provider.maxRetries`, `retry.provider.maxRetryDelayMs`, `shellPath`, `shellCommandPrefix` |
 | Resources | `extensions`, `skills`, `prompts`, `themes`, `enableSkillCommands` (paths, globs, trust and reload) |
 | Misc | `sessionShareDestination` (auto/gist/radius, settings picker and live upload routing), `collapseChangelog`, `enableInstallTelemetry`, `enableAnalytics`, `warnings.anthropicExtraUsage` |
-| Package resources | `packages` local skill/prompt declarations now load through normal CLI with manifest/filter/trust/precedence evidence; package extensions/themes, managed sources, commands and `npmCommand` remain open. See [evidence](fixtures/resource-packages-local-current-pi-2026-10-14.json) |
+| Package resources | `packages` local and managed npm/Git declarations feed skill/prompt/theme/native extension loading with manifest/filter/trust/provenance evidence. Cached Git startup, explicit ref/update and failure/cancellation have [current evidence](fixtures/managed-git-rpc-process.json); package CLI, `npmCommand` and remaining registry/legacy resolution proof stay required. |
 
 ## Product slices still requiring source/test audit
 

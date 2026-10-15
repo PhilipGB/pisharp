@@ -1,10 +1,12 @@
 # PiSharp capability parity
 
-Managed npm queue1 now has Runtime acquisition, trusted startup/reload roots and
-real CLI/provider plus native reload evidence. Root full verification passes
-1,980 .NET / 24 Node / 50 Python with zero skips. Managed git (queue2) and package
-CLI (queue3) remain required; package capability stays in progress. See
-[managed npm evidence](docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json).
+Managed npm and Git acquisition (queues1/2) now feed the existing resource owners.
+Git cached startup, pinned/unchanged and explicit unpinned updates, dependency
+failure and cancellation have native and local-process evidence. Root full
+verification passes **1,997 .NET / 24 Node / 50 Python**, zero skips. Package CLI
+(queue3), configured npm commands and remaining package resolution proof stay
+required; no capability promotion. See [Git evidence](docs/parity/fixtures/managed-git-rpc-process.json)
+and [npm evidence](docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json).
 
 ## Authoritative Sol-to-Luna checkpoint — 2026-10-15
 
