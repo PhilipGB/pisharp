@@ -75,13 +75,10 @@ internal sealed class TerminalSelectionList<T>
         _activeOptions = IsScoped && _scopedOptions is not null ? _scopedOptions : _allOptions;
         if (_scopedOptions is null) IsScoped = false;
         FilterOptions();
-        if (_query.Length == 0)
-        {
-            var selectedIndex = IndexOf(selectedKey, _filteredOptions);
-            _selectedIndex = selectedIndex >= 0
-                ? selectedIndex
-                : Math.Clamp(_selectedIndex, 0, Math.Max(0, _filteredOptions.Count - 1));
-        }
+        var selectedIndex = IndexOf(selectedKey, _filteredOptions);
+        _selectedIndex = selectedIndex >= 0
+            ? selectedIndex
+            : Math.Clamp(_selectedIndex, 0, Math.Max(0, _filteredOptions.Count - 1));
     }
 
     public TerminalSelectionAction HandleInput(TerminalInputEvent input, int? mouseContentLine = null)

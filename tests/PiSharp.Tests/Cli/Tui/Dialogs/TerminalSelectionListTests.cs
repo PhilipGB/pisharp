@@ -97,6 +97,25 @@ public sealed class TerminalSelectionListTests
     }
 
     [Fact]
+    public void RefreshPreservesTheSelectedOptionWhileSearchIsActive()
+    {
+        var options = new[]
+        {
+            new TerminalSelectionOption<string>("alpha", "alpha", "alpha", SearchText: "matching item"),
+            new TerminalSelectionOption<string>("beta", "beta", "beta", SearchText: "matching item")
+        };
+        var list = new TerminalSelectionList<string>("Choose", options);
+        list.HandleInput(new(null, "matching"));
+        list.HandleInput(Key(ConsoleKey.DownArrow));
+        Assert.Equal("beta", list.Selected?.Option.Value);
+
+        list.ReplaceOptions(options, scopedOptions: null);
+
+        Assert.Equal("beta", list.Selected?.Option.Value);
+        Assert.Contains("Search: matching", string.Join('\n', list.Render(80, 24)));
+    }
+
+    [Fact]
     public void ModelPickerRendersAnInverseSearchCursorCell()
     {
         var list = new TerminalSelectionList<string>("Select model",
