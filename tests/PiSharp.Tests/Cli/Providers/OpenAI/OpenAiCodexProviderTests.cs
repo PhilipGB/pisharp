@@ -244,7 +244,11 @@ public sealed class OpenAiCodexProviderTests
         Assert.Equal(conversation.Id, requestId);
         using var sent = JsonDocument.Parse(requestBody!);
         Assert.Equal(conversation.Id, sent.RootElement.GetProperty("prompt_cache_key").GetString());
-        Assert.Contains("Earlier question", sent.RootElement.GetRawText(), StringComparison.Ordinal);
+        Assert.False(sent.RootElement.TryGetProperty("previous_response_id", out _));
+        var input = sent.RootElement.GetProperty("input");
+        Assert.Contains("Earlier question", input.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("Earlier answer", input.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("Continue the resumed conversation", input.GetRawText(), StringComparison.Ordinal);
     }
 
     [Fact]

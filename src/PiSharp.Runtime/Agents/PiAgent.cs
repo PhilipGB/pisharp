@@ -348,32 +348,32 @@ public sealed class PiAgent
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationId = null) =>
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null) =>
         RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent,
-            takeSteering, projectContext, bashSessionEnvironment, conversationId);
+            takeSteering, projectContext, bashSessionEnvironment, conversationSessionId);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent = null, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationId = null) =>
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null) =>
         RunStreamingDurableCoreAsync(prompt, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment, conversationId);
+            projectContext, bashSessionEnvironment, conversationSessionId);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationDurableAsync(AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationId = null) =>
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null) =>
         RunStreamingDurableCoreAsync(null, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment, conversationId);
+            projectContext, bashSessionEnvironment, conversationSessionId);
 
     private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableCoreAsync(ChatMessage? prompt,
         AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment, string? conversationId)
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment, string? conversationSessionId)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
@@ -390,11 +390,19 @@ public sealed class PiAgent
             _projectContext = projectContext;
             _providerRequestIndex = 0;
             _injectedSteering.Clear();
-            var runOptions = new ChatClientAgentRunOptions(new ChatOptions
+            var chatOptions = new ChatOptions
             {
-                Tools = GetRuntimeFunctionsForRun().ToList(),
-                ConversationId = conversationId
-            });
+                Tools = GetRuntimeFunctionsForRun().ToList()
+            };
+            if (conversationSessionId is { Length: > 0 })
+            {
+                var properties = new AdditionalPropertiesDictionary
+                {
+                    [ProviderSessionMetadata.ConversationSessionIdProperty] = conversationSessionId
+                };
+                chatOptions.AdditionalProperties = properties;
+            }
+            var runOptions = new ChatClientAgentRunOptions(chatOptions);
             if (bashSessionEnvironment is { Count: > 0 })
             {
                 var properties = new AdditionalPropertiesDictionary();

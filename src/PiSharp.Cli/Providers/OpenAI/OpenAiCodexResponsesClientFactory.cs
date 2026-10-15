@@ -6,6 +6,7 @@ using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using OpenAI;
+using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Cli;
 
@@ -81,18 +82,40 @@ internal sealed class OpenAiCodexChatOptionsClient(IChatClient inner, OpenAiCode
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
-        using var scope = requestContext.Push(new(ClampSessionId(options?.ConversationId ?? OpenAiCodexRequestContext.GetCurrentSessionId())));
-        return await base.GetResponseAsync(messages, options, cancellationToken).ConfigureAwait(false);
+        using var scope = requestContext.Push(new(ResolveSessionId(options)));
+        return await base.GetResponseAsync(messages, StripConversationSessionId(options), cancellationToken).ConfigureAwait(false);
     }
 
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
         IEnumerable<ChatMessage> messages, ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        using var scope = requestContext.Push(new(ClampSessionId(options?.ConversationId ?? OpenAiCodexRequestContext.GetCurrentSessionId())));
-        await foreach (var update in base.GetStreamingResponseAsync(messages, options, cancellationToken)
+        using var scope = requestContext.Push(new(ResolveSessionId(options)));
+        await foreach (var update in base.GetStreamingResponseAsync(messages,
+            StripConversationSessionId(options), cancellationToken)
             .WithCancellation(cancellationToken).ConfigureAwait(false))
             yield return update;
+    }
+
+    private static string? ResolveSessionId(ChatOptions? options)
+    {
+        var conversationSessionId = options?.AdditionalProperties?.TryGetValue(
+            ProviderSessionMetadata.ConversationSessionIdProperty, out var value) == true
+            ? value as string : null;
+        return ClampSessionId(conversationSessionId ?? options?.ConversationId ??
+            OpenAiCodexRequestContext.GetCurrentSessionId());
+    }
+
+    private static ChatOptions? StripConversationSessionId(ChatOptions? options)
+    {
+        if (options?.AdditionalProperties is not { } properties ||
+            !properties.ContainsKey(ProviderSessionMetadata.ConversationSessionIdProperty)) return options;
+
+        var requestOptions = options.Clone();
+        var requestProperties = properties.Clone();
+        requestProperties.Remove(ProviderSessionMetadata.ConversationSessionIdProperty);
+        requestOptions.AdditionalProperties = requestProperties.Count == 0 ? null : requestProperties;
+        return requestOptions;
     }
 
     private static string? ClampSessionId(string? value) => string.IsNullOrEmpty(value)
