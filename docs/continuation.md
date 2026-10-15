@@ -2,7 +2,7 @@
 
 ## Sol orchestration checkpoint — 2026-10-15
 
-Base SHA: `cc7c7f1ebf067c6594f318c17b883cda240910f8`; starting handover SHA:
+Base SHA: `a33e556b1fd88e5c935c9346ad286608f99f7384`; starting handover SHA:
 `77caa3290a0300e2e02d61039b306260f127872a`. Queues **1 and 2 are completed**;
 next is **3, package install/remove/update/list CLI workflows**. The package
 milestone covers tasks1–3. Capability counts remain **10 verified / 146 in
@@ -36,23 +36,35 @@ Concurrency stays **serialized**, both gates not run. Fingerprint: Linux x86_64;
 .NET 10.0.112, Node 24.21.0, Python 3.14.4; 24 CPUs / 32 GiB memory class;
 profile base `/tmp/pisharp-sol-orchestration-20261015`. Queue2 reported and removed
 a Python cache created inside its worker worktree without the assigned profile;
-no default-user-location write is established and no gate is certified. Queue1
-worker state was removed. Queue2 cleanup follows verified publication; reconcile
-actual worktrees/branches on resume. No advisor escalation.
+no default-user-location write is established and no gate is certified. Queue1 and queue2 worker states were removed after publication; reconcile actual
+worktrees/branches on resume. No advisor escalation.
 
-Latest inspected exact-head CI is green at `cc7c7f1e`, run
-[38721216635](https://github.com/PhilipGB/pisharp/actions/runs/38721216635).
-Inspect this task's exact-head CI after publication before dependent CLI work.
-Push with per-command `GIT_SSH_COMMAND='ssh -F /dev/null'`; use public GitHub REST
-for CI reads (`gh` is unauthenticated).
+Latest inspected exact-head CI is green at product `a33e556b`, run
+[38726521422](https://github.com/PhilipGB/pisharp/actions/runs/38726521422).
+Queue2 worker state is removed. The temporary filesystem and prior specialists
+were refreshed after publication; no implementation was lost. The missing
+read-only queue3 preparation a1 was explicitly abandoned and its Git registration
+and private branch removed with guards. Queue3 now uses **worker/003-package-cli-a2**
+at product `a33e556b`, with a new external worktree and full private profile under
+`/tmp/pisharp-sol-orchestration-20261015/pisharp-workers/003-package-cli-a2/`.
+Both required specialist probes and isolated SDK/push preflight passed again.
+Toolchain fingerprint is unchanged; continuity uncertainty keeps serialized mode.
+Push with per-command `GIT_SSH_COMMAND='ssh -F /dev/null'`; public GitHub REST
+provides CI reads (`gh` is unauthenticated).
 
 Configured Pi remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` at
-`/tmp/pisharp-luna-pi`. [The startup delta review](parity/fixtures/sol-orchestration-upstream-startup-2026-10-15.json)
-through `dc939913f6142adce7c09da5707fdd6451b37fb0` classifies one Chord change
-out of scope and retry wording/Anthropic off-thinking as deferred P2 for tasks43/44.
-No pin advance; full final freeze/audit remains required. Detailed state and
-authorship are in `sol_orchestration` and the ordered ledger queue. Full parity
-remains incomplete; continue the goal after each task and milestone.
+`/tmp/pisharp-luna-pi`. The pinned clone, dependencies and ignored provider model
+data were restored. Normal source CLI version probe now passes, and permanent
+reference validation confirms unchanged tracked source. The initial missing-data
+probe failure and repair are recorded in [the resumed checkpoint](parity/fixtures/sol-orchestration-resume-task3-2026-10-15.json).
+Luna audited eight further commits through `5ab7fe74c400097b386662205cd93900695b8a71`;
+root reviewed the provider image patch/current owners. Anthropic/Claude Bedrock
+error-result image placement is required P2 for queue43. The Kimi revert/restoration
+has no net protocol delta; test-only changes, Chord/Durable and the Nix wrapper
+receive their bounded classifications. No P0/P1 interrupts queue3. The earlier
+[startup review](parity/fixtures/sol-orchestration-upstream-startup-2026-10-15.json)
+retains retry/off-thinking P2 work for tasks43/44. No pin advance; final freeze/audit
+remains required. Full parity is incomplete; continue after each task and milestone.
 
 ## Sol-to-Luna handover — 2026-10-15
 

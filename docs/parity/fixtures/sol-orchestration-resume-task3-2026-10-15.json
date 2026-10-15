@@ -1,0 +1,108 @@
+{
+  "pins": {
+    "pisharpProduct": "a33e556b1fd88e5c935c9346ad286608f99f7384",
+    "configuredPi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "previousReviewedUpstream": "dc939913f6142adce7c09da5707fdd6451b37fb0",
+    "observedUpstream": "5ab7fe74c400097b386662205cd93900695b8a71"
+  },
+  "scope": "Full resume checks after temporary filesystem and specialist runtime were refreshed. Bounded eight-commit upstream source audit; no pin advance or new feature implementation.",
+  "ci": {
+    "run": 38726521422,
+    "sha": "a33e556b1fd88e5c935c9346ad286608f99f7384",
+    "conclusion": "success"
+  },
+  "environment": {
+    "os": "Linux",
+    "architecture": "x86_64",
+    "toolchain": ".NET 10.0.112; Node24.21.0; Python3.14.4",
+    "logicalCpus": 24,
+    "memoryClass": "32 GiB",
+    "profileBase": "/tmp/pisharp-sol-orchestration-20261015",
+    "mode": "serialized",
+    "gates": "not run; continuity uncertainty requires serialized state"
+  },
+  "resume": {
+    "main": "local and remote match; starting handover is an ancestor; fast-forward dry-run push succeeded",
+    "orphanDisposition": "Prepared read-only worker003-package-cli-a1 had no commit beyond product base. Its directory/profile and prior live specialists were absent. Removed the prunable worktree registration and unpushed branch after guards; a1 abandoned and not reused.",
+    "newAttempt": "worker/003-package-cli-a2 at a33e556b; external worktree and full isolated profile prepared; isolated dotnet --version confirmed",
+    "specialistProbes": {
+      "luna-worker": "gpt-6-luna/xhigh responded with a33e556b",
+      "sol-advisor": "gpt-6.1-sol/ultra responded with a33e556b"
+    },
+    "piPreparation": [
+      "Pinned clone restored",
+      "npm ci --ignore-scripts --no-audit --no-fund",
+      "Initial normal source CLI version probe failed because ignored generated provider data was missing",
+      "npm run hydrate:model-data restored ignored data",
+      "Final source CLI --version succeeded (1.2.0)",
+      "Permanent reference validation passed with no tracked Pi changes"
+    ],
+    "logs": "artifacts/parity/resume-task3/"
+  },
+  "commits": [
+    {
+      "sha": "4a5d37291531ad48b8e536c892557877d219463c",
+      "classification": "OUT_OF_SCOPE",
+      "reason": "Chord/Durable output utility move; no normal PiSharp CLI equivalent."
+    },
+    {
+      "sha": "6a1f799b675c8cb98320b71ff7ee44f160fe8d66",
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "reason": "Temporary Kimi Coding protocol reversion; subsequent a3f265b1 restores the starting contract."
+    },
+    {
+      "sha": "f7e3cb5433ba9500d4381d201e628bb5301c9924",
+      "classification": "OUT_OF_SCOPE",
+      "reason": "Namespaced SQLite storage is confined to Durable."
+    },
+    {
+      "sha": "568c2a82a7e8252e21489a57739d7f5a407da622",
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "reason": "OpenRouter test fixture model substitution only."
+    },
+    {
+      "sha": "dfb03c3283cb4eb568ef646c37b9c2ef70c8b400",
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "reason": "Model registry test fixture substitution only."
+    },
+    {
+      "sha": "a3f265b1c6a49bc0904c76518d2d436ba44c95e9",
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "reason": "Kimi Coding restoration to Chat Completions /coding/v1; the pair has no net protocol delta."
+    },
+    {
+      "sha": "eddebaeebf8168dfc31d6712b7a021e4df3b4e6a",
+      "classification": "OUT_OF_SCOPE",
+      "reason": "Upstream Nix package wrapper PATH adjustment; no corresponding PiSharp Nix wrapper contract."
+    },
+    {
+      "sha": "5ab7fe74c400097b386662205cd93900695b8a71",
+      "classification": "NEEDS_WORK",
+      "reason": "P2: preserve error-result images after all tool results with an attributed caption for Anthropic and Claude on Bedrock. Current Anthropic projection omits images; Bedrock keeps them inside error results."
+    }
+  ],
+  "providerImageDelta": {
+    "priority": "P2",
+    "queue": 43,
+    "source": [
+      "packages/ai/src/api/anthropic-messages.ts",
+      "packages/ai/src/api/bedrock-converse-stream.ts",
+      "packages/ai/src/api/transform-messages.ts"
+    ],
+    "tests": [
+      "packages/ai/test/anthropic-error-tool-result-images.test.ts",
+      "packages/ai/test/bedrock-convert-messages.test.ts"
+    ],
+    "currentOwners": [
+      "src/PiSharp.Cli/Providers/Anthropic/AnthropicToolResultProjection.cs",
+      "src/PiSharp.Cli/Providers/Bedrock/BedrockRequestMapper.cs"
+    ],
+    "requiredObservableContract": true,
+    "interruptFeatureQueue": false
+  },
+  "authorship": "Luna source audit; root reviewed the exact image-placement patch/current owners and recorded the resumed state.",
+  "limitations": [
+    "Source inspection only for this eight-commit delta; no new provider differential or native test run claimed.",
+    "The configured Pi pin stays b06c1f2c; final upstream freeze and audit remain required."
+  ]
+}
