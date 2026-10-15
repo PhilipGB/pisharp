@@ -1,21 +1,24 @@
 # PiSharp capability parity
 
-## Current integration checkpoint — 2026-10-15
+## Current integration checkpoint — 2026-10-16
 
-Verified product source is `7e09c26f16adfec94b8a88e4a2f45e136204f7e4` on
+Verified product source is `95eaf93c1aeea51d1916c59d97a5bce2b901e508` on
 `parity/current-pi-completion`; Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Current execution prioritizes
 Codex subscription and llama.cpp usability, then core agent/session behavior
-and the interactive application. Codex grammar/custom tools now have local
-WebSocket, SSE fallback, replay and provider-switch fixtures. The llama UI has
-local tool-use and stream-cancellation evidence; a real local server/model
-acceptance run remains open. Broad secondary-provider parity is deferred for
-this goal; queue order remains inventory.
+and the interactive application. Codex grammar/custom tools have local
+WebSocket/SSE fallback, replay and provider-switch fixtures; non-streaming
+summary calls now aggregate the Responses stream, and empty SSE frames are
+skipped iteratively. Session discovery skips malformed candidates whose head
+entry is missing. The llama UI has local tool-use and stream-cancellation
+evidence; a real local server/model acceptance run remains open. Broad
+secondary-provider parity is deferred for this goal; queue order remains
+inventory.
 
-The local solution passes **2,083/2,083 .NET tests, zero skips**, a
+The local solution passes **2,085/2,085 .NET tests, zero skips**, a
 warnings-as-errors build with zero warnings, and format verification. Exact-head
-CI for this product source is pending; the last green exact-head checkpoint is
-docs-only `c7b8a304` at run
+CI for this product source is pending; the last green exact-head checkpoint
+remains docs-only `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 Counts are **12 verified, 148 in progress, 34 not started** across the 194
 required capabilities. Full parity and the final source audit remain incomplete.

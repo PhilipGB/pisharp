@@ -1,6 +1,6 @@
 # Continuation — PiSharp capability parity
 
-## Feature-first functional goal — 2026-10-15
+## Feature-first functional goal — 2026-10-16
 
 This checkpoint supersedes the old queue order as the active execution priority.
 The goal is a useful PiSharp for Codex subscriptions and llama.cpp, followed by
@@ -11,7 +11,7 @@ user-facing application features. Keep the configured Pi checkout pinned at
 The last green exact-head checkpoint was the docs-only `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 Current integrated product source is
-`7e09c26f16adfec94b8a88e4a2f45e136204f7e4` on
+`95eaf93c1aeea51d1916c59d97a5bce2b901e508` on
 `parity/current-pi-completion`. Codex coverage includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
 account/session WebSocket reuse, cached `previous_response_id` deltas, MAF
@@ -20,7 +20,10 @@ completed usage, visible stream failures, and cancellation after output begins.
 Supported Codex models now declare grammar tools as Responses custom tools;
 WebSocket and SSE custom-input events map into MAF function calls, custom call
 outputs replay correctly, and switching to a standard Responses provider sends
-ordinary function items.
+ordinary function items. Non-streaming Responses calls now aggregate the
+Codex SSE/WebSocket stream for compaction summaries, preserving summary text,
+response ID and usage; the SSE fallback also skips long runs of empty frames
+iteratively.
 Resumed requests carry the saved Codex session ID as private provider metadata
 while MAF still sends the saved user and assistant history in `input`; the
 focused test also checks refreshed credentials and session headers. The llama
@@ -31,9 +34,11 @@ saved llama model. Normal interactive llama fixtures now execute a local
 streamed text, settles the run and accepts a later prompt without replay. Core
 fixtures verify steering reaches the first request, compaction retains trailing
 steering after a completed tool result, retry restoration failures settle, and
-RPC validates a replacement provider before cancelling the active run. The
-full local suite passes **2,083/2,083** with zero skips; full solution format and the
-warnings-as-errors build pass with zero warnings. Exact-head CI for this product
+RPC validates a replacement provider before cancelling the active run. Recent
+session discovery skips a malformed newer session whose selected head is
+missing and continues to an older valid session. The full local suite passes
+**2,085/2,085** with zero skips; full solution format and the warnings-as-errors
+build pass with zero warnings. Exact-head CI for this product
 source is pending; the last green exact-head checkpoint remains docs-only
 `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
