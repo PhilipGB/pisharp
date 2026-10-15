@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+from xml.sax.saxutils import escape
 
 from pi_reference import verify_pi_checkout
 from terminal.thread_limits import apply_test_thread_limit
@@ -20,6 +21,9 @@ sha = verify_pi_checkout(args.pi)
 pi = args.pi.resolve()
 repo = Path(__file__).resolve().parents[2]
 probes = Path(__file__).resolve().parent
+cli_output = repo / 'src/PiSharp.Cli/bin/Debug/net10.0'
+if not (cli_output / 'PiSharp.Cli.dll').is_file():
+    raise RuntimeError('Build src/PiSharp.Cli before running the Google provider differential.')
 oracle = pi / 'packages/ai/test/pisharp-google-provider-differential.test.ts'
 if oracle.exists():
     raise RuntimeError(f'Refusing to overwrite {oracle}')
@@ -44,9 +48,12 @@ with tempfile.TemporaryDirectory(prefix='pisharp-google-provider-') as directory
     </ItemGroup>
   </Target>
 </Project>''')
+    references = '\n'.join(
+        f'<Reference Include="{escape(dll.stem)}"><HintPath>{escape(str(dll))}</HintPath></Reference>'
+        for dll in sorted(cli_output.glob('*.dll')))
     (work / 'probe.csproj').write_text(f'''<Project Sdk="Microsoft.NET.Sdk">
 <PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><AssemblyName>PiSharp.Tests</AssemblyName><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
-<ItemGroup><ProjectReference Include="{repo}/src/PiSharp.Cli/PiSharp.Cli.csproj" /></ItemGroup></Project>''')
+<ItemGroup>{references}</ItemGroup></Project>''')
     environment = dict(os.environ)
     build = subprocess.run(['dotnet', 'build', str(work / 'probe.csproj'), '-m:1', '-p:UseSharedCompilation=false',
                             f'-p:CustomAfterMicrosoftCommonTargets={lightweight_copy}'],

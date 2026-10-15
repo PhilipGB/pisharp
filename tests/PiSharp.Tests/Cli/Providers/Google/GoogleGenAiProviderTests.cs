@@ -223,13 +223,13 @@ public sealed class GoogleGenAiProviderTests
         var contents = continuation.RootElement.GetProperty("contents").EnumerateArray().ToArray();
         var modelTurn = Assert.Single(contents, item => item.TryGetProperty("role", out var role) && role.GetString() == "model");
         var callPart = Assert.Single(modelTurn.GetProperty("parts").EnumerateArray());
-        Assert.Equal("call_one", callPart.GetProperty("functionCall").GetProperty("id").GetString());
+        Assert.Equal("call/one", callPart.GetProperty("functionCall").GetProperty("id").GetString());
         Assert.Equal("QUJDRA==", callPart.GetProperty("thoughtSignature").GetString());
         var functionResponses = contents.SelectMany(item => item.GetProperty("parts").EnumerateArray())
             .Where(item => item.TryGetProperty("functionResponse", out _)).ToArray();
         var functionResponse = Assert.Single(functionResponses).GetProperty("functionResponse");
         Assert.Equal("echo", functionResponse.GetProperty("name").GetString());
-        Assert.Equal("call_one", functionResponse.GetProperty("id").GetString());
+        Assert.Equal("call/one", functionResponse.GetProperty("id").GetString());
         Assert.Equal("echo:ping", functionResponse.GetProperty("response").GetProperty("output").GetString());
     }
 
@@ -263,16 +263,17 @@ public sealed class GoogleGenAiProviderTests
         var geminiThreeRequest = geminiThree.BuildRequest(messages, null);
         var geminiThreeContents = geminiThreeRequest["contents"]!.AsArray();
         var geminiThreeParts = geminiThreeContents[1]!["parts"]!.AsArray();
+        Assert.Equal(3, geminiThreeParts.Count);
         Assert.Equal("", geminiThreeParts[0]!["text"]!.GetValue<string>());
         Assert.True(geminiThreeParts[0]!["thought"]!.GetValue<bool>());
         Assert.Equal("QUJDRA==", geminiThreeParts[0]!["thoughtSignature"]!.GetValue<string>());
         Assert.Equal("", geminiThreeParts[1]!["text"]!.GetValue<string>());
         Assert.Equal("QUJDRA==", geminiThreeParts[1]!["thoughtSignature"]!.GetValue<string>());
         var geminiThreeCall = geminiThreeParts[2]!["functionCall"]!;
-        Assert.Equal("call_one", geminiThreeCall["id"]!.GetValue<string>());
+        Assert.Equal("call/one", geminiThreeCall["id"]!.GetValue<string>());
         Assert.Equal("QUJDRA==", geminiThreeParts[2]!["thoughtSignature"]!.GetValue<string>());
         var geminiThreeResult = geminiThreeContents[2]!["parts"]![0]!["functionResponse"]!;
-        Assert.Equal("call_one", geminiThreeResult["id"]!.GetValue<string>());
+        Assert.Equal("call/one", geminiThreeResult["id"]!.GetValue<string>());
         Assert.Equal("image/png", geminiThreeResult["parts"]![0]!["inlineData"]!["mimeType"]!.GetValue<string>());
         Assert.Equal(3, geminiThreeContents.Count);
 
@@ -297,8 +298,12 @@ public sealed class GoogleGenAiProviderTests
 
         using var geminiLive = new GoogleGenAiChatClient(new HttpClient(), new Uri("https://example.test/v1beta"), "key",
             GoogleModel("gemini-3.5-flash") with { Id = "gemini-live-3-pro" });
-        var liveCall = geminiLive.BuildRequest(messages, null)["contents"]![1]!["parts"]![1]!["functionCall"]!;
+        var liveRequest = geminiLive.BuildRequest(messages, null);
+        var liveParts = liveRequest["contents"]![1]!["parts"]!.AsArray();
+        var liveCall = Assert.Single(liveParts)!["functionCall"]!;
         Assert.Equal("call_one", liveCall["id"]!.GetValue<string>());
+        var liveResult = liveRequest["contents"]![2]!["parts"]![0]!["functionResponse"]!;
+        Assert.Equal("call_one", liveResult["id"]!.GetValue<string>());
     }
 
     [Fact]

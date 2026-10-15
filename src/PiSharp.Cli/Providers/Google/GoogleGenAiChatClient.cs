@@ -166,10 +166,15 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         if (!string.IsNullOrWhiteSpace(options?.Instructions))
             systemParts.Add(SanitizeSurrogates(options.Instructions));
         var callNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        var callIds = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var message in messages)
         {
             foreach (var call in message.Contents.OfType<FunctionCallContent>())
-                callNames[NormalizeCallId(call.CallId)] = call.Name;
+            {
+                var callId = ResolveCallId(call.CallId, call.AdditionalProperties);
+                callIds[call.CallId] = callId;
+                callNames[callId] = call.Name;
+            }
         }
 
         foreach (var message in messages)
@@ -196,9 +201,10 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
                     var images = message.Contents.OfType<DataContent>().Where(IsImage).ToArray();
                     var responseText = GetResultText(result.Result);
                     if (responseText.Length == 0 && images.Length > 0) responseText = "(see attached image)";
+                    var callId = callIds.GetValueOrDefault(result.CallId, ResolveCallId(result.CallId, null));
                     var functionResponse = new JsonObject
                     {
-                        ["name"] = callNames.GetValueOrDefault(NormalizeCallId(result.CallId), "unknown"),
+                        ["name"] = callNames.GetValueOrDefault(callId, "unknown"),
                         ["response"] = new JsonObject
                         {
                             [result.Exception is null ? "output" : "error"] = result.Exception is null
@@ -206,7 +212,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
                                 : JsonValue.Create(result.Exception.Message)
                         }
                     };
-                    if (RequiresToolCallId(_modelId)) functionResponse["id"] = NormalizeCallId(result.CallId);
+                    if (RequiresToolCallId(_modelId)) functionResponse["id"] = callId;
                     if (images.Length > 0 && SupportsMultimodalFunctionResponse(_modelId))
                     {
                         var imageParts = new JsonArray();
@@ -254,7 +260,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
                         partsForMessage.Add(ToInlineData(data));
                         break;
                     case FunctionCallContent call:
-                        var callId = NormalizeCallId(call.CallId);
+                        var callId = ResolveCallId(call.CallId, call.AdditionalProperties);
                         var functionCall = new JsonObject
                         {
                             ["name"] = call.Name,
@@ -476,11 +482,10 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
 
     private void MarkSignatureSource(AIContent content, string? signature)
     {
-        if (!IsValidSignature(signature)) return;
         content.AdditionalProperties ??= new AdditionalPropertiesDictionary();
-        content.AdditionalProperties[SignatureKey] = signature!;
         content.AdditionalProperties[SignatureProviderKey] = SignatureProvider;
         content.AdditionalProperties[SignatureModelKey] = _modelId;
+        if (IsValidSignature(signature)) content.AdditionalProperties[SignatureKey] = signature!;
     }
 
     private bool IsSameModel(AdditionalPropertiesDictionary? properties) =>
@@ -547,6 +552,9 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             ? character : '_').Take(64).ToArray());
         return sanitized.Length == 0 ? "call" : sanitized;
     }
+
+    private string ResolveCallId(string id, AdditionalPropertiesDictionary? properties) =>
+        !RequiresToolCallId(_modelId) || IsSameModel(properties) ? id : NormalizeCallId(id);
 
     private static void StripSchemaMetadata(JsonNode? schema)
     {
