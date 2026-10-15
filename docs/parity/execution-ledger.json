@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Feature-first functional goal on parity/current-pi-completion. Current branch checkpoint c7b8a304b716c0ec39c9118d77a81f3462de8184; keep configured Pi pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 12 verified, 147 in progress, 35 not started. Prior queue order is inventory, not current execution priority. Codex subscription and llama.cpp paths lead, followed by core agent/session/tool, TUI/editor and user-facing application behavior. Broad secondary-provider parity is deferred for this goal; full parity remains incomplete.",
+  "source_note": "Feature-first functional goal on parity/current-pi-completion. Product source checkpoint 2bf3d9896655e472624b82d3f85153328571a3ef; keep configured Pi pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 12 verified, 147 in progress, 35 not started. Prior queue order is inventory, not current execution priority. Codex subscription and llama.cpp paths lead, followed by core agent/session/tool, TUI/editor and user-facing application behavior. Broad secondary-provider parity is deferred for this goal; full parity remains incomplete.",
   "feature_first_goal": {
     "updated": "2026-10-15",
     "priority_current_goal_families": [
@@ -39,7 +39,8 @@
     ],
     "global_inventory_policy": "Keep required_ids and all per-task statuses. The recorded counts remain 12 verified, 147 in progress and 35 not started until evidence supports status changes. These scope labels do not close or remove any capability.",
     "mixed_row_policy": "Split Codex, llama.cpp or shared core behavior from unrelated provider-specific behavior. Implement the priority portion and leave deferred provider acceptance tracked in its existing task.",
-    "provider_freeze": "Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi, OpenCode, Together, Cloudflare, gateway and unrelated catalog work is intentionally deferred unless a P0/P1 regression or shared Codex/llama contract requires a fix."
+    "provider_freeze": "Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi, OpenCode, Together, Cloudflare, gateway and unrelated catalog work is intentionally deferred unless a P0/P1 regression or shared Codex/llama contract requires a fix.",
+    "source_checkpoint": "2bf3d9896655e472624b82d3f85153328571a3ef"
   },
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
@@ -291,7 +292,8 @@
         "Current Pi 3daa2028 silent-completion cancellation guard: two cases match the real Pi OpenAI SDK stream/final-result boundary. Five fail-first checks exposed silent success after caller cancellation/request or idle deadline; eight new controls and the saved-settings real CLI timeout fixture now pass. Monotonic deadline checks preserve byte-level idle reset and request priority. Evidence: docs/parity/fixtures/current-pi-refresh-2026-10-13/provider-silent-abort.json; full working tree 1581 passed, zero failures/skips. Indefinitely uncooperative inner clients, all provider-specific timeout formatting and broader lifecycle parity remain open; no capability status changes.",
         "RPC settlement race repair: two barrier regressions fail deterministically against old code (settled before save and next prompt rejected while marker writer still completing). Three new tests pass, including save-failure ordering/recovery; 40 focused RPC checks and full 1735 tests pass with zero skips. Both original Linux clone/PTY cases pass ten repetitions each alongside the full suite; existing timeouts unchanged. RPC persists before public settlement, separates logical active state from task cleanup, and joins cleanup before the next run. Clone process test now asserts its active-prompt acknowledgement. Historical failed CI 38493836105 is retained; its exact schedule is unavailable, but the reproduced race explains the pipe-wait symptom. See docs/parity/fixtures/rpc-settlement-current-pi-2026-10-14.json. Exact repair CI pending; broad RPC parity remains open.",
         "Both focused timing repair commits pass exact-head Linux CI: terminal d462f4ae865d97bb167558f94df8a68082129e5d / run 38532839354 / 1732 tests; RPC bac3f6645feaf156d40b3761caab972a46c1e569 / run 38533106677 / 1735 tests. Both jobs pass, zero skips; Node 24 and Python 49 pass. Five persisted immediate post-settlement Pi/native RPC turns match prompt acknowledgements, provider/settlement counts and final idle state. Original failures remain historical evidence. Deterministic fail-first regressions plus ten repetitions of each original test and six paired fullscreen checkpoints support resolving the characterized races. Whole lifecycle/TUI/RPC parity remains open.",
-        "Current configured Pi b06c1f2c: 175 partial JSON inputs and 18 native provider calls match; five SDK fail-first rows and native Bedrock cases protect rejection, with real MAF proving zero function invocations. See Luna contracts/verification receipts."
+        "Current configured Pi b06c1f2c: 175 partial JSON inputs and 18 native provider calls match; five SDK fail-first rows and native Bedrock cases protect rejection, with real MAF proving zero function invocations. See Luna contracts/verification receipts.",
+        "Current Pi packages/ai/src/utils/retry.ts marks subscription_sharing_usage_unavailable and subscription_sharing_user_unavailable retryable, while subscription_sharing_usage_limit_exceeded is terminal. AgentRunRetryPolicy now covers those three Codex subscription cases; CapacityRetryTests exercises each. Focused retry tests pass 10/10 and the integrated solution warnings-as-errors build passes with zero warnings at source 2bf3d989. This is not full retry parity or a live Codex service differential."
       ],
       "dependencies": [],
       "handover_review": {
@@ -6257,7 +6259,8 @@
         "Implemented at 531392ad4 with OpenAiCodexResponsesClientFactory, account-scoped request handling, session affinity and an embedded current-Pi model catalog. Codex OAuth integration landed at eecb324e7; API keys are rejected for this subscription provider."
       ],
       "evidence": [
-        "OpenAiCodexProviderTests exercises the real Responses SDK over a deterministic loopback, checking account-scoped headers, request projection, session affinity and SSE. Exact-head Linux CI at eecb324e7085f138bf756884f45e1fba6a292d7c passed run 36462567719: format, warnings-as-errors build, 779/779 tests (0 skipped). Upstream provider sources remain unchanged at Pi 11894012dd461232eb075bc890538b6866860a10 since audit pin cd5ff1125981f0fc37a56df25eee7310286a3f89. WebSocket/cached transport, manual-code fallback and broad image/tool/usage/error differential evidence remain open."
+        "OpenAiCodexProviderTests exercises the real Responses SDK over a deterministic loopback, checking account-scoped headers, request projection, session affinity and SSE. Exact-head Linux CI at eecb324e7085f138bf756884f45e1fba6a292d7c passed run 36462567719: format, warnings-as-errors build, 779/779 tests (0 skipped). Upstream provider sources remain unchanged at Pi 11894012dd461232eb075bc890538b6866860a10 since audit pin cd5ff1125981f0fc37a56df25eee7310286a3f89. WebSocket/cached transport, manual-code fallback and broad image/tool/usage/error differential evidence remain open.",
+        "The manual-code fallback is now implemented under provider-auth-openai-codex-oauth. Codex WebSocket/cached continuation with pre-output SSE fallback, plus broader image/tool/usage/error differential evidence, remain open."
       ],
       "dependencies": [],
       "handover_review": {
@@ -6290,11 +6293,13 @@
         "Match remaining current-Pi login interactions, including manual-code fallback, and retain provider-specific auth differential evidence."
       ],
       "implementation": [
-        "Implemented at eecb324e7 through OpenAiCodexOAuthAdapter and the provider OAuth boundary. Browser PKCE/device-code flows, private credential persistence, serialized refresh and request-time account auth are active; Codex rejects API-key authentication."
+        "Implemented at eecb324e7 through OpenAiCodexOAuthAdapter and the provider OAuth boundary. Browser PKCE/device-code flows, private credential persistence, serialized refresh and request-time account auth are active; Codex rejects API-key authentication.",
+        "Codex browser login now races manual authorization-code input against the loopback callback and prompts manually if the listener cannot start. It accepts a code, code#state, or redirect URL; a supplied state mismatch is rejected before exchange and PKCE is retained."
       ],
       "evidence": [
         "OpenAiCodexOAuthTests covers device and browser flows, callback state/denial, PKCE exchange, credential restart, concurrent refresh, cancellation, failed/invalid refresh, API-key refusal and dynamic request auth; AuthStatusCommandTests verifies offline secret-free status. Exact-head Linux CI run 36462567719 passed 779/779 tests (0 skipped). Manual-code fallback and OAuth flows for the six other current-Pi built-ins remain open.",
-        "The 2026-10-02 retry-source refresh found a separate remaining classifier gap: AgentRunRetryPolicy lacks current Pi subscription_sharing_usage_unavailable/user_unavailable retry wording and the subscription_sharing_usage_limit_exceeded terminal exclusion. The capacity slice does not claim those cases are verified."
+        "The 2026-10-02 retry-source refresh found a separate remaining classifier gap: AgentRunRetryPolicy lacks current Pi subscription_sharing_usage_unavailable/user_unavailable retry wording and the subscription_sharing_usage_limit_exceeded terminal exclusion. The capacity slice does not claim those cases are verified.",
+        "OpenAiCodexOAuthTests covers manual code, pasted code#state, redirect URL, callback race cancellation/disposal, listener-start failure and mismatched-state refusal before exchange. Combined Codex OAuth and retry tests pass 22/22; scoped format and the integrated warnings-as-errors solution build pass. This does not close broader OAuth differential evidence or the overall Codex subscription scenario; status remains in_progress."
       ],
       "dependencies": [
         "provider-api-openai-codex-responses"

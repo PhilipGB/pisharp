@@ -8,14 +8,19 @@ core agent/session/tool behavior, the interactive experience, and other
 user-facing application features. Keep the configured Pi checkout pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-The current shared-branch source checkpoint is `1cdb57f7cfd2723152a3d45b0dd1498052995231`
-on `parity/current-pi-completion`. Its exact-head Linux CI passed at
-[38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300);
-the docs-only checkpoint at `c7b8a304` passed run
+The previous verified product source was `1cdb57f7cfd2723152a3d45b0dd1498052995231`
+on `parity/current-pi-completion`, with exact-head Linux CI run
+[38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300).
+The last green exact-head checkpoint was the docs-only `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
-The recorded baseline is 2,057/2,057 .NET tests, zero skips, formatting, and a
-warnings-as-errors solution build with zero warnings. Re-run the focused and
-integrated checks for new changes.
+Current integrated product source is `2bf3d9896655e472624b82d3f85153328571a3ef`.
+It adds Codex manual authorization-code/redirect-URL fallback and retries for
+temporary Codex subscription-usage failures while leaving exhausted shared
+usage terminal. The combined OAuth/retry tests pass **22/22**, full solution
+format passes, and a warnings-as-errors solution build passes with zero
+warnings. Exact-head CI for `2bf3d989` is pending; the prior 2,057-test full
+baseline is not evidence for this newer source. Run the full suite at a major
+family closure and before declaring this goal complete.
 
 All 194 capability IDs remain in the global inventory at **12 verified, 147 in
 progress, and 35 not started**. Do not change those totals simply because this
