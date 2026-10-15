@@ -84,6 +84,12 @@ modelRuntime.SetVirtualModelRegistry(projectRuntime.Extensions.Registration.Virt
 
 var projectBinding = new ActiveProjectRuntime(projectConfiguration, projectRuntime, cli);
 
+if (cli.ListModels)
+{
+    await CliStartupCommands.ListModelsAsync(modelRuntime, cli, Console.Out);
+    return;
+}
+
 var initialSelection = await InitialModelComposition.ResolveAsync(
     modelRuntime, cli, explicitThinking, userSettings);
 
@@ -103,12 +109,6 @@ using var codemodeHttp = new HttpClient
 var codemodeModels = new ProviderCodemodeModels(modelRuntime, codemodeHttp);
 var modelRuntimeController = new ModelRuntimeController(modelRuntime, () => projectBinding.Settings,
     Environment.GetEnvironmentVariable);
-
-if (cli.ListModels)
-{
-    await CliStartupCommands.ListModelsAsync(modelRuntime, cli, Console.Out);
-    return;
-}
 
 IChatClient chat;
 
