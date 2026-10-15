@@ -1,0 +1,184 @@
+{
+  "feature": "managed-npm-resource-acquisition-and-startup",
+  "pins": {
+    "pi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharpBase": "18ae277ef855ac556131b1fe0af1786e76462dfe"
+  },
+  "fixture": {
+    "installSource": "npm:<declared-name>@file:<local-tarball>",
+    "packages": [
+      "managed-skill",
+      "managed-native-extension",
+      "managed-extension-dependency"
+    ],
+    "resources": [
+      "skill",
+      "prompt",
+      "theme",
+      "startup extension skill"
+    ],
+    "npmPolicy": [
+      "lifecycle scripts enabled",
+      "automatic peer installation disabled (--legacy-peer-deps)"
+    ],
+    "network": "npm offline mode enabled; all package inputs are local tarballs",
+    "cli": "PI_OFFLINE unset; --offline omitted"
+  },
+  "processDifferential": {
+    "driver": "tools/parity/resource-invocation-process-differential.py",
+    "scenario": "managed-npm-package",
+    "result": "Pi and PiSharp matched",
+    "providerRequests": 2,
+    "providerInput": [
+      "installed skill expansion",
+      "Review topic"
+    ],
+    "extensionConfiguredAtStartup": 1,
+    "lifecycleScriptRuns": {
+      "skill": 1,
+      "extension": 1,
+      "dependency": 1
+    },
+    "peerDependencyInstalled": false
+  },
+  "reloadProbe": {
+    "driver": "tools/parity/managed-npm-process-differential.py",
+    "result": "Pi resource loader and PiSharp runtime reload comparisons passed",
+    "packageResourcesStable": true,
+    "extensionConfigureCountPerProduct": 2,
+    "pisharpExtensionResourceChangedOnReload": true,
+    "peerDependencyInstalled": false
+  },
+  "nativeReloadOwner": {
+    "test": "ManagedResourcePackageStoreTests.LocalTarballsLoadResourcesAndNativeExtensionOncePerStartupAndReload",
+    "result": "passed",
+    "changedExtensionSkillVisibleAfterReload": true,
+    "extensionConfigureCount": 2
+  },
+  "focusedVerification": {
+    "managedResourcePackageStoreTests": "4 passed",
+    "resourceExtensionThemeAndProjectContextTests": "61 passed",
+    "formatVerify": "passed"
+  },
+  "limitations": [
+    "RPC provider-input comparison covers real startup and has no RPC reload claim.",
+    "Pi uses a JavaScript extension entry and PiSharp uses the package's native C# extension entry.",
+    "Registry resolution and cross-platform process cancellation are outside this fixture."
+  ],
+  "rootVerification": {
+    "baseSha": "18ae277ef855ac556131b1fe0af1786e76462dfe",
+    "workerSha": "54aec7c199016ffa4816fdfe376edb328c947993",
+    "rootReviewCorrections": [
+      "ResourcePackageFiles uses shared npm parser for BOM/whitespace source detection; existing startup/reload test includes padded lexical npm source.",
+      "Restored deleted-skill response index after differential prompt-loop refactor; reran existing deleted-skill and local-package scenarios.",
+      "RPC differential propagates TMPDIR, XDG, .NET/NuGet and session profile to children; corrected managed RPC comparison passed.",
+      "Default-profile verification exposed npm fixture cache writes to read-only /home/philip/.npm. Fixture pack/store/CLI tests now own npm cache under their temporary root and restore scoped process environment."
+    ],
+    "focused": {
+      "passed": 87,
+      "failed": 0,
+      "skipped": 0
+    },
+    "defaultProfileCacheRepairFocused": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "firstFullRun": {
+      "passed": 1977,
+      "failed": 3,
+      "skipped": 0,
+      "failed_tests": [
+        "ManagedResourcePackageStoreTests.NpmOwnsConfiguredRangeChecksForCompatibleAndIncompatibleCachedVersions",
+        "ManagedResourcePackageStoreTests.LocalTarballsLoadResourcesAndNativeExtensionOncePerStartupAndReload",
+        "ManagedResourcePackageStoreTests.CancellingNpmInstallKillsAndAwaitsLifecycleChildWithoutRetry"
+      ],
+      "cause": "Fixture npm pack attempted ambient read-only user cache; deterministic fixture isolation defect, not a load artifact.",
+      "log": "artifacts/parity/001-managed-npm-root/full-dotnet.log"
+    },
+    "finalFullRun": {
+      "environment": "All workers idle; default HOME/config/temp/session environment. Writable .NET/NuGet infrastructure caches and processor count two only; fixtures own npm cache.",
+      "restore": "pass",
+      "format": "pass",
+      "warningsAsErrorsBuild": {
+        "warnings": 0,
+        "errors": 0
+      },
+      "dotnet": {
+        "passed": 1980,
+        "failed": 0,
+        "skipped": 0
+      },
+      "node": {
+        "passed": 24,
+        "failed": 0,
+        "skipped": 0
+      },
+      "python": {
+        "passed": 50,
+        "failed": 0,
+        "skipped": 0
+      },
+      "architecture": {
+        "passed": 6,
+        "failed": 0
+      },
+      "documentation": {
+        "documents": 132,
+        "references": 506
+      },
+      "referenceValidation": "configured pin verified clean",
+      "mcp": {
+        "scenarios": 26,
+        "passedChecks": 261,
+        "classifiedOutcomes": 8,
+        "regressions": 0
+      }
+    },
+    "differentialReruns": {
+      "managed_rpc": true,
+      "managed_reload": true,
+      "deleted_skill": true,
+      "local_package": true
+    },
+    "terminal": {
+      "calibration": {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "comparedRenderFrameCount": 4,
+        "renderDifferences": 0,
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawMatch": false
+      },
+      "paired": {
+        "id": "120x40-dark-fullscreen",
+        "match": true,
+        "differences": 0,
+        "comparedRenderFrameCount": 4,
+        "renderDifferences": 0,
+        "scenarioErrors": {},
+        "httpMatch": true,
+        "rawMatch": false
+      }
+    },
+    "logDirectory": "artifacts/parity/001-managed-npm-root",
+    "limitations": [
+      "Full verification is Linux evidence; native macOS/Windows behavior remains open.",
+      "Registry resolution and configurable npm/Bun/pnpm command variants are not established by the named local tarball fixtures.",
+      "Raw terminal bytes differ; same-Pi calibration and paired rendered state match.",
+      "Git acquisition and package CLI commands remain queued; package capability is not closed."
+    ],
+    "testedSourceDigest": {
+      "algorithm": "SHA256 of concatenated 8-byte big-endian path length, UTF8 path, SHA256 file bytes for sorted unique git ls-files under src/tests/tools/.github",
+      "sha256": "7ba4cab307ce3a210f7b63bcb3063b1288d23d5bee9094ec1dd7bf5de4d719f4",
+      "files": 899
+    },
+    "documentationAfterReceiptUpdate": {
+      "documents": 132,
+      "references": 507,
+      "result": "pass"
+    }
+  }
+}

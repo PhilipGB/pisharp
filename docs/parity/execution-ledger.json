@@ -1469,7 +1469,8 @@
       "implementation": [
         "PackageSettingsReader and ResourcePackageSource retain typed personal/project declarations and filters.",
         "ResourcePackageFiles and ResourcePathSelection load local skill/prompt manifests and conventional folders, preserving package provenance, filters, project identity replacement/autoload deltas, trust and precedence.",
-        "LocalResourcePathRules treats lowercase skill.md aliases as ordinary files when applying parent overrides."
+        "LocalResourcePathRules treats lowercase skill.md aliases as ordinary files when applying parent overrides.",
+        "Queue1: Runtime ManagedResourcePackageStore acquires named npm sources with scripts/peer policy, cached ranges/tags, offline/trust selection and kill+await cancellation. Resolved roots feed existing resource, extension and theme owners through async CLI startup/reload."
       ],
       "evidence": [
         "The current goal supersedes the earlier Pi Packages exclusion; normal CLI package-resource operations are in scope.",
@@ -1485,7 +1486,8 @@
         "Current Pi 3daa2028 extension SDK/CLI failure boundaries: native unhandled configuration failure exits -6 versus source exit 1 and recovery hint; missing explicit path exits 2 versus source exit 1/full path diagnostic/hint. Source SDK discards failed registrations and loads a valid sibling, while normal CLI refuses startup. Configuration/missing-path/dependency-resolver native tests fail first; corrupt assembly control and preload error dedup are retained. Focused ExtensionAssemblyLoader, registration checkpoint and ExtensionStartupFailure owners now match the SDK state/diagnostic and normal CLI controlled error text/exit/no-provider boundaries; all thirteen CLI cases and prior 95 loader cases match, 76 focused and full 1954 native checks pass with zero skips/warnings; format and docs validation pass. Original duplicate/missing logical scenarios are corrected from thrown SDK exceptions to diagnostics according to source loader/main.ts; no scenarios or assertions are removed. See docs/parity/fixtures/resource-package-extension-errors-current-pi-2026-10-15.json. Wider conflicts/builtins/errors/aliases/reload/project overrides and managed/CLI package workflows remain open.",
         "Current Pi 3daa2028 explicit extension URL/canonical/CLI path boundary: native rejects a valid file URL and configures a canonical CLI/package alias twice; two native failures/one control precede repair. Padded argument remains rejected by both CLIs; native leaked trailing CRLF/FEFF into error lines, and first URI repair was too late for the existing session-target resolver. ResourceLocalPath/ExtensionCliPaths now preserve original invocation resolution before loader trimming; canonical dedup retains the first lexical path. Actual full-loader metadata corrected the initial all-CLI expectation: exact plain/URL overlap keeps package provenance, while a distinct alias keeps CLI provenance. Two corrected native metadata assertions fail before the overlay repair; three paired full-loader metadata cases now match. All sixteen real CLI flows and prior 95 loader cases match; 58 focused and nine startup checks pass, as does the final full 1957-test suite with zero failures/skips. Fresh build has zero warnings; format, docs, Node 24 and Python 50 pass. See docs/parity/fixtures/resource-package-extension-paths-current-pi-2026-10-15.json. Configured paths/other aliases/malformed URLs/collisions/reload/project scope and managed/CLI package workflows remain open.",
         "Current Pi 3daa2028 final extension selection after pre-trust bootstrap: a trusted project disables its overlapping personal package extension, so Pi omits its Guide skill while native initially keeps it; a second native failure exposes stale user provenance on a project-enabled preload. Untrusted control passes. ExtensionCatalogSelection and ExtensionRegistrationSelection now remove deselected owned contributions, refresh retained metadata and preserve configured instances/host registrations. Three full-loader bootstrap/configuration/metadata comparisons and all eighteen normal CLI/provider flows match; 26 focused checks pass with three new native rows. Final full 1960 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-pretrust-current-pi-2026-10-15.json. Full module ordering/conflicts, broader filters/aliases/reload/cross-module mutations and managed package workflows remain open.",
-        "Current Pi 3daa2028 final extension order: a retained personal module plus a new project module configures once each in both products, but native initially orders modules and resources_discover callbacks personal-first while source is project-first. One native regression fails first with an untrusted control. Actual DefaultResourceLoader and ExtensionRunner with real in-memory session/model/auth owners characterize callback order. ExtensionCatalogSelection now keeps module/context pairs in final canonical selection order, and ExtensionRegistrationOrder stably orders owned dictionaries/callbacks without reconfiguring factories or changing within-owner order. The paired loader/runner case, prior three selection cases and eighteen normal CLI/provider flows match; 28 focused checks pass. Final full 1962 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json. Conflicts/replaceable builtins/dynamic registration/virtual-model ordering and broader filters/aliases/reload/managed workflows remain open."
+        "Current Pi 3daa2028 final extension order: a retained personal module plus a new project module configures once each in both products, but native initially orders modules and resources_discover callbacks personal-first while source is project-first. One native regression fails first with an untrusted control. Actual DefaultResourceLoader and ExtensionRunner with real in-memory session/model/auth owners characterize callback order. ExtensionCatalogSelection now keeps module/context pairs in final canonical selection order, and ExtensionRegistrationOrder stably orders owned dictionaries/callbacks without reconfiguring factories or changing within-owner order. The paired loader/runner case, prior three selection cases and eighteen normal CLI/provider flows match; 28 focused checks pass. Final full 1962 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json. Conflicts/replaceable builtins/dynamic registration/virtual-model ordering and broader filters/aliases/reload/managed workflows remain open.",
+        "docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json: Luna implementation; root focused87 and default-profile full1980 tests, two managed paired drivers plus deleted-skill/local controls, terminal4-frame pair/calibration, all full gates green. npm registry/alternate commands and git/package CLI remain open."
       ],
       "dependencies": [],
       "handover_remaining": {
@@ -1919,7 +1921,8 @@
       "implementation": [
         "Partial: CLI and resource/extension loaders accept repeatable explicit skill, prompt-template, and .NET extension paths even with corresponding discovery disabled; project auto-discovery is trust-gated. Native .NET extensions support startup/reload resource-discovery handlers for skills, prompts, and themes; broader Pi extension APIs remain incomplete.",
         "The `--theme`, `--use-theme`, and `--no-themes` flags are parsed and applied. Explicit theme files/directories are repeatable and cwd-relative; `--no-themes` suppresses discovered/configured user and trusted-project themes but keeps built-ins/system and explicit CLI paths. `--use-theme` is an interactive-only startup override and an explicit saved theme replaces it.",
-        "src/PiSharp.Runtime/Resources/ContextInstructions.cs and LocalResourceFileType.cs: complete context text, single BOM removal, priority read-failure fallback, ordered warnings, readable worktree shadow selection and regular-file checks. CLI ProjectRuntimeContext forwards diagnostics."
+        "src/PiSharp.Runtime/Resources/ContextInstructions.cs and LocalResourceFileType.cs: complete context text, single BOM removal, priority read-failure fallback, ordered warnings, readable worktree shadow selection and regular-file checks. CLI ProjectRuntimeContext forwards diagnostics.",
+        "Queue1: Runtime ManagedResourcePackageStore acquires named npm sources with scripts/peer policy, cached ranges/tags, offline/trust selection and kill+await cancellation. Resolved roots feed existing resource, extension and theme owners through async CLI startup/reload."
       ],
       "evidence": [
         "tests/PiSharp.Tests/{Runtime/Resources/ResourceCatalogTests,Runtime/Extensions/ExtensionCatalogTests,Cli/Providers/ProviderModelRuntimeTests}.cs exercise duplicate precedence, opt-in paths, HTTP provider request content and PTY extension command behavior. Upstream package resolution and trust diagnostics still differ.",
@@ -1939,7 +1942,8 @@
         "Current Pi 3daa2028 extension SDK/CLI failure boundaries: native unhandled configuration failure exits -6 versus source exit 1 and recovery hint; missing explicit path exits 2 versus source exit 1/full path diagnostic/hint. Source SDK discards failed registrations and loads a valid sibling, while normal CLI refuses startup. Configuration/missing-path/dependency-resolver native tests fail first; corrupt assembly control and preload error dedup are retained. Focused ExtensionAssemblyLoader, registration checkpoint and ExtensionStartupFailure owners now match the SDK state/diagnostic and normal CLI controlled error text/exit/no-provider boundaries; all thirteen CLI cases and prior 95 loader cases match, 76 focused and full 1954 native checks pass with zero skips/warnings; format and docs validation pass. Original duplicate/missing logical scenarios are corrected from thrown SDK exceptions to diagnostics according to source loader/main.ts; no scenarios or assertions are removed. See docs/parity/fixtures/resource-package-extension-errors-current-pi-2026-10-15.json. Wider conflicts/builtins/errors/aliases/reload/project overrides and managed/CLI package workflows remain open.",
         "Current Pi 3daa2028 explicit extension URL/canonical/CLI path boundary: native rejects a valid file URL and configures a canonical CLI/package alias twice; two native failures/one control precede repair. Padded argument remains rejected by both CLIs; native leaked trailing CRLF/FEFF into error lines, and first URI repair was too late for the existing session-target resolver. ResourceLocalPath/ExtensionCliPaths now preserve original invocation resolution before loader trimming; canonical dedup retains the first lexical path. Actual full-loader metadata corrected the initial all-CLI expectation: exact plain/URL overlap keeps package provenance, while a distinct alias keeps CLI provenance. Two corrected native metadata assertions fail before the overlay repair; three paired full-loader metadata cases now match. All sixteen real CLI flows and prior 95 loader cases match; 58 focused and nine startup checks pass, as does the final full 1957-test suite with zero failures/skips. Fresh build has zero warnings; format, docs, Node 24 and Python 50 pass. See docs/parity/fixtures/resource-package-extension-paths-current-pi-2026-10-15.json. Configured paths/other aliases/malformed URLs/collisions/reload/project scope and managed/CLI package workflows remain open.",
         "Current Pi 3daa2028 final extension selection after pre-trust bootstrap: a trusted project disables its overlapping personal package extension, so Pi omits its Guide skill while native initially keeps it; a second native failure exposes stale user provenance on a project-enabled preload. Untrusted control passes. ExtensionCatalogSelection and ExtensionRegistrationSelection now remove deselected owned contributions, refresh retained metadata and preserve configured instances/host registrations. Three full-loader bootstrap/configuration/metadata comparisons and all eighteen normal CLI/provider flows match; 26 focused checks pass with three new native rows. Final full 1960 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-pretrust-current-pi-2026-10-15.json. Full module ordering/conflicts, broader filters/aliases/reload/cross-module mutations and managed package workflows remain open.",
-        "Current Pi 3daa2028 final extension order: a retained personal module plus a new project module configures once each in both products, but native initially orders modules and resources_discover callbacks personal-first while source is project-first. One native regression fails first with an untrusted control. Actual DefaultResourceLoader and ExtensionRunner with real in-memory session/model/auth owners characterize callback order. ExtensionCatalogSelection now keeps module/context pairs in final canonical selection order, and ExtensionRegistrationOrder stably orders owned dictionaries/callbacks without reconfiguring factories or changing within-owner order. The paired loader/runner case, prior three selection cases and eighteen normal CLI/provider flows match; 28 focused checks pass. Final full 1962 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json. Conflicts/replaceable builtins/dynamic registration/virtual-model ordering and broader filters/aliases/reload/managed workflows remain open."
+        "Current Pi 3daa2028 final extension order: a retained personal module plus a new project module configures once each in both products, but native initially orders modules and resources_discover callbacks personal-first while source is project-first. One native regression fails first with an untrusted control. Actual DefaultResourceLoader and ExtensionRunner with real in-memory session/model/auth owners characterize callback order. ExtensionCatalogSelection now keeps module/context pairs in final canonical selection order, and ExtensionRegistrationOrder stably orders owned dictionaries/callbacks without reconfiguring factories or changing within-owner order. The paired loader/runner case, prior three selection cases and eighteen normal CLI/provider flows match; 28 focused checks pass. Final full 1962 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json. Conflicts/replaceable builtins/dynamic registration/virtual-model ordering and broader filters/aliases/reload/managed workflows remain open.",
+        "docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json: Luna implementation; root focused87 and default-profile full1980 tests, two managed paired drivers plus deleted-skill/local controls, terminal4-frame pair/calibration, all full gates green. npm registry/alternate commands and git/package CLI remain open."
       ],
       "dependencies": [],
       "handover_review": {
@@ -9644,7 +9648,24 @@
         "implementation_pattern": "Add one concrete Runtime ManagedResourcePackageStore for acquisition/cache/process lifetime; consume resolved roots through existing ResourcePackageFiles. Keep user interaction/config writes in CLI. Start with a local npm tarball and a skill+extension package; retain Pi npm script policy from package-manager source.",
         "focused_verification": "ResourcePackageLoadingTests; deterministic child npm fixture with no internet",
         "differential_verification": "Extend resource-invocation-process-differential.py with local tarball installation and reload",
-        "completion_condition": "One ordinary skill package and one extension dependency package install, load once, reload and cancel cleanly."
+        "completion_condition": "One ordinary skill package and one extension dependency package install, load once, reload and cancel cleanly.",
+        "status": "completed",
+        "evidence": [
+          "docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json"
+        ],
+        "authorship": {
+          "queue_order": 1,
+          "implementation": "Luna",
+          "worker_sha": "54aec7c199016ffa4816fdfe376edb328c947993",
+          "integration": "Root",
+          "root_corrections": [
+            "ResourcePackageFiles uses shared npm parser for BOM/whitespace source detection; existing startup/reload test includes padded lexical npm source.",
+            "Restored deleted-skill response index after differential prompt-loop refactor; reran existing deleted-skill and local-package scenarios.",
+            "RPC differential propagates TMPDIR, XDG, .NET/NuGet and session profile to children; corrected managed RPC comparison passed.",
+            "Default-profile verification exposed npm fixture cache writes to read-only /home/philip/.npm. Fixture pack/store/CLI tests now own npm cache under their temporary root and restore scoped process environment."
+          ]
+        },
+        "remaining_capability_work": "Managed git acquisition and package CLI commands (queue2/3) still required; neither touched capability promoted."
       },
       {
         "order": 2,
@@ -11187,8 +11208,8 @@
   },
   "sol_orchestration": {
     "starting_sha": "77caa3290a0300e2e02d61039b306260f127872a",
-    "base_sha": "77caa3290a0300e2e02d61039b306260f127872a",
-    "queue_position": 1,
+    "base_sha": "18ae277ef855ac556131b1fe0af1786e76462dfe",
+    "queue_position": 2,
     "milestone": "Managed packages: queue 1–3; acquisition boundary established before dependent git/CLI work",
     "mode": "serialized",
     "isolation_gates": {
@@ -11208,24 +11229,42 @@
       "luna-worker": "gpt-6-luna/xhigh: returned starting SHA",
       "sol-advisor": "gpt-6.1-sol/ultra: returned starting SHA"
     },
-    "preflight": "External worktree and worker branch create/remove; isolated dotnet version command; push dry-run passed. Initial checkpoint push follows.",
+    "preflight": "Passed specialist probes, external worktree/branch create/remove, isolated profile application, and initial checkpoint commit/fast-forward push.",
     "ssh_workaround": "Per-command GIT_SSH_COMMAND=ssh -F /dev/null; system SSH configuration untouched",
     "ci_access": "Unauthenticated public GitHub REST API; gh has no credentials",
     "latest_exact_head_ci": {
-      "sha": "77caa3290a0300e2e02d61039b306260f127872a",
-      "run": 38664773270,
+      "sha": "18ae277ef855ac556131b1fe0af1786e76462dfe",
+      "run": 38714634396,
       "conclusion": "success"
     },
     "upstream_observed": "dc939913f6142adce7c09da5707fdd6451b37fb0",
-    "upstream_policy": "Pin retained at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6; bounded delta review pending",
-    "worker_state": "No orphaned worktrees or worker branches at startup; preflight worker removed",
+    "upstream_policy": "Configured pin retained at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6; startup three-commit delta reviewed in the referenced receipt; P2 retry/off-thinking deferred to queue43/44.",
+    "worker_state": "Queue1 worker 54aec7c1 reviewed and squash-applied; cleanup follows verified task publication. No other workers.",
     "last_full_verification": {
-      "product_sha": "df163a4704f3a498f40046ae6a289b870a2b8af9",
-      "receipt": "docs/parity/fixtures/luna-handover-2026-10-15/verification.json",
-      "result": "green handover receipt; no product changes through starting SHA"
+      "base_sha": "18ae277ef855ac556131b1fe0af1786e76462dfe",
+      "worker_sha": "54aec7c199016ffa4816fdfe376edb328c947993",
+      "tested_source_digest": "7ba4cab307ce3a210f7b63bcb3063b1288d23d5bee9094ec1dd7bf5de4d719f4",
+      "receipt": "docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json",
+      "result": "1980 .NET / 24 Node / 50 Python; zero skips, six architecture checks, MCP 261/8 classified/no regressions; clean-profile full rerun green"
     },
     "milestones_since_full_verification": 0,
-    "authorship": [],
-    "advisor_escalations": []
+    "authorship": [
+      {
+        "queue_order": 1,
+        "implementation": "Luna",
+        "worker_sha": "54aec7c199016ffa4816fdfe376edb328c947993",
+        "integration": "Root",
+        "root_corrections": [
+          "ResourcePackageFiles uses shared npm parser for BOM/whitespace source detection; existing startup/reload test includes padded lexical npm source.",
+          "Restored deleted-skill response index after differential prompt-loop refactor; reran existing deleted-skill and local-package scenarios.",
+          "RPC differential propagates TMPDIR, XDG, .NET/NuGet and session profile to children; corrected managed RPC comparison passed.",
+          "Default-profile verification exposed npm fixture cache writes to read-only /home/philip/.npm. Fixture pack/store/CLI tests now own npm cache under their temporary root and restore scoped process environment."
+        ]
+      }
+    ],
+    "advisor_escalations": [],
+    "initial_checkpoint_sha": "18ae277ef855ac556131b1fe0af1786e76462dfe",
+    "upstream_review": "docs/parity/fixtures/sol-orchestration-upstream-startup-2026-10-15.json",
+    "isolation_review": "RPC child profile omission and ambient npm fixture cache dependency corrected during root review; serialized mode retained, gates not certified. Root reran managed RPC and complete default-profile verification."
   }
 }

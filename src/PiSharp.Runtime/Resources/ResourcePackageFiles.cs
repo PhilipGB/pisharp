@@ -10,12 +10,12 @@ internal sealed class ResourcePackageFiles
     internal List<PackageResourceFile> Extensions { get; } = [];
 
     internal static ResourcePackageFiles Load(string cwd, string agentDirectory, bool trusted,
-        IReadOnlyList<ResourcePackageSource>? user, IReadOnlyList<ResourcePackageSource>? project, CancellationToken token)
+        IReadOnlyList<ResourcePackageSource>? user, IReadOnlyList<ResourcePackageSource>? project, CancellationToken token,
+        IReadOnlyList<ManagedResourcePackageRoot>? managedRoots = null)
     {
         var result = new ResourcePackageFiles();
         var selected = new Dictionary<string, (ResourcePackageSource Package, string Scope)>(StringComparer.Ordinal);
-        var declarations = (trusted ? project ?? [] : []).Select(package => (Package: package, Scope: "project"))
-            .Concat((user ?? []).Select(package => (Package: package, Scope: "user")));
+        var declarations = SelectDeclarations(trusted ? project ?? [] : [], user ?? []);
         var skillPaths = new HashSet<string>(StringComparer.Ordinal);
         var promptPaths = new HashSet<string>(StringComparer.Ordinal);
         var themePaths = new HashSet<string>(StringComparer.Ordinal);
@@ -24,10 +24,21 @@ internal sealed class ResourcePackageFiles
         {
             token.ThrowIfCancellationRequested();
             var package = declaration.Package;
-            if (package.Source.StartsWith("npm:", StringComparison.Ordinal) ||
-                package.Source.StartsWith("git:", StringComparison.Ordinal)) continue;
-            var baseDirectory = declaration.Scope == "project" ? Path.Combine(cwd, ".pi") : agentDirectory;
-            var root = ResourceLocalPath.Resolve(package.Source, baseDirectory);
+            var source = package.Source.Trim();
+            if (source.StartsWith("git:", StringComparison.Ordinal)) continue;
+            string root;
+            if (ManagedResourcePackageStore.TryGetNpmPackageName(package.Source, out _))
+            {
+                var resolved = (managedRoots ?? []).FirstOrDefault(candidate =>
+                    candidate.Scope == declaration.Scope && candidate.Source == package.Source);
+                if (resolved is null) continue;
+                root = Path.GetFullPath(resolved.Path);
+            }
+            else
+            {
+                var baseDirectory = declaration.Scope == "project" ? Path.Combine(cwd, ".pi") : agentDirectory;
+                root = ResourceLocalPath.Resolve(package.Source, baseDirectory);
+            }
             if (selected.TryGetValue(root, out var prior) &&
                 !(prior.Scope == "project" && !prior.Package.Autoload && declaration.Scope == "user")) continue;
             selected.TryAdd(root, declaration);
@@ -77,6 +88,38 @@ internal sealed class ResourcePackageFiles
         RetainCanonicalEntries(result.Prompts);
         RetainCanonicalEntries(result.Themes);
         RetainCanonicalEntries(result.Extensions);
+        return result;
+    }
+
+    private static IReadOnlyList<(ResourcePackageSource Package, string Scope)> SelectDeclarations(
+        IReadOnlyList<ResourcePackageSource> project, IReadOnlyList<ResourcePackageSource> user)
+    {
+        var result = new List<(ResourcePackageSource Package, string Scope)>();
+        var npmIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var entry in project.Select(package => (Package: package, Scope: "project"))
+                     .Concat(user.Select(package => (Package: package, Scope: "user"))))
+        {
+            if (!ManagedResourcePackageStore.TryGetNpmPackageName(entry.Package.Source, out var name))
+            {
+                result.Add(entry);
+                continue;
+            }
+            if (!npmIndexes.TryGetValue(name, out var index))
+            {
+                npmIndexes.Add(name, result.Count);
+                result.Add(entry);
+                continue;
+            }
+            var existing = result[index];
+            if (existing.Scope == "project" && entry.Scope == "user")
+            {
+                if (!existing.Package.Autoload) result.Add(entry);
+            }
+            else if (entry.Scope == "project")
+            {
+                result[index] = entry;
+            }
+        }
         return result;
     }
 

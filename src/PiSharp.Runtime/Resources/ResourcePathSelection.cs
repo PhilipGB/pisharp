@@ -18,9 +18,11 @@ internal sealed class ResourcePathSelection(string cwd, string agentDirectory, b
         bool discoverSkills, bool discoverPrompts, IReadOnlyList<string>? additionalSkills, IReadOnlyList<string>? additionalPrompts,
         IReadOnlyList<string>? userSkills, IReadOnlyList<string>? projectSkills,
         IReadOnlyList<string>? userPrompts, IReadOnlyList<string>? projectPrompts, ExtensionResourceDiscovery? extensions,
-        IReadOnlyList<ResourcePackageSource>? userPackages, IReadOnlyList<ResourcePackageSource>? projectPackages)
+        IReadOnlyList<ResourcePackageSource>? userPackages, IReadOnlyList<ResourcePackageSource>? projectPackages,
+        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots)
     {
-        var packages = ResourcePackageFiles.Load(cwd, agentDirectory, trusted, userPackages, projectPackages, token);
+        var packages = ResourcePackageFiles.Load(cwd, agentDirectory, trusted, userPackages, projectPackages, token,
+            managedPackageRoots);
         var result = new ResourcePathSelection(cwd, agentDirectory, trusted, token, packages);
         var skills = result.Defaults(true, userSkills, projectSkills);
         var prompts = result.Defaults(false, userPrompts, projectPrompts);

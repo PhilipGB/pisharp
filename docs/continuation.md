@@ -1,35 +1,51 @@
 # Continuation — PiSharp capability parity
 
-## Sol orchestration startup — 2026-10-15
+## Sol orchestration checkpoint — 2026-10-15
 
-Base SHA: `77caa3290a0300e2e02d61039b306260f127872a`. This active parity goal
-continues the handover queue below; full parity remains incomplete. Queue position
-is **1**, starting with managed npm packages, then pinned git and package CLI
-(tasks 1–3). Capability counts remain **10 verified / 146 in progress / 38 not started**.
-No P0/P1 is newly established. Deferred findings remain in the handover ledger.
+Base SHA: `18ae277ef855ac556131b1fe0af1786e76462dfe`; starting handover SHA:
+`77caa3290a0300e2e02d61039b306260f127872a`. Queue **1 is completed**;
+next is **2, managed git acquisition and pinned/update behavior**, then package
+CLI workflows (3). The package milestone covers tasks 1–3. Capability counts
+remain **10 verified / 146 in progress / 38 not started** because git and CLI
+contracts remain required. No unresolved P0/P1 is established.
 
-Concurrency mode is **serialized**, both gates not run. The environment fingerprint
-is Linux x86_64; .NET 10.0.112, Node 24.21.0, Python 3.14.4; 24 logical CPUs,
-32 GiB memory class; profile base `/tmp/pisharp-sol-orchestration-20261015`.
-No prior orchestration fingerprint exists. Both requested model probes responded:
-Luna worker at xhigh and Sol advisor at ultra. External worktree/branch lifecycle
-and isolated profile application passed preflight. No orphaned worker state exists.
+Queue1 authorship: **Luna** implemented worker `54aec7c1`; **Root** reviewed,
+squash-integrated, corrected shared source parsing, harness compatibility/profile
+propagation and fixture-owned npm caches, then independently reran the evidence.
+See [the managed npm receipt](parity/fixtures/managed-npm-local-tarball-2026-10-15.json).
+Real CLI/RPC startup reaches two successful provider requests with installed skill
+and template expansion; a separate Pi-loader/native-runtime probe and native
+reload-owner tests establish the stated reload scope. No RPC reload is claimed.
 
-Local and origin heads match the base SHA, and its exact-head CI
-[38664773270](https://github.com/PhilipGB/pisharp/actions/runs/38664773270) is green.
-Push dry-run succeeds with per-command `GIT_SSH_COMMAND='ssh -F /dev/null'`;
-the system SSH include has an ownership error, so retain this established workaround.
-Use the public GitHub REST API for CI reads; `gh` is unauthenticated.
-The initial checkpoint is pushed before feature mutation.
+Full default-profile verification on this task candidate passed restore, format,
+zero-warning build, **1,980 .NET / 24 Node / 50 Python**, zero skips, six architecture
+checks, documentation paths, clean pinned reference, and MCP **261 passing checks /
+eight classified outcomes / zero regressions**. All workers were idle. The receipt
+records the exact source digest and base/worker SHAs, logs, and the first red run:
+three new npm fixtures depended on a read-only ambient cache. Fixture-owned caches
+repair that failure; the clean-profile four-test rerun and complete rerun pass.
+Milestones since full verification: **0**. The package-theme startup terminal
+pair and same-Pi calibration each match four rendered frames; raw bytes differ.
 
-Configured Pi remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` in
-`/tmp/pisharp-luna-pi`; observed upstream is now
-`dc939913f6142adce7c09da5707fdd6451b37fb0`. Review bounded upstream changes
-without advancing the pin. Last full verification is the green handover receipt
-at product `df163a4704f3a498f40046ae6a289b870a2b8af9`; milestones since that
-verification: **0**. No advisor escalation or feature task completed yet.
-Detailed live orchestration state is `sol_orchestration` in the execution ledger.
+Concurrency stays **serialized**, both gates not run. Fingerprint: Linux x86_64;
+.NET 10.0.112, Node 24.21.0, Python 3.14.4; 24 CPUs / 32 GiB memory class;
+profile base `/tmp/pisharp-sol-orchestration-20261015`. Root corrected incomplete
+RPC child profile propagation; no parallel mode is certified. Queue1 worker cleanup
+follows verified publication. Root must reconcile any retained worker state on resume.
 
+Latest recorded exact-head CI is green at startup checkpoint `18ae277e`, run
+[38714634396](https://github.com/PhilipGB/pisharp/actions/runs/38714634396).
+After this task publication, inspect its exact-head CI before depending on the new
+acquisition boundary. Push with per-command `GIT_SSH_COMMAND='ssh -F /dev/null'`;
+use public GitHub REST for CI reads (`gh` is unauthenticated).
+
+Configured Pi remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` at
+`/tmp/pisharp-luna-pi`. [The three-commit startup delta review](parity/fixtures/sol-orchestration-upstream-startup-2026-10-15.json)
+through `dc939913f6142adce7c09da5707fdd6451b37fb0` classifies one Chord change
+out of scope and retry wording/Anthropic off-thinking as deferred P2 for tasks43/44.
+No pin advance; full final freeze/audit remains required. No advisor escalation.
+Detailed task/source evidence and authorship are in `sol_orchestration` and queue1
+of the execution ledger. Full parity remains incomplete.
 
 ## Sol-to-Luna handover — 2026-10-15
 

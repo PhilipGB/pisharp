@@ -475,7 +475,8 @@ public sealed partial class ExtensionCatalog : IDisposable
         IReadOnlyList<string>? additionalPaths = null, IReadOnlyList<string>? userPaths = null,
         IReadOnlyList<string>? projectPaths = null, IReadOnlyList<BuiltinExtensionDefinition>? builtins = null,
         ExtensionCatalog? preloaded = null,
-        IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null)
+        IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null,
+        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null)
     {
         var catalog = preloaded ?? new ExtensionCatalog();
         try
@@ -487,7 +488,7 @@ public sealed partial class ExtensionCatalog : IDisposable
             var seenPaths = new HashSet<string>(catalog._loadErrors.Select(error => error.Path).Select(ResourcePathIdentity.Canonicalize),
                 OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
             var packageFiles = discover ? ResourcePackageFiles.Load(cwd, agentDirectory, projectTrusted,
-                userPackages, projectPackages, CancellationToken.None).Extensions : [];
+                userPackages, projectPackages, CancellationToken.None, managedPackageRoots).Extensions : [];
             var packagePaths = packageFiles.Select(file => file.Path).ToHashSet(seenPaths.Comparer);
             var packageMetadata = packageFiles.ToDictionary(file => file.Path, file => file.Source, seenPaths.Comparer);
             foreach (var entry in additionalPaths ?? [])

@@ -29,7 +29,8 @@ internal sealed class TerminalThemeCatalog
         IReadOnlyList<string>? userThemePaths = null, IReadOnlyList<string>? projectThemePaths = null,
         bool discoverThemes = true, IReadOnlyList<string>? explicitThemePaths = null,
         string? explicitThemeBaseDirectory = null,
-        IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null)
+        IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null,
+        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(agentDirectory);
         _environment = environment ?? Environment.GetEnvironmentVariable;
@@ -53,7 +54,7 @@ internal sealed class TerminalThemeCatalog
             ? null
             : Path.Combine(_projectBaseDirectory!, "themes");
         _packageThemes = ResourcePackageFiles.Load(trustedProjectDirectory ?? _explicitThemeBaseDirectory, _userBaseDirectory,
-            trustedProjectDirectory is not null, userPackages, projectPackages, CancellationToken.None).Themes;
+            trustedProjectDirectory is not null, userPackages, projectPackages, CancellationToken.None, managedPackageRoots).Themes;
     }
 
     public IReadOnlyList<string> GetAvailableNames()

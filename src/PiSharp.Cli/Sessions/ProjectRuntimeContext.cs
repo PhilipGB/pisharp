@@ -19,15 +19,18 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
     public UserSettings BaseUserSettings { get; }
     public UserSettings? ProjectSettings { get; }
     public UserSettings Settings { get; }
+    public IReadOnlyList<ManagedResourcePackageRoot> ManagedPackageRoots { get; }
 
     private ProjectRuntimeConfiguration(string workingDirectory, bool trusted, UserSettings baseUserSettings,
-        UserSettings? projectSettings, UserSettings settings, ExtensionCatalog? bootstrapExtensions)
+        UserSettings? projectSettings, UserSettings settings, IReadOnlyList<ManagedResourcePackageRoot> managedPackageRoots,
+        ExtensionCatalog? bootstrapExtensions)
     {
         WorkingDirectory = workingDirectory;
         Trusted = trusted;
         BaseUserSettings = baseUserSettings;
         ProjectSettings = projectSettings;
         Settings = settings;
+        ManagedPackageRoots = managedPackageRoots;
         _bootstrapExtensions = bootstrapExtensions;
     }
 
@@ -37,6 +40,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
 
     public ProjectRuntimeConfiguration WithSettings(UserSettings baseUserSettings, UserSettings? projectSettings,
         UserSettings settings) => new(WorkingDirectory, Trusted, baseUserSettings, projectSettings, settings,
+        ManagedPackageRoots,
         bootstrapExtensions: null);
 
     public static async Task<ProjectRuntimeConfiguration> LoadAsync(string workingDirectory, string agentDirectory,
@@ -47,6 +51,10 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         var cwd = Path.GetFullPath(workingDirectory);
         var baseSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable, cancellationToken);
         baseSettings.ApplyHttpProxyEnvironment(Environment.GetEnvironmentVariable, Environment.SetEnvironmentVariable);
+        var offline = arguments.Offline || IsOfflineEnvironment();
+        var packageStore = new ManagedResourcePackageStore(agentDirectory);
+        var managedPackageRoots = (await packageStore.ResolveAsync(cwd, trusted: false,
+            userPackages: baseSettings.Packages, offline: offline, cancellationToken: cancellationToken)).ToList();
         ExtensionCatalog? bootstrapExtensions = null;
         try
         {
@@ -60,7 +68,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                         "builtin:", StringComparison.Ordinal)).ToArray();
                 bootstrapExtensions = ExtensionCatalog.Load(agentDirectory, cwd, projectTrusted: false,
                     discover: !arguments.NoExtensions, additionalPaths: cliExtensions,
-                    userPaths: userExtensions, builtins: [], userPackages: baseSettings.Packages);
+                    userPaths: userExtensions, builtins: [], userPackages: baseSettings.Packages,
+                    managedPackageRoots: managedPackageRoots);
             }
 
             var trusted = trustedOverride ?? await trustStore.ResolveAsync(cwd, arguments.ProjectTrustOverride,
@@ -70,8 +79,14 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                 mode: arguments.Print ? "print" : arguments.Mode,
                 extensionUi: extensionUi);
             var projectSettings = trusted ? await UserSettings.LoadProjectAsync(cwd, cancellationToken) : null;
+            if (projectSettings?.Packages is { Count: > 0 })
+            {
+                managedPackageRoots = (await packageStore.ResolveAsync(cwd, trusted: true,
+                    userPackages: baseSettings.Packages, projectPackages: projectSettings.Packages,
+                    offline: offline, cancellationToken: cancellationToken)).ToList();
+            }
             return new(cwd, trusted, baseSettings, projectSettings,
-                baseSettings.Overlay(projectSettings ?? new UserSettings()), bootstrapExtensions);
+                baseSettings.Overlay(projectSettings ?? new UserSettings()), managedPackageRoots, bootstrapExtensions);
         }
         catch
         {
@@ -95,6 +110,9 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
             (Directory.EnumerateFiles(extensionDirectory, "*.dll", SearchOption.TopDirectoryOnly).Any() ||
              Directory.EnumerateDirectories(extensionDirectory).Any(directory => File.Exists(Path.Combine(directory, "index.dll"))));
     }
+
+    private static bool IsOfflineEnvironment() => Environment.GetEnvironmentVariable("PI_OFFLINE") is { } value &&
+        value.ToLowerInvariant() is "1" or "true" or "yes";
 }
 
 internal sealed class ProjectRuntimeContext : IDisposable
@@ -179,7 +197,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
                     McpBuiltin.CreateDefinition(mcpManager)],
                 preloaded: configuration.TakeBootstrapExtensions(),
                 userPackages: configuration.BaseUserSettings.Packages,
-                projectPackages: configuration.ProjectSettings?.Packages);
+                projectPackages: configuration.ProjectSettings?.Packages,
+                managedPackageRoots: configuration.ManagedPackageRoots);
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
             var effectiveMcpServers = McpRuntime.SelectEffectiveServers(mcp.Servers,
                 extensions.Registration.McpServers);
@@ -230,7 +249,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 userSkills: configuration.BaseUserSettings.Skills, projectSkills: configuration.ProjectSettings?.Skills,
                 userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts,
                 extensionResources: extensionResources,
-                userPackages: configuration.BaseUserSettings.Packages, projectPackages: configuration.ProjectSettings?.Packages);
+                userPackages: configuration.BaseUserSettings.Packages, projectPackages: configuration.ProjectSettings?.Packages,
+                managedPackageRoots: configuration.ManagedPackageRoots);
             if (extensions.LoadErrors.Count > 0) throw new ExtensionStartupFailure(extensions.LoadErrors);
             return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
                 resources, extensions, extensionResources, store, sessionImport, mcpManager, effectiveMcpServers);
