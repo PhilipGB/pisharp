@@ -72,6 +72,10 @@ public static class ProviderChatClientFactory
         {
             providerClient = PiMessagesChatClientFactory.Create(selection);
         }
+        else if (protocol == "mistral-conversations")
+        {
+            providerClient = MistralConversationsChatClientFactory.Create(selection, configuredTimeout ?? 60_000);
+        }
         else if (protocol == "google-generative-ai")
         {
             providerClient = GoogleGenAiChatClientFactory.Create(selection);
@@ -200,7 +204,8 @@ public static class ProviderChatClientFactory
         }
         providerClient = new ModelSamplingParametersChatClient(providerClient, selection.Model, samplingContext,
             samplingSupported);
-        var timeoutClient = new ProviderRequestTimeoutChatClient(new ProviderToolArgumentChatClient(providerClient, argumentCapture), requestTimeout, idleTimeout);
+        var streamRequestTimeout = protocol == "mistral-conversations" ? int.MaxValue : requestTimeout;
+        var timeoutClient = new ProviderRequestTimeoutChatClient(new ProviderToolArgumentChatClient(providerClient, argumentCapture), streamRequestTimeout, idleTimeout);
         return new ProviderRetryChatClient(timeoutClient, providerMaxRetries,
             retrySettings?.MaxRetryDelayMs ?? ProviderRetrySettings.DefaultMaxRetryDelayMs);
     }

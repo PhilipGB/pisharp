@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -87,6 +86,8 @@ internal sealed class MistralChatCompatibilityHandler(MistralChatRequestContext 
 {
     private const int ToolCallIdLength = 9;
 
+    internal static string CreateToolCallId(string id) => new ToolCallIdNormalizer().Normalize(id);
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
@@ -149,21 +150,46 @@ internal sealed class MistralChatCompatibilityHandler(MistralChatRequestContext 
         {
             if (_ids.TryGetValue(id, out var existing)) return existing;
             var alphanumeric = new string(id.Where(char.IsAsciiLetterOrDigit).ToArray());
-            if (alphanumeric.Length == ToolCallIdLength && _used.Add(alphanumeric))
-            {
-                _ids.Add(id, alphanumeric);
-                return alphanumeric;
-            }
-
+            var seedBase = alphanumeric.Length > 0 ? alphanumeric : id;
             for (var attempt = 0; ; attempt++)
             {
-                var seed = attempt == 0 ? id : $"{id}:{attempt}";
-                var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(seed))).ToLowerInvariant();
-                var candidate = hash[..ToolCallIdLength];
+                var candidate = attempt == 0 && alphanumeric.Length == ToolCallIdLength
+                    ? alphanumeric
+                    : ShortHash(attempt == 0 ? seedBase : $"{seedBase}:{attempt}")[..ToolCallIdLength];
                 if (!_used.Add(candidate)) continue;
                 _ids.Add(id, candidate);
                 return candidate;
             }
+        }
+
+        private static string ShortHash(string value)
+        {
+            uint first = 0xdeadbeef;
+            uint second = 0x41c6ce57;
+            unchecked
+            {
+                foreach (var character in value)
+                {
+                    first = (first ^ character) * 2654435761u;
+                    second = (second ^ character) * 1597334677u;
+                }
+                first = ((first ^ (first >> 16)) * 2246822507u) ^ ((second ^ (second >> 13)) * 3266489909u);
+                second = ((second ^ (second >> 16)) * 2246822507u) ^ ((first ^ (first >> 13)) * 3266489909u);
+            }
+            return ToBase36(second) + ToBase36(first);
+        }
+
+        private static string ToBase36(uint value)
+        {
+            const string digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+            Span<char> buffer = stackalloc char[7];
+            var index = buffer.Length;
+            do
+            {
+                buffer[--index] = digits[(int)(value % 36)];
+                value /= 36;
+            } while (value > 0);
+            return new string(buffer[index..]);
         }
     }
 }
