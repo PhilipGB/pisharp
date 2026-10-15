@@ -13,14 +13,17 @@ on `parity/current-pi-completion`, with exact-head Linux CI run
 [38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300).
 The last green exact-head checkpoint was the docs-only `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
-Current integrated product source is `2bf3d9896655e472624b82d3f85153328571a3ef`.
-It adds Codex manual authorization-code/redirect-URL fallback and retries for
-temporary Codex subscription-usage failures while leaving exhausted shared
-usage terminal. The combined OAuth/retry tests pass **22/22**, full solution
-format passes, and a warnings-as-errors solution build passes with zero
-warnings. Exact-head CI for `2bf3d989` is pending; the prior 2,057-test full
-baseline is not evidence for this newer source. Run the full suite at a major
-family closure and before declaring this goal complete.
+Current integrated product source is `14f8e1447fd7751da838c6ed357ca190e8a828bc`.
+It includes Codex manual authorization-code/redirect-URL fallback, retries for
+temporary Codex subscription-usage failures, and account/session WebSocket
+reuse with cached `previous_response_id` deltas. A stale cached response retries
+once with full context; connection-limit failures retry once and then fall back
+to SSE before output. WebSocket events flow through the existing Responses SDK
+reader, and the cached socket expires after five idle minutes. The full local
+suite passes **2,066/2,066** with zero skips; full solution format and the
+warnings-as-errors build pass with zero warnings. Exact-head CI for `14f8e144`
+is pending; the last green exact-head checkpoint remains the docs-only
+`c7b8a304` at run [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 
 All 194 capability IDs remain in the global inventory at **12 verified, 147 in
 progress, and 35 not started**. Do not change those totals simply because this
@@ -33,9 +36,11 @@ Current execution priority is:
 1. **Codex subscription path:** finish normal ChatGPT/Codex sign-in, credential
    refresh, model selection, Responses streaming and continuation, tool/image
    handling, cancellation/retry, reasoning/usage, and session resume/switching.
-   Browser PKCE, device login, private credentials, account-scoped SSE, and a
-   model catalog are implemented. Manual-code fallback and WebSocket/cached
-   continuation with pre-output SSE fallback remain open.
+   Browser PKCE, device login, private credentials, the current model catalog,
+   account-scoped Responses streaming, cached WebSocket continuation, and
+   pre-output SSE fallback are implemented. Broader tool/image/usage/error
+   differentials and end-to-end authenticated session-resume scenarios remain
+   open.
 2. **llama.cpp path:** reuse the verified router configuration, model
    discovery/selection, Hugging Face download, load/unload, context reload, and
    twelve current-Pi paired terminal flows. Those deterministic receipts do not

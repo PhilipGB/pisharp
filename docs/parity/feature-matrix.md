@@ -1,19 +1,17 @@
 ## Current integration checkpoint and priority reset — 2026-10-15
 
-Current integrated product source is `2bf3d9896655e472624b82d3f85153328571a3ef`
+Current integrated product source is `14f8e1447fd7751da838c6ed357ca190e8a828bc`
 on `parity/current-pi-completion`; configured Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This source adds Codex manual
-authorization-code/redirect-URL fallback and retries temporary Codex
-subscription-usage failures while keeping exhausted shared usage terminal.
-Combined OAuth/retry tests pass **22/22**, full solution format passes, and the
-warnings-as-errors solution build passes with zero warnings. Exact-head CI for
-this source is pending. The previous green product source was
-`1cdb57f7cfd2723152a3d45b0dd1498052995231` at run
+authorization-code/redirect-URL fallback, temporary subscription-usage retry,
+account/session WebSocket reuse, cached continuation deltas, stale-continuation
+retry, and pre-output SSE fallback. The full local suite passes **2,066/2,066**
+with zero skips; full solution format and the warnings-as-errors build pass
+with zero warnings. Exact-head CI for this source is pending. The previous green
+product source was `1cdb57f7cfd2723152a3d45b0dd1498052995231` at run
 [38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300);
 the last green branch checkpoint was docs-only `c7b8a304` at
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
-The earlier full local baseline was 2,057/2,057 .NET tests, zero skips, format,
-and a warnings-as-errors solution build with zero warnings.
 
 All 194 capability IDs remain tracked: **12 verified, 147 in progress, 35 not
 started**. The old queue order is inventory, not current execution priority.
@@ -22,9 +20,9 @@ usability, then core agent/session/tool behavior, TUI/editor/navigation, and
 normal CLI/RPC and application features. Existing llama router, model,
 download/context-reload, and twelve-flow terminal receipts should be reused;
 they do not by themselves prove the remaining end-to-end local-model scenario.
-Codex browser/device OAuth and account-scoped SSE are implemented; manual-code
-fallback and WebSocket/cached continuation with pre-output SSE fallback remain
-open.
+Codex browser/device/manual OAuth, account-scoped Responses streaming,
+WebSocket/cached continuation and pre-output SSE fallback are implemented.
+Broader tool/image/usage/error differential evidence remains open.
 
 Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi,
 OpenCode, Together, Cloudflare, gateway and unrelated catalog parity is
