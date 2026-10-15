@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -207,6 +208,48 @@ public sealed class LlamaRouterProviderTests
             Assert.Equal(0.9, Assert.IsType<ClassifierBoolAnswer>(classification.Answers["safe"]).Probability, 8);
             Assert.Contains(requests, request => request.Path == "/v1/systemone" &&
                 request.Authorization == "Bearer router-secret");
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public async Task FailedModelPropsDoNotHideOtherLoadedRouterModels()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-partial-props-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var requests = new ConcurrentQueue<string>();
+            using var http = new HttpClient(new RouterHandler(request =>
+            {
+                var path = request.RequestUri!.PathAndQuery;
+                requests.Enqueue(path);
+                return path switch
+                {
+                    "/models" => Json("""
+                        {"data":[
+                          {"id":"broken-props","status":{"value":"loaded"},"architecture":{"output_modalities":["text"]}},
+                          {"id":"qwen","status":{"value":"loaded"},"architecture":{"output_modalities":["text"]}}
+                        ]}
+                        """),
+                    "/props?model=broken-props&autoload=false" => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
+                    "/props?model=qwen&autoload=false" => Json("""{"chat_template":"{% if enable_thinking %}think{% endif %}"}"""),
+                    _ => new HttpResponseMessage(HttpStatusCode.NotFound)
+                };
+            }));
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "LLAMA_BASE_URL" ? "http://llama.test:8080" : null, http);
+
+            var models = await runtime.ListModelsAsync("llama.cpp");
+
+            Assert.Equal(["broken-props", "qwen"], models.Select(model => model.Id));
+            Assert.False(Assert.Single(models, model => model.Id == "broken-props").Reasoning);
+            Assert.True(Assert.Single(models, model => model.Id == "qwen").Reasoning);
+            Assert.Contains("/props?model=broken-props&autoload=false", requests);
+            Assert.Contains("/props?model=qwen&autoload=false", requests);
         }
         finally
         {

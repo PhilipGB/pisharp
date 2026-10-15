@@ -41,7 +41,8 @@ internal static class LlamaRouterCatalog
         var templates = new Dictionary<string, string>(StringComparer.Ordinal);
         var loaded = chatModels.Where(model => model.Status.Value == "loaded").ToArray();
         var properties = await Task.WhenAll(loaded.Select(async model =>
-            (model.Id, Props: await client.GetPropsAsync(model.Id, cancellationToken).ConfigureAwait(false)))).ConfigureAwait(false);
+            (model.Id, Props: await GetPropsOrDefaultAsync(client, model.Id, cancellationToken).ConfigureAwait(false))))
+            .ConfigureAwait(false);
         foreach (var (id, props) in properties)
             if (!string.IsNullOrEmpty(props.ChatTemplate)) templates[id] = props.ChatTemplate;
 
@@ -155,6 +156,22 @@ internal static class LlamaRouterCatalog
         }
         if (cached is > 0) return cached.Value;
         return model.Metadata?.TrainingContextWindow is > 0 ? model.Metadata.TrainingContextWindow.Value : 128000;
+    }
+
+    private static async Task<LlamaRouterServerProps> GetPropsOrDefaultAsync(LlamaRouterClient client, string model,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await client.GetPropsAsync(model, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception error) when (!cancellationToken.IsCancellationRequested &&
+                                      error is HttpRequestException or TaskCanceledException or InvalidDataException or JsonException)
+        {
+            // Props only add optional chat-template metadata. Keep the model usable if its metadata
+            // endpoint fails; a later catalog refresh can discover reasoning support.
+            return new LlamaRouterServerProps();
+        }
     }
 }
 
