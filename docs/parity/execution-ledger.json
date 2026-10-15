@@ -4147,14 +4147,21 @@
     {
       "id": "settings-thinkingbudgets",
       "title": "Setting: thinkingBudgets",
-      "status": "not_started",
+      "status": "verified",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
         "Support thinkingBudgets with upstream type/default and user/trusted-project precedence",
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "c8928c3d implements typed thinkingBudgets validation and persistence, trusted-project precedence, ThinkingBudgetPolicy defaults/output reserve, and runtime/provider propagation through PiAgent and observed model metadata.",
+        "Anthropic, Bedrock, Google/Vertex, and OpenAI Completions project the selected budget through their supported request fields; Gemini 3.5+ uses thinkingLevel rather than the Gemini 2.5 budget field."
+      ],
+      "evidence": [
+        "docs/parity/fixtures/thinking-budgets-current-pi-2026-10-15.md records supported integer levels, trust/reload/startup behavior, the runtime consumer, and limitations.",
+        "Focused settings/runtime/provider coverage passed 149/149 at queue 7; the current integrated suite passes 2057/2057 with zero skips. Malformed values, persistence, trusted-project precedence, reload, and provider request mapping are covered.",
+        "Five pinned Pi helper comparisons match. Ten enabled Google/Vertex thinking controls match; two off controls retain P2 differences. Exact-head Linux CI run 38784569620 passed at c8928c3d."
+      ],
       "dependencies": [],
       "handover_review": {
         "decision": "required-contract-incomplete-or-not-yet-proven",
@@ -6172,10 +6179,12 @@
         "Verify usage, error bodies, retry headers, metadata/discovery, and credential isolation against deterministic local transports and current Pi."
       ],
       "implementation": [
-        "Implemented at ec1ea0f212f2a1964c891ce4a90c286020f3bcca with AzureOpenAiRequestHandler and AzureOpenAiChatOptionsClient. The adapter applies api-version, deployment mapping, Azure api-key authentication, store=false, reasoning/include projection, and per-session prompt_cache_key. A static current-Pi snapshot contains 43 models."
+        "Implemented at ec1ea0f212f2a1964c891ce4a90c286020f3bcca with AzureOpenAiRequestHandler and AzureOpenAiChatOptionsClient. The adapter applies api-version, deployment mapping, Azure api-key authentication, store=false, reasoning/include projection, and per-session prompt_cache_key. A static current-Pi snapshot contains 43 models.",
+        "Queue 10 extends the deterministic Azure Responses coverage for continuation and configured API-key/version/deployment preservation; 5ef5c30e corrects the JSON-encoded function output assertion."
       ],
       "evidence": [
-        "AzureOpenAiProviderTests exercise a deterministic local real-SDK boundary and the embedded catalog. Exact-head Linux CI run 36452261244 passed format, warnings-as-errors build (0 warnings/errors), and 764/764 tests (0 skipped). Provider-wide Pi differential coverage for images/tools/usage/errors and hosted OAuth remains incomplete."
+        "AzureOpenAiProviderTests exercise a deterministic local real-SDK boundary and the embedded catalog. Exact-head Linux CI run 36452261244 passed format, warnings-as-errors build (0 warnings/errors), and 764/764 tests (0 skipped). Provider-wide Pi differential coverage for images/tools/usage/errors and hosted OAuth remains incomplete.",
+        "AzureOpenAiProviderTests pass within the 190/190 integrated focused suite and 2057/2057 full local suite. The continuation loopback verifies mapped deployment, API key, API version, and encoded tool result on the second request; wider Pi differentials for images, usage, retries, and errors remain open."
       ],
       "dependencies": [],
       "handover_review": {
@@ -6279,11 +6288,13 @@
         "Compare the adapter and provider-specific semantics against current Pi; do not claim full Google or overall provider parity from local fixtures alone."
       ],
       "implementation": [
-        "A dedicated REST/SSE client and embedded 22-model snapshot are implemented from Pi c90d9ea586194003211f10cded3c14f74a4f81e1. The Google protocol is restricted to the built-in google profile, and profile loading preserves its protocol and credential identity."
+        "A dedicated REST/SSE client and embedded 22-model snapshot are implemented from Pi c90d9ea586194003211f10cded3c14f74a4f81e1. The Google protocol is restricted to the built-in google profile, and profile loading preserves its protocol and credential identity.",
+        "Queue 8 updates GoogleGenAiChatClient history replay for cached usage, finish errors, Gemini Live IDs, valid same-model signatures, nested multimodal tool results, and cross-model tool-ID normalization; commits 2612a08b and 1cdb57f7."
       ],
       "evidence": [
         "GoogleGenAiProviderTests and ProviderChatClientFactoryTests cover the catalog, deterministic HTTP/SSE, MAF tool continuation, signatures, Gemini-version image routing and custom-provider rejection. Exact-head Linux CI run 36472207899 passed 790/790 tests (0 skipped). Current-Pi focused Google suites passed 65 tests with 9 skipped at c90d9ea586194003211f10cded3c14f74a4f81e1. A paired Google differential and broader provider-specific image/tool/usage/error evidence remain outstanding.",
-        "Current Pi b06c1f2c Gemini 4+ enabled thinking controls now use thinkingLevel in shared Google/Vertex mapping. Six enabled request controls match; two off-control differences are explicitly P2 and retained in Luna contracts, not claimed matched."
+        "Current Pi b06c1f2c Gemini 4+ enabled thinking controls now use thinkingLevel in shared Google/Vertex mapping. Six enabled request controls match; two off-control differences are explicitly P2 and retained in Luna contracts, not claimed matched.",
+        "Six pinned request-conversion cases match Pi across GenAI/Vertex, Gemini 2.5/3.5 and Gemma 4. Google focused tests pass 23/23; the full integrated suite passes 2057/2057. See docs/parity/fixtures/google-genai-vertex-current-pi-2026-10-15.json. This is pre-transport conversion evidence; provider-wide behavior remains open."
       ],
       "dependencies": [],
       "handover_remaining": {
@@ -6325,13 +6336,15 @@
       ],
       "implementation": [
         "Implemented at bb8f1ce34 with GoogleVertexChatClientFactory and GoogleVertexProviderOptions. The adapter shares GoogleGenAiChatClient conversion, uses separate Vertex publisher routes and bearer-token ADC, selects regional endpoints, and embeds a 14-model snapshot from Pi c90d9ea586194003211f10cded3c14f74a4f81e1.",
-        "Commit 584a7d1eb74dfb1fc2624f00a5246806db37c548 avoids parsing the catalog {location} template as a concrete endpoint in ModelSelection.Connection."
+        "Commit 584a7d1eb74dfb1fc2624f00a5246806db37c548 avoids parsing the catalog {location} template as a concrete endpoint in ModelSelection.Connection.",
+        "Queue 8 shares the updated GoogleGenAiChatClient conversion across Google Vertex; current source commit 1cdb57f7 preserves same-provider/model call IDs and normalizes cross-model IDs."
       ],
       "evidence": [
         "GoogleVertexProviderTests passes 7/7 locally: current-Pi catalog/default model, API-key precedence over configured ADC, secret-safe auth status, real API-key publisher HTTP path/body/headers, ADC project/location path and bearer token, and global/us/eu/regional hostname mapping.",
         "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --no-restore --warnaserror passed with 0 warnings/errors; dotnet test PiSharp.slnx --no-build --no-restore passed 790/790 (0 skipped). Exact-head Linux CI run 36472207899 passed all gates at 584a7d1eb74dfb1fc2624f00a5246806db37c548.",
         "Current Pi c90d9ea586194003211f10cded3c14f74a4f81e1 focused Google suites passed 65 tests with 9 skipped and the provider source was inspected. This is not a paired Pi/PiSharp differential. The current ADC availability check recognizes explicit credential files and the gcloud ADC file; metadata-server ADC status and service-account/profile login UX remain open.",
-        "Current Pi b06c1f2c Gemini 4+ enabled thinking controls now use thinkingLevel in shared Google/Vertex mapping. Six enabled request controls match; two off-control differences are explicitly P2 and retained in Luna contracts, not claimed matched."
+        "Current Pi b06c1f2c Gemini 4+ enabled thinking controls now use thinkingLevel in shared Google/Vertex mapping. Six enabled request controls match; two off-control differences are explicitly P2 and retained in Luna contracts, not claimed matched.",
+        "The six-case Pi differential includes Vertex Gemini 2.5/3.5 and Gemma 4 and matches ordered request contents. This does not cover Vertex ADC variants, retries, live services, or every response/error path; see docs/parity/fixtures/google-genai-vertex-current-pi-2026-10-15.json."
       ],
       "dependencies": [
         "provider-api-google-genai"
@@ -7144,7 +7157,7 @@
       ],
       "evidence": [
         "Current Pi pins @modelcontextprotocol/conformance@0.2.0-alpha.11 and runs modes 2025-03-26, 2025-06-18 and 2025-11-25. Its runner compares each check against a committed baseline. PiSharp has no equivalent harness or baseline yet.",
-        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi’s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp’s equivalent runner and baseline remain to be implemented and classified.",
+        "At current Pi 4270522473e677ddba7b093caa0064a3df51d459, reran packages/coding-agent/test/mcp-conformance/run.ts against @modelcontextprotocol/conformance@0.2.0-alpha.11. All 26 scenarios across protocol versions 2025-03-26, 2025-06-18 and 2025-11-25 match Pi\u2019s committed baseline: 261 checks pass and the same eight checks fail in the three documented cases (six elicitation defaults, CIMD client-id use, and the deliberate three-sign-in limit). PiSharp\u2019s equivalent runner and baseline remain to be implemented and classified.",
         "PiSharp candidate based on 10ce13a3: the executable official-suite harness drives production McpRuntime, real registered tools and the OAuth loopback callback. Full run against @modelcontextprotocol/conformance@0.2.0-alpha.11 matches current Pi 4270522473e677ddba7b093caa0064a3df51d459 across all 26 scenarios and three protocol modes: 261 checks pass and the same eight known checks fail, each classified. The run verifies selected protocol fallback, SSE reconnect/resume, OAuth scope step-up, tool calls and JSON Schema 2020-12 preservation. Focused MCP tests pass 76/76; terminal tests 24/24; Python tests 38/38; dotnet format passes; warnings-as-errors build has zero warnings/errors; full .NET suite passes 1,343/1,343 with zero skips. See tools/parity/mcp-conformance/README.md.",
         "Exact-head Linux CI run 38212383263 passes on PiSharp 0cfdf05e448192b15b4090406f602027bdfbc95d: standard job passes terminal 24/24, Python 38/38, format, warnings-as-errors build and .NET 1,343/1,343 with zero skips; the dedicated official MCP conformance job builds and passes the full three-mode suite. Current Pi remained at 4270522473e677ddba7b093caa0064a3df51d459 after a fresh fetch. The MCP conformance capability is verified; the overall parity gate remains open.",
         "Exact-head Linux CI 38222962860 on PiSharp e92d592b818cb5655046b98abafbd288a5e375d5 passes the official 26-scenario conformance suite across all three protocol modes with 261 passing checks, the same eight documented failures, and no baseline regressions."
@@ -7639,7 +7652,7 @@
       "status": "verified",
       "source": "earendil-works/pi@eba849739511223c51a62bbd7e3f1c00f99fb1d0: packages/coding-agent/src/extensions/llama/{index,provider,client,ui,huggingface}.ts; test/llama-extension.test.ts",
       "acceptance": [
-        "Audit and match Download model…, repository search, quantization selection and exact owner/repository[:quant] input.",
+        "Audit and match Download model\u2026, repository search, quantization selection and exact owner/repository[:quant] input.",
         "Match HF_TOKEN and token-file lookup precedence, gated-model warnings/access links, cancellation and unload/retain prompts.",
         "The router downloads the model; deterministic local HTTP/process and full terminal differential evidence is required."
       ],
@@ -7720,7 +7733,7 @@
     {
       "id": "provider-api-azure-foundry-chat-completions",
       "title": "Provider API: Azure Foundry Chat Completions",
-      "status": "not_started",
+      "status": "in_progress",
       "source": "earendil-works/pi@a37306d437c528c355357bc9123524de2bf67267: packages/ai/src/api/azure-openai-config.ts; packages/ai/src/providers/azure.ts; packages/ai/src/providers/azure-openai-responses.ts; packages/ai/test/azure-openai-completions.test.ts.",
       "acceptance": [
         "Expose current Azure Foundry deployments with correct provider/model identity, endpoint and deployment mapping, API version, and credential environment precedence.",
@@ -7728,12 +7741,13 @@
         "Use deterministic local HTTP/process differentials for normal selection and deployment-specific URLs; keep this separate from Azure OpenAI Responses behavior."
       ],
       "implementation": [
-        "src/PiSharp.Cli/Providers/AzureOpenAI/AzureOpenAiEndpoint.cs",
-        "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs",
-        "src/PiSharp.Cli/ModelCatalog.cs"
+        "Queue 10 adds the Azure Foundry Chat Completions profile and endpoint/deployment mapping in src/PiSharp.Cli/Providers/AzureOpenAI/AzureOpenAiEndpoint.cs, ProviderChatClientFactory.cs, and ModelCatalog.cs; integrated commit b2c67611.",
+        "The profile uses Azure Foundry bearer authentication, the deployment-specific v1 route, and the pinned catalog identity."
       ],
       "evidence": [
-        "Added by the 2026-10-08 source audit: Azure Foundry Chat Completions is distinct from the existing Azure OpenAI Responses ledger capability."
+        "AzureFoundryProviderTests pass 4/4, covering the pinned catalog model, request/stream path, bearer auth, reasoning/tool continuation, endpoint errors, and missing-endpoint validation.",
+        "The integrated focused provider/settings suite passes 190/190; the local full suite passes 2057/2057 with zero skips and exact-head Linux CI run 38789357300 passes. See docs/parity/fixtures/provider-queues-10-11-current-pi-2026-10-15.md.",
+        "Pi request/stream differential coverage for metadata, usage, retries, cancellation, and error envelopes remains open; this separate capability stays in progress."
       ],
       "dependencies": [
         "feature-models-selection-catalogs-and-credentials"
@@ -7768,10 +7782,12 @@
       "implementation": [
         "src/PiSharp.Cli/ProviderRetryPolicy.cs",
         "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs",
-        "tests/PiSharp.Tests/Cli/Providers/Mistral/MistralProviderCompatibilityTests.cs"
+        "tests/PiSharp.Tests/Cli/Providers/Mistral/MistralProviderCompatibilityTests.cs",
+        "Queue 11 adds the native Mistral Conversations request/stream boundary and reasoning/tool/image/usage mappings; integrated commit 1bd72a80. Root resolved ProviderChatClientFactory.cs to retain the Azure Foundry route alongside Mistral selection."
       ],
       "evidence": [
-        "Added by the 2026-10-08 source audit: existing Mistral mapping tests do not prove these current finish_reason retry and header-only timeout contracts."
+        "MistralProviderCompatibilityTests pass 9/9 within the 190/190 integrated focused suite and 2057/2057 full local suite. Coverage includes reasoning effort, tool continuation, images/cached usage, finish-reason retry boundaries, retry headers, terminal HTTP text, header timeout, and cancellation.",
+        "The direct Pi stream comparison remains open: Pi emits tool-call start/argument deltas while the adapter emits the completed call. No whole Mistral Conversations parity claim is made. See docs/parity/fixtures/provider-queues-10-11-current-pi-2026-10-15.md."
       ],
       "dependencies": [
         "feature-agent-multi-turn-and-streaming"
@@ -11268,7 +11284,7 @@
       "status": "completed",
       "conclusion": "success",
       "exact_head": "548f8cd435c78801663a39ee1156ee34a595ed4c",
-      "note": "Latest completed full exact-head CI before the integrated queues 4–6/9/12 and root queue 5; current wave CI is pending."
+      "note": "Latest completed full exact-head CI before the integrated queues 4\u20136/9/12 and root queue 5; current wave CI is pending."
     },
     "readiness": "READY FOR LUNA HANDOVER",
     "stopping_audit": [
@@ -11357,8 +11373,8 @@
   "sol_orchestration": {
     "starting_sha": "77caa3290a0300e2e02d61039b306260f127872a",
     "base_sha": "21d5e47e5a4b2cf084ed01b0a0ee7cca9efbc538",
-    "queue_position": 7,
-    "milestone": "Managed package CLI queues 1–3 completed and feature-pi-packages verified. Extension queues 4–5 and independent provider queues 6/9/12 integrated; queue 7 (thinking budgets) is next.",
+    "queue_position": 13,
+    "milestone": "Bounded slices for queues 1\u201312 are integrated. Queue 7 thinkingBudgets is verified; queue 8 has a six-case Google/Vertex transcript match; queues 10\u201311 add Azure Responses, Azure Foundry, and Mistral local transport coverage. Broader provider contracts remain in progress; queue 13 is next.",
     "mode": "parallel-wave",
     "isolation_gates": {
       "two_worker": "not run",
@@ -11381,22 +11397,22 @@
     "ssh_workaround": "Per-command GIT_SSH_COMMAND=ssh -F /dev/null; system SSH configuration untouched",
     "ci_access": "Unauthenticated public GitHub REST API; gh has no credentials",
     "latest_exact_head_ci": {
-      "run": 38771357186,
-      "sha": "548f8cd435c78801663a39ee1156ee34a595ed4c",
+      "run": 38789357300,
+      "sha": "1cdb57f7cfd2723152a3d45b0dd1498052995231",
       "conclusion": "success",
-      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38771357186",
-      "note": "Exact-head full suite passed for queue 3 before current queues 4–6/9/12 and 5; current integrated wave CI is pending."
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38789357300",
+      "note": "Exact-head Linux CI passed for the integrated queue 7\u201312 product source. The run covered the test and MCP conformance jobs."
     },
     "upstream_observed": "5ab7fe74c400097b386662205cd93900695b8a71",
     "upstream_policy": "Configured pin retained at b06c1f2c. Original three-commit review plus resumed eight-commit review through5ab7fe74 are recorded. New error-result image placement is required P2 deferred to existing queue43; no P0/P1 interrupt.",
-    "worker_state": "Queues 6, 9 and 12 workers completed and their private worktrees are clean. Root integrated and verified queues 4–6/9/12 plus queue 5. Current source product commit is 192f426832f42e01caf06905edeff2bbab4f2403; exact-head CI for the integrated wave is pending. No worker processes remain.",
+    "worker_state": "Queues 7, 8, 10, and 11 are integrated; all workers are finished and no worker processes remain. Root independently reviewed the Google same-model/cross-model call-ID behavior, corrected the Azure Responses continuation assertion, ran the six-case Google/Vertex differential, and passed the 2057-test local suite plus format and warnings-as-errors build. Exact-head CI 38789357300 passed.",
     "last_full_verification": {
-      "base_sha": "548f8cd435c78801663a39ee1156ee34a595ed4c",
-      "receipt": "docs/parity/fixtures/package-cli-real-process-2026-10-15.json",
-      "result": "Exact-head Linux CI run 38771357186 passed restore, format, warnings-as-errors build and all 2018 .NET tests, zero skips, at 548f8cd435c78801663a39ee1156ee34a595ed4c.",
-      "published_sha": "548f8cd435c78801663a39ee1156ee34a595ed4c"
+      "base_sha": "1cdb57f7cfd2723152a3d45b0dd1498052995231",
+      "receipt": "docs/parity/fixtures/google-genai-vertex-current-pi-2026-10-15.json",
+      "result": "Root local verification passed dotnet format, warnings-as-errors solution build (0 warnings/errors), and 2057/2057 .NET tests (0 skips). Exact-head Linux CI run 38789357300 passed for product source 1cdb57f7cfd2723152a3d45b0dd1498052995231.",
+      "published_sha": "1cdb57f7cfd2723152a3d45b0dd1498052995231"
     },
-    "milestones_since_full_verification": 5,
+    "milestones_since_full_verification": 9,
     "authorship": [
       {
         "queue_order": 1,
@@ -11462,6 +11478,44 @@
         "integration": "Root",
         "integrated_commit": "7eef7cc7",
         "verification": "Focused Radius/OAuth 34/34, Pi tests 18/18, shimmer 26 and MCP setup 10 comparisons passed."
+      },
+      {
+        "queue_order": 7,
+        "implementation": "Root",
+        "product_commit": "c8928c3d",
+        "integration": "Root",
+        "verification": "Focused tests pass 149/149; five pinned helper cases match; ten enabled Google/Vertex thinking controls match with two P2 off-control differences retained. Exact-head CI 38784569620 passed."
+      },
+      {
+        "queue_order": 8,
+        "implementation": "Luna",
+        "worker_sha": "762584801aaba834601536dfbd5fb3965a3d904a",
+        "integrated_commit": "2612a08b",
+        "integration": "Root",
+        "root_corrections": [
+          "Preserved same-model Google tool call IDs and normalized IDs only on cross-model replay after the six-case Pi differential exposed the distinction."
+        ],
+        "verification": "Six pinned Google/Vertex transcript cases match; Google focused tests pass 23/23 and the integrated full .NET suite passes 2057/2057."
+      },
+      {
+        "queue_order": 10,
+        "implementation": "Luna",
+        "worker_sha": "12e43f259a093156fc5360a0599173e1fe749b79",
+        "integrated_commit": "b2c67611",
+        "integration": "Root",
+        "root_corrections": [
+          "Corrected the Azure Responses continuation assertion to compare the JSON-encoded tool result.",
+          "Preserved the Azure Foundry route while resolving the Mistral factory integration."
+        ],
+        "verification": "Azure Foundry passes 4 local loopbacks; Azure Responses coverage is included in the 190/190 focused suite and 2057/2057 full local suite."
+      },
+      {
+        "queue_order": 11,
+        "implementation": "Luna",
+        "worker_sha": "47ea0242428442ad4deb4f3972f9b11331f3da35",
+        "integrated_commit": "1bd72a80",
+        "integration": "Root",
+        "verification": "Nine Mistral compatibility tests pass within the 190/190 focused suite and 2057/2057 full local suite; Pi stream-delta parity remains open."
       }
     ],
     "advisor_escalations": [],

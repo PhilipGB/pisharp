@@ -1,14 +1,29 @@
 # PiSharp capability parity
 
-Managed npm and Git acquisition (queues1/2) now feed the existing resource owners.
-Git cached startup, pinned/unchanged and explicit unpinned updates, dependency
-failure and cancellation have native and local-process evidence. Root full
-verification passes **1,997 .NET / 24 Node / 50 Python**, zero skips. Package CLI
-(queue3), configured npm commands and remaining package resolution proof stay
-required; no capability promotion. See [Git evidence](docs/parity/fixtures/managed-git-rpc-process.json)
-and [npm evidence](docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json).
+## Current integration checkpoint — 2026-10-15
 
-## Authoritative Sol-to-Luna checkpoint — 2026-10-15
+Verified product source is `1cdb57f7cfd2723152a3d45b0dd1498052995231` on
+`parity/current-pi-completion`; Pi remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Bounded implementation slices for
+queues 1–12 are integrated. Thinking budgets are verified, and six Google/Vertex
+transcript-conversion cases match pinned Pi. Azure Responses, Azure Foundry,
+Mistral, and broader provider behavior remain in progress.
+
+The local solution passes **2,057/2,057 .NET tests, zero skips**, a
+warnings-as-errors build with zero warnings, and format verification. Exact-head
+Linux CI run [38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300)
+passed on the product source. Counts are **12 verified, 147 in progress, 35 not started** across
+the 194 required capabilities. Queue 13 is next: Codex Responses/OAuth and
+Anthropic inline tool declarations. Full parity and the final source audit remain
+incomplete.
+
+See the [thinking budget](docs/parity/fixtures/thinking-budgets-current-pi-2026-10-15.md),
+[Google/Vertex](docs/parity/fixtures/google-genai-vertex-current-pi-2026-10-15.json),
+[queues 10–11 provider](docs/parity/fixtures/provider-queues-10-11-current-pi-2026-10-15.md),
+[Git](docs/parity/fixtures/managed-git-rpc-process.json), and
+[npm](docs/parity/fixtures/managed-npm-local-tarball-2026-10-15.json) receipts.
+
+## Historical Sol-to-Luna checkpoint — 2026-10-15 (superseded)
 
 The configured/audited Pi cutoff is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 All 194 required capability IDs remain: **10 verified, 146 in progress, 38 not
@@ -21,7 +36,7 @@ and deferred P2/P3/P4 findings supersede the older next-action prose below.
 See [the handover](docs/continuation.md) and the execution ledger for the current plan.
 
 
-## Current post-merge checkpoint — 2026-10-15
+## Historical post-merge checkpoint — 2026-10-15 (superseded)
 
 PiSharp merged `main` is `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`; exact-head Linux CI [38427397999](https://github.com/PhilipGB/pisharp/actions/runs/38427397999) passes. Work continues on `parity/current-pi-completion`. The major architecture refactor and composition review are complete; only the bounded final architecture regression review remains. Production dependencies remain CLI → Runtime → Core, with MAF 1.21.0 and Microsoft.Extensions.AI 10.10.0.
 

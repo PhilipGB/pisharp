@@ -2,29 +2,25 @@
 
 ## Resumed integration checkpoint — 2026-10-15
 
-Current product commit: `192f426832f42e01caf06905edeff2bbab4f2403` on
-`parity/current-pi-completion`, based on queue-3 exact-CI commit
-`548f8cd435c78801663a39ee1156ee34a595ed4c`. The configured Pi checkout remains
-at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+Verified product source: `1cdb57f7cfd2723152a3d45b0dd1498052995231` on
+`parity/current-pi-completion`. The configured Pi checkout remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-Queues 1–6, 9, and 12 are integrated; queues 4 and 5 cover extension conflict
-selection and the typed native extension context, lifecycle callbacks, shared UI
-adapter, and resource reload path. Queue 3's real Pi/PiSharp package CLI process
-pair is complete and exact-head CI run [38771357186](https://github.com/PhilipGB/pisharp/actions/runs/38771357186)
-passed **2,018/2,018 .NET tests, zero skips** on `548f8cd4`. Current integrated
-local verification passes **157 focused tests, zero skips**, a warnings-as-errors
-solution build with zero warnings/errors, and solution formatting. Pinned-Pi
-extension context/event/reload, conflict, ordering, pre-trust, provider sampling,
-tool argument, and Radius comparisons pass for their covered scopes. Exact-head CI
-for `192f4268` is pending.
+Bounded implementation slices for queues 1–12 are integrated. Thinking budgets
+are verified. Google GenAI/Vertex now match six pinned transcript-conversion
+cases. Azure Responses, Azure Foundry, and Mistral have expanded local transport
+coverage; their broader provider contracts remain in progress. The current local
+verification passes **2,057/2,057 .NET tests, zero skips**, a warnings-as-errors
+solution build with zero warnings, and formatting. Exact-head Linux CI run
+[38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300) for
+the product source passed.
 
-`feature-pi-packages` is promoted to verified; counts are **11 verified, 145 in
-progress, 38 not started**. Broader extension, provider, and package-resolution
-work remains in progress where the receipts retain uncovered behavior or
-observable differences. Next priority is queue 7, thinking budgets; inspect the
-next 6–10 ledger rows and schedule only independent ownership lanes. Keep the Pi
-pin fixed and preserve `test.pdf` and unrelated files. See the receipts listed in
-[the feature matrix](parity/feature-matrix.md) and the execution ledger.
+All 194 required capability IDs remain tracked: **12 verified, 147 in progress,
+35 not started**. Next ordered work is queue 13, covering Codex Responses/OAuth
+and Anthropic inline tool declarations. Full parity and the final source audit
+remain incomplete. Keep the Pi pin fixed and preserve `test.pdf` and unrelated
+files. See the receipts listed in [the feature matrix](parity/feature-matrix.md)
+and the execution ledger.
 
 ## Historical user-requested stop — 2026-10-15 (superseded by this resume)
 

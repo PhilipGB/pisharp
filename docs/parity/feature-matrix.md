@@ -1,31 +1,32 @@
 ## Current integration checkpoint — 2026-10-15
 
-Product commit `192f426832f42e01caf06905edeff2bbab4f2403` integrates package CLI
-queues 1–3, extension conflict selection (4), typed extension context/lifecycle/UI
-(5), sampling options (6), Bedrock/Pi Messages tool-call validation (9), and the
-Radius catalog/OAuth setup slice (12). Queue 7, thinking budgets, is next. The
-configured Pi pin remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+Verified product source is `1cdb57f7cfd2723152a3d45b0dd1498052995231` on
+`parity/current-pi-completion`; configured Pi remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Bounded implementation slices for
+queues 1–12 are integrated. Thinking budgets are verified; Google GenAI/Vertex,
+Azure Responses, Azure Foundry, and Mistral remain in progress where broader
+provider contracts are still open.
 
-The package CLI install/remove/update/list and resource invocation process pair
-matches; `feature-pi-packages` is verified with the Git progress and failed-fetch
-sidecar metadata differences bounded in its receipt. The current-Pi extension
-context comparison matches project/model/provider state, semantic tool event
-order, and startup/reload discovery. A real RPC process checks context/UI/events,
-and a Linux PTY checks `/reload`. The integrated focused suite passes **157/157**,
-the solution build has zero warnings/errors, and format verification passes.
-Exact-head CI for the current branch is pending. See the [package CLI receipt](fixtures/package-cli-real-process-2026-10-15.json),
+The latest local verification passes **2,057/2,057 .NET tests, zero skips**, a
+warnings-as-errors solution build with zero warnings, and format verification.
+The six-case Google/Vertex transcript differential matches. Exact-head Linux CI
+run [38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300)
+passed on the product source. All 194 capability IDs remain tracked:
+**12 verified, 147 in progress, 35 not started**. Next ordered work is queue 13:
+Codex Responses/OAuth and Anthropic inline tool declarations. Full parity and the
+final source audit remain incomplete.
+
+See the [thinking-budget receipt](fixtures/thinking-budgets-current-pi-2026-10-15.md),
+[Google/Vertex receipt](fixtures/google-genai-vertex-current-pi-2026-10-15.json),
+[provider queue 10–11 receipt](fixtures/provider-queues-10-11-current-pi-2026-10-15.md),
+[package CLI receipt](fixtures/package-cli-real-process-2026-10-15.json),
 [extension conflict receipt](fixtures/extension-conflicts-current-pi-2026-10-15.json),
 [extension context receipt](fixtures/extension-context-runtime-current-pi-2026-10-15.json),
 [sampling receipt](fixtures/provider-sampling-options-current-pi-2026-10-15.json),
 [provider call receipt](fixtures/provider-tool-call-validation-current-pi-2026-10-15.json),
 and [Radius receipt](fixtures/radius-catalog-oauth-setup-current-pi-2026-10-15.json).
 
-All 194 required capability IDs remain tracked: **11 verified, 145 in progress,
-38 not started**. The broader extension and provider capabilities remain in
-progress because their remaining current-Pi contracts are not covered by these
-bounded queue slices. Full parity and the final source audit remain incomplete.
-
-## Authoritative Sol-to-Luna checkpoint — 2026-10-15
+## Historical Sol-to-Luna checkpoint — 2026-10-15 (superseded)
 
 The configured/audited Pi cutoff is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 All 194 required capability IDs remain: **10 verified, 146 in progress, 38 not
