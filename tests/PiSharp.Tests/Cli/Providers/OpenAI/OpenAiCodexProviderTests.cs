@@ -46,6 +46,49 @@ public sealed class OpenAiCodexProviderTests
     }
 
     [Fact]
+    public async Task CodexResponsesWebSocketProjectsInlinePngAsInputImage()
+    {
+        using var listener = StartListener(out var port);
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync();
+            using var socket = (await context.AcceptWebSocketAsync(null)).WebSocket;
+            requestBody = await ReceiveWebSocketMessageAsync(socket);
+            await SendWebSocketResponseAsync(socket, "resp_image", "image received");
+        });
+
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses");
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var selection = new ModelSelection(provider, model, CreateToken("account-fixture"), true, "fixture token");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var image = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/bX8AAAAASUVORK5CYII=");
+        var prompt = new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User,
+        [
+            new Microsoft.Extensions.AI.TextContent("Describe this image"),
+            new Microsoft.Extensions.AI.DataContent(image, "image/png")
+        ]);
+        var output = new StringBuilder();
+        await foreach (var update in client.GetStreamingResponseAsync([prompt],
+            new Microsoft.Extensions.AI.ChatOptions { ConversationId = "codex-image-fixture" }, deadline.Token))
+            if (update.Text is { } text) output.Append(text);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("image received", output.ToString());
+        using var sent = JsonDocument.Parse(requestBody!);
+        var content = sent.RootElement.GetProperty("input")[0].GetProperty("content").EnumerateArray().ToArray();
+        Assert.Contains(content, item => item.GetProperty("type").GetString() == "input_text" &&
+            item.GetProperty("text").GetString() == "Describe this image");
+        var inputImage = Assert.Single(content, item => item.GetProperty("type").GetString() == "input_image");
+        Assert.Equal($"data:image/png;base64,{Convert.ToBase64String(image)}",
+            inputImage.GetProperty("image_url").GetString());
+    }
+
+    [Fact]
     public async Task CodexResponsesUsesCachedAccountScopedWebSocketAndRealResponsesClient()
     {
         using var listener = StartListener(out var port);
