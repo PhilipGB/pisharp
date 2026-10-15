@@ -1,5 +1,35 @@
 # Continuation — PiSharp capability parity
 
+## User-requested stop — 2026-10-15
+
+Base SHA: `21d5e47e5a4b2cf084ed01b0a0ee7cca9efbc538`. The user cleared the
+goal and requested **stop at the next suitable point**. Both specialists are idle;
+no further task or integration is authorized by this checkpoint alone.
+
+Queue3 is **in progress, unintegrated** on local branch
+`worker/003-package-cli-a2`, committed through
+`ea44cb08cbda35c2e2d152709a532192a13e82f0`. Preserve its clean external worktree
+and private profile at `/tmp/pisharp-sol-orchestration-20261015/pisharp-workers/003-package-cli-a2/`.
+If temporary storage disappears, recover the committed work from the branch;
+do not classify this attempt as an empty preparation or discard its commits.
+
+Luna's final bounded focused run passes **20/20, zero skips**; root inspected
+the log but has **not** independently rerun it or accepted the final commit.
+Package command/settings/store behavior and native process evidence are committed.
+The reusable real Pi/PiSharp package CLI differential, full resource invocation
+proof, compact parity receipt, final root review, integration and verification
+remain unfinished. Self/model update targets remain later queue work. See
+[the stop receipt](parity/fixtures/package-cli-user-stop-2026-10-15.json).
+
+Main product source remains `a33e556b`; last full verification remains
+**1,997 .NET / 24 Node / 50 Python**, six architecture checks and MCP **261/8
+classified/no regressions**. Counts remain **10 verified / 146 in progress /
+38 not started**; no promotion or queue3 completion. Serialized mode, both gates
+not run, unchanged fingerprint, zero milestones since full verification and no
+advisor escalation. Last inspected exact-head CI for pre-stop main `21d5e47e`
+is successful, run **38756890943**. The checkpoint below describes the prior
+startup; this stop record supersedes its active-work instructions.
+
 ## Sol orchestration checkpoint — 2026-10-15
 
 Base SHA: `a33e556b1fd88e5c935c9346ad286608f99f7384`; starting handover SHA:

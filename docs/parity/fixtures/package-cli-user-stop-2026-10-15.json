@@ -1,0 +1,59 @@
+{
+  "checkpoint": "User-requested stop; queue3 remains incomplete",
+  "date": "2026-10-15",
+  "baseSha": "21d5e47e5a4b2cf084ed01b0a0ee7cca9efbc538",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "userInstruction": "Goal cleared; stop at the next suitable point.",
+  "worker": {
+    "branch": "worker/003-package-cli-a2",
+    "commit": "ea44cb08cbda35c2e2d152709a532192a13e82f0",
+    "worktree": "/tmp/pisharp-sol-orchestration-20261015/pisharp-workers/003-package-cli-a2/wt",
+    "profile": "/tmp/pisharp-sol-orchestration-20261015/pisharp-workers/003-package-cli-a2/profile",
+    "state": "clean, committed, preserved for resume; specialist idle; worker reports no fixture processes remaining",
+    "checkpoints": [
+      "5dfbccf5c47967d2592effbd8a1da2dad748d8d8",
+      "1626c5fbf5bbc509f20ff7fbb1a08fa28f8db391",
+      "648c3cce8250c6a8a3b0b6accd780739072fc924",
+      "ea44cb08cbda35c2e2d152709a532192a13e82f0"
+    ]
+  },
+  "authorship": {
+    "implementation": "Luna",
+    "root": "Read-only source/diff review and this stop checkpoint; no queue3 integration or independent verification."
+  },
+  "workerVerification": {
+    "passed": 20,
+    "failed": 0,
+    "skipped": 0,
+    "command": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter 'FullyQualifiedName~ResourcePackageCommandProcessTests|FullyQualifiedName~ConfiguredNpmCommandUsesManagerSpecificInstallAndRemoveArgv|FullyQualifiedName~LegacyGlobalUserLookupIsReadOnlyAndManagedInstallTakesPrecedence|FullyQualifiedName~LegacyAlternateManagerLookupsUseReadOnlyManagerSpecificPaths|FullyQualifiedName~MissingOrMalformedLegacyLookupFallsBackToManagedAcquisition|FullyQualifiedName~GitDependencyInstallUsesConfiguredManagerPoliciesAndUnknownFallback|FullyQualifiedName~PackageSettingsReaderTests' --disable-build-servers -m:1 -p:UseSharedCompilation=false --nologo --verbosity quiet",
+    "log": "/tmp/pisharp-sol-orchestration-20261015/pisharp-workers/003-package-cli-a2/profile/tmp/queue3-final-focused.log",
+    "environment": "Assigned full isolated worker profile",
+    "diffCheck": "passed before private commit"
+  },
+  "rootVerification": "Root inspected the clean Git state, final commit summary and worker test log. No root test rerun, final acceptance, squash integration, or product publication.",
+  "implementedInPrivateBranch": [
+    "Package install/remove/uninstall/list and package-only update routing, scope/trust/settings persistence and controlled errors.",
+    "Configured npmCommand argv policies, managed npm/Git operations, read-only user legacy lookup, and offline update behavior.",
+    "Native command process tests, local reference/filter/duplicate persistence, registry range/latest upgrade controls and installed skill selection."
+  ],
+  "remaining": [
+    "Reusable real Pi/PiSharp package CLI differential for npm/Git install/remove/update/list, persisted scope/settings and full resource invocation.",
+    "Compact reviewed parity receipt and final exact-worker review.",
+    "Squash integration, independent root focused/differential verification, default-profile milestone verification, capability closure review, publication and exact-head CI.",
+    "Self/model updater targets remain separate later queue work; no parity claim for them."
+  ],
+  "resume": "Only resume if requested. Reconcile main/remote/CI and all worker state; continue/adopt this committed implementation rather than discarding it. Keep serialized mode until gates are proven.",
+  "mainProductSha": "a33e556b1fd88e5c935c9346ad286608f99f7384",
+  "capabilityCounts": {
+    "verified": 10,
+    "in_progress": 146,
+    "not_started": 38
+  },
+  "queue3Completed": false,
+  "goalCompleted": false,
+  "limitations": [
+    "Worker tests have not been independently rerun by root.",
+    "No paired CLI parity claim; no final full verification for queue3.",
+    "Temporary raw logs/profile are not durable remote backups; private Git commits remain local repository objects/refs."
+  ]
+}
