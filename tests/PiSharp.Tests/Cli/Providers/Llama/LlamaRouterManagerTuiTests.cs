@@ -353,6 +353,48 @@ public sealed class LlamaRouterManagerTuiTests
     }
 
     [Fact]
+    public async Task ResumeSwitchesToSavedLlamaModelAndRestoresHistory()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-resume-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var sessions = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        await using var server = new RouterServer(chatResponse: "TARGET_MODEL_REPLY");
+        server.Statuses["target"] = "loaded";
+        var store = new PiSharp.Runtime.Sessions.ConversationStore(root, sessions);
+        var saved = new PiSharp.Runtime.Sessions.ConversationSession(root, "target",
+            server.Origin + "/v1", "llama.cpp");
+        saved.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "prior target context"));
+        var savedPath = store.NewPath(saved);
+        await store.SaveAsync(saved, savedPath);
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+            sessionDirectory: sessions);
+        try
+        {
+            await terminal.WaitTextAsync("qwen");
+            var mark = terminal.Mark;
+            await terminal.SendAsync($"/resume {saved.Id[..12]}\n");
+            await terminal.WaitTextAsync($"Resumed {saved.Id[..12]}", mark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("Continue with the target model.\n");
+            await terminal.WaitTextAsync("TARGET_MODEL_REPLY", mark);
+
+            var request = Assert.Single(server.Requests, item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions");
+            using var body = JsonDocument.Parse(request.Body!);
+            Assert.Equal("target", body.RootElement.GetProperty("model").GetString());
+            Assert.Contains("prior target context", body.RootElement.GetProperty("messages").ToString());
+            await terminal.QuitAsync();
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task RouterConnectionScreenCanRetryCatalogDiscovery()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
@@ -390,6 +432,7 @@ public sealed class LlamaRouterManagerTuiTests
         private readonly bool _holdDownload;
         private readonly bool _holdRestore;
         private readonly bool _failFirstCatalog;
+        private readonly string? _chatResponse;
         private readonly ConcurrentBag<Task> _background = [];
         private readonly TaskCompletionSource _downloadRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _loadProgressRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -408,12 +451,13 @@ public sealed class LlamaRouterManagerTuiTests
         public string Origin { get; }
 
         public RouterServer(bool holdLoad = false, bool failFirstCatalog = false, bool holdDownload = false,
-            bool sleepingQwen = false, bool holdRestore = false)
+            bool sleepingQwen = false, bool holdRestore = false, string? chatResponse = null)
         {
             _holdLoad = holdLoad;
             _failFirstCatalog = failFirstCatalog;
             _holdDownload = holdDownload;
             _holdRestore = holdRestore;
+            _chatResponse = chatResponse;
             if (sleepingQwen) Statuses["qwen"] = "sleeping";
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
@@ -507,6 +551,34 @@ public sealed class LlamaRouterManagerTuiTests
                     }
                     else if (context.Request.HttpMethod == "GET" && path.StartsWith("/props", StringComparison.Ordinal))
                         response = "{}";
+                    else if (context.Request.HttpMethod == "POST" && path == "/v1/chat/completions" && _chatResponse is not null)
+                    {
+                        using var payload = JsonDocument.Parse(body!);
+                        var model = payload.RootElement.GetProperty("model").GetString()!;
+                        var first = new
+                        {
+                            id = "chatcmpl_local",
+                            @object = "chat.completion.chunk",
+                            created = 1,
+                            model,
+                            choices = new[] { new
+                            {
+                                index = 0,
+                                delta = new { role = "assistant", content = _chatResponse },
+                                finish_reason = (string?)null
+                            } }
+                        };
+                        var last = new
+                        {
+                            id = "chatcmpl_local",
+                            @object = "chat.completion.chunk",
+                            created = 1,
+                            model,
+                            choices = new[] { new { index = 0, delta = new { }, finish_reason = "stop" } }
+                        };
+                        contentType = "text/event-stream";
+                        response = $"data: {JsonSerializer.Serialize(first)}\n\ndata: {JsonSerializer.Serialize(last)}\n\ndata: [DONE]\n\n";
+                    }
                     else
                     {
                         context.Response.StatusCode = 404;
@@ -647,7 +719,7 @@ public sealed class LlamaRouterManagerTuiTests
         public int Mark { get { lock (_gate) return _output.Length; } }
 
         public ManagerTerminal(string root, string agent, string serverUrl, string? hfEndpoint = null,
-            string? hfToken = null, bool llamaProvider = false)
+            string? hfToken = null, bool llamaProvider = false, string? sessionDirectory = null)
         {
             _editorModelText = llamaProvider ? "llama.cpp/qwen" : "fixture-model";
             var start = new ProcessStartInfo("/usr/bin/script")
@@ -661,8 +733,10 @@ public sealed class LlamaRouterManagerTuiTests
             start.ArgumentList.Add("-e");
             start.ArgumentList.Add("-c");
             var arguments = llamaProvider
-                ? " --provider llama.cpp --model qwen --no-session --no-tools"
-                : " --provider fixture --model fixture-model --offline --no-session --no-tools";
+                ? " --provider llama.cpp --model qwen"
+                : " --provider fixture --model fixture-model --offline";
+            arguments += sessionDirectory is null ? " --no-session" : " --session-dir " + ShellQuote(sessionDirectory);
+            arguments += " --no-tools";
             start.ArgumentList.Add("stty rows 30 cols 100; exec dotnet " + ShellQuote(typeof(CliArguments).Assembly.Location) + arguments);
             start.ArgumentList.Add("/dev/null");
             foreach (var name in new[] { "LLAMA_BASE_URL", "LLAMA_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL",

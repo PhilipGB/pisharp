@@ -23,8 +23,11 @@ internal static class InteractiveMode
         var trustStore = startup.Trust;
         var usesDefaultToolsSetting = startup.UsesDefaultToolsSetting;
         var prompt = projectBinding.Arguments.Prompt;
+        TerminalSessionNavigation? sessionNavigationReference = null;
         var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding, () => Console.Out);
-        var sessionNavigation = new TerminalSessionNavigation(projectBinding, modelBinding, conversationBinding, projectTransitions, presentation);
+        var sessionNavigation = new TerminalSessionNavigation(projectBinding, conversationBinding, projectTransitions,
+            presentation, AdoptProjectSession);
+        sessionNavigationReference = sessionNavigation;
         var settingsCommands = new TerminalSettingsCommands(agentDirectory, projectBinding, modelBinding, conversationBinding,
             modelTransitions, presentation, execution);
         var modelSelection = new TerminalModelSelectionCommands(modelRuntime, modelRuntimeController, projectBinding, modelBinding,
@@ -49,7 +52,7 @@ internal static class InteractiveMode
             ReloadResources, () => HandleEditorApplicationAction("app.message.copy"));
         void RefreshProjectUi()
         {
-            sessionNavigation.RefreshPicker();
+            sessionNavigationReference?.RefreshPicker();
             presentation.RefreshTerminalTheme();
             terminalScreen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
         }
