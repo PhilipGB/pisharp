@@ -221,7 +221,22 @@ internal sealed class AgentRunRetryController
                     { RetrySuccess = false, RetryAttempt = retries, RetryFinalError = "Retry cancelled" });
                     return AgentTurnOutcome.Failed;
                 }
-                await restoreContext(cancellationToken);
+                try
+                {
+                    await restoreContext(cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    publish(new AgentLifecycleEvent("auto_retry_end")
+                    { RetrySuccess = false, RetryAttempt = retries, RetryFinalError = "Retry cancelled" });
+                    return AgentTurnOutcome.Failed;
+                }
+                catch (Exception restoreError)
+                {
+                    publish(new AgentLifecycleEvent("auto_retry_end")
+                    { RetrySuccess = false, RetryAttempt = retries, RetryFinalError = restoreError.Message });
+                    return AgentTurnOutcome.Failed;
+                }
                 continuation = true;
             }
         }

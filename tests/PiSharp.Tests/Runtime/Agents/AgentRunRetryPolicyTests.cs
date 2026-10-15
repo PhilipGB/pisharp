@@ -90,4 +90,35 @@ public sealed class AgentRunRetryPolicyTests
         var retryEndedIndex = events.FindIndex(item => item.Type == "auto_retry_end");
         Assert.True(completedIndex < retryEndedIndex);
     }
+
+    [Fact]
+    public async Task FailedContextRestoreEndsScheduledRetryAndFailsTheTurn()
+    {
+        var controller = new AgentRunRetryController(new AgentRunRetryPolicy(enabled: true, maxRetries: 1,
+            baseDelay: TimeSpan.Zero, maxDelay: TimeSpan.Zero));
+        var events = new List<AgentLifecycleEvent>();
+
+        async IAsyncEnumerable<AgentResponseUpdate> Execute(bool continuation,
+            Action<AgentLifecycleEvent> observeAttempt)
+        {
+            if (continuation) yield break;
+            observeAttempt(new("prompt_accepted") { RunStartHead = "root" });
+            observeAttempt(new("model_request_failed", Error: "503 service unavailable"));
+            await Task.Yield();
+            throw new HttpRequestException("503 service unavailable", null,
+                System.Net.HttpStatusCode.ServiceUnavailable);
+        }
+
+        var outcome = await controller.RunTurnAsync(Execute, events.Add, _ => { },
+            (_, _, _) => Task.CompletedTask,
+            _ => Task.FromException(new IOException("execution restore failed")),
+            () => { }, () => "head", CancellationToken.None);
+
+        Assert.Equal(AgentTurnOutcome.Failed, outcome);
+        Assert.Single(events, item => item.Type == "auto_retry_start");
+        var retryEnd = Assert.Single(events, item => item.Type == "auto_retry_end");
+        Assert.False(retryEnd.RetrySuccess);
+        Assert.Equal("execution restore failed", retryEnd.RetryFinalError);
+        Assert.DoesNotContain(events, item => item.Type == "agent_attempt_started");
+    }
 }
