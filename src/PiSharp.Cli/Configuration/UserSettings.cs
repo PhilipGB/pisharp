@@ -90,7 +90,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     bool? EnableSkillCommands = null, IReadOnlyList<string>? Extensions = null,
     IReadOnlyList<string>? Skills = null, IReadOnlyList<string>? Prompts = null,
     IReadOnlyList<string>? Themes = null, string? ShellCommandPrefix = null, string? SessionShareDestination = null,
-    IReadOnlyList<ResourcePackageSource>? Packages = null, IReadOnlyList<string>? NpmCommand = null)
+    IReadOnlyList<ResourcePackageSource>? Packages = null, IReadOnlyList<string>? NpmCommand = null,
+    IReadOnlyDictionary<string, int>? ThinkingBudgets = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -124,6 +125,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         IReadOnlyList<ResourcePackageSource>? packages = null;
         IReadOnlyList<string>? npmCommand = null;
         IReadOnlyDictionary<string, string>? modelThinkingLevels = null;
+        IReadOnlyDictionary<string, int>? thinkingBudgets = null;
         CompactionSettings? compaction = null;
         RetrySettings? retry = null;
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
@@ -285,6 +287,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 modelThinkingLevels = ParseModelThinkingLevels(property.Value);
                 continue;
             }
+            if (property.Name == "thinkingBudgets")
+            {
+                thinkingBudgets = ParseThinkingBudgets(property.Value);
+                continue;
+            }
             if (property.Name == "defaultTools")
             {
                 if (property.Value.ValueKind != JsonValueKind.Array)
@@ -345,7 +352,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
             modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
             enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
-            npmCommand);
+            npmCommand, thinkingBudgets);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -386,7 +393,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.ShellCommandPrefix ?? ShellCommandPrefix,
         project.SessionShareDestination ?? SessionShareDestination,
         project.Packages ?? Packages,
-        project.NpmCommand ?? NpmCommand);
+        project.NpmCommand ?? NpmCommand,
+        MergeThinkingBudgets(ThinkingBudgets, project.ThinkingBudgets));
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");
@@ -469,6 +477,32 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         var merged = global is null ? new Dictionary<string, string>(StringComparer.Ordinal) :
             new Dictionary<string, string>(global, StringComparer.Ordinal);
         foreach (var (model, level) in project) merged[model] = level;
+        return merged;
+    }
+
+    private static IReadOnlyDictionary<string, int>? ParseThinkingBudgets(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object || value.EnumerateObject().Count() > 4)
+            throw new InvalidDataException("settings.json thinkingBudgets must be an object of at most four token budgets.");
+
+        var budgets = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var property in value.EnumerateObject())
+        {
+            if (property.Name is not ("minimal" or "low" or "medium" or "high") ||
+                property.Value.ValueKind != JsonValueKind.Number || !property.Value.TryGetInt32(out var budget) || budget < 0 ||
+                !budgets.TryAdd(property.Name, budget))
+                throw new InvalidDataException("settings.json thinkingBudgets values must be non-negative integers for minimal, low, medium, or high.");
+        }
+        return budgets;
+    }
+
+    private static IReadOnlyDictionary<string, int>? MergeThinkingBudgets(
+        IReadOnlyDictionary<string, int>? user, IReadOnlyDictionary<string, int>? project)
+    {
+        if (project is null) return user;
+        var merged = user is null ? new Dictionary<string, int>(StringComparer.Ordinal) :
+            new Dictionary<string, int>(user, StringComparer.Ordinal);
+        foreach (var (level, budget) in project) merged[level] = budget;
         return merged;
     }
 

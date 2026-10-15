@@ -185,6 +185,28 @@ public sealed class BedrockProviderTests
     }
 
     [Fact]
+    public void BedrockLegacyClaudeExpandsOutputCeilingForConfiguredThinkingBudget()
+    {
+        var model = new ModelDescriptor("anthropic.claude-3-7-sonnet-20250219-v1:0", "Anthropic",
+            128_000, "configured", Reasoning: true, Name: "Claude 3.7 Sonnet", MaxOutputTokens: 20_000);
+        var options = new ChatOptions
+        {
+            MaxOutputTokens = 4096,
+            Reasoning = ThinkingLevels.ToOptions("medium")
+        };
+        options.AdditionalProperties ??= new();
+        options.AdditionalProperties[ThinkingBudgetPolicy.SettingsProperty] =
+            new Dictionary<string, int>(StringComparer.Ordinal) { ["medium"] = 5000 };
+
+        var request = BedrockRequestMapper.Build(model, [new ChatMessage(ChatRole.User, "hello")], options,
+            enablePromptCaching: false, oneHourCache: false, forcePromptCaching: false, region: "us-east-1");
+
+        Assert.Equal(9096, request.InferenceConfig.MaxTokens);
+        var thinking = request.AdditionalModelRequestFields.AsDictionary()["thinking"].AsDictionary();
+        Assert.Equal(5000, thinking["budget_tokens"].AsInt());
+    }
+
+    [Fact]
     public async Task BedrockCancellationFlowsIntoAwsStreamTransport()
     {
         var model = BedrockModelCatalog.Load()[0];

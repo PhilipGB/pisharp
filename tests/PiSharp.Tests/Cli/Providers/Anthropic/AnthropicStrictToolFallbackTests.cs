@@ -244,6 +244,29 @@ public sealed class AnthropicStrictToolFallbackTests
         Assert.Empty(harness.Payloads);
     }
 
+    [Fact]
+    public async Task LegacyThinkingUsesConfiguredBudgetAndExpandsTheOutputCeiling()
+    {
+        using var harness = new AnthropicStrictHttpFixture((_, _) => Success);
+        using var client = harness.Client(reasoning: true, maxOutputTokens: 20_000);
+        var options = new ChatOptions
+        {
+            MaxOutputTokens = 4096,
+            Reasoning = ThinkingLevels.ToOptions("medium")
+        };
+        options.AdditionalProperties ??= new();
+        options.AdditionalProperties[ThinkingBudgetPolicy.SettingsProperty] =
+            new Dictionary<string, int>(StringComparer.Ordinal) { ["medium"] = 5000 };
+
+        Assert.Equal("ok", (await InvokeAsync(client, Messages(), streaming: false, harness.Token, options)).Text);
+        await harness.StopAsync();
+
+        var payload = Assert.Single(harness.Payloads);
+        Assert.Equal(9096, payload.GetProperty("max_tokens").GetInt32());
+        Assert.Equal(5000, payload.GetProperty("thinking").GetProperty("budget_tokens").GetInt32());
+        Assert.False(payload.TryGetProperty(ThinkingBudgetPolicy.SettingsProperty, out _));
+    }
+
     [Theory]
     [InlineData("0", true)]
     [InlineData("1", true)]

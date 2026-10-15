@@ -14,7 +14,7 @@ for (const item of JSON.parse(readFileSync(input, 'utf8'))) {
     reasoning: true, input: ['text'], contextWindow: 128000, maxTokens: 4096,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } };
   const response = await streamSimple(model, { messages: [{ role: 'user', content: 'hello', timestamp: 0 }] }, {
-    apiKey: 'fixture', reasoning: item.level === 'off' ? undefined : item.level,
+    apiKey: 'fixture', reasoning: item.level === 'off' ? undefined : item.level, thinkingBudgets: item.budgets ?? undefined,
     onPayload: value => { payload = value; throw new Error('payload captured'); },
   }).result();
   if (!payload || !response.errorMessage?.includes('payload captured')) throw new Error(JSON.stringify(response));

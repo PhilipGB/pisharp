@@ -17,7 +17,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<string?>? getAdditionalSystemInstructions = null,
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? transformContext = null,
     Func<IReadOnlyList<ChatMessage>, ChatOptions, System.Text.Json.JsonElement?>? projectToolTranscript = null,
-    Func<string?>? getSystemInstructions = null)
+    Func<string?>? getSystemInstructions = null,
+    Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
@@ -349,14 +350,19 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
 
     private ChatOptions? ApplyCurrentReasoning(ChatOptions? options)
     {
-        if (getReasoning is null) return options;
+        if (getReasoning is null && getThinkingBudgets is null) return options;
         var requestOptions = options?.Clone() ?? new ChatOptions();
-        requestOptions.Reasoning = getReasoning();
+        if (getReasoning is not null) requestOptions.Reasoning = getReasoning();
         if (routedChatClient is not null)
         {
             requestOptions.AdditionalProperties ??= new();
             requestOptions.AdditionalProperties[ModelSamplingParametersChatClient.ThinkingLevelProperty] =
                 routedChatClient.SelectedThinkingLevel;
+        }
+        if (getThinkingBudgets?.Invoke() is { } thinkingBudgets)
+        {
+            requestOptions.AdditionalProperties ??= new();
+            requestOptions.AdditionalProperties[ThinkingBudgetPolicy.SettingsProperty] = thinkingBudgets;
         }
         return requestOptions;
     }

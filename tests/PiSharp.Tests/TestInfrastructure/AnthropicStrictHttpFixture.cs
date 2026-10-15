@@ -70,9 +70,11 @@ internal sealed class AnthropicStrictHttpFixture : IDisposable
         });
     }
 
-    internal IChatClient Client(bool nativeChanges = false, bool strictSupport = true)
+    internal IChatClient Client(bool nativeChanges = false, bool strictSupport = true,
+        bool reasoning = false, int? maxOutputTokens = null)
     {
-        var model = new ModelDescriptor("fixture", "fixture", 128000, "configured", Provider: "fixture",
+        var model = new ModelDescriptor("fixture", "fixture", 128000, "configured", Reasoning: reasoning,
+            Provider: "fixture", MaxOutputTokens: maxOutputTokens,
             Api: "anthropic-messages", Compatibility: JsonSerializer.SerializeToElement(new
             {
                 supportsStrictTools = strictSupport,

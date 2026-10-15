@@ -59,17 +59,35 @@ public sealed class ModelSamplingParametersChatClient(IChatClient inner, ModelDe
         var requestProperties = options?.AdditionalProperties;
         var thinkingLevel = GetString(requestProperties, ThinkingLevelProperty) ?? GetThinkingLevel(options?.Reasoning);
         var requestParameters = GetObject(requestProperties, RequestSamplingParametersProperty);
-        var parameters = providerSupportsSampling ? Resolve(model, thinkingLevel, requestParameters) : null;
+        var modelParameters = providerSupportsSampling ? Resolve(model, thinkingLevel, null) : null;
+        var parameters = providerSupportsSampling ? ModelMetadataJson.MergeObjects(requestParameters, modelParameters) : null;
+        var thinkingBudgets = ThinkingBudgetPolicy.Read(requestProperties);
+        if (model.Api == "openai-completions" && options?.Reasoning is not null && model.Reasoning == true &&
+            ThinkingBudgetPolicy.ReadThinkingBudgetField(model.Compatibility) is { } budgetField)
+        {
+            var ceiling = options.MaxOutputTokens ?? model.MaxOutputTokens ?? 0;
+            var budget = ThinkingBudgetPolicy.ClampToAnswerRoom(
+                ThinkingBudgetPolicy.ForLevel(thinkingLevel, thinkingBudgets), ceiling);
+            if (budget > 0)
+            {
+                parameters = ThinkingBudgetPolicy.MergeBudgetParameter(modelParameters, budgetField, budget);
+                if (providerSupportsSampling) parameters = ModelMetadataJson.MergeObjects(requestParameters, parameters);
+            }
+        }
 
+        var keepThinkingBudgets = model.Api is "anthropic-messages" or "google-generative-ai" or "google-vertex" or
+            "bedrock-converse-stream";
+        var removeBudgetSettings = requestProperties?.ContainsKey(ThinkingBudgetPolicy.SettingsProperty) == true && !keepThinkingBudgets;
         if (requestProperties is null ||
             (!requestProperties.ContainsKey(ThinkingLevelProperty) &&
-             !requestProperties.ContainsKey(RequestSamplingParametersProperty)))
+             !requestProperties.ContainsKey(RequestSamplingParametersProperty) && !removeBudgetSettings))
             return (options, parameters);
 
         var requestOptions = options!.Clone();
         var properties = requestProperties.Clone();
         properties.Remove(ThinkingLevelProperty);
         properties.Remove(RequestSamplingParametersProperty);
+        if (removeBudgetSettings) properties.Remove(ThinkingBudgetPolicy.SettingsProperty);
         requestOptions.AdditionalProperties = properties.Count == 0 ? null : properties;
         return (requestOptions, parameters);
     }

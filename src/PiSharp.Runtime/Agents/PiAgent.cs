@@ -97,7 +97,8 @@ public sealed class PiAgent
         Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? getSkillInstructions = null,
         IReadOnlyList<string>? initialActiveToolNames = null,
         IReadOnlyList<ExtensionLifecycleHandlerRegistration>? extensionLifecycleHandlers = null,
-        PiSharpExtensionContextConfiguration? extensionContextConfiguration = null)
+        PiSharpExtensionContextConfiguration? extensionContextConfiguration = null,
+        IReadOnlyDictionary<string, int>? thinkingBudgets = null)
     {
         _contextTransforms = new(extensionContextTransforms);
         _extensionLifecycleHandlers = extensionLifecycleHandlers?.ToArray() ?? [];
@@ -145,18 +146,19 @@ public sealed class PiAgent
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
             _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions,
             _contextTransforms.ApplyAsync, (messages, options) =>
-                _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout), new ChatClientAgentOptions
+                _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout,
+            () => thinkingBudgets), new ChatClientAgentOptions
+            {
+                Name = "PiSharp",
+                ChatHistoryProvider = _history,
+                AllowConcurrentInvocation = true,
+                ChatOptions = new ChatOptions
                 {
-                    Name = "PiSharp",
-                    ChatHistoryProvider = _history,
-                    AllowConcurrentInvocation = true,
-                    ChatOptions = new ChatOptions
-                    {
-                        Instructions = SystemInstructions,
-                        Tools = [],
-                        Reasoning = reasoning
-                    }
-                });
+                    Instructions = SystemInstructions,
+                    Tools = [],
+                    Reasoning = reasoning
+                }
+            });
     }
 
     private IReadOnlyList<ChatMessage> TakeSteeringForRequest(IEnumerable<ChatMessage> messages)

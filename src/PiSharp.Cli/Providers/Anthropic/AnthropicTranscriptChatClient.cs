@@ -186,7 +186,9 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
             }
             if (blocks.Count > 0) updates.Add(new(assistantCount, new JsonObject { ["role"] = "system", ["content"] = blocks }));
         }
+        var thinkingBudgets = ThinkingBudgetPolicy.Read(options?.AdditionalProperties);
         var requestOptions = options?.Clone() ?? new ChatOptions();
+        requestOptions.AdditionalProperties?.Remove(ThinkingBudgetPolicy.SettingsProperty);
         var originalFactory = requestOptions.RawRepresentationFactory;
         requestOptions.RawRepresentationFactory = client =>
         {
@@ -211,6 +213,26 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
                 };
             }
             if (native) parameters = parameters with { Betas = (parameters.Betas ?? []).Append((ApiEnum<string, AnthropicBeta>)"inline-tools-2026-09-15").Distinct().ToArray() };
+            var adaptiveThinking = SupportsAdaptiveThinking() ||
+                parameters.Thinking is { } configuredThinking && configuredThinking.TryPickAdaptive(out _);
+            if (options?.Reasoning is { } reasoning && !adaptiveThinking)
+            {
+                var level = reasoning.Effort switch
+                {
+                    ReasoningEffort.Low => "low",
+                    ReasoningEffort.Medium => "medium",
+                    ReasoningEffort.High => "high",
+                    ReasoningEffort.ExtraHigh => "xhigh",
+                    _ => "high"
+                };
+                var adjusted = ThinkingBudgetPolicy.AdjustMaxTokens(options.MaxOutputTokens,
+                    model.MaxOutputTokens ?? 16384, level, thinkingBudgets);
+                var budget = Math.Min(adjusted.ThinkingBudget,
+                    Math.Max(0, adjusted.MaxTokens - ThinkingBudgetPolicy.MinimumAnswerTokens));
+                var thinking = JsonSerializer.Deserialize<BetaThinkingConfigParam>(
+                    $"{{\"type\":\"enabled\",\"budget_tokens\":{budget}}}")!;
+                parameters = parameters with { MaxTokens = adjusted.MaxTokens, Thinking = thinking };
+            }
             return parameters;
         };
         requestOptions.Instructions = null;
@@ -232,6 +254,19 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
     private bool Compatibility(string name, bool fallback) =>
         model.Compatibility is { ValueKind: JsonValueKind.Object } compatibility && compatibility.TryGetProperty(name, out var value)
             ? value.ValueKind == JsonValueKind.True : fallback;
+
+    private bool SupportsAdaptiveThinking()
+    {
+        if (Compatibility("forceAdaptiveThinking", false)) return true;
+        var value = (model.Id + " " + model.Name).ToLowerInvariant().Replace('_', '-');
+        return value.Contains("opus-4-6", StringComparison.Ordinal) ||
+            value.Contains("opus-4-7", StringComparison.Ordinal) ||
+            value.Contains("opus-4-8", StringComparison.Ordinal) ||
+            value.Contains("opus-5", StringComparison.Ordinal) ||
+            value.Contains("sonnet-4-6", StringComparison.Ordinal) ||
+            value.Contains("sonnet-5", StringComparison.Ordinal) ||
+            value.Contains("fable-5", StringComparison.Ordinal);
+    }
 
     private bool CanFallback(AnthropicApiException error, Projection projection, CancellationToken token)
     {

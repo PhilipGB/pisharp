@@ -338,6 +338,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),
             getSkillInstructions: (activeToolNames, declaredToolNames) => Resources.SystemInstructions(
                 ResolveSkillFileReadTool(arguments, activeToolNames, declaredToolNames)),
+            thinkingBudgets: effectiveSettings.ThinkingBudgets,
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.
             // Avoid adding PiAgent's independent fallback retry loop on top of that configured count.
             retryPolicy: ProviderRetryPolicy.None);

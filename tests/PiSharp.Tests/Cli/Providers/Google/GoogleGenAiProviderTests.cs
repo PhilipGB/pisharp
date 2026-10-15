@@ -29,6 +29,32 @@ public sealed class GoogleGenAiProviderTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GeminiTwoPointFiveUsesConfiguredThinkingBudgetWhileGeminiThreeUsesThinkingLevel(bool vertex)
+    {
+        var budgets = new Dictionary<string, int>(StringComparer.Ordinal) { ["high"] = 6144 };
+        var options = new ChatOptions { Reasoning = ThinkingLevels.ToOptions("high") };
+        options.AdditionalProperties ??= new();
+        options.AdditionalProperties[ThinkingBudgetPolicy.SettingsProperty] = budgets;
+
+        using var geminiTwo = new GoogleGenAiChatClient(new HttpClient(), new Uri("https://example.test/v1beta"),
+            "key", GoogleModel("gemini-2.5-flash"),
+            vertex ? new GoogleVertexRequestOptions(null, null, false) : null);
+        var budget = geminiTwo.BuildRequest([new ChatMessage(ChatRole.User, "hello")], options)
+            ["generationConfig"]!["thinkingConfig"]!["thinkingBudget"]!.GetValue<int>();
+        Assert.Equal(6144, budget);
+
+        using var geminiThree = new GoogleGenAiChatClient(new HttpClient(), new Uri("https://example.test/v1beta"),
+            "key", GoogleModel("gemini-3.5-flash"),
+            vertex ? new GoogleVertexRequestOptions(null, null, false) : null);
+        var thinking = geminiThree.BuildRequest([new ChatMessage(ChatRole.User, "hello")], options)
+            ["generationConfig"]!["thinkingConfig"]!.AsObject();
+        Assert.Equal("HIGH", thinking["thinkingLevel"]!.GetValue<string>());
+        Assert.False(thinking.ContainsKey("thinkingBudget"));
+    }
+
     [Fact]
     public async Task GoogleProfileUsesCurrentPiCatalogAndGeminiCredential()
     {

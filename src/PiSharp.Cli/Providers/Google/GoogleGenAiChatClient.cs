@@ -290,7 +290,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             root["generationConfig"] = generation;
         }
 
-        AddThinkingConfig(root, options?.Reasoning);
+        AddThinkingConfig(root, options);
         AddTools(root, options);
         return root;
     }
@@ -385,9 +385,11 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         return true;
     }
 
-    private void AddThinkingConfig(JsonObject root, ReasoningOptions? reasoning)
+    private void AddThinkingConfig(JsonObject root, ChatOptions? options)
     {
         if (model.Reasoning != true) return;
+        var reasoning = options?.Reasoning;
+        var thinkingBudgets = ThinkingBudgetPolicy.Read(options?.AdditionalProperties);
         var enabled = reasoning is not null;
         var requested = reasoning?.Effort switch
         {
@@ -404,7 +406,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
                 ? mappedValue.GetString()?.ToLowerInvariant() : level;
             var config = new JsonObject { ["includeThoughts"] = enabled };
             if (UsesThinkingLevel(_modelId)) config["thinkingLevel"] = ToApiThinkingLevel(mapped);
-            else config["thinkingBudget"] = enabled ? GetThinkingBudget(_modelId, mapped ?? requested) : 0;
+            else config["thinkingBudget"] = enabled ? GetThinkingBudget(_modelId, mapped ?? requested, thinkingBudgets) : 0;
             AddThinkingConfigNode(root, config);
         }
         else if (UsesThinkingLevel(_modelId))
@@ -421,7 +423,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             AddThinkingConfigNode(root, new JsonObject
             {
                 ["includeThoughts"] = enabled,
-                ["thinkingBudget"] = enabled ? GetThinkingBudget(_modelId, requested) : 0
+                ["thinkingBudget"] = enabled ? GetThinkingBudget(_modelId, requested, thinkingBudgets) : 0
             });
         }
     }
@@ -567,8 +569,11 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         _ => "THINKING_LEVEL_UNSPECIFIED"
     };
 
-    private static int GetThinkingBudget(string modelId, string level)
+    private static int GetThinkingBudget(string modelId, string level,
+        IReadOnlyDictionary<string, int>? customBudgets = null)
     {
+        var budgetLevel = level is "xhigh" or "max" ? "high" : level;
+        if (customBudgets?.TryGetValue(budgetLevel, out var customBudget) == true) return customBudget;
         if (modelId.Contains("2.5-pro", StringComparison.OrdinalIgnoreCase))
             return level switch { "minimal" => 128, "low" => 2048, "medium" => 8192, "high" or "max" => 32768, _ => -1 };
         if (modelId.Contains("2.5-flash-lite", StringComparison.OrdinalIgnoreCase))

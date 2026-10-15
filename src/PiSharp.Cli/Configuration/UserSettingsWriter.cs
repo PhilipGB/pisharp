@@ -148,6 +148,8 @@ internal static class UserSettingsWriter
                 double.IsFinite(retryDelay) && retryDelay >= 0,
             "retry.provider.timeoutMs" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var providerTimeout) && providerTimeout >= 0,
+            "thinkingBudgets.minimal" or "thinkingBudgets.low" or "thinkingBudgets.medium" or "thinkingBudgets.high" =>
+                value is null || int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var thinkingBudget) && thinkingBudget >= 0,
             "terminal.trueColor" => value is null or "auto" or "true" or "false",
             "sessionShareDestination" => value is null or "auto" or "gist" or "radius",
             "markdown.codeBlockIndent" => true,
@@ -194,6 +196,8 @@ internal static class UserSettingsWriter
         "retry.provider.maxRetries" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "retry.provider.maxRetryDelayMs" => JsonValue.Create(double.Parse(value!, NumberStyles.Float, CultureInfo.InvariantCulture)),
         "retry.provider.timeoutMs" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
+        "thinkingBudgets.minimal" or "thinkingBudgets.low" or "thinkingBudgets.medium" or "thinkingBudgets.high" =>
+            JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "httpIdleTimeoutMs" => JsonValue.Create(string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase)
             ? 0 : int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         _ => JsonValue.Create(value)
