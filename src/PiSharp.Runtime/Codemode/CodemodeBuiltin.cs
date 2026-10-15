@@ -17,7 +17,7 @@ public static class CodemodeBuiltin
     private static readonly Regex s_word = new(@"[A-Za-z0-9_]+",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-    public static BuiltinExtensionDefinition Definition { get; } = new("codemode", Configure);
+    public static BuiltinExtensionDefinition Definition { get; } = new("codemode", Configure, Replaceable: true);
 
     public static void Configure(ExtensionRegistration registration)
     {

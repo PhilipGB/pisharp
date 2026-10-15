@@ -11,12 +11,18 @@ public sealed partial class ExtensionRegistration
         lock (_toolGate)
             lock (_mcpGate)
             {
+                foreach (var (name, candidates) in _toolCandidates)
+                {
+                    var ordered = candidates.OrderBy(candidate => Rank(candidate.SourceInfo.Path)).ToArray();
+                    candidates.Clear();
+                    candidates.AddRange(ordered);
+                    SetToolWinner(name, candidates[0]);
+                }
                 OrderDictionary(_tools, pair => Rank(_toolSourceInfo[pair.Key].Path));
                 OrderDictionary(_toolDefinitions, pair => Rank(_toolSourceInfo[pair.Key].Path));
                 OrderDictionary(_toolRenderers, pair => Rank(_toolSourceInfo[pair.Key].Path));
                 OrderDictionary(_toolSourceInfo, pair => Rank(pair.Value.Path));
-                OrderDictionary(_commands, pair => Rank(_commandInfo[pair.Key].SourceInfo.Path));
-                OrderDictionary(_commandInfo, pair => Rank(pair.Value.SourceInfo.Path));
+                OrderList(_commands, command => Rank(command.Info.SourceInfo.Path));
                 OrderDictionary(_mcpServers, pair => Rank(pair.Value.ExtensionPath));
                 OrderList(_userBashHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_toolCallHooks, entry => Rank(entry.SourceInfo.Path));

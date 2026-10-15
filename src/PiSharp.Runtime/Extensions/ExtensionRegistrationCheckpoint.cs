@@ -9,8 +9,10 @@ public sealed partial class ExtensionRegistration
             {
                 var owned = _ownedToolNames.ToDictionary(pair => pair.Key,
                     pair => new HashSet<string>(pair.Value, pair.Value.Comparer), _ownedToolNames.Comparer);
+                var toolCandidates = _toolCandidates.ToDictionary(pair => pair.Key,
+                    pair => pair.Value.ToList(), _toolCandidates.Comparer);
                 Action[] restore = [Capture(_tools), Capture(_toolDefinitions), Capture(_toolSourceInfo),
-                Capture(_toolRenderers), Capture(_commands), Capture(_commandInfo), Capture(_mcpServers),
+                Capture(_toolRenderers), Capture(_commands), Capture(_mcpServers),
                 Capture(_userBashHandlers), Capture(_toolCallHooks), Capture(_toolResultHooks),
                 Capture(_contextTransforms), Capture(_resourceDiscoveryHandlers), Capture(_projectTrustHandlers),
                 _virtualModels.CreateConfigurationCheckpoint()];
@@ -22,6 +24,8 @@ public sealed partial class ExtensionRegistration
                             foreach (var reset in restore) reset();
                             _ownedToolNames.Clear();
                             foreach (var pair in owned) _ownedToolNames.Add(pair.Key, pair.Value);
+                            _toolCandidates.Clear();
+                            foreach (var pair in toolCandidates) _toolCandidates.Add(pair.Key, pair.Value);
                         }
                 };
             }

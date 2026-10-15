@@ -8,6 +8,45 @@ verifyPiCheckout(pi);
 const { DefaultResourceLoader } = await import(pathToFileURL(pi + '/packages/coding-agent/src/core/resource-loader.ts').href);
 const { SettingsManager } = await import(pathToFileURL(pi + '/packages/coding-agent/src/core/settings-manager.ts').href);
 const results = [];
+if (process.argv[4] === '--conflicts') {
+  const root = path.join(parent, 'conflicts'), cwd = path.join(root, 'project'), agent = path.join(root, 'agent');
+  fs.mkdirSync(cwd, { recursive: true });
+  fs.mkdirSync(agent, { recursive: true });
+  const factory = owner => api => {
+    api.registerTool({ name: 'shared_tool', label: owner, description: `${owner} tool`,
+      parameters: { type: 'object', properties: {} }, execute: async () => ({ content: [{ type: 'text', text: owner }] }) });
+    api.registerCommand('deploy', { description: `${owner} command`, handler: async () => {} });
+    if (owner === 'project') api.registerCommand('mcp', { description: 'project mcp command', handler: async () => {} });
+    else api.registerCommand('user_only', { description: 'user command', handler: async () => {} });
+  };
+  const loader = new DefaultResourceLoader({ cwd, agentDir: agent, extensionFactories: [
+    { name: 'project', factory: factory('project') },
+    { name: 'user', factory: factory('user') },
+    { name: 'mcp', builtin: true, replaceable: true, factory: api => {
+      api.registerTool({ name: 'builtin_marker', label: 'builtin', parameters: { type: 'object', properties: {} },
+        execute: async () => ({ content: [{ type: 'text', text: 'builtin' }] }) });
+      api.registerCommand('mcp', { description: 'built-in mcp command', handler: async () => {} });
+    } }
+  ] });
+  await loader.reload();
+  const extensions = loader.getExtensions();
+  const load = file => import(pathToFileURL(pi + '/packages/coding-agent/src/core/' + file + '.ts').href);
+  const [{ ExtensionRunner }, { SessionManager }, { ModelRuntime }, { ModelRegistry }, { AuthStorage }] =
+    await Promise.all(['extensions/runner', 'session-manager', 'model-runtime', 'model-registry', 'auth-storage'].map(load));
+  const models = await ModelRuntime.create({ credentials: AuthStorage.inMemory(), modelsPath: null, refreshOnCreate: false });
+  const runner = new ExtensionRunner(extensions.extensions, extensions.runtime, cwd, SessionManager.inMemory(cwd), new ModelRegistry(models));
+  const result = {
+    loaded: extensions.extensions.map(extension => extension.path),
+    tool: (() => { const definition = runner.getToolDefinition('shared_tool'); return definition && { name: definition.name, description: definition.description }; })(),
+    tools: runner.getAllRegisteredTools().map(tool => tool.definition.name).sort(),
+    commands: runner.getRegisteredCommands().map(command => ({ name: command.invocationName, description: command.description }))
+      .sort((left, right) => left.name.localeCompare(right.name)),
+    errors: extensions.errors,
+    warnings: extensions.warnings ?? []
+  };
+  console.log(JSON.stringify(result));
+  process.exit(0);
+}
 for (const id of process.argv[4] === '--ordering' ? ['project-added'] : ['disabled', 'enabled', 'untrusted']) {
   const root = path.join(parent, id), cwd = path.join(root, 'project'), agent = path.join(root, 'agent');
   const pkg = path.join(root, 'package'), file = path.join(pkg, 'extensions/index.ts'), trace = path.join(root, 'pi-trace.log');
@@ -35,7 +74,7 @@ for (const id of process.argv[4] === '--ordering' ? ['project-added'] : ['disabl
   } });
   const relative = value => value == null ? null : path.relative(root, value).replace(/\.ts$/, '.<module>');
   const extensions = loader.getExtensions();
-  const result = { id, bootstrapCount, configurationTrace: fs.readFileSync(trace, 'utf8').trim().split('\n'),
+  const result = { id, bootstrapCount, configurationTrace: fs.existsSync(trace) ? fs.readFileSync(trace, 'utf8').trim().split('\n') : [],
     errors: extensions.errors, loaded: extensions.extensions.map(extension => ({
       path: relative(extension.path), sourceInfo: { path: relative(extension.sourceInfo.path),
         source: extension.sourceInfo.source, scope: extension.sourceInfo.scope, origin: extension.sourceInfo.origin,

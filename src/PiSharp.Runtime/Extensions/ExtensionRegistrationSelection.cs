@@ -11,24 +11,26 @@ public sealed partial class ExtensionRegistration
         lock (_toolGate)
             lock (_mcpGate)
             {
-                foreach (var name in _toolSourceInfo.Where(pair => pair.Value.Path == previous.Path)
-                    .Select(pair => pair.Key).ToArray())
+                var changedTools = _toolCandidates.Where(pair => pair.Value.Any(candidate =>
+                        candidate.SourceInfo.Path == previous.Path))
+                    .Select(pair => pair.Key).ToArray();
+                foreach (var name in changedTools)
                 {
-                    if (selected is not null) _toolSourceInfo[name] = selected;
-                    else
+                    var candidates = _toolCandidates[name];
+                    for (var index = candidates.Count - 1; index >= 0; index--)
                     {
-                        _toolSourceInfo.Remove(name);
-                        _tools.Remove(name);
-                        _toolDefinitions.Remove(name);
-                        _toolRenderers.Remove(name);
-                        foreach (var owned in _ownedToolNames.Values) owned.Remove(name);
+                        if (candidates[index].SourceInfo.Path != previous.Path) continue;
+                        if (selected is null) candidates.RemoveAt(index);
+                        else candidates[index] = candidates[index] with { SourceInfo = selected };
                     }
+                    RefreshToolWinner(name);
                 }
-                foreach (var name in _commandInfo.Where(pair => pair.Value.SourceInfo.Path == previous.Path)
-                    .Select(pair => pair.Key).ToArray())
+                for (var index = _commands.Count - 1; index >= 0; index--)
                 {
-                    if (selected is not null) _commandInfo[name] = _commandInfo[name] with { SourceInfo = selected };
-                    else { _commandInfo.Remove(name); _commands.Remove(name); }
+                    var command = _commands[index];
+                    if (command.Info.SourceInfo.Path != previous.Path) continue;
+                    if (selected is null) _commands.RemoveAt(index);
+                    else _commands[index] = command with { Info = command.Info with { SourceInfo = selected } };
                 }
                 if (selected is null)
                 {

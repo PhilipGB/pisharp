@@ -120,3 +120,21 @@ public sealed class HiddenSkillReaderFixture : IPiSharpExtension
         }
     }
 }
+
+public sealed class ExtensionConflictFixture : IPiSharpExtension
+{
+    public void Configure(ExtensionRegistration registration)
+    {
+        var name = Path.GetFileName(typeof(ExtensionConflictFixture).Assembly.Location);
+        if (name is not ("project.dll" or "user.dll")) return;
+
+        var owner = Path.GetFileNameWithoutExtension(name);
+        registration.AddTool(AIFunctionFactory.Create(() => owner, name: "shared_tool",
+            description: owner + " tool"));
+        registration.AddCommand("deploy", (_, _) => Task.FromResult(owner), owner + " command");
+        if (owner == "project")
+            registration.AddCommand("mcp", (_, _) => Task.FromResult(owner), "project mcp command");
+        else
+            registration.AddCommand("user_only", (_, _) => Task.FromResult(owner), "user command");
+    }
+}

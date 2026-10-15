@@ -241,6 +241,10 @@ internal sealed class ProjectRuntimeContext : IDisposable
                     userExtensionPaths, projectPaths);
                 ActivateReachTool(extensions.Registration, "codemode");
             }
+            foreach (var conflict in extensions.ConflictDiagnostics)
+                Console.Error.WriteLine($"Extension conflict ({conflict.Path}): {conflict.Error}");
+            foreach (var warning in extensions.Warnings)
+                Console.Error.WriteLine(warning.Warning);
             var extensionResources = await extensions.DiscoverResourcesAsync(cwd, resourceDiscoveryReason,
                 cancellationToken);
             foreach (var error in extensionResources.Errors)

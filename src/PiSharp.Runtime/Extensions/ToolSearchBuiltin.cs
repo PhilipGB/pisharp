@@ -11,7 +11,7 @@ public static class ToolSearchBuiltin
     private static readonly JsonElement s_outputSchema = CreateOutputSchema();
     public static BuiltinExtensionDefinition Definition { get; } = new("tool-search", Configure,
         ShouldAutoEnable: registration => registration.ToolDefinitions.Any(tool =>
-            tool.Exposure is ToolExposure.CodeMode or ToolExposure.Deferred));
+            tool.Exposure is ToolExposure.CodeMode or ToolExposure.Deferred), Replaceable: true);
 
     public static void Configure(ExtensionRegistration registration)
     {
