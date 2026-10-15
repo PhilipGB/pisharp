@@ -16,6 +16,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--ordering', action='store_true', help='Compare a retained personal module and a new project module.')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     env = dict(os.environ, NUGET_HTTP_CACHE_PATH='/tmp/pisharp-nuget-http', NUGET_PACKAGES='/tmp/pisharp-nuget-packages')
@@ -27,13 +28,14 @@ def main():
         subprocess.run(['dotnet', 'build', str(work / 'probe.csproj'), '--warnaserror', '-m:1',
             '-p:UseSharedCompilation=false', f'-p:RestoreFallbackFolders={Path.home() / ".nuget/packages"}'],
             env=env, check=True, stdout=subprocess.DEVNULL, timeout=120)
-        actual = json.loads(subprocess.check_output(['dotnet', str(work / 'bin/Debug/net10.0/probe.dll'), str(work)], env=env, timeout=30))
-        expected = json.loads(subprocess.check_output(['node', '--experimental-transform-types', str(ROOT / 'tools/parity/extension-pretrust-selection-probe.mjs'), str(args.pi.resolve()), str(work)], env=env, timeout=30))
+        extra = ['--ordering'] if args.ordering else []
+        actual = json.loads(subprocess.check_output(['dotnet', str(work / 'bin/Debug/net10.0/probe.dll'), str(work)] + extra, env=env, timeout=30))
+        expected = json.loads(subprocess.check_output(['node', '--experimental-transform-types', str(ROOT / 'tools/parity/extension-pretrust-selection-probe.mjs'), str(args.pi.resolve()), str(work)] + extra, env=env, timeout=30))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(dict(piSha=sha, pi=expected, pisharp=actual, match=actual == expected,
-        scope='Actual DefaultResourceLoader.reload(resolveProjectTrust) versus bootstrap/final ExtensionCatalog selection: disabled/enabled/untrusted project package cases compare bootstrap count, configuration trace, errors, final loaded modules and all five source-info fields. Only generated root paths and .ts/.dll suffixes normalize.'), indent=2) + '\n')
+        scope='Actual DefaultResourceLoader.reload(resolveProjectTrust) versus bootstrap/final ExtensionCatalog selection: selected project package cases compare bootstrap count, configuration trace, errors, final loaded modules and all five source-info fields. Only generated root paths and .ts/.dll suffixes normalize.'), indent=2) + '\n')
     assert actual == expected
-    print('Matched three full-loader pre-trust extension selection/source metadata cases.')
+    print(f'Matched {len(actual)} full-loader pre-trust extension selection/source metadata cases.')
 
 
 if __name__ == '__main__':

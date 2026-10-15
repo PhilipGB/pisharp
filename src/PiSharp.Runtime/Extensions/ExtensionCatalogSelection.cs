@@ -23,4 +23,18 @@ public sealed partial class ExtensionCatalog
             }
         }
     }
+
+    private void OrderSelectedExtensions(IReadOnlyList<(string Path, ResourceSourceInfo SourceInfo)> selected)
+    {
+        var ranks = selected.Select((entry, index) => (Path: ResourcePathIdentity.Canonicalize(entry.Path), Rank: index))
+            .ToDictionary(entry => entry.Path, entry => entry.Rank,
+                OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        var ordered = _loadedExtensions.Select((source, index) => (Source: source, Context: _contexts[index]))
+            .OrderBy(entry => ranks[ResourcePathIdentity.Canonicalize(entry.Source.Path)]).ToArray();
+        _loadedExtensions.Clear();
+        _loadedExtensions.AddRange(ordered.Select(entry => entry.Source));
+        _contexts.Clear();
+        _contexts.AddRange(ordered.Select(entry => entry.Context));
+        Registration.OrderExtensions(_loadedExtensions);
+    }
 }

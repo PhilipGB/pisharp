@@ -1,0 +1,245 @@
+{
+  "date": "2026-10-15",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "a23ae162efe7c2118411128a6b5956adb65a7039",
+  "scope": "Final module and resource-discovery callback precedence when a project module joins a pre-trust personal module.",
+  "characterization": {
+    "pairedFailFirst": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "pi": [
+        {
+          "id": "project-added",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured",
+            "configured"
+          ],
+          "errors": [],
+          "loaded": [
+            {
+              "path": "project-package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "project-package/extensions/index.<module>",
+                "source": "../../project-package",
+                "scope": "project",
+                "origin": "package",
+                "baseDir": "project-package"
+              }
+            },
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ],
+          "discoveryBaseDirs": [
+            "project-package/extensions",
+            "package/extensions"
+          ]
+        }
+      ],
+      "pisharp": [
+        {
+          "id": "project-added",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured",
+            "configured"
+          ],
+          "errors": [],
+          "loaded": [
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            },
+            {
+              "path": "project-package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "project-package/extensions/index.<module>",
+                "source": "../../project-package",
+                "scope": "project",
+                "origin": "package",
+                "baseDir": "project-package"
+              }
+            }
+          ],
+          "discoveryBaseDirs": [
+            "package/extensions",
+            "project-package/extensions"
+          ]
+        }
+      ],
+      "match": false,
+      "scope": "Actual DefaultResourceLoader.reload(resolveProjectTrust) versus bootstrap/final ExtensionCatalog selection: selected project package cases compare bootstrap count, configuration trace, errors, final loaded modules and all five source-info fields. Only generated root paths and .ts/.dll suffixes normalize."
+    },
+    "nativeFailFirst": {
+      "failed": 1,
+      "passed": 1,
+      "skipped": 0
+    },
+    "cause": "Native retained configuration order (personal then project), while Pi constructs final extensions in resource-selection order (project then personal). Factory traces match at two configurations; both loaded-module and actual resource-discovery callback order differ.",
+    "oracle": "Actual DefaultResourceLoader.reload(resolveProjectTrust) and ExtensionRunner.emitResourcesDiscover with actual in-memory SessionManager, AuthStorage, ModelRuntime and ModelRegistry; model refresh is disabled. No mocked dispatch substitutes for the runner."
+  },
+  "implementation": [
+    "ExtensionCatalogSelection keeps loaded module/context pairs together while ordering them by the final canonical selection. Retained modules are reused; configuration side effects are not repeated.",
+    "ExtensionRegistrationOrder stably orders owned command/tool/MCP dictionaries and callback lists by final module position, preserving registration order within each owner. The source-info wrappers introduced by the selection repair supply callback ownership."
+  ],
+  "verification": {
+    "focusedPassed": 28,
+    "newNativeRows": 2,
+    "fullSuite": {
+      "passed": 1962,
+      "failed": 0,
+      "skipped": 0
+    },
+    "freshBuild": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "format": "passed",
+    "fullLoaderRunner": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "pi": [
+        {
+          "id": "project-added",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured",
+            "configured"
+          ],
+          "errors": [],
+          "loaded": [
+            {
+              "path": "project-package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "project-package/extensions/index.<module>",
+                "source": "../../project-package",
+                "scope": "project",
+                "origin": "package",
+                "baseDir": "project-package"
+              }
+            },
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ],
+          "discoveryBaseDirs": [
+            "project-package/extensions",
+            "package/extensions"
+          ]
+        }
+      ],
+      "pisharp": [
+        {
+          "id": "project-added",
+          "bootstrapCount": 1,
+          "configurationTrace": [
+            "configured",
+            "configured"
+          ],
+          "errors": [],
+          "loaded": [
+            {
+              "path": "project-package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "project-package/extensions/index.<module>",
+                "source": "../../project-package",
+                "scope": "project",
+                "origin": "package",
+                "baseDir": "project-package"
+              }
+            },
+            {
+              "path": "package/extensions/index.<module>",
+              "sourceInfo": {
+                "path": "package/extensions/index.<module>",
+                "source": "../package",
+                "scope": "user",
+                "origin": "package",
+                "baseDir": "package"
+              }
+            }
+          ],
+          "discoveryBaseDirs": [
+            "project-package/extensions",
+            "package/extensions"
+          ]
+        }
+      ],
+      "match": true,
+      "scope": "Actual DefaultResourceLoader.reload(resolveProjectTrust) versus bootstrap/final ExtensionCatalog selection: selected project package cases compare bootstrap count, configuration trace, errors, final loaded modules and all five source-info fields. Only generated root paths and .ts/.dll suffixes normalize."
+    },
+    "priorSelectionCases": 3,
+    "priorSelectionMismatches": 0,
+    "normalCliCases": 18,
+    "normalCliMismatches": 0,
+    "documentation": {
+      "documents": 132,
+      "references": 505
+    }
+  },
+  "sourcePaths": [
+    "packages/coding-agent/src/core/resource-loader.ts: loadFinalExtensionSet constructs orderedExtensions from extensionPaths.",
+    "packages/coding-agent/src/core/extensions/runner.ts: snapshotEventHandlers and emitResourcesDiscover dispatch in extension order.",
+    "packages/coding-agent/src/core/package-manager.ts: resourcePrecedenceRank selects project paths before personal paths."
+  ],
+  "reproduction": [
+    "python3 tools/parity/extension-pretrust-selection-differential.py --pi /tmp/pisharp-parity-audit-pi --ordering --output artifacts/parity/<run>/ordering.json",
+    "dotnet test PiSharp.slnx --filter FullyQualifiedName~ExtensionPreTrustOrderTests"
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-15",
+  "logs": {
+    "package-extension-pretrust-order-native-first.log": "8f57e8528f7dddb4e5e9de7f8386c15a37b5cb2207c45b5ada7f1c32830710a0",
+    "package-extension-pretrust-order-first.log": "7a29b89bd2b079d2a6801791dd64cdc19de584f77f67c3fa285ac82f44e28614",
+    "package-extension-pretrust-order-first.json": "426893da2e57fc7b51fe046f50b74777fe0efc6a7436f4a0be71a215c48e6071",
+    "package-extension-pretrust-order-focused.log": "a5c137229b69ee508a40ad941a6d1458f090ed2709eaf68804876be14fa5ac95",
+    "package-extension-pretrust-order-final.json": "4043b1497aa7992dba05ec990fa44fa529230721656d5420740f275d7c1f54e4",
+    "package-extension-pretrust-order-final.log": "03c2f84313e8de272165cddfdc417674707b3a573da35126fb66b10fd5691590",
+    "package-extension-pretrust-dispatch-first.json": "d2272cd82d8a9c4076f40fffafa779c8c56961d854956f70633eabef21f17af7",
+    "package-extension-pretrust-dispatch-first.log": "275045157e435c61b52a0511fb1209e9481e4ccec02acb127f5caef4a49c74e9",
+    "package-extension-order-nested-manifest-regression.json": "344a13566e095ec2d4c5fbc00c3aa1e29046226610ca9389a83c26c898075510",
+    "package-extension-order-padded-explicit-regression.json": "bb26b691e11370cf5653d779f61aab8afd5245bc8f197c8ed465c47fc2d7fa8a",
+    "package-extension-order-hidden-sibling-regression.json": "f624cd4063a9b6310e77997f47c65f18e75f1f5f17ff0bb6244f0c7385147608",
+    "package-extension-order-root-regression.json": "6b8cd0e1d6c308ed5dbb22a05a1bf18744278ff99d9ff6a36e5c65d0115b3418",
+    "package-extension-order-project-disabled-regression.json": "ddcb757102d15f40084a15270273060dd178e5a24af99127e6dac23fcd19670a",
+    "package-extension-order-disabled-regression.json": "e6b144e340c0e76fc2627d8be31dd22ba466d361609de1fb5d47dc3124ae859d",
+    "package-extension-order-file-url-explicit-regression.json": "075f92dea2240abd79cab5024e61458eae967473680790091c0c104f6ce3e238",
+    "package-extension-order-throwing-sibling-regression.json": "d0cd89fe9e718e1a23de482ec93118a130015d5fa680e60e1fcc71eb55a1523b",
+    "package-extension-order-no-extensions-regression.json": "64e833f22aacafedb76d52c838170d5d8c844ef347b94fdaedaeaae71b8623f1",
+    "package-extension-order-canonical-explicit-alias-regression.json": "3531df6c46022e166e6c402c02d289acbef076e94fa0f6afb24a5fd2229d3d5d",
+    "package-extension-order-manifest-regression.json": "55bc472e33150ceea5b03f3b070fd632907fdefe99cb964877d7e692d273ef73",
+    "package-extension-order-missing-explicit-regression.json": "a56c0fa9d2c3b615c133783c90a79e22a35e498a41d33f99b7637ab182b73a57",
+    "package-extension-order-conventions-regression.json": "90c280a2579db64a7c399791042e1a4daf88c34a1831fae277093ad028306796",
+    "package-extension-order-node-modules-sibling-regression.json": "d9238852ec36f51940638763daba2b19126c8126b3adce0bba4b8fdc263ca7b5",
+    "package-extension-order-ignored-sibling-regression.json": "f5c8aadd4c0b914b8200afc0e54616aec8ef37c9100caa2bd6f043d912449164",
+    "package-extension-order-index-with-sibling-regression.json": "ab430a1433581ebb5d5d7da0d3769b089708f2d6e147503fc87602fe64fe572c",
+    "package-extension-order-file-regression.json": "a43fd8966184082b6fb4166de76a30384004024896c1e915c1030df4455cf562",
+    "package-extension-order-project-enabled-regression.json": "3348ec242df362eea090f6b878b09ae46b81129ec19e207f1d49a962fb8cd25e",
+    "package-extension-order-final-build.log": "8c0c394281fbc6dd8152bebd611cc8b1088a5c83dd44c046bcc4b90e759bb30e",
+    "package-extension-order-final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-order-final-full.log": "1c813d45a3dfcd135f17e11ab31a5faa3e6a62d70297b6ebeb98d4411b90031f"
+  },
+  "limits": [
+    "One named project-plus-retained-personal full-loader/runner case and an untrusted native control. Source comparison preserves both full source metadata and callback base-directory order; only generated root paths and language-specific module suffixes normalize.",
+    "Conflicting names, replaceable builtins, dynamic registrations, virtual-model ordering, more complex package filters/aliases and reload remain open; no entire capability is promoted.",
+    "Earlier process/PTY failures retain separate causal evidence; later unrelated green CI is not used to resolve them. MCP classifications and final audits remain required."
+  ]
+}

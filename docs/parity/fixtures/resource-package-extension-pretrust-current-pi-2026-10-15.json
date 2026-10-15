@@ -228,6 +228,20 @@
     "documentation": {
       "documents": 132,
       "references": 504
+    },
+    "exactCI": {
+      "sha": "a23ae162efe7c2118411128a6b5956adb65a7039",
+      "run": 38657791815,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38657791815",
+      "jobs": {
+        "mcp-conformance": "success",
+        "test": "success"
+      },
+      "passed": 1960,
+      "failed": 0,
+      "skipped": 0,
+      "nodePassed": 24,
+      "pythonPassed": 50
     }
   },
   "sourcePaths": [
@@ -291,7 +305,8 @@
     "package-extension-pretrust-node-modules-sibling-recovery.json": "2fb83c07db7bade000ccf10c9eff5f98e3bca5073ef47bd9fd9c7d2891d43080",
     "package-extension-pretrust-disabled-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
     "package-extension-pretrust-missing-explicit-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
-    "package-extension-pretrust-nested-manifest-recovery.json": "19035e62fe362228e4f2f1cfd280093bd3cbf7c666350b3d33e87e37d2f0e62f"
+    "package-extension-pretrust-nested-manifest-recovery.json": "19035e62fe362228e4f2f1cfd280093bd3cbf7c666350b3d33e87e37d2f0e62f",
+    "package-extension-pretrust-exact-ci.log": "2aad4f0dd2c3b61b6731bff8b8e07ca25e1c23bb97a41e33ce146ffc4326680c"
   },
   "limits": [
     "Three named full-loader and normal CLI project selection cases; broader package delta/alias/filter precedence, final module ordering/conflicts, builtins and reload remain open.",

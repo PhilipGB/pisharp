@@ -549,6 +549,7 @@ public sealed partial class ExtensionCatalog : IDisposable
                     catalog._contexts.Add(loaded.Context!);
                 }
             }
+            catalog.OrderSelectedExtensions(selectedPaths);
             if (discover)
                 foreach (var builtin in builtins ?? [])
                     if (builtin.AutoEnable && (builtin.ShouldAutoEnable?.Invoke(catalog.Registration) ?? true) &&
