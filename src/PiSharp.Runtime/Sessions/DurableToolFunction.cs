@@ -15,7 +15,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
     Func<IReadOnlyDictionary<string, AIFunction>>? allToolFunctions = null,
     PiSharpToolHookPipeline? toolHooks = null, JsonElement? outputSchema = null, ICodemodeModels? codemodeModels = null,
     Func<IDictionary<string, object?>, PiSharpToolReach?>? reachesTools = null,
-    PiSharpToolNamespace? toolNamespace = null) : DelegatingAIFunction(inner)
+    PiSharpToolNamespace? toolNamespace = null,
+    Func<PiSharpExtensionContext?>? currentExtensionContext = null) : DelegatingAIFunction(inner)
 {
     private readonly ToolResultSchemaValidator _outputValidator = new(outputSchema);
 
@@ -51,7 +52,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             toolExecutionContext = nestedInvocation is null
                 ? PiSharpToolExecutionContext.CreateRoot(loadout,
                     allToolFunctions ?? (() => new Dictionary<string, AIFunction>(StringComparer.Ordinal)),
-                    publish, toolCallId, id, Name, callArguments ?? displayArguments, codemodeModels)
+                    publish, toolCallId, id, Name, callArguments ?? displayArguments, codemodeModels,
+                    currentExtensionContext?.Invoke())
                 : nestedInvocation.Parent.ForToolCall(toolCallId, parentToolCallId, id, Name,
                     callArguments ?? displayArguments, onNestedUpdate);
         }

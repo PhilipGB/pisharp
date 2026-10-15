@@ -1,10 +1,80 @@
 using System.Text.Json;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime;
 using PiSharp.ResourceDiscoveryExtension;
+using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Tools;
 
 var results = new List<object>();
+if (args.Length > 1 && args[1] == "--context")
+{
+    var root = Path.Combine(args[0], "context");
+    var cwd = Path.Combine(root, "project");
+    var agent = Path.Combine(root, "agent");
+    var trace = Path.Combine(root, "native-context.log");
+    Directory.CreateDirectory(cwd);
+    Directory.CreateDirectory(agent);
+    var previousEnabled = Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_CONTEXT");
+    var previousTrace = Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_CONTEXT_TRACE");
+    try
+    {
+        Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_CONTEXT", "true");
+        Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_CONTEXT_TRACE", trace);
+        using var catalog = ExtensionCatalog.Load(agent, cwd, false, discover: false,
+            additionalPaths: [typeof(ExtensionContextFixture).Assembly.Location]);
+        await catalog.DiscoverResourcesAsync(cwd, ExtensionResourceDiscoveryReason.Startup);
+        await catalog.DiscoverResourcesAsync(cwd, ExtensionResourceDiscoveryReason.Reload);
+        var sourceInfo = catalog.LoadedExtensions.Single();
+        var handlers = catalog.Registration.LifecycleHandlers.Select(handler =>
+            new ExtensionLifecycleHandlerRegistration(handler, sourceInfo)).ToArray();
+        var modelId = "extension-context-model";
+        var providerId = "fixture";
+        var agentRuntime = new PiAgent(new ContextProbeClient(), new CodingTools(cwd), noBuiltinTools: true,
+            extensionToolRegistrations: catalog.Registration.ToolDefinitions,
+            extensionLifecycleHandlers: handlers,
+            extensionContextConfiguration: new(cwd, "rpc", false, true, new ContextProbeUi()),
+            initialActiveToolNames: ["extension_context_probe"]);
+        var conversation = new ConversationSession(cwd, modelId, "http://127.0.0.1", providerId);
+        var run = await ConversationRun.OpenAsync(agentRuntime, conversation, provider: providerId);
+        await foreach (var _ in run.RunEventsAsync("inspect context")) { }
+        var lines = await File.ReadAllLinesAsync(trace);
+        using var stateDocument = JsonDocument.Parse(lines.Single(line => line.StartsWith("state:", StringComparison.Ordinal))[6..]);
+        var rawState = stateDocument.RootElement;
+        var state = new
+        {
+            workingDirectory = rawState.GetProperty("workingDirectory").GetString(),
+            mode = rawState.GetProperty("mode").GetString(),
+            hasUserInterface = rawState.GetProperty("hasUserInterface").GetBoolean(),
+            isProjectTrusted = rawState.GetProperty("isProjectTrusted").GetBoolean(),
+            isIdle = rawState.GetProperty("isIdle").GetBoolean(),
+            currentModelId = rawState.GetProperty("currentModelId").GetString(),
+            currentProviderId = rawState.GetProperty("currentProviderId").GetString(),
+            activeToolNames = rawState.GetProperty("activeToolNames").EnumerateArray().Select(item => item.GetString()).ToArray()
+        };
+        var nativeEvents = lines.Where(line => line.StartsWith("event:", StringComparison.Ordinal))
+            .Select(line => line.Split(':')[1] switch
+            {
+                "tool_execution_started" => "tool_start",
+                "tool_execution_update" => "tool_update",
+                "tool_execution_finished" => "tool_result",
+                var eventType => eventType
+            }).ToArray();
+        var resourceReasons = lines.Where(line => line.StartsWith("resource:", StringComparison.Ordinal))
+            .Select(line => line[9..]).ToArray();
+        Console.WriteLine(JsonSerializer.Serialize(new { state, events = nativeEvents, resources = resourceReasons }));
+    }
+    finally
+    {
+        Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_CONTEXT", previousEnabled);
+        Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_CONTEXT_TRACE", previousTrace);
+    }
+    return;
+}
+
 if (args.Length > 1 && args[1] == "--conflicts")
 {
     var root = Path.Combine(args[0], "conflicts");
@@ -97,3 +167,35 @@ foreach (var id in args.Length > 1 && args[1] == "--ordering" ? new[] { "project
     }
 }
 Console.WriteLine(JsonSerializer.Serialize(results));
+
+sealed class ContextProbeClient : IChatClient
+{
+    private int _requests;
+    public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+        CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+        ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (Interlocked.Increment(ref _requests) == 1)
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [new FunctionCallContent("context-probe-call", "extension_context_probe", new Dictionary<string, object?>())]);
+        else
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "context observed");
+        await Task.CompletedTask;
+    }
+
+    public object? GetService(Type serviceType, object? serviceKey = null) => null;
+    public void Dispose() { }
+}
+
+sealed class ContextProbeUi : IPiSharpExtensionUi
+{
+    public Task<string?> SelectAsync(string title, IReadOnlyList<string> options, CancellationToken cancellationToken = default) =>
+        Task.FromResult<string?>(null);
+    public Task<bool> ConfirmAsync(string title, string message, CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+    public Task<string?> InputAsync(string title, string? placeholder = null, CancellationToken cancellationToken = default) =>
+        Task.FromResult<string?>(null);
+    public void Notify(string message, string type = "info") { }
+}

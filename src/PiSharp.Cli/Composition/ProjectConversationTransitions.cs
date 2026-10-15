@@ -15,7 +15,8 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
     private readonly ProjectResourceReload _resourceReload = new(agentDirectory, configuredSessionDirectory, trustStore, modelRuntime);
     public InteractiveSessionController Sessions { get; private set; } = CreateSessions(projectBinding, modelBinding, runComposition);
     public ProjectSessionRuntimeFactory SessionFactory { get; private set; } = new(agentDirectory, projectBinding.Arguments,
-        configuredSessionDirectory, trustStore, modelRuntime, codemodeModels);
+        configuredSessionDirectory, trustStore, modelRuntime, codemodeModels,
+        projectBinding.Configuration.HasUserInterface, projectBinding.Configuration.ExtensionUi);
 
     private static InteractiveSessionController CreateSessions(ActiveProjectRuntime project, ActiveModelRuntime model,
         ConversationRunComposition runs) => new(project.Store, project.Arguments.NoSession,
@@ -26,7 +27,8 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
         Sessions = CreateSessions(projectBinding, modelBinding, runComposition);
         if (rebuildFactory)
             SessionFactory = new ProjectSessionRuntimeFactory(agentDirectory, projectBinding.Arguments,
-                configuredSessionDirectory, trustStore, modelRuntime, codemodeModels);
+                configuredSessionDirectory, trustStore, modelRuntime, codemodeModels,
+                projectBinding.Configuration.HasUserInterface, projectBinding.Configuration.ExtensionUi);
     }
 
     public async Task ReloadAsync(bool usesDefaultToolsSetting, Action<ProjectRuntimeContext> configureMcp,
@@ -37,7 +39,8 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
         try
         {
             var reload = await _resourceReload.LoadAsync(projectBinding.WorkingDirectory, () => projectBinding.Settings, () => projectBinding.Arguments, projectBinding.Trusted,
-                usesDefaultToolsSetting, () => conversationBinding.Run.ActiveToolNames);
+                usesDefaultToolsSetting, () => conversationBinding.Run.ActiveToolNames,
+                projectBinding.Configuration.HasUserInterface, projectBinding.Configuration.ExtensionUi);
             using var nextConfiguration = reload.Configuration;
             var reloadPlan = reload.ToolPlan;
             nextProject = reload.Project;

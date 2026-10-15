@@ -20,10 +20,14 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
     public UserSettings? ProjectSettings { get; }
     public UserSettings Settings { get; }
     public IReadOnlyList<ManagedResourcePackageRoot> ManagedPackageRoots { get; }
+    public string ExtensionMode { get; }
+    public bool HasUserInterface { get; }
+    public IProjectTrustExtensionUi ExtensionUi { get; }
 
     private ProjectRuntimeConfiguration(string workingDirectory, bool trusted, UserSettings baseUserSettings,
         UserSettings? projectSettings, UserSettings settings, IReadOnlyList<ManagedResourcePackageRoot> managedPackageRoots,
-        ExtensionCatalog? bootstrapExtensions)
+        ExtensionCatalog? bootstrapExtensions, string extensionMode, bool hasUserInterface,
+        IProjectTrustExtensionUi extensionUi)
     {
         WorkingDirectory = workingDirectory;
         Trusted = trusted;
@@ -32,6 +36,9 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         Settings = settings;
         ManagedPackageRoots = managedPackageRoots;
         _bootstrapExtensions = bootstrapExtensions;
+        ExtensionMode = extensionMode;
+        HasUserInterface = hasUserInterface;
+        ExtensionUi = extensionUi;
     }
 
     internal ExtensionCatalog? TakeBootstrapExtensions() => Interlocked.Exchange(ref _bootstrapExtensions, null);
@@ -40,13 +47,12 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
 
     public ProjectRuntimeConfiguration WithSettings(UserSettings baseUserSettings, UserSettings? projectSettings,
         UserSettings settings) => new(WorkingDirectory, Trusted, baseUserSettings, projectSettings, settings,
-        ManagedPackageRoots,
-        bootstrapExtensions: null);
+        ManagedPackageRoots, bootstrapExtensions: null, ExtensionMode, HasUserInterface, ExtensionUi);
 
     public static async Task<ProjectRuntimeConfiguration> LoadAsync(string workingDirectory, string agentDirectory,
         CliArguments arguments, ProjectTrust trustStore, bool interactiveTrust, TextReader input, TextWriter output,
         bool? trustedOverride = null, CancellationToken cancellationToken = default,
-        IProjectTrustExtensionUi? extensionUi = null)
+        IProjectTrustExtensionUi? extensionUi = null, bool? hasUserInterface = null)
     {
         var cwd = Path.GetFullPath(workingDirectory);
         var baseSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable, cancellationToken);
@@ -88,7 +94,9 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                     offline: offline, cancellationToken: cancellationToken)).ToList();
             }
             return new(cwd, trusted, baseSettings, projectSettings,
-                baseSettings.Overlay(projectSettings ?? new UserSettings()), managedPackageRoots, bootstrapExtensions);
+                baseSettings.Overlay(projectSettings ?? new UserSettings()), managedPackageRoots, bootstrapExtensions,
+                ResolveExtensionMode(arguments), hasUserInterface ?? interactiveTrust,
+                extensionUi ?? UnavailableProjectTrustExtensionUi.Instance);
         }
         catch
         {
@@ -115,6 +123,13 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
 
     private static bool IsOfflineEnvironment() => Environment.GetEnvironmentVariable("PI_OFFLINE") is { } value &&
         value.ToLowerInvariant() is "1" or "true" or "yes";
+
+    private static string ResolveExtensionMode(CliArguments arguments) => arguments.Print ? "print" : arguments.Mode switch
+    {
+        "interactive" => "tui",
+        "text" => "print",
+        var mode => mode
+    };
 }
 
 internal sealed class ProjectRuntimeContext : IDisposable
@@ -317,6 +332,9 @@ internal sealed class ProjectRuntimeContext : IDisposable
             virtualModelRequestRouter: virtualModelRequestRouter,
             codemodeModels: codemodeModels,
             initialActiveToolNames: initialNames,
+            extensionLifecycleHandlers: Extensions.Registration.RegisteredLifecycleHandlers,
+            extensionContextConfiguration: new PiSharpExtensionContextConfiguration(WorkingDirectory,
+                Configuration.ExtensionMode, Configuration.HasUserInterface, Trusted, Configuration.ExtensionUi),
             getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),
             getSkillInstructions: (activeToolNames, declaredToolNames) => Resources.SystemInstructions(
                 ResolveSkillFileReadTool(arguments, activeToolNames, declaredToolNames)),

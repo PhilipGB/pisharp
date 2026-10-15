@@ -14,7 +14,7 @@ public sealed partial class ExtensionRegistration
                 Action[] restore = [Capture(_tools), Capture(_toolDefinitions), Capture(_toolSourceInfo),
                 Capture(_toolRenderers), Capture(_commands), Capture(_mcpServers),
                 Capture(_userBashHandlers), Capture(_toolCallHooks), Capture(_toolResultHooks),
-                Capture(_contextTransforms), Capture(_resourceDiscoveryHandlers), Capture(_projectTrustHandlers),
+                Capture(_contextTransforms), Capture(_lifecycleHandlers), Capture(_resourceDiscoveryHandlers), Capture(_projectTrustHandlers),
                 _virtualModels.CreateConfigurationCheckpoint()];
                 return () =>
                 {

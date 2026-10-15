@@ -31,10 +31,14 @@ public sealed class PiAgent
     private readonly string? _projectInstructions;
     private readonly Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? _getSkillInstructions;
     private readonly PiSharpContextTransformPipeline _contextTransforms;
+    private readonly IReadOnlyList<ExtensionLifecycleHandlerRegistration> _extensionLifecycleHandlers;
+    private readonly PiSharpExtensionContext _extensionContext;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
     private readonly ToolBatchTermination _toolBatchTermination = new();
     private DurableExecution? _active;
+    private ConversationSession? _extensionConversation;
+    private int _isRunning;
     private Action<AgentLifecycleEvent>? _events;
     private Func<bool, IReadOnlyList<ChatMessage>>? _takeSteering;
     private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
@@ -91,9 +95,17 @@ public sealed class PiAgent
         Func<string?>? getAdditionalSystemInstructions = null,
         IReadOnlyList<PiSharpContextTransform>? extensionContextTransforms = null,
         Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? getSkillInstructions = null,
-        IReadOnlyList<string>? initialActiveToolNames = null)
+        IReadOnlyList<string>? initialActiveToolNames = null,
+        IReadOnlyList<ExtensionLifecycleHandlerRegistration>? extensionLifecycleHandlers = null,
+        PiSharpExtensionContextConfiguration? extensionContextConfiguration = null)
     {
         _contextTransforms = new(extensionContextTransforms);
+        _extensionLifecycleHandlers = extensionLifecycleHandlers?.ToArray() ?? [];
+        _extensionContext = new(extensionContextConfiguration ?? new PiSharpExtensionContextConfiguration(
+                tools.WorkingDirectory, "print", false, false, UnavailableProjectTrustExtensionUi.Instance),
+            () => Volatile.Read(ref _extensionConversation),
+            () => Volatile.Read(ref _currentToolLoadout)?.Snapshot.ActiveToolNames.ToArray() ?? [],
+            () => Volatile.Read(ref _isRunning) == 0);
         _codemodeModels = codemodeModels;
         _codingTools = tools;
         _customSystemPrompt = systemPrompt;
@@ -103,7 +115,7 @@ public sealed class PiAgent
         _selectedImageResizeOptions = tools.ImageResizeOptions;
         _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
         _chatClient = new MutableChatClient(client);
-        _routedChatClient = new RoutedChatClient(_chatClient, value => _events?.Invoke(value), route => SetPhysicalImageLimits(route.Model));
+        _routedChatClient = new RoutedChatClient(_chatClient, PublishEvent, route => SetPhysicalImageLimits(route.Model));
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         _supportsImages = supportsImages ? 1 : 0;
         _reasoning = reasoning;
@@ -128,7 +140,7 @@ public sealed class PiAgent
         }
         var initialLoadout = _toolCatalog.CreateLoadout().Snapshot;
         SystemInstructions = BuildSystemInstructions(initialLoadout.Declared, initialLoadout.ActiveToolNames);
-        _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, value => _events?.Invoke(value),
+        _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, PublishEvent,
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
             _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions,
@@ -223,9 +235,30 @@ public sealed class PiAgent
             previous.Namespace == registration.Namespace) return;
         _runtimeToolRegistrations[name] = registration;
         _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
-            value => _events?.Invoke(value), _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
+            PublishEvent, _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
             () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels,
-            registration.ReachesTools, registration.Namespace);
+            registration.ReachesTools, registration.Namespace, () => _extensionContext);
+    }
+
+    internal void SetExtensionConversation(ConversationSession conversation) =>
+        Volatile.Write(ref _extensionConversation, conversation);
+
+    private void PublishEvent(AgentLifecycleEvent item)
+    {
+        foreach (var registration in _extensionLifecycleHandlers)
+        {
+            try { registration.Handler(item, _extensionContext); }
+            catch (Exception error)
+            {
+                try
+                {
+                    _events?.Invoke(new AgentLifecycleEvent("extension_error", Error: error.Message,
+                        Details: new { extensionPath = registration.SourceInfo.Path, eventType = item.Type }));
+                }
+                catch (Exception) { }
+            }
+        }
+        _events?.Invoke(item);
     }
 
     private IReadOnlyList<AITool> GetRuntimeFunctionsForRun() =>
@@ -350,6 +383,7 @@ public sealed class PiAgent
             _currentToolTranscript = GetToolTranscript(session);
             _active = durable;
             _events = onEvent;
+            Volatile.Write(ref _isRunning, 1);
             _takeSteering = takeSteering;
             _projectContext = projectContext;
             _providerRequestIndex = 0;
@@ -383,6 +417,7 @@ public sealed class PiAgent
         {
             _projectContext = null;
             _takeSteering = null;
+            Volatile.Write(ref _isRunning, 0);
             _events = null;
             _active = null;
             Volatile.Write(ref _currentToolLoadout, null);

@@ -28,6 +28,7 @@ public sealed partial class ExtensionRegistration
                 OrderList(_toolCallHooks, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_toolResultHooks, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_contextTransforms, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_lifecycleHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_resourceDiscoveryHandlers, entry => Rank(entry.ExtensionSource.Path));
                 OrderList(_projectTrustHandlers, entry => Rank(entry.SourceInfo.Path));
             }

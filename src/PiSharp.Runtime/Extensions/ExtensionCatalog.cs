@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
 using PiSharp.Runtime.VirtualModels;
 
@@ -58,6 +59,7 @@ public sealed partial class ExtensionRegistration
     private readonly List<ExtensionHandlerRegistration<PiSharpToolCallHook>> _toolCallHooks = [];
     private readonly List<ExtensionHandlerRegistration<PiSharpToolResultHook>> _toolResultHooks = [];
     private readonly List<ExtensionHandlerRegistration<PiSharpContextTransform>> _contextTransforms = [];
+    private readonly List<ExtensionLifecycleHandlerRegistration> _lifecycleHandlers = [];
     private readonly List<RegisteredResourceDiscoveryHandler> _resourceDiscoveryHandlers = [];
     private readonly List<RegisteredProjectTrustHandler> _projectTrustHandlers = [];
     private readonly object _mcpGate = new();
@@ -85,6 +87,10 @@ public sealed partial class ExtensionRegistration
     public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks.Select(entry => entry.Handler).ToArray();
     public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks.Select(entry => entry.Handler).ToArray();
     public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<PiSharpExtensionLifecycleHandler> LifecycleHandlers =>
+        _lifecycleHandlers.Select(entry => entry.Handler).ToArray();
+    internal IReadOnlyList<ExtensionLifecycleHandlerRegistration> RegisteredLifecycleHandlers =>
+        _lifecycleHandlers.ToArray();
     internal IReadOnlyList<RegisteredResourceDiscoveryHandler> ResourceDiscoveryHandlers =>
         _resourceDiscoveryHandlers.ToArray();
     private IReadOnlyList<RegisteredProjectTrustHandler> ProjectTrustHandlers => _projectTrustHandlers.ToArray();
@@ -276,6 +282,21 @@ public sealed partial class ExtensionRegistration
     {
         ArgumentNullException.ThrowIfNull(transform);
         _contextTransforms.Add(new(transform, _currentSourceInfo ?? SourceInfoFromHandler(transform)));
+    }
+
+    /// <summary>Registers a synchronous callback for agent lifecycle events emitted during a run.</summary>
+    public void AddLifecycleHandler(PiSharpExtensionLifecycleHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        _lifecycleHandlers.Add(new(handler, _currentSourceInfo ?? SourceInfoFromHandler(handler)));
+    }
+
+    /// <summary>Registers an event-only lifecycle callback.</summary>
+    public void AddLifecycleHandler(Action<AgentLifecycleEvent> handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        var sourceInfo = _currentSourceInfo ?? SourceInfoFromHandler(handler);
+        _lifecycleHandlers.Add(new((eventData, _) => handler(eventData), sourceInfo));
     }
 
     /// <summary>Registers resources that become available after extension startup and each reload.</summary>

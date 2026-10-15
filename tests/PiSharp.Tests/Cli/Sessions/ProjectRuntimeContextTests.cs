@@ -231,6 +231,10 @@ public sealed class ProjectRuntimeContextTests
             output: output, error: interactiveError);
         interactiveUi.Notify("interactive notifications are silent");
         Assert.Equal(string.Empty, interactiveError.ToString());
+        var notification = (Message: "", Type: "");
+        interactiveUi.SetInteractiveNotificationHandler((message, type) => notification = (message, type));
+        interactiveUi.Notify("interactive warning", "warning");
+        Assert.Equal(("interactive warning", "warning"), notification);
     }
 
     [Fact]

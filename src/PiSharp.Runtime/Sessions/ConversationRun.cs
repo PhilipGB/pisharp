@@ -569,6 +569,7 @@ public sealed class ConversationRun
         var accepted = false;
         var attribution = new ProviderRequestAttribution(Conversation.Model, Conversation.Provider,
             _providerApi, _pricing, _reasoningLevel);
+        _agent.SetExtensionConversation(Conversation);
         _agent.SetVirtualModelSession(Conversation, _reasoningLevel ?? "off", _save);
         VirtualModelContextCoordinator? virtualContext = null;
         IReadOnlyList<JsonElement>? expectedProviderPrefix = null;

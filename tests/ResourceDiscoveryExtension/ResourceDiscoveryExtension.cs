@@ -1,4 +1,5 @@
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Sessions;
 using Microsoft.Extensions.AI;
 using System.Text.Json;
 
@@ -81,6 +82,7 @@ public sealed class PartialRegistrationFailureFixture : IPiSharpExtension
             Path.GetFileName(GetType().Assembly.Location) != "bad.dll") return;
         registration.AddCommand("partial_command", (_, _) => Task.FromResult("Must not remain registered"),
             "Uncommitted extension command");
+        registration.AddLifecycleHandler(_ => { });
         registration.AddTool(AIFunctionFactory.Create(() => "Must not remain registered", name: "partial_tool"));
         using var mcp = JsonDocument.Parse("{\"command\":\"false\"}");
         registration.RegisterMcpServer("partial_mcp", mcp.RootElement);
@@ -136,5 +138,57 @@ public sealed class ExtensionConflictFixture : IPiSharpExtension
             registration.AddCommand("mcp", (_, _) => Task.FromResult(owner), "project mcp command");
         else
             registration.AddCommand("user_only", (_, _) => Task.FromResult(owner), "user command");
+    }
+}
+
+public sealed class ExtensionContextFixture : IPiSharpExtension
+{
+    public void Configure(ExtensionRegistration registration)
+    {
+        if (!string.Equals(Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_CONTEXT"), "true",
+                StringComparison.OrdinalIgnoreCase)) return;
+
+        registration.AddResourceDiscoveryHandler((context, _) =>
+        {
+            Trace("resource:" + (context.Reason == ExtensionResourceDiscoveryReason.Reload ? "reload" : "startup"));
+            return Task.FromResult<ExtensionResourceDiscoveryResult?>(null);
+        });
+        registration.AddLifecycleHandler((item, context) =>
+        {
+            if (item.Tool == "extension_context_probe" && item.Type is "tool_execution_started" or
+                "tool_execution_update" or "tool_execution_finished")
+                Trace("event:" + item.Type + ":" + context.CurrentModelId);
+        });
+        registration.AddTool(AIFunctionFactory.Create((AIFunctionArguments arguments) =>
+        {
+            var invocation = PiSharpToolExecutionContext.Get(arguments) ??
+                throw new InvalidOperationException("PiSharp tool invocation context was not attached.");
+            var context = invocation.ExtensionContext ??
+                throw new InvalidOperationException("PiSharp extension context was not attached.");
+            invocation.ReportProgress("extension context progress");
+            context.Ui.Notify("extension context notification", "warning");
+            var state = new
+            {
+                context.WorkingDirectory,
+                context.Mode,
+                context.HasUserInterface,
+                context.IsProjectTrusted,
+                context.IsIdle,
+                context.CurrentModelId,
+                context.CurrentProviderId,
+                context.SessionId,
+                context.SessionName,
+                context.ConversationHeadId,
+                ActiveToolNames = context.ActiveToolNames
+            };
+            Trace("state:" + JsonSerializer.Serialize(state, JsonSerializerOptions.Web));
+            return JsonSerializer.Serialize(state, JsonSerializerOptions.Web);
+        }, name: "extension_context_probe", description: "Report live native extension context for parity tests."));
+    }
+
+    private static void Trace(string value)
+    {
+        var path = Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_CONTEXT_TRACE");
+        if (!string.IsNullOrWhiteSpace(path)) File.AppendAllText(path, value + "\n");
     }
 }

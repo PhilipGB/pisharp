@@ -3,12 +3,88 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using PiSharp.Cli;
+using PiSharp.ResourceDiscoveryExtension;
 using SkiaSharp;
 
 namespace PiSharp.Tests;
 
 public sealed class TerminalPtyTests
 {
+    [Fact]
+    public async Task InteractiveReloadRunsNativeExtensionResourceDiscoveryAgain()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-extension-reload-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var tracePath = Path.Combine(root, "extension-trace.log");
+        Directory.CreateDirectory(agent);
+        Process? process = null;
+        try
+        {
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 100; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --no-session --no-tools --extension {ShellQuote(typeof(ExtensionContextFixture).Assembly.Location)}");
+            start.ArgumentList.Add("/dev/null");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["PISHARP_TEST_EXTENSION_CONTEXT"] = "true";
+            start.Environment["PISHARP_TEST_EXTENSION_CONTEXT_TRACE"] = tracePath;
+            process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var output = new StringBuilder();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var reloadCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (await process.StandardOutput.ReadAsync(buffer) is var count && count > 0)
+                {
+                    lock (output)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
+                        if (captured.Contains("Reloaded keybindings, extensions, skills, prompts, themes, and context files", StringComparison.Ordinal))
+                            reloadCompleted.TrySetResult();
+                    }
+                }
+                lock (output) return output.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await inputReady.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/reload\n");
+            await process.StandardInput.FlushAsync();
+            await reloadCompleted.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            var capturedOutput = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Agent error:", capturedOutput);
+            Assert.DoesNotContain("Exception:", await stderr);
+            var trace = await File.ReadAllLinesAsync(tracePath);
+            Assert.Contains("resource:startup", trace);
+            Assert.Contains("resource:reload", trace);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task TrustSelectorSavesParentDecisionWithoutChangingTheCurrentSession()
     {

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 
@@ -11,7 +12,8 @@ internal sealed class ProjectSessionRuntimeFactory(
     CliArguments arguments,
     string? configuredSessionDirectory,
     ProjectTrust trustStore,
-    ProviderModelRuntime modelRuntime, ICodemodeModels? codemodeModels = null)
+    ProviderModelRuntime modelRuntime, ICodemodeModels? codemodeModels = null,
+    bool hasUserInterface = false, IProjectTrustExtensionUi? extensionUi = null)
 {
     public void ValidateExistingSwitchTarget(string sessionReference, string invocationDirectory)
     {
@@ -30,7 +32,8 @@ internal sealed class ProjectSessionRuntimeFactory(
             ? PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory)
             : Path.GetFullPath(invocationDirectory);
         var configuration = await ProjectRuntimeConfiguration.LoadAsync(workingDirectory, agentDirectory, arguments,
-            trustStore, interactiveTrust: false, TextReader.Null, TextWriter.Null, cancellationToken: cancellationToken);
+            trustStore, interactiveTrust: false, TextReader.Null, TextWriter.Null, cancellationToken: cancellationToken,
+            extensionUi: extensionUi, hasUserInterface: hasUserInterface);
         var sourceSessionDirectory = keepSourceSessionDirectory ? Path.GetDirectoryName(path) : null;
         var project = await ProjectRuntimeContext.LoadAsync(configuration, agentDirectory, arguments,
             configuredSessionDirectory, sourceSessionDirectory, cancellationToken,

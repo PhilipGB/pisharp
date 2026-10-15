@@ -16,6 +16,9 @@ internal static class InteractiveMode
     {
         var editor = presentation.Editor;
         var terminalScreen = presentation.Screen;
+        if (projectBinding.Configuration.ExtensionUi is ProjectTrustStartupUi extensionUi && terminalScreen is not null)
+            extensionUi.SetInteractiveNotificationHandler((message, type) => terminalScreen.AppendThemedStatusLine(
+                type == "info" ? message : $"{type}: {message}"));
         var terminalClipboard = presentation.Clipboard;
         var trustStore = startup.Trust;
         var usesDefaultToolsSetting = startup.UsesDefaultToolsSetting;

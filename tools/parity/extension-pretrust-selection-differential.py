@@ -19,6 +19,7 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--ordering', action='store_true', help='Compare a retained personal module and a new project module.')
     mode.add_argument('--conflicts', action='store_true', help='Compare tool/command winners and replaceable builtins.')
+    mode.add_argument('--context', action='store_true', help='Compare lazy context, tool event order, UI state and resource reload.')
     args = parser.parse_args()
     sha = verify_pi_checkout(args.pi)
     cache_root = Path(os.environ.get('PISHARP_PARITY_NUGET_ROOT', '/tmp/pisharp-sol-orchestration-20261015/root-profile'))
@@ -33,12 +34,15 @@ def main():
             env=env, check=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=120)
         if build.returncode:
             raise RuntimeError(build.stdout)
-        extra = ['--conflicts'] if args.conflicts else ['--ordering'] if args.ordering else []
+        extra = ['--conflicts'] if args.conflicts else ['--ordering'] if args.ordering else ['--context'] if args.context else []
         actual = json.loads(subprocess.check_output(['dotnet', str(work / 'bin/Debug/net10.0/probe.dll'), str(work)] + extra, env=env, timeout=30))
         expected = json.loads(subprocess.check_output(['node', '--experimental-transform-types', str(ROOT / 'tools/parity/extension-pretrust-selection-probe.mjs'), str(args.pi.resolve()), str(work)] + extra, env=env, timeout=30))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     receipt = dict(piSha=sha, pi=expected, pisharp=actual, match=actual == expected,
-        scope=('Actual DefaultResourceLoader conflict selection/ExtensionRunner command resolution versus ExtensionCatalog: '
+        scope=('Actual Pi ExtensionRunner lazy context getters, tool event callbacks and resources_discover startup/reload '
+            'versus native tool execution context, lifecycle handlers, UI adapter and extension resource discovery. '
+            'Random session identifiers are excluded; cwd/model/provider and semantic callback order are compared.' if args.context else
+            'Actual DefaultResourceLoader conflict selection/ExtensionRunner command resolution versus ExtensionCatalog: '
             'compares loaded owners, first tool winner, duplicate-command aliases/descriptions, conflict diagnostics and '
             'replaceable-builtin warnings; temporary fixture paths normalize to inline owner labels.' if args.conflicts else
             'Actual DefaultResourceLoader.reload(resolveProjectTrust) versus bootstrap/final ExtensionCatalog selection: '
@@ -46,7 +50,8 @@ def main():
             'all five source-info fields. Only generated root paths and .ts/.dll suffixes normalize.'))
     args.output.write_text(json.dumps(receipt, indent=2) + '\n')
     assert actual == expected
-    print('Matched Pi and PiSharp extension conflict winners, command aliases and diagnostics.' if args.conflicts else
+    print('Matched Pi and PiSharp extension context fields, callback order and resource reload.' if args.context else
+        'Matched Pi and PiSharp extension conflict winners, command aliases and diagnostics.' if args.conflicts else
         f'Matched {len(actual)} full-loader pre-trust extension selection/source metadata cases.')
 
 

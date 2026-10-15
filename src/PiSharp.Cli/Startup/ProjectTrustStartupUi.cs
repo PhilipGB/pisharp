@@ -6,7 +6,11 @@ namespace PiSharp.Cli.Tui;
 internal sealed class ProjectTrustStartupUi(bool hasUserInterface, string mode, TextWriter output, TextWriter error)
     : IProjectTrustExtensionUi
 {
+    private Action<string, string>? _interactiveNotificationHandler;
     private bool CanShowDialog => hasUserInterface && mode == "interactive";
+
+    internal void SetInteractiveNotificationHandler(Action<string, string> handler) =>
+        _interactiveNotificationHandler = handler;
 
     public Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
         CancellationToken cancellationToken = default)
@@ -54,7 +58,11 @@ internal sealed class ProjectTrustStartupUi(bool hasUserInterface, string mode, 
 
     public void Notify(string message, string type = "info")
     {
-        if (mode == "interactive") return;
+        if (mode == "interactive")
+        {
+            _interactiveNotificationHandler?.Invoke(message, type);
+            return;
+        }
         var color = type switch
         {
             "error" => "31",
