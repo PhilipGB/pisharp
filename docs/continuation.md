@@ -8,22 +8,25 @@ core agent/session/tool behavior, the interactive experience, and other
 user-facing application features. Keep the configured Pi checkout pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-The previous verified product source was `1cdb57f7cfd2723152a3d45b0dd1498052995231`
-on `parity/current-pi-completion`, with exact-head Linux CI run
-[38789357300](https://github.com/PhilipGB/pisharp/actions/runs/38789357300).
 The last green exact-head checkpoint was the docs-only `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
-Current integrated product source is `14f8e1447fd7751da838c6ed357ca190e8a828bc`.
-It includes Codex manual authorization-code/redirect-URL fallback, retries for
-temporary Codex subscription-usage failures, and account/session WebSocket
-reuse with cached `previous_response_id` deltas. A stale cached response retries
-once with full context; connection-limit failures retry once and then fall back
-to SSE before output. WebSocket events flow through the existing Responses SDK
-reader, and the cached socket expires after five idle minutes. The full local
-suite passes **2,066/2,066** with zero skips; full solution format and the
-warnings-as-errors build pass with zero warnings. Exact-head CI for `14f8e144`
-is pending; the last green exact-head checkpoint remains the docs-only
-`c7b8a304` at run [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
+Current integrated product source is
+`8f4ab85b8e6160abef93c75a03a5dd21b128a614` on
+`parity/current-pi-completion`. It includes Codex manual
+authorization-code/redirect-URL fallback, temporary subscription-usage retry,
+account/session WebSocket reuse, cached `previous_response_id` deltas, and
+full MAF tool-loop continuation. Cached function-call arguments compare as JSON
+values despite serialization whitespace; cancellation before the first
+WebSocket event propagates. Stale cached responses retry once with full
+context; connection-limit failures retry once and then fall back to SSE before
+output. WebSocket events still flow through the Responses SDK reader, and the
+cached socket expires after five idle minutes. The llama router keeps models
+available when an optional per-model `/props` request fails, while retaining
+metadata from successful peers. The full local suite passes **2,070/2,070**
+with zero skips; full solution format and the warnings-as-errors build pass
+with zero warnings. Exact-head CI for `8f4ab85b` is pending; the last green
+exact-head checkpoint remains docs-only `c7b8a304` at run
+[38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 
 All 194 capability IDs remain in the global inventory at **12 verified, 147 in
 progress, and 35 not started**. Do not change those totals simply because this
@@ -37,16 +40,16 @@ Current execution priority is:
    refresh, model selection, Responses streaming and continuation, tool/image
    handling, cancellation/retry, reasoning/usage, and session resume/switching.
    Browser PKCE, device login, private credentials, the current model catalog,
-   account-scoped Responses streaming, cached WebSocket continuation, and
-   pre-output SSE fallback are implemented. Broader tool/image/usage/error
-   differentials and end-to-end authenticated session-resume scenarios remain
-   open.
+   account-scoped Responses streaming, cached WebSocket continuation,
+   function-call tool loops and pre-output SSE fallback are implemented.
+   Broader image/usage/error differentials, cancellation after output begins,
+   and end-to-end authenticated session-resume scenarios remain open.
 2. **llama.cpp path:** reuse the verified router configuration, model
-   discovery/selection, Hugging Face download, load/unload, context reload, and
-   twelve current-Pi paired terminal flows. Those deterministic receipts do not
-   substitute for the remaining end-to-end local model acceptance. No
-   `llama-server` or test endpoint is configured in this environment, so a live
-   model smoke test has not run.
+   discovery/selection, Hugging Face download, load/unload, context reload,
+   twelve current-Pi paired terminal flows, and fail-soft optional `/props`
+   metadata. Those deterministic receipts do not substitute for the remaining
+   end-to-end local model acceptance. No `llama-server` or test endpoint is
+   configured in this environment, so a live model smoke test has not run.
 3. **Core and interactive use:** agent/tool loops, prompt queues, cancellation,
    retries, durable session lifecycle, compaction/context, built-in tools,
    TUI/editor/navigation, normal CLI/RPC, settings/resources/extensions, MCP,
