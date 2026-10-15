@@ -11,8 +11,9 @@ public sealed class BedrockProviderTests
 {
     [Theory]
     [InlineData("""{"text":"\url{x}","mode":"w"}""", "\\url{x}")]
-    [InlineData("""{"text":"ab\u00""", "ab")]
-    public async Task BedrockToolArgumentsRepairMalformedAndIncompleteUnicodeEscapes(string arguments, string expected)
+    [InlineData("""{"text":"ab\u00""", null)]
+    [InlineData("""{"text":"keep", BROKEN}""", null)]
+    public async Task BedrockToolArgumentsRepairStringEscapesAndRejectMalformedCompletedCalls(string arguments, string? expected)
     {
         var transport = new RecordingTransport([
             new MessageStartEvent { Role = ConversationRole.Assistant },
@@ -27,7 +28,16 @@ public sealed class BedrockProviderTests
             BedrockModelCatalog.Load().Single(item => item.Id == "global.anthropic.claude-sonnet-4-6"), false, false, false, "us-east-1");
         var response = await client.GetResponseAsync([new ChatMessage(ChatRole.User, "fixture")]);
         var call = Assert.Single(response.Messages.SelectMany(message => message.Contents).OfType<FunctionCallContent>());
-        Assert.Equal(expected, call.Arguments!["text"]);
+        if (expected is null)
+        {
+            Assert.Empty(call.Arguments!);
+            Assert.Contains(arguments, Assert.IsType<System.Text.Json.JsonException>(call.Exception).Message);
+        }
+        else
+        {
+            Assert.Null(call.Exception);
+            Assert.Equal(expected, call.Arguments!["text"]);
+        }
     }
 
     private static readonly byte[] s_png = Convert.FromBase64String(

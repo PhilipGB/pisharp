@@ -11,6 +11,24 @@ namespace PiSharp.Tests;
 
 public sealed class GoogleGenAiProviderTests
 {
+    [Theory]
+    [InlineData("gemini-4-argon")]
+    [InlineData("gemini-4-argon-preview")]
+    public void GeminiFourUsesThinkingLevelForGoogleAndVertex(string modelId)
+    {
+        foreach (var vertex in new[] { false, true })
+        {
+            using var client = new GoogleGenAiChatClient(new HttpClient(), new Uri("https://example.test/v1beta"),
+                "key", GoogleModel("gemini-3.5-flash") with { Id = modelId },
+                vertex: vertex ? new GoogleVertexRequestOptions(null, null, false) : null);
+            var request = client.BuildRequest([new ChatMessage(ChatRole.User, "hello")],
+                new ChatOptions { Reasoning = ThinkingLevels.ToOptions("high") });
+            var thinking = request["generationConfig"]!["thinkingConfig"]!.AsObject();
+            Assert.Equal("HIGH", thinking["thinkingLevel"]!.GetValue<string>());
+            Assert.False(thinking.ContainsKey("thinkingBudget"));
+        }
+    }
+
     [Fact]
     public async Task GoogleProfileUsesCurrentPiCatalogAndGeminiCredential()
     {

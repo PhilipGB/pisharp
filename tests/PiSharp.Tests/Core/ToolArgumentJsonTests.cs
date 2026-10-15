@@ -6,6 +6,23 @@ namespace PiSharp.Tests;
 public sealed class ToolArgumentJsonTests
 {
     [Theory]
+    [InlineData("""{"path":"target.txt", BROKEN}""")]
+    [InlineData("{\"path\":\"target.txt\"")]
+    [InlineData("[]")]
+    [InlineData("null")]
+    public void CompletedArgumentsRejectPrefixesAndNonObjects(string source) =>
+        Assert.ThrowsAny<JsonException>(() => ToolArgumentJson.ParseComplete(source));
+
+    [Theory]
+    [InlineData("", "{}")]
+    [InlineData("""{"text":"\url{x}"}""", """{"text":"\\url{x}"}""")]
+    public void CompletedArgumentsPreserveEmptyObjectsAndStringEscapeRepair(string source, string expected)
+    {
+        using var document = JsonDocument.Parse(expected);
+        Assert.True(JsonElement.DeepEquals(document.RootElement, ToolArgumentJson.ParseComplete(source)));
+    }
+
+    [Theory]
     [InlineData("""{"text":"\url{x}"}""", """{"text":"\\url{x}"}""")]
     [InlineData("""{"path":"a.tex","content":"\usepackage{x}","mode":"w"}""", """{"path":"a.tex","content":"\\usepackage{x}","mode":"w"}""")]
     [InlineData("""{"text":"caf\u00e9 \url"}""", """{"text":"café \\url"}""")]

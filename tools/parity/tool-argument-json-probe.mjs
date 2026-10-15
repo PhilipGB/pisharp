@@ -19,6 +19,7 @@ for (const fixture of JSON.parse(readFileSync(nativeFile, 'utf8'))) {
   if (result.stopReason === 'error') throw new Error(result.errorMessage);
   const calls = result.content.filter(content => content.type === 'toolCall');
   if (calls.length !== 1) throw new Error(JSON.stringify(result));
-  native.push({ protocol: fixture.protocol, input: fixture.input, arguments: calls[0].arguments });
+  native.push({ protocol: fixture.protocol, input: fixture.input, arguments: calls[0].arguments,
+    hasError: !!calls[0].argumentsError, errorIncludesInput: !!calls[0].argumentsError?.includes(fixture.input) });
 }
 console.log(JSON.stringify({ parsed, native }));

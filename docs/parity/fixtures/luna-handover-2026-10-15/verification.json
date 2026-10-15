@@ -1,0 +1,168 @@
+{
+  "date": "2026-10-15",
+  "branch": "parity/current-pi-completion",
+  "starting_sha": "cccbf3e069a3e98f5703709df5beec1363eb1c8e",
+  "configured_pi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "audited_cutoff": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "observed_remote_upstream": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "baseline": {
+    "restore": "pass with writable /tmp NuGet caches",
+    "build": "pass, 0 warnings/errors",
+    "dotnet": {
+      "passed": 1962,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "final": {
+    "restore": "pass",
+    "format": "pass",
+    "build": "pass, 0 warnings/errors",
+    "dotnet_trx_counters": {
+      "total": "1976",
+      "executed": "1976",
+      "passed": "1976",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "dotnet": {
+      "passed": 1976,
+      "failed": 0,
+      "skipped": 0
+    },
+    "node": {
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    },
+    "python": {
+      "passed": 50,
+      "failed": 0,
+      "skipped": 0
+    },
+    "architecture": {
+      "tests": 6,
+      "outcomes": {
+        "Passed": 6
+      }
+    },
+    "documentation": {
+      "documents": 132,
+      "references": 506,
+      "status": "pass; revalidated after staging final handover"
+    },
+    "mcp": {
+      "scenarios": 26,
+      "passing_checks": 261,
+      "classified_failures": 8,
+      "regressions": 0,
+      "baseline": "tools/parity/mcp-conformance/baseline.json"
+    },
+    "focused_native": {
+      "passed": 130,
+      "failed": 0,
+      "skipped": 0
+    },
+    "pi_source_tests": {
+      "provider": 35,
+      "resources_settings_trust": 106,
+      "skips": 0
+    },
+    "mcp_build": "pass, 0 warnings/errors",
+    "documentation_tests": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "fail_first": {
+    "sdk_completed_argument_rows": 5,
+    "gemini_request_rows": 2,
+    "notes": "Initial Gemini fixture erroneously looked up absent catalog IDs; fixture corrected to clone a supported descriptor and replace its ID, then both request rows failed before production mapping was added. Exact JSON exception subtype assertion corrected to accept JsonException subclasses. These test setup errors are not counted as product findings."
+  },
+  "differentials": {
+    "tool_arguments": {
+      "parser_prefixes": 175,
+      "native_completed_calls": 18,
+      "match": true
+    },
+    "google_enabled": {
+      "matched": 6,
+      "off_p2_differences": 2,
+      "full_match": false
+    },
+    "context_instructions": {
+      "cases": 15,
+      "match": true
+    },
+    "default_trust_provider_selection": {
+      "cases": 9,
+      "match": true
+    },
+    "extension_order": {
+      "cases": 1,
+      "match": true
+    },
+    "legacy_skills_reload": {
+      "frames": 14,
+      "paired_terminal_differences": 0,
+      "calibration_differences": 0,
+      "http_match": true,
+      "semantic_assertion": "pass",
+      "raw_match": false
+    }
+  },
+  "tested_file_sha256": {
+    "src/PiSharp.Cli/Providers/Bedrock/BedrockConverseChatClient.cs": "0bc4e020597cd6df2e1df4a1f5b6888bcdd7f9da246bf7f282d2fe221aaaef6d",
+    "src/PiSharp.Cli/Providers/Google/GoogleGenAiChatClient.cs": "becb5076a9ed8d60b705498526bad05e47b4a58ad4cf21d337724382c220042c",
+    "src/PiSharp.Cli/Providers/ProviderToolArgumentChatClient.cs": "2fd1b939c52e38aa2e951caf6c06c6b6fc1295770c0173dd47a5128928b80369",
+    "src/PiSharp.Core/ToolArgumentJson.cs": "b0139d2c50860720f8e2455ae6c6bfed48b7c8848d97e682dff06d3640e47efc",
+    "tests/PiSharp.Tests/Cli/Providers/Bedrock/BedrockProviderTests.cs": "b0a6f86a655b0cf28e561973a9c508eb7a6cf82986eda6eff5b9734c9470e9b3",
+    "tests/PiSharp.Tests/Cli/Providers/Google/GoogleGenAiProviderTests.cs": "9fc2a1959e7c5780499ec8d8ac21faa5fa1e2f7ebb099ff1d32249d0ce11a8e6",
+    "tests/PiSharp.Tests/Cli/Providers/ProviderToolArgumentRepairTests.cs": "3516c60e081e38e688d485d5d3a2decfa105be820a2d5efb8f52555d266e6beb",
+    "tests/PiSharp.Tests/Core/ToolArgumentJsonTests.cs": "c534ef45bfc28d0d20c717c839a6499685e4880e2e21540b6359d34eabf0756a",
+    "tools/parity/default-project-trust-process-differential.py": "3ceff773d7cf87ba19206977a6fdd08726ac62e017e5f06529642b972ad8244c",
+    "tools/parity/google-thinking-differential.py": "1588f934aeea746e0eb4e68985e876886ddb3663220db2d57f8efff7303c86ed",
+    "tools/parity/google-thinking-probe.cs": "67f8210ee5999e135742f77763ef12c1939bdc7948e69d7a4e75851aec35704c",
+    "tools/parity/google-thinking-probe.mjs": "ebf45690cb1a8331016d93f66c4c79a2fc66ff793932e19b3cc81a620fb43757",
+    "tools/parity/pi-reference.txt": "83fb001315a6c8775065d7291e81bbe43f30e00ed9bc2bce2fab603a7a11690c",
+    "tools/parity/tool-argument-json-differential.py": "d4b0494d9a80469eb29fd6347156152b73ca084839d5447987888203d52f664e",
+    "tools/parity/tool-argument-json-probe.cs": "2ed1c4097eb7f7eca0afce6310303fef8c483a0f9fa8fa16bb2b9664f90d0f5e",
+    "tools/parity/tool-argument-json-probe.mjs": "07ca86246796a2cf0bb4e4a8c2e1435ad198075439535231a6758ae600219576"
+  },
+  "scope": "Linux current-source boundary and required standard gates. No live paid credentials, native macOS/Windows, full provider breadth or full Pi parity claim. Historical timing failures are not retrospectively resolved. Two Google off differences and 11 audited upstream deltas remain explicit deferred work.",
+  "test_pdf": "Never opened, changed, moved, deleted, staged or committed; Git status and explicit path staging exclude it.",
+  "commands": [
+    "dotnet restore PiSharp.slnx",
+    "dotnet format PiSharp.slnx --verify-no-changes --no-restore",
+    "dotnet build PiSharp.slnx --no-restore --warnaserror",
+    "dotnet test PiSharp.slnx --no-build --no-restore",
+    "npm test --prefix tools/parity/terminal",
+    "python3 -m unittest discover -s tools/parity/terminal -p 'test_*.py'",
+    "python3 tools/validate_doc_paths.py",
+    "dotnet build tools/McpConformance/PiSharp.McpConformance.csproj --no-restore --warnaserror",
+    "node tools/parity/mcp-conformance/run.mjs"
+  ],
+  "environment": "NET10 SDK 10.0.112, Node 24.21.0. NUGET_PACKAGES=/tmp/pisharp-luna-nuget; NUGET_HTTP_CACHE_PATH=/tmp/pisharp-luna-nuget-http; DOTNET_CLI_HOME=/tmp/pisharp-luna-dotnet; DOTNET_PROCESSOR_COUNT=2. Build/test processes can use --disable-build-servers -m:1 -p:UseSharedCompilation=false to avoid inherited compiler servers. SSH per-command -F /dev/null bypasses host SSH include ownership error; host configuration untouched.",
+  "differential_commands": [
+    "python3 tools/parity/tool-argument-json-differential.py --pi /tmp/pisharp-luna-pi --output artifacts/parity/luna-handover-2026-10-15/tool-arguments.json",
+    "python3 tools/parity/google-thinking-differential.py --pi /tmp/pisharp-luna-pi --output artifacts/parity/luna-handover-2026-10-15/google-thinking.json",
+    "python3 tools/parity/context-instructions-differential.py --pi /tmp/pisharp-luna-pi --output artifacts/parity/luna-handover-2026-10-15/context-instructions.json",
+    "python3 tools/parity/default-project-trust-process-differential.py --pi /tmp/pisharp-luna-pi --output artifacts/parity/luna-handover-2026-10-15/default-trust.json",
+    "python3 tools/parity/extension-pretrust-selection-differential.py --pi /tmp/pisharp-luna-pi --ordering --output artifacts/parity/luna-handover-2026-10-15/extension-order.json",
+    "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-luna-pi --fixture tools/parity/terminal/fixtures/legacy-project-skills-reload.json --case 120x40-dark-fullscreen --output artifacts/parity/luna-handover-2026-10-15/legacy-skills-paired",
+    "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-luna-pi --fixture tools/parity/terminal/fixtures/legacy-project-skills-reload.json --case 120x40-dark-fullscreen --calibrate --output artifacts/parity/luna-handover-2026-10-15/legacy-skills-calibration",
+    "python3 tools/parity/terminal/assert_legacy_project_skills_reload.py --report artifacts/parity/luna-handover-2026-10-15/legacy-skills-paired/report.json --capture artifacts/parity/luna-handover-2026-10-15/legacy-skills-paired --output artifacts/parity/luna-handover-2026-10-15/legacy-skills-behavior.json"
+  ]
+}

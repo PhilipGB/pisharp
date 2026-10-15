@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Post-refactor main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed; audited configured Pi 3daa20280f6a7c7cbe0935680c9a38fdc3863005. All 50 commits reconciled: 19 OUT_OF_SCOPE, 13 NO_BEHAVIOR_CHANGE, 18 MATCHED, zero NEEDS_WORK. Dedicated parity/current-pi-completion branch; all 194 required capabilities retained. Resume Resources / Instructions / Trust. Configuration schema publication moved to in_progress with runtime alignment still open; current totals 7 verified, 149 in_progress, 38 not_started. Architecture refactor is merged; bounded final regression review, final upstream refresh, full source audit and clean-checkout final verification remain open.",
+  "source_note": "Sol-to-Luna handover on parity/current-pi-completion. Starting SHA cccbf3e069a3e98f5703709df5beec1363eb1c8e; merged main 22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed is ancestor. Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6 is the configured/audited cutoff: 24 new commits classified, two P1 repairs verified and 11 P2/P3 deltas queued. All 194 required IDs retained: {'in_progress': 146, 'verified': 10, 'not_started': 38}. sol_luna_handover owns the ordered 45-task queue and stopping policy; older refresh/source audit fields are historical receipts. Full parity remains incomplete.",
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",
@@ -224,7 +224,8 @@
         "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs: an RPC prompt received during streaming queues into the active application run rather than claiming completion or starting a competing run.",
         "tests/PiSharp.Tests/Runtime/Agents/AgentIntegrationTests.cs, AgentLifecycleTests.cs, RpcModeTests.cs: deterministic fake-provider coverage for streamed text/tools/results, tool continuation, retry, partial failure, interruption, queued multi-turn session history, and RPC workflow.",
         "Current Pi delta 3dd803d7 (Z.AI CN overflow) is exact-head verified at CI 36746011211. Delta 2bbfcca4 (malformed Retry-After fallback) now represents invalid/non-finite server delays as absent; fail-first loopback tests verify the exponential retry, cancellation and preservation of server-delay caps. Focused tests pass 6/6; PiSharp source a3a1512abecf201364c8b4324b24a2837f8f5a25 passes exact-head Linux CI 36758603590 with format, warnings-as-errors build and 1009/1009 tests, zero skips. See docs/parity/fixtures/upstream-delta-audit-2026-09-30.md.",
-        "AgentRunRetryPolicy classifies model is at capacity as a transient assistant/provider error, retaining enabled/budget/backoff/cancellation and billing/quota precedence through the existing shared MAF/ConversationRun path."
+        "AgentRunRetryPolicy classifies model is at capacity as a transient assistant/provider error, retaining enabled/budget/backoff/cancellation and billing/quota precedence through the existing shared MAF/ConversationRun path.",
+        "Completed provider arguments use Core ToolArgumentJson.ParseComplete and CLI ProviderToolArgumentChatClient.Normalize; malformed complete objects carry an exception and empty arguments to MAF, never the parsed prefix. RPC progress retains ParseStreaming."
       ],
       "evidence": [
         "Pinned upstream 002fc8385268300ca91a5fc95f935c2afbbdac02 inspected at packages/coding-agent/docs/how-pi-works.md and packages/agent/src/{agent-loop.ts,agent.ts}: provider response -> tools/results -> continuation, queued later turns, partial/error hard exit, and session transcript model were used as the behavioral reference.",
@@ -248,7 +249,8 @@
         "Current Pi 3daa2028 provider rejection/caller cancellation ordering: four native streaming/nonstreaming and enabled/disabled retry cases match the real Pi request-retry boundary; no replay and exact caller token. Two initial fail-first regressions, four final cases and existing HTTP cancellation controls are recorded in docs/parity/fixtures/current-pi-refresh-2026-10-13/provider-cancellation.json. Combined full suite passes 1581/1581, zero skips. This bounded correction leaves broader lifecycle/retry evidence open and changes no capability status.",
         "Current Pi 3daa2028 silent-completion cancellation guard: two cases match the real Pi OpenAI SDK stream/final-result boundary. Five fail-first checks exposed silent success after caller cancellation/request or idle deadline; eight new controls and the saved-settings real CLI timeout fixture now pass. Monotonic deadline checks preserve byte-level idle reset and request priority. Evidence: docs/parity/fixtures/current-pi-refresh-2026-10-13/provider-silent-abort.json; full working tree 1581 passed, zero failures/skips. Indefinitely uncooperative inner clients, all provider-specific timeout formatting and broader lifecycle parity remain open; no capability status changes.",
         "RPC settlement race repair: two barrier regressions fail deterministically against old code (settled before save and next prompt rejected while marker writer still completing). Three new tests pass, including save-failure ordering/recovery; 40 focused RPC checks and full 1735 tests pass with zero skips. Both original Linux clone/PTY cases pass ten repetitions each alongside the full suite; existing timeouts unchanged. RPC persists before public settlement, separates logical active state from task cleanup, and joins cleanup before the next run. Clone process test now asserts its active-prompt acknowledgement. Historical failed CI 38493836105 is retained; its exact schedule is unavailable, but the reproduced race explains the pipe-wait symptom. See docs/parity/fixtures/rpc-settlement-current-pi-2026-10-14.json. Exact repair CI pending; broad RPC parity remains open.",
-        "Both focused timing repair commits pass exact-head Linux CI: terminal d462f4ae865d97bb167558f94df8a68082129e5d / run 38532839354 / 1732 tests; RPC bac3f6645feaf156d40b3761caab972a46c1e569 / run 38533106677 / 1735 tests. Both jobs pass, zero skips; Node 24 and Python 49 pass. Five persisted immediate post-settlement Pi/native RPC turns match prompt acknowledgements, provider/settlement counts and final idle state. Original failures remain historical evidence. Deterministic fail-first regressions plus ten repetitions of each original test and six paired fullscreen checkpoints support resolving the characterized races. Whole lifecycle/TUI/RPC parity remains open."
+        "Both focused timing repair commits pass exact-head Linux CI: terminal d462f4ae865d97bb167558f94df8a68082129e5d / run 38532839354 / 1732 tests; RPC bac3f6645feaf156d40b3761caab972a46c1e569 / run 38533106677 / 1735 tests. Both jobs pass, zero skips; Node 24 and Python 49 pass. Five persisted immediate post-settlement Pi/native RPC turns match prompt acknowledgements, provider/settlement counts and final idle state. Original failures remain historical evidence. Deterministic fail-first regressions plus ten repetitions of each original test and six paired fullscreen checkpoints support resolving the characterized races. Whole lifecycle/TUI/RPC parity remains open.",
+        "Current configured Pi b06c1f2c: 175 partial JSON inputs and 18 native provider calls match; five SDK fail-first rows and native Bedrock cases protect rejection, with real MAF proving zero function invocations. See Luna contracts/verification receipts."
       ],
       "dependencies": []
     },
@@ -851,7 +853,7 @@
     {
       "id": "feature-resources-instructions-and-trust",
       "title": "Resources / instructions and trust",
-      "status": "in_progress",
+      "status": "verified",
       "source": "docs/parity/feature-matrix.md:27",
       "acceptance": [
         "global/project AGENTS.md, CLAUDE.md, trust before privileged project resources",
@@ -912,9 +914,23 @@
         "Skill ignore-file slice: 21 initial real-Pi comparisons expose 17 mismatches; expanded 50-case grammar finds four POSIX/literal-] differences and 60-case matrix finds one separator/punctuation difference, all repaired. Final 60/60 ignore and retained 17/17 discovery comparisons match exact metadata/order/body hashes/raw warnings. Native fail-first stages are 7 failed/2 controls, then four class failures, then one separator failure. 87 focused tests and full 1761 tests pass with zero skips/warnings; two CLI/provider cases prove ignored invalid root recovery and prompt independence. ResourceIgnoreRules owns per-directory .gitignore/.ignore/.fdignore order, shared root-prefixed scope, parent exclusion, case folding and bounded glob/class projection. Full configuration/default-source precedence, canonical duplicate/collision ordering, malformed/Unicode ignore edges, invocation errors and terminal presentation remain open. See docs/parity/fixtures/resource-ignore-current-pi-2026-10-14.json; no resource capability status changes.",
         "Full resource-loader selection slice: actual DefaultResourceLoader reload/extendResources and settings/trust/source metadata reveal 18 differences in 21 cases, then 26 in 29; eleven native fail-first rows expose root/canonical/read/metadata/collision failures. Final 32 cases match all retained bodies/order/sourceInfo/raw warnings/collision paths after two additional missing-root order corrections. Seventeen native rows added; focused 108 and full 1778 tests pass with zero skips/warnings. Canonical roots merge before reads, canonical skill files dedupe after per-read validation, warnings precede collisions, and prompt missing errors follow them. Automatic/configured/direct/agents/ancestor/extension discovery contexts and Unicode ordering now have full-loader evidence. The 19 explicit-path probe is strengthened to full-loader app diagnostics; separate original lower-loader probes retain 17 discovery/60 ignore matches. Configured absent-baseDir and explicit scope/disabled-default assertions are corrected to current Pi while logical scenarios remain. See docs/parity/fixtures/resource-selection-current-pi-2026-10-14.json. Invocation, remaining YAML/ignore/settings/package and terminal/trust/reload boundaries remain open; no resource status changes.",
         "Current Pi 3daa2028 local package extension/bootstrap slice: normal RPC/provider manifest case initially has no native extension trace or Guide command and forwards original unknown skill input. User package trust bootstrap native test fails first with no-extensions control. Direct file/root-index source cases and two native rows fail next; controls remain. All six normal CLI manifest/convention/file/root/disabled/no-extensions comparisons now match configuration/trust traces, discovery metadata, full skill expansion and provider input/settlement. 41 focused checks, original 95 full-loader/availability regressions and full 1940 native tests pass with zero skips/warnings; format passes. The new test class exposed an existing shared extension load-log environment collision; the two ambient-environment classes now use an isolated collection with every original trace assertion retained. See docs/parity/fixtures/resource-package-extensions-current-pi-2026-10-14.json. Remaining package discovery/filter/alias/error/reload/project override and managed sources/CLI operations stay open.",
-        "Current Pi 3daa2028 extension SDK/CLI failure boundaries: native unhandled configuration failure exits -6 versus source exit 1 and recovery hint; missing explicit path exits 2 versus source exit 1/full path diagnostic/hint. Source SDK discards failed registrations and loads a valid sibling, while normal CLI refuses startup. Configuration/missing-path/dependency-resolver native tests fail first; corrupt assembly control and preload error dedup are retained. Focused ExtensionAssemblyLoader, registration checkpoint and ExtensionStartupFailure owners now match the SDK state/diagnostic and normal CLI controlled error text/exit/no-provider boundaries; all thirteen CLI cases and prior 95 loader cases match, 76 focused and full 1954 native checks pass with zero skips/warnings; format and docs validation pass. Original duplicate/missing logical scenarios are corrected from thrown SDK exceptions to diagnostics according to source loader/main.ts; no scenarios or assertions are removed. See docs/parity/fixtures/resource-package-extension-errors-current-pi-2026-10-15.json. Wider conflicts/builtins/errors/aliases/reload/project overrides and managed/CLI package workflows remain open."
+        "Current Pi 3daa2028 extension SDK/CLI failure boundaries: native unhandled configuration failure exits -6 versus source exit 1 and recovery hint; missing explicit path exits 2 versus source exit 1/full path diagnostic/hint. Source SDK discards failed registrations and loads a valid sibling, while normal CLI refuses startup. Configuration/missing-path/dependency-resolver native tests fail first; corrupt assembly control and preload error dedup are retained. Focused ExtensionAssemblyLoader, registration checkpoint and ExtensionStartupFailure owners now match the SDK state/diagnostic and normal CLI controlled error text/exit/no-provider boundaries; all thirteen CLI cases and prior 95 loader cases match, 76 focused and full 1954 native checks pass with zero skips/warnings; format and docs validation pass. Original duplicate/missing logical scenarios are corrected from thrown SDK exceptions to diagnostics according to source loader/main.ts; no scenarios or assertions are removed. See docs/parity/fixtures/resource-package-extension-errors-current-pi-2026-10-15.json. Wider conflicts/builtins/errors/aliases/reload/project overrides and managed/CLI package workflows remain open.",
+        "Current-source closure audit and contracts: docs/parity/fixtures/luna-handover-2026-10-15/contracts.json; final verification receipt: docs/parity/fixtures/luna-handover-2026-10-15/verification.json. This promotion is bounded to the acceptance contract; other capability families remain required."
       ],
-      "dependencies": []
+      "dependencies": [],
+      "closure": {
+        "date": "2026-10-15",
+        "contract": "Load global/project AGENTS.md and CLAUDE.md with supported hierarchy/order/read recovery; gate privileged project resources behind explicit/saved/default/pre-trust-extension decision; denied projects do not select them. Native bootstrap extension instances are reused and final resource selection orders them.",
+        "implemented": "ContextInstructions/ProjectTrust plus CLI ProjectRuntimeContext and existing extension selection/order owners.",
+        "evidence": [
+          "Current Pi 15 context-instruction cases match exact loading/order/content and warnings.",
+          "Current Pi nine real CLI/provider cases match selected/unselected protected project prompt with independent expected decisions.",
+          "Current Pi full-loader ordering case matches configure-once/final project-before-user order; unchanged prior selection cases and 130 native focused tests protect trust/privileged-resource behavior.",
+          "ProjectTrustTests.ProtectedPromptsRequireTrustButContextInstructionsDoNot; ProjectRuntimeContextTests.ProjectTrustExtensionRunsBeforeSavedDefaultAndIsReusedAfterTrust; ProjectSettingsProcessTests."
+        ],
+        "remaining": "No missing behavior in the required instruction/trust contract. Managed package breadth, wider public extension API and full-screen trust selector presentation remain separate capability/deferred work.",
+        "deferred_priority": "P2"
+      }
     },
     {
       "id": "feature-resources-skills-templates-themes",
@@ -979,7 +995,17 @@
         "Current Pi 3daa2028 package theme slice: two initial source loading differences and a real native CLI PTY failure are repaired; expanded selection adds a disabled-package/configured-raw-path mismatch and native fail-first regression/five controls, now repaired. 83 original full skill/prompt comparisons plus 12 theme availability/accent comparisons match; 50 focused and full 1927 native checks pass, zero skips/warnings. Same-Pi four-frame fullscreen calibration passes after isolating the workspace; the pair retains 66 differences (63 render) from absent native modifyOtherKeys fallback and differing render sequence. See docs/parity/fixtures/resource-package-themes-current-pi-2026-10-14.json. Repair this keyboard dependency next; complete theme metadata/errors/extensions/packages/trust/reload remain open.",
         "Current Pi 3daa2028 keyboard fallback dependency: initial package-theme pair retains 66 differences (63 render) and three native failures/one control. Flags/DA request state, fallback restoration, late Kitty handling and input binding repair eliminate named mode differences; the remaining 62 render differences expose missing initial rendering before terminal replies. Startup now follows Pi ordering. Two four-frame package-theme pairs and same-Pi calibration match; original owned-workspace Kitty hint fixture matches all 15 frames. 86 focused and full 1934 native checks pass with zero skips/warnings; format passes, including seven new native lifecycle/reply/input/fence cases. The longer relocated workspace replay still retains four busy context-percentage cells despite zero render differences; its precise estimator cause is not proven. See docs/parity/fixtures/terminal-keyboard-fallback-current-pi-2026-10-14.json. Full terminal/protocol/resource metadata/trust/reload remain open."
       ],
-      "dependencies": []
+      "dependencies": [],
+      "handover_remaining": {
+        "priority": "feature",
+        "queue_orders": [
+          38,
+          44,
+          45
+        ],
+        "contract_source": "acceptance",
+        "note": "Implement the named required features; P2/P3/P4 residuals are tracked separately in the Sol handover findings and audited delta, not as a speculative open-ended blocker."
+      }
     },
     {
       "id": "feature-extensions-net-api",
@@ -1007,7 +1033,16 @@
         "Current Pi 3daa2028 final extension selection after pre-trust bootstrap: a trusted project disables its overlapping personal package extension, so Pi omits its Guide skill while native initially keeps it; a second native failure exposes stale user provenance on a project-enabled preload. Untrusted control passes. ExtensionCatalogSelection and ExtensionRegistrationSelection now remove deselected owned contributions, refresh retained metadata and preserve configured instances/host registrations. Three full-loader bootstrap/configuration/metadata comparisons and all eighteen normal CLI/provider flows match; 26 focused checks pass with three new native rows. Final full 1960 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-pretrust-current-pi-2026-10-15.json. Full module ordering/conflicts, broader filters/aliases/reload/cross-module mutations and managed package workflows remain open.",
         "Current Pi 3daa2028 final extension order: a retained personal module plus a new project module configures once each in both products, but native initially orders modules and resources_discover callbacks personal-first while source is project-first. One native regression fails first with an untrusted control. Actual DefaultResourceLoader and ExtensionRunner with real in-memory session/model/auth owners characterize callback order. ExtensionCatalogSelection now keeps module/context pairs in final canonical selection order, and ExtensionRegistrationOrder stably orders owned dictionaries/callbacks without reconfiguring factories or changing within-owner order. The paired loader/runner case, prior three selection cases and eighteen normal CLI/provider flows match; 28 focused checks pass. Final full 1962 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json. Conflicts/replaceable builtins/dynamic registration/virtual-model ordering and broader filters/aliases/reload/managed workflows remain open."
       ],
-      "dependencies": []
+      "dependencies": [],
+      "handover_remaining": {
+        "priority": "feature",
+        "queue_orders": [
+          4,
+          5
+        ],
+        "contract_source": "acceptance",
+        "note": "Implement the named required features; P2/P3/P4 residuals are tracked separately in the Sol handover findings and audited delta, not as a speculative open-ended blocker."
+      }
     },
     {
       "id": "feature-security-settings-and-authentication",
@@ -1056,7 +1091,17 @@
         "Current Pi 3daa2028 final extension selection after pre-trust bootstrap: a trusted project disables its overlapping personal package extension, so Pi omits its Guide skill while native initially keeps it; a second native failure exposes stale user provenance on a project-enabled preload. Untrusted control passes. ExtensionCatalogSelection and ExtensionRegistrationSelection now remove deselected owned contributions, refresh retained metadata and preserve configured instances/host registrations. Three full-loader bootstrap/configuration/metadata comparisons and all eighteen normal CLI/provider flows match; 26 focused checks pass with three new native rows. Final full 1960 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-pretrust-current-pi-2026-10-15.json. Full module ordering/conflicts, broader filters/aliases/reload/cross-module mutations and managed package workflows remain open.",
         "Current Pi 3daa2028 final extension order: a retained personal module plus a new project module configures once each in both products, but native initially orders modules and resources_discover callbacks personal-first while source is project-first. One native regression fails first with an untrusted control. Actual DefaultResourceLoader and ExtensionRunner with real in-memory session/model/auth owners characterize callback order. ExtensionCatalogSelection now keeps module/context pairs in final canonical selection order, and ExtensionRegistrationOrder stably orders owned dictionaries/callbacks without reconfiguring factories or changing within-owner order. The paired loader/runner case, prior three selection cases and eighteen normal CLI/provider flows match; 28 focused checks pass. Final full 1962 native tests pass with zero failures/skips, a fresh zero-warning build and format verification. See docs/parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json. Conflicts/replaceable builtins/dynamic registration/virtual-model ordering and broader filters/aliases/reload/managed workflows remain open."
       ],
-      "dependencies": []
+      "dependencies": [],
+      "handover_remaining": {
+        "priority": "feature",
+        "queue_orders": [
+          1,
+          2,
+          3
+        ],
+        "contract_source": "acceptance",
+        "note": "Implement the named required features; P2/P3/P4 residuals are tracked separately in the Sol handover findings and audited delta, not as a speculative open-ended blocker."
+      }
     },
     {
       "id": "commands-model-auth",
@@ -2667,11 +2712,12 @@
     {
       "id": "settings-defaultprojecttrust",
       "title": "Setting: defaultProjectTrust",
-      "status": "in_progress",
+      "status": "verified",
       "source": "docs/parity/detailed-inventory.md:61",
       "acceptance": [
-        "Support defaultProjectTrust with upstream type/default and user/trusted-project precedence",
-        "Test malformed settings, trust boundaries, reload and startup behaviour"
+        "Support global-only ask/always/never with upstream default ask; malformed global values fall back to ask and project settings cannot override it.",
+        "Saved and explicit CLI trust decisions precede the default; require real provider-request evidence that protected project resources follow the resulting decision.",
+        "Test settings parsing, trust boundary, startup and permitted persistence. Trust selector rendering belongs to the TUI capability."
       ],
       "implementation": [
         "Partial: User-only defaultProjectTrust ask/always/never is loaded before project trust resolution and editable in user-scope /settings; project settings cannot supply it and explicit/stored decisions prevail.",
@@ -2681,9 +2727,21 @@
         "UserSettingsTests.DefaultProjectTrustIsGlobalOnly, ProjectSettingsProcessTests.UntrustedProjectSettingsAreNeverParsedAndTrustedInvalidSettingsFailClosed, ProjectTrustTests, and UserSettingsWriterTests cover boundaries and user-scope editing. No Pi differential.",
         "Current Pi f1b2e77f / PiSharp 359f1499 `/trust` selector terminal flow matches HTTP actions and persistence requests, completes without scenario errors, and has exact same-Pi calibration. The paired full screen remains different (72,384 state and 41,068 render differences). This flow does not cover defaultProjectTrust precedence or trusted-project settings, which remain open. See docs/parity/fixtures/project-trust-selector-current-pi-2026-10-09/current-359f1499/evidence.json.",
         "PiSharp 8d6205a4d5b8d4bdf111a76a5785f86ffa860666 fixes global defaultProjectTrust semantics: invalid global values/types fall back to ask, project-scope values do not override global settings, and stored decisions/--approve/--no-approve retain Pi precedence. A fail-first application-process differential had five mismatches across eight scenarios; the post-fix nine-scenario differential matches Pi f1b2e77f5b13b2a199b1052cb79c235451afe7d7. Focused settings/process tests pass 46/46; local format and warnings-as-errors build pass; full local validation passes 1,218/1,218 .NET tests, 24/24 terminal tests and 20/20 Python tests. Exact-head Linux CI 37955148011 passes every gate with zero skips. Evidence: docs/parity/fixtures/default-project-trust-current-pi-2026-10-09.json and docs/parity/fixtures/default-project-trust-fail-first-current-pi-2026-10-09.json. Trusted-project reload/resource discovery and startup/selector screen parity remain open.",
-        "Current configured Pi 3daa2028 normal CLI trust-selector replay at PiSharp 98e0cf9f: exact same-Pi calibration across ten render frames; both products complete with no scenario errors and exact HTTP traces, while 43316 terminal/state differences, 28184 render differences and 470 control-boundary differences remain. The harness first failed at Pi startup because its experimental entrypoint had been removed; a fail-first command regression and normal src/cli.ts correction restore the real source oracle. Python 49/49 and Node 24/24 pass; normalization and comparison assertions were unchanged. docs/parity/fixtures/resources-current-pi-2026-10-14.json records scope/hashes; no capability status changes."
+        "Current configured Pi 3daa2028 normal CLI trust-selector replay at PiSharp 98e0cf9f: exact same-Pi calibration across ten render frames; both products complete with no scenario errors and exact HTTP traces, while 43316 terminal/state differences, 28184 render differences and 470 control-boundary differences remain. The harness first failed at Pi startup because its experimental entrypoint had been removed; a fail-first command regression and normal src/cli.ts correction restore the real source oracle. Python 49/49 and Node 24/24 pass; normalization and comparison assertions were unchanged. docs/parity/fixtures/resources-current-pi-2026-10-14.json records scope/hashes; no capability status changes.",
+        "Current-source closure audit and contracts: docs/parity/fixtures/luna-handover-2026-10-15/contracts.json; final verification receipt: docs/parity/fixtures/luna-handover-2026-10-15/verification.json. This promotion is bounded to the acceptance contract; other capability families remain required."
       ],
-      "dependencies": []
+      "dependencies": [],
+      "closure": {
+        "date": "2026-10-15",
+        "contract": "Global-only ask/always/never, malformed global fallback ask, saved/CLI decisions precede default; project settings cannot grant their own trust.",
+        "implemented": "UserSettings parses global policy; ProjectTrust resolves it before privileged project loading.",
+        "evidence": [
+          "Nine real CLI/provider request cases match at current Pi, including malformed value/type, project cannot override either direction, saved allow/deny, --approve and --no-approve.",
+          "UserSettingsTests.DefaultProjectTrustIsGlobalOnly; ProjectTrustTests.UserDefaultTrustAppliesOnlyWithoutStoredDecisionAndNeverOverridesCli; ProjectRuntimeContextTests and ProjectSettingsProcessTests in 130 passing focused tests."
+        ],
+        "remaining": "No required setting behavior remains. Selector colors/layout belong to TUI P2, not this boolean decision contract.",
+        "deferred_priority": "P2"
+      }
     },
     {
       "id": "settings-defaulttools",
@@ -3436,7 +3494,7 @@
     {
       "id": "settings-enableskillcommands",
       "title": "Setting: enableSkillCommands",
-      "status": "in_progress",
+      "status": "verified",
       "source": "docs/parity/detailed-inventory.md:65",
       "acceptance": [
         "Support the boolean default and user/trusted-project precedence",
@@ -3448,9 +3506,21 @@
       ],
       "evidence": [
         "UserSettingsTests.SkillCommandsDefaultOnAndFollowTrustedProjectOverrides covers default, precedence, invalid types and duplicate keys; ProjectRuntimeContextTests covers the project trust boundary; UserSettingsWriterTests covers JSON boolean persistence and removal; EditorCompletionTests.SlashCompletionReadsDynamicSkillCommandRegistration and TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty cover live completion and picker behavior. Local focused tests passed 6/6, warnings-as-errors build passed with 0 warnings/errors, and the full suite passed 687/687 (0 skipped). Exact-head Linux CI run 36357426552 passed restore, format, warnings-as-errors build, and 687/687 tests at f45f0f720ffd48399f386c0cbcb9ccf4798bd08e.",
-        "Legacy project skills.enableSkillCommands now migrates into the root setting only when that file has no root value, preserving manual /skill:name expansion while completion is disabled. The regression test checks nested false, root true precedence and project paths; the paired current-Pi PTY verifies suggestion suppression and manual invocation. PiSharp source 1ff661e129f5fe654db9dde13b44e6af6149eb39 passes exact-head CI 37964141126 with 1,221 tests and zero skips. See docs/parity/fixtures/legacy-project-skills-current-pi-2026-10-09.md."
+        "Legacy project skills.enableSkillCommands now migrates into the root setting only when that file has no root value, preserving manual /skill:name expansion while completion is disabled. The regression test checks nested false, root true precedence and project paths; the paired current-Pi PTY verifies suggestion suppression and manual invocation. PiSharp source 1ff661e129f5fe654db9dde13b44e6af6149eb39 passes exact-head CI 37964141126 with 1,221 tests and zero skips. See docs/parity/fixtures/legacy-project-skills-current-pi-2026-10-09.md.",
+        "Current-source closure audit and contracts: docs/parity/fixtures/luna-handover-2026-10-15/contracts.json; final verification receipt: docs/parity/fixtures/luna-handover-2026-10-15/verification.json. This promotion is bounded to the acceptance contract; other capability families remain required."
       ],
-      "dependencies": []
+      "dependencies": [],
+      "closure": {
+        "date": "2026-10-15",
+        "contract": "Boolean default true with user/trusted-project precedence and legacy migration; hide/expose live slash completion without disabling manual expansion; support startup/picker/writer/reload.",
+        "implemented": "UserSettings/UserSettingsWriter and current-value TerminalResourceCompletion callback; resource expansion remains independent.",
+        "evidence": [
+          "Current Pi paired legacy-project-skills-reload has 14 canonical render frames, exact normalized terminal state and HTTP, zero scenario errors; same-Pi calibration has zero differences. Semantic assertion proves hidden manual invocation, reload, then visible reloaded completion and correct provider input.",
+          "UserSettingsTests.SkillCommandsDefaultOnAndFollowTrustedProjectOverrides; EditorCompletionTests.SlashCompletionReadsDynamicSkillCommandRegistration; existing writer/PTY tests all pass in full 1976-test suite."
+        ],
+        "remaining": "No required setting behavior remains. Paired raw bytes differ with matching rendered state; P4 informational.",
+        "deferred_priority": "P4"
+      }
     },
     {
       "id": "settings-collapsechangelog",
@@ -3575,9 +3645,19 @@
         "A dedicated REST/SSE client and embedded 22-model snapshot are implemented from Pi c90d9ea586194003211f10cded3c14f74a4f81e1. The Google protocol is restricted to the built-in google profile, and profile loading preserves its protocol and credential identity."
       ],
       "evidence": [
-        "GoogleGenAiProviderTests and ProviderChatClientFactoryTests cover the catalog, deterministic HTTP/SSE, MAF tool continuation, signatures, Gemini-version image routing and custom-provider rejection. Exact-head Linux CI run 36472207899 passed 790/790 tests (0 skipped). Current-Pi focused Google suites passed 65 tests with 9 skipped at c90d9ea586194003211f10cded3c14f74a4f81e1. A paired Google differential and broader provider-specific image/tool/usage/error evidence remain outstanding."
+        "GoogleGenAiProviderTests and ProviderChatClientFactoryTests cover the catalog, deterministic HTTP/SSE, MAF tool continuation, signatures, Gemini-version image routing and custom-provider rejection. Exact-head Linux CI run 36472207899 passed 790/790 tests (0 skipped). Current-Pi focused Google suites passed 65 tests with 9 skipped at c90d9ea586194003211f10cded3c14f74a4f81e1. A paired Google differential and broader provider-specific image/tool/usage/error evidence remain outstanding.",
+        "Current Pi b06c1f2c Gemini 4+ enabled thinking controls now use thinkingLevel in shared Google/Vertex mapping. Six enabled request controls match; two off-control differences are explicitly P2 and retained in Luna contracts, not claimed matched."
       ],
-      "dependencies": []
+      "dependencies": [],
+      "handover_remaining": {
+        "priority": "feature",
+        "queue_orders": [
+          8,
+          44
+        ],
+        "contract_source": "acceptance",
+        "note": "Implement the named required features; P2/P3/P4 residuals are tracked separately in the Sol handover findings and audited delta, not as a speculative open-ended blocker."
+      }
     },
     {
       "id": "provider-api-google-vertex",
@@ -3596,11 +3676,21 @@
       "evidence": [
         "GoogleVertexProviderTests passes 7/7 locally: current-Pi catalog/default model, API-key precedence over configured ADC, secret-safe auth status, real API-key publisher HTTP path/body/headers, ADC project/location path and bearer token, and global/us/eu/regional hostname mapping.",
         "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed; dotnet build PiSharp.slnx --no-restore --warnaserror passed with 0 warnings/errors; dotnet test PiSharp.slnx --no-build --no-restore passed 790/790 (0 skipped). Exact-head Linux CI run 36472207899 passed all gates at 584a7d1eb74dfb1fc2624f00a5246806db37c548.",
-        "Current Pi c90d9ea586194003211f10cded3c14f74a4f81e1 focused Google suites passed 65 tests with 9 skipped and the provider source was inspected. This is not a paired Pi/PiSharp differential. The current ADC availability check recognizes explicit credential files and the gcloud ADC file; metadata-server ADC status and service-account/profile login UX remain open."
+        "Current Pi c90d9ea586194003211f10cded3c14f74a4f81e1 focused Google suites passed 65 tests with 9 skipped and the provider source was inspected. This is not a paired Pi/PiSharp differential. The current ADC availability check recognizes explicit credential files and the gcloud ADC file; metadata-server ADC status and service-account/profile login UX remain open.",
+        "Current Pi b06c1f2c Gemini 4+ enabled thinking controls now use thinkingLevel in shared Google/Vertex mapping. Six enabled request controls match; two off-control differences are explicitly P2 and retained in Luna contracts, not claimed matched."
       ],
       "dependencies": [
         "provider-api-google-genai"
-      ]
+      ],
+      "handover_remaining": {
+        "priority": "feature",
+        "queue_orders": [
+          8,
+          44
+        ],
+        "contract_source": "acceptance",
+        "note": "Implement the named required features; P2/P3/P4 residuals are tracked separately in the Sol handover findings and audited delta, not as a speculative open-ended blocker."
+      }
     },
     {
       "id": "provider-api-bedrock-converse",
@@ -3888,7 +3978,16 @@
         "tool-exposure-loadout",
         "tool-nested-execution",
         "tool-result-contracts"
-      ]
+      ],
+      "handover_remaining": {
+        "priority": "feature",
+        "queue_orders": [
+          26,
+          27
+        ],
+        "contract_source": "acceptance",
+        "note": "Implement the named required features; P2/P3/P4 residuals are tracked separately in the Sol handover findings and audited delta, not as a speculative open-ended blocker."
+      }
     },
     {
       "id": "virtual-model-routing-persistence",
@@ -5361,13 +5460,13 @@
     "latest_tested_pi_head": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e"
   },
   "execution_policy": {
-    "updated": "2026-10-14",
+    "updated": "2026-10-15",
     "priority": [
-      "The two retained process/PTY CI races are repaired with deterministic fail-first evidence, bounded process repetitions, current-Pi replays and exact repair CI. Preserve that evidence; do not treat unrelated later green runs as resolving future intermittent failures.",
-      "Resume Resources / Instructions / Trust and finish all 194 required capabilities.",
-      "Perform final bounded upstream refresh, fresh source audit, architecture regression review and clean-checkout full verification."
+      "Resolve encountered P0/P1 before dependent features.",
+      "Execute sol_luna_handover.queue feature tasks in order; P2/P3/P4 follow feature completion.",
+      "At the end of the continuing Luna parity goal perform the full final source audit and current-source parity gate; this Sol goal stops after verified pushed handover."
     ],
-    "bookkeeping": "After each coherent implementation slice, run focused verification, format verification, warnings-as-errors build and the full test suite; commit and push; verify exact-head CI; update parity evidence; refresh current Pi when the active family requires it; then continue until every ledger capability and the complete final gate are satisfied. Preserve unrelated user-owned worktree files."
+    "bookkeeping": "Use actual observable acceptance to promote existing capabilities. Coherent verified checkpoints are committed/pushed; exact-head CI is recorded. Preserve test.pdf and unrelated files."
   },
   "architecture_refactor_verification": {
     "scope": "Architecture-only pre-review structural checkpoint; existing capability statuses and known parity gaps remain unchanged.",
@@ -6336,5 +6435,1505 @@
       "normal_cli_cases": 18,
       "normal_cli_mismatches": 0
     }
+  },
+  "sol_luna_handover": {
+    "date": "2026-10-15",
+    "objective": "Bound and architect remaining parity work for Luna; complete this Sol handover, not full Pi parity.",
+    "branch": "parity/current-pi-completion",
+    "starting_sha": "cccbf3e069a3e98f5703709df5beec1363eb1c8e",
+    "main_sha": "22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed",
+    "starting_ci": {
+      "run": 38658864333,
+      "conclusion": "success",
+      "exact_sha": "cccbf3e069a3e98f5703709df5beec1363eb1c8e"
+    },
+    "configured_pi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "audited_upstream_cutoff": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "upstream_audit": "docs/parity/fixtures/luna-handover-2026-10-15/upstream-audit.json",
+    "verification_receipt": "docs/parity/fixtures/luna-handover-2026-10-15/verification.json",
+    "queue": [
+      {
+        "order": 1,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-pi-packages",
+          "cli-resources"
+        ],
+        "observable_behavior": "Install a managed npm package and expose its declared skills/prompts/themes/extensions in startup and reload.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/package-manager.ts",
+          "packages/coding-agent/test/package-manager.test.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Resources/ResourcePackageSource.cs",
+          "src/PiSharp.Runtime/Resources/ResourcePackageFiles.cs",
+          "src/PiSharp.Cli/Configuration/PackageSettingsReader.cs"
+        ],
+        "implementation_pattern": "Add one concrete Runtime ManagedResourcePackageStore for acquisition/cache/process lifetime; consume resolved roots through existing ResourcePackageFiles. Keep user interaction/config writes in CLI. Start with a local npm tarball and a skill+extension package; retain Pi npm script policy from package-manager source.",
+        "focused_verification": "ResourcePackageLoadingTests; deterministic child npm fixture with no internet",
+        "differential_verification": "Extend resource-invocation-process-differential.py with local tarball installation and reload",
+        "completion_condition": "One ordinary skill package and one extension dependency package install, load once, reload and cancel cleanly."
+      },
+      {
+        "order": 2,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-pi-packages"
+        ],
+        "observable_behavior": "Resolve pinned git packages and update only sources eligible for update.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/package-manager.ts",
+          "packages/coding-agent/test/package-manager.test.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Resources/ResourcePackageSource.cs",
+          "src/PiSharp.Runtime/Resources/ResourcePackageFiles.cs"
+        ],
+        "implementation_pattern": "Reuse the managed store from task 1 with argument-array git subprocesses; pin/ref identity is separate from lexical source provenance. Stage cache replacement then publish successful root.",
+        "focused_verification": "ResourcePackageLoadingTests with local bare repo and two tags",
+        "differential_verification": "Pair Pi/PiSharp against local git remote; compare resolved resources and pinned/unpinned update behavior",
+        "completion_condition": "Pinned source stays fixed, unpinned update refreshes, failed/cancelled fetch preserves last usable root."
+      },
+      {
+        "order": 3,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-pi-packages",
+          "cli-resources",
+          "commands-runtime"
+        ],
+        "observable_behavior": "Implement package install/remove/update/list CLI workflows and permitted configuration scope.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/cli/args.ts",
+          "packages/coding-agent/src/main.ts",
+          "packages/coding-agent/src/core/package-manager.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Startup/CliStartupCommands.cs",
+          "src/PiSharp.Cli/Configuration/UserSettingsWriter.cs",
+          "src/PiSharp.Cli/Configuration/PackageSettingsReader.cs"
+        ],
+        "implementation_pattern": "Add cohesive CLI ResourcePackageCommand under a Packages folder; use managed store tasks 1/2 and existing settings persistence. Program only routes.",
+        "focused_verification": "CliArgumentsTests; PackageSettingsTests; new package process tests",
+        "differential_verification": "Run real CLIs on local tarball/git fixtures, compare persisted source list and discovered resources",
+        "completion_condition": "Commands work at supported user/project scope, errors leave settings/cache intact, exit status is paired."
+      },
+      {
+        "order": 4,
+        "priority": "feature",
+        "capability_ids": [
+          "extensions-builtin-resource-loading",
+          "feature-extensions-net-api"
+        ],
+        "observable_behavior": "Resolve extension name conflicts and replaceable builtins without discarding unrelated owners.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/extensions/loader.ts",
+          "packages/coding-agent/src/core/extensions/runner.ts",
+          "packages/coding-agent/test/extensions-runner.test.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Extensions/ExtensionCatalog.cs",
+          "src/PiSharp.Runtime/Extensions/ExtensionCatalogSelection.cs",
+          "src/PiSharp.Runtime/Extensions/ExtensionRegistrationOrder.cs"
+        ],
+        "implementation_pattern": "Extend checkpoint/selection/order owners already proven by extension-pretrust-selection-differential. Preserve configure-once and final project-before-user ordering; do not rebuild a registry framework.",
+        "focused_verification": "ExtensionCatalogTests; ResourcePackageLoadingTests",
+        "differential_verification": "Extend extension-pretrust-selection-differential.py with supported conflicting tool/command cases",
+        "completion_condition": "Current-Pi supported conflict winners and diagnostics match; failed registrants leave no partial state."
+      },
+      {
+        "order": 5,
+        "priority": "feature",
+        "capability_ids": [
+          "extension-orchestration-api",
+          "feature-extensions-net-api"
+        ],
+        "observable_behavior": "Expose native event/context/UI equivalents for supported extension actions and runtime registrations.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/extensions/types.ts",
+          "packages/coding-agent/src/core/extensions/runner.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Extensions/ExtensionCatalog.cs",
+          "src/PiSharp.Runtime/Extensions/PiSharpToolExecutionContext.cs",
+          "src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs"
+        ],
+        "implementation_pattern": "Add explicit typed callbacks to existing extension registration API; current conversation/model/project bindings are read at invocation. Runtime contracts exclude terminal dependencies; CLI adapts UI. TypeScript binary/source compatibility is not required.",
+        "focused_verification": "ExtensionCatalogTests; RpcExtensionCommandProcessTests; TerminalPtyTests",
+        "differential_verification": "Use fixture extension in both languages; compare callback-visible state, event order and resource reload",
+        "completion_condition": "Each supported action has native/public contract plus actual CLI process or PTY proof."
+      },
+      {
+        "order": 6,
+        "priority": "feature",
+        "capability_ids": [
+          "provider-thinking-level-sampling",
+          "feature-models-selection-catalogs-and-credentials"
+        ],
+        "observable_behavior": "Resolve model defaults, clamped effective thinking-level sampling and request overrides before outbound serialization.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/simple-options.ts",
+          "packages/ai/test/sampling-options.test.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Providers/ModelCatalog.cs",
+          "src/PiSharp.Cli/Providers/ProviderProfileLoader.cs",
+          "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs",
+          "src/PiSharp.Cli/Protocols/Rpc/RpcModelProjector.cs"
+        ],
+        "implementation_pattern": "Add pure Runtime sampling merge helper and descriptor per-level metadata. CLI ProviderSamplingChatClient clones ChatOptions on both paths and supplies provider projection; preserve exact effective level string rather than reverse mapping MEAI effort. Prove Chat Completions and Google before repeating other APIs.",
+        "focused_verification": "ProviderModelRuntimeTests plus loopback body tests",
+        "differential_verification": "New paired request probe using Pi resolveSamplingParams/streamSimple; compare defaults, clamp and override",
+        "completion_condition": "Hardest supported metadata/override case and ordinary unset case match; remaining adapters enumerated explicitly."
+      },
+      {
+        "order": 7,
+        "priority": "feature",
+        "capability_ids": [
+          "settings-thinkingbudgets",
+          "feature-agent-usage-reasoning-context-and-compaction"
+        ],
+        "observable_behavior": "Persist thinkingBudgets and send bounded budgets where the API supports token budgets.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/simple-options.ts",
+          "packages/coding-agent/src/core/settings-manager.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Configuration/UserSettings.cs",
+          "src/PiSharp.Cli/Configuration/UserSettingsWriter.cs",
+          "src/PiSharp.Cli/Providers/Anthropic/AnthropicTranscriptChatClient.cs",
+          "src/PiSharp.Cli/Providers/Google/GoogleGenAiChatClient.cs"
+        ],
+        "implementation_pattern": "Use typed immutable setting in CLI; provider request mapping owns shared answer-room ceilings and budget expansion. Do not conflate MEAI effort with a token budget.",
+        "focused_verification": "UserSettingsTests; GoogleGenAiProviderTests; Anthropic provider loopback tests",
+        "differential_verification": "Pair low/high custom budget payloads including max-token ceiling",
+        "completion_condition": "Startup/trust/reload/persistence and supported outbound fields match; unsupported APIs omit budgets."
+      },
+      {
+        "order": 8,
+        "priority": "feature",
+        "capability_ids": [
+          "provider-api-google-genai",
+          "provider-api-google-vertex"
+        ],
+        "observable_behavior": "Complete Google/Vertex image, reasoning-signature, tools, usage and error differentials.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/google-shared.ts",
+          "packages/ai/test/google-thinking-level-map.test.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/Google/GoogleGenAiChatClient.cs",
+          "src/PiSharp.Cli/Providers/Google/GoogleVertexProviderOptions.cs"
+        ],
+        "implementation_pattern": "Both protocols share GoogleGenAiChatClient and request projection; auth remains factory/options-owned. Extend google-thinking-differential rather than separate adapters.",
+        "focused_verification": "GoogleGenAiProviderTests; GoogleVertexProviderTests",
+        "differential_verification": "Extend google-thinking-differential.py with representative tool/image/signature continuation and ADC loopback",
+        "completion_condition": "Required provider contract matches; thinking-off P2 remains separately classified until fixed."
+      },
+      {
+        "order": 9,
+        "priority": "feature",
+        "capability_ids": [
+          "provider-api-bedrock-converse",
+          "provider-api-pi-messages"
+        ],
+        "observable_behavior": "Apply the completed-argument/tool-replay pattern to remaining native provider boundaries and establish provider breadth evidence.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/bedrock-converse-stream.ts",
+          "packages/ai/src/api/pi-messages.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/Bedrock/BedrockConverseChatClient.cs",
+          "src/PiSharp.Cli/Providers/Anthropic/PiMessagesChatClient.cs"
+        ],
+        "implementation_pattern": "Use ProviderToolArgumentChatClient.Normalize for raw completed JSON; preserve FunctionCallContent.Exception and let MAF reject it. Google/Pi Messages already receive object values: validate object shape at parsing boundary, never invent a streaming prefix.",
+        "focused_verification": "BedrockProviderTests; PiMessages provider tests; ProviderToolArgumentRepairTests",
+        "differential_verification": "Pair malformed call + successful tool continuation and image/reasoning usage with real adapters",
+        "completion_condition": "No tool side effect on malformed calls and normal tool/result/reasoning replay matches."
+      },
+      {
+        "order": 10,
+        "priority": "feature",
+        "capability_ids": [
+          "provider-api-azure-foundry-chat-completions",
+          "provider-api-azure-openai-responses"
+        ],
+        "observable_behavior": "Add Foundry Chat Completions and finish Azure response wire contracts.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/azure-openai-responses.ts",
+          "packages/ai/src/providers/azure.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/AzureOpenAI/AzureOpenAiProviderOptions.cs",
+          "src/PiSharp.Cli/Providers/AzureOpenAI/AzureOpenAiRequestHandler.cs",
+          "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs"
+        ],
+        "implementation_pattern": "Keep Azure endpoint/auth/deployment projection in CLI and reuse SDK Completions/Responses plus strict tool normalization; one concrete handler per distinct wire contract.",
+        "focused_verification": "Azure provider tests; ProviderToolArgumentRepairTests",
+        "differential_verification": "Paired local Azure-compatible endpoint requests, version/deployment/auth and tool continuation",
+        "completion_condition": "Each supported Azure API has paired success/error/tool bodies and no credential authority regression."
+      },
+      {
+        "order": 11,
+        "priority": "feature",
+        "capability_ids": [
+          "provider-api-mistral-conversations"
+        ],
+        "observable_behavior": "Complete native Mistral Conversations beyond current Chat Completions-compatible slice.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/mistral-conversations.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/Mistral/MistralChatCompatibility.cs",
+          "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs"
+        ],
+        "implementation_pattern": "Preserve Mistral reasoning/tool-ID compatibility owners; add concrete native transport adapter only for endpoints/events the current compatibility handler cannot represent.",
+        "focused_verification": "Mistral provider tests",
+        "differential_verification": "Paired native Conversations requests and tool/reasoning continuation",
+        "completion_condition": "Required endpoint and observable event/tool/usage/error behavior matches, not merely metadata alias."
+      },
+      {
+        "order": 12,
+        "priority": "feature",
+        "capability_ids": [
+          "provider-profile-radius",
+          "provider-auth-radius-oauth"
+        ],
+        "observable_behavior": "Close Radius catalog/auth and interactive setup behavior.",
+        "pi_source_or_test": [
+          "packages/ai/src/providers/radius.ts",
+          "packages/coding-agent/src/modes/interactive"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/RadiusProviderCatalog.cs",
+          "src/PiSharp.Cli/Tui/Commands/TerminalProviderCommands.cs"
+        ],
+        "implementation_pattern": "Reuse existing Radius OAuth/MCP setup and terminal provider login owners; setup acceptance triggers existing project/runtime reload exactly once.",
+        "focused_verification": "Radius OAuth/setup tests; TerminalPtyTests",
+        "differential_verification": "Existing Radius process/terminal fixtures with local auth/callback endpoints",
+        "completion_condition": "Catalog/account selection and accept/cancel/copy/reload contracts have paired evidence."
+      },
+      {
+        "order": 13,
+        "priority": "feature",
+        "capability_ids": [
+          "provider-auth-openai-chatgpt-oauth",
+          "provider-auth-openai-codex-oauth",
+          "provider-api-openai-codex-responses"
+        ],
+        "observable_behavior": "Support the distinct ChatGPT sign-in route and Codex manual/device fallback without borrowing API-key credentials.",
+        "pi_source_or_test": [
+          "packages/ai/src/auth/oauth/openai-codex.ts",
+          "packages/ai/src/api/openai-codex-responses.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/OpenAI/OpenAiCodexResponsesClientFactory.cs",
+          "src/PiSharp.Cli/Providers/ProviderCredentialResolver.cs"
+        ],
+        "implementation_pattern": "Reuse credential store and serialized refresh. Keep account-scoped transport headers separate from official OpenAI API-key identity; map selection to explicit protocol.",
+        "focused_verification": "Provider OAuth tests; OpenAI Codex provider tests",
+        "differential_verification": "Real process login/refresh against deterministic OAuth server and paired account headers",
+        "completion_condition": "Supported auth modes persist/restart and route inference correctly; cancellation leaves no partial login."
+      },
+      {
+        "order": 14,
+        "priority": "feature",
+        "capability_ids": [
+          "settings-transport",
+          "settings-websocketconnecttimeoutms",
+          "provider-api-openai-codex-responses"
+        ],
+        "observable_behavior": "Implement Codex WebSocket and cached continuation with pre-stream SSE fallback.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/openai-codex-responses.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/OpenAI/OpenAiCodexResponsesClientFactory.cs",
+          "src/PiSharp.Cli/Providers/OpenAI/StatelessResponsesChatClient.cs"
+        ],
+        "implementation_pattern": "New cohesive Codex connection owner keyed by account+session; serialize one stream per socket, cancellation closes owned in-flight work, dispose with provider lifetime. Canonical session remains authoritative; SSE fallback only before output.",
+        "focused_verification": "New local WebSocket integration fixtures; Codex HTTP fixtures",
+        "differential_verification": "Pair handshake timeout, connection reuse, cached continuation and fallback",
+        "completion_condition": "All advertised transport settings have observable effect with no response/tool replay duplication."
+      },
+      {
+        "order": 15,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-models-selection-catalogs-and-credentials",
+          "commands-model-auth"
+        ],
+        "observable_behavior": "Implement missing provider profiles using each current upstream protocol, starting with Kimi and OpenCode.",
+        "pi_source_or_test": [
+          "packages/ai/src/providers/kimi-coding.ts",
+          "packages/ai/src/providers/opencode-go.ts",
+          "packages/ai/scripts/generate-models.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/BuiltinProviderProfiles.cs",
+          "src/PiSharp.Cli/Providers/ProviderProfileLoader.cs",
+          "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs"
+        ],
+        "implementation_pattern": "Current cutoff Kimi uses Chat Completions /coding/v1, with later system tool declarations except Highspeed. OpenCode uses /inference and /inference/go and mixed model APIs. Import pinned catalogs like Google/Mistral; never route by provider name alone.",
+        "focused_verification": "ProviderModelRuntimeTests; transcript provider tests",
+        "differential_verification": "Paired declaration-changing tool_search continuation and normal request for each profile",
+        "completion_condition": "Each missing family works through normal CLI, correct auth/environment/endpoint and protocol; ordinary variants repeat tested pattern."
+      },
+      {
+        "order": 16,
+        "priority": "feature",
+        "capability_ids": [
+          "provider-cloudflare-ai-gateway",
+          "provider-together-catalog"
+        ],
+        "observable_behavior": "Add Cloudflare gateway and Together catalog metadata as established profile/adaptor variants.",
+        "pi_source_or_test": [
+          "packages/ai/src/providers/cloudflare-ai-gateway.ts",
+          "packages/ai/scripts/generate-models.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/BuiltinProviderProfiles.cs",
+          "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs"
+        ],
+        "implementation_pattern": "Follow task 15 profile/catalog pattern; Cloudflare routing and authority live in provider-specific CLI handler.",
+        "focused_verification": "ProviderModelRuntimeTests; loopback gateway fixtures",
+        "differential_verification": "Pair endpoint/header/catalog/availability requests",
+        "completion_condition": "Both profiles list/select and send supported requests with exact local fixture proof."
+      },
+      {
+        "order": 17,
+        "priority": "feature",
+        "capability_ids": [
+          "provider-responses-grammar-tools"
+        ],
+        "observable_behavior": "Preserve Responses custom/grammar tool declarations and replay.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/openai-responses-shared.ts",
+          "packages/ai/src/types.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs",
+          "src/PiSharp.Runtime/Sessions/ToolDeclarationTranscript.cs",
+          "src/PiSharp.Runtime/Sessions/StoredToolResultReplay.cs"
+        ],
+        "implementation_pattern": "Wire grammar/custom-call projection belongs in CLI Responses adapter; Runtime transcript persists stable tool declaration identity and raw custom input without coercing it to ordinary object arguments.",
+        "focused_verification": "New Responses SDK loopback tests; transcript restoration tests",
+        "differential_verification": "Pair grammar/custom call+result continuation, export/import and branch switch",
+        "completion_condition": "Supported custom tool requests/results survive restart and provider replay without schema loss."
+      },
+      {
+        "order": 18,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-config-schemas-publication"
+        ],
+        "observable_behavior": "Align published schema fields with runtime parsing and public discovery.",
+        "pi_source_or_test": [
+          "packages/coding-agent/schemas/settings.schema.json",
+          "packages/coding-agent/schemas/models.schema.json"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Configuration/Schemas/settings.schema.json",
+          "src/PiSharp.Cli/Configuration/Schemas/models.schema.json",
+          "src/PiSharp.Cli/Configuration/UserSettings.cs"
+        ],
+        "implementation_pattern": "Keep schemas as public artifacts; implement settings through typed parser/writer/runtime ownership rather than accepting no-op keys. Work family by family after behavior exists.",
+        "focused_verification": "Schema publication tests; UserSettingsTests",
+        "differential_verification": "config-schema-differential.py and representative actual CLI config input",
+        "completion_condition": "Published supported fields parse/apply; remaining unsupported families documented precisely; no schema-only completion claim."
+      },
+      {
+        "order": 19,
+        "priority": "feature",
+        "capability_ids": [
+          "settings-tuimode",
+          "settings-fullscreenexitoutput",
+          "settings-fullscreenscrollbar",
+          "settings-fullscreencopyonselect",
+          "settings-fullscreenwheelscrolllines"
+        ],
+        "observable_behavior": "Apply fullscreen/regular mode, exit output, scrollbar/copy and wheel preferences.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/settings-manager.ts",
+          "packages/tui/src/tui.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Configuration/UserSettings.cs",
+          "src/PiSharp.Cli/Tui/Rendering/TerminalScreenCompositor.cs",
+          "src/PiSharp.Cli/Tui/Input/TerminalInputActions.cs"
+        ],
+        "implementation_pattern": "Typed settings in CLI; mode/lifetime owned by terminal composition, pointer/scroll state by screen/input owners. Implement one setting at a time with existing writer and current-value bindings.",
+        "focused_verification": "UserSettingsTests; TerminalPtyTests; terminal input tests",
+        "differential_verification": "New calibrated semantic PTY fixtures for mode/exit and selection/wheel",
+        "completion_condition": "Supported settings alter actual screen/input behavior and reload/persist, no regular-mode unsupported-setting exit."
+      },
+      {
+        "order": 20,
+        "priority": "feature",
+        "capability_ids": [
+          "settings-editorpaddingx",
+          "settings-outputpad",
+          "settings-autocompletemaxvisible",
+          "settings-showhardwarecursor"
+        ],
+        "observable_behavior": "Apply editor/output geometry and completion/cursor preferences.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/settings-manager.ts",
+          "packages/tui/src/components/editor.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Tui/Editor/TerminalEditor.cs",
+          "src/PiSharp.Cli/Tui/Editor/TerminalResourceCompletion.cs",
+          "src/PiSharp.Cli/Tui/Rendering/TerminalScreenCompositor.cs",
+          "src/PiSharp.Cli/Configuration/UserSettings.cs"
+        ],
+        "implementation_pattern": "Extend existing layout calculation and settings callback owners, one current immutable settings snapshot per frame; do not hardcode startup copies.",
+        "focused_verification": "EditorCompletionTests; TerminalPtyTests",
+        "differential_verification": "Calibrated small/ordinary terminal fixtures with supported configured settings",
+        "completion_condition": "Persisted/live layout and cursor behavior matches at named rendered checkpoints."
+      },
+      {
+        "order": 21,
+        "priority": "feature",
+        "capability_ids": [
+          "settings-terminal-showimages",
+          "settings-terminal-imagewidthcells",
+          "settings-terminal-clearonshrink",
+          "settings-terminal-showterminalprogress",
+          "settings-terminal-hyperlinks",
+          "settings-terminal-images",
+          "settings-images-autoresize"
+        ],
+        "observable_behavior": "Complete terminal image, link, progress and resize controls.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/settings-manager.ts",
+          "packages/tui/src/terminal-image.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Tui/Rendering/TerminalScreenCompositor.cs",
+          "src/PiSharp.Cli/Tui/Input/TerminalInput.cs",
+          "src/PiSharp.Cli/Configuration/UserSettings.cs"
+        ],
+        "implementation_pattern": "Image capability detection/terminal lifetime stay in CLI; byte validation and model input resizing retain existing Runtime tools owners. Settings must not turn model-image blocking into terminal-only behavior.",
+        "focused_verification": "Terminal image/input tests; CodingTools image tests",
+        "differential_verification": "Calibrated Kitty/non-Kitty image/link/resize fixtures and exact required protocol bytes",
+        "completion_condition": "Supported settings and fallback behavior work without stale images, cursor corruption or model replay changes."
+      },
+      {
+        "order": 22,
+        "priority": "feature",
+        "capability_ids": [
+          "settings-doubleescapeaction",
+          "settings-treefiltermode",
+          "settings-branchsummary-reservetokens",
+          "settings-branchsummary-skipprompt",
+          "keys-tree-scoped-picker"
+        ],
+        "observable_behavior": "Complete tree navigation/filter and branch summary policy.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/settings-manager.ts",
+          "packages/coding-agent/src/modes/interactive/components/tree-selector.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Sessions/InteractiveSessionController.cs",
+          "src/PiSharp.Cli/Tui/Editor/TerminalEditor.cs",
+          "src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs"
+        ],
+        "implementation_pattern": "CLI owns picker selection/input and summary choice; Runtime owns summary requests/persistence. Snapshot selected source branch before cancelling outgoing run, adopt only after successful save.",
+        "focused_verification": "ConversationSession tests; TerminalPtyTests; tree picker tests",
+        "differential_verification": "Paired branch/tree process plus calibrated picker fixture",
+        "completion_condition": "Configured filtering/escape/summary budget/skip choices preserve selected history and cancellation semantics."
+      },
+      {
+        "order": 23,
+        "priority": "feature",
+        "capability_ids": [
+          "settings-showcachemissnotices",
+          "settings-cachewarming"
+        ],
+        "observable_behavior": "Implement visible cache miss notices and provider cache warming policy.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/settings-manager.ts",
+          "packages/coding-agent/src/core/agent-session.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Configuration/UserSettings.cs",
+          "src/PiSharp.Cli/Tui/Rendering/InteractiveTranscript.cs",
+          "src/PiSharp.Runtime/Sessions/UsageAccounting.cs"
+        ],
+        "implementation_pattern": "Cache policy belongs at provider/request boundary; terminal only projects recorded usage/notices. No background request without owned cancellation/disposal; do not mutate canonical history for warming.",
+        "focused_verification": "UsageAccounting tests; local provider request fixtures",
+        "differential_verification": "Pair warm/cold request and notice behavior with deterministic usage",
+        "completion_condition": "Supported setting has bounded observable request/notice effect and cancels on session disposal."
+      },
+      {
+        "order": 24,
+        "priority": "feature",
+        "capability_ids": [
+          "settings-collapsechangelog",
+          "settings-enableinstalltelemetry",
+          "settings-enableanalytics",
+          "settings-warnings-anthropicextrausage"
+        ],
+        "observable_behavior": "Implement remaining startup/privacy/diagnostic settings using scoped concrete owners.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/settings-manager.ts",
+          "packages/coding-agent/src/modes/interactive/interactive-mode.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Configuration/UserSettings.cs",
+          "src/PiSharp.Cli/Startup/TerminalStartupPresentation.cs",
+          "src/PiSharp.Cli/Providers/Anthropic/AnthropicTranscriptChatClient.cs"
+        ],
+        "implementation_pattern": "Keep telemetry/network policy in CLI startup/provider owners and output in terminal presentation. Observe configured opt-out before creating any corresponding network resource.",
+        "focused_verification": "UserSettingsTests; startup and Anthropic loopback tests",
+        "differential_verification": "Pair startup/changelog/warning behavior and deterministic network trace",
+        "completion_condition": "All supported keys persist/apply, with required opt-out preventing requests."
+      },
+      {
+        "order": 25,
+        "priority": "feature",
+        "capability_ids": [
+          "settings-markdown-mermaid",
+          "feature-tui-normal-fullscreen-renderer"
+        ],
+        "observable_behavior": "Add actual Mermaid rendering at the Markdown presentation boundary.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/modes/interactive/components/mermaid.ts",
+          "packages/tui/src/components/markdown.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Tui/Rendering/InteractiveTranscript.cs",
+          "src/PiSharp.Cli/Configuration/UserSettings.cs"
+        ],
+        "implementation_pattern": "Use one cohesive CLI Markdown transformer with owned subprocess/resources if needed; Runtime retains original assistant text. Never accept mermaid as a no-op setting.",
+        "focused_verification": "Markdown rendering tests; TerminalPtyTests",
+        "differential_verification": "Calibrated ordinary fenced Mermaid and malformed-source display fixtures",
+        "completion_condition": "Setting changes visible supported diagram rendering while persisted/model text stays original."
+      },
+      {
+        "order": 26,
+        "priority": "feature",
+        "capability_ids": [
+          "mcp-oauth-client-metadata-documents",
+          "mcp-runtime"
+        ],
+        "observable_behavior": "Implement configured MCP Client ID Metadata Document registration with OAuth fallback.",
+        "pi_source_or_test": [
+          "packages/mcp/src",
+          "packages/coding-agent/src/extensions/mcp"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs",
+          "src/PiSharp.Runtime/Mcp/McpClientConnection.cs",
+          "src/PiSharp.Runtime/Mcp/McpConfiguration.cs"
+        ],
+        "implementation_pattern": "Use current SDK OAuth configuration where installed metadata supports it; keep URL/server-bound token identity and existing dynamic registration path. SDK limitation must have a reproduced supported failure before workaround.",
+        "focused_verification": "McpOAuth tests; conformance basic-cimd scenario",
+        "differential_verification": "Pair Pi configured CIMD against loopback metadata/auth server",
+        "completion_condition": "Configured metadata client id reaches auth/token requests; default dynamic registration remains green. Baseline only changes after reviewed success."
+      },
+      {
+        "order": 27,
+        "priority": "feature",
+        "capability_ids": [
+          "mcp-runtime",
+          "commands-runtime"
+        ],
+        "observable_behavior": "Complete interactive MCP management using current config and connection owners.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/modes/interactive",
+          "packages/mcp/src"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Mcp/McpCommand.cs",
+          "src/PiSharp.Runtime/Mcp/McpRuntimeManager.cs",
+          "src/PiSharp.Runtime/Mcp/McpStartupCoordinator.cs"
+        ],
+        "implementation_pattern": "CLI dialog delegates enable/disable/exposure/login actions to existing manager/config editor. Catalog owns connection disposal; waits name only required server. Never retry uncertain tool side effects.",
+        "focused_verification": "Mcp runtime/manager tests; TerminalPtyTests",
+        "differential_verification": "Calibrated /mcp workflow and process tool/resource call after reconfiguration",
+        "completion_condition": "User management changes the active tool surface, persists and cancels/reconnects without leaked child processes."
+      },
+      {
+        "order": 28,
+        "priority": "feature",
+        "capability_ids": [
+          "codemode-runtime",
+          "tool-nested-execution",
+          "tool-result-contracts"
+        ],
+        "observable_behavior": "Finish Codemode output envelopes, model/classifier calls and usage/termination semantics.",
+        "pi_source_or_test": [
+          "packages/codemode/src",
+          "packages/coding-agent/src/extensions/codemode"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Codemode/CodemodeModelCalls.cs",
+          "src/PiSharp.Runtime/Codemode/CodemodeModelProjection.cs",
+          "src/PiSharp.Runtime/Extensions/PiSharpToolExecutionContext.cs"
+        ],
+        "implementation_pattern": "Reuse shared nested pipeline and result contracts; Node/QuickJS process owns VM lifetime. Terminate promptly, release worker admission only after exit. Separate model-facing output from UI details.",
+        "focused_verification": "Codemode tests; ClassifierRuntimeTests",
+        "differential_verification": "codemode-classifier-differential.py plus existing lifetime/model/source probes",
+        "completion_condition": "One ordinary and one nested error/termination/usage continuation match without duplicate charges or effects."
+      },
+      {
+        "order": 29,
+        "priority": "feature",
+        "capability_ids": [
+          "virtual-model-routing-persistence",
+          "classifier-runtime"
+        ],
+        "observable_behavior": "Close route context budget, physical usage attribution and classifier persistence contracts.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/virtual-models.ts",
+          "packages/ai/src/api/classifier-shared.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Sessions/VirtualModelContextCoordinator.cs",
+          "src/PiSharp.Runtime/Sessions/RoutedChatClient.cs",
+          "src/PiSharp.Runtime/VirtualModels"
+        ],
+        "implementation_pattern": "Logical model stays session state; routed physical context/pricing belongs to request attribution. Re-evaluate context per provider continuation, not only first prompt.",
+        "focused_verification": "VirtualModel tests; ClassifierRuntimeTests",
+        "differential_verification": "virtual-model-routing-differential.py and classifier driver",
+        "completion_condition": "Tool continuation, branch/restart and compaction use correct physical limit/cost while logical selection remains stable."
+      },
+      {
+        "order": 30,
+        "priority": "feature",
+        "capability_ids": [
+          "rpc-set-session-name",
+          "rpc-get-last-assistant-text",
+          "rpc-set-steering-mode",
+          "rpc-set-follow-up-mode",
+          "rpc-clear-queue"
+        ],
+        "observable_behavior": "Close narrow RPC command contracts by comparing real supported idle/active/error paths.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "packages/coding-agent/src/core/agent-session.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+          "src/PiSharp.Cli/Protocols/Rpc/RpcQueueModeCommandHandler.cs",
+          "src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs"
+        ],
+        "implementation_pattern": "Follow RpcQueueModeCommandHandler/RpcSessionCommandHandler correlated responses; current run/project lookup via ActiveConversationRuntime callbacks. Remove only stale hypothetical criteria once source/process behavior is demonstrated.",
+        "focused_verification": "RpcModeTests; RpcIdleQueueProcessTests; UserSettingsWriterTests",
+        "differential_verification": "Extend rpc-settlement-differential.py with idle/active queue/name/read commands and save failure control",
+        "completion_condition": "Each command acceptance is proven and promoted individually; unrelated provider/TUI differences no longer block it."
+      },
+      {
+        "order": 31,
+        "priority": "feature",
+        "capability_ids": [
+          "rpc-get-messages",
+          "rpc-get-entries",
+          "rpc-get-tree",
+          "rpc-message-start-update-end",
+          "rpc-tool-execution-start-update-end"
+        ],
+        "observable_behavior": "Complete protocol read/event projection for provider partial content and argument errors.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+          "packages/ai/src/types.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Protocols/Rpc/RpcAssistantMessageProjector.cs",
+          "src/PiSharp.Cli/Protocols/Rpc/RpcEventProjector.cs",
+          "src/PiSharp.Cli/Protocols/Rpc/RpcSessionMessageProjector.cs"
+        ],
+        "implementation_pattern": "Progress uses ParseStreaming, completed tool calls use strict normalization, final snapshots retain argument failure metadata. Snapshot current canonical tree for reads without holding provider work.",
+        "focused_verification": "RpcToolCallDeltaProcessTests; RpcInterruptedSessionProcessTests",
+        "differential_verification": "Paired streaming provider process with partial JSON, malformed completion, cancellation and final read",
+        "completion_condition": "Supported wire fields/order and post-settlement snapshots match; no partial value authorizes execution."
+      },
+      {
+        "order": 32,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-sessions-jsonl-lifecycle",
+          "feature-sessions-tree-clone-fork-import-export",
+          "rpc-new-session",
+          "rpc-switch-session",
+          "rpc-clone",
+          "rpc-fork"
+        ],
+        "observable_behavior": "Close persistence/replacement contracts and platform evidence.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/session-manager.ts",
+          "packages/coding-agent/test/session-manager"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs",
+          "src/PiSharp.Runtime/Sessions/AtomicSessionFileWriter.cs",
+          "src/PiSharp.Cli/Sessions/InteractiveSessionController.cs"
+        ],
+        "implementation_pattern": "Canonical application tree persists; MAF sessions are disposable projections. Preflight target/save before outgoing cancellation, settle then publish replacement bindings. Preserve source import bytes and stale-writer refusal.",
+        "focused_verification": "Session recovery/lease tests; RpcSessionReplacementProcessTests",
+        "differential_verification": "Existing tool-resume/crash/clone/fork probes plus native macOS lock lane",
+        "completion_condition": "Required supported session lifecycle paths have process proof; unavailable native lanes remain explicit, never inferred from Linux guards."
+      },
+      {
+        "order": 33,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-tools-default-set-dynamic-availability",
+          "feature-tools-read",
+          "feature-tools-write",
+          "feature-tools-edit",
+          "feature-tools-bash",
+          "feature-tools-grep-find-ls"
+        ],
+        "observable_behavior": "Close ordinary built-in tool observable contracts and live default-tool reload.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/tools",
+          "packages/coding-agent/test/tools.test.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Tools/CodingTools.cs",
+          "src/PiSharp.Runtime/Agents/AgentToolCatalog.cs",
+          "src/PiSharp.Runtime/Extensions/ToolLoadout.cs"
+        ],
+        "implementation_pattern": "Use existing read planner/coordinated mutation/shell owners; declarations and callable set share loadout. Error/refusal never implies a file side effect. Run supported upstream boundaries, not combinatorial parser expansion.",
+        "focused_verification": "CodingToolsTests; tool registration/loadout tests; DefaultToolReloadPolicyTests",
+        "differential_verification": "Tool batch/argument/resume drivers and actual CLI reload fixture",
+        "completion_condition": "Each required tool supported success/error/cancel boundary is evidenced and ledger promoted individually."
+      },
+      {
+        "order": 34,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-agent-multi-turn-and-streaming",
+          "feature-agent-steering-follow-up-concurrent-tools",
+          "rpc-agent-start-end-settled",
+          "rpc-turn-start-end",
+          "rpc-queue-update"
+        ],
+        "observable_behavior": "Close agent/queue/retry lifecycle and settlement contracts.",
+        "pi_source_or_test": [
+          "packages/agent/src/agent-loop.ts",
+          "packages/agent/src/agent.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Sessions/ConversationRun.cs",
+          "src/PiSharp.Runtime/Sessions/PromptDeliveryController.cs",
+          "src/PiSharp.Runtime/Sessions/ProviderTurnJournal.cs"
+        ],
+        "implementation_pattern": "MAF owns function loop; ConversationRun owns canonical append/queue/settlement. Provider retries occur only before output. Use existing explicit settled barrier and cancellation ownership, no competing loops.",
+        "focused_verification": "AgentLifecycleTests; RpcRetryProcessTests; RpcIdleQueueProcessTests",
+        "differential_verification": "rpc-settlement-differential.py and provider-request-cancellation-differential.py",
+        "completion_condition": "Required lifecycle/queue modes match real process order, cancellation and persistence; no claimed exhaustive provider equivalence."
+      },
+      {
+        "order": 35,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-agent-usage-reasoning-context-and-compaction",
+          "rpc-compact",
+          "commands-context"
+        ],
+        "observable_behavior": "Close compaction and context/usage projection.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/compaction",
+          "packages/coding-agent/src/core/agent-session.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Sessions/ConversationCompactionCoordinator.cs",
+          "src/PiSharp.Runtime/Sessions/CompactionUsageAccounting.cs",
+          "src/PiSharp.Runtime/Agents/PiCompactionSummarizer.cs"
+        ],
+        "implementation_pattern": "Use coordinator cut-point planning/two-stage summary and canonical persistence. Provider request attribution supplies physical usage; a failed/cancelled summary leaves original context usable.",
+        "focused_verification": "Compaction tests; RpcCompactProcessTests",
+        "differential_verification": "Existing RPC compact process probe plus split-turn/virtual-route cases",
+        "completion_condition": "Supported manual/automatic summaries, usage and restart behavior match current source; estimator differences classified separately."
+      },
+      {
+        "order": 36,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-cli-text-print-json-rpc-sdk",
+          "cli-prompt-modes",
+          "cli-models",
+          "cli-sessions",
+          "cli-tools",
+          "cli-runtime",
+          "cli-auth"
+        ],
+        "observable_behavior": "Close CLI entry modes and flag/error/output contracts.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/cli/args.ts",
+          "packages/coding-agent/src/main.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Startup/CliStartupCommands.cs",
+          "src/PiSharp.Cli/Protocols/Json/JsonPromptMode.cs",
+          "src/PiSharp.Cli/Composition"
+        ],
+        "implementation_pattern": "Program remains thin composition; mode owners consume same current bindings and shared runtime. Use deterministic offline/model config to avoid network catalog races.",
+        "focused_verification": "CliArgumentsTests; StartupFlagsProcessTests; JSON/RPC process tests",
+        "differential_verification": "Existing print truncation/resource process drivers plus exact exit/output flag pairs",
+        "completion_condition": "Required modes/flags observable through normal CLI have source/process evidence and individual ledger closure."
+      },
+      {
+        "order": 37,
+        "priority": "feature",
+        "capability_ids": [
+          "commands-output-share",
+          "feature-commands-export-runtime",
+          "rpc-export-html"
+        ],
+        "observable_behavior": "Finish share/HTML export output and theme/resource rendering contracts.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/export-html",
+          "packages/coding-agent/src/modes/interactive/session-share.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Sessions/SessionShareExport.cs",
+          "src/PiSharp.Runtime/Sessions/SessionExport.cs",
+          "src/PiSharp.Cli/Sessions/SessionExportCommand.cs"
+        ],
+        "implementation_pattern": "Runtime projects deterministic session content; CLI owns destinations/network/user interactions. Export theme CSS via owned presentation options, no terminal object in Runtime.",
+        "focused_verification": "SessionShareTests; SessionExportTests",
+        "differential_verification": "session-share-differential.py and static HTML comparison",
+        "completion_condition": "Supported exported content/theme/link and share success/error/cancel match without losing history."
+      },
+      {
+        "order": 38,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-resources-skills-templates-themes",
+          "settings-skills",
+          "settings-prompts",
+          "settings-themes",
+          "settings-extensions"
+        ],
+        "observable_behavior": "Close skills/templates/themes/settings resource family while preserving verified instruction/trust behavior.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/resource-loader.ts",
+          "packages/coding-agent/test/resource-loader.test.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Runtime/Resources/ResourceCatalog.cs",
+          "src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs",
+          "src/PiSharp.Cli/Composition/ProjectConversationTransitions.cs"
+        ],
+        "implementation_pattern": "Keep ResourceFileDiscovery/frontmatter/path/package owners. Preload global/CLI extensions once, decide trust before project privileged resources, final select/order then discover/reload. No new YAML/ignore permutations absent real supported mismatch.",
+        "focused_verification": "ResourceCatalogTests; ResourcePackageLoadingTests; ProjectRuntimeContextTests",
+        "differential_verification": "resource-selection/extension-pretrust/invocation probes; calibrated reload and trust UI fixtures",
+        "completion_condition": "Defined discovery/invocation/theme/trust/reload contracts have evidence; documented P2/P3 presentation no longer becomes indefinite generic blocker."
+      },
+      {
+        "order": 39,
+        "priority": "feature",
+        "capability_ids": [
+          "feature-tui-editor-history-completion-and-paste",
+          "feature-tui-keybindings-display-controls",
+          "keys-model-display",
+          "keys-app-control",
+          "keys-queue-session",
+          "keys-editor-input"
+        ],
+        "observable_behavior": "Close editor/keymap/input flow semantic parity.",
+        "pi_source_or_test": [
+          "packages/tui/src/components/editor.ts",
+          "packages/coding-agent/src/modes/interactive"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Tui/Editor/TerminalEditor.cs",
+          "src/PiSharp.Cli/Tui/Input/TerminalInput.cs",
+          "src/PiSharp.Cli/Tui/Input/TerminalInputActions.cs"
+        ],
+        "implementation_pattern": "Input owns terminal reply demultiplexing and mode negotiation; editor owns draft/history/completion; mode lifetime restored in finally. Reuse initial render-before-reply pattern.",
+        "focused_verification": "TerminalInputTests; EditorCompletionTests; TerminalPtyTests",
+        "differential_verification": "Existing startup/editor/queue fixtures with same-Pi calibration and named rendered state",
+        "completion_condition": "Supported editing/paste/history/key bindings and active-to-idle behavior match without hangs or lost input."
+      },
+      {
+        "order": 40,
+        "priority": "feature",
+        "capability_ids": [
+          "tui-auth-url-copy",
+          "tui-current-easter-eggs",
+          "feature-tui-normal-fullscreen-renderer"
+        ],
+        "observable_behavior": "Finish user-visible provider login copy/cancel and supported interactive effects.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/modes/interactive",
+          "packages/coding-agent/src/core/slash-commands.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Tui/Commands/TerminalProviderCommands.cs",
+          "src/PiSharp.Cli/Tui/Dialogs",
+          "src/PiSharp.Cli/Tui/Clipboard"
+        ],
+        "implementation_pattern": "Follow TerminalProviderLogin/TerminalProviderOAuthInteraction and owned modal input; ordinary semantic/rendered behavior outranks raw escape differences.",
+        "focused_verification": "TerminalPtyTests; OAuth and clipboard tests",
+        "differential_verification": "Existing auth-copy/callback and interactive effect fixtures with calibration",
+        "completion_condition": "Supported user actions complete and render correctly; tiny raw-only differences classified separately."
+      },
+      {
+        "order": 41,
+        "priority": "feature",
+        "capability_ids": [
+          "cli-application-install-update"
+        ],
+        "observable_behavior": "Implement supported application install/update commands with bounded process ownership.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/main.ts",
+          "packages/coding-agent/src/cli"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Startup/CliStartupCommands.cs"
+        ],
+        "implementation_pattern": "Add concrete CLI application update owner separate from resource package store; use deterministic release resolver/process fixture, explicit current executable and cancellation.",
+        "focused_verification": "New install/update command process tests",
+        "differential_verification": "Pair commands against local release metadata/artifact endpoint",
+        "completion_condition": "Supported normal application command behavior and exit status verified without contacting production installers."
+      },
+      {
+        "order": 42,
+        "priority": "P2",
+        "capability_ids": [
+          "feature-models-selection-catalogs-and-credentials"
+        ],
+        "observable_behavior": "Unify ambiguous bare and gateway-qualified model reference selection.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/model-resolver.ts",
+          "packages/coding-agent/test/model-resolver.test.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs",
+          "src/PiSharp.Cli/Providers/ProviderCredentialResolver.cs"
+        ],
+        "implementation_pattern": "Add pure concrete CLI ModelReferenceResolver over collected candidates and authentication availability. Reuse across CLI/scopes/model command/credential print; never let reasoning suffix change provider and never resolve credentials by catalog order.",
+        "focused_verification": "ProviderModelRuntimeTests",
+        "differential_verification": "Pair named-provider/gateway/raw-ID ambiguities and suffixed selection",
+        "completion_condition": "Current source winner/ambiguity behavior matches while explicit selection and credential isolation stay green."
+      },
+      {
+        "order": 43,
+        "priority": "P2",
+        "capability_ids": [
+          "provider-api-openai-codex-responses",
+          "feature-models-selection-catalogs-and-credentials"
+        ],
+        "observable_behavior": "Import deferred provider metadata/cache/retry/reasoning deltas at audited cutoff.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/openai-responses.ts",
+          "packages/ai/src/utils/retry.ts",
+          "packages/ai/scripts/generate-models.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/OpenAI",
+          "src/PiSharp.Cli/Providers/ProviderRetryChatClient.cs",
+          "src/PiSharp.Cli/Providers/Data"
+        ],
+        "implementation_pattern": "Repeat request projection pattern; per-message thinking metadata belongs canonical transcript properties, not shared adapter fields. Preserve fixed earlier GPT-6 configuration items.",
+        "focused_verification": "Provider retry/Responses tests",
+        "differential_verification": "Pair each of GPT-6 mid-conversation effort, gateway retry phrase, 500K Codex catalog, Xiaomi maps and same-chunk reasoning order separately",
+        "completion_condition": "Each audited P2 item has focused supported evidence and audit status updated without broad profile parity claim."
+      },
+      {
+        "order": 44,
+        "priority": "P2",
+        "capability_ids": [
+          "provider-api-google-genai",
+          "provider-api-google-vertex",
+          "feature-resources-skills-templates-themes"
+        ],
+        "observable_behavior": "Resolve explicit off-thinking and empty-quoted template argument discrepancies.",
+        "pi_source_or_test": [
+          "packages/ai/src/api/google-shared.ts",
+          "packages/coding-agent/src/core/prompt-templates.ts",
+          "packages/coding-agent/test/prompt-templates.test.ts"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Providers/Google/GoogleGenAiChatClient.cs",
+          "src/PiSharp.Runtime/Resources/PromptTemplateExpansion.cs"
+        ],
+        "implementation_pattern": "Follow google-thinking paired payload probe and existing template invocation differential. Preserve empty quoted tokens without changing whitespace/Unicode recovery already proven.",
+        "focused_verification": "GoogleGenAiProviderTests; PromptTemplateExpansionTests",
+        "differential_verification": "google-thinking-differential.py; resource-invocation-differential.py",
+        "completion_condition": "Off control and empty quoted token match current source; remove deferred expectation only after both sides verified."
+      },
+      {
+        "order": 45,
+        "priority": "P3",
+        "capability_ids": [
+          "feature-tui-normal-fullscreen-renderer",
+          "commands-output-share",
+          "feature-resources-skills-templates-themes"
+        ],
+        "observable_behavior": "Resolve supported residual presentation and repository asset differences after features.",
+        "pi_source_or_test": [
+          "packages/coding-agent/src/core/tools/render-utils.ts",
+          "packages/coding-agent/test/read-line-range-display.test.ts",
+          ".pi/skills/github-work.md"
+        ],
+        "pisharp_owners": [
+          "src/PiSharp.Cli/Tui/Rendering/TerminalToolPresentation.cs",
+          "src/PiSharp.Runtime/Sessions/SessionExport.cs",
+          "src/PiSharp.Runtime/Resources"
+        ],
+        "implementation_pattern": "Share numeric/null read-range formatting in presentation; import repository skill with upstream provenance and configured-pin verification. Keep raw captures ignored.",
+        "focused_verification": "ToolCallRenderingTests; SessionExportTests; ResourceCatalogTests",
+        "differential_verification": "Read-line renderer/export pairs; project asset loader pair; calibrated residual TUI cases",
+        "completion_condition": "Audited P3 differences closed individually; raw-only invisible differences remain P4 informational."
+      }
+    ],
+    "completion_policy": "Implement feature queue before deferred P2/P3/P4. Only encountered P0/P1 interrupts. Preserve all 194 required capabilities and promote each on actual acceptance evidence; do not reopen completed parsers for speculative permutations.",
+    "architecture_review": "Bounded changed-area review only; production direction CLI -> Runtime -> Core and direct MAF 1.21/MEAI 10.10 preserved. No broad review requested.",
+    "known_traps": [
+      "Read active model/project/conversation bindings at callback invocation, including reload and replacement.",
+      "MAF sessions are projections; canonical application tree and branch-local tool state own persistence.",
+      "Only completed JSON objects authorize tool invocation; partial JSON is progress. Preserve exception and raw-input diagnostics through function content mapping.",
+      "Do not replay uncertain tool side effects on retry/reconnect/crash.",
+      "Pre-trust global/CLI extensions configure once; project privilege follows trust; final selection determines ordering and metadata.",
+      "Provider transcript declaration order and physical route attribution survive branch/restart; do not capture stale tool lists.",
+      "Terminate Node worker promptly but release admission only after exit; propagate cancellation/disposal.",
+      "Restore terminal modes and subscriptions; render initial screen before terminal replies; preserve source-only calibration failures."
+    ],
+    "findings": [
+      {
+        "id": "strict-completed-tool-arguments",
+        "priority": "P1",
+        "status": "fixed-verified",
+        "evidence": "Five SDK fail-first rows; Core/Bedrock/MAF rejection regressions; 175 prefixes and 18 native paired provider calls."
+      },
+      {
+        "id": "gemini-four-thinking-level",
+        "priority": "P1",
+        "status": "fixed-verified",
+        "evidence": "Two corrected fail-first rows; shared Google/Vertex thinkingLevel request mapping; six enabled paired controls."
+      },
+      {
+        "id": "google-thinking-off",
+        "priority": "P2",
+        "status": "deferred",
+        "queue_order": 44,
+        "evidence": "Two exact off-control payload mismatches retained in google-thinking.json. Ordinary enabled controls match."
+      },
+      {
+        "id": "weak-historical-trust-probe",
+        "priority": "P3",
+        "status": "verification-strengthened",
+        "evidence": "Historical auth-failure classification could not distinguish trust; updated process probe requires selected project prompt in one successful loopback request and an independent expected result."
+      },
+      {
+        "id": "raw-terminal-equivalence",
+        "priority": "P4",
+        "status": "deferred-informational",
+        "evidence": "Raw terminal bytes differ despite matched rendered-state fixtures. No demonstrated supported visible effect; do not implement merely for internal equivalence."
+      },
+      {
+        "id": "legacy-skill-assertion-report-shadow",
+        "priority": "P3",
+        "status": "deferred",
+        "queue_order": 45,
+        "evidence": "assert_legacy_project_skills_reload.py overwrites local case with calibration before projecting top-level pair diagnostics. Behavior comparison reads paired capture correctly. This handover reads the paired report directly and runs semantic assertion without calibration option; calibration is combined separately in receipt."
+      },
+      {
+        "id": "historical-calibration-and-process-timing",
+        "priority": "P2",
+        "status": "deferred-verification-limitation",
+        "evidence": "Historical quiet-startup, source-only and active-resize calibration timing failures remain retained in old fixtures. Current green baseline, full gate and one matching current fixture do not retrospectively explain those schedules. Investigate only a reproduced current supported failure; feature work remains ahead."
+      },
+      {
+        "id": "trust-selector-presentation",
+        "priority": "P2",
+        "status": "deferred",
+        "queue_order": 40,
+        "evidence": "Prior calibrated trust-selector fixture retains visible layout/color differences. Required trust decision/resource gating is now independently verified; full TUI capability remains in_progress."
+      }
+    ],
+    "resource_closure_review": [
+      {
+        "id": "feature-resources-instructions-and-trust",
+        "decision": "Verified: original instruction/trust acceptance is satisfied by current-source loader, actual privileged-resource selection, bootstrap order and native boundary tests. Full-screen selector presentation is explicit TUI P2; managed package/public extension breadth remains in its own feature family."
+      },
+      {
+        "id": "feature-resources-skills-templates-themes",
+        "decision": "Keep in_progress: required complete theme reload/package resource metadata still needs family work. Empty quoted tokens is explicit P2; no further speculative YAML expansion."
+      },
+      {
+        "id": "feature-pi-packages",
+        "decision": "Keep in_progress: managed npm/git acquisition and package CLI are required feature work; local package loaders are representative infrastructure already proven."
+      },
+      {
+        "id": "settings-defaultprojecttrust",
+        "decision": "Verified: all nine strengthened real provider-request cases and native precedence/trust tests pass; global-only acceptance corrected from stale generic project-overlay wording."
+      },
+      {
+        "id": "settings-enableskillcommands",
+        "decision": "Verified: current paired/calibrated 14-frame reload, semantic invocation assertions, native setting/completion tests and full writer/PTY suite pass."
+      }
+    ],
+    "representative_patterns": {
+      "provider": "ProviderToolArgumentChatClient.Normalize; ProviderToolArgumentRepairTests (both response paths, real SDK loopback, MAF rejection); BedrockProviderTests (native event adapter).",
+      "resource": "ResourceFileDiscovery/ResourceFrontmatter/ResourceCatalog and resource-selection-differential.py; use loader output and one real RPC/provider input, not parser-only claims.",
+      "process": "default-project-trust-process-differential.py now requires actual project prompt selection and independently expected outcome, not a pre-auth error classification.",
+      "tui": "terminal/run.py paired + same-Pi calibration; legacy-project-skills-reload fixture + semantic assertion + direct paired report inspection. Raw byte match is separate.",
+      "rpc": "RpcQueueModeCommandHandler and RpcSessionCommandHandler with current binding callbacks; rpc-settlement-differential.py and RpcIdleQueueProcessTests.",
+      "mcp": "McpToolPublication/McpResourcePublication/McpClientConnection; pinned conformance gate with per-check failure classification and real process/HTTP fixtures."
+    },
+    "capability_counts": {
+      "in_progress": 146,
+      "verified": 10,
+      "not_started": 38
+    },
+    "promoted_to_verified": [
+      "feature-resources-instructions-and-trust",
+      "settings-defaultprojecttrust",
+      "settings-enableskillcommands"
+    ],
+    "not_started_review": "All 38 not_started entries remain genuinely missing required behavior. Queue explicitly covers them; none promoted based solely on metadata, planned work or compatible transport. This session closes three already implemented contracts and fixes two P1 boundaries rather than scaffolding unused types.",
+    "completion_audit": {
+      "feature-resources-instructions-and-trust": {
+        "status": "verified",
+        "contract": "Load global/project AGENTS.md and CLAUDE.md with supported hierarchy/order/read recovery; gate privileged project resources behind explicit/saved/default/pre-trust-extension decision; denied projects do not select them. Native bootstrap extension instances are reused and final resource selection orders them.",
+        "evidence": [
+          "Current Pi 15 context-instruction cases match exact loading/order/content and warnings.",
+          "Current Pi nine real CLI/provider cases match selected/unselected protected project prompt with independent expected decisions.",
+          "Current Pi full-loader ordering case matches configure-once/final project-before-user order; unchanged prior selection cases and 130 native focused tests protect trust/privileged-resource behavior.",
+          "ProjectTrustTests.ProtectedPromptsRequireTrustButContextInstructionsDoNot; ProjectRuntimeContextTests.ProjectTrustExtensionRunsBeforeSavedDefaultAndIsReusedAfterTrust; ProjectSettingsProcessTests."
+        ],
+        "remaining": "No missing behavior in the required instruction/trust contract. Managed package breadth, wider public extension API and full-screen trust selector presentation remain separate capability/deferred work."
+      },
+      "settings-defaultprojecttrust": {
+        "status": "verified",
+        "contract": "Global-only ask/always/never, malformed global fallback ask, saved/CLI decisions precede default; project settings cannot grant their own trust.",
+        "evidence": [
+          "Nine real CLI/provider request cases match at current Pi, including malformed value/type, project cannot override either direction, saved allow/deny, --approve and --no-approve.",
+          "UserSettingsTests.DefaultProjectTrustIsGlobalOnly; ProjectTrustTests.UserDefaultTrustAppliesOnlyWithoutStoredDecisionAndNeverOverridesCli; ProjectRuntimeContextTests and ProjectSettingsProcessTests in 130 passing focused tests."
+        ],
+        "remaining": "No required setting behavior remains. Selector colors/layout belong to TUI P2, not this boolean decision contract."
+      },
+      "settings-enableskillcommands": {
+        "status": "verified",
+        "contract": "Boolean default true with user/trusted-project precedence and legacy migration; hide/expose live slash completion without disabling manual expansion; support startup/picker/writer/reload.",
+        "evidence": [
+          "Current Pi paired legacy-project-skills-reload has 14 canonical render frames, exact normalized terminal state and HTTP, zero scenario errors; same-Pi calibration has zero differences. Semantic assertion proves hidden manual invocation, reload, then visible reloaded completion and correct provider input.",
+          "UserSettingsTests.SkillCommandsDefaultOnAndFollowTrustedProjectOverrides; EditorCompletionTests.SlashCompletionReadsDynamicSkillCommandRegistration; existing writer/PTY tests all pass in full 1976-test suite."
+        ],
+        "remaining": "No required setting behavior remains. Paired raw bytes differ with matching rendered state; P4 informational."
+      }
+    },
+    "family_status": {
+      "Agent execution/context": {
+        "verified": [],
+        "in_progress": [
+          "feature-agent-multi-turn-and-streaming",
+          "feature-agent-steering-follow-up-concurrent-tools",
+          "feature-agent-usage-reasoning-context-and-compaction"
+        ],
+        "not_started": [],
+        "deferred": []
+      },
+      "Providers/models/auth/routing": {
+        "verified": [
+          "provider-llama-context-cache-reload",
+          "provider-llama-router-configuration",
+          "provider-llama-router-management",
+          "provider-llama-router-models",
+          "provider-llama-router-download"
+        ],
+        "in_progress": [
+          "feature-models-selection-catalogs-and-credentials",
+          "provider-api-azure-openai-responses",
+          "provider-api-openai-codex-responses",
+          "provider-auth-openai-codex-oauth",
+          "provider-api-google-genai",
+          "provider-api-google-vertex",
+          "provider-api-bedrock-converse",
+          "provider-api-pi-messages",
+          "provider-profile-radius",
+          "provider-auth-radius-oauth",
+          "virtual-model-routing-persistence",
+          "classifier-runtime",
+          "provider-anthropic-inline-tools",
+          "provider-api-mistral-conversations"
+        ],
+        "not_started": [
+          "provider-auth-openai-chatgpt-oauth",
+          "provider-responses-grammar-tools",
+          "provider-together-catalog",
+          "provider-cloudflare-ai-gateway",
+          "provider-api-azure-foundry-chat-completions",
+          "provider-thinking-level-sampling"
+        ],
+        "deferred": [
+          "P2 audited endpoint/profile/catalog/cache/model-selection/stream controls; two Google off request differences."
+        ]
+      },
+      "Tools/loadouts/results": {
+        "verified": [],
+        "in_progress": [
+          "feature-tools-default-set-dynamic-availability",
+          "feature-tools-read",
+          "feature-tools-write",
+          "feature-tools-edit",
+          "feature-tools-bash",
+          "feature-tools-grep-find-ls",
+          "tool-exposure-loadout",
+          "tool-nested-execution",
+          "tool-result-contracts",
+          "tool-search-runtime"
+        ],
+        "not_started": [],
+        "deferred": []
+      },
+      "CLI/commands/security": {
+        "verified": [],
+        "in_progress": [
+          "feature-multimodal-input-and-inline-images",
+          "feature-cli-text-print-json-rpc-sdk",
+          "feature-commands-model-settings",
+          "feature-commands-sessions-context",
+          "feature-commands-export-runtime",
+          "feature-security-settings-and-authentication",
+          "commands-model-auth",
+          "commands-session",
+          "commands-context",
+          "commands-output-share",
+          "commands-runtime",
+          "commands-dynamic",
+          "cli-prompt-modes",
+          "cli-models",
+          "cli-sessions",
+          "cli-tools",
+          "cli-resources",
+          "cli-runtime",
+          "cli-auth",
+          "feature-config-schemas-publication"
+        ],
+        "not_started": [
+          "cli-application-install-update"
+        ],
+        "deferred": []
+      },
+      "TUI/editor/input": {
+        "verified": [],
+        "in_progress": [
+          "feature-tui-normal-fullscreen-renderer",
+          "feature-tui-editor-history-completion-and-paste",
+          "feature-tui-keybindings-display-controls",
+          "keys-editor-movement-history",
+          "keys-editor-mutation",
+          "keys-editor-input",
+          "keys-app-control",
+          "keys-queue-session",
+          "keys-fullscreen",
+          "tui-auth-url-copy",
+          "tui-full-terminal-differential-harness"
+        ],
+        "not_started": [
+          "keys-model-display",
+          "keys-tree-scoped-picker",
+          "tui-current-easter-eggs"
+        ],
+        "deferred": [
+          "P2 trust selector presentation and historical calibration/timing limitation; P3 read range display; P4 raw-only bytes."
+        ]
+      },
+      "Sessions/persistence": {
+        "verified": [],
+        "in_progress": [
+          "feature-sessions-jsonl-lifecycle",
+          "feature-sessions-tree-clone-fork-import-export"
+        ],
+        "not_started": [],
+        "deferred": []
+      },
+      "Resources/packages/trust": {
+        "verified": [
+          "feature-resources-instructions-and-trust"
+        ],
+        "in_progress": [
+          "feature-resources-skills-templates-themes",
+          "feature-pi-packages"
+        ],
+        "not_started": [],
+        "deferred": [
+          "P2 empty quoted template argument tokens; P3 repository github-work asset. Required managed package and complete theme/resource behavior remain feature work."
+        ]
+      },
+      "Extensions": {
+        "verified": [],
+        "in_progress": [
+          "feature-extensions-net-api",
+          "extension-orchestration-api",
+          "extensions-builtin-resource-loading"
+        ],
+        "not_started": [],
+        "deferred": []
+      },
+      "RPC": {
+        "verified": [],
+        "in_progress": [
+          "rpc-prompt",
+          "rpc-steer",
+          "rpc-follow-up",
+          "rpc-abort",
+          "rpc-clear-queue",
+          "rpc-new-session",
+          "rpc-get-state",
+          "rpc-get-messages",
+          "rpc-set-model",
+          "rpc-cycle-model",
+          "rpc-get-available-models",
+          "rpc-set-thinking-level",
+          "rpc-cycle-thinking-level",
+          "rpc-get-available-thinking-levels",
+          "rpc-set-steering-mode",
+          "rpc-set-follow-up-mode",
+          "rpc-compact",
+          "rpc-set-auto-compaction",
+          "rpc-set-auto-retry",
+          "rpc-abort-retry",
+          "rpc-bash",
+          "rpc-abort-bash",
+          "rpc-get-session-stats",
+          "rpc-export-html",
+          "rpc-switch-session",
+          "rpc-fork",
+          "rpc-clone",
+          "rpc-get-fork-messages",
+          "rpc-get-entries",
+          "rpc-get-tree",
+          "rpc-get-last-assistant-text",
+          "rpc-set-session-name",
+          "rpc-get-commands",
+          "rpc-extension-command-prompt",
+          "rpc-agent-start-end-settled",
+          "rpc-turn-start-end",
+          "rpc-message-start-update-end",
+          "rpc-tool-execution-start-update-end",
+          "rpc-queue-update",
+          "rpc-entry-appended",
+          "rpc-session-info-changed",
+          "rpc-thinking-level-changed"
+        ],
+        "not_started": [],
+        "deferred": [
+          "P3 legacy reload assertion diagnostic shadowing is a harness finding; future RPC argument-error serialization remains explicit feature work."
+        ]
+      },
+      "Settings": {
+        "verified": [
+          "settings-defaultprojecttrust",
+          "settings-shellcommandprefix",
+          "settings-enableskillcommands"
+        ],
+        "in_progress": [
+          "settings-defaultprovider",
+          "settings-defaultmodel",
+          "settings-defaultthinkinglevel",
+          "settings-modelthinkinglevels",
+          "settings-enabledmodels",
+          "settings-hidethinkingblock",
+          "settings-steeringmode",
+          "settings-followupmode",
+          "settings-externaleditor",
+          "settings-defaulttools",
+          "settings-sessiondir",
+          "settings-compaction-enabled",
+          "settings-compaction-reservetokens",
+          "settings-compaction-keeprecenttokens",
+          "settings-compaction-modeloverrides",
+          "settings-theme",
+          "settings-quietstartup",
+          "settings-terminal-truecolor",
+          "settings-images-blockimages",
+          "settings-markdown-codeblockindent",
+          "settings-markdown-mermaid",
+          "settings-transport",
+          "settings-httpproxy",
+          "settings-httpidletimeoutms",
+          "settings-websocketconnecttimeoutms",
+          "settings-retry-enabled",
+          "settings-retry-maxretries",
+          "settings-retry-basedelayms",
+          "settings-retry-maxagentdelayms",
+          "settings-retry-provider-timeoutms",
+          "settings-retry-provider-maxretries",
+          "settings-retry-provider-maxretrydelayms",
+          "settings-shellpath",
+          "settings-extensions",
+          "settings-skills",
+          "settings-prompts",
+          "settings-themes"
+        ],
+        "not_started": [
+          "settings-thinkingbudgets",
+          "settings-showcachemissnotices",
+          "settings-cachewarming",
+          "settings-doubleescapeaction",
+          "settings-treefiltermode",
+          "settings-branchsummary-reservetokens",
+          "settings-branchsummary-skipprompt",
+          "settings-tuimode",
+          "settings-fullscreenexitoutput",
+          "settings-fullscreenscrollbar",
+          "settings-fullscreencopyonselect",
+          "settings-editorpaddingx",
+          "settings-outputpad",
+          "settings-autocompletemaxvisible",
+          "settings-showhardwarecursor",
+          "settings-terminal-showimages",
+          "settings-terminal-imagewidthcells",
+          "settings-terminal-clearonshrink",
+          "settings-terminal-showterminalprogress",
+          "settings-terminal-hyperlinks",
+          "settings-terminal-images",
+          "settings-images-autoresize",
+          "settings-collapsechangelog",
+          "settings-enableinstalltelemetry",
+          "settings-enableanalytics",
+          "settings-warnings-anthropicextrausage",
+          "settings-fullscreenwheelscrolllines"
+        ],
+        "deferred": []
+      },
+      "Codemode": {
+        "verified": [],
+        "in_progress": [
+          "codemode-runtime"
+        ],
+        "not_started": [],
+        "deferred": []
+      },
+      "MCP": {
+        "verified": [
+          "mcp-client-conformance"
+        ],
+        "in_progress": [
+          "mcp-runtime"
+        ],
+        "not_started": [
+          "mcp-oauth-client-metadata-documents"
+        ],
+        "deferred": [
+          "No encountered P0/P1. Existing six elicitation + CIMD + scope-limit client result are classified scope differences; configured CIMD is feature work."
+        ]
+      }
+    }
+  },
+  "handover_upstream_refresh": {
+    "date": "2026-10-15",
+    "previousReference": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+    "auditedCutoff": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "observedUpstreamMain": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "startingPiSharp": "cccbf3e069a3e98f5703709df5beec1363eb1c8e",
+    "commitCount": 24,
+    "classifications": {
+      "OUT_OF_SCOPE": 9,
+      "NEEDS_WORK": 11,
+      "MATCHED": 2,
+      "NO_BEHAVIOR_CHANGE": 2
+    },
+    "policy": "All 24 commits classified before pin advance. P1 repairs are the active implementation slice; P2/P3 remain deferred below feature completion. MATCHED entries require the final verification receipt, not this source inspection alone."
   }
 }

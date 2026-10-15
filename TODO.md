@@ -1,5 +1,18 @@
 # PiSharp capability parity
 
+## Authoritative Sol-to-Luna checkpoint — 2026-10-15
+
+The configured/audited Pi cutoff is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+All 194 required capability IDs remain: **10 verified, 146 in progress, 38 not
+started**. Instruction/trust behavior, global defaultProjectTrust and live
+skill-command settings are now verified against their defined observable
+contracts. The two encountered P1 repairs are strict completed tool arguments
+and Gemini 4 thinking-level requests. Full Pi parity remains incomplete.
+The 45-task ordered Luna queue, architecture decisions, exact verification scope
+and deferred P2/P3/P4 findings supersede the older next-action prose below.
+See [the handover](docs/continuation.md) and the execution ledger for the current plan.
+
+
 ## Current post-merge checkpoint — 2026-10-15
 
 PiSharp merged `main` is `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`; exact-head Linux CI [38427397999](https://github.com/PhilipGB/pisharp/actions/runs/38427397999) passes. Work continues on `parity/current-pi-completion`. The major architecture refactor and composition review are complete; only the bounded final architecture regression review remains. Production dependencies remain CLI → Runtime → Core, with MAF 1.21.0 and Microsoft.Extensions.AI 10.10.0.

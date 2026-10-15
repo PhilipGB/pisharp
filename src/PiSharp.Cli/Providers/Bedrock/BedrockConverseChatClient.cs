@@ -66,8 +66,10 @@ internal sealed class BedrockConverseChatClient(IBedrockConverseTransport transp
                         FinalizeReasoning(completedBlock);
                         if (completedBlock.ToolName is not null)
                         {
-                            var call = new FunctionCallContent(completedBlock.ToolId!, completedBlock.ToolName,
-                                ParseArguments(completedBlock.ToolArguments.ToString()));
+                            var call = new FunctionCallContent(completedBlock.ToolId!, completedBlock.ToolName, new Dictionary<string, object?>());
+                            ProviderToolArgumentChatClient.Normalize(call, completedBlock.ToolArguments.ToString());
+                            if (call.Exception is null && call.Arguments is not null)
+                                call.Arguments = ToDictionary(JsonSerializer.SerializeToElement(call.Arguments));
                             yield return CreateUpdate(responseId, [call]);
                         }
                     }
@@ -189,22 +191,6 @@ internal sealed class BedrockConverseChatClient(IBedrockConverseTransport transp
         null or "" => new ChatFinishReason("error"),
         _ => new ChatFinishReason("error")
     };
-
-    private static IDictionary<string, object?> ParseArguments(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return new Dictionary<string, object?>();
-        try
-        {
-            var parsed = PiSharp.Core.ToolArgumentJson.ParseStreaming(json);
-            return parsed.ValueKind == JsonValueKind.Object
-                ? ToDictionary(parsed)
-                : new Dictionary<string, object?>();
-        }
-        catch (JsonException)
-        {
-            return new Dictionary<string, object?>();
-        }
-    }
 
     private static Dictionary<string, object?> ToDictionary(JsonElement element) => element.EnumerateObject()
         .ToDictionary(property => property.Name, property => ConvertJsonValue(property.Value), StringComparer.Ordinal);

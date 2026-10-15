@@ -36,7 +36,7 @@ internal sealed class ProviderToolArgumentChatClient(IChatClient inner, Provider
 
     private void Repair(IList<AIContent> contents, object? raw)
     {
-        foreach (var call in contents.OfType<FunctionCallContent>().Where(call => call.Exception is not null))
+        foreach (var call in contents.OfType<FunctionCallContent>())
         {
 #pragma warning disable OPENAI001
             var arguments = capture?.Arguments(call.CallId) ?? (call.RawRepresentation switch
@@ -48,11 +48,24 @@ internal sealed class ProviderToolArgumentChatClient(IChatClient inner, Provider
             });
 #pragma warning restore OPENAI001
             if (arguments is null) continue;
-            var parsed = ToolArgumentJson.ParseStreaming(arguments);
-            call.Arguments = parsed.ValueKind == JsonValueKind.Object
-                ? JsonSerializer.Deserialize<Dictionary<string, object?>>(parsed.GetRawText()) : new Dictionary<string, object?>();
-            call.Exception = null;
-            call.RawRepresentation = null;
+            Normalize(call, arguments);
         }
+    }
+
+    internal static void Normalize(FunctionCallContent call, string arguments)
+    {
+        // Partial prefixes are useful for progress, but cannot authorize a completed tool invocation.
+        try
+        {
+            var parsed = ToolArgumentJson.ParseComplete(arguments);
+            call.Arguments = JsonSerializer.Deserialize<Dictionary<string, object?>>(parsed.GetRawText());
+            call.Exception = null;
+        }
+        catch (JsonException error)
+        {
+            call.Arguments = new Dictionary<string, object?>();
+            call.Exception = new JsonException($"{error.Message}\n\nReceived arguments:\n{arguments}", error);
+        }
+        call.RawRepresentation = null;
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime.Providers;
@@ -7,6 +8,47 @@ namespace PiSharp.Tests;
 
 public sealed class ProviderToolArgumentRepairTests
 {
+    [Theory]
+    [InlineData("openai-completions", false)]
+    [InlineData("openai-completions", true)]
+    [InlineData("openai-responses", false)]
+    [InlineData("openai-responses", true)]
+    [InlineData("anthropic-messages", true)]
+    public async Task CompletedMalformedArgumentsCannotExecuteTheirParsedPrefix(string protocol, bool streaming)
+    {
+        const string arguments = """{"path":"target.txt","content":"replacement", BROKEN}""";
+        await using var server = new ProviderToolArgumentServer(protocol, arguments, streaming);
+        var model = new ModelDescriptor("fixture-model", "Fixture", 128000, "configured", Provider: "fixture", Api: protocol);
+        var provider = new ProviderProfile("fixture", "Fixture", server.Endpoint, true, false, null, null, [model], Api: protocol);
+        using var client = ProviderChatClientFactory.Create(new ModelSelection(provider, model, "fixture-key", true, "fixture"));
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        ChatMessage[] messages = [new(ChatRole.User, "create a document")];
+        var response = streaming
+            ? await client.GetStreamingResponseAsync(messages, cancellationToken: deadline.Token).ToChatResponseAsync(deadline.Token)
+            : await client.GetResponseAsync(messages, cancellationToken: deadline.Token);
+        var call = Assert.Single(response.Messages.SelectMany(message => message.Contents).OfType<FunctionCallContent>());
+        Assert.NotNull(call.Exception);
+        Assert.Empty(call.Arguments!);
+        Assert.Contains(arguments, call.Exception.Message);
+
+        var invocations = 0;
+        using var replay = new ReplayCallClient(call);
+        var agent = new ChatClientAgent(replay, new ChatClientAgentOptions
+        {
+            ChatOptions = new ChatOptions
+            {
+                Tools = [AIFunctionFactory.Create((string path, string content) =>
+                {
+                    invocations++;
+                    return "written";
+                }, "fixture_tool")]
+            }
+        });
+        await agent.RunAsync("create a document", cancellationToken: deadline.Token);
+        Assert.Equal(0, invocations);
+        Assert.NotNull(replay.ToolResult);
+    }
+
     [Theory]
     [InlineData("openai-completions", false)]
     [InlineData("openai-completions", true)]
@@ -53,5 +95,25 @@ public sealed class ProviderToolArgumentRepairTests
             replay = document.RootElement.Clone();
         }
         Assert.Equal("\\usepackage{x} café \\url{x}", replay.GetProperty("content").GetString());
+    }
+
+    private sealed class ReplayCallClient(FunctionCallContent call) : IChatClient
+    {
+        private int _requests;
+        public FunctionResultContent? ToolResult { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (_requests++ == 0)
+                return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, [call])));
+            ToolResult = Assert.Single(messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>());
+            return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, "arguments rejected")));
+        }
+
+        public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
     }
 }

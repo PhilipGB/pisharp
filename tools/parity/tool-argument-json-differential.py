@@ -46,5 +46,5 @@ with tempfile.TemporaryDirectory(prefix='pisharp-tool-json-differential-') as di
     assert actual == expected, json.dumps(dict(pi=expected, pisharp=actual), indent=2)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(dict(piSha=sha, pi=expected, pisharp=actual, match=True,
-        comparison='Exact repair strings and JSON values across captured prefixes; nine native streaming tool results through real Pi provider adapters and native PiSharp SDKs. Pi HTTP is an injected fetch; PiSharp uses loopback HTTP. Depths above 64, non-JSON numeric values/unsafe integer rounding, browser services and full event envelopes are not covered.'), indent=2) + '\n')
+        comparison='Exact repair strings and JSON values across captured prefixes; completed arguments and error presence/raw-input retention through real Pi provider adapters and native PiSharp SDKs. Pi HTTP is an injected fetch; PiSharp uses loopback HTTP. Exception wording, depths above 64, non-JSON numeric values/unsafe integer rounding, browser services and full event envelopes are not covered.'), indent=2) + '\n')
     print(f'Matched {len(inputs)} parser prefixes and {len(actual["native"])} native provider tool calls.')

@@ -1,0 +1,1092 @@
+{
+  "tool-arguments": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "match": true,
+    "comparison": "Exact repair strings and JSON values across captured prefixes; completed arguments and error presence/raw-input retention through real Pi provider adapters and native PiSharp SDKs. Pi HTTP is an injected fetch; PiSharp uses loopback HTTP. Exception wording, depths above 64, non-JSON numeric values/unsafe integer rounding, browser services and full event envelopes are not covered.",
+    "partialParserCases": 175,
+    "completedProviderCalls": 18,
+    "completedCalls": [
+      {
+        "protocol": "openai-completions",
+        "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x} caf\\u00e9 \\url{x}\",\"mode\":\"w\"}",
+        "arguments": {
+          "path": "a.tex",
+          "content": "\\usepackage{x} caf\u00e9 \\url{x}",
+          "mode": "w"
+        },
+        "hasError": false,
+        "errorIncludesInput": false
+      },
+      {
+        "protocol": "openai-completions",
+        "input": "{\"text\":\"valid\\\\usepackage \\u00e9\"}",
+        "arguments": {
+          "text": "valid\\usepackage \u00e9"
+        },
+        "hasError": false,
+        "errorIncludesInput": false
+      },
+      {
+        "protocol": "openai-completions",
+        "input": "{\"text\":\"ab\\u00",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "openai-completions",
+        "input": "{\"path\":\"target.txt\",\"content\":\"replacement\", BROKEN}",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "openai-completions",
+        "input": "null",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "openai-completions",
+        "input": "[]",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "openai-responses",
+        "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x} caf\\u00e9 \\url{x}\",\"mode\":\"w\"}",
+        "arguments": {
+          "path": "a.tex",
+          "content": "\\usepackage{x} caf\u00e9 \\url{x}",
+          "mode": "w"
+        },
+        "hasError": false,
+        "errorIncludesInput": false
+      },
+      {
+        "protocol": "openai-responses",
+        "input": "{\"text\":\"valid\\\\usepackage \\u00e9\"}",
+        "arguments": {
+          "text": "valid\\usepackage \u00e9"
+        },
+        "hasError": false,
+        "errorIncludesInput": false
+      },
+      {
+        "protocol": "openai-responses",
+        "input": "{\"text\":\"ab\\u00",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "openai-responses",
+        "input": "{\"path\":\"target.txt\",\"content\":\"replacement\", BROKEN}",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "openai-responses",
+        "input": "null",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "openai-responses",
+        "input": "[]",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "anthropic-messages",
+        "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x} caf\\u00e9 \\url{x}\",\"mode\":\"w\"}",
+        "arguments": {
+          "path": "a.tex",
+          "content": "\\usepackage{x} caf\u00e9 \\url{x}",
+          "mode": "w"
+        },
+        "hasError": false,
+        "errorIncludesInput": false
+      },
+      {
+        "protocol": "anthropic-messages",
+        "input": "{\"text\":\"valid\\\\usepackage \\u00e9\"}",
+        "arguments": {
+          "text": "valid\\usepackage \u00e9"
+        },
+        "hasError": false,
+        "errorIncludesInput": false
+      },
+      {
+        "protocol": "anthropic-messages",
+        "input": "{\"text\":\"ab\\u00",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "anthropic-messages",
+        "input": "{\"path\":\"target.txt\",\"content\":\"replacement\", BROKEN}",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "anthropic-messages",
+        "input": "null",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      },
+      {
+        "protocol": "anthropic-messages",
+        "input": "[]",
+        "arguments": {},
+        "hasError": true,
+        "errorIncludesInput": true
+      }
+    ],
+    "rawRunReportSha256": "11040d1ec053b55f833125fde423e1e442c337d13b9aeafca76832ac5babc256"
+  },
+  "default-trust": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharpSha": "cccbf3e069a3e98f5703709df5beec1363eb1c8e",
+    "normalization": "Launch both CLI applications with isolated agent directories and a deterministic loopback provider. Require exactly one successful provider request and compare whether a project prompt template expands into that request. Explicit expected trust outcomes prevent two equally wrong clients passing. Exit codes must both be zero. TUI selector rendering remains outside this setting contract.",
+    "scenarios": [
+      {
+        "id": "malformed-global-string-falls-back-to-ask",
+        "user": {
+          "defaultProjectTrust": "sometimes"
+        }
+      },
+      {
+        "id": "malformed-global-type-falls-back-to-ask",
+        "user": {
+          "defaultProjectTrust": true
+        }
+      },
+      {
+        "id": "project-always-does-not-override-global-never",
+        "user": {
+          "defaultProjectTrust": "never"
+        },
+        "project": {
+          "defaultProjectTrust": "always",
+          "theme": "light"
+        }
+      },
+      {
+        "id": "project-never-does-not-override-global-always",
+        "user": {
+          "defaultProjectTrust": "always"
+        },
+        "project": {
+          "defaultProjectTrust": "never",
+          "theme": "light"
+        }
+      },
+      {
+        "id": "malformed-project-setting-does-not-fail-trusted-project",
+        "user": {
+          "defaultProjectTrust": "always"
+        },
+        "project": {
+          "defaultProjectTrust": true,
+          "theme": "light"
+        }
+      },
+      {
+        "id": "saved-deny-precedes-global-always",
+        "user": {
+          "defaultProjectTrust": "always"
+        },
+        "project": {
+          "defaultProjectTrust": "never",
+          "theme": "light"
+        },
+        "saved": false
+      },
+      {
+        "id": "saved-allow-precedes-global-never",
+        "user": {
+          "defaultProjectTrust": "never"
+        },
+        "project": {
+          "defaultProjectTrust": "never",
+          "theme": "light"
+        },
+        "saved": true
+      },
+      {
+        "id": "approve-precedes-saved-deny",
+        "user": {
+          "defaultProjectTrust": "never"
+        },
+        "project": {
+          "defaultProjectTrust": "never",
+          "theme": "light"
+        },
+        "saved": false,
+        "override": "--approve"
+      },
+      {
+        "id": "no-approve-precedes-saved-allow",
+        "user": {
+          "defaultProjectTrust": "always"
+        },
+        "project": {
+          "defaultProjectTrust": "never",
+          "theme": "light"
+        },
+        "saved": true,
+        "override": "--no-approve"
+      }
+    ],
+    "results": [
+      {
+        "id": "malformed-global-string-falls-back-to-ask",
+        "pi": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "pisharp": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "match": true
+      },
+      {
+        "id": "malformed-global-type-falls-back-to-ask",
+        "pi": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "pisharp": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "match": true
+      },
+      {
+        "id": "project-always-does-not-override-global-never",
+        "pi": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "pisharp": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "match": true
+      },
+      {
+        "id": "project-never-does-not-override-global-always",
+        "pi": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": true
+        },
+        "pisharp": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": true
+        },
+        "match": true
+      },
+      {
+        "id": "malformed-project-setting-does-not-fail-trusted-project",
+        "pi": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": true
+        },
+        "pisharp": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": true
+        },
+        "match": true
+      },
+      {
+        "id": "saved-deny-precedes-global-always",
+        "pi": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "pisharp": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "match": true
+      },
+      {
+        "id": "saved-allow-precedes-global-never",
+        "pi": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": true
+        },
+        "pisharp": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": true
+        },
+        "match": true
+      },
+      {
+        "id": "approve-precedes-saved-deny",
+        "pi": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": true
+        },
+        "pisharp": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": true
+        },
+        "match": true
+      },
+      {
+        "id": "no-approve-precedes-saved-allow",
+        "pi": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "pisharp": {
+          "outcome": "completed",
+          "exitCode": 0,
+          "projectResourceSelected": false
+        },
+        "match": true
+      }
+    ],
+    "match": true,
+    "rawRunReportSha256": "9faf1fc2b3f14c22aeda44deb028c7b2e8197e01d01a02d053ed78f0c8b90bc4"
+  },
+  "context-instructions": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "scenarios": [
+      {
+        "id": "global-ancestor-override-order",
+        "cwd": "project/child",
+        "agent": "agent",
+        "files": {
+          "agent/CLAUDE.md": {
+            "bytes": 6,
+            "denied": false,
+            "fifo": false
+          },
+          "AGENTS.md": {
+            "bytes": 8,
+            "denied": false,
+            "fifo": false
+          },
+          "project/AGENTS.md": {
+            "bytes": 8,
+            "denied": false,
+            "fifo": false
+          },
+          "project/AGENTS.override.md": {
+            "bytes": 8,
+            "denied": false,
+            "fifo": false
+          },
+          "project/child/AGENTS.MD": {
+            "bytes": 5,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "agent-also-ancestor",
+        "cwd": "project/child",
+        "agent": "project",
+        "files": {
+          "project/AGENTS.md": {
+            "bytes": 4,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "uppercase-claude",
+        "cwd": "project",
+        "agent": "agent",
+        "files": {
+          "project/CLAUDE.MD": {
+            "bytes": 9,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "one-bom",
+        "cwd": "project",
+        "agent": "agent",
+        "files": {
+          "project/AGENTS.md": {
+            "bytes": 6,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "two-boms",
+        "cwd": "project",
+        "agent": "agent",
+        "files": {
+          "project/AGENTS.md": {
+            "bytes": 9,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "file-over-64k",
+        "cwd": "project",
+        "agent": "agent",
+        "files": {
+          "project/AGENTS.md": {
+            "bytes": 66560,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "combined-over-256k",
+        "cwd": "project/child",
+        "agent": "agent",
+        "files": {
+          "agent/AGENTS.md": {
+            "bytes": 143360,
+            "denied": false,
+            "fifo": false
+          },
+          "project/AGENTS.md": {
+            "bytes": 143360,
+            "denied": false,
+            "fifo": false
+          },
+          "project/child/AGENTS.md": {
+            "bytes": 143360,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "utf8-replacement",
+        "cwd": "project",
+        "agent": "agent",
+        "files": {
+          "project/AGENTS.md": {
+            "bytes": 13,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "unreadable-priority-falls-back",
+        "cwd": "project",
+        "agent": "agent",
+        "files": {
+          "project/AGENTS.override.md": {
+            "bytes": 6,
+            "denied": true,
+            "fifo": false
+          },
+          "project/AGENTS.md": {
+            "bytes": 8,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "unreadable-ancestor-does-not-stop-child",
+        "cwd": "project/child",
+        "agent": "agent",
+        "files": {
+          "project/AGENTS.md": {
+            "bytes": 6,
+            "denied": true,
+            "fifo": false
+          },
+          "project/child/AGENTS.md": {
+            "bytes": 5,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "warning-order-is-global-then-child-to-ancestor",
+        "cwd": "project/child",
+        "agent": "agent",
+        "files": {
+          "agent/AGENTS.override.md": {
+            "bytes": 13,
+            "denied": true,
+            "fifo": false
+          },
+          "agent/AGENTS.md": {
+            "bytes": 6,
+            "denied": false,
+            "fifo": false
+          },
+          "project/AGENTS.override.md": {
+            "bytes": 15,
+            "denied": true,
+            "fifo": false
+          },
+          "project/AGENTS.md": {
+            "bytes": 8,
+            "denied": false,
+            "fifo": false
+          },
+          "project/child/AGENTS.override.md": {
+            "bytes": 12,
+            "denied": true,
+            "fifo": false
+          },
+          "project/child/AGENTS.md": {
+            "bytes": 5,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "named-pipe-is-skipped-before-reading",
+        "cwd": "project",
+        "agent": "agent",
+        "files": {
+          "project/AGENTS.override.md": {
+            "bytes": 0,
+            "denied": false,
+            "fifo": true
+          },
+          "project/AGENTS.md": {
+            "bytes": 8,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "unreadable-worktree-context-inherits-main",
+        "cwd": "main/worktrees/feature/child",
+        "agent": "agent",
+        "files": {
+          "main/.git/HEAD": {
+            "bytes": 21,
+            "denied": false,
+            "fifo": false
+          },
+          "main/.git/worktrees/feature/HEAD": {
+            "bytes": 24,
+            "denied": false,
+            "fifo": false
+          },
+          "main/.git/worktrees/feature/commondir": {
+            "bytes": 6,
+            "denied": false,
+            "fifo": false
+          },
+          "main/worktrees/feature/.git": {
+            "bytes": 0,
+            "denied": false,
+            "fifo": false
+          },
+          "main/AGENTS.md": {
+            "bytes": 4,
+            "denied": false,
+            "fifo": false
+          },
+          "main/worktrees/feature/AGENTS.md": {
+            "bytes": 6,
+            "denied": true,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "unreadable-worktree-override-shadows-by-fallback-name",
+        "cwd": "main/worktrees/feature/child",
+        "agent": "agent",
+        "files": {
+          "main/.git/HEAD": {
+            "bytes": 21,
+            "denied": false,
+            "fifo": false
+          },
+          "main/.git/worktrees/feature/HEAD": {
+            "bytes": 24,
+            "denied": false,
+            "fifo": false
+          },
+          "main/.git/worktrees/feature/commondir": {
+            "bytes": 6,
+            "denied": false,
+            "fifo": false
+          },
+          "main/worktrees/feature/.git": {
+            "bytes": 0,
+            "denied": false,
+            "fifo": false
+          },
+          "main/AGENTS.md": {
+            "bytes": 4,
+            "denied": false,
+            "fifo": false
+          },
+          "main/worktrees/feature/AGENTS.override.md": {
+            "bytes": 6,
+            "denied": true,
+            "fifo": false
+          },
+          "main/worktrees/feature/AGENTS.md": {
+            "bytes": 8,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      },
+      {
+        "id": "readable-worktree-context-shadows-main",
+        "cwd": "main/worktrees/feature/child",
+        "agent": "agent",
+        "files": {
+          "main/.git/HEAD": {
+            "bytes": 21,
+            "denied": false,
+            "fifo": false
+          },
+          "main/.git/worktrees/feature/HEAD": {
+            "bytes": 24,
+            "denied": false,
+            "fifo": false
+          },
+          "main/.git/worktrees/feature/commondir": {
+            "bytes": 6,
+            "denied": false,
+            "fifo": false
+          },
+          "main/worktrees/feature/.git": {
+            "bytes": 0,
+            "denied": false,
+            "fifo": false
+          },
+          "main/AGENTS.md": {
+            "bytes": 4,
+            "denied": false,
+            "fifo": false
+          },
+          "main/worktrees/feature/AGENTS.md": {
+            "bytes": 8,
+            "denied": false,
+            "fifo": false
+          }
+        }
+      }
+    ],
+    "differences": [],
+    "match": true,
+    "comparison": "Exact loaded path/warning order and SHA256 of full file contents in the native project-instructions envelope. Only isolated workspace prefixes are normalized; large text, BOMs, invalid UTF8 replacement, linked-worktree shadowing and read-failure continuation are retained.",
+    "runnerUid": 1000,
+    "limitations": "Real file reads on Linux; unreadable fixtures use mode 000 under the actual non-root runner. Linked-worktree metadata is deterministic; broader real git/symlink/platform topology, exact warning color/native error wording and complete startup/reload/trust UI remain wider work.",
+    "rawRunReportSha256": "63d521c844ae22ea1fe527f19adb60ccb74d1ef40d91d58b9c89aeae895f99a0"
+  },
+  "google-thinking": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pi": [
+      {
+        "model": "gemini-4-argon",
+        "level": "high",
+        "vertex": false,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      },
+      {
+        "model": "gemini-4-argon",
+        "level": "high",
+        "vertex": true,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      },
+      {
+        "model": "gemini-4-argon",
+        "level": "off",
+        "vertex": false,
+        "thinking": {
+          "thinkingBudget": 0
+        }
+      },
+      {
+        "model": "gemini-4-argon",
+        "level": "off",
+        "vertex": true,
+        "thinking": {
+          "thinkingBudget": 0
+        }
+      },
+      {
+        "model": "gemini-3.5-flash",
+        "level": "low",
+        "vertex": false,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingLevel": "LOW"
+        }
+      },
+      {
+        "model": "gemini-3.5-flash",
+        "level": "low",
+        "vertex": true,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingLevel": "LOW"
+        }
+      },
+      {
+        "model": "gemini-2.5-flash",
+        "level": "high",
+        "vertex": false,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingBudget": 24576
+        }
+      },
+      {
+        "model": "gemini-2.5-flash",
+        "level": "high",
+        "vertex": true,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingBudget": 24576
+        }
+      }
+    ],
+    "pisharp": [
+      {
+        "model": "gemini-4-argon",
+        "level": "high",
+        "vertex": false,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      },
+      {
+        "model": "gemini-4-argon",
+        "level": "high",
+        "vertex": true,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      },
+      {
+        "model": "gemini-4-argon",
+        "level": "off",
+        "vertex": false,
+        "thinking": {
+          "includeThoughts": false,
+          "thinkingLevel": "MINIMAL"
+        }
+      },
+      {
+        "model": "gemini-4-argon",
+        "level": "off",
+        "vertex": true,
+        "thinking": {
+          "includeThoughts": false,
+          "thinkingLevel": "MINIMAL"
+        }
+      },
+      {
+        "model": "gemini-3.5-flash",
+        "level": "low",
+        "vertex": false,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingLevel": "LOW"
+        }
+      },
+      {
+        "model": "gemini-3.5-flash",
+        "level": "low",
+        "vertex": true,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingLevel": "LOW"
+        }
+      },
+      {
+        "model": "gemini-2.5-flash",
+        "level": "high",
+        "vertex": false,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingBudget": 24576
+        }
+      },
+      {
+        "model": "gemini-2.5-flash",
+        "level": "high",
+        "vertex": true,
+        "thinking": {
+          "includeThoughts": true,
+          "thinkingBudget": 24576
+        }
+      }
+    ],
+    "match": false,
+    "matchedConfigurations": 6,
+    "deferredDifferences": [
+      {
+        "pi": {
+          "model": "gemini-4-argon",
+          "level": "off",
+          "vertex": false,
+          "thinking": {
+            "thinkingBudget": 0
+          }
+        },
+        "pisharp": {
+          "model": "gemini-4-argon",
+          "level": "off",
+          "vertex": false,
+          "thinking": {
+            "includeThoughts": false,
+            "thinkingLevel": "MINIMAL"
+          }
+        }
+      },
+      {
+        "pi": {
+          "model": "gemini-4-argon",
+          "level": "off",
+          "vertex": true,
+          "thinking": {
+            "thinkingBudget": 0
+          }
+        },
+        "pisharp": {
+          "model": "gemini-4-argon",
+          "level": "off",
+          "vertex": true,
+          "thinking": {
+            "includeThoughts": false,
+            "thinkingLevel": "MINIMAL"
+          }
+        }
+      }
+    ],
+    "deferredPriority": "P2",
+    "deferredReason": "Thinking off uses includeThoughts:false/thinkingLevel:MINIMAL in PiSharp, while this Pi model without a level map sends thinkingBudget:0. Enabled controls match; off mapping remains provider feature work.",
+    "scope": "Eight Google and Vertex request thinking configurations, captured before network I/O. Six enabled controls match and two off controls retain an explicit P2 difference. Native tests cover SDK request construction; no live provider, Google auth, full body or streaming response parity claim.",
+    "rawRunReportSha256": "7201f45a3dd1b11f488f938bb6455db38ddff6d34f20b48ebe65ab687877e2dc"
+  },
+  "extension-order": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pi": [
+      {
+        "id": "project-added",
+        "bootstrapCount": 1,
+        "configurationTrace": [
+          "configured",
+          "configured"
+        ],
+        "errors": [],
+        "loaded": [
+          {
+            "path": "project-package/extensions/index.<module>",
+            "sourceInfo": {
+              "path": "project-package/extensions/index.<module>",
+              "source": "../../project-package",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "project-package"
+            }
+          },
+          {
+            "path": "package/extensions/index.<module>",
+            "sourceInfo": {
+              "path": "package/extensions/index.<module>",
+              "source": "../package",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "package"
+            }
+          }
+        ],
+        "discoveryBaseDirs": [
+          "project-package/extensions",
+          "package/extensions"
+        ]
+      }
+    ],
+    "pisharp": [
+      {
+        "id": "project-added",
+        "bootstrapCount": 1,
+        "configurationTrace": [
+          "configured",
+          "configured"
+        ],
+        "errors": [],
+        "loaded": [
+          {
+            "path": "project-package/extensions/index.<module>",
+            "sourceInfo": {
+              "path": "project-package/extensions/index.<module>",
+              "source": "../../project-package",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "project-package"
+            }
+          },
+          {
+            "path": "package/extensions/index.<module>",
+            "sourceInfo": {
+              "path": "package/extensions/index.<module>",
+              "source": "../package",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "package"
+            }
+          }
+        ],
+        "discoveryBaseDirs": [
+          "project-package/extensions",
+          "package/extensions"
+        ]
+      }
+    ],
+    "match": true,
+    "scope": "Actual DefaultResourceLoader.reload(resolveProjectTrust) versus bootstrap/final ExtensionCatalog selection: selected project package cases compare bootstrap count, configuration trace, errors, final loaded modules and all five source-info fields. Only generated root paths and .ts/.dll suffixes normalize.",
+    "rawRunReportSha256": "86ebdc3b166e72370e6651e9a1987e0e07b9e25dce0e8eb02369740b39dc8c94"
+  },
+  "legacy-skills-behavior": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharpSha": "cccbf3e069a3e98f5703709df5beec1363eb1c8e",
+    "fixture": "legacy-project-skills-reload",
+    "behaviorMatch": true,
+    "behavior": {
+      "pi": {
+        "chatRequests": 2,
+        "disabledCompletionBeforeReload": true,
+        "reloadedCompletionEnabled": true,
+        "initialSkillExpanded": true,
+        "reloadedSkillExpanded": true,
+        "visibleSuggestionRows": [
+          "\u2192 skill:reloaded-legacy-skill     [p] Reloaded legacy skill",
+          "  skill:grill-me                  [u] A relentless interview to sharpen a plan or design.",
+          "  skill:grill-with-docs           [u] A relentless interview to sharpen a plan or design, which also creates docs (ADR",
+          "  skill:handoff                   [u] Compact the current conversation into a handoff document for another agent to pi",
+          "  skill:microsoft-agent-framewor  [u] Build, review, host, secure, evaluate, and migrate C#/.NET applications using Mi"
+        ],
+        "reloadStatusVisible": true,
+        "expandedUserMessages": [
+          [
+            "<skill name=\"initial-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill.\n\nInitial legacy skill body marker.\n</skill>\n\nfirst-argument"
+          ],
+          [
+            "<skill name=\"initial-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill.\n\nInitial legacy skill body marker.\n</skill>\n\nfirst-argument",
+            "<skill name=\"reloaded-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/reloaded-skills/reloaded-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/reloaded-skills/reloaded-legacy-skill.\n\nReloaded legacy skill body marker.\n</skill>\n\nsecond-argument"
+          ]
+        ],
+        "advertisedSkillsByRequest": [
+          [],
+          []
+        ],
+        "scenarioError": null
+      },
+      "pisharp": {
+        "chatRequests": 2,
+        "disabledCompletionBeforeReload": true,
+        "reloadedCompletionEnabled": true,
+        "initialSkillExpanded": true,
+        "reloadedSkillExpanded": true,
+        "visibleSuggestionRows": [
+          "\u2192 skill:reloaded-legacy-skill     [p] Reloaded legacy skill",
+          "  skill:grill-me                  [u] A relentless interview to sharpen a plan or design.",
+          "  skill:grill-with-docs           [u] A relentless interview to sharpen a plan or design, which also creates docs (ADR",
+          "  skill:handoff                   [u] Compact the current conversation into a handoff document for another agent to pi",
+          "  skill:microsoft-agent-framewor  [u] Build, review, host, secure, evaluate, and migrate C#/.NET applications using Mi"
+        ],
+        "reloadStatusVisible": true,
+        "expandedUserMessages": [
+          [
+            "<skill name=\"initial-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill.\n\nInitial legacy skill body marker.\n</skill>\n\nfirst-argument"
+          ],
+          [
+            "<skill name=\"initial-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/legacy-skills/initial-legacy-skill.\n\nInitial legacy skill body marker.\n</skill>\n\nfirst-argument",
+            "<skill name=\"reloaded-legacy-skill\" location=\"/tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/reloaded-skills/reloaded-legacy-skill/SKILL.md\">\nReferences are relative to /tmp/pisharp-terminal-fixture-workspace/legacy-skills-reload-project/.pi/reloaded-skills/reloaded-legacy-skill.\n\nReloaded legacy skill body marker.\n</skill>\n\nsecond-argument"
+          ]
+        ],
+        "advertisedSkillsByRequest": [
+          [],
+          []
+        ],
+        "scenarioError": null
+      }
+    },
+    "fullTerminalMatch": true,
+    "fullHttpMatch": true,
+    "rawMatch": false,
+    "terminalDifferences": 0,
+    "renderDifferences": 0,
+    "controlBoundaryDifferences": 652,
+    "scenarioErrors": {},
+    "calibration": null,
+    "rawRunReportSha256": "5021562d286ad4db711e0bf38988eb1a4712834e9e45e5fff2b3b702c7466720"
+  },
+  "legacy-skills-paired": {
+    "terminalMatch": true,
+    "httpMatch": true,
+    "rawMatch": false,
+    "renderDifferences": 0,
+    "differences": 0,
+    "controlBoundaryDifferenceCount": 652,
+    "scenarioErrors": {},
+    "assertionFrames": 14
+  },
+  "legacy-skills-calibration": {
+    "terminalMatch": true,
+    "httpMatch": true,
+    "rawMatch": true,
+    "renderDifferences": 0,
+    "differences": 0,
+    "controlBoundaryDifferenceCount": 0,
+    "scenarioErrors": {},
+    "assertionFrames": 14
+  }
+}

@@ -6,6 +6,17 @@ namespace PiSharp.Core;
 /// <summary>Parses complete or partial model arguments while preserving malformed string escapes.</summary>
 public static class ToolArgumentJson
 {
+    public static JsonElement ParseComplete(string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source)) return JsonSerializer.SerializeToElement(new { });
+        JsonElement parsed;
+        try { parsed = Parse(source); }
+        catch (JsonException) { parsed = Parse(Repair(source)); }
+        if (parsed.ValueKind != JsonValueKind.Object)
+            throw new JsonException("Tool arguments must be a JSON object.");
+        return parsed;
+    }
+
     public static JsonElement ParseStreaming(string? source)
     {
         if (string.IsNullOrWhiteSpace(source)) return JsonSerializer.SerializeToElement(new { });

@@ -583,6 +583,8 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         modelId.Equals("gemini-flash-lite-latest", StringComparison.OrdinalIgnoreCase) ||
         System.Text.RegularExpressions.Regex.IsMatch(modelId, "^gemini-3(?:\\.\\d+)?-(?:pro|flash)",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant) ||
+        System.Text.RegularExpressions.Regex.IsMatch(modelId, "gemini-(?:[4-9]|[1-9]\\d)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant) ||
         System.Text.RegularExpressions.Regex.IsMatch(modelId, "^gemma-?4", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
     private static string GetResultText(object? value) => value switch

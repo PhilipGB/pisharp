@@ -1,5 +1,18 @@
 ## Current post-merge checkpoint — 2026-10-15
 
+## Authoritative Sol-to-Luna checkpoint — 2026-10-15
+
+The configured/audited Pi cutoff is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+All 194 required capability IDs remain: **10 verified, 146 in progress, 38 not
+started**. Instruction/trust behavior, global defaultProjectTrust and live
+skill-command settings are now verified against their defined observable
+contracts. The two encountered P1 repairs are strict completed tool arguments
+and Gemini 4 thinking-level requests. Full Pi parity remains incomplete.
+The 45-task ordered Luna queue, architecture decisions, exact verification scope
+and deferred P2/P3/P4 findings supersede the older next-action prose below.
+See [the handover](../continuation.md) and the execution ledger for the current plan.
+
+
 PiSharp merged `main` is `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`; exact-head Linux CI [38427397999](https://github.com/PhilipGB/pisharp/actions/runs/38427397999) passes. Work continues on `parity/current-pi-completion`. The major architecture refactor and composition review are complete; only the bounded final architecture regression review remains. Production dependencies remain CLI → Runtime → Core, with MAF 1.21.0 and Microsoft.Extensions.AI 10.10.0.
 
 Fresh local baseline: restore/format/warnings-as-errors build pass; .NET 1,390/1,390 with zero skips, Node 24/24, Python 47/47, documentation 131 documents / 457 references, MCP with no regressions against eight classified failures. All 17 existing process differential drivers ran; the classifier probe required valid boolean criteria and updated item extraction, then its billing/authority comparisons passed. This probe retains Pi output items and does not verify the open Codemode formatting contract. All 33 terminal fixtures ran at one explicitly selected case each: initial calibration 30/33 and pairs 24/33; seven repeats/corrections retain all failures. The harness teardown and Markdown input defects are fixed; Python terminal tests now pass 48/48. Product presentation and one thinking-toggle HTTP mismatch remain open.

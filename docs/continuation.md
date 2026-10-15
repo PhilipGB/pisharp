@@ -1,5 +1,240 @@
 # Continuation — PiSharp capability parity
 
+## Sol-to-Luna handover — 2026-10-15
+
+This checkpoint supersedes the older next-action paragraphs below. This Sol goal
+ends with the verified, pushed handover; the continuing Luna goal owns full parity.
+Do not spend another session extending YAML/resource permutations without a
+supported observable failure. Read `sol_luna_handover` in
+[the execution ledger](parity/execution-ledger.json) before implementing the queue.
+It contains 45 ordered tasks, each with capability IDs, behavior, actual Pi source
+and test paths, PiSharp owners, the established pattern, focused and differential
+verification, and an explicit completion condition. All owner/source paths were
+checked against this worktree and the configured Pi checkout.
+
+### Repository and evidence
+
+- Branch: `parity/current-pi-completion`; starting SHA
+  `cccbf3e069a3e98f5703709df5beec1363eb1c8e`.
+- Merged architecture-refactor main `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`
+  is an ancestor; no main merge/rebase was needed. Starting exact-head CI
+  [38658864333](https://github.com/PhilipGB/pisharp/actions/runs/38658864333) passed.
+- Configured Pi and audited cutoff:
+  `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A fresh remote read still returns
+  that SHA. [The 24-commit audit](parity/fixtures/luna-handover-2026-10-15/upstream-audit.json)
+  classifies nine out of scope, two no behavior change, two matched P1 repairs,
+  and eleven deferred P2/P3 changes. Advancing the reference selects the target;
+  it does not claim those deferred changes are implemented.
+- Local validation: restore, format and zero-warning build; .NET **1,976 passed,
+  zero failed/skipped**, Node **24**, Python **50**, six architecture checks;
+  MCP **261 passing checks / eight classified failures / zero regressions** over
+  26 scenarios. Focused native checks: 130. Pi source suites: 35 provider and
+  106 resource/settings/trust tests, zero skips. See
+  [the verification receipt](parity/fixtures/luna-handover-2026-10-15/verification.json).
+- Product checkpoint SHA and final exact-head CI are recorded in the publication
+  receipt added after the verified checkpoint is pushed. The final docs-only
+  commit is resolved by the branch ref; no self-referential commit hash is invented.
+- Reviewed [contract evidence](parity/fixtures/luna-handover-2026-10-15/contracts.json)
+  is committed; generated captures and TRX remain under
+  `artifacts/parity/luna-handover-2026-10-15/` and are not durable backups.
+
+### Capability closure
+
+The required inventory remains **194 IDs: 10 verified, 146 in progress, 38 not
+started**. Three implemented contracts are now deliberately closed:
+
+- `feature-resources-instructions-and-trust`: instruction hierarchy/read recovery,
+  trust before privileged project selection, declined selection, and configure-once
+  pre-trust extension reuse. Fifteen current instruction cases, nine actual
+  provider-request trust cases, current extension ordering and native boundary
+  tests support the original contract. Full-screen trust selector styling remains
+  a separate TUI P2, not a missing trust decision.
+- `settings-defaultprojecttrust`: global-only default/invalid fallback,
+  saved/explicit precedence and inability of project configuration to grant its
+  own trust. The old pre-authentication probe was too weak; the current process
+  probe requires successful HTTP plus the independently expected project prompt
+  expansion in all nine cases.
+- `settings-enableskillcommands`: defaults/precedence, legacy migration,
+  live completion, manual invocation, persistence and reload. The current paired
+  reload and same-Pi calibration match 14 rendered frames with exact normalized
+  HTTP and zero scenario errors; raw byte differences remain explicit.
+
+`feature-resources-skills-templates-themes`, packages and extension API remain in
+progress for actual missing theme/package/public API behavior. Required managed
+npm/git and package CLI workflows are feature work. All 38 not-started IDs still
+lack required behavior; none was promoted from a plan or metadata alone. The
+ledger records exact closure contracts, implementation, remaining work, evidence
+and deferred priorities. A capability is not held open merely for hypothetical
+parser or visual subcases.
+
+### Major family status
+
+| Family | Verified | In progress | Not started | Deferred |
+| --- | --- | --- | --- | --- |
+| Agent execution/context | 0 | 3 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| Providers/models/auth/routing | 5 | 14 | 6 | P2 audited endpoint/profile/catalog/cache/model-selection/stream controls; two Google off request differences. |
+| Tools/loadouts/results | 0 | 10 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| CLI/commands/security | 0 | 20 | 1 | None newly recorded; required feature gaps remain in the ledger. |
+| TUI/editor/input | 0 | 11 | 3 | P2 trust selector presentation and historical calibration/timing limitation; P3 read range display; P4 raw-only bytes. |
+| Sessions/persistence | 0 | 2 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| Resources/packages/trust | 1 | 2 | 0 | P2 empty quoted template argument tokens; P3 repository github-work asset. Required managed package and complete theme/resource behavior remain feature work. |
+| Extensions | 0 | 3 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| RPC | 0 | 42 | 0 | P3 legacy reload assertion diagnostic shadowing is a harness finding; future RPC argument-error serialization remains explicit feature work. |
+| Settings | 3 | 37 | 27 | None newly recorded; required feature gaps remain in the ledger. |
+| Codemode | 0 | 1 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| MCP | 1 | 1 | 1 | No encountered P0/P1. Existing six elicitation + CIMD + scope-limit client result are classified scope differences; configured CIMD is feature work. |
+
+### Fixed P1 boundaries and representative patterns
+
+Completed tool arguments previously used the partial progress parser. Malformed
+final JSON could execute its parsed prefix. Core `ToolArgumentJson.ParseComplete`
+now requires a complete JSON object after Pi-compatible string-escape repair;
+CLI `ProviderToolArgumentChatClient.Normalize` supplies empty arguments and a
+parsing exception on failure. Both SDK response paths and the native Bedrock
+adapter use that shape. MAF owns function rejection and continuation; tests prove
+zero function invocations. RPC progress still uses `ParseStreaming`. Five SDK
+fail-first rows and Bedrock regressions protect the boundary. A current Pi pair
+matches 175 partial inputs and 18 completed provider calls, including malformed
+objects, non-objects, repaired escapes and ordinary valid calls.
+
+Google and Vertex now share Gemini 4+ `thinkingLevel` selection instead of sending
+a rejected token budget. Corrected fail-first requests and six enabled paired
+controls establish the fix. Two off-thinking controls remain an explicit **P2**
+wire discrepancy; the reviewed report says `match:false` for the full set. Do not
+silently generalize enabled-control evidence to all thinking behavior.
+
+Use these existing examples:
+
+| Surface | Pattern to repeat |
+| --- | --- |
+| Providers | `ProviderToolArgumentChatClient`, `ProviderToolArgumentRepairTests`, native `BedrockProviderTests`, `google-thinking-differential.py` |
+| Resources | `ResourceFileDiscovery`, `ResourceFrontmatter`, `ResourceCatalog`; `resource-selection-differential.py` plus a real RPC/provider input |
+| Process | `default-project-trust-process-differential.py`: successful request plus independent expected outcome, not common failure classification |
+| TUI | `terminal/run.py`, paired and same-Pi calibration, `legacy-project-skills-reload.json`, semantic assertion and direct paired report inspection |
+| RPC | `RpcQueueModeCommandHandler`, `RpcSessionCommandHandler`, `rpc-settlement-differential.py`, current active bindings |
+| MCP | `McpClientConnection`, `McpToolPublication`, `McpResourcePublication`, pinned conformance and per-check classifications |
+
+### Architecture decisions Luna should preserve
+
+Production remains **CLI → Runtime → Core**, using installed **MAF 1.21.0 /
+MEAI 10.10.0**. The invoked framework skill is a newer snapshot; installed
+metadata and the compiled application are authoritative. No framework upgrade or
+new generic infrastructure is needed for this queue.
+
+| Family | Ownership, state, lifetime and contract |
+| --- | --- |
+| Agent/session | MAF owns the function loop. `ConversationRun` owns canonical appends, prompt queue and settlement. `ConversationSession`/tree is durable; MAF sessions are disposable branch projections. Preflight/save replacements before cancelling outgoing work, settle before publishing new active bindings. Preserve unknown-side-effect recovery and stale-writer refusal. |
+| Current state | Read `ActiveModelRuntime`, `ActiveProjectRuntime`, `ActiveConversationRuntime` at callback invocation. Reload/model/session transitions publish explicit bindings. Do not capture stale agents, tools, project settings or stores in new callbacks. |
+| Providers | CLI owns wire protocols/auth/transcript mapping; Runtime owns common execution/metadata/usage. Retry before streamed output only; malformed arguments remain errors through MAF and mapping. Keep provider endpoint identity separate from the display profile. Kimi at this cutoff uses Chat Completions `/coding/v1`, OpenCode uses inference endpoints and per-model APIs. |
+| Sampling/model references | Add a pure Runtime sampling merge over descriptor defaults, exact clamped level and request overrides. A CLI chat-options wrapper handles both response paths; provider adapters map fields. Carry the exact selected level rather than reversing a lossy MEAI effort. A concrete CLI model-reference resolver collects candidates before choosing authenticated named-provider/gateway identity; shared resolver is used by CLI/scopes/auth/model commands. |
+| Managed packages | Add one concrete Runtime managed package store for npm/git process/cache lifetime, cancellation and resolved roots. Feed roots into existing package resource owners. One CLI package command owner handles scopes/persistence/UI; no generic registry. Source/ref identity, lexical provenance and canonical file identity are distinct. Match Pi's supported package execution policy from source; use local tarball/git fixtures. |
+| Resources/extensions | Existing discovery/frontmatter/path/package owners retain parsing/projection. User/global/CLI extensions configure once before trust, project privilege follows trust, final selection controls order/metadata. Catalog owns extension resources/disposal. Reload replaces discovered resources and refreshes active callbacks; failed registrations roll back checkpoints. |
+| MCP | SDK owns protocol transport. Runtime owns naming/exposure, server+URL credential identity, publication/reconnect and startup waits. Catalog owns connections; named indirect operations wait only for the reached server. Never retry an uncertain tool side effect. Keep resource/publication lock order and callback client-identity checks. Add CIMD through actual installed SDK support or a narrowly reproduced adapter. |
+| Codemode | Runtime owns nested pipeline, branch-local store, result/usage contract and Node worker admission. Request termination promptly; release admission only after actual exit. Cancel/dispose work with the owning run. UI details do not replace model-facing results. |
+| TUI/settings | CLI owns settings parser/writer, terminal input/layout/modes/dialogs; Runtime owns original content/execution. Use current immutable snapshots per frame. Restore terminal modes/subscriptions on exit; initial screen renders before replies. Add settings only when a real runtime/render/input consumer exists. |
+| Codex transport | One concrete connection owner keyed by account+session handles serialized socket work, bounded handshake and disposal; SSE fallback is allowed only before output. Canonical app history remains authoritative; cached response IDs never become its persistent format. |
+
+Only changed areas were reviewed. Six architecture regression tests pass; no
+broad architecture redesign was performed or is needed. The concrete strict tool
+boundary and Google shared request mapping prove representative implementations;
+45 queue tasks below specify the remaining shapes instead of empty scaffolding.
+
+### Ordered mechanical queue
+
+The complete task records are in `sol_luna_handover.queue`. Each row below names
+its place in that queue; execute feature tasks before deferred cleanup. When a
+family has variants, prove the difficult and ordinary case then repeat the proven
+adapter/persistence/test pattern. Do not redesign project boundaries.
+
+| Order | Work | Priority |
+| --- | --- | --- |
+| 1 | Install a managed npm package and expose its declared skills/prompts/themes/extensions in startup and reload. | feature |
+| 2 | Resolve pinned git packages and update only sources eligible for update. | feature |
+| 3 | Implement package install/remove/update/list CLI workflows and permitted configuration scope. | feature |
+| 4 | Resolve extension name conflicts and replaceable builtins without discarding unrelated owners. | feature |
+| 5 | Expose native event/context/UI equivalents for supported extension actions and runtime registrations. | feature |
+| 6 | Resolve model defaults, clamped effective thinking-level sampling and request overrides before outbound serialization. | feature |
+| 7 | Persist thinkingBudgets and send bounded budgets where the API supports token budgets. | feature |
+| 8 | Complete Google/Vertex image, reasoning-signature, tools, usage and error differentials. | feature |
+| 9 | Apply the completed-argument/tool-replay pattern to remaining native provider boundaries and establish provider breadth evidence. | feature |
+| 10 | Add Foundry Chat Completions and finish Azure response wire contracts. | feature |
+| 11 | Complete native Mistral Conversations beyond current Chat Completions-compatible slice. | feature |
+| 12 | Close Radius catalog/auth and interactive setup behavior. | feature |
+| 13 | Support the distinct ChatGPT sign-in route and Codex manual/device fallback without borrowing API-key credentials. | feature |
+| 14 | Implement Codex WebSocket and cached continuation with pre-stream SSE fallback. | feature |
+| 15 | Implement missing provider profiles using each current upstream protocol, starting with Kimi and OpenCode. | feature |
+| 16 | Add Cloudflare gateway and Together catalog metadata as established profile/adaptor variants. | feature |
+| 17 | Preserve Responses custom/grammar tool declarations and replay. | feature |
+| 18 | Align published schema fields with runtime parsing and public discovery. | feature |
+| 19 | Apply fullscreen/regular mode, exit output, scrollbar/copy and wheel preferences. | feature |
+| 20 | Apply editor/output geometry and completion/cursor preferences. | feature |
+| 21 | Complete terminal image, link, progress and resize controls. | feature |
+| 22 | Complete tree navigation/filter and branch summary policy. | feature |
+| 23 | Implement visible cache miss notices and provider cache warming policy. | feature |
+| 24 | Implement remaining startup/privacy/diagnostic settings using scoped concrete owners. | feature |
+| 25 | Add actual Mermaid rendering at the Markdown presentation boundary. | feature |
+| 26 | Implement configured MCP Client ID Metadata Document registration with OAuth fallback. | feature |
+| 27 | Complete interactive MCP management using current config and connection owners. | feature |
+| 28 | Finish Codemode output envelopes, model/classifier calls and usage/termination semantics. | feature |
+| 29 | Close route context budget, physical usage attribution and classifier persistence contracts. | feature |
+| 30 | Close narrow RPC command contracts by comparing real supported idle/active/error paths. | feature |
+| 31 | Complete protocol read/event projection for provider partial content and argument errors. | feature |
+| 32 | Close persistence/replacement contracts and platform evidence. | feature |
+| 33 | Close ordinary built-in tool observable contracts and live default-tool reload. | feature |
+| 34 | Close agent/queue/retry lifecycle and settlement contracts. | feature |
+| 35 | Close compaction and context/usage projection. | feature |
+| 36 | Close CLI entry modes and flag/error/output contracts. | feature |
+| 37 | Finish share/HTML export output and theme/resource rendering contracts. | feature |
+| 38 | Close skills/templates/themes/settings resource family while preserving verified instruction/trust behavior. | feature |
+| 39 | Close editor/keymap/input flow semantic parity. | feature |
+| 40 | Finish user-visible provider login copy/cancel and supported interactive effects. | feature |
+| 41 | Implement supported application install/update commands with bounded process ownership. | feature |
+| 42 | Unify ambiguous bare and gateway-qualified model reference selection. | P2 |
+| 43 | Import deferred provider metadata/cache/retry/reasoning deltas at audited cutoff. | P2 |
+| 44 | Resolve explicit off-thinking and empty-quoted template argument discrepancies. | P2 |
+| 45 | Resolve supported residual presentation and repository asset differences after features. | P3 |
+
+### Deferred findings and verification boundaries
+
+There were no P0 findings. Both encountered P1 defects are fixed and verified.
+The upstream audit assigns every in-scope remaining delta P2/P3. P2 includes
+isolated model-reference policy, cache/metadata/retry/streaming controls, missing
+profile variants, empty quoted template arguments and the explicit Google off
+mapping. Feature tasks that implement whole missing families precede those
+isolated deltas. P3 includes read-range presentation, the repository github-work
+asset and an assertion helper's local-variable shadowing. P4 raw-only terminal
+bytes have no demonstrated supported visible consequence and are not scheduled
+for implementation.
+
+The legacy-skill assertion helper overwrites its local pair case with calibration
+when `--calibration-report` is supplied. Its semantic comparison is correct, but
+reported pair diagnostics then come from calibration. This receipt avoids that
+option and independently reads both report files; fixing that P3 helper is deferred.
+Earlier quiet-startup, source-only/resize calibration and timing failures remain
+retained and unexplained. Current passing checks do not retrospectively resolve
+them. Investigate only when a current supported failure changes priority.
+
+MCP's eight classified failures remain six unadvertised elicitation checks,
+CIMD default-registration behavior and the deliberately unsuccessful scope retry
+limit client result. The limit assertion passes. No encountered MCP P0/P1 blocks
+handover; configured CIMD is explicitly queued feature work. Native macOS/Windows,
+paid providers, full provider breadth and complete TUI parity are not established
+by this Linux run. Full final parity source audit remains a future Luna gate;
+the Sol upstream delta is nevertheless completely bounded and classified.
+
+The shared workspace required writable NuGet caches under `/tmp`; use the
+recorded environment in the verification receipt if the sandbox is still active.
+`git -c core.sshCommand='ssh -F /dev/null'` bypassed a host SSH include ownership
+error without changing host configuration. Do not inspect or alter `test.pdf`.
+Explicit staging paths exclude it and all unrelated user files.
+
+Luna readiness: the next 45 tasks have concrete ownership, state/lifetime,
+persistence/cancellation rules, source references, representative examples and
+verification/completion conditions. Stop architectural exploration and execute
+the queue. Publication and final CI status are recorded below once verified.
+
+---
+
 ## Current post-merge checkpoint — 2026-10-15
 
 PiSharp merged `main` is `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`; exact-head Linux CI [38427397999](https://github.com/PhilipGB/pisharp/actions/runs/38427397999) passes. Work continues on `parity/current-pi-completion`. The major architecture refactor and composition review are complete; only the bounded final architecture regression review remains. Production dependencies remain CLI → Runtime → Core, with MAF 1.21.0 and Microsoft.Extensions.AI 10.10.0.
