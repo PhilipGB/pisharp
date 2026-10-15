@@ -489,6 +489,304 @@ public sealed class OpenAiCodexProviderTests
     }
 
     [Fact]
+    public async Task CodexResponsesProjectsGrammarToolsAndReplaysCustomCallsAsFunctionCalls()
+    {
+        using var listener = StartListener(out var port);
+        string? requestBody = null;
+        string? replayBody = null;
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync();
+            var accepted = await context.AcceptWebSocketAsync(null);
+            using var socket = accepted.WebSocket;
+            requestBody = await ReceiveWebSocketMessageAsync(socket);
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.created",
+                response = new { id = "resp_grammar", @object = "response", created_at = 1, model = "gpt-5.5", status = "in_progress", output = Array.Empty<object>() }
+            });
+            var customCall = new
+            {
+                id = "ctc_grammar",
+                type = "custom_tool_call",
+                status = "completed",
+                call_id = "call_grammar",
+                name = "constrained_echo",
+                input = "hello"
+            };
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.output_item.added",
+                output_index = 0,
+                item = new { id = "ctc_grammar", type = "custom_tool_call", status = "in_progress", call_id = "call_grammar", name = "constrained_echo", input = "" }
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.custom_tool_call_input.delta",
+                item_id = "ctc_grammar",
+                output_index = 0,
+                delta = "hel"
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.custom_tool_call_input.delta",
+                item_id = "ctc_grammar",
+                output_index = 0,
+                delta = "lo"
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.custom_tool_call_input.done",
+                item_id = "ctc_grammar",
+                output_index = 0,
+                input = "hello"
+            });
+            await SendWebSocketEventAsync(socket, new { type = "response.output_item.done", output_index = 0, item = customCall });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.completed",
+                response = new
+                {
+                    id = "resp_grammar",
+                    @object = "response",
+                    created_at = 1,
+                    model = "gpt-5.5",
+                    status = "completed",
+                    output = new object[] { customCall }
+                }
+            });
+            replayBody = await ReceiveWebSocketMessageAsync(socket);
+            await SendWebSocketResponseAsync(socket, "resp_grammar_final", "done");
+        });
+
+        var compatibility = JsonSerializer.SerializeToElement(new { supportsOpenAIGrammarTools = true });
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses", Compatibility: compatibility);
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var selection = new ModelSelection(provider, model, CreateToken("account-fixture"), true, "fixture token");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        const string grammarDefinition = "start: WORD\n%import common.WORD\n%ignore \" \"";
+        var policy = JsonSerializer.SerializeToElement(new
+        {
+            type = "grammar",
+            variants = new { openai_lark = grammarDefinition }
+        });
+        var tool = Microsoft.Extensions.AI.AIFunctionFactory.Create((string value) => value,
+            new Microsoft.Extensions.AI.AIFunctionFactoryOptions
+            {
+                Name = "constrained_echo",
+                Description = "Echo a grammar-constrained value.",
+                AdditionalProperties = new Dictionary<string, object?> { ["constrainedSampling"] = policy }
+            });
+        var options = new Microsoft.Extensions.AI.ChatOptions
+        {
+            ConversationId = "codex-grammar-fixture",
+            Tools = [tool]
+        };
+        var calls = new List<Microsoft.Extensions.AI.FunctionCallContent>();
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "Echo hello")], options, deadline.Token))
+            calls.AddRange(update.Contents.OfType<Microsoft.Extensions.AI.FunctionCallContent>());
+        var call = Assert.Single(calls);
+        Assert.Equal("call_grammar", call.CallId);
+        Assert.Equal("constrained_echo", call.Name);
+        var arguments = JsonSerializer.SerializeToElement(call.Arguments);
+        Assert.Equal("hello", arguments.GetProperty("value").GetString());
+        Microsoft.Extensions.AI.ChatMessage[] replayMessages =
+        [
+            new(Microsoft.Extensions.AI.ChatRole.User, "Echo hello"),
+            new(Microsoft.Extensions.AI.ChatRole.Assistant, [call]),
+            new(Microsoft.Extensions.AI.ChatRole.Tool,
+                [new Microsoft.Extensions.AI.FunctionResultContent(call.CallId, "echo:hello")]),
+            new(Microsoft.Extensions.AI.ChatRole.User, "Say done")
+        ];
+        var finalText = new StringBuilder();
+        await foreach (var update in client.GetStreamingResponseAsync(replayMessages, options, deadline.Token))
+            if (update.Text is { } text) finalText.Append(text);
+        Assert.Equal("done", finalText.ToString());
+        await server.WaitAsync(deadline.Token);
+        using var sent = JsonDocument.Parse(requestBody!);
+        var declaration = Assert.Single(sent.RootElement.GetProperty("tools").EnumerateArray());
+        Assert.Equal("custom", declaration.GetProperty("type").GetString());
+        Assert.Equal("constrained_echo", declaration.GetProperty("name").GetString());
+        Assert.Equal("grammar", declaration.GetProperty("format").GetProperty("type").GetString());
+        Assert.Equal("lark", declaration.GetProperty("format").GetProperty("syntax").GetString());
+        Assert.Equal(grammarDefinition,
+            declaration.GetProperty("format").GetProperty("definition").GetString());
+        using var replay = JsonDocument.Parse(replayBody!);
+        Assert.Equal("resp_grammar", replay.RootElement.GetProperty("previous_response_id").GetString());
+        var replayInput = replay.RootElement.GetProperty("input").EnumerateArray().ToArray();
+        Assert.Equal(2, replayInput.Length);
+        Assert.Equal("custom_tool_call_output", replayInput[0].GetProperty("type").GetString());
+        Assert.Equal("call_grammar", replayInput[0].GetProperty("call_id").GetString());
+        Assert.Equal("input_text", replayInput[1].GetProperty("content")[0].GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task CodexGrammarCustomToolEventsOnSseFallbackBecomeFunctionCallUpdates()
+    {
+        using var listener = StartListener(out var port);
+        string? websocketRequestBody = null;
+        var websocketAttempts = 0;
+        var server = Task.Run(async () =>
+        {
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var context = await listener.GetContextAsync();
+                var accepted = await context.AcceptWebSocketAsync(null);
+                using var socket = accepted.WebSocket;
+                websocketRequestBody = await ReceiveWebSocketMessageAsync(socket);
+                websocketAttempts++;
+                await SendWebSocketErrorAsync(socket, "websocket_connection_limit_reached");
+                socket.Abort();
+            }
+
+            var fallback = await listener.GetContextAsync();
+            fallback.Response.ContentType = "text/event-stream";
+            await using var writer = new StreamWriter(fallback.Response.OutputStream);
+            await writer.WriteLineAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_grammar_sse\",\"object\":\"response\",\"created_at\":1,\"model\":\"gpt-5.5\",\"status\":\"in_progress\",\"output\":[]}}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"ctc_grammar_sse\",\"type\":\"custom_tool_call\",\"status\":\"in_progress\",\"call_id\":\"call_grammar_sse\",\"name\":\"constrained_echo\",\"input\":\"\"}}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: {\"type\":\"response.custom_tool_call_input.delta\",\"item_id\":\"ctc_grammar_sse\",\"output_index\":0,\"delta\":\"hel\"}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: {\"type\":\"response.custom_tool_call_input.delta\",\"item_id\":\"ctc_grammar_sse\",\"output_index\":0,\"delta\":\"lo\"}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: {\"type\":\"response.custom_tool_call_input.done\",\"item_id\":\"ctc_grammar_sse\",\"output_index\":0,\"input\":\"hello\"}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"ctc_grammar_sse\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_grammar_sse\",\"name\":\"constrained_echo\",\"input\":\"hello\"}}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_grammar_sse\",\"object\":\"response\",\"created_at\":1,\"model\":\"gpt-5.5\",\"status\":\"completed\",\"output\":[{\"id\":\"ctc_grammar_sse\",\"type\":\"custom_tool_call\",\"status\":\"completed\",\"call_id\":\"call_grammar_sse\",\"name\":\"constrained_echo\",\"input\":\"hello\"}]}}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: [DONE]");
+            await writer.WriteLineAsync();
+            await writer.FlushAsync();
+            fallback.Response.Close();
+        });
+
+        var compatibility = JsonSerializer.SerializeToElement(new { supportsOpenAIGrammarTools = true });
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses", Compatibility: compatibility);
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var selection = new ModelSelection(provider, model, CreateToken("account-fixture"), true, "fixture token");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        const string grammarDefinition = "start: WORD\n%import common.WORD\n%ignore \" \"";
+        var policy = JsonSerializer.SerializeToElement(new
+        {
+            type = "grammar",
+            variants = new { openai_lark = grammarDefinition }
+        });
+        var tool = Microsoft.Extensions.AI.AIFunctionFactory.Create((string value) => value,
+            new Microsoft.Extensions.AI.AIFunctionFactoryOptions
+            {
+                Name = "constrained_echo",
+                Description = "Echo a grammar-constrained value.",
+                AdditionalProperties = new Dictionary<string, object?> { ["constrainedSampling"] = policy }
+            });
+        var options = new Microsoft.Extensions.AI.ChatOptions
+        {
+            ConversationId = "codex-grammar-sse-fixture",
+            Tools = [tool]
+        };
+        var calls = new List<Microsoft.Extensions.AI.FunctionCallContent>();
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "Echo hello")], options, deadline.Token))
+            calls.AddRange(update.Contents.OfType<Microsoft.Extensions.AI.FunctionCallContent>());
+        await server.WaitAsync(deadline.Token);
+
+        var call = Assert.Single(calls);
+        Assert.Equal("call_grammar_sse", call.CallId);
+        Assert.Equal("constrained_echo", call.Name);
+        var arguments = JsonSerializer.SerializeToElement(call.Arguments);
+        Assert.Equal("hello", arguments.GetProperty("value").GetString());
+        Assert.Equal(2, websocketAttempts);
+        using var sent = JsonDocument.Parse(websocketRequestBody!);
+        Assert.Equal("custom", sent.RootElement.GetProperty("tools")[0].GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task GrammarToolHistorySwitchesBackToStandardResponsesFunctionItems()
+    {
+        using var listener = StartListener(out var port);
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            using (var reader = new StreamReader(request.Request.InputStream, request.Request.ContentEncoding))
+                requestBody = await reader.ReadToEndAsync();
+            request.Response.ContentType = "text/event-stream";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteLineAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_provider_switch\",\"object\":\"response\",\"created_at\":1,\"model\":\"grok-3-mini\",\"status\":\"in_progress\",\"output\":[]}}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_provider_switch\",\"output_index\":0,\"content_index\":0,\"delta\":\"done\"}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_provider_switch\",\"object\":\"response\",\"created_at\":1,\"model\":\"grok-3-mini\",\"status\":\"completed\",\"output\":[]}}");
+            await writer.WriteLineAsync();
+            await writer.WriteLineAsync("data: [DONE]");
+            await writer.WriteLineAsync();
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        var model = new ModelDescriptor("grok-3-mini", "xai", 131_072, "fixture", true,
+            Provider: "xai", Name: "Grok 3 Mini", MaxOutputTokens: 16_384,
+            Input: ["text"], Api: "openai-responses");
+        var provider = new ProviderProfile("xai", "xAI",
+            new Uri($"http://127.0.0.1:{port}/v1"), true, false, null, null, [model], Api: "openai-responses");
+        var selection = new ModelSelection(provider, model, "fixture-api-key", true, "fixture key");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        const string grammarDefinition = "start: WORD\n%import common.WORD\n%ignore \" \"";
+        var policy = JsonSerializer.SerializeToElement(new
+        {
+            type = "grammar",
+            variants = new { openai_lark = grammarDefinition }
+        });
+        var tool = Microsoft.Extensions.AI.AIFunctionFactory.Create((string value) => value,
+            new Microsoft.Extensions.AI.AIFunctionFactoryOptions
+            {
+                Name = "constrained_echo",
+                Description = "Echo a grammar-constrained value.",
+                AdditionalProperties = new Dictionary<string, object?> { ["constrainedSampling"] = policy }
+            });
+        var call = new Microsoft.Extensions.AI.FunctionCallContent("call_provider_switch", "constrained_echo",
+            new Dictionary<string, object?> { ["value"] = "hello" });
+        Microsoft.Extensions.AI.ChatMessage[] history =
+        [
+            new(Microsoft.Extensions.AI.ChatRole.User, "Echo hello"),
+            new(Microsoft.Extensions.AI.ChatRole.Assistant, [call]),
+            new(Microsoft.Extensions.AI.ChatRole.Tool,
+                [new Microsoft.Extensions.AI.FunctionResultContent(call.CallId, "echo:hello")]),
+            new(Microsoft.Extensions.AI.ChatRole.User, "Say done")
+        ];
+        var options = new Microsoft.Extensions.AI.ChatOptions { Tools = [tool] };
+        var output = new StringBuilder();
+        await foreach (var update in client.GetStreamingResponseAsync(history, options, deadline.Token))
+            if (update.Text is { } text) output.Append(text);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("done", output.ToString());
+        using var sent = JsonDocument.Parse(requestBody!);
+        var declaration = Assert.Single(sent.RootElement.GetProperty("tools").EnumerateArray());
+        Assert.Equal("function", declaration.GetProperty("type").GetString());
+        Assert.Equal("constrained_echo", declaration.GetProperty("name").GetString());
+        var input = sent.RootElement.GetProperty("input").EnumerateArray().ToArray();
+        var replayedCall = Assert.Single(input, item => item.GetProperty("type").GetString() == "function_call");
+        var replayedOutput = Assert.Single(input, item => item.GetProperty("type").GetString() == "function_call_output");
+        Assert.Equal("call_provider_switch", replayedCall.GetProperty("call_id").GetString());
+        Assert.Equal("constrained_echo", replayedCall.GetProperty("name").GetString());
+        using var arguments = JsonDocument.Parse(replayedCall.GetProperty("arguments").GetString()!);
+        Assert.Equal("hello", arguments.RootElement.GetProperty("value").GetString());
+        Assert.Equal("call_provider_switch", replayedOutput.GetProperty("call_id").GetString());
+    }
+
+    [Fact]
     public async Task CodexResponsesToolLoopSendsTheToolResultAsCachedWebSocketInput()
     {
         using var listener = StartListener(out var port);

@@ -2,6 +2,7 @@ using System.ClientModel;
 using System.ClientModel.Primitives;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -24,7 +25,7 @@ internal static class OpenAiCodexResponsesClientFactory
             Transport = new HttpClientPipelineTransport(new HttpClient(
                 new OpenAiCodexRequestHandler(selection.ApiKey, requestContext,
                     new ProviderWireActivityHandler(new OpenAiCodexWebSocketBridgeHandler(
-                        new HttpClientHandler { AllowAutoRedirect = false }, TimeSpan.FromSeconds(15))),
+                        requestContext, new HttpClientHandler { AllowAutoRedirect = false }, TimeSpan.FromSeconds(15))),
                     selection.OAuthCredentialResolver),
                 disposeHandler: true))
         };
@@ -32,11 +33,79 @@ internal static class OpenAiCodexResponsesClientFactory
 #pragma warning disable OPENAI001
         var chat = new StatelessResponsesChatClient(client.GetResponsesClient().AsIChatClient(selection.Model.Id));
 #pragma warning restore OPENAI001
-        return new OpenAiCodexChatOptionsClient(chat, requestContext);
+        return new OpenAiCodexChatOptionsClient(chat, requestContext,
+            SupportsGrammarTools(selection.Model.Compatibility));
     }
+
+    private static bool SupportsGrammarTools(JsonElement? compatibility) =>
+        compatibility is { ValueKind: JsonValueKind.Object } value &&
+        value.TryGetProperty("supportsOpenAIGrammarTools", out var supported) &&
+        supported.ValueKind == JsonValueKind.True;
 }
 
-internal sealed record OpenAiCodexRequestMetadata(string? SessionId);
+internal sealed record OpenAiCodexRequestMetadata(string? SessionId,
+    IReadOnlyDictionary<string, OpenAiCodexGrammarTool> GrammarTools);
+
+internal sealed record OpenAiCodexGrammarTool(string Name, string? Description, string Syntax,
+    string Definition, string InputProperty);
+
+internal sealed class OpenAiCodexGrammarCallState(OpenAiCodexGrammarTool grammar)
+{
+    private bool _started;
+    private bool _closed;
+    private string _input = string.Empty;
+
+    public string? Append(string inputDelta)
+    {
+        if (_closed)
+            throw new InvalidOperationException($"Grammar tool input for '{grammar.InputProperty}' changed after it was closed.");
+        var nextInput = _input + inputDelta;
+        return Advance(nextInput, close: false);
+    }
+
+    public string Complete(string input)
+    {
+        if (_closed && input != _input)
+            throw new InvalidOperationException($"Grammar tool input for '{grammar.InputProperty}' changed after it was closed.");
+        _ = Advance(input, close: true);
+        return CreateArguments();
+    }
+
+    private string? Advance(string nextInput, bool close)
+    {
+        if (!nextInput.StartsWith(_input, StringComparison.Ordinal))
+            throw new InvalidOperationException($"Grammar tool input for '{grammar.InputProperty}' changed non-monotonically.");
+        var inputDelta = nextInput[_input.Length..];
+        if (!close && inputDelta.Length == 0) return null;
+
+        var delta = string.Empty;
+        if (!_started)
+        {
+            delta = $"{{{JsonSerializer.Serialize(grammar.InputProperty)}:\"";
+            _started = true;
+        }
+        delta += JsonSerializer.Serialize(inputDelta)[1..^1];
+        _input = nextInput;
+        if (close)
+        {
+            delta += "\"}";
+            _closed = true;
+        }
+        return delta;
+    }
+
+    private string CreateArguments()
+    {
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString(grammar.InputProperty, _input);
+            writer.WriteEndObject();
+        }
+        return Encoding.UTF8.GetString(buffer.ToArray());
+    }
+}
 
 internal sealed class OpenAiCodexRequestContext
 {
@@ -76,13 +145,14 @@ internal sealed class OpenAiCodexRequestContext
 }
 
 /// <summary>Passes stable session affinity to the Codex wire adapter without changing canonical history.</summary>
-internal sealed class OpenAiCodexChatOptionsClient(IChatClient inner, OpenAiCodexRequestContext requestContext)
+internal sealed class OpenAiCodexChatOptionsClient(IChatClient inner, OpenAiCodexRequestContext requestContext,
+    bool supportsGrammarTools)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
-        using var scope = requestContext.Push(new(ResolveSessionId(options)));
+        using var scope = requestContext.Push(new(ResolveSessionId(options), ResolveGrammarTools(options)));
         return await base.GetResponseAsync(messages, StripConversationSessionId(options), cancellationToken).ConfigureAwait(false);
     }
 
@@ -90,7 +160,7 @@ internal sealed class OpenAiCodexChatOptionsClient(IChatClient inner, OpenAiCode
         IEnumerable<ChatMessage> messages, ChatOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        using var scope = requestContext.Push(new(ResolveSessionId(options)));
+        using var scope = requestContext.Push(new(ResolveSessionId(options), ResolveGrammarTools(options)));
         await foreach (var update in base.GetStreamingResponseAsync(messages,
             StripConversationSessionId(options), cancellationToken)
             .WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -104,6 +174,60 @@ internal sealed class OpenAiCodexChatOptionsClient(IChatClient inner, OpenAiCode
             ? value as string : null;
         return ClampSessionId(conversationSessionId ?? options?.ConversationId ??
             OpenAiCodexRequestContext.GetCurrentSessionId());
+    }
+
+    private IReadOnlyDictionary<string, OpenAiCodexGrammarTool> ResolveGrammarTools(ChatOptions? options)
+    {
+        var grammarTools = new Dictionary<string, OpenAiCodexGrammarTool>(StringComparer.Ordinal);
+        if (!supportsGrammarTools || options?.Tools is null) return grammarTools;
+
+        foreach (var function in options.Tools.OfType<AIFunction>())
+        {
+            if (!function.AdditionalProperties.TryGetValue("constrainedSampling", out var configured) ||
+                configured is not JsonElement policy || policy.ValueKind != JsonValueKind.Object ||
+                !policy.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String ||
+                type.GetString() != "grammar")
+                continue;
+
+            var variants = policy.TryGetProperty("variants", out var variantsElement) &&
+                variantsElement.ValueKind == JsonValueKind.Object ? variantsElement : default;
+            var lark = ReadNonEmptyString(variants, "openai_lark");
+            var regex = ReadNonEmptyString(variants, "openai_regex");
+            if (lark is null && regex is null)
+                throw new InvalidOperationException($"Tool \"{function.Name}\" cannot use grammar constrained sampling: no supported grammar variant was provided.");
+
+            var inputProperty = ResolveGrammarInputProperty(function);
+            grammarTools[function.Name] = new(function.Name, function.Description,
+                lark is not null ? "lark" : "regex", lark ?? regex!, inputProperty);
+        }
+
+        return grammarTools;
+    }
+
+    private static string? ReadNonEmptyString(JsonElement parent, string property) =>
+        parent.ValueKind == JsonValueKind.Object && parent.TryGetProperty(property, out var value) &&
+        value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(value.GetString())
+            ? value.GetString()
+            : null;
+
+    private static string ResolveGrammarInputProperty(AIFunction function)
+    {
+        var schema = function.JsonSchema;
+        if (schema.ValueKind != JsonValueKind.Object || !schema.TryGetProperty("type", out var type) ||
+            type.ValueKind != JsonValueKind.String || type.GetString() != "object")
+            throw new InvalidOperationException($"Tool \"{function.Name}\" cannot use grammar constrained sampling: grammar constrained sampling requires an object parameter schema.");
+
+        if (!schema.TryGetProperty("required", out var required) || required.ValueKind != JsonValueKind.Array ||
+            required.GetArrayLength() != 1 || required[0].ValueKind != JsonValueKind.String)
+            throw new InvalidOperationException($"Tool \"{function.Name}\" cannot use grammar constrained sampling: grammar constrained sampling requires exactly one required string property.");
+
+        var inputProperty = required[0].GetString()!;
+        if (!schema.TryGetProperty("properties", out var properties) || properties.ValueKind != JsonValueKind.Object ||
+            !properties.TryGetProperty(inputProperty, out var input) || input.ValueKind != JsonValueKind.Object)
+            throw new InvalidOperationException($"Tool \"{function.Name}\" cannot use grammar constrained sampling: grammar constrained sampling requires a properties entry for {inputProperty}.");
+        if (!input.TryGetProperty("type", out type) || type.ValueKind != JsonValueKind.String || type.GetString() != "string")
+            throw new InvalidOperationException($"Tool \"{function.Name}\" cannot use grammar constrained sampling: grammar constrained sampling property {inputProperty} must have type string.");
+        return inputProperty;
     }
 
     private static ChatOptions? StripConversationSessionId(ChatOptions? options)
@@ -177,14 +301,19 @@ internal sealed class OpenAiCodexRequestHandler : DelegatingHandler
                 request.Headers.Remove("x-client-request-id");
                 request.Headers.TryAddWithoutValidation("x-client-request-id", sessionId);
             }
-            await ProjectBodyAsync(request, metadata.SessionId, cancellationToken).ConfigureAwait(false);
+            await ProjectBodyAsync(request, metadata, cancellationToken).ConfigureAwait(false);
         }
         else
         {
             await ProjectBodyAsync(request, null, cancellationToken).ConfigureAwait(false);
         }
 
-        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        if (_requestContext.Current is { GrammarTools.Count: > 0 } responseMetadata &&
+            response.Content.Headers.ContentType?.MediaType?.Equals("text/event-stream", StringComparison.OrdinalIgnoreCase) == true)
+            await OpenAiCodexGrammarSseStream.ProjectAsync(response, responseMetadata.GrammarTools, cancellationToken)
+                .ConfigureAwait(false);
+        return response;
     }
 
     private static Uri ResolveCodexUri(Uri uri)
@@ -197,10 +326,12 @@ internal sealed class OpenAiCodexRequestHandler : DelegatingHandler
         return new UriBuilder(uri) { Path = path }.Uri;
     }
 
-    private static async Task ProjectBodyAsync(HttpRequestMessage request, string? sessionId,
+    private static async Task ProjectBodyAsync(HttpRequestMessage request, OpenAiCodexRequestMetadata? metadata,
         CancellationToken cancellationToken)
     {
         if (request.Content is not { } content) return;
+        var sessionId = metadata?.SessionId;
+        var grammarTools = metadata?.GrammarTools ?? new Dictionary<string, OpenAiCodexGrammarTool>(StringComparer.Ordinal);
         var bytes = await content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(bytes);
         if (document.RootElement.ValueKind != JsonValueKind.Object) return;
@@ -246,6 +377,8 @@ internal sealed class OpenAiCodexRequestHandler : DelegatingHandler
                 {
                     // ConversationId is PiSharp's stable session affinity key, not a Responses id.
                 }
+                else if (property.NameEquals("tools")) WriteTools(writer, property.Value, grammarTools);
+                else if (property.NameEquals("input")) WriteInput(writer, property.Value, grammarTools);
                 else property.WriteTo(writer);
             }
 
@@ -266,6 +399,138 @@ internal sealed class OpenAiCodexRequestHandler : DelegatingHandler
                 projected.Headers.TryAddWithoutValidation(header.Key, header.Value);
         request.Content = projected;
         content.Dispose();
+    }
+
+    private static void WriteTools(Utf8JsonWriter writer, JsonElement tools,
+        IReadOnlyDictionary<string, OpenAiCodexGrammarTool> grammarTools)
+    {
+        writer.WritePropertyName("tools");
+        if (tools.ValueKind != JsonValueKind.Array)
+        {
+            tools.WriteTo(writer);
+            return;
+        }
+
+        writer.WriteStartArray();
+        foreach (var tool in tools.EnumerateArray())
+        {
+            if (tool.ValueKind != JsonValueKind.Object || !tool.TryGetProperty("name", out var name) ||
+                name.ValueKind != JsonValueKind.String || !grammarTools.TryGetValue(name.GetString()!, out var grammar))
+            {
+                tool.WriteTo(writer);
+                continue;
+            }
+
+            writer.WriteStartObject();
+            writer.WriteString("type", "custom");
+            writer.WriteString("name", grammar.Name);
+            if (grammar.Description is not null) writer.WriteString("description", grammar.Description);
+            writer.WritePropertyName("format");
+            writer.WriteStartObject();
+            writer.WriteString("type", "grammar");
+            writer.WriteString("syntax", grammar.Syntax);
+            writer.WriteString("definition", grammar.Definition);
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray();
+    }
+
+    private static void WriteInput(Utf8JsonWriter writer, JsonElement input,
+        IReadOnlyDictionary<string, OpenAiCodexGrammarTool> grammarTools)
+    {
+        writer.WritePropertyName("input");
+        if (input.ValueKind != JsonValueKind.Array || grammarTools.Count == 0)
+        {
+            input.WriteTo(writer);
+            return;
+        }
+
+        var callTools = new Dictionary<string, OpenAiCodexGrammarTool>(StringComparer.Ordinal);
+        writer.WriteStartArray();
+        foreach (var item in input.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object || !item.TryGetProperty("type", out var type) ||
+                type.ValueKind != JsonValueKind.String)
+            {
+                item.WriteTo(writer);
+                continue;
+            }
+
+            if (type.GetString() == "function_call" && TryGetGrammarCall(item, grammarTools, out var grammar, out var callId, out var callInput))
+            {
+                if (callId is { Length: > 0 }) callTools[callId] = grammar;
+                WriteCustomCall(writer, item, grammar.Name, callInput);
+            }
+            else if (type.GetString() == "function_call_output" &&
+                item.TryGetProperty("call_id", out var outputCallId) && outputCallId.ValueKind == JsonValueKind.String &&
+                callTools.TryGetValue(outputCallId.GetString()!, out _))
+            {
+                writer.WriteStartObject();
+                writer.WriteString("type", "custom_tool_call_output");
+                writer.WritePropertyName("call_id");
+                outputCallId.WriteTo(writer);
+                if (item.TryGetProperty("output", out var output))
+                {
+                    writer.WritePropertyName("output");
+                    output.WriteTo(writer);
+                }
+                writer.WriteEndObject();
+            }
+            else item.WriteTo(writer);
+        }
+        writer.WriteEndArray();
+    }
+
+    private static bool TryGetGrammarCall(JsonElement item,
+        IReadOnlyDictionary<string, OpenAiCodexGrammarTool> grammarTools, out OpenAiCodexGrammarTool grammar,
+        out string? callId, out string callInput)
+    {
+        grammar = null!;
+        callId = null;
+        callInput = string.Empty;
+        if (!item.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String ||
+            !grammarTools.TryGetValue(name.GetString()!, out var resolvedGrammar) ||
+            !item.TryGetProperty("arguments", out var arguments) || arguments.ValueKind != JsonValueKind.String)
+            return false;
+
+        grammar = resolvedGrammar;
+
+        try
+        {
+            using var document = JsonDocument.Parse(arguments.GetString()!);
+            if (document.RootElement.ValueKind != JsonValueKind.Object ||
+                !document.RootElement.TryGetProperty(grammar.InputProperty, out var value) ||
+                value.ValueKind != JsonValueKind.String)
+                return false;
+            callInput = value.GetString()!;
+            if (item.TryGetProperty("call_id", out var callIdElement) && callIdElement.ValueKind == JsonValueKind.String)
+                callId = callIdElement.GetString();
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static void WriteCustomCall(Utf8JsonWriter writer, JsonElement source, string name, string input)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("type", "custom_tool_call");
+        if (source.TryGetProperty("call_id", out var callId))
+        {
+            writer.WritePropertyName("call_id");
+            callId.WriteTo(writer);
+        }
+        writer.WriteString("name", name);
+        writer.WriteString("input", input);
+        if (source.TryGetProperty("namespace", out var itemNamespace))
+        {
+            writer.WritePropertyName("namespace");
+            itemNamespace.WriteTo(writer);
+        }
+        writer.WriteEndObject();
     }
 
     private static void WriteInclude(Utf8JsonWriter writer, JsonElement? existing)

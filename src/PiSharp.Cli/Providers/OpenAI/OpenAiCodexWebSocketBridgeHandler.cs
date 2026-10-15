@@ -4,11 +4,13 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace PiSharp.Cli;
 
 /// <summary>Uses Codex's Responses WebSocket transport while preserving the SDK's SSE event reader.</summary>
-internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler innerHandler, TimeSpan connectTimeout)
+internal sealed class OpenAiCodexWebSocketBridgeHandler(OpenAiCodexRequestContext requestContext,
+    HttpMessageHandler innerHandler, TimeSpan connectTimeout)
     : DelegatingHandler(innerHandler)
 {
     private const string WebSocketBeta = "responses_websockets=2026-02-06";
@@ -105,6 +107,7 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
                 {
                     RequestMessage = request,
                     Content = new WebSocketEventContent(socket, firstEvent,
+                        requestContext.Current?.GrammarTools ?? new Dictionary<string, OpenAiCodexGrammarTool>(StringComparer.Ordinal),
                         responseEvent => connection.Continuation = CreateContinuation(originalBody, responseEvent),
                         keepConnection => Release(connection, cacheable, keepConnection))
                 };
@@ -570,10 +573,11 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
     {
         private readonly WebSocketEventStream _stream;
 
-        public WebSocketEventContent(ClientWebSocket socket, string firstEvent, Action<JsonElement> onCompleted,
-            Action<bool> release)
+        public WebSocketEventContent(ClientWebSocket socket, string firstEvent,
+            IReadOnlyDictionary<string, OpenAiCodexGrammarTool> grammarTools,
+            Action<JsonElement> onCompleted, Action<bool> release)
         {
-            _stream = new WebSocketEventStream(socket, firstEvent, onCompleted, release);
+            _stream = new WebSocketEventStream(socket, firstEvent, grammarTools, onCompleted, release);
             Headers.ContentType = new("text/event-stream");
         }
 
@@ -602,6 +606,7 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
     }
 
     private sealed class WebSocketEventStream(ClientWebSocket socket, string firstEvent,
+        IReadOnlyDictionary<string, OpenAiCodexGrammarTool> grammarTools,
         Action<JsonElement> onCompleted, Action<bool> release) : Stream
     {
         private string? _firstEvent = firstEvent;
@@ -611,6 +616,7 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
         private bool _emitDone;
         private bool _doneEmitted;
         private bool _released;
+        private readonly Dictionary<string, OpenAiCodexGrammarCallState> _customCalls = new(StringComparer.Ordinal);
 
         public override bool CanRead => !_released;
         public override bool CanSeek => false;
@@ -668,7 +674,8 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
                 _sawSuccessfulCompletion = successfulCompletion;
                 if (successfulCompletion) onCompleted(document.RootElement);
                 _emitDone = terminal;
-                _pending = Encoding.UTF8.GetBytes($"data: {eventJson}\n\n");
+                var projectedEvent = ProjectCustomToolEvent(document.RootElement, eventType, grammarTools, _customCalls);
+                _pending = Encoding.UTF8.GetBytes($"data: {projectedEvent}\n\n");
                 _pendingOffset = 0;
                 return CopyPending(destination);
             }
@@ -700,4 +707,77 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
             base.Dispose(disposing);
         }
     }
+
+    internal static string ProjectCustomToolEvent(JsonElement source, string? eventType,
+        IReadOnlyDictionary<string, OpenAiCodexGrammarTool> grammarTools,
+        IDictionary<string, OpenAiCodexGrammarCallState> customCalls)
+    {
+        if (grammarTools.Count == 0 || eventType is null) return source.GetRawText();
+        var root = JsonNode.Parse(source.GetRawText())?.AsObject();
+        if (root is null) return source.GetRawText();
+
+        if (eventType is "response.output_item.added" or "response.output_item.done" &&
+            root["item"] is JsonObject item)
+        {
+            if (TryProjectCustomCallItem(item, grammarTools, customCalls,
+                eventType == "response.output_item.added")) return root.ToJsonString();
+        }
+        else if (eventType == "response.custom_tool_call_input.delta")
+        {
+            var itemId = ReadString(root["item_id"]);
+            var delta = ReadString(root["delta"]);
+            if (itemId is not null && delta is not null && customCalls.TryGetValue(itemId, out var state) &&
+                state.Append(delta) is { } argumentsDelta)
+            {
+                root["type"] = "response.function_call_arguments.delta";
+                root["delta"] = argumentsDelta;
+                return root.ToJsonString();
+            }
+        }
+        else if (eventType == "response.custom_tool_call_input.done")
+        {
+            var itemId = ReadString(root["item_id"]);
+            var input = ReadString(root["input"]);
+            if (itemId is not null && input is not null && customCalls.TryGetValue(itemId, out var state))
+            {
+                root["type"] = "response.function_call_arguments.done";
+                root.Remove("input");
+                root["arguments"] = state.Complete(input);
+                return root.ToJsonString();
+            }
+        }
+        else if (eventType is "response.completed" or "response.done" or "response.incomplete" &&
+            root["response"] is JsonObject response && response["output"] is JsonArray output)
+        {
+            foreach (var outputItem in output.OfType<JsonObject>())
+                TryProjectCustomCallItem(outputItem, grammarTools, customCalls, isAdded: false);
+            return root.ToJsonString();
+        }
+
+        return source.GetRawText();
+    }
+
+    private static bool TryProjectCustomCallItem(JsonObject item,
+        IReadOnlyDictionary<string, OpenAiCodexGrammarTool> grammarTools,
+        IDictionary<string, OpenAiCodexGrammarCallState> customCalls, bool isAdded)
+    {
+        if (!string.Equals(ReadString(item["type"]), "custom_tool_call", StringComparison.Ordinal) ||
+            ReadString(item["name"]) is not { } name || !grammarTools.TryGetValue(name, out var grammar))
+            return false;
+
+        var itemId = ReadString(item["id"]);
+        var state = itemId is not null && customCalls.TryGetValue(itemId, out var existing)
+            ? existing
+            : new OpenAiCodexGrammarCallState(grammar);
+        if (itemId is not null) customCalls[itemId] = state;
+        var input = isAdded ? string.Empty : ReadString(item["input"]) ?? string.Empty;
+        item["type"] = "function_call";
+        item.Remove("input");
+        item["arguments"] = isAdded ? string.Empty : state.Complete(input);
+        return true;
+    }
+
+    private static string? ReadString(JsonNode? value) =>
+        value is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var result) ? result : null;
+
 }
