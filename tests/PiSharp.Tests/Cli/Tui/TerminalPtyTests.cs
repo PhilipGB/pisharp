@@ -545,11 +545,13 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
-    public async Task SessionDiscoveryResumeAndCloneWorkThroughLinuxPty()
+    public async Task SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-session-pty-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(cwd, "agent");
         Directory.CreateDirectory(cwd);
+        Directory.CreateDirectory(agentDirectory);
         try
         {
             var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
@@ -560,8 +562,9 @@ public sealed class TerminalPtyTests
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                ArgumentList = { "-q", "-e", "-c", $"stty rows 24 cols 80; dotnet '{assembly}' --local --session-dir '{cwd}/sessions' --no-tools", "/dev/null" }
+                ArgumentList = { "-q", "-e", "-c", $"stty ixon rows 24 cols 80; dotnet '{assembly}' --local --session-dir '{cwd}/sessions' --no-tools; stty -a", "/dev/null" }
             };
+            start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
             using var process = Process.Start(start);
             Assert.NotNull(process);
             var output = new StringBuilder();
@@ -610,14 +613,19 @@ public sealed class TerminalPtyTests
             var stderr = process.StandardError.ReadToEndAsync();
             using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             await inputReady.Task.WaitAsync(limit.Token);
-            await process.StandardInput.WriteAsync("/name first\n/new\n/name second\n/sessions\n/resume first\n/resume\n");
+            await process.StandardInput.WriteAsync("/name first\n/new\n/name second\n/sessions\n/resume first\n/resume second\n/resume\n");
             await process.StandardInput.FlushAsync();
             await pickerOpened.Task.WaitAsync(limit.Token);
+            var firstId = (await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store))
+                .Single(session => session.Name == "first").Id[..12];
             var secondId = (await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store))
                 .Single(session => session.Name == "second").Id[..12];
-            await process.StandardInput.WriteAsync("second\r");
+            await process.StandardInput.WriteAsync("\u0013"); // Ctrl+S switches the picker to name order.
             await process.StandardInput.FlushAsync();
-            await WaitForOutputAsync(captured => captured.Contains($"Resumed {secondId}", StringComparison.Ordinal), limit.Token);
+            await WaitForOutputAsync(captured => captured.Contains("Resume session · Name", StringComparison.Ordinal), limit.Token);
+            await process.StandardInput.WriteAsync("\u001b[H\r"); // Home, then resume the first name-sorted session.
+            await process.StandardInput.FlushAsync();
+            await WaitForOutputAsync(captured => captured.Contains($"Resumed {firstId}", StringComparison.Ordinal), limit.Token);
             await process.StandardInput.WriteAsync($"/session\n/export {cwd}/export.html\n/clone\n/session\n/quit\n");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
@@ -630,8 +638,10 @@ public sealed class TerminalPtyTests
                 .Select(match => match.Groups[1].Value).ToArray();
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("Resumed", capturedOutput);
-            Assert.Contains("Resume session", capturedOutput);
+            Assert.Contains("Resume session · Name", capturedOutput);
+            Assert.Contains(firstId, resumedIds);
             Assert.Contains(resumedIds, id => secondIds.Contains(id));
+            Assert.Matches(@"(?<!-)ixon\b", capturedOutput);
             Assert.Contains("clone:", capturedOutput);
             Assert.Contains("Exported private HTML", capturedOutput);
             Assert.Contains("PiSharp session", await File.ReadAllTextAsync(Path.Combine(cwd, "export.html")));

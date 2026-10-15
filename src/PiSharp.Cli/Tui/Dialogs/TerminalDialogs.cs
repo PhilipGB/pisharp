@@ -6,13 +6,15 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
     public TerminalSelection<T>? ShowSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
-        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items")
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null)
     {
         if (getScreen() is not { IsActive: true } screen) return null;
         var input = getInput();
         using var mode = TerminalMode.Enter(screen);
         return new TerminalOverlayHost(input).Select(screen, title, options, selectedKey, scopedOptions,
-            allLabel, scopedLabel, emptyMessage);
+            allLabel, scopedLabel, emptyMessage, actionHint, handleInput);
     }
 
     public TerminalSelection<T>? ShowModelSelectionList<T>(

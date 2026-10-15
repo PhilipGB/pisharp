@@ -39,6 +39,7 @@ public sealed class TerminalEditor
     public string Draft => _buffer.Text;
     public string Hotkeys => _keymap.FormatHotkeys();
     internal string? GetDisplayKeys(string action) => _keymap.GetDisplayKeys(action);
+    internal bool MatchesKeybinding(string action, ConsoleKeyInfo key) => _keymap.Matches(action, key);
     internal TerminalTheme CurrentTheme => _screen?.CurrentTheme ?? TerminalTheme.Default;
     internal string? ActiveAuthorizationUrl => _screen?.ActiveAuthorizationUrl;
     internal bool IsScreenActive => _screen is { IsActive: true };
@@ -89,8 +90,11 @@ public sealed class TerminalEditor
     internal TerminalSelection<T>? ShowSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
-        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items") =>
-        _dialogs.ShowSelectionList(title, options, selectedKey, scopedOptions, allLabel, scopedLabel, emptyMessage);
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null) =>
+        _dialogs.ShowSelectionList(title, options, selectedKey, scopedOptions, allLabel, scopedLabel, emptyMessage,
+            actionHint, handleInput);
 
     internal TerminalSelection<T>? ShowModelSelectionList<T>(
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey, string hint,

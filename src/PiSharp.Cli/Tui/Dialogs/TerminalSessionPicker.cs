@@ -10,11 +10,33 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
         CancellationToken cancellationToken = default)
     {
         var sessions = await SessionCatalog.ListAsync(store, cancellationToken);
-        var options = sessions.Select(session => ToOption(session, currentPath)).ToArray();
+        var sortByName = false;
+        var options = ToOptions(sessions, currentPath, sortByName);
         var current = sessions.FirstOrDefault(session => PathsEqual(session.Path, currentPath));
-        var chosen = editor.ShowSelectionList("Resume session", options, current is null ? null : Key(current),
-            emptyMessage: "No saved sessions in this project");
+        var sortKey = editor.GetDisplayKeys("app.session.toggleSort");
+        var chosen = editor.ShowSelectionList("Resume session · Recent", options,
+            current is null ? null : Key(current), emptyMessage: "No saved sessions in this project",
+            actionHint: sortKey is null ? null : $"{sortKey} sort",
+            handleInput: (list, input) =>
+            {
+                if (input.Key is not { } key || !editor.MatchesKeybinding("app.session.toggleSort", key)) return false;
+                sortByName = !sortByName;
+                list.SetTitle($"Resume session · {(sortByName ? "Name" : "Recent")}");
+                list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName), scopedOptions: null);
+                return true;
+            });
         return chosen?.Option.Value;
+    }
+
+    private static IReadOnlyList<TerminalSelectionOption<SessionListing>> ToOptions(
+        IReadOnlyList<SessionListing> sessions, string? currentPath, bool sortByName)
+    {
+        IEnumerable<SessionListing> ordered = sortByName
+            ? sessions.OrderBy(session => string.IsNullOrWhiteSpace(session.Name) ? 1 : 0)
+                .ThenBy(session => session.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(session => session.Id, StringComparer.Ordinal)
+            : sessions;
+        return ordered.Select(session => ToOption(session, currentPath)).ToArray();
     }
 
     private static TerminalSelectionOption<SessionListing> ToOption(SessionListing session, string? currentPath)

@@ -6,11 +6,13 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
     public TerminalSelection<T>? Select<T>(TerminalScreen screen, string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
-        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items")
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null)
     {
         ArgumentNullException.ThrowIfNull(screen);
         var list = new TerminalSelectionList<T>(title, options, selectedKey, scopedOptions,
-            allLabel, scopedLabel, emptyMessage);
+            allLabel, scopedLabel, emptyMessage, actionHint);
         try
         {
             while (screen.IsActive)
@@ -25,6 +27,7 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
                 }
                 else next = input.Read();
                 if (next.IsEndOfStream) return null;
+                if (handleInput?.Invoke(list, next) == true) continue;
                 if (list.Selected is null && TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                 var mouseContentLine = next.Mouse is { } mouse
                     ? TerminalOverlayLayout.ContentLineAt(content, screen.TerminalWidth, screen.TerminalHeight,
