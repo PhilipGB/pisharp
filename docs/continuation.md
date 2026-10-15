@@ -11,7 +11,7 @@ user-facing application features. Keep the configured Pi checkout pinned at
 The last green exact-head checkpoint was the docs-only `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
 Current integrated product source is
-`95eaf93c1aeea51d1916c59d97a5bce2b901e508` on
+`2a9de290009243903ff6adbe04f8b611790c7b98` on
 `parity/current-pi-completion`. Codex coverage includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
 account/session WebSocket reuse, cached `previous_response_id` deltas, MAF
@@ -36,9 +36,12 @@ fixtures verify steering reaches the first request, compaction retains trailing
 steering after a completed tool result, retry restoration failures settle, and
 RPC validates a replacement provider before cancelling the active run. Recent
 session discovery skips a malformed newer session whose selected head is
-missing and continues to an older valid session. The full local suite passes
-**2,085/2,085** with zero skips; full solution format and the warnings-as-errors
-build pass with zero warnings. Exact-head CI for this product
+missing and continues to an older valid session. The project session picker
+toggles recent/name sorting with Ctrl+S while preserving the selected session,
+including when a search is active. Linux terminal mode restores XON/XOFF after
+using the shortcut. The full local suite passes **2,086/2,086** with zero skips;
+full solution format and the
+warnings-as-errors build pass with zero warnings. Exact-head CI for this product
 source is pending; the last green exact-head checkpoint remains docs-only
 `c7b8a304` at run
 [38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
