@@ -219,7 +219,7 @@ public sealed class AzureOpenAiProviderTests
             using var continuation = JsonDocument.Parse(requests[1]);
             Assert.Contains(continuation.RootElement.GetProperty("input").EnumerateArray(), item =>
                 item.TryGetProperty("type", out var type) && type.GetString() == "function_call_output" &&
-                item.GetProperty("output").GetString() == "echo:ping");
+                item.GetProperty("output").GetString() == "\"echo:ping\"");
         }
         finally
         {
