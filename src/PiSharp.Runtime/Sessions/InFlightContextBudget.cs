@@ -23,9 +23,10 @@ internal sealed class InFlightContextBudget(
         var users = Enumerable.Range(0, messages.Count).Where(i => messages[i].Role == ChatRole.User).ToArray();
         if (users.Length == 0)
             throw new InvalidOperationException("Tool-loop context exceeds the configured budget; no user turn can be summarized safely.");
+        var currentTurnStart = FindCurrentTurnStart(messages, users);
         var boundary = users[^1];
         var splitTurn = users.Length == 1 ||
-            AutoCompactionPolicy.Estimate(messages.Skip(boundary).ToArray(), "") > policy.TriggerTokens;
+            AutoCompactionPolicy.Estimate(messages.Skip(currentTurnStart).ToArray(), "") > policy.TriggerTokens;
         if (!splitTurn && policy.KeepRecentTokens is int keepRecent)
         {
             long estimated = 0;
@@ -40,8 +41,8 @@ internal sealed class InFlightContextBudget(
         }
         if (splitTurn)
         {
-            boundary = CompletedToolBoundary(messages, users[^1]);
-            if (boundary <= users[^1])
+            boundary = CompletedToolBoundary(messages, currentTurnStart);
+            if (boundary <= currentTurnStart)
                 throw new InvalidOperationException("Tool-loop context exceeds the configured budget; no completed tool call/result pair can be summarized safely.");
         }
         if (boundary <= users[0])
@@ -73,6 +74,33 @@ internal sealed class InFlightContextBudget(
             _cachedSummary = prefix is null ? null : summaryText;
         }
         return projected;
+    }
+
+    private static int FindCurrentTurnStart(IReadOnlyList<ChatMessage> messages, IReadOnlyList<int> users)
+    {
+        var latestUser = users[^1];
+        var lastToolCall = -1;
+        for (var index = latestUser - 1; index >= 0; index--)
+            if (messages[index].Contents.OfType<FunctionCallContent>().Any())
+            {
+                lastToolCall = index;
+                break;
+            }
+        if (lastToolCall < 0) return latestUser;
+
+        var lastToolResult = -1;
+        for (var index = latestUser - 1; index > lastToolCall; index--)
+            if (messages[index].Contents.OfType<FunctionResultContent>().Any())
+            {
+                lastToolResult = index;
+                break;
+            }
+        if (lastToolResult < 0 || messages.Skip(lastToolResult + 1).Take(latestUser - lastToolResult - 1)
+                .Any(message => message.Role == ChatRole.Assistant))
+            return latestUser;
+
+        // Steering can be appended after a tool result while the same turn is still waiting for its next request.
+        return users.LastOrDefault(user => user < lastToolCall, latestUser);
     }
 
     private static bool HasBalancedToolCalls(IReadOnlyList<ChatMessage> messages, int start, int end)
