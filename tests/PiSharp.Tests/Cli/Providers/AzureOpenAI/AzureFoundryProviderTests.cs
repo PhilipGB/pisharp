@@ -72,7 +72,7 @@ public sealed class AzureFoundryProviderTests
             var updates = new List<ChatResponseUpdate>();
             await foreach (var update in ProviderChatClientFactory.Create(selection, new ProviderRetrySettings(0, 10_000))
                 .GetStreamingResponseAsync(
-                    [new ChatMessage(ChatRole.System, "first"), new ChatMessage(ChatRole.Developer, "second"),
+                    [new ChatMessage(ChatRole.System, "first"), new ChatMessage(new ChatRole("developer"), "second"),
                         new ChatMessage(ChatRole.User, "hello")],
                     new ChatOptions { Reasoning = ThinkingLevels.ToOptions("high") }, deadline.Token))
             {
@@ -99,7 +99,7 @@ public sealed class AzureFoundryProviderTests
             Assert.False(body.RootElement.TryGetProperty("api-version", out _));
             var messages = body.RootElement.GetProperty("messages");
             Assert.Equal(["system", "system", "user"], messages.EnumerateArray()
-                .Select(message => message.GetProperty("role").GetString()).ToArray());
+                .Select(message => message.GetProperty("role").GetString()!).ToArray());
             Assert.Equal(JsonValueKind.String, messages[2].GetProperty("content").ValueKind);
             Assert.DoesNotContain("prompt_cache", requestBody, StringComparison.Ordinal);
         }
@@ -161,7 +161,7 @@ public sealed class AzureFoundryProviderTests
             using var continuation = JsonDocument.Parse(requests[1]);
             var messages = continuation.RootElement.GetProperty("messages");
             Assert.Contains(messages.EnumerateArray(), message => message.GetProperty("role").GetString() == "tool" &&
-                message.GetProperty("content").GetString() == "echo:ping");
+                message.GetProperty("content").GetString() == "\"echo:ping\"");
             Assert.Contains(messages.EnumerateArray(), message => message.GetProperty("role").GetString() == "assistant" &&
                 message.TryGetProperty("reasoning_content", out var reasoning) && reasoning.GetString() == string.Empty);
             Assert.All(requests, requestBody =>
@@ -213,7 +213,7 @@ public sealed class AzureFoundryProviderTests
             Assert.Equal("Bearer azure-key", authorization);
             Assert.Equal("/openai/v1/chat/completions", requestPath);
             using var body = JsonDocument.Parse(requestBody!);
-            Assert.Equal("deepseek-v4-pro", body.RootElement.GetProperty("model").GetString());
+            Assert.Equal("deployment-deepseek", body.RootElement.GetProperty("model").GetString());
         }
         finally
         {
@@ -247,7 +247,8 @@ public sealed class AzureFoundryProviderTests
         var environment = new Dictionary<string, string>
         {
             ["AZURE_OPENAI_BASE_URL"] = $"http://127.0.0.1:{port}/openai/v1",
-            ["AZURE_OPENAI_API_KEY"] = "azure-key"
+            ["AZURE_OPENAI_API_KEY"] = "azure-key",
+            ["AZURE_OPENAI_DEPLOYMENT_NAME_MAP"] = "deepseek-v4-pro=deployment-deepseek"
         };
         using var http = new HttpClient(new RejectUnexpectedRequestHandler());
         var runtime = await ProviderModelRuntime.CreateAsync(root, false,
