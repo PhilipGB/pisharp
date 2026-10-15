@@ -463,6 +463,8 @@ def main():
             project_installs[product] = run_cli(product, args.pi, args.pisharp, item['cwd'], item['env'],
                 ['install', git_source, '--local', '--approve'])
             assert project_installs[product]['exitCode'] == 0, project_installs[product]
+            results[product]['projectGitInstallOutput'] = normalized_command(
+                project_installs[product], item['root'], item['agent'])
             results[product]['projectSettingsAfterGit'] = package_sources(read_settings(item['cwd'] / '.pi/settings.json'))
             git_path = find_git_package(item['root'], 'managed-git-package')
             results[product]['gitHeadBeforeUpdate'] = git_head(git_path, item['env'])
@@ -472,6 +474,8 @@ def main():
             packages=results[product]['projectSettingsAfterGit'], head=results[product]['gitHeadBeforeUpdate'])
             for product in results})
         assert_pair('project Git lifecycle script effects', {product: results[product]['gitLifecycleCountsAfterInstall']
+            for product in results})
+        assert_pair('successful project Git install output', {product: results[product]['projectGitInstallOutput']
             for product in results})
         assert all(results[product]['gitHeadBeforeUpdate'] == git_fixture['v1_head'] for product in results)
 
@@ -520,6 +524,8 @@ def main():
             successful_updates[product] = run_cli(product, args.pi, args.pisharp, item['cwd'], item['env'],
                 ['update', '--extension', git_source, '--approve'])
             assert successful_updates[product]['exitCode'] == 0, successful_updates[product]
+            results[product]['successfulGitUpdateOutput'] = normalized_command(
+                successful_updates[product], item['root'], item['agent'])
             git_path = find_git_package(item['root'], 'managed-git-package')
             results[product]['gitHeadAfterUpdate'] = git_head(git_path, item['env'])
             results[product]['gitLifecycleCountsAfterUpdate'] = lifecycle_counts(item['markers'] / 'git',

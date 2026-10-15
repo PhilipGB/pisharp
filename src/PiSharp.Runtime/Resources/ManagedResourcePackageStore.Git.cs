@@ -198,7 +198,8 @@ public sealed partial class ManagedResourcePackageStore
             cloneArguments.Add(source.Repository);
             cloneArguments.Add(stage);
             await RunGitAsync(workingDirectory, cloneArguments, cancellationToken,
-                standardOutput: standardOutput, standardError: standardError);
+                standardOutput: standardOutput, standardError: standardError,
+                replaceOutputPath: stage, replaceOutputPathWith: packageRoot);
 
             if (source.Ref is not null)
             {
@@ -449,27 +450,37 @@ public sealed partial class ManagedResourcePackageStore
 
     private async Task<(int ExitCode, string StandardOutput, string StandardError)> RunGitAsync(
         string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken,
-        bool throwOnFailure = true, TextWriter? standardOutput = null, TextWriter? standardError = null)
+        bool throwOnFailure = true, TextWriter? standardOutput = null, TextWriter? standardError = null,
+        string? replaceOutputPath = null, string? replaceOutputPathWith = null)
     {
         var result = await RunProcessAsync("git", workingDirectory, arguments, cancellationToken);
-        if (standardOutput is not null && result.StandardOutput.Length > 0)
+        var output = result.StandardOutput;
+        var error = result.StandardError;
+        if (replaceOutputPath is not null && replaceOutputPathWith is not null)
         {
-            await standardOutput.WriteAsync(result.StandardOutput);
+            output = output.Replace(replaceOutputPath, replaceOutputPathWith, StringComparison.Ordinal);
+            error = error.Replace(replaceOutputPath, replaceOutputPathWith, StringComparison.Ordinal);
+        }
+        if (standardOutput is not null && output.Length > 0)
+        {
+            await standardOutput.WriteAsync(output);
             await standardOutput.FlushAsync();
         }
-        if (standardError is not null && result.StandardError.Length > 0)
+        if (standardError is not null && error.Length > 0)
         {
-            await standardError.WriteAsync(result.StandardError);
+            await standardError.WriteAsync(error);
             await standardError.FlushAsync();
         }
         if (throwOnFailure && result.ExitCode != 0)
         {
-            var details = string.IsNullOrWhiteSpace(result.StandardError)
-                ? result.StandardOutput.Trim()
-                : result.StandardError.Trim();
-            throw new IOException($"git {string.Join(' ', arguments)} failed (exit {result.ExitCode}). {details}");
+            var details = string.IsNullOrWhiteSpace(error) ? output.Trim() : error.Trim();
+            var command = string.Join(' ', arguments.Select(argument =>
+                replaceOutputPath is not null && replaceOutputPathWith is not null
+                    ? argument.Replace(replaceOutputPath, replaceOutputPathWith, StringComparison.Ordinal)
+                    : argument));
+            throw new IOException($"git {command} failed (exit {result.ExitCode}). {details}");
         }
-        return result;
+        return (result.ExitCode, output, error);
     }
 
     private async Task<(int ExitCode, string StandardOutput, string StandardError)> RunProcessAsync(
