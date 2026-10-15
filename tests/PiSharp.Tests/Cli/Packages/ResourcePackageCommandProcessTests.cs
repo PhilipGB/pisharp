@@ -168,7 +168,7 @@ public sealed class ResourcePackageCommandProcessTests
             "{\"name\":\"npm-diagnostic-forwarding\",\"version\":\"1.0.0\"}");
         var shim = Path.Combine(fixture.Root, "npm-with-diagnostic");
         await File.WriteAllTextAsync(shim,
-            "#!/bin/sh\nprintf 'npm install diagnostic\\n' >&2\nexec npm \"$@\"\n");
+            "#!/bin/sh\nprintf 'npm install output\\n'\nprintf 'npm install diagnostic\\n' >&2\nexec npm \"$@\"\n");
         File.SetUnixFileMode(shim, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         await File.WriteAllTextAsync(Path.Combine(fixture.AgentDirectory, "settings.json"),
             JsonSerializer.Serialize(new { npmCommand = new[] { shim } }));
@@ -176,6 +176,7 @@ public sealed class ResourcePackageCommandProcessTests
         var result = await RunAsync(fixture, "install", "npm:npm-diagnostic-forwarding@file:" + tarball);
 
         Assert.Equal(0, result.ExitCode);
+        Assert.Contains("npm install output", result.Output);
         Assert.Contains("npm install diagnostic", result.Error);
     }
 

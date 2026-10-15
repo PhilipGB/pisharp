@@ -105,7 +105,8 @@ public sealed partial class ManagedResourcePackageStore
 
     /// <summary>Removes one selected managed install. Local package sources are references and remain untouched.</summary>
     public async Task RemoveAsync(string workingDirectory, string source, string scope,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, TextWriter? standardOutput = null,
+        TextWriter? standardError = null)
     {
         var cwd = Path.GetFullPath(workingDirectory);
         var installRoot = Path.Combine(scope == "project" ? Path.Combine(cwd, ".pi") : _agentDirectory, "npm");
@@ -118,7 +119,7 @@ public sealed partial class ManagedResourcePackageStore
             if (Directory.Exists(packageRoot))
             {
                 var (exitCode, output, error) = await RunNpmAsync(cwd, GetNpmUninstallArguments(npm.Name, installRoot),
-                    _processEnvironmentOverrides, cancellationToken, forwardStandardError: true);
+                    _processEnvironmentOverrides, cancellationToken, standardOutput, standardError);
                 if (exitCode != 0)
                     throw new IOException($"Package manager uninstall failed for '{source}' (exit {exitCode}). " +
                         (string.IsNullOrWhiteSpace(error) ? output.Trim() : error.Trim()));
@@ -185,18 +186,20 @@ public sealed partial class ManagedResourcePackageStore
 
     /// <summary>Performs the explicit package CLI install/reconcile operation in exactly one scope.</summary>
     public async Task InstallSelectedAsync(string workingDirectory, string source, string scope,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, TextWriter? standardOutput = null,
+        TextWriter? standardError = null)
     {
         var cwd = Path.GetFullPath(workingDirectory);
         var scopeRoot = scope == "project" ? Path.Combine(cwd, ".pi") : _agentDirectory;
         if (TryParseNpmSource(source, out var npm))
         {
             await InstallAsync(cwd, Path.Combine(scopeRoot, "npm"), source, npm,
-                _processEnvironmentOverrides, cancellationToken, force: true);
+                _processEnvironmentOverrides, cancellationToken, force: true, standardOutput, standardError);
             return;
         }
         if (ManagedGitSource.TryParse(source, out var git))
-            await ReconcileGitAsync(cwd, Path.Combine(scopeRoot, "git"), git, cancellationToken);
+            await ReconcileGitAsync(cwd, Path.Combine(scopeRoot, "git"), git, cancellationToken,
+                standardOutput, standardError);
     }
 
     private static IReadOnlyList<ResourcePackageSource> SelectScopeDeclarations(
@@ -332,7 +335,8 @@ public sealed partial class ManagedResourcePackageStore
 
     private async Task InstallAsync(string workingDirectory, string installRoot, string source, NpmPackageSpec spec,
         IReadOnlyDictionary<string, string?> processEnvironmentOverrides,
-        CancellationToken cancellationToken, bool force = false)
+        CancellationToken cancellationToken, bool force = false, TextWriter? standardOutput = null,
+        TextWriter? standardError = null)
     {
         var rootKey = Path.GetFullPath(installRoot);
         var installLock = s_installLocks.GetOrAdd(rootKey, _ => new SemaphoreSlim(1, 1));
@@ -354,7 +358,7 @@ public sealed partial class ManagedResourcePackageStore
             cancellationToken.ThrowIfCancellationRequested();
             var (exitCode, output, errorOutput) = await RunNpmAsync(workingDirectory,
                 GetNpmInstallArguments(spec.InstallSpec, installRoot),
-                processEnvironmentOverrides, cancellationToken, forwardStandardError: true);
+                processEnvironmentOverrides, cancellationToken, standardOutput, standardError);
             if (exitCode != 0)
             {
                 var details = string.IsNullOrWhiteSpace(errorOutput) ? output.Trim() : errorOutput.Trim();
@@ -385,7 +389,7 @@ public sealed partial class ManagedResourcePackageStore
     private async Task<(int ExitCode, string StandardOutput, string StandardError)> RunNpmAsync(
         string workingDirectory, IReadOnlyList<string> arguments,
         IReadOnlyDictionary<string, string?> processEnvironmentOverrides, CancellationToken cancellationToken,
-        bool forwardStandardError = false)
+        TextWriter? standardOutput = null, TextWriter? standardError = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var process = new Process
@@ -413,8 +417,8 @@ public sealed partial class ManagedResourcePackageStore
             throw new IOException($"Could not start npm: {error.Message}", error);
         }
 
-        var standardOutput = ReadBoundedAsync(process.StandardOutput);
-        var standardError = ReadBoundedAsync(process.StandardError);
+        var standardOutputTask = ReadBoundedAsync(process.StandardOutput);
+        var standardErrorTask = ReadBoundedAsync(process.StandardError);
         try
         {
             await process.WaitForExitAsync(cancellationToken);
@@ -425,16 +429,21 @@ public sealed partial class ManagedResourcePackageStore
             catch (InvalidOperationException) { }
             catch (System.ComponentModel.Win32Exception) { }
             await process.WaitForExitAsync(CancellationToken.None);
-            await Task.WhenAll(standardOutput, standardError);
+            await Task.WhenAll(standardOutputTask, standardErrorTask);
             throw;
         }
 
-        var output = await standardOutput;
-        var standardErrorText = await standardError;
-        if (forwardStandardError && standardErrorText.Length > 0)
+        var output = await standardOutputTask;
+        var standardErrorText = await standardErrorTask;
+        if (standardOutput is not null && output.Length > 0)
         {
-            await Console.Error.WriteAsync(standardErrorText);
-            await Console.Error.FlushAsync();
+            await standardOutput.WriteAsync(output);
+            await standardOutput.FlushAsync();
+        }
+        if (standardError is not null && standardErrorText.Length > 0)
+        {
+            await standardError.WriteAsync(standardErrorText);
+            await standardError.FlushAsync();
         }
         return (process.ExitCode, output, standardErrorText);
     }

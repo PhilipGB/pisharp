@@ -248,7 +248,8 @@ internal static class ResourcePackageCommand
                         // Validate the destination document before making an acquisition attempt.
                         if (parsed.Local) _ = projectSettings ?? await UserSettings.LoadProjectAsync(cwd, cancellationToken);
                         if (ManagedResourcePackageStore.GetManagedPackageIdentity(source) is not null)
-                            await store.InstallSelectedAsync(cwd, source, scope, cancellationToken);
+                            await store.InstallSelectedAsync(cwd, source, scope, cancellationToken,
+                                standardOutput: output, standardError: error);
                         await UserSettingsWriter.UpdatePackageSourceAsync(settingsPath, source, storedSource, cwd, scopeBase,
                             remove: false, userScope: !parsed.Local, cancellationToken);
                         await output.WriteLineAsync($"Installed {source}");
@@ -262,7 +263,8 @@ internal static class ResourcePackageCommand
                         var scopeBase = parsed.Local ? Path.Combine(cwd, ".pi") : agent;
                         var settingsPath = parsed.Local ? projectSettingsPath : userSettingsPath;
                         if (parsed.Local) _ = projectSettings ?? await UserSettings.LoadProjectAsync(cwd, cancellationToken);
-                        await store.RemoveAsync(cwd, source, scope, cancellationToken);
+                        await store.RemoveAsync(cwd, source, scope, cancellationToken,
+                            standardOutput: output, standardError: error);
                         var removed = await UserSettingsWriter.UpdatePackageSourceAsync(settingsPath, source, source, cwd,
                             scopeBase, remove: true, userScope: !parsed.Local, cancellationToken);
                         if (!removed) return await FailAsync(error, $"No matching package found for {source}");
@@ -288,7 +290,8 @@ internal static class ResourcePackageCommand
                             return 0;
                         }
                         _ = await store.UpdateAsync(cwd, trusted, userPackages, projectPackages, source,
-                            offline: IsOfflineEnvironment(), cancellationToken: cancellationToken);
+                            offline: IsOfflineEnvironment(), cancellationToken: cancellationToken,
+                            standardOutput: output, standardError: error);
                         await output.WriteLineAsync(source is null ? "Updated packages" : $"Updated {source}");
                         return 0;
                     }

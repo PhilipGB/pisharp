@@ -92,13 +92,16 @@ def strip_ansi(value):
 
 def normalized_command(result, product_root, agent):
     def normalize(value):
-        return strip_ansi(value).replace(str(product_root), '<project-root>').replace(str(agent), '<agent>')
+        value = strip_ansi(value).replace(str(product_root), '<project-root>').replace(str(agent), '<agent>')
+        return re.sub(r'\b\d+(?:\.\d+)?(?:ms|s)\b', '<duration>', value)
     stdout = normalize(result['stdout']).strip()
     stderr = normalize(result['stderr']).strip()
     status_lines = [line.strip() for line in stdout.splitlines()
                     if re.match(r'^(Installed|Removed|Updated|No packages installed\.)', line.strip())]
+    stdout_lines = [line.strip() for line in stdout.splitlines() if line.strip()]
     diagnostics = [line for line in stderr.splitlines() if line.strip()]
-    return dict(exitCode=result['exitCode'], statusLines=status_lines, diagnostics=diagnostics)
+    return dict(exitCode=result['exitCode'], statusLines=status_lines, stdoutLines=stdout_lines,
+                diagnostics=diagnostics)
 
 
 def command_outcome(result, product_root, agent):
@@ -421,6 +424,8 @@ def main():
             for product, item in products.items():
                 results[product].setdefault('npmInstallDiagnostics', []).append(
                     normalized_command(command_results[product], item['root'], item['agent'])['diagnostics'])
+                results[product].setdefault('npmInstallStdout', []).append(
+                    normalized_command(command_results[product], item['root'], item['agent'])['stdoutLines'])
         for product, item in products.items():
             settings = read_settings(item['agent'] / 'settings.json')
             assert package_sources(settings) == npm_sources, settings
@@ -435,6 +440,8 @@ def main():
         assert_pair('user npm lifecycle script effects', {product: results[product]['npmLifecycleCounts']
             for product in results})
         assert_pair('successful npm install stderr diagnostics', {product: results[product]['npmInstallDiagnostics']
+            for product in results})
+        assert_pair('successful npm install stdout', {product: results[product]['npmInstallStdout']
             for product in results})
 
         list_results = {}
@@ -530,19 +537,25 @@ def main():
             results[product]['projectRpc'] = project_replays[product]
 
         # Remove the project package, then user packages; the list must return to empty.
-        project_removes, user_removes = {}, {}
+        project_removes, user_removes, npm_removes = {}, {}, {}
         for product, item in products.items():
             project_removes[product] = run_cli(product, args.pi, args.pisharp, item['cwd'], item['env'],
                 ['remove', git_source, '--local', '--approve'])
             assert project_removes[product]['exitCode'] == 0
             assert package_sources(read_settings(item['cwd'] / '.pi/settings.json')) == []
+            npm_removes[product] = []
             for source in reversed(npm_sources):
                 removal = run_cli(product, args.pi, args.pisharp, item['cwd'], item['env'], ['remove', source])
                 assert removal['exitCode'] == 0, removal
+                npm_removes[product].append(normalized_command(removal, item['root'], item['agent']))
             assert package_sources(read_settings(item['agent'] / 'settings.json')) == []
             user_removes[product] = run_cli(product, args.pi, args.pisharp, item['cwd'], item['env'], ['list'])
             assert user_removes[product]['exitCode'] == 0
             results[product]['emptyList'] = list_semantics(user_removes[product])
+            results[product]['npmRemoveOutputs'] = npm_removes[product]
+            results[product]['projectGitRemove'] = command_outcome(project_removes[product], item['root'], item['agent'])
+        assert_pair('npm uninstall command output', {product: results[product]['npmRemoveOutputs'] for product in results})
+        assert_pair('project Git removal command output', {product: results[product]['projectGitRemove'] for product in results})
         assert_pair('remove and empty list', {product: results[product]['emptyList'] for product in results})
         assert all(results[product]['emptyList'] == ['No packages installed.'] for product in results)
 

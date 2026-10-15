@@ -14,7 +14,8 @@ public sealed partial class ManagedResourcePackageStore
         IReadOnlyList<ResourcePackageSource>? projectPackages = null,
         string? source = null,
         bool offline = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, TextWriter? standardOutput = null,
+        TextWriter? standardError = null)
     {
         var targets = GetInstallTargets(workingDirectory, userPackages, projectPackages, trusted, source);
         if (offline) return await ResolveAsync(workingDirectory, trusted, userPackages, projectPackages,
@@ -23,10 +24,12 @@ public sealed partial class ManagedResourcePackageStore
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (ManagedGitSource.TryParse(target.Package.Source, out var git))
-                await ReconcileGitAsync(target.WorkingDirectory, target.GitInstallRoot, git, cancellationToken);
+                await ReconcileGitAsync(target.WorkingDirectory, target.GitInstallRoot, git, cancellationToken,
+                    standardOutput, standardError);
             else if (TryParseNpmSource(target.Package.Source, out var npm))
                 await InstallAsync(target.WorkingDirectory, target.NpmInstallRoot, target.Package.Source, npm,
-                    _processEnvironmentOverrides, cancellationToken);
+                    _processEnvironmentOverrides, cancellationToken, standardOutput: standardOutput,
+                    standardError: standardError);
         }
         return await ResolveAsync(workingDirectory, trusted, userPackages, projectPackages,
             offline: true, cancellationToken);
@@ -38,7 +41,8 @@ public sealed partial class ManagedResourcePackageStore
         IReadOnlyList<ResourcePackageSource>? projectPackages = null,
         string? source = null,
         bool offline = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, TextWriter? standardOutput = null,
+        TextWriter? standardError = null)
     {
         var targets = GetUpdateTargets(workingDirectory, userPackages, projectPackages, trusted, source);
         if (offline) return await ResolveAsync(workingDirectory, trusted, userPackages, projectPackages,
@@ -55,11 +59,13 @@ public sealed partial class ManagedResourcePackageStore
                 if (!await HasNpmPackageAsync(target.NpmInstallRoot, npm, cancellationToken))
                 {
                     await InstallAsync(target.WorkingDirectory, target.NpmInstallRoot, target.Package.Source, npm,
-                        _processEnvironmentOverrides, cancellationToken);
+                        _processEnvironmentOverrides, cancellationToken, standardOutput: standardOutput,
+                        standardError: standardError);
                 }
                 else if (await NpmHasAvailableUpdateAsync(target.WorkingDirectory, target.NpmInstallRoot, npm, cancellationToken))
                 {
-                    await UpdateNpmAsync(target.WorkingDirectory, target.NpmInstallRoot, target.Package.Source, npm, cancellationToken);
+                    await UpdateNpmAsync(target.WorkingDirectory, target.NpmInstallRoot, target.Package.Source,
+                        npm, cancellationToken, standardOutput, standardError);
                 }
             }
         }
@@ -144,11 +150,12 @@ public sealed partial class ManagedResourcePackageStore
     }
 
     private async Task ReconcileGitAsync(string workingDirectory, string installRoot, ManagedGitSource source,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, TextWriter? standardOutput = null,
+        TextWriter? standardError = null)
     {
         var packageRoot = GetGitPackageRoot(installRoot, source);
         await AcquireGitAsync(workingDirectory, packageRoot, source, installRoot,
-            reconcileExisting: true, cancellationToken);
+            reconcileExisting: true, cancellationToken, standardOutput, standardError);
     }
 
     private static string GetGitPackageRoot(string installRoot, ManagedGitSource source)
@@ -163,7 +170,8 @@ public sealed partial class ManagedResourcePackageStore
     }
 
     private async Task AcquireGitAsync(string workingDirectory, string packageRoot, ManagedGitSource source,
-        string gitInstallRoot, bool reconcileExisting, CancellationToken cancellationToken)
+        string gitInstallRoot, bool reconcileExisting, CancellationToken cancellationToken,
+        TextWriter? standardOutput = null, TextWriter? standardError = null)
     {
         var rootKey = Path.GetFullPath(packageRoot);
         var installLock = s_installLocks.GetOrAdd(rootKey, _ => new SemaphoreSlim(1, 1));
@@ -189,13 +197,16 @@ public sealed partial class ManagedResourcePackageStore
             }
             cloneArguments.Add(source.Repository);
             cloneArguments.Add(stage);
-            await RunGitAsync(workingDirectory, cloneArguments, cancellationToken);
+            await RunGitAsync(workingDirectory, cloneArguments, cancellationToken,
+                standardOutput: standardOutput, standardError: standardError);
 
             if (source.Ref is not null)
             {
                 ValidateGitReference(source.Ref);
-                await RunGitAsync(stage, ["-C", stage, "fetch", "origin", source.Ref], cancellationToken);
-                await RunGitAsync(stage, ["-C", stage, "checkout", "--detach", "FETCH_HEAD"], cancellationToken);
+                await RunGitAsync(stage, ["-C", stage, "fetch", "origin", source.Ref], cancellationToken,
+                    standardOutput: standardOutput, standardError: standardError);
+                await RunGitAsync(stage, ["-C", stage, "checkout", "--detach", "FETCH_HEAD"], cancellationToken,
+                    standardOutput: standardOutput, standardError: standardError);
             }
 
             var stagedHead = (await RunGitAsync(stage, ["-C", stage, "rev-parse", "HEAD"], cancellationToken)).StandardOutput.Trim();
@@ -208,7 +219,8 @@ public sealed partial class ManagedResourcePackageStore
             if (File.Exists(Path.Combine(stage, "package.json")))
             {
                 var (exitCode, output, errorOutput) = await RunNpmAsync(stage,
-                    GetGitDependencyInstallArguments(), _processEnvironmentOverrides, cancellationToken);
+                    GetGitDependencyInstallArguments(), _processEnvironmentOverrides, cancellationToken,
+                    standardOutput, standardError);
                 if (exitCode != 0)
                 {
                     var details = string.IsNullOrWhiteSpace(errorOutput) ? output.Trim() : errorOutput.Trim();
@@ -289,7 +301,7 @@ public sealed partial class ManagedResourcePackageStore
     }
 
     private async Task UpdateNpmAsync(string workingDirectory, string installRoot, string source, NpmPackageSpec spec,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, TextWriter? standardOutput, TextWriter? standardError)
     {
         var installLock = s_installLocks.GetOrAdd(Path.GetFullPath(installRoot), _ => new SemaphoreSlim(1, 1));
         await installLock.WaitAsync(cancellationToken);
@@ -298,7 +310,7 @@ public sealed partial class ManagedResourcePackageStore
             var installSpec = spec.Version is null ? spec.Name + "@latest" : spec.InstallSpec;
             var (exitCode, output, errorOutput) = await RunNpmAsync(workingDirectory,
                 GetNpmInstallArguments(installSpec, installRoot),
-                _processEnvironmentOverrides, cancellationToken);
+                _processEnvironmentOverrides, cancellationToken, standardOutput, standardError);
             if (exitCode != 0)
             {
                 var details = string.IsNullOrWhiteSpace(errorOutput) ? output.Trim() : errorOutput.Trim();
@@ -437,9 +449,19 @@ public sealed partial class ManagedResourcePackageStore
 
     private async Task<(int ExitCode, string StandardOutput, string StandardError)> RunGitAsync(
         string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken,
-        bool throwOnFailure = true)
+        bool throwOnFailure = true, TextWriter? standardOutput = null, TextWriter? standardError = null)
     {
         var result = await RunProcessAsync("git", workingDirectory, arguments, cancellationToken);
+        if (standardOutput is not null && result.StandardOutput.Length > 0)
+        {
+            await standardOutput.WriteAsync(result.StandardOutput);
+            await standardOutput.FlushAsync();
+        }
+        if (standardError is not null && result.StandardError.Length > 0)
+        {
+            await standardError.WriteAsync(result.StandardError);
+            await standardError.FlushAsync();
+        }
         if (throwOnFailure && result.ExitCode != 0)
         {
             var details = string.IsNullOrWhiteSpace(result.StandardError)
