@@ -4,6 +4,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using PiSharp.Cli;
+using PiSharp.Runtime;
 using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Tests;
@@ -276,6 +277,233 @@ public sealed class OpenAiCodexProviderTests
         Assert.Equal(2, websocketAttempts);
     }
 
+    [Fact]
+    public async Task CodexResponsesWebSocketPreservesFunctionCallUpdatesForTheAgentLoop()
+    {
+        using var listener = StartListener(out var port);
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync();
+            var accepted = await context.AcceptWebSocketAsync(null);
+            using var socket = accepted.WebSocket;
+            requestBody = await ReceiveWebSocketMessageAsync(socket);
+            var functionCall = new
+            {
+                id = "fc_codex",
+                type = "function_call",
+                status = "completed",
+                call_id = "call_codex",
+                name = "read_file",
+                arguments = "{\"path\":\"sample.txt\"}"
+            };
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.created",
+                response = new { id = "resp_tool", @object = "response", created_at = 1, model = "gpt-5.5", status = "in_progress", output = Array.Empty<object>() }
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.output_item.added",
+                output_index = 0,
+                item = new { id = "fc_codex", type = "function_call", status = "in_progress", call_id = "call_codex", name = "read_file", arguments = "" }
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.function_call_arguments.delta",
+                item_id = "fc_codex",
+                output_index = 0,
+                delta = "{\"path\":\"sample.txt\"}"
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.function_call_arguments.done",
+                item_id = "fc_codex",
+                output_index = 0,
+                arguments = "{\"path\":\"sample.txt\"}"
+            });
+            await SendWebSocketEventAsync(socket, new { type = "response.output_item.done", output_index = 0, item = functionCall });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.completed",
+                response = new
+                {
+                    id = "resp_tool",
+                    @object = "response",
+                    created_at = 1,
+                    model = "gpt-5.5",
+                    status = "completed",
+                    output = new object[] { functionCall }
+                }
+            });
+        });
+
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses");
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var selection = new ModelSelection(provider, model, CreateToken("account-fixture"), true, "fixture token");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var tool = Microsoft.Extensions.AI.AIFunctionFactory.Create((string path) => path, name: "read_file");
+        var options = new Microsoft.Extensions.AI.ChatOptions
+        {
+            ConversationId = "codex-tool-fixture",
+            Tools = [tool]
+        };
+        var calls = new List<Microsoft.Extensions.AI.FunctionCallContent>();
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "Read sample.txt")],
+            options, deadline.Token))
+            calls.AddRange(update.Contents.OfType<Microsoft.Extensions.AI.FunctionCallContent>());
+        await server.WaitAsync(deadline.Token);
+
+        Assert.NotEmpty(calls);
+        var call = calls.Last();
+        Assert.Equal("call_codex", call.CallId);
+        Assert.Equal("read_file", call.Name);
+        var arguments = JsonSerializer.SerializeToElement(call.Arguments);
+        Assert.Equal("sample.txt", arguments.GetProperty("path").GetString());
+        using var sent = JsonDocument.Parse(requestBody!);
+        Assert.Contains(sent.RootElement.GetProperty("tools").EnumerateArray(),
+            item => item.GetProperty("name").GetString() == "read_file");
+    }
+
+    [Fact]
+    public async Task CodexResponsesToolLoopSendsTheToolResultAsCachedWebSocketInput()
+    {
+        using var listener = StartListener(out var port);
+        string? firstRequest = null;
+        string? secondRequest = null;
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync();
+            var accepted = await context.AcceptWebSocketAsync(null);
+            using var socket = accepted.WebSocket;
+            firstRequest = await ReceiveWebSocketMessageAsync(socket);
+            var functionCall = new
+            {
+                id = "fc_echo",
+                type = "function_call",
+                status = "completed",
+                call_id = "call_echo",
+                name = "echo_ext",
+                arguments = "{\"text\":\"ping\"}"
+            };
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.created",
+                response = new { id = "resp_tool", @object = "response", created_at = 1, model = "gpt-5.5", status = "in_progress", output = Array.Empty<object>() }
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.output_item.added",
+                output_index = 0,
+                item = new { id = "fc_echo", type = "function_call", status = "in_progress", call_id = "call_echo", name = "echo_ext", arguments = "" }
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.function_call_arguments.done",
+                output_index = 0,
+                item_id = "fc_echo",
+                arguments = "{\"text\":\"ping\"}"
+            });
+            await SendWebSocketEventAsync(socket, new { type = "response.output_item.done", output_index = 0, item = functionCall });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.completed",
+                response = new
+                {
+                    id = "resp_tool",
+                    @object = "response",
+                    created_at = 1,
+                    model = "gpt-5.5",
+                    status = "completed",
+                    output = new object[] { functionCall }
+                }
+            });
+
+            secondRequest = await ReceiveWebSocketMessageAsync(socket);
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.created",
+                response = new { id = "resp_final", @object = "response", created_at = 2, model = "gpt-5.5", status = "in_progress", output = Array.Empty<object>() }
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.output_text.delta",
+                item_id = "msg_final",
+                output_index = 0,
+                content_index = 0,
+                delta = "done"
+            });
+            await SendWebSocketEventAsync(socket, new
+            {
+                type = "response.completed",
+                response = new { id = "resp_final", @object = "response", created_at = 2, model = "gpt-5.5", status = "completed", output = Array.Empty<object>() }
+            });
+        });
+
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses");
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var selection = new ModelSelection(provider, model, CreateToken("account-fixture"), true, "fixture token");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var echo = Microsoft.Extensions.AI.AIFunctionFactory.Create((string text) => "echo:" + text, name: "echo_ext");
+        var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()), extensionTools: [echo]);
+        var session = await agent.CreateSessionAsync(deadline.Token);
+        var output = new StringBuilder();
+        await foreach (var update in agent.RunStreamingAsync("use echo", session, deadline.Token))
+            if (update.Text is { } text) output.Append(text);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("done", output.ToString());
+        using var first = JsonDocument.Parse(firstRequest!);
+        using var second = JsonDocument.Parse(secondRequest!);
+        Assert.Equal("response.create", first.RootElement.GetProperty("type").GetString());
+        Assert.Equal("resp_tool", second.RootElement.GetProperty("previous_response_id").GetString());
+        var input = Assert.Single(second.RootElement.GetProperty("input").EnumerateArray());
+        Assert.Equal("function_call_output", input.GetProperty("type").GetString());
+        using var toolResult = JsonDocument.Parse(input.GetProperty("output").GetString()!);
+        Assert.Equal("echo:ping", toolResult.RootElement.GetString());
+    }
+
+    [Fact]
+    public async Task CodexResponsesWebSocketCancellationBeforeFirstEventPropagates()
+    {
+        using var listener = StartListener(out var port);
+        var requestReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync();
+            var accepted = await context.AcceptWebSocketAsync(null);
+            using var socket = accepted.WebSocket;
+            _ = await ReceiveWebSocketMessageAsync(socket);
+            requestReceived.TrySetResult();
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+        });
+
+        var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+            Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+            Input: ["text", "image"], Api: "openai-codex-responses");
+        var provider = new ProviderProfile("openai-codex", "OpenAI Codex",
+            new Uri($"http://127.0.0.1:{port}/backend-api"), true, false, null, null, [model], Api: "openai-codex-responses");
+        var selection = new ModelSelection(provider, model, CreateToken("account-fixture"), true, "fixture token");
+        using var client = ProviderChatClientFactory.Create(selection);
+        using var cancellation = new CancellationTokenSource();
+        var request = ReadTextAsync(client, "Wait for response",
+            new Microsoft.Extensions.AI.ChatOptions { ConversationId = "codex-cancel-fixture" }, cancellation.Token);
+        await requestReceived.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => request);
+        await server.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
     private static async Task<string> ReadTextAsync(Microsoft.Extensions.AI.IChatClient client, string prompt,
         Microsoft.Extensions.AI.ChatOptions options, CancellationToken cancellationToken)
         => await ReadMessagesAsync(client,
@@ -364,6 +592,12 @@ public sealed class OpenAiCodexProviderTests
                 error = new { code, message = "Cached response not found." }
             }
         });
+        await socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    private static async Task SendWebSocketEventAsync(WebSocket socket, object value)
+    {
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(value);
         await socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
     }
 

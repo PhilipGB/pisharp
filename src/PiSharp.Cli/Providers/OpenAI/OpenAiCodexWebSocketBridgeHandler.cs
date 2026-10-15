@@ -259,7 +259,7 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
         for (var index = 0; index < continuation.ResponseItems.Length; index++)
         {
             using var responseItem = JsonDocument.Parse(continuation.ResponseItems[index]);
-            if (!JsonElementsEqual(currentItems[previousItems.Length + index], responseItem.RootElement)) return false;
+            if (!ContinuationItemsEqual(currentItems[previousItems.Length + index], responseItem.RootElement)) return false;
         }
 
         using var buffer = new MemoryStream();
@@ -279,6 +279,30 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
         }
         cachedRequestBody = buffer.ToArray();
         return true;
+    }
+
+    private static bool ContinuationItemsEqual(JsonElement current, JsonElement response)
+    {
+        if (JsonElementsEqual(current, response)) return true;
+        if (current.ValueKind != JsonValueKind.Object || response.ValueKind != JsonValueKind.Object ||
+            !current.TryGetProperty("type", out var currentType) || currentType.GetString() != "function_call" ||
+            !response.TryGetProperty("type", out var responseType) || responseType.GetString() != "function_call" ||
+            !current.TryGetProperty("arguments", out var currentArguments) || currentArguments.ValueKind != JsonValueKind.String ||
+            !response.TryGetProperty("arguments", out var responseArguments) || responseArguments.ValueKind != JsonValueKind.String ||
+            !string.Equals(CanonicalObjectWithoutProperty(current, "arguments"),
+                CanonicalObjectWithoutProperty(response, "arguments"), StringComparison.Ordinal))
+            return false;
+
+        try
+        {
+            using var currentDocument = JsonDocument.Parse(currentArguments.GetString()!);
+            using var responseDocument = JsonDocument.Parse(responseArguments.GetString()!);
+            return JsonElementsEqual(currentDocument.RootElement, responseDocument.RootElement);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static CachedContinuation? CreateContinuation(byte[] requestBody, JsonElement responseEvent)
@@ -382,6 +406,24 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(HttpMessageHandler inner
             writer.WriteStartObject();
             foreach (var property in element.EnumerateObject()
                 .Where(property => !property.NameEquals("input") && !property.NameEquals("previous_response_id"))
+                .OrderBy(property => property.Name, StringComparer.Ordinal))
+            {
+                writer.WritePropertyName(property.Name);
+                WriteCanonicalValue(writer, property.Value);
+            }
+            writer.WriteEndObject();
+        }
+        return Encoding.UTF8.GetString(buffer.ToArray());
+    }
+
+    private static string CanonicalObjectWithoutProperty(JsonElement element, string excludedProperty)
+    {
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            foreach (var property in element.EnumerateObject()
+                .Where(property => !property.NameEquals(excludedProperty))
                 .OrderBy(property => property.Name, StringComparer.Ordinal))
             {
                 writer.WritePropertyName(property.Name);
