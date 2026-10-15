@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -790,13 +789,8 @@ public sealed class OpenAiCodexProviderTests
 
     private static HttpListener StartListener(out int port)
     {
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        var listener = new HttpListener();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        var (listener, selectedPort) = TestLoopbackListener.Start();
+        port = selectedPort;
         return listener;
     }
 }
