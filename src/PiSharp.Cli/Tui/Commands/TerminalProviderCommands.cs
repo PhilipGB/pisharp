@@ -50,7 +50,19 @@ internal sealed class TerminalProviderCommands(ProviderModelRuntime providers, M
 
     public async Task SelectNamedModelAsync(string argument, Func<ModelSelection, string, Task> apply)
     {
-        var selected = await providers.ResolveAsync(null, argument, includeOutOfScope: true);
+        var reference = argument.Trim();
+        var slash = reference.IndexOf('/');
+        var qualifiedProvider = slash > 0 && providers.Providers.Any(provider =>
+            provider.Id.Equals(reference[..slash], StringComparison.OrdinalIgnoreCase));
+        var currentProvider = model.Selection.Provider.Id;
+        var currentMatch = currentProvider.Equals("llama.cpp", StringComparison.OrdinalIgnoreCase) && !qualifiedProvider
+            ? providers.GetAvailableModelSnapshot().FirstOrDefault(candidate =>
+                candidate.Available && candidate.Provider?.Equals(currentProvider, StringComparison.OrdinalIgnoreCase) == true &&
+                candidate.Id.Equals(reference, StringComparison.OrdinalIgnoreCase))
+            : null;
+        var selected = currentMatch is null
+            ? await providers.ResolveAsync(null, reference, includeOutOfScope: true)
+            : await providers.ResolveAsync(currentProvider, currentMatch.Id, includeOutOfScope: true);
         var thinking = controller.ResolveThinkingLevelForModelSwitch(selected, model.Thinking);
         await apply(selected, thinking);
     }

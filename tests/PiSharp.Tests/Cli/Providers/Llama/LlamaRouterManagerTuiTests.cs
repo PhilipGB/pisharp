@@ -342,6 +342,11 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("Model: target", mark);
             await terminal.WaitTextAsync("Model: target", mark);
             Assert.Equal("loaded", server.Statuses["target"]);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("/model qwen\n");
+            await terminal.WaitTextAsync("Model: qwen", mark);
+            Assert.Equal("loaded", server.Statuses["qwen"]);
             await terminal.QuitAsync();
         }
         finally { Directory.Delete(root, recursive: true); }
