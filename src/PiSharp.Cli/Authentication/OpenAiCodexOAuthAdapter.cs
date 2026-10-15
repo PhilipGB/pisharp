@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -96,27 +97,142 @@ public sealed class OpenAiCodexOAuthAdapter : IProviderOAuthAdapter
         var challenge = Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier)));
         var state = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
         var redirectUri = new Uri(BrowserRedirectUri);
-        IProviderOAuthCallbackServer callback;
+        IProviderOAuthCallbackServer? callback = null;
         try { callback = _callbackServers.Start(redirectUri, state); }
-        catch (Exception error) when (error is HttpListenerException or InvalidOperationException)
+        catch (Exception error) when (error is HttpListenerException or InvalidOperationException or
+                                     IOException or SocketException or UnauthorizedAccessException or PlatformNotSupportedException)
         {
-            throw new InvalidOperationException("Could not start the OpenAI Codex browser callback listener. Use device code login instead.", error);
+            // Pi continues with a manual authorization-code prompt when the loopback listener cannot start.
         }
 
-        await using (callback.ConfigureAwait(false))
+        try
         {
             var authorizeUri = BuildAuthorizationUri(redirectUri, state, challenge);
             interaction.Notify(new ProviderOAuthNotice("auth_url",
-                "Open the authorization URL in a browser and complete the ChatGPT sign-in.", authorizeUri));
+                "A browser window should open. Complete login to finish.", authorizeUri));
             try { _openBrowser(authorizeUri); }
             catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception or IOException or NotSupportedException)
             {
                 interaction.Notify(new ProviderOAuthNotice("message",
                     "The browser could not be opened automatically; open the authorization URL manually.", authorizeUri));
             }
-            var code = await callback.WaitForCodeAsync(cancellationToken).ConfigureAwait(false);
+
+            var code = callback is null
+                ? await PromptForAuthorizationCodeAsync(interaction, state, cancellationToken).ConfigureAwait(false)
+                : await WaitForCallbackOrManualCodeAsync(callback, interaction, state, cancellationToken)
+                    .ConfigureAwait(false);
             return await ExchangeCodeAsync(code, verifier, redirectUri, cancellationToken).ConfigureAwait(false);
         }
+        finally
+        {
+            if (callback is not null)
+                await callback.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<string> WaitForCallbackOrManualCodeAsync(IProviderOAuthCallbackServer callback,
+        IProviderOAuthInteraction interaction, string expectedState, CancellationToken cancellationToken)
+    {
+        using var callbackCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var promptCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var callbackTask = callback.WaitForCodeAsync(callbackCancellation.Token);
+        Task<string> promptTask;
+        try
+        {
+            promptTask = interaction.PromptForCodeAsync(
+                "Complete login in your browser, or paste the authorization code / redirect URL here:",
+                BrowserRedirectUri, promptCancellation.Token);
+        }
+        catch (NotSupportedException)
+        {
+            return await callbackTask.ConfigureAwait(false);
+        }
+
+        var completed = await Task.WhenAny(callbackTask, promptTask).ConfigureAwait(false);
+        if (completed == callbackTask)
+        {
+            try { return await callbackTask.ConfigureAwait(false); }
+            finally
+            {
+                promptCancellation.Cancel();
+                _ = ObserveCompletionAsync(promptTask);
+            }
+        }
+
+        try
+        {
+            var input = await promptTask.ConfigureAwait(false);
+            callbackCancellation.Cancel();
+            _ = ObserveCompletionAsync(callbackTask);
+            return ValidateAuthorizationInput(ParseAuthorizationInput(input), expectedState);
+        }
+        catch (NotSupportedException)
+        {
+            promptCancellation.Cancel();
+            _ = ObserveCompletionAsync(promptTask);
+            return await callbackTask.ConfigureAwait(false);
+        }
+        catch
+        {
+            callbackCancellation.Cancel();
+            _ = ObserveCompletionAsync(callbackTask);
+            throw;
+        }
+    }
+
+    private static async Task<string> PromptForAuthorizationCodeAsync(IProviderOAuthInteraction interaction,
+        string expectedState, CancellationToken cancellationToken)
+    {
+        var input = await interaction.PromptForCodeAsync(
+            "Complete login in your browser, or paste the authorization code / redirect URL here:",
+            BrowserRedirectUri, cancellationToken).ConfigureAwait(false);
+        return ValidateAuthorizationInput(ParseAuthorizationInput(input), expectedState);
+    }
+
+    private static string ValidateAuthorizationInput((string? Code, string? State) parsed, string expectedState)
+    {
+        if (parsed.State is not null && !CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(parsed.State), Encoding.UTF8.GetBytes(expectedState)))
+            throw new InvalidOperationException("OpenAI Codex OAuth state mismatch.");
+        if (string.IsNullOrWhiteSpace(parsed.Code))
+            throw new InvalidDataException("OpenAI Codex authorization input has no code.");
+        return parsed.Code;
+    }
+
+    private static (string? Code, string? State) ParseAuthorizationInput(string input)
+    {
+        var value = input.Trim();
+        if (Uri.TryCreate(value, UriKind.Absolute, out var uri))
+            return ParseAuthorizationQuery(uri.Query);
+        if (value.Contains("code=", StringComparison.Ordinal) || value.Contains("state=", StringComparison.Ordinal))
+            return ParseAuthorizationQuery(value);
+        var delimiter = value.IndexOf('#');
+        if (delimiter >= 0)
+            return (NullIfWhiteSpace(value[..delimiter]), NullIfWhiteSpace(value[(delimiter + 1)..]));
+        return (NullIfWhiteSpace(value), null);
+    }
+
+    private static (string? Code, string? State) ParseAuthorizationQuery(string query)
+    {
+        string? code = null;
+        string? state = null;
+        foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = part.IndexOf('=');
+            var key = Uri.UnescapeDataString(separator < 0 ? part : part[..separator]);
+            var value = Uri.UnescapeDataString(separator < 0 ? "" : part[(separator + 1)..].Replace('+', ' '));
+            if (key == "code") code = value;
+            else if (key == "state") state = value;
+        }
+        return (NullIfWhiteSpace(code), NullIfWhiteSpace(state));
+    }
+
+    private static string? NullIfWhiteSpace(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private static async Task ObserveCompletionAsync(Task task)
+    {
+        try { await task.ConfigureAwait(false); }
+        catch (Exception) { }
     }
 
     private async Task<StoredCredential> LoginDeviceCodeAsync(IProviderOAuthInteraction interaction,

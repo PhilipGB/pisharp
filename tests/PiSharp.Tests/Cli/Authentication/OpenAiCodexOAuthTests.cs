@@ -117,6 +117,69 @@ public sealed class OpenAiCodexOAuthTests
         Assert.Equal(query["code_challenge"], Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(form!["code_verifier"]))));
     }
 
+    [Theory]
+    [InlineData("pasted-code")]
+    [InlineData("pasted-code#{state}")]
+    [InlineData("http://localhost:1455/auth/callback?code=pasted-code&state={state}")]
+    public async Task BrowserLoginRacesLoopbackCallbackAgainstPiCompatibleManualInput(string inputTemplate)
+    {
+        var token = CreateToken("account-manual");
+        Uri? opened = null;
+        Dictionary<string, string>? form = null;
+        var callbackFactory = new FakeCallbackServerFactory("unused", waitForManualInput: true);
+        using var http = new HttpClient(new DelegateHandler(async (request, cancellationToken) =>
+        {
+            Assert.Equal("https://auth.openai.com/oauth/token", request.RequestUri?.ToString());
+            form = ParseForm(await request.Content!.ReadAsStringAsync(cancellationToken));
+            return TokenResponse(token, "refresh-manual");
+        }));
+        var interaction = new RecordingInteraction("browser")
+        {
+            ManualCodeInput = () => inputTemplate.Replace("{state}", ParseQuery(opened!)["state"], StringComparison.Ordinal)
+        };
+        var adapter = new OpenAiCodexOAuthAdapter(http, callbackFactory, uri => opened = uri);
+
+        var credential = await adapter.LoginAsync("browser", interaction, CancellationToken.None);
+
+        Assert.Equal("account-manual", credential.AccountId);
+        Assert.Equal("pasted-code", form?["code"]);
+        Assert.Equal("http://localhost:1455/auth/callback", form?["redirect_uri"]);
+        Assert.False(string.IsNullOrWhiteSpace(form?["code_verifier"]));
+        var authorizationQuery = ParseQuery(opened!);
+        Assert.Equal(authorizationQuery["code_challenge"],
+            Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(form!["code_verifier"]))));
+        Assert.Equal("Complete login in your browser, or paste the authorization code / redirect URL here:",
+            interaction.ManualCodeMessage);
+        Assert.Equal("http://localhost:1455/auth/callback", interaction.ManualCodePlaceholder);
+        await callbackFactory.CallbackWaitCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(callbackFactory.ServerDisposed);
+    }
+
+    [Fact]
+    public async Task BrowserLoginFallsBackToManualInputWhenCallbackListenerCannotStartAndRejectsWrongState()
+    {
+        Uri? opened = null;
+        var exchangeCount = 0;
+        using var http = new HttpClient(new DelegateHandler((_, _) =>
+        {
+            Interlocked.Increment(ref exchangeCount);
+            throw new InvalidOperationException("A mismatched manual state must not exchange the code.");
+        }));
+        var callbackFactory = new FakeCallbackServerFactory("unused", failStart: true);
+        var interaction = new RecordingInteraction("browser")
+        {
+            ManualCodeInput = () => "pasted-code#wrong-state"
+        };
+        var adapter = new OpenAiCodexOAuthAdapter(http, callbackFactory, uri => opened = uri);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            adapter.LoginAsync("browser", interaction, CancellationToken.None));
+
+        Assert.Equal("OpenAI Codex OAuth state mismatch.", error.Message);
+        Assert.Equal(0, exchangeCount);
+        Assert.Equal("https://auth.openai.com/oauth/authorize", opened?.GetLeftPart(UriPartial.Path));
+    }
+
     [Fact]
     public async Task ConcurrentCodexRequestsRefreshOnceAndPersistRotatedTokens()
     {
@@ -329,6 +392,9 @@ public sealed class OpenAiCodexOAuthTests
     private sealed class RecordingInteraction(string selectedMethod) : IProviderOAuthInteraction
     {
         public List<ProviderOAuthNotice> Notices { get; } = [];
+        public Func<string>? ManualCodeInput { get; init; }
+        public string? ManualCodeMessage { get; private set; }
+        public string? ManualCodePlaceholder { get; private set; }
 
         public Task<string> SelectLoginMethodAsync(IReadOnlyList<ProviderOAuthLoginMethod> methods,
             CancellationToken cancellationToken)
@@ -336,6 +402,16 @@ public sealed class OpenAiCodexOAuthTests
             cancellationToken.ThrowIfCancellationRequested();
             Assert.Contains(methods, method => method.Id == selectedMethod);
             return Task.FromResult(selectedMethod);
+        }
+
+        public Task<string> PromptForCodeAsync(string message, string placeholder, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ManualCodeMessage = message;
+            ManualCodePlaceholder = placeholder;
+            return ManualCodeInput is null
+                ? Task.FromException<string>(new NotSupportedException("Manual OAuth code input is not supported by this test interaction."))
+                : Task.FromResult(ManualCodeInput());
         }
 
         public void Notify(ProviderOAuthNotice notice) => Notices.Add(notice);
@@ -348,29 +424,50 @@ public sealed class OpenAiCodexOAuthTests
             CancellationToken cancellationToken) => send(request, cancellationToken);
     }
 
-    private sealed class FakeCallbackServerFactory(string authorizationCode) : IProviderOAuthCallbackServerFactory
+    private sealed class FakeCallbackServerFactory(string authorizationCode, bool waitForManualInput = false,
+        bool failStart = false) : IProviderOAuthCallbackServerFactory
     {
         public Uri? RedirectUri { get; private set; }
         public string? State { get; private set; }
         public string? ServerState { get; private set; }
+        public bool ServerDisposed { get; private set; }
+        public TaskCompletionSource CallbackWaitCancelled { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public IProviderOAuthCallbackServer Start(Uri redirectUri, string expectedState)
         {
             RedirectUri = redirectUri;
             State = expectedState;
             ServerState = expectedState;
-            return new FakeCallbackServer(authorizationCode);
+            if (failStart) throw new InvalidOperationException("The callback listener is unavailable.");
+            return new FakeCallbackServer(authorizationCode, waitForManualInput,
+                () => ServerDisposed = true, () => CallbackWaitCancelled.TrySetResult());
         }
     }
 
-    private sealed class FakeCallbackServer(string authorizationCode) : IProviderOAuthCallbackServer
+    private sealed class FakeCallbackServer(string authorizationCode, bool waitForManualInput,
+        Action onDisposed, Action onWaitCancelled) : IProviderOAuthCallbackServer
     {
-        public Task<string> WaitForCodeAsync(CancellationToken cancellationToken)
+        public async Task<string> WaitForCodeAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(authorizationCode);
+            try
+            {
+                if (waitForManualInput)
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                onWaitCancelled();
+                throw;
+            }
+            return authorizationCode;
         }
 
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public ValueTask DisposeAsync()
+        {
+            onDisposed();
+            return ValueTask.CompletedTask;
+        }
     }
 }
