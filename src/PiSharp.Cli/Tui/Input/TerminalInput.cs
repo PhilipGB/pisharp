@@ -406,7 +406,7 @@ public sealed class TerminalInput
 
     private TerminalInputEvent ByteToEvent(int value)
     {
-        if (value is 10 or 13) return Key(ConsoleKey.Enter, '\n');
+        if (value == 13) return Key(ConsoleKey.Enter, '\n');
         if (value is 8 or 127) return Key(ConsoleKey.Backspace, '\b');
         if (value == 9) return Key(ConsoleKey.Tab, '\t');
         if (value < 32) return Key((ConsoleKey)(ConsoleKey.A + value - 1), (char)value, control: true);

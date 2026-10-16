@@ -240,6 +240,26 @@ public sealed class TerminalInputTests
         Assert.Equal("t", editor.SelectedText);
     }
 
+    [Fact]
+    public void CtrlJInsertsANewLineWhileEnterSubmits()
+    {
+        var reader = new TerminalInput(new MemoryStream([10, 13]));
+        var editor = new EditorBuffer();
+        editor.InsertText("one");
+
+        var newLine = reader.Read().Key!.Value;
+        Assert.Equal(ConsoleKey.J, newLine.Key);
+        Assert.True(newLine.Modifiers.HasFlag(ConsoleModifiers.Control));
+        Assert.Equal(EditorAction.Render, editor.Handle(newLine));
+        Assert.Equal("one\n", editor.Text);
+        Assert.Empty(editor.History);
+
+        var submit = reader.Read().Key!.Value;
+        Assert.Equal(ConsoleKey.Enter, submit.Key);
+        Assert.Equal(EditorAction.Submit, editor.Handle(submit));
+        Assert.Equal("one", Assert.Single(editor.History));
+    }
+
     [Theory]
     [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\aX")]
     [InlineData("\u001b]11;rgb:0000/1111/2222\u001b\\X")]
@@ -373,7 +393,7 @@ public sealed class TerminalInputTests
     public void PastedMultilineTextRemainsOneAtomicEditorInsertion()
     {
         var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(
-            "before\u001b[200~line one\r\nline two\u001b[201~after\n")));
+            "before\u001b[200~line one\r\nline two\u001b[201~after\r")));
         var buffer = new EditorBuffer();
         foreach (var c in "before") buffer.Handle(new ConsoleKeyInfo(c, ConsoleKey.NoName, false, false, false));
         for (var i = 0; i < 6; i++) reader.Read();
