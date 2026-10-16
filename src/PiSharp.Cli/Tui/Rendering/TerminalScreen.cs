@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.AI;
@@ -1007,62 +1008,115 @@ public sealed class TerminalScreen : IDisposable
 
     public void Dispose()
     {
-        try
+        Exception? failure = null;
+
+        void Attempt(Action action)
         {
-            if (!Console.IsInputRedirected && _terminalColorQuery is { HasPendingReplies: true } query)
-            {
-                var input = _terminalInput ?? TerminalInput.OpenConsole();
-                using var mode = TerminalMode.Enter(this);
-                AttachTerminalInput(input);
-                query.CompletePendingReplies(input);
-            }
+            try { action(); }
+            catch (Exception error) { failure ??= error; }
         }
-        catch (IOException) { }
-        finally { _terminalColorQuery?.Dispose(); _protocolInput.Dispose(); }
-        IReadOnlyList<TerminalTranscriptBuffer.CapturedChunk> captured;
-        bool truncated;
+
+        Attempt(() =>
+        {
+            if (Console.IsInputRedirected || _terminalColorQuery is not { HasPendingReplies: true } query) return;
+            var input = _terminalInput ?? TerminalInput.OpenConsole();
+            using var mode = TerminalMode.Enter(this);
+            AttachTerminalInput(input);
+            query.CompletePendingReplies(input);
+        });
+        Attempt(() => _terminalColorQuery?.Dispose());
+        Attempt(_protocolInput.Dispose);
+
+        IReadOnlyList<TerminalTranscriptBuffer.CapturedChunk> captured = [];
+        var truncated = false;
         IReadOnlyList<string>? documentRows = null;
-        bool terminalModeShutdownPrepared;
+        var terminalModeShutdownPrepared = false;
+        var wasActive = false;
         lock (_gate)
         {
-            if (!_active) return;
-            _render.Flush();
-            _render.Dispose();
-            _toolTimers.Dispose();
-            _active = false;
-            terminalModeShutdownPrepared = _terminalModeShutdownPrepared;
-            if (_activated)
+            if (!_active)
             {
-                if (ReferenceEquals(Console.Out, _installedOut)) Console.SetOut(_originalOut);
-                if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
+                wasActive = false;
             }
-            _originalOut.Write((_useAlternateScreen ? "\u001b[?2026h" : "") + _images.CleanupControlSequence() + (_useAlternateScreen
-                    ? TerminalMouseMode.Disable + "\u001b[?7h"
-                    : "") + (_useAlternateScreen ? "\u001b[?2026l" : ""));
-            _originalOut.Flush();
-            _originalOut.Write("\u001b[?25h" + (terminalModeShutdownPrepared ? "" : _keyboardProtocol.End()));
-            _originalOut.Flush();
-            if (_useAlternateScreen && _conversationPresentation.HasContent)
+            else
             {
-                var columns = Columns();
-                var header = _startupHeader?.Invoke(_theme, columns, _startupExpanded) ?? "";
-                var startupContent = _startupContent?.Invoke(_theme, columns, _startupExpanded) ?? "";
-                var transcript = _images.LayoutTranscript(_transcript.GetTextForScrollback(columns, _theme) + _conversationPresentation.LiveText,
-                    columns, Math.Max(1, Rows() - 5));
-                var headerRows = string.IsNullOrEmpty(header)
-                    ? Array.Empty<string>()
-                    : TerminalTextLayout.Create(header, columns).Rows;
-                var contentText = (string.IsNullOrEmpty(startupContent) ? "" : startupContent + "\n") + transcript;
-                var contentRows = TerminalTextLayout.Create(contentText, columns).Rows;
-                documentRows = headerRows.Concat(contentRows).ToArray();
+                wasActive = true;
+                Attempt(_render.Flush);
+                Attempt(_render.Dispose);
+                Attempt(_toolTimers.Dispose);
+                _active = false;
+                terminalModeShutdownPrepared = _terminalModeShutdownPrepared;
+                if (_activated)
+                {
+                    Attempt(() =>
+                    {
+                        if (ReferenceEquals(Console.Out, _installedOut)) Console.SetOut(_originalOut);
+                    });
+                    Attempt(() =>
+                    {
+                        if (ReferenceEquals(Console.Error, _installedError)) Console.SetError(_originalError);
+                    });
+                }
+
+                Attempt(() => _originalOut.Write((_useAlternateScreen ? "\u001b[?2026h" : "") + _images.CleanupControlSequence()));
+                if (_useAlternateScreen)
+                {
+                    Attempt(() => _originalOut.Write(TerminalMouseMode.Disable));
+                    Attempt(() => _originalOut.Write("\u001b[?7h\u001b[?2026l"));
+                }
+                Attempt(_originalOut.Flush);
+                Attempt(() => _originalOut.Write("\u001b[?25h"));
+                if (!terminalModeShutdownPrepared) Attempt(() => _originalOut.Write(_keyboardProtocol.End()));
+                Attempt(_originalOut.Flush);
+
+                if (_useAlternateScreen && _conversationPresentation.HasContent)
+                {
+                    try
+                    {
+                        var columns = Columns();
+                        var header = _startupHeader?.Invoke(_theme, columns, _startupExpanded) ?? "";
+                        var startupContent = _startupContent?.Invoke(_theme, columns, _startupExpanded) ?? "";
+                        var transcript = _images.LayoutTranscript(_transcript.GetTextForScrollback(columns, _theme) + _conversationPresentation.LiveText,
+                            columns, Math.Max(1, Rows() - 5));
+                        var headerRows = string.IsNullOrEmpty(header)
+                            ? Array.Empty<string>()
+                            : TerminalTextLayout.Create(header, columns).Rows;
+                        var contentText = (string.IsNullOrEmpty(startupContent) ? "" : startupContent + "\n") + transcript;
+                        var contentRows = TerminalTextLayout.Create(contentText, columns).Rows;
+                        documentRows = headerRows.Concat(contentRows).ToArray();
+                    }
+                    catch (Exception error) { failure ??= error; }
+                }
+
+                Attempt(() =>
+                {
+                    if (_useAlternateScreen)
+                        _compositor.LeaveAlternateScreen(terminalModeShutdownPrepared ? "\u001b[?2004l" : "",
+                            restoreDocumentFollows: documentRows is not null);
+                    else if (terminalModeShutdownPrepared)
+                        _originalOut.Write("\u001b[?2004l");
+                });
+
+                // Repeat the terminal's basic mode resets after the compositor's best-effort exit.
+                // These toggles are idempotent and ensure a failed screen write cannot skip cleanup.
+                if (_useAlternateScreen)
+                {
+                    Attempt(() => _originalOut.Write("\u001b[?1049l"));
+                    Attempt(() => _originalOut.Write("\u001b[?7h"));
+                }
+                if (terminalModeShutdownPrepared) Attempt(() => _originalOut.Write("\u001b[?2004l"));
+                Attempt(() => _originalOut.Write("\u001b[?25h"));
+                Attempt(_originalOut.Flush);
+
+                captured = _transcript.CaptureScrollbackSnapshot();
+                truncated = _transcript.CaptureTruncated;
             }
-            if (_useAlternateScreen)
-                _compositor.LeaveAlternateScreen(terminalModeShutdownPrepared ? "\u001b[?2004l" : "",
-                    restoreDocumentFollows: documentRows is not null);
-            else if (terminalModeShutdownPrepared)
-                _originalOut.Write("\u001b[?2004l");
-            captured = _transcript.CaptureScrollbackSnapshot();
-            truncated = _transcript.CaptureTruncated;
+        }
+
+        if (!wasActive)
+        {
+            if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
+            return;
         }
 
         if (documentRows is null)
@@ -1070,18 +1124,20 @@ public sealed class TerminalScreen : IDisposable
             foreach (var chunk in captured)
             {
                 var writer = chunk.IsError ? _originalError : _originalOut;
-                writer.Write(chunk.Text);
-                writer.Flush();
+                Attempt(() => writer.Write(chunk.Text));
+                Attempt(writer.Flush);
             }
         }
         if (truncated)
         {
-            _originalError.WriteLine("Interactive transcript exceeded the scrollback restore limit; the active screen was still rendered in full.");
-            _originalError.Flush();
+            Attempt(() => _originalError.WriteLine("Interactive transcript exceeded the scrollback restore limit; the active screen was still rendered in full."));
+            Attempt(_originalError.Flush);
         }
-        if (documentRows is not null) _compositor.RestoreDocumentToNormalBuffer(documentRows);
-        else if (_useAlternateScreen) _compositor.RestoreLastFrameToNormalBuffer();
-        _images.Clear();
+        if (documentRows is not null) Attempt(() => _compositor.RestoreDocumentToNormalBuffer(documentRows));
+        else if (_useAlternateScreen) Attempt(_compositor.RestoreLastFrameToNormalBuffer);
+        Attempt(_images.Clear);
+
+        if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
     }
 
     private int _lastColumns;

@@ -1600,9 +1600,10 @@ public sealed class TerminalPtyTests
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task ImmediateQuitLeavesNoTerminalRepliesAndRestoresTtyThroughLinuxPty(bool reply)
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public async Task ExitLeavesNoTerminalRepliesAndRestoresTtyThroughLinuxPty(bool reply, bool cancel)
     {
         if (!OperatingSystem.IsLinux()) return;
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-terminal-shutdown-" + Guid.NewGuid().ToString("N"));
@@ -1640,7 +1641,8 @@ public sealed class TerminalPtyTests
                     replies += b''.join(('\x1b]4;%d;#262626\x07' % i).encode() for i in range(16))
                     replies += b'\x1b[?61;1;21;22c'
                     quit_started = time.monotonic()
-                    os.write(master, b'/quit\n' + (replies if sys.argv[2] == 'True' else b''))
+                    if sys.argv[2] == 'True': os.write(master, replies)
+                    os.write(master, b'\x03\x03' if sys.argv[3] == 'True' else b'/quit\n')
                     while child.poll() is None:
                         receive()
                     assert child.wait() == 0, repr(output[-2000:])
@@ -1662,6 +1664,7 @@ public sealed class TerminalPtyTests
                 """);
             start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
             start.ArgumentList.Add(reply.ToString());
+            start.ArgumentList.Add(cancel.ToString());
             using var process = Process.Start(start)!;
             var output = process.StandardOutput.ReadToEndAsync();
             var error = process.StandardError.ReadToEndAsync();
