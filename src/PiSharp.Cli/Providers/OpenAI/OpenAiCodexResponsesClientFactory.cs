@@ -26,7 +26,7 @@ internal static class OpenAiCodexResponsesClientFactory
                 new OpenAiCodexRequestHandler(selection.ApiKey, requestContext,
                     new ProviderWireActivityHandler(new OpenAiCodexWebSocketBridgeHandler(
                         requestContext, new HttpClientHandler { AllowAutoRedirect = false }, TimeSpan.FromSeconds(15))),
-                    selection.OAuthCredentialResolver),
+                    selection.OAuthCredentialResolver, selection.Authenticated),
                 disposeHandler: true))
         };
         var client = new OpenAIClient(new ApiKeyCredential(selection.ApiKey), options);
@@ -253,16 +253,19 @@ internal sealed class OpenAiCodexRequestHandler : DelegatingHandler
 {
     private const string EncryptedReasoning = "reasoning.encrypted_content";
     private readonly string _accessToken;
-    private readonly string _accountId;
+    private readonly string? _accountId;
     private readonly OpenAiCodexRequestContext _requestContext;
     private readonly Func<CancellationToken, Task<(string Access, string AccountId)>>? _credentialResolver;
+    private readonly bool _authenticated;
 
     public OpenAiCodexRequestHandler(string accessToken, OpenAiCodexRequestContext requestContext,
         HttpMessageHandler innerHandler,
-        Func<CancellationToken, Task<(string Access, string AccountId)>>? credentialResolver = null) : base(innerHandler)
+        Func<CancellationToken, Task<(string Access, string AccountId)>>? credentialResolver = null,
+        bool authenticated = true) : base(innerHandler)
     {
         _accessToken = accessToken;
-        _accountId = ExtractAccountId(accessToken);
+        _authenticated = authenticated || credentialResolver is not null;
+        _accountId = _authenticated && credentialResolver is null ? ExtractAccountId(accessToken) : null;
         _requestContext = requestContext;
         _credentialResolver = credentialResolver;
     }
@@ -280,6 +283,13 @@ internal sealed class OpenAiCodexRequestHandler : DelegatingHandler
             accessToken = current.Access;
             accountId = current.AccountId;
         }
+        else if (!_authenticated)
+        {
+            throw new InvalidOperationException(
+                "OpenAI Codex is not authenticated. Sign in with `/login openai-codex oauth` before sending a prompt.");
+        }
+        if (accountId is null)
+            throw new InvalidOperationException("OpenAI Codex authentication did not provide a ChatGPT account ID.");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Remove("api-key");
         request.Headers.Remove("chatgpt-account-id");

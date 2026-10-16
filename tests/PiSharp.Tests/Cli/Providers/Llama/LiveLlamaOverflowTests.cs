@@ -52,7 +52,7 @@ public sealed class LiveLlamaOverflowTests
             new CodingTools(Path.GetTempPath()), noTools: true), conversation);
         var events = new List<AgentLifecycleEvent>();
         await foreach (var item in run.RunEventsAsync(
-            "Write a long numbered list of 1000 lines; begin immediately with line 1 and do not summarize.", cancel.Token))
+            "Reply with the single word READY immediately, then stop.", cancel.Token))
         {
             events.Add(item);
             if (item.Type == "model_text_delta") cancel.Cancel();

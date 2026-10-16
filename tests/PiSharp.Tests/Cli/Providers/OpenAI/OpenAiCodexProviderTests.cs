@@ -45,6 +45,20 @@ public sealed class OpenAiCodexProviderTests
     }
 
     [Fact]
+    public async Task UnauthenticatedCodexClientDefersCredentialValidationAndRejectsRequestsBeforeTransport()
+    {
+        var transport = new CountingHandler();
+        using var client = new HttpClient(new OpenAiCodexRequestHandler("not-configured",
+            new OpenAiCodexRequestContext(), transport, authenticated: false));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.GetAsync("https://chatgpt.com/backend-api/responses"));
+
+        Assert.Contains("/login openai-codex oauth", error.Message, StringComparison.Ordinal);
+        Assert.Equal(0, transport.RequestCount);
+    }
+
+    [Fact]
     public async Task CodexSubscriptionWorkflowSignsInStreamsToolsQueuesSteeringAndResumesSavedSession()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-codex-acceptance-" + Guid.NewGuid().ToString("N"));
@@ -1581,6 +1595,18 @@ public sealed class OpenAiCodexProviderTests
                 return TokenResponse(accessToken);
             }
             throw new InvalidOperationException($"Unexpected OAuth request {request.RequestUri}.");
+        }
+    }
+
+    private sealed class CountingHandler : HttpMessageHandler
+    {
+        public int RequestCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            RequestCount++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
         }
     }
 
