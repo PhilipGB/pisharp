@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using PiSharp.Cli;
 using PiSharp.ResourceDiscoveryExtension;
 using SkiaSharp;
@@ -601,6 +602,179 @@ public sealed class TerminalPtyTests
             if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
             releaseFirstResponse.TrySetResult();
             await serverTimeout.CancelAsync();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task McpManagerSelectsDisablesBacksOutAndKeepsTheConversationUsableThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-manager-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        using var listener = StartLoopbackListener(out var port);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var providerRequestReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var provider = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(timeout.Token);
+            Assert.Equal("/v1/responses", request.Request.Url?.AbsolutePath);
+            using var reader = new StreamReader(request.Request.InputStream);
+            var body = await reader.ReadToEndAsync(timeout.Token);
+            Assert.Contains("conversation remains usable", body, StringComparison.Ordinal);
+            providerRequestReceived.TrySetResult();
+            request.Response.ContentType = "text/event-stream";
+            request.Response.KeepAlive = false;
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"mcp_followup\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+            await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"mcp_followup_text\",\"output_index\":0,\"content_index\":0,\"delta\":\"MCP_MANAGER_FOLLOWUP_OK\"}\n\n");
+            await writer.WriteAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"mcp_followup\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\n");
+            await writer.WriteAsync("data: [DONE]\n\n");
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        Process? process = null;
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
+            var configPath = Path.Combine(agent, "mcp.json");
+            await File.WriteAllTextAsync(configPath, JsonSerializer.Serialize(new
+            {
+                mcpServers = new Dictionary<string, object>
+                {
+                    ["manager"] = new { command = "python3", args = new[] { fixture }, exposure = "direct" }
+                }
+            }));
+            var models = """
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model","api":"openai-responses","reasoning":true}]}}}
+                """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+            await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), models);
+
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --provider fixture --model fixture-model --no-session --offline");
+            start.ArgumentList.Add("/dev/null");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["PISHARP_FIXTURE_KEY"] = "pty-fixture-key";
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
+                start.Environment.Remove(name);
+            foreach (var name in start.Environment.Keys.Where(name => name.StartsWith("MCP_FIXTURE_", StringComparison.Ordinal)).ToArray())
+                start.Environment.Remove(name);
+            process = Process.Start(start);
+            Assert.NotNull(process);
+
+            var output = new StringBuilder();
+            var outputGate = new object();
+            var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var managerList = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var actionMenu = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var disabledDetails = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var disabledList = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var conversationInputVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var followUpSettled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[4096];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputGate)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        var frames = TerminalOutputFrameReader.Read(captured, rows: 24, columns: 80);
+                        var frame = frames.Count == 0 ? string.Empty : frames[^1].Screen;
+                        if (captured.Contains("\u001b[?2026l", StringComparison.Ordinal)) ready.TrySetResult();
+                        if (frame.Contains("MCP servers", StringComparison.Ordinal) && frame.Contains("manager", StringComparison.Ordinal))
+                        {
+                            managerList.TrySetResult();
+                        }
+                        if (frame.Contains("MCP server manager", StringComparison.Ordinal) && frame.Contains("Disable", StringComparison.Ordinal))
+                            actionMenu.TrySetResult();
+                        if (frame.Contains("State: disabled", StringComparison.Ordinal) && frame.Contains("Enable", StringComparison.Ordinal))
+                            disabledDetails.TrySetResult();
+                        if (frame.Contains("MCP servers", StringComparison.Ordinal) && frame.Contains("manager", StringComparison.Ordinal) &&
+                            frame.Contains("disabled", StringComparison.Ordinal) &&
+                            !frame.Contains("State: disabled", StringComparison.Ordinal)) disabledList.TrySetResult();
+                        if (frame.Contains("conversation remains usable", StringComparison.Ordinal) &&
+                            !frame.Contains("Search: conversation remains usable", StringComparison.Ordinal))
+                            conversationInputVisible.TrySetResult();
+                        const string activeFooter = "Enter steers · follow-up queues · Escape aborts";
+                        if (frame.Contains("MCP_MANAGER_FOLLOWUP_OK", StringComparison.Ordinal) &&
+                            !frame.Contains(activeFooter, StringComparison.Ordinal) &&
+                            !frame.Contains("Working", StringComparison.Ordinal)) followUpSettled.TrySetResult();
+                    }
+                }
+                lock (outputGate) return output.ToString();
+            });
+            var stderr = new StringBuilder();
+            var stderrDrain = Task.Run(async () => { var buffer = new char[1024]; int count; while ((count = await process.StandardError.ReadAsync(buffer)) > 0) lock (outputGate) stderr.Append(buffer, 0, count); });
+            try { await ready.Task.WaitAsync(timeout.Token); }
+            catch { string partial; string errors; lock (outputGate) { partial = output.ToString(); errors = stderr.ToString(); } Assert.Fail("TUI startup timeout. stdout: " + partial + " stderr: " + errors); }
+            await process.StandardInput.WriteAsync("/mcp\r");
+            await process.StandardInput.FlushAsync();
+            try { await managerList.Task.WaitAsync(timeout.Token); }
+            catch { string partial; string errors; lock (outputGate) { partial = output.ToString(); errors = stderr.ToString(); } Assert.Fail("Manager list timeout. stdout: " + partial + " stderr: " + errors); }
+            await process.StandardInput.WriteAsync("\r");
+            await process.StandardInput.FlushAsync();
+            await actionMenu.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\u001b[B\u001b[B\u001b[B\r");
+            await process.StandardInput.FlushAsync();
+            await disabledDetails.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\u001b");
+            await process.StandardInput.FlushAsync();
+            await disabledList.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\u001b");
+            await process.StandardInput.FlushAsync();
+            await Task.Delay(100, timeout.Token);
+            await process.StandardInput.WriteAsync("conversation remains usable");
+            await process.StandardInput.FlushAsync();
+            await conversationInputVisible.Task.WaitAsync(TimeSpan.FromSeconds(5), timeout.Token);
+            await process.StandardInput.WriteAsync("\r");
+            await process.StandardInput.FlushAsync();
+            try { await providerRequestReceived.Task.WaitAsync(TimeSpan.FromSeconds(5), timeout.Token); }
+            catch
+            {
+                string partial;
+                lock (outputGate) partial = output.ToString();
+                var frames = TerminalOutputFrameReader.Read(partial, rows: 24, columns: 80);
+                Assert.Fail("Conversation prompt did not submit a provider request. Last frame: " +
+                    (frames.Count == 0 ? partial : frames[^1].Screen) +
+                    (provider.IsFaulted ? " Provider fixture: " + provider.Exception : ""));
+            }
+            await followUpSettled.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/quit\r");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            await stdout;
+            await provider.WaitAsync(timeout.Token);
+
+            string terminalOutput;
+            lock (outputGate) terminalOutput = output.ToString();
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("Disabled MCP server manager.", terminalOutput, StringComparison.Ordinal);
+            Assert.Contains("MCP_MANAGER_FOLLOWUP_OK", terminalOutput, StringComparison.Ordinal);
+            using var saved = JsonDocument.Parse(await File.ReadAllTextAsync(configPath));
+            Assert.False(saved.RootElement.GetProperty("mcpServers").GetProperty("manager").GetProperty("enabled").GetBoolean());
+            Assert.DoesNotContain("Session error:", terminalOutput, StringComparison.Ordinal);
+            Assert.DoesNotContain("Error:", stderr.ToString(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            timeout.Cancel();
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
             Directory.Delete(root, recursive: true);
         }
     }

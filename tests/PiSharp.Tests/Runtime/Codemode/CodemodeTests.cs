@@ -218,6 +218,45 @@ public sealed class CodemodeTests
     }
 
     [Fact]
+    public async Task SandboxEnforcesTextOutputOutputItemAndNestedArgumentLimits()
+    {
+        var toolCalls = 0;
+        var capture = AIFunctionFactory.Create((string value) =>
+        {
+            Interlocked.Increment(ref toolCalls);
+            return value.Length.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }, name: "capture");
+        var registry = new PiSharpToolRegistry([new(capture, ToolExposure.CodeMode)]);
+        var context = PiSharpToolExecutionContext.CreateRoot(registry.CreateLoadout(),
+            () => new Dictionary<string, AIFunction> { ["capture"] = capture }, _ => { }, "test", null,
+            "codemode", new Dictionary<string, object?>());
+
+        var textOverflow = await CodemodeSandbox.ExecuteAsync("text('x'.repeat(65537))", context,
+            new Dictionary<string, JsonElement>(), CancellationToken.None);
+        Assert.False(textOverflow.Ok);
+        Assert.Equal("Codemode output limit exceeded.", textOverflow.Error);
+
+        var itemOverflow = await CodemodeSandbox.ExecuteAsync("for(let i=0;i<257;i++)text('x')", context,
+            new Dictionary<string, JsonElement>(), CancellationToken.None);
+        Assert.False(itemOverflow.Ok);
+        Assert.Contains("output item limit exceeded", itemOverflow.Error, StringComparison.Ordinal);
+
+        var argumentOverflow = await CodemodeSandbox.ExecuteAsync(
+            "await tools.capture({value:'x'.repeat(4194305)})", context,
+            new Dictionary<string, JsonElement>(), CancellationToken.None);
+        Assert.False(argumentOverflow.Ok);
+        Assert.Equal("Codemode call arguments exceed the limit.", argumentOverflow.Error);
+        Assert.Equal(0, Volatile.Read(ref toolCalls));
+
+        var aggregateOverflow = await CodemodeSandbox.ExecuteAsync(
+            "for(let i=0;i<3;i++)await tools.capture({value:'x'.repeat(2800000)})", context,
+            new Dictionary<string, JsonElement>(), CancellationToken.None);
+        Assert.False(aggregateOverflow.Ok);
+        Assert.Equal("Codemode total call arguments exceed the limit.", aggregateOverflow.Error);
+        Assert.Equal(2, Volatile.Read(ref toolCalls));
+    }
+
+    [Fact]
     public async Task CancellationStopsOutstandingNestedCall()
     {
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

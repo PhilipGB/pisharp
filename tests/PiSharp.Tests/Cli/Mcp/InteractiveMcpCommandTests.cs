@@ -25,7 +25,7 @@ public sealed class InteractiveMcpCommandTests
 
             await InteractiveResourceCommands.ExecuteAsync("/mcp", "help", "/mcp help", () => resources,
                 () => registration, _ => Task.CompletedTask, null, null, _ => Task.CompletedTask,
-                () => Task.CompletedTask);
+                () => Task.CompletedTask, () => []);
 
             Assert.Contains("/mcp status | details <server> | reconnect <server>", output.ToString());
             Assert.Contains("/mcp add ... or /mcp remove ... in the shell", output.ToString());
@@ -55,7 +55,7 @@ public sealed class InteractiveMcpCommandTests
 
             await InteractiveResourceCommands.ExecuteAsync("/mcp", "reload", "/mcp reload", () => resources,
                 () => registration, _ => Task.CompletedTask, null, null, _ => Task.CompletedTask,
-                () => { reloaded = true; return Task.CompletedTask; });
+                () => { reloaded = true; return Task.CompletedTask; }, () => []);
 
             Assert.True(reloaded);
             Assert.Contains("Reloaded MCP servers", output.ToString());

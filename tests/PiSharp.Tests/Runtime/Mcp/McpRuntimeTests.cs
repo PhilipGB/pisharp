@@ -156,6 +156,51 @@ public sealed class McpRuntimeTests
     }
 
     [Fact]
+    public async Task FailedServerDoesNotPreventHealthyConfiguredServerFromServingTools()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-isolation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixture = Path.Combine(AppContext.BaseDirectory, "TestInfrastructure", "Fixtures", "mcp_fixture.py");
+            await File.WriteAllTextAsync(Path.Combine(root, "mcp.json"), JsonSerializer.Serialize(new
+            {
+                mcpServers = new Dictionary<string, object>
+                {
+                    ["broken"] = new
+                    {
+                        command = "python3",
+                        args = new[] { "-c", "raise RuntimeError('isolated failure')" },
+                        exposure = "direct"
+                    },
+                    ["healthy"] = new
+                    {
+                        command = "python3",
+                        args = new[] { fixture },
+                        exposure = "direct"
+                    }
+                }
+            }));
+            var configuration = await McpConfiguration.LoadAsync(root, root, false);
+            using var catalog = ExtensionCatalog.Load(root, root, false, discover: false);
+
+            var errors = await McpRuntime.RegisterAsync(configuration, catalog, root);
+
+            Assert.Single(errors, error => error.StartsWith("MCP server broken could not connect (", StringComparison.Ordinal));
+            Assert.DoesNotContain(catalog.Registration.ToolDefinitions,
+                tool => tool.Function.Name.StartsWith("mcp__broken__", StringComparison.Ordinal));
+            var echo = Assert.Single(catalog.Registration.ToolDefinitions,
+                tool => tool.Function.Name == "mcp__healthy__echo");
+            var result = Assert.IsType<PiSharpToolResult>(await echo.Function.InvokeAsync(
+                new AIFunctionArguments(new Dictionary<string, object?> { ["value"] = "still available" })));
+
+            Assert.Equal("still available", result.Text);
+            Assert.False(result.IsError);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task ResourceOnlyServerDoesNotNeedToolCapability()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-resources-" + Guid.NewGuid().ToString("N"));

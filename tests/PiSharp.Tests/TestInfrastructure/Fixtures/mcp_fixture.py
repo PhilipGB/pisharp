@@ -3,7 +3,11 @@
 import json
 import os
 import sys
+import threading
 import time
+
+server_stopping = threading.Event()
+write_lock = threading.Lock()
 
 pid_path = os.getenv("MCP_FIXTURE_PID_PATH")
 if pid_path:
@@ -12,8 +16,9 @@ if pid_path:
 
 
 def respond(request, result):
-    sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": request["id"], "result": result}) + "\n")
-    sys.stdout.flush()
+    with write_lock:
+        sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": request["id"], "result": result}) + "\n")
+        sys.stdout.flush()
 
 
 for line in sys.stdin:
@@ -24,10 +29,12 @@ for line in sys.stdin:
         with open(request_log, "a", encoding="utf-8") as log:
             log.write(method + "\n")
     if method == "exit":
+        server_stopping.set()
         break
     if "id" not in request:
         continue
     if method == "shutdown":
+        server_stopping.set()
         respond(request, {})
         continue
     if method == "initialize":
@@ -71,6 +78,13 @@ for line in sys.stdin:
             tools[0].pop("outputSchema", None)
         respond(request, {"tools": tools})
     elif method == "tools/call":
+        if os.getenv("MCP_FIXTURE_BLOCK_CALL") == "1":
+            started_path = os.getenv("MCP_FIXTURE_CALL_STARTED_PATH")
+            if started_path:
+                with open(started_path, "w", encoding="utf-8") as marker:
+                    marker.write("started")
+            threading.Thread(target=server_stopping.wait, daemon=True).start()
+            continue
         params = request["params"]
         if params["name"] == "echo":
             if "MCP_FIXTURE_STRUCTURED_JSON" in os.environ:
