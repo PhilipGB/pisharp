@@ -1,27 +1,35 @@
 ## Interactive UX milestone complete — 2026-10-16
 
 The bounded UX release is on `milestone/interactive-ux` at product source
-`5a6958bfa4d648095485c1f837136c0d15133ffa`. It covers terminal cleanup and raw
-input, multiline editor use and completion, streamed transcript anchoring and
-resize reflow, and searchable session-tree branch selection.
+`927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f`, based on `main`
+`2f5957c808bea59292b592a26d64ca0bc6d49c3d`. It covers terminal cleanup and raw
+input, multiline editing with history/completion and resize, retry status,
+streamed transcript anchoring, and searchable session-tree branch selection.
 
 Linux PTY evidence verifies edited multiline prompts reach the llama fixture
-unchanged, file completion works, tool calls/results continue into a follow-up,
-session search/sort/rename/resume/tree selection persist correctly, settings and
-model/login dialogs work, and terminal state is restored after normal exit,
-cancellation, double Ctrl+C and render failures. A Linux PTY test pauses a
-60-row stream, scrolls back, resizes, returns to latest output, then verifies the
-first and last streamed rows each appear once in follow-up history. Compositor
-tests also cover preserving the user's scroll position during streaming and
-resize. Full local verification passes 2,102 .NET tests with zero skips, six
-architecture checks, 24 Node tests,
-50 Python tests, documentation path validation, format/build and MCP conformance
-with no new regressions. Exact-head Linux CI passes on source
-`5a6958bfa4d648095485c1f837136c0d15133ffa` ([run
-38883691922](https://github.com/PhilipGB/pisharp/actions/runs/38883691922)).
+unchanged after narrow/wide resize, history resubmits the same prompt,
+completion selects a file, and model-picker cancellation/resize plus failed and
+successful provider switches preserve or update the working runtime as
+expected. The conversation-tree PTY now selects and persists one of two sibling
+branches while retaining the other. A Responses-compatible PTY flow visibly
+streams assistant text, tool progress/call/result, continuation and a follow-up;
+an injected command error also verifies the exact terminal mode is restored.
+Retry start, success and final failure are visible in the transcript. A separate
+Linux PTY test pauses a 60-row stream, scrolls back, resizes, returns to latest
+output, then verifies every streamed row appears once in follow-up history.
+Session search/sort/rename/resume, settings and login dialogs, and cleanup after
+normal exit, cancellation, double Ctrl+C and render failures remain covered.
 
-The Codex auth store and local llama router were unavailable for live smoke
-tests. These results close only the bounded UX milestone; all 194 global
+Full local verification passes 2,104 .NET tests with zero skips, six
+architecture checks, 24 Node tests, 50 Python tests, 134 documentation files and
+522 references, format/build, and MCP conformance with no new regressions. Exact
+head Linux CI passes on source `927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f`
+([run 38889766086](https://github.com/PhilipGB/pisharp/actions/runs/38889766086)).
+
+The normal Codex auth store and local llama router were unavailable for live
+smoke tests. Model-picker provider switching used the llama router and an
+authenticated deterministic OpenAI-compatible fixture. These results close
+only the bounded UX milestone; all 194 global
 capability IDs retain their existing statuses (**12 verified, 148 in progress,
 34 not started**). Broader provider, resource, MCP/Codemode and global parity
 work remains deferred.

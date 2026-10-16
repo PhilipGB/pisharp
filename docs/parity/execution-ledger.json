@@ -79,30 +79,32 @@
     "updated": "2026-10-16",
     "status": "complete",
     "branch": "milestone/interactive-ux",
-    "source_commit": "5a6958bfa4d648095485c1f837136c0d15133ffa",
+    "source_commit": "927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f",
     "configured_pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "scope": [
       "terminal restoration after normal exit, cancellation, double Ctrl+C and render failures",
-      "raw Enter versus Ctrl+J input, multiline editing, cursor movement, paste and file completion",
+      "raw Enter versus Ctrl+J input, multiline editing, cursor movement, history, paste, file completion and editor resize",
+      "retry progress and outcome rendering, plus model-picker resize/cancel and failed/successful provider switches",
       "transcript viewport anchoring during streaming and resize",
       "session picker branch-head details and searchable conversation-tree selection"
     ],
     "acceptance_evidence": {
       "editor": [
-        "LlamaRouterManagerTuiTests.EditorSubmitsAnEditedMultilinePromptThroughLinuxPty verifies pasted multiline input, cursor-left editing and exact provider prompt text.",
+        "LlamaRouterManagerTuiTests.EditorSubmitsAnEditedMultilinePromptThroughLinuxPty verifies narrow/wide resize while editing, exact submitted text, history resubmission, and completion selection in a Linux PTY.",
         "TerminalPtyTests.FileCompletionPickerAppliesTheSelectedAtPathThroughLinuxPty verifies completion in the interactive process."
       ],
       "conversation": [
-        "TerminalPtyTests.ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal exercises streamed tool call/result/continuation and queued input.",
+        "TerminalPtyTests.ActiveRunStreamsExtensionToolThroughLinuxPtyAndRestoresTheTerminal visibly exercises working progress, pre-tool assistant text, extension call/result, continuation, a later follow-up, injected command failure, and exact terminal-mode restoration.",
+        "InteractiveTranscriptTests.InteractiveTranscriptShowsRetryProgressAndOutcomeInTheTerminal verifies visible retry start, success, final failure and terminal-control sanitization.",
         "TerminalScreenCompositorTests.ScrolledTranscriptKeepsItsVisibleRowsWhileStreamingAndLatestStillFollows and ScrolledUnicodeTranscriptKeepsItsSourceAnchorAfterResize verify viewport anchor behavior.",
         "LlamaRouterManagerTuiTests.StreamingTranscriptRemainsAnchoredAcrossScrollAndResizeThroughLinuxPty pauses a 60-row stream, scrolls back, resizes, returns to latest output, resumes the conversation, and verifies the first and last streamed rows each appear once in follow-up history."
       ],
       "sessions": [
-        "TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty and ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty exercise session sorting/search/resume and branch selection.",
+        "TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty and ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty exercise session sorting/search/resume and selection/persistence among sibling branches.",
         "TerminalSessionPickerTests and TerminalTreePickerTests cover displayed branch heads, search and tree selection state."
       ],
       "dialogs_and_cleanup": [
-        "TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty, ProviderLoginTuiTests, and LlamaRouterManagerTuiTests cover settings, login and local-model management workflows.",
+        "TerminalPtyTests.SettingsPickerEditsUserScopeThroughLinuxPty, ProviderLoginTuiTests, LlamaRouterManagerTuiTests.ModelPickerCancelAndFailedSwitchPreserveTheWorkingProviderAcrossSuccessfulSwitches, and the existing llama manager flows cover settings, login, model-picker resize/cancel, preserved runtime after failure, successful provider switches, and local-model management.",
         "TerminalPtyTests.ExitLeavesNoTerminalRepliesAndRestoresTtyThroughLinuxPty, DoubleCtrlCExitsInteractiveProcess, and TerminalScreenLifecycleTests cover terminal cleanup paths."
       ]
     },
@@ -110,7 +112,7 @@
       "restore": "dotnet restore PiSharp.slnx passed.",
       "format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed.",
       "build": "dotnet build PiSharp.slnx --no-restore --warnaserror passed with 0 warnings and 0 errors.",
-      "dotnet_tests": "2,102 passed, 0 failed, 0 skipped.",
+      "dotnet_tests": "2,104 passed, 0 failed, 0 skipped.",
       "architecture_tests": "6 passed, 0 failed, 0 skipped.",
       "node_terminal_tests": "24 passed, 0 failed, 0 skipped.",
       "python_terminal_tests": "50 passed, 0 failed, 0 skipped.",
@@ -119,12 +121,12 @@
       "test_environment": "Set TMPDIR, TMP and TEMP to /tmp because this workspace defaults temporary files under HOME and path-display tests expect absolute external paths."
     },
     "exact_head_ci": {
-      "run_id": 38883691922,
-      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38883691922",
-      "head_sha": "5a6958bfa4d648095485c1f837136c0d15133ffa",
+      "run_id": 38889766086,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38889766086",
+      "head_sha": "927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f",
       "status": "passed"
     },
-    "live_smoke": "Not available: LLAMA_BASE_URL is unset and the normal default auth store is absent.",
+    "live_smoke": "Not available: LLAMA_BASE_URL is unset and the normal default auth store is absent. The deterministic model-picker provider switch exercised llama.cpp and an authenticated OpenAI-compatible fixture.",
     "global_capability_statuses_unchanged": {
       "verified": 12,
       "in_progress": 148,
