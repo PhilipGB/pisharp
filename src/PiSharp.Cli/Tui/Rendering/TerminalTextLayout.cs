@@ -79,6 +79,9 @@ internal static class TerminalTextLayout
             }
             return Math.Clamp(low - 1, 0, Rows.Count - 1);
         }
+
+        public int SourceIndexAtVisualRow(int visualRow) =>
+            _rowStarts[Math.Clamp(visualRow, 0, _rowStarts.Length - 1)];
     }
 
     public static IReadOnlyList<string> Wrap(string text, int width) => Create(text, width).Rows;

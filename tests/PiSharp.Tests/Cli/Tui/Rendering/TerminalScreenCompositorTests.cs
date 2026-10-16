@@ -218,6 +218,68 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void ScrolledTranscriptKeepsItsVisibleRowsWhileStreamingAndLatestStillFollows()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var transcript = string.Join('\n', Enumerable.Range(0, 30).Select(index => $"message {index:D2}"));
+
+        compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 80, height: 12, new TranscriptSearchController(), new TerminalMouseRouter());
+        var scrolled = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 8, columns: 80, height: 12, new TranscriptSearchController(), new TerminalMouseRouter());
+        Assert.Contains("message 15", scrolled.Rows[0]);
+
+        transcript += "\nmessage 30\nmessage 31\nmessage 32";
+        var streaming = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: scrolled.ScrollOffset, columns: 80, height: 12,
+            new TranscriptSearchController(), new TerminalMouseRouter());
+
+        Assert.Contains("message 15", streaming.Rows[0]);
+        Assert.DoesNotContain(streaming.Rows, row => row.Contains("message 30", StringComparison.Ordinal));
+
+        var latestCompositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var latestTranscript = string.Join('\n', Enumerable.Range(0, 30).Select(index => $"message {index:D2}"));
+        latestCompositor.Compose("", 0, null, null, latestTranscript, "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 80, height: 12, new TranscriptSearchController(), new TerminalMouseRouter());
+        latestTranscript += "\nmessage 30\nmessage 31\nmessage 32";
+        var latest = latestCompositor.Compose("", 0, null, null, latestTranscript, "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 80, height: 12,
+            new TranscriptSearchController(), new TerminalMouseRouter());
+
+        Assert.Contains(latest.Rows, row => row.Contains("message 32", StringComparison.Ordinal));
+        Assert.DoesNotContain(latest.Rows, row => row.Contains("message 00", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ScrolledUnicodeTranscriptKeepsItsSourceAnchorAfterResize()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var transcript = string.Join('\n', Enumerable.Range(0, 30)
+            .Select(index => $"item {index:D2} {new string('界', 20)} suffix"));
+        const int height = 8;
+        const int originalWidth = 24;
+        const int resizedWidth = 40;
+        const int transcriptHeight = 3;
+        var originalLayout = TerminalTextLayout.Create(transcript, originalWidth);
+        var targetSourceIndex = transcript.IndexOf("item 20", StringComparison.Ordinal);
+        var targetRow = originalLayout.VisualRowAt(targetSourceIndex);
+        var scrollOffset = TerminalTranscriptViewport.ScrollOffsetForFirstRow(
+            originalLayout.RowCount, targetRow, transcriptHeight);
+
+        compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 0, columns: originalWidth, height, new TranscriptSearchController(), new TerminalMouseRouter());
+        var scrolled = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset, columns: originalWidth, height, new TranscriptSearchController(), new TerminalMouseRouter());
+        Assert.Contains("item 20", scrolled.Rows[0]);
+
+        var resized = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrolled.ScrollOffset, columns: resizedWidth, height,
+            new TranscriptSearchController(), new TerminalMouseRouter());
+
+        Assert.Contains("item 20", resized.Rows[0]);
+    }
+
+    [Fact]
     public void StartupTrustNoticeUsesAnIndentedPiWidthContinuation()
     {
         var presentation = new TerminalStartupPresentation(null, verbose: false);

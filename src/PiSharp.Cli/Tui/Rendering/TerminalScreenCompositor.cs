@@ -20,6 +20,9 @@ internal sealed class TerminalScreenCompositor
     private int _previousRestoreStartRow;
     private int _previousColumns;
     private int _previousHeight;
+    private TerminalTextLayout.LayoutResult? _previousTranscriptLayout;
+    private int _previousTranscriptFirstVisualRow;
+    private int _previousTranscriptScrollOffset;
 
     public TerminalScreenCompositor(TextWriter output, TerminalImageRenderer images)
     {
@@ -87,8 +90,23 @@ internal sealed class TerminalScreenCompositor
             visibleLayout = TerminalTextLayout.Create(startupPrefix + highlightedSearch.HighlightedText, transcriptWidth);
         }
 
+        // Pi's follow-end scroll view keeps its absolute scrollTop while new content arrives.
+        // This screen stores distance from the bottom, so compensate that offset to keep the
+        // first visible source position stable while the reader is away from live output.
+        if (highlightedSearch.MatchCount == 0 && scrollOffset > 0 &&
+            scrollOffset == _previousTranscriptScrollOffset && _previousTranscriptLayout is { } previousLayout)
+        {
+            var anchorSourceIndex = previousLayout.SourceIndexAtVisualRow(_previousTranscriptFirstVisualRow);
+            var anchoredFirstRow = transcriptLayout.VisualRowAt(anchorSourceIndex);
+            scrollOffset = TerminalTranscriptViewport.ScrollOffsetForFirstRow(
+                transcriptLayout.RowCount, anchoredFirstRow, transcriptHeight);
+        }
+
         var transcriptRows = TerminalTranscriptViewport.WrapWindow(visibleLayout,
             transcriptHeight, scrollOffset, out scrollOffset, out var firstVisualRow);
+        _previousTranscriptLayout = transcriptLayout;
+        _previousTranscriptFirstVisualRow = firstVisualRow;
+        _previousTranscriptScrollOffset = scrollOffset;
         var rows = Enumerable.Repeat("", height).ToArray();
         for (var index = 0; index < startupHeight; index++)
             rows[index] = TerminalTranscriptViewport.Clip(startupRows[index], columns);
