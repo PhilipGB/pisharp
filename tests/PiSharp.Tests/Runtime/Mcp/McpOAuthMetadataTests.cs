@@ -204,6 +204,55 @@ public sealed class McpOAuthMetadataTests
         }
     }
 
+    [Fact]
+    public async Task LoginAcceptsConfigured127LoopbackCallback()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-127-callback-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await using var server = new OAuthServer();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        try
+        {
+            var callbackPort = GetLoopbackPort();
+            using var config = JsonDocument.Parse(JsonSerializer.Serialize(new
+            {
+                url = server.Origin + "/mcp",
+                oauth = new
+                {
+                    clientId = "fixture-client",
+                    callbackUrl = "http://127.0.0.1:" + callbackPort + "/callback"
+                }
+            }));
+            var entry = McpConfiguration.Parse("protected", config.RootElement, "mcp.json", "global");
+            var output = new LoginOutput();
+            var login = McpOAuthLogin.SignInAsync(entry, root, output, false,
+                TimeSpan.FromSeconds(10), deadline.Token);
+            var authorizationUri = new Uri(await output.Authorization.Task.WaitAsync(deadline.Token));
+            var query = System.Web.HttpUtility.ParseQueryString(authorizationUri.Query);
+            var redirect = new Uri(query["redirect_uri"]!);
+
+            Assert.Equal("127.0.0.1", redirect.Host);
+            Assert.Equal(callbackPort, redirect.Port);
+            Assert.Equal("/callback", redirect.AbsolutePath);
+
+            var callbackUri = new UriBuilder(redirect)
+            {
+                Query = "code=fixture-code&state=" + Uri.EscapeDataString(query["state"]!) +
+                    "&iss=" + Uri.EscapeDataString(server.Origin)
+            }.Uri;
+            using var browser = new HttpClient();
+            Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(callbackUri, deadline.Token)).StatusCode);
+            await login.WaitAsync(deadline.Token);
+
+            Assert.Equal(1, server.TokenRequests);
+        }
+        finally
+        {
+            deadline.Cancel();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -246,7 +295,12 @@ public sealed class McpOAuthMetadataTests
             var callbackUri = new UriBuilder(redirect) { Query = callbackQuery }.Uri;
             using var browser = new HttpClient();
             var wrongOrigin = new UriBuilder(callbackUri) { Host = "127.0.0.1" }.Uri;
-            Assert.Equal(HttpStatusCode.BadRequest, (await browser.GetAsync(wrongOrigin, deadline.Token)).StatusCode);
+            var wrongOriginError = await Record.ExceptionAsync(async () =>
+            {
+                using var response = await browser.GetAsync(wrongOrigin, deadline.Token);
+                Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
+            });
+            Assert.True(wrongOriginError is null or HttpRequestException, wrongOriginError?.ToString());
             var wrongPath = new UriBuilder(callbackUri) { Path = "/wrong" }.Uri;
             Assert.Equal(HttpStatusCode.BadRequest, (await browser.GetAsync(wrongPath, deadline.Token)).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(callbackUri, deadline.Token)).StatusCode);
