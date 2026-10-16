@@ -73,7 +73,7 @@ public sealed class CliThemeProcessTests
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             await customThemeRendered.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);

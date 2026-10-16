@@ -131,7 +131,7 @@ public sealed class McpOAuthTuiTests
                 var diagnostics = exited ? await stderr : "";
                 throw new TimeoutException($"The TUI did not become ready (exited={exited}, code={exitCode}).\n{partial}\n{diagnostics}", error);
             }
-            await process.StandardInput.WriteAsync("/mcp login oauth\n");
+            await process.StandardInput.WriteAsync("/mcp login oauth\r");
             await process.StandardInput.FlushAsync();
             await authorizationUrlVisible.Task.WaitAsync(deadline.Token);
             try { await notificationFrameVisible.Task.WaitAsync(TimeSpan.FromSeconds(8), deadline.Token); }
@@ -194,7 +194,7 @@ public sealed class McpOAuthTuiTests
                 await signedIn.Task.WaitAsync(deadline.Token);
             }
 
-            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             await process.WaitForExitAsync(deadline.Token);

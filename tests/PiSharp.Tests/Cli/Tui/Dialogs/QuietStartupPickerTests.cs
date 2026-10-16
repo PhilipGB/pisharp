@@ -28,6 +28,7 @@ public sealed class QuietStartupPickerTests
             using var process = Process.Start(start)!;
             var saved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var rawInputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var output = Task.Run(async () =>
             {
                 var text = new StringBuilder();
@@ -36,6 +37,7 @@ public sealed class QuietStartupPickerTests
                 {
                     text.Append(buffer, 0, count);
                     var current = text.ToString();
+                    if (current.Contains("\u001b[?2004h", StringComparison.Ordinal)) rawInputReady.TrySetResult();
                     if (current.Contains("Saved user setting quietStartup = header.", StringComparison.Ordinal)) saved.TrySetResult();
                     if (current.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
                 }
@@ -44,14 +46,15 @@ public sealed class QuietStartupPickerTests
             var error = process.StandardError.ReadToEndAsync();
             try
             {
-                await process.StandardInput.WriteAsync("/settings\nQuiet startup\n\u001b[B\n");
+                await rawInputReady.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                await process.StandardInput.WriteAsync("/settings\rQuiet startup\r\u001b[B\r");
                 await process.StandardInput.FlushAsync();
                 await saved.Task.WaitAsync(TimeSpan.FromSeconds(12));
                 Assert.Equal(QuietStartupMode.Header, (await UserSettings.LoadAsync(agent, _ => null)).QuietStartup);
                 await process.StandardInput.WriteAsync("\u001b");
                 await process.StandardInput.FlushAsync();
                 await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
-                await process.StandardInput.WriteAsync("/quit\n");
+                await process.StandardInput.WriteAsync("/quit\r");
                 process.StandardInput.Close();
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
                 await process.WaitForExitAsync(timeout.Token);

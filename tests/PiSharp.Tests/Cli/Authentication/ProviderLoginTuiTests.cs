@@ -36,12 +36,20 @@ public sealed class ProviderLoginTuiTests
             start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
             using var process = System.Diagnostics.Process.Start(start)!;
             var output = new StringBuilder();
+            var rawInputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var draining = Task.Run(async () =>
             {
                 var buffer = new char[1024];
                 int count;
                 while ((count = await process.StandardOutput.ReadAsync(buffer)) > 0)
-                    lock (output) output.Append(buffer, 0, count);
+                {
+                    lock (output)
+                    {
+                        output.Append(buffer, 0, count);
+                        if (output.ToString().Contains("\u001b[?2004h", StringComparison.Ordinal))
+                            rawInputReady.TrySetResult();
+                    }
+                }
             });
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
@@ -55,13 +63,14 @@ public sealed class ProviderLoginTuiTests
             }
             try
             {
-                await process.StandardInput.WriteAsync("before-login\n/login fixture oauth\n/login fixture api-key\n");
+                await rawInputReady.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("before-login\r/login fixture oauth\r/login fixture api-key\r");
                 await process.StandardInput.FlushAsync();
                 await WaitFor("API key for fixture:");
-                await process.StandardInput.WriteAsync("fixture-secret-not-for-transcript\n");
+                await process.StandardInput.WriteAsync("fixture-secret-not-for-transcript\r");
                 await process.StandardInput.FlushAsync();
                 await WaitFor("Authenticated fixture with api-key");
-                await process.StandardInput.WriteAsync("/model fixture/fixture-alt\n/thinking high\n/thinking\n/model\n\u001b[B\u001b[A\r/logout\nafter-logout\n/quit\n");
+                await process.StandardInput.WriteAsync("/model fixture/fixture-alt\r/thinking high\r/thinking\r/model\r\u001b[B\u001b[A\r/logout\rafter-logout\r/quit\r");
                 process.StandardInput.Close();
                 await process.WaitForExitAsync(timeout.Token);
                 await draining;
@@ -160,13 +169,13 @@ public sealed class ProviderLoginTuiTests
                 throw new TimeoutException("The Codex provider TUI did not become ready.\n" + partial, error);
             }
 
-            await process.StandardInput.WriteAsync("/login openai-codex oauth\n");
+            await process.StandardInput.WriteAsync("/login openai-codex oauth\r");
             await process.StandardInput.FlushAsync();
             await methodsVisible.Task.WaitAsync(deadline.Token);
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await cancelled.Task.WaitAsync(deadline.Token);
-            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             await process.WaitForExitAsync(deadline.Token);
@@ -290,7 +299,7 @@ public sealed class ProviderLoginTuiTests
                 throw new TimeoutException("The provider TUI did not become ready.\n" + partial, error);
             }
 
-            await process.StandardInput.WriteAsync("/login anthropic oauth\n");
+            await process.StandardInput.WriteAsync("/login anthropic oauth\r");
             await process.StandardInput.FlushAsync();
             await methodSelectorVisible.Task.WaitAsync(deadline.Token);
             await process.StandardInput.WriteAsync("\u001b[B\r");
@@ -337,7 +346,7 @@ public sealed class ProviderLoginTuiTests
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await cancelled.Task.WaitAsync(deadline.Token);
-            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             await process.WaitForExitAsync(deadline.Token);

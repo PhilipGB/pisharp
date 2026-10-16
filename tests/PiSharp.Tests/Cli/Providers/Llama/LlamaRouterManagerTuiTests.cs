@@ -457,6 +457,49 @@ public sealed class LlamaRouterManagerTuiTests
     }
 
     [Fact]
+    public async Task EditorSubmitsAnEditedMultilinePromptThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-editor-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        await using var server = new RouterServer(chatResponse: "MULTILINE_PROMPT_OK");
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+            sessionDirectory: Path.Combine(root, "sessions"), noTools: true);
+        try
+        {
+            await terminal.WaitFrameAsync(frame => frame.Contains("qwen", StringComparison.Ordinal) &&
+                !frame.Contains("llama.cpp models", StringComparison.Ordinal) &&
+                !frame.Contains("Unload model?", StringComparison.Ordinal));
+            const string originalPrompt = "Read facts.txt and answer with its content.\nSummarize the answer in one sentence.";
+            await terminal.SendRawAsync("\u001b[200~" + originalPrompt + "\u001b[201~");
+            await terminal.WaitTextAsync("Summarize the answer in one sentence.");
+            await terminal.SendRawAsync(string.Concat(Enumerable.Repeat("\u001b[D", originalPrompt.Length)) + "Please ");
+            await terminal.WaitTextAsync("Please Read facts.txt and answer with its content.");
+            await terminal.SendRawAsync("\r");
+            await terminal.WaitFrameAsync(frame => frame.Contains("MULTILINE_PROMPT_OK", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal));
+
+            var request = Assert.Single(server.Requests, item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions");
+            using var body = JsonDocument.Parse(request.Body!);
+            var userMessage = body.RootElement.GetProperty("messages").EnumerateArray()
+                .Single(message => message.GetProperty("role").GetString() == "user");
+            var content = userMessage.GetProperty("content");
+            var submittedPrompt = content.ValueKind == JsonValueKind.String
+                ? content.GetString()
+                : string.Concat(content.EnumerateArray().Select(part => part.GetProperty("text").GetString()));
+            Assert.Equal("Please Read facts.txt and answer with its content.\nSummarize the answer in one sentence.",
+                submittedPrompt);
+            await terminal.QuitAsync();
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task CancellingLocalModelStreamAfterVisibleTextSettlesAndAcceptsNextPrompt()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
@@ -948,6 +991,12 @@ public sealed class LlamaRouterManagerTuiTests
         }
 
         public async Task SendAsync(string input)
+        {
+            await _process.StandardInput.WriteAsync(input.Replace('\n', '\r'));
+            await _process.StandardInput.FlushAsync();
+        }
+
+        public async Task SendRawAsync(string input)
         {
             await _process.StandardInput.WriteAsync(input);
             await _process.StandardInput.FlushAsync();

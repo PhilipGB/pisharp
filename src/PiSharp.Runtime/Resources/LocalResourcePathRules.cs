@@ -79,13 +79,29 @@ public static class LocalResourcePathRules
         var relative = Normalize(Path.GetRelativePath(fullBase, path));
         var absolute = Normalize(path);
         var name = Path.GetFileName(path);
-        if (GlobMatch(relative, fullPattern) || GlobMatch(name, fullPattern) || GlobMatch(absolute, fullPattern))
+        if (GlobMatchAny([relative, name, absolute], fullPattern))
             return true;
         if (!skillPath || !Path.GetFileName(path).Equals("SKILL.md", StringComparison.Ordinal))
             return false;
         var parent = Path.GetDirectoryName(path)!;
-        return GlobMatch(Normalize(Path.GetRelativePath(fullBase, parent)), fullPattern) ||
-            GlobMatch(Path.GetFileName(parent), fullPattern) || GlobMatch(Normalize(parent), fullPattern);
+        return GlobMatchAny([
+            Normalize(Path.GetRelativePath(fullBase, parent)),
+            Path.GetFileName(parent),
+            Normalize(parent)
+        ], fullPattern);
+    }
+
+    private static bool GlobMatchAny(IReadOnlyList<string> values, string pattern)
+    {
+        if (pattern.Length == 0 || pattern.Length > 4096) return false;
+
+        var patternStart = 0;
+        while (patternStart < pattern.Length && pattern[patternStart] == '!') patternStart++;
+        if (patternStart == 0)
+            return values.Any(value => GlobMatch(value, pattern));
+
+        var matches = values.Any(value => GlobMatchExpanded(value, pattern[patternStart..]));
+        return (patternStart % 2 != 0) != matches;
     }
 
     private static bool MatchesExact(string path, string pattern, string baseDirectory, bool skillPath)
