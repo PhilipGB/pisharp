@@ -1,5 +1,69 @@
 # Continuation — PiSharp capability parity
 
+## Interactive UX milestone complete — 2026-10-16
+
+The bounded Interactive UX milestone is complete on branch
+`milestone/interactive-ux`, product source
+`927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f`, based on main
+`2f5957c808bea59292b592a26d64ca0bc6d49c3d`. The configured Pi reference
+remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; global Pi parity
+remains incomplete.
+
+This milestone made terminal ownership resilient through cleanup failures,
+preserved raw Enter and Ctrl+J input correctly, made retry status visible,
+anchored a scrolled transcript while output and geometry change, exposed
+session branch heads, and added a searchable conversation-tree picker that
+switches and persists the selected head. A narrow local-resource matcher
+correction keeps minimatch negation consistent across relative, basename and
+absolute path candidates.
+
+Interactive evidence includes a Linux PTY multiline editor submission that
+pastes a multiline prompt, edits its beginning, resizes narrow and wide, submits
+the exact provider text, recalls/resubmits it from history, and completes a
+file path. Model-picker evidence covers resize and cancel, an unauthenticated
+provider failure that retains the working model, and successful switches whose
+subsequent requests use the selected provider/model. The conversation-tree PTY
+selects one of two sibling branches and verifies the chosen head persists while
+the other branch remains available. A Responses-compatible Linux PTY flow
+visibly renders pre-tool assistant text, working progress, extension call and
+result, assistant continuation and a later follow-up; an injected command
+error verifies terminal mode restoration. Retry start/success/failure status
+is rendered in the transcript. Session sorting, search, rename, resume, branch
+selection, settings/login dialogs, and cleanup after normal exit, cancellation,
+double Ctrl+C and render failures remain covered. Compositor tests verify that
+scrolling stays anchored through streaming and resize while the live view
+follows the latest output. A Linux PTY acceptance pauses a 60-row stream, scrolls
+back, resizes, returns to the latest row, then verifies every streamed row
+appears once in follow-up history.
+
+Final local verification on the source commit: restore and format pass;
+warnings-as-errors solution build reports zero warnings/errors; .NET passes
+**2,104/2,104** with zero skips; architecture checks pass **6/6**; Node passes
+**24/24**; Python passes **50/50**; documentation validation finds **134
+documents and 522 references**; MCP conformance reports no regressions against
+its classified baseline. Tests used `TMPDIR=/tmp` because the local default temp
+directory is inside `$HOME` and affected path-display assertions. At source
+acceptance, live Codex and llama smoke tests were unavailable. The model-picker
+provider switch used llama.cpp and an authenticated deterministic
+OpenAI-compatible fixture.
+
+Exact-head Linux CI on source `927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f`
+passes all required jobs: [run 38889766086](https://github.com/PhilipGB/pisharp/actions/runs/38889766086).
+
+A follow-up live smoke on 2026-10-16 used the saved Codex and llama.cpp
+credentials. PiSharp discovered each provider's models and completed one short
+no-tools, no-session request with `gpt-6-luna` and the loaded
+`Qwen3.8-27B-GGUF`. The run used a private temporary copy of the auth file so
+model-cache writes stayed under `/tmp`; the original profile and sessions were
+left untouched, and the temporary copy was removed.
+
+The 194 global capability IDs remain at **12 verified, 148 in progress and 34
+not started**. UX evidence does not claim global parity. Broader provider work,
+MCP/Codemode expansion, full resource/extension parity, exhaustive terminal
+differentials and broader live provider coverage remain deferred. Recommended
+next bounded milestone: MCP/Codemode interactive workflow completion and
+conformance, kept separate from provider breadth and the global parity audit.
+
 ## Daily Driver Core milestone complete — 2026-10-16
 
 This checkpoint completes the bounded Codex subscription and llama.cpp daily

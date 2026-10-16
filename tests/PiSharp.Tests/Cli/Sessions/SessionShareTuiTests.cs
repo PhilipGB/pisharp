@@ -20,7 +20,7 @@ public sealed class SessionShareTuiTests
         var saved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var shared = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var output = CaptureAsync(process, text =>
+        var output = new TerminalOutputCapture(process, text =>
         {
             if (text.Contains("Saved user setting sessionShareDestination = radius.", StringComparison.Ordinal)) saved.TrySetResult();
             if (text.Contains("Settings closed.", StringComparison.Ordinal)) closed.TrySetResult();
@@ -29,6 +29,7 @@ public sealed class SessionShareTuiTests
         var error = process.StandardError.ReadToEndAsync();
         try
         {
+            await output.WaitForRawInputReadyAsync(TimeSpan.FromSeconds(10));
             await SendAsync(process, "/settings\nSession share destination\n\u001b[B\u001b[B\n");
             await saved.Task.WaitAsync(TimeSpan.FromSeconds(12));
             Assert.Equal("radius", (await UserSettings.LoadAsync(agent, _ => null)).ShareDestination);
@@ -41,7 +42,7 @@ public sealed class SessionShareTuiTests
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(12));
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await error);
-            Assert.Contains("Run '/login radius' first.", await output);
+            Assert.Contains("Run '/login radius' first.", await output.Completion);
         }
         finally { if (!process.HasExited) process.Kill(entireProcessTree: true); }
     }
@@ -61,13 +62,14 @@ public sealed class SessionShareTuiTests
             ConnectionSettings.LocalEndpoint, "local").ToJson());
         using var process = Start(fixture, agent, sessionPath);
         var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var output = CaptureAsync(process, text =>
+        var output = new TerminalOutputCapture(process, text =>
         {
             if (text.Contains("Share cancelled", StringComparison.Ordinal)) cancelled.TrySetResult();
         });
         var error = process.StandardError.ReadToEndAsync();
         try
         {
+            await output.WaitForRawInputReadyAsync(TimeSpan.FromSeconds(10));
             await SendAsync(process, "/share\n");
             await ProcessTestHelpers.WaitForFileAsync(Path.Combine(fixture.Root, "gist-pid"));
             var pid = ProcessTestHelpers.ReadLinuxProcessId(Path.Combine(fixture.Root, "gist-pid"));
@@ -80,14 +82,14 @@ public sealed class SessionShareTuiTests
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(12));
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await error);
-            var captured = await output;
+            var captured = await output.Completion;
             Assert.Contains("Creating gist...", captured);
             Assert.DoesNotContain("Stop sharing?", captured);
         }
         catch (TimeoutException)
         {
             if (!process.HasExited) process.Kill(entireProcessTree: true);
-            Assert.Fail(await output + "\n" + await error);
+            Assert.Fail(output.Output + "\n" + await error);
         }
         finally { if (!process.HasExited) process.Kill(entireProcessTree: true); }
     }
@@ -114,19 +116,8 @@ public sealed class SessionShareTuiTests
 
     private static async Task SendAsync(Process process, string input)
     {
-        await process.StandardInput.WriteAsync(input);
+        await process.StandardInput.WriteAsync(input.Replace('\n', '\r'));
         await process.StandardInput.FlushAsync();
     }
 
-    private static async Task<string> CaptureAsync(Process process, Action<string> observe)
-    {
-        var text = new StringBuilder();
-        var buffer = new char[4096];
-        while (await process.StandardOutput.ReadAsync(buffer) is var count && count > 0)
-        {
-            text.Append(buffer, 0, count);
-            observe(text.ToString());
-        }
-        return text.ToString();
-    }
 }

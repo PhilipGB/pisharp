@@ -339,15 +339,16 @@ public sealed class ExtensionCatalogTests
                 start.Environment["PISHARP_AGENT_DIR"] = Path.Combine(cwd, "agent");
                 using var process = Process.Start(start);
                 Assert.NotNull(process);
-                var stdout = process.StandardOutput.ReadToEndAsync();
+                var stdout = new TerminalOutputCapture(process);
                 var stderr = process.StandardError.ReadToEndAsync();
-                await process.StandardInput.WriteAsync("/fixture hi\n/quit\n");
+                await stdout.WaitForRawInputReadyAsync(TimeSpan.FromSeconds(10));
+                await process.StandardInput.WriteAsync("/fixture hi\r/quit\r");
                 process.StandardInput.Close();
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
                 try { await process.WaitForExitAsync(timeout.Token); }
                 catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
                 Assert.Equal(0, process.ExitCode);
-                return (await stdout, await stderr);
+                return (await stdout.Completion, await stderr);
             }
             var denied = await Run(false);
             Assert.Contains("Unknown command: /fixture", denied.Output + denied.Error);

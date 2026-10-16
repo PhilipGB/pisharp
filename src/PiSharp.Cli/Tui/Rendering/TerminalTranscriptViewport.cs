@@ -38,6 +38,12 @@ internal static class TerminalTranscriptViewport
         return Math.Clamp(totalRows - Math.Min(totalRows, startRow + viewportHeight), 0, MaximumScrollOffset);
     }
 
+    public static int ScrollOffsetForFirstRow(int totalRows, int firstRow, int viewportHeight)
+    {
+        var startRow = Math.Clamp(firstRow, 0, Math.Max(0, totalRows - viewportHeight));
+        return Math.Clamp(totalRows - Math.Min(totalRows, startRow + viewportHeight), 0, MaximumScrollOffset);
+    }
+
     public static string Clip(string value, int width)
     {
         var result = new StringBuilder();

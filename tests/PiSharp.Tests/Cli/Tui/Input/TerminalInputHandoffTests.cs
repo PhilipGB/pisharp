@@ -6,7 +6,7 @@ namespace PiSharp.Tests;
 public sealed class TerminalInputHandoffTests
 {
     [Theory]
-    [InlineData("\n")]
+    [InlineData("\r")]
     [InlineData("é")]
     [InlineData("x")]
     public void CancellationDuringReadRetainsCompleteEventForIdleConsumer(string text)
@@ -52,7 +52,7 @@ public sealed class TerminalInputHandoffTests
     }
 
     [Theory]
-    [InlineData("\n")]
+    [InlineData("\r")]
     [InlineData("x")]
     public void ActiveReaderReceivesInputBeforeActivityEnds(string text)
     {
@@ -66,7 +66,7 @@ public sealed class TerminalInputHandoffTests
 
     private static void AssertEvent(string text, TerminalInputEvent value)
     {
-        if (text == "\n") Assert.Equal(ConsoleKey.Enter, value.Key!.Value.Key);
+        if (text == "\r") Assert.Equal(ConsoleKey.Enter, value.Key!.Value.Key);
         else
         {
             Assert.True(TerminalInput.TryGetText(value, out var actual));

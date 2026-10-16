@@ -168,6 +168,26 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
             case "context_compacted" when interactive && !string.IsNullOrEmpty(update.Text):
                 status.WriteLine(Safe(update.Text));
                 break;
+            case "auto_retry_start":
+                {
+                    var attempt = update.RetryAttempt?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "?";
+                    var maxAttempts = update.RetryMaxAttempts?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "?";
+                    var delay = update.RetryDelayMs is { } delayMs
+                        ? $" in {(delayMs / 1000d).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}s" : "";
+                    var error = string.IsNullOrWhiteSpace(update.Error) ? "" : $": {Safe(update.Error)}";
+                    status.WriteLine($"Retrying provider request ({attempt}/{maxAttempts}){delay}{error}");
+                    break;
+                }
+            case "auto_retry_end" when update.RetrySuccess == true:
+                status.WriteLine("Provider retry succeeded.");
+                break;
+            case "auto_retry_end" when update.RetrySuccess == false:
+                {
+                    var finalError = string.IsNullOrWhiteSpace(update.RetryFinalError)
+                        ? "" : $": {Safe(update.RetryFinalError)}";
+                    status.WriteLine($"Provider retry stopped{finalError}");
+                    break;
+                }
             case "tool_execution_started" when interactive:
                 WriteToolCall(update);
                 break;

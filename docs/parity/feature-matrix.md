@@ -1,3 +1,44 @@
+## Interactive UX milestone complete — 2026-10-16
+
+The bounded UX release is on `milestone/interactive-ux` at product source
+`927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f`, based on `main`
+`2f5957c808bea59292b592a26d64ca0bc6d49c3d`. It covers terminal cleanup and raw
+input, multiline editing with history/completion and resize, retry status,
+streamed transcript anchoring, and searchable session-tree branch selection.
+
+Linux PTY evidence verifies edited multiline prompts reach the llama fixture
+unchanged after narrow/wide resize, history resubmits the same prompt,
+completion selects a file, and model-picker cancellation/resize plus failed and
+successful provider switches preserve or update the working runtime as
+expected. The conversation-tree PTY now selects and persists one of two sibling
+branches while retaining the other. A Responses-compatible PTY flow visibly
+streams assistant text, tool progress/call/result, continuation and a follow-up;
+an injected command error also verifies the exact terminal mode is restored.
+Retry start, success and final failure are visible in the transcript. A separate
+Linux PTY test pauses a 60-row stream, scrolls back, resizes, returns to latest
+output, then verifies every streamed row appears once in follow-up history.
+Session search/sort/rename/resume, settings and login dialogs, and cleanup after
+normal exit, cancellation, double Ctrl+C and render failures remain covered.
+
+Full local verification passes 2,104 .NET tests with zero skips, six
+architecture checks, 24 Node tests, 50 Python tests, 134 documentation files and
+522 references, format/build, and MCP conformance with no new regressions. Exact
+head Linux CI passes on product source `927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f`
+([run 38889766086](https://github.com/PhilipGB/pisharp/actions/runs/38889766086)).
+The PR review head `8fd77a8289fdf3216e3b674b2869c03b2d791708` also passed Linux
+CI ([run 38892905189](https://github.com/PhilipGB/pisharp/actions/runs/38892905189));
+that head records the live-smoke follow-up without changing product code.
+
+A follow-up live smoke on 2026-10-16 used the saved Codex and llama.cpp
+credentials. PiSharp discovered both model catalogs and completed short
+no-tools, no-session requests with Codex `gpt-6-luna` and the loaded llama.cpp
+`Qwen3.8-27B-GGUF`. The smoke used a private temporary auth copy for cache
+writes and removed it afterward; the original profile and sessions were not
+modified. These results close only the bounded UX milestone; all 194 global
+capability IDs retain their existing statuses (**12 verified, 148 in progress,
+34 not started**). Broader provider, resource, MCP/Codemode and global parity
+work remains deferred.
+
 ## Daily Driver Core milestone complete — 2026-10-16
 
 Current integrated product source is

@@ -92,6 +92,11 @@ internal static class InteractiveMode
                     var split = line.IndexOf(' ');
                     var command = split < 0 ? line : line[..split];
                     var argument = split < 0 ? "" : line[(split + 1)..].Trim();
+                    if (command == "/tree")
+                    {
+                        await sessionNavigation.SelectTreePointAsync();
+                        continue;
+                    }
                     var sessionCommands = new InteractiveSessionCommands(projectBinding.Store, projectBinding.WorkingDirectory, projectBinding.Arguments.NoSession,
                         Console.Out, () => editor.ReadLineAsync(HandleEditorApplicationAction, enableApplicationActions: false),
                         presentation.LoadSessionTranscript);

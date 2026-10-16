@@ -69,7 +69,7 @@ internal sealed class RadiusLoginTerminal : IAsyncDisposable
 
     public async Task SendAsync(string input)
     {
-        await _process.StandardInput.WriteAsync(input);
+        await _process.StandardInput.WriteAsync(input.Replace('\n', '\r'));
         await _process.StandardInput.FlushAsync();
     }
 

@@ -128,9 +128,10 @@ public sealed class QuietStartupTests
             start.Environment["PISHARP_AGENT_DIR"] = agent;
             start.Environment["HOME"] = root;
             using var process = Process.Start(start)!;
-            var output = process.StandardOutput.ReadToEndAsync();
+            var output = new TerminalOutputCapture(process);
             var error = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync("/quit\n");
+            await output.WaitForRawInputReadyAsync(TimeSpan.FromSeconds(10));
+            await process.StandardInput.WriteAsync("/quit\r");
             process.StandardInput.Close();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(timeout.Token); }
@@ -138,11 +139,11 @@ public sealed class QuietStartupTests
             {
                 if (!process.HasExited) process.Kill(entireProcessTree: true);
                 await process.WaitForExitAsync();
-                throw new TimeoutException($"Quiet-startup CLI did not exit within 12 seconds.\nstdout:\n{await output}\nstderr:\n{await error}", failure);
+                throw new TimeoutException($"Quiet-startup CLI did not exit within 12 seconds.\nstdout:\n{output.Output}\nstderr:\n{await error}", failure);
             }
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await error);
-            var text = await output;
+            var text = await output.Completion;
             Assert.Equal(header, text.Contains("▀▀█", StringComparison.Ordinal));
             Assert.Equal(header, text.Contains("PiSharp v", StringComparison.Ordinal));
             Assert.Contains("This project is not trusted", text);
