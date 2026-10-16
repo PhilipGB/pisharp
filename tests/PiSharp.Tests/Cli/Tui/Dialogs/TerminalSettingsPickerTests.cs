@@ -7,7 +7,7 @@ public sealed class TerminalSettingsPickerTests
     [Fact]
     public void SettingsKeepPiSharedOrderAndAppendPiSharpOptions()
     {
-        // Pi source receipt: settings-selector.ts, main, 2026-10-16
+        // Pi source receipt: settings-selector.ts, main, inspected 2026-10-16
         // https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/modes/interactive/components/settings-selector.ts
         // The prompt-specified first ten are authoritative; the remaining supported shared entries
         // retain upstream order. Mermaid rendering, cache miss notices and changelog collapsing are

@@ -24,32 +24,6 @@ public sealed class EditorCompletion
         _describeCommand = describeCommand;
     }
 
-    private static readonly string[] s_commands =
-    [
-        "/tree",
-        "/branch",
-        "/fork",
-        "/clone",
-        "/new",
-        "/sessions",
-        "/resume",
-        "/delete-session",
-        "/import",
-        "/name",
-        "/model",
-        "/llama",
-        "/models",
-        "/settings",
-        "/compact",
-        "/export",
-        "/share",
-        "/export-jsonl",
-        "/session",
-        "/trust",
-        "/reload",
-        "/hotkeys",
-        "/quit"
-    ];
     private static readonly string s_cjkPunctuation = "，．：；！？（）［］｛｝“”‘’…—、。「」『』《》〈〉【】〔〕〖〗〘〙〚〛〝〞";
     private static readonly IReadOnlyDictionary<char, char> s_pathWrappers = new Dictionary<char, char>
     {
@@ -116,13 +90,16 @@ public sealed class EditorCompletion
         var start = FindTokenStart(before);
         return IsSlashCommandStart(before, start)
             ? FindSlashCommandMatches(before[start..])
-                .Select(command => new EditorCompletionSuggestion(command, _describeCommand?.Invoke(command)))
+                .Select(command => new EditorCompletionSuggestion(command,
+                    _describeCommand?.Invoke(command) ?? InteractiveCommandCatalog.Describe(command)))
                 .ToArray()
             : [];
     }
 
-    private string[] FindSlashCommandMatches(string fragment) => s_commands
-        .Concat(_dynamicCommands?.Invoke() ?? [])
+    private IReadOnlyList<string> FindSlashCommandMatches(string fragment) => InteractiveCommandCatalog.Merge(
+            (_dynamicCommands?.Invoke() ?? []).Select(command =>
+                new InteractiveCommandMetadata(command, _describeCommand?.Invoke(command) ?? "")))
+        .Select(command => command.Command)
         .Where(command => command.StartsWith(fragment, StringComparison.OrdinalIgnoreCase))
         .ToArray();
 

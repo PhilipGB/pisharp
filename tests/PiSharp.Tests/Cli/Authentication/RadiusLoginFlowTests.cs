@@ -100,16 +100,17 @@ public sealed class RadiusLoginFlowTests
         else Assert.Equal(ExistingMcp, saved);
         mark = terminal.Mark;
         await terminal.SendAsync("/settings\n");
-        var settings = await terminal.WaitFrameAsync(frame => frame.Contains("Settings scope", StringComparison.Ordinal) ||
+        await terminal.WaitFrameAsync(frame =>
+            frame.Contains("Auto-compact", StringComparison.Ordinal) &&
+            frame.Contains("Type to filter", StringComparison.Ordinal), mark);
+        mark = terminal.Mark;
+        await terminal.SendAsync("hide thinking");
+        var settings = await terminal.WaitFrameAsync(frame =>
+            frame.Contains("Filter: hide thinking", StringComparison.Ordinal) &&
             frame.Contains("Hide thinking", StringComparison.Ordinal), mark);
-        if (settings.Contains("Settings scope", StringComparison.Ordinal))
-        {
-            mark = terminal.Mark;
-            await terminal.SendAsync("\n");
-            settings = await terminal.WaitFrameAsync(frame => frame.Contains("Hide thinking", StringComparison.Ordinal), mark);
-        }
         // The settings changed on disk during the offer. Only accepting it reloads the runtime snapshot.
-        Assert.Contains("Hide thinking · " + (choice == "yes" ? "enabled" : "inherit/default"), settings);
+        var hideThinking = settings.Split('\n').Single(line => line.Contains("Hide thinking", StringComparison.Ordinal));
+        Assert.Contains(choice == "yes" ? "true" : "false", hideThinking, StringComparison.Ordinal);
         mark = terminal.Mark;
         await terminal.SendAsync("\u001b");
         await terminal.WaitTextAsync("Settings closed.", mark);

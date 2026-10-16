@@ -1,5 +1,44 @@
 # Continuation — PiSharp capability parity
 
+## Interactive Command UX consistency correction — 2026-10-16
+
+This bounded correction is on `milestone/interactive-command-ux`, based on
+`c52f02744f7ef5aa6e7d0202f617ed4e2dda3770`. The configured global Pi reference
+remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; this work does not promote a
+global capability or claim full TUI parity.
+
+Settings now use a compact searchable in-flow list with the requested initial
+ten-row order, aligned values, selected-setting description, bounded rows,
+position/count, and persistence checks at 80 and 52 columns. The order test
+protects the user-observed acceptance order. Pi's current selector was inspected
+at `698a2d23b86a5045dd54554354a5e0cb7e466795`; its present upstream order places
+Show images and Image width before Auto-resize images, so the prompt's explicit
+first-ten sequence remains authoritative for this correction. Supported,
+small-UX-gap and out-of-scope setting classifications are recorded in
+[`interactive-command-ux-2026-10-16.md`](parity/fixtures/interactive-command-ux-2026-10-16.md).
+
+Tab and Shift+Tab cycle slash/path candidates directly in the editor buffer.
+The completion metadata comes from the canonical built-in command catalog,
+which merges dynamic skill, prompt and extension commands. PTY acceptance cycles
+`/mod` through `/model` and `/models`, completes `/thi` to `/thinking`, and
+opens the selector with one Enter. The `/thinking` selector shares supported
+level order and descriptions with Shift+Tab cycling, supports direct setters,
+cancel and model-specific Ctrl+S defaults, and is covered by isolated PTY tests
+that verify a later provider request uses the new level.
+
+The correction remains bounded to settings presentation, completion, command
+discovery and thinking selection. No execution-ledger or feature-matrix status
+changed. Final local verification passes restore, format, and the
+warnings-as-errors solution build; .NET **2,157/2,157** with zero skips;
+architecture **6/6**; Node **24/24**; Python **50/50**; and documentation path
+validation (**135 documents, 524 references**). The .NET suite used `TMPDIR=/tmp`
+so the terminal path fixtures fit their 120-column displays.
+
+MCP conformance passes **261** checks with the same eight classified baseline
+failures in elicitation, basic CIMD and scope retry-limit behavior; there are no
+new regressions. The exact-head Linux CI check remains a completion gate. Do not
+start Resources / Packages / Extensions from this task.
+
 ## MCP + Codemode Workflow milestone — 2026-10-16
 
 The bounded MCP/Codemode milestone is on

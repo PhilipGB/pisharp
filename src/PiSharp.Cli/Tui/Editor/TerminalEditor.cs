@@ -522,7 +522,8 @@ public sealed class TerminalEditor
         Action? beforeDispatch = null)
     {
         ArgumentNullException.ThrowIfNull(dispatch);
-        if (_keymap.MatchesEditorAction(key)) return false;
+        if (_keymap.MatchesEditorAction(key) &&
+            !(_keymap.Matches("app.thinking.cycle", key) && _completionCycle is null)) return false;
         var action = _keymap.MatchIdleApplicationAction(key);
         if (action is null) return false;
         beforeDispatch?.Invoke();

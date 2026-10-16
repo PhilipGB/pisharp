@@ -61,6 +61,17 @@ public sealed class ProviderLoginTuiTests
                     await Task.Delay(20, timeout.Token);
                 }
             }
+            async Task WaitForScreen(Func<string, bool> predicate)
+            {
+                while (true)
+                {
+                    string captured;
+                    lock (output) captured = output.ToString();
+                    var frames = TerminalOutputFrameReader.Read(captured, rows: 24, columns: 80);
+                    if (frames.Count > 0 && predicate(frames[^1].Screen)) return;
+                    await Task.Delay(20, timeout.Token);
+                }
+            }
             try
             {
                 await rawInputReady.Task.WaitAsync(timeout.Token);
@@ -70,7 +81,14 @@ public sealed class ProviderLoginTuiTests
                 await process.StandardInput.WriteAsync("fixture-secret-not-for-transcript\r");
                 await process.StandardInput.FlushAsync();
                 await WaitFor("Authenticated fixture with api-key");
-                await process.StandardInput.WriteAsync("/model fixture/fixture-alt\r/thinking high\r/thinking\r/model\r\u001b[B\u001b[A\r/logout\rafter-logout\r/quit\r");
+                await process.StandardInput.WriteAsync("/model fixture/fixture-alt\r/thinking high\r/thinking\r");
+                await process.StandardInput.FlushAsync();
+                await WaitForScreen(screen => screen.Contains("Thinking Level", StringComparison.Ordinal));
+                await process.StandardInput.WriteAsync("\u001b");
+                await process.StandardInput.FlushAsync();
+                await WaitForScreen(screen => !screen.Contains("Thinking Level", StringComparison.Ordinal));
+                await process.StandardInput.WriteAsync("/model\r\u001b[B\u001b[A\r/logout\rafter-logout\r/quit\r");
+                await process.StandardInput.FlushAsync();
                 process.StandardInput.Close();
                 await process.WaitForExitAsync(timeout.Token);
                 await draining;
@@ -79,8 +97,7 @@ public sealed class ProviderLoginTuiTests
                 Assert.Contains("has no configured OAuth adapter", transcript);
                 Assert.Contains("Authenticated fixture with api-key", transcript);
                 Assert.Contains("Model: fixture-alt", transcript);
-                Assert.Contains("Thinking: off", transcript);
-                Assert.Contains("Thinking: off; available: off", transcript);
+                Assert.Contains("Thinking Level", transcript);
                 Assert.Contains("Logged out fixture", transcript);
                 var restoreBoundary = transcript.LastIndexOf("\u001b[?1049l", StringComparison.Ordinal);
                 Assert.True(restoreBoundary >= 0, "The interactive screen was not restored.");

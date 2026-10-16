@@ -60,7 +60,7 @@ public sealed class QuietStartupPickerTests
                 await process.WaitForExitAsync(timeout.Token);
                 Assert.Equal(0, process.ExitCode);
                 Assert.Equal("", await error);
-                Assert.Contains("Disable verbose printing at startup (header: keep only the startup header)", await output);
+                Assert.Contains("Disable verbose printing at startup; header keeps only the startup header.", await output);
             }
             catch (TimeoutException)
             {

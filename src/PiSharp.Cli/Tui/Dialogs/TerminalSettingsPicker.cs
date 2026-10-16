@@ -12,7 +12,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
 
     // Source receipt: Pi's settings-selector.ts at
     // https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/modes/interactive/components/settings-selector.ts
-    // (main, inspected 2026-10-16; items array and insertions around lines 434-783).
+    // (main, inspected 2026-10-16; item array and insertion order).
     // The prompt's first-ten order is authoritative; later shared entries follow Pi's current
     // source order, including session sharing after follow-up mode (Pi's absent Transport item is omitted).
     // PiSharp-only options follow the shared settings.
