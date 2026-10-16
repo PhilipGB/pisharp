@@ -83,6 +83,8 @@ public sealed class PartialRegistrationFailureFixture : IPiSharpExtension
         registration.AddCommand("partial_command", (_, _) => Task.FromResult("Must not remain registered"),
             "Uncommitted extension command");
         registration.AddLifecycleHandler(_ => { });
+        registration.AddBeforeAgentStartHandler((_, _, _) =>
+            ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(new("Must not remain registered")));
         registration.AddTool(AIFunctionFactory.Create(() => "Must not remain registered", name: "partial_tool"));
         using var mcp = JsonDocument.Parse("{\"command\":\"false\"}");
         registration.RegisterMcpServer("partial_mcp", mcp.RootElement);

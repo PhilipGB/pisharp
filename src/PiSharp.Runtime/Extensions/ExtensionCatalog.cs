@@ -60,6 +60,7 @@ public sealed partial class ExtensionRegistration
     private readonly List<ExtensionHandlerRegistration<PiSharpToolResultHook>> _toolResultHooks = [];
     private readonly List<ExtensionHandlerRegistration<PiSharpContextTransform>> _contextTransforms = [];
     private readonly List<ExtensionLifecycleHandlerRegistration> _lifecycleHandlers = [];
+    private readonly List<PiSharpBeforeAgentStartHandlerRegistration> _beforeAgentStartHandlers = [];
     private readonly List<RegisteredResourceDiscoveryHandler> _resourceDiscoveryHandlers = [];
     private readonly List<RegisteredProjectTrustHandler> _projectTrustHandlers = [];
     private readonly object _mcpGate = new();
@@ -89,6 +90,8 @@ public sealed partial class ExtensionRegistration
     public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.Select(entry => entry.Handler).ToArray();
     public IReadOnlyList<PiSharpExtensionLifecycleHandler> LifecycleHandlers =>
         _lifecycleHandlers.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<PiSharpBeforeAgentStartHandlerRegistration> BeforeAgentStartHandlers =>
+        _beforeAgentStartHandlers.ToArray();
     internal IReadOnlyList<ExtensionLifecycleHandlerRegistration> RegisteredLifecycleHandlers =>
         _lifecycleHandlers.ToArray();
     internal IReadOnlyList<RegisteredResourceDiscoveryHandler> ResourceDiscoveryHandlers =>
@@ -297,6 +300,13 @@ public sealed partial class ExtensionRegistration
         ArgumentNullException.ThrowIfNull(handler);
         var sourceInfo = _currentSourceInfo ?? SourceInfoFromHandler(handler);
         _lifecycleHandlers.Add(new((eventData, _) => handler(eventData), sourceInfo));
+    }
+
+    /// <summary>Registers an asynchronous hook that may replace the system prompt for each user turn.</summary>
+    public void AddBeforeAgentStartHandler(PiSharpBeforeAgentStartHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        _beforeAgentStartHandlers.Add(new(handler, _currentSourceInfo ?? SourceInfoFromHandler(handler)));
     }
 
     /// <summary>Registers resources that become available after extension startup and each reload.</summary>

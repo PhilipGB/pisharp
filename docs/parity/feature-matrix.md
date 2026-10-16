@@ -1,3 +1,16 @@
+## Resources / Packages / Extensions resume — 2026-10-16
+
+Package install/remove/update/list behavior is already verified by the package
+CLI process receipt. The extension conflict and replaceable-builtin warning
+case matches Pi in the retained queue-4 receipt; the typed lifecycle context,
+UI adapter and resource-reload case matches in the queue-5 receipt. The new
+`before_agent_start` slice at product source `9d5b0a22` supports ordered
+system-prompt replacement for submitted user turns, with five focused checks,
+format verification and a zero-warning build. It does not cover idle custom
+`triggerTurn` runs, injected messages or the rest of the extension API. Broad
+resource and extension capability statuses remain unchanged. See the
+[receipt](fixtures/extension-before-agent-start-current-pi-2026-10-16.json).
+
 ## MCP + Codemode Workflow milestone — 2026-10-16
 
 The bounded milestone branch is `milestone/mcp-codemode-workflows`, based on main

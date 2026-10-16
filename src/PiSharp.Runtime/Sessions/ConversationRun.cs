@@ -92,6 +92,7 @@ public sealed class ConversationRun
         _reasoningLevel = reasoningLevel;
         _promptDelivery = new PromptDeliveryController(_runtimeStateGate, steeringMode, followUpMode);
         Conversation = conversation;
+        _agent.SetExtensionConversation(Conversation);
         _toolState = new ConversationToolState(agent, conversation);
         _execution = execution;
         _historyCount = conversation.ContextMessages().Count;
@@ -273,9 +274,12 @@ public sealed class ConversationRun
             var accepted = false;
             var activeTurnOutcomeSent = false;
             object? owner = null;
+            var conversationRunActivityStarted = false;
             try
             {
                 owner = BeginPromptLoop(Publish);
+                _agent.BeginConversationRunActivity();
+                conversationRunActivityStarted = true;
                 PromptBatch? current = new([promptMessage], [promptText]);
                 var stopRun = false;
                 while (current is not null)
@@ -283,41 +287,51 @@ public sealed class ConversationRun
                     var turn = current;
                     activeTurnOutcomeSent = false;
                     var currentMessage = turn.Messages[0];
-                    var outcome = await _retryController.RunTurnAsync(
-                        (continuation, observeAttempt) => continuation
-                            ? RunStreamingContinuationAsync(turn.Text, linked.Token, observeAttempt)
-                            : turn.Messages.Count > 1
-                                ? RunStreamingBatchAsync(turn.Messages, turn.Text, linked.Token, observeAttempt)
-                                : RunStreamingAsync(currentMessage, turn.Texts[0], linked.Token, observeAttempt),
-                        item =>
-                        {
-                            if (item.Type == "prompt_accepted") accepted = true;
-                            if (item.Type is "prompt_accepted" or "agent_attempt_started") activeTurnOutcomeSent = false;
-                            Publish(item);
-                            if (item.Type is "turn_completed" or "turn_failed" or "turn_interrupted" or "prompt_rejected")
-                                activeTurnOutcomeSent = true;
-                        },
-                        update =>
-                        {
-                            if (update.Contents is null) return;
-                            foreach (var content in update.Contents)
+                    AgentTurnOutcome outcome;
+                    _agent.ClearRunSystemPromptOverride();
+                    try
+                    {
+                        await _agent.PrepareBeforeAgentStartAsync(currentMessage, turn.Texts[0], Publish, linked.Token);
+                        outcome = await _retryController.RunTurnAsync(
+                            (continuation, observeAttempt) => continuation
+                                ? RunStreamingContinuationAsync(turn.Text, linked.Token, observeAttempt)
+                                : turn.Messages.Count > 1
+                                    ? RunStreamingBatchAsync(turn.Messages, turn.Text, linked.Token, observeAttempt)
+                                    : RunStreamingAsync(currentMessage, turn.Texts[0], linked.Token, observeAttempt),
+                            item =>
                             {
-                                if (content is TextReasoningContent reasoning && !string.IsNullOrEmpty(reasoning.Text))
-                                    Publish(new("reasoning_delta", Text: reasoning.Text));
-                                else if (content is UsageContent usage)
-                                    Publish(UsageEvent(CurrentProviderUsage(usage.Details)));
-                            }
-                        },
-                        (head, pathLength, token) => OmitFailedRetryContextAsync(head, pathLength, Publish, token),
-                        async token =>
-                        {
-                            var history = Conversation.ContextMessages();
-                            _execution = await RestoreExecutionAsync(history, token);
-                            _historyCount = history.Count;
-                        },
-                        FlushPendingBashExecutions,
-                        () => Conversation.Tree.HeadId,
-                        linked.Token);
+                                if (item.Type == "prompt_accepted") accepted = true;
+                                if (item.Type is "prompt_accepted" or "agent_attempt_started") activeTurnOutcomeSent = false;
+                                Publish(item);
+                                if (item.Type is "turn_completed" or "turn_failed" or "turn_interrupted" or "prompt_rejected")
+                                    activeTurnOutcomeSent = true;
+                            },
+                            update =>
+                            {
+                                if (update.Contents is null) return;
+                                foreach (var content in update.Contents)
+                                {
+                                    if (content is TextReasoningContent reasoning && !string.IsNullOrEmpty(reasoning.Text))
+                                        Publish(new("reasoning_delta", Text: reasoning.Text));
+                                    else if (content is UsageContent usage)
+                                        Publish(UsageEvent(CurrentProviderUsage(usage.Details)));
+                                }
+                            },
+                            (head, pathLength, token) => OmitFailedRetryContextAsync(head, pathLength, Publish, token),
+                            async token =>
+                            {
+                                var history = Conversation.ContextMessages();
+                                _execution = await RestoreExecutionAsync(history, token);
+                                _historyCount = history.Count;
+                            },
+                            FlushPendingBashExecutions,
+                            () => Conversation.Tree.HeadId,
+                            linked.Token);
+                    }
+                    finally
+                    {
+                        _agent.ClearRunSystemPromptOverride();
+                    }
                     activeTurnOutcomeSent = true;
                     if (outcome != AgentTurnOutcome.Completed)
                     {
@@ -350,10 +364,17 @@ public sealed class ConversationRun
             }
             finally
             {
-                if (owner is not null) EndPromptLoop(owner);
-                try { await channel.Writer.WriteAsync(new("agent_settled"), consumerClosed.Token); }
-                catch (OperationCanceledException) { }
-                channel.Writer.TryComplete();
+                try
+                {
+                    if (owner is not null) EndPromptLoop(owner);
+                }
+                finally
+                {
+                    if (conversationRunActivityStarted) _agent.EndConversationRunActivity();
+                    try { await channel.Writer.WriteAsync(new("agent_settled"), consumerClosed.Token); }
+                    catch (OperationCanceledException) { }
+                    channel.Writer.TryComplete();
+                }
             }
         }, CancellationToken.None);
         try
