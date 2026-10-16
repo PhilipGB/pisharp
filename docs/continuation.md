@@ -1,14 +1,14 @@
 # Continuation — PiSharp capability parity
 
-## Feature-first functional goal — 2026-10-16
+## Daily Driver Core milestone complete — 2026-10-16
 
-This checkpoint supersedes the old queue order as the active execution priority.
-The goal is a useful PiSharp for Codex subscriptions and llama.cpp, followed by
-core agent/session/tool behavior, the interactive experience, and other
-user-facing application features. Keep the configured Pi checkout pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+This checkpoint completes the bounded Codex subscription and llama.cpp daily
+driver milestone. The configured Pi checkout remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; global Pi parity remains a separate
+roadmap. Stop this milestone here and wait for the next goal before broadening
+provider or application scope.
 
-The current PR product checkpoint is `95c89a6829fcddb85dcb8a92a1e8dc72ccd94c4c`
+The current PR product checkpoint is `92fccccc5604f3601a25f84796755208d147efc3`
 on `parity/current-pi-completion`. Codex coverage includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
 account/session WebSocket reuse, cached `previous_response_id` deltas, MAF
@@ -54,72 +54,59 @@ The combined Codex/llama focused acceptance filter passes 32/32 with zero skips;
 format verification and the warnings-as-errors solution build pass. The
 configured local router was reachable during this checkpoint: the opt-in live
 Qwen3.8-27B-GGUF read-tool continuation and post-visible-text cancellation
-fixtures pass 2/2. These checks do not establish a live Codex account or real
-llama manager/TUI load-switch-resume acceptance.
-Exact-head Linux CI run 38835209720 passes restore, format, warnings-as-errors
-build, Node/Python/docs checks, MCP conformance and 2,091/2,091 .NET tests with
-zero skips ([run 38835209720](https://github.com/PhilipGB/pisharp/actions/runs/38835209720)).
+fixtures pass 2/2. A live Codex account was not available, and live-server
+manager/TUI load-switch-resume was not exercised; the goal permits deterministic
+fixtures for these acceptance contracts. These live-only checks remain useful
+future evidence, but they do not block this bounded milestone.
+The llama Linux PTY acceptance now composes interactive `read` tool execution,
+tool-result continuation, clean save/exit, fresh-process `--continue`, and a
+successful follow-up using restored history. The llama manager/TUI test class
+passes 11/11 with zero skips; the cross-model resume fixture waits for the
+completed assistant turn before sending exit input.
+Exact-head Linux CI on product source `92fccccc5604f3601a25f84796755208d147efc3`
+passes restore, format, warnings-as-errors build, Node/Python/docs checks, MCP
+conformance and 2,091/2,091 .NET tests with zero skips
+([push run 38837170138](https://github.com/PhilipGB/pisharp/actions/runs/38837170138),
+[pull-request run 38837172889](https://github.com/PhilipGB/pisharp/actions/runs/38837172889)).
 
 All 194 capability IDs remain in the global inventory at **12 verified, 148 in
-progress, and 34 not started**. No capability status changed in this checkpoint.
-Change those totals only when evidence supports
-a status change, not simply because this goal reprioritizes work. The existing
-ordered queue remains useful inventory;
-queue 13 is no longer an instruction to implement Anthropic alongside Codex.
-Split mixed work and leave unrelated provider requirements tracked.
+progress, and 34 not started**. These global parity counts do not measure this
+milestone. Keep existing statuses and the deferred provider backlog intact.
 
-Current execution priority is:
+## Daily Driver Core acceptance
 
-1. **Codex subscription path:** finish normal ChatGPT/Codex sign-in, credential
-   refresh, model selection, Responses streaming and continuation, tool/image
-   handling, cancellation/retry, reasoning/usage, and session resume/switching.
-   Browser PKCE, device login, private credentials, the current model catalog,
-   account-scoped Responses streaming, cached WebSocket continuation,
-   function-call tool loops and pre-output SSE fallback are implemented.
-   Local request fixtures cover inline images, completed usage, stream errors,
-   post-output cancellation, resumed history with refreshed credentials, and
-   grammar/custom calls across WebSocket, SSE fallback and provider switching.
-   A PTY fixture covers the interactive browser/device method list and cancel;
-   fake OAuth plus loopback Responses cover successful sign-in and continuation.
-   Live authenticated-account acceptance and wider current-Pi behavior
-   differentials remain open.
-2. **llama.cpp path:** reuse the verified router configuration, model
-   discovery/selection, Hugging Face download, load/unload, context reload,
-   twelve current-Pi paired terminal flows, fail-soft optional `/props`
-   metadata, exact catalog-name model switching, and cross-model session
-   resume, local read-tool execution and streamed cancellation through the
-   interactive route. Live Qwen inference also passed a `read` tool continuation
-   and cancellation smoke test through the configured router. Real live
-   manager/TUI load-switch-resume acceptance remains open.
-3. **Core and interactive use:** agent/tool loops, prompt queues, cancellation,
-   retries, durable session lifecycle, compaction/context, built-in tools,
-   TUI/editor/navigation, normal CLI/RPC, settings/resources/extensions, MCP,
-   and Codemode.
+The bounded acceptance scenarios are covered and pass:
 
-Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi,
-OpenCode, Together, Cloudflare, gateway, and unrelated catalog work is
-**intentionally deferred provider backlog** for this functional goal. Keep its
-capability IDs and current statuses; do not spend implementation time there
-unless a P0/P1 regression or a shared Codex/llama contract requires a fix. Do
-not run the former broad provider freeze as part of this goal.
+- **Codex subscription:** deterministic device-code sign-in, model selection,
+  streamed Responses/WebSocket output, MAF tool execution and result
+  continuation, steering, cancellation/error handling, compaction, session
+  persistence and continuation through a fresh runtime/client.
+- **llama.cpp:** a Linux PTY fixture selects a local model, streams a response,
+  uses `read`, continues from the tool result, saves and exits, resumes through
+  `--continue`, and completes a follow-up using restored history. Separate
+  fixtures cover cancellation, manager load/unload, model switching and
+  cross-model session resume. Live Qwen inference passed tool continuation and
+  cancellation against the configured local router.
+- **Shared behavior:** fixtures cover queued steering, compaction with trailing
+  input, durable sessions, model replacement validation and terminal cleanup
+  after interactive exit.
 
-The acceptance bar remains end-to-end: a normal user must sign in, select a
-Codex model, stream, use tools, steer/cancel/retry, compact, save, resume, switch
-settings/model, and continue; the local route must configure or discover a
-model, stream, use supported tools, cancel, save/resume, reload or switch, and
-work through the normal UI without cloud services. Semantic TUI behavior and
-understandable errors matter more than raw terminal-byte equality. Preserve
-`test.pdf` and unrelated files. See the receipts in [the feature matrix](parity/feature-matrix.md)
-and the execution ledger.
+The llama router manager/TUI class passes **11/11** with zero skips. Full
+milestone verification is green on the product source above. Wider current-Pi
+differentials and non-core resources/MCP/Codemode workflows remain in the global
+inventory; broad secondary-provider parity stays deferred. Do not resume those
+tasks under this completed milestone. Preserve `test.pdf` and unrelated files.
+See the receipts in [the feature matrix](parity/feature-matrix.md) and the
+execution ledger.
 
 ## Prior integrated queue checkpoint — 2026-10-15
 
 Queues 1–12 had integrated implementation slices at the source checkpoint
 above. Thinking budgets were verified. Google GenAI/Vertex matched six pinned
 transcript-conversion cases. Azure Responses, Azure Foundry, and Mistral had
-expanded local transport coverage; their broader provider contracts remained
-in progress. These results are retained as evidence, while current priorities
-are defined by the feature-first goal above.
+expanded local transport coverage; their broader provider contracts remain in
+the global inventory. These results are historical evidence and do not reopen
+the completed Daily Driver Core milestone above.
 
 ## Historical user-requested stop — 2026-10-15 (superseded by this resume)
 

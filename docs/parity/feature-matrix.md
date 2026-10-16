@@ -1,7 +1,7 @@
-## Current integration checkpoint and priority reset — 2026-10-16
+## Daily Driver Core milestone complete — 2026-10-16
 
 Current integrated product source is
-`95c89a6829fcddb85dcb8a92a1e8dc72ccd94c4c` on
+`92fccccc5604f3601a25f84796755208d147efc3` on
 `parity/current-pi-completion`; configured Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Codex coverage now includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
@@ -28,28 +28,33 @@ Codex selection now opens the interactive TUI; credential claim validation is
 deferred until a request, which is rejected before transport with a sign-in
 hint. A PTY fixture covers the browser/device login choices and cancellation.
 The opt-in live llama checks passed read-tool continuation and cancellation
-against Qwen3.8-27B-GGUF; full real-server TUI management/resume acceptance
-remains open. The combined Codex/llama focused acceptance filter passes
+against Qwen3.8-27B-GGUF; live-server TUI management/resume was not exercised.
+A composed Linux PTY fixture proves the local `read` tool
+loop, clean session save/exit, restart with `--continue`, and a follow-up from
+restored history; the llama router manager/TUI class passes **11/11**, zero
+skips. The combined Codex/llama focused acceptance filter passes
 **32/32**, and solution format plus the warnings-as-errors build pass. Exact-head
-Linux CI run 38835209720 passes **2,091/2,091** .NET tests with zero skips,
-format, build, Node/Python/docs checks and MCP conformance
-([run 38835209720](https://github.com/PhilipGB/pisharp/actions/runs/38835209720)).
+Linux CI on source `92fccccc5604f3601a25f84796755208d147efc3` passes
+**2,091/2,091** .NET tests with zero skips, format, build, Node/Python/docs
+checks and MCP conformance ([push run 38837170138](https://github.com/PhilipGB/pisharp/actions/runs/38837170138),
+[pull-request run 38837172889](https://github.com/PhilipGB/pisharp/actions/runs/38837172889)).
 
 All 194 capability IDs remain tracked: **12 verified, 148 in progress, 34 not
 started**. The grammar/custom Responses slice moved from not started to in
-progress based on its new deterministic implementation evidence. The old queue
-order is inventory, not current execution priority.
-This goal prioritizes Codex subscription usability and llama.cpp/local-model
-usability, then core agent/session/tool behavior, TUI/editor/navigation, and
-normal CLI/RPC and application features. Existing llama router, model,
-download/context-reload, and twelve-flow terminal receipts should be reused;
-they do not by themselves prove the remaining end-to-end local-model scenario.
+progress based on its deterministic implementation evidence. Global capability
+statuses remain unchanged by milestone completion. The completed goal covered
+Codex subscription usability and llama.cpp/local-model usability, followed by
+core agent/session/tool behavior and the required interactive workflows. The
+composed local PTY fixture now proves the end-to-end tool and session-resume
+path; older router, model, download/context-reload and terminal receipts remain
+supporting evidence.
 Codex browser/device/manual OAuth, account-scoped Responses streaming,
 WebSocket/cached continuation, function-call tool loops and pre-output SSE
 fallback are implemented. Local fixtures now cover images, usage, errors,
-post-output cancellation, resumed-history requests and grammar/custom tools;
-live authenticated account acceptance and wider current-Pi differentials
-remain open.
+post-output cancellation, resumed-history requests and grammar/custom tools.
+Live authenticated account evidence was unavailable; wider current-Pi
+differentials remain global backlog. Live-server TUI management is a
+non-blocking evidence gap for this deterministic acceptance.
 
 Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi,
 OpenCode, Together, Cloudflare, gateway and unrelated catalog parity is
