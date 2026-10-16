@@ -45,6 +45,305 @@ public sealed class OpenAiCodexProviderTests
     }
 
     [Fact]
+    public async Task CodexSubscriptionWorkflowSignsInStreamsToolsQueuesSteeringAndResumesSavedSession()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-codex-acceptance-" + Guid.NewGuid().ToString("N"));
+        var cwd = Path.Combine(root, "project");
+        var agentDirectory = Path.Combine(root, "agent");
+        Directory.CreateDirectory(cwd);
+        Directory.CreateDirectory(agentDirectory);
+        await File.WriteAllTextAsync(Path.Combine(cwd, "facts.txt"), "local fixture fact");
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        using var listener = StartListener(out var port);
+        var localEndpoint = new Uri($"http://127.0.0.1:{port}/backend-api");
+        var accessToken = CreateToken("account-acceptance");
+        using var oauthHttp = new HttpClient(new CodexLoginHandler(accessToken));
+        var sessionPath = Path.Combine(root, "conversation.session.json");
+        string? toolRequestBody = null;
+        string? initialRequestBody = null;
+        string? steeringRequestBody = null;
+        string? resumedRequestBody = null;
+        string? firstAuthorization = null;
+        string? resumedAuthorization = null;
+        string? firstAccountId = null;
+        string? resumedAccountId = null;
+        string? firstSessionId = null;
+        string? resumedSessionId = null;
+        var visibleToolContinuation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseToolContinuation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var server = Task.Run(async () =>
+        {
+            var initialContext = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            firstAuthorization = initialContext.Request.Headers["Authorization"];
+            firstAccountId = initialContext.Request.Headers["chatgpt-account-id"];
+            firstSessionId = initialContext.Request.Headers["session-id"];
+            using (var socket = (await initialContext.AcceptWebSocketAsync(null)).WebSocket)
+            {
+                initialRequestBody = await ReceiveWebSocketMessageAsync(socket);
+                await SendWebSocketToolCallAsync(socket, "resp_read", "call_read", "read",
+                    "{\"path\":\"facts.txt\"}");
+
+                toolRequestBody = await ReceiveWebSocketMessageAsync(socket);
+                await SendWebSocketEventAsync(socket, new
+                {
+                    type = "response.created",
+                    response = new { id = "resp_tool_result", @object = "response", created_at = 2, model = "gpt-5.5", status = "in_progress", output = Array.Empty<object>() }
+                });
+                await SendWebSocketEventAsync(socket, new
+                {
+                    type = "response.output_text.delta",
+                    item_id = "msg_tool_result",
+                    output_index = 0,
+                    content_index = 0,
+                    delta = "Read local fixture fact."
+                });
+                visibleToolContinuation.TrySetResult();
+                await releaseToolContinuation.Task.WaitAsync(deadline.Token);
+                await SendWebSocketEventAsync(socket, new
+                {
+                    type = "response.completed",
+                    response = new
+                    {
+                        id = "resp_tool_result",
+                        @object = "response",
+                        created_at = 2,
+                        model = "gpt-5.5",
+                        status = "completed",
+                        usage = new { input_tokens = 24, output_tokens = 6, total_tokens = 30 },
+                        output = new object[]
+                        {
+                            new
+                            {
+                                id = "msg_tool_result",
+                                type = "message",
+                                role = "assistant",
+                                status = "completed",
+                                content = new[] { new { type = "output_text", text = "Read local fixture fact.", annotations = Array.Empty<object>() } }
+                            }
+                        }
+                    }
+                });
+
+                steeringRequestBody = await ReceiveWebSocketMessageAsync(socket);
+                await SendWebSocketResponseAsync(socket, "resp_steered", "Steering applied.");
+            }
+
+            var resumedContext = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            resumedAuthorization = resumedContext.Request.Headers["Authorization"];
+            resumedAccountId = resumedContext.Request.Headers["chatgpt-account-id"];
+            resumedSessionId = resumedContext.Request.Headers["session-id"];
+            using var resumedSocket = (await resumedContext.AcceptWebSocketAsync(null)).WebSocket;
+            resumedRequestBody = await ReceiveWebSocketMessageAsync(resumedSocket);
+            await SendWebSocketResponseAsync(resumedSocket, "resp_resumed", "Resumed successfully.");
+        }, deadline.Token);
+
+        try
+        {
+            var runtime = await ProviderModelRuntime.CreateAsync(agentDirectory, false, _ => null, oauthHttp,
+                offline: true, cancellationToken: deadline.Token);
+            await runtime.LoginOAuthAsync("openai-codex", new CodexLoginInteraction(), deadline.Token);
+            var models = await runtime.ListModelsAsync("openai-codex", deadline.Token);
+            Assert.Contains(models, model => model.Id == "gpt-5.5" && model.Available);
+            var selected = await runtime.ResolveAsync("openai-codex", "gpt-5.5", deadline.Token);
+            Assert.True(selected.Authenticated);
+            Assert.Equal("stored OAuth", selected.AuthSource);
+            selected = selected with
+            {
+                Provider = selected.Provider with { Endpoint = localEndpoint },
+                Model = selected.Model with { BaseUrl = localEndpoint.ToString() }
+            };
+
+            using var client = ProviderChatClientFactory.Create(selected);
+            var conversation = new PiSharp.Runtime.Sessions.ConversationSession(cwd, selected.Model.Id,
+                localEndpoint.ToString(), selected.Provider.Id);
+            async Task SaveAsync(CancellationToken token) =>
+                await File.WriteAllTextAsync(sessionPath, conversation.ToJson(), token);
+            var agent = new PiAgent(client, new CodingTools(cwd), selectedTools: ["read"]);
+            var run = await PiSharp.Runtime.Sessions.ConversationRun.OpenAsync(agent, conversation,
+                deadline.Token, SaveAsync, provider: selected.Provider.Id, reasoningLevel: "off",
+                autoCompactionEnabled: false, providerApi: "openai-codex-responses");
+            var events = new List<PiSharp.Runtime.Sessions.AgentLifecycleEvent>();
+            var runTask = Task.Run(async () =>
+            {
+                await foreach (var item in run.RunEventsAsync("Read facts.txt and report the result.", deadline.Token))
+                {
+                    events.Add(item);
+                    if (item.Type == "model_text_delta" && item.Text == "Read local fixture fact.")
+                    {
+                        Assert.True(run.TrySteer("Keep the result and state that steering was applied."));
+                        releaseToolContinuation.TrySetResult();
+                    }
+                }
+            }, deadline.Token);
+            await Task.WhenAll(runTask, visibleToolContinuation.Task);
+            await run.PersistAsync(deadline.Token);
+
+            Assert.Contains(events, item => item.Type == "tool_execution_finished" && item.Tool == "read");
+            Assert.Contains(events, item => item.Type == "prompt_queued" && item.Text == "Keep the result and state that steering was applied.");
+            Assert.Contains(events, item => item.Type == "model_text_delta" && item.Text == "Steering applied.");
+            Assert.Equal("agent_settled", events[^1].Type);
+            Assert.Equal("Bearer " + accessToken, firstAuthorization);
+            Assert.Equal("account-acceptance", firstAccountId);
+            Assert.Equal(conversation.Id, firstSessionId);
+
+            using var initial = JsonDocument.Parse(initialRequestBody!);
+            Assert.Contains("Read facts.txt and report the result.", initial.RootElement.GetRawText(), StringComparison.Ordinal);
+            Assert.Contains(initial.RootElement.GetProperty("tools").EnumerateArray(), tool =>
+                tool.GetProperty("name").GetString() == "read");
+            using var toolContinuation = JsonDocument.Parse(toolRequestBody!);
+            Assert.Equal("resp_read", toolContinuation.RootElement.GetProperty("previous_response_id").GetString());
+            Assert.Contains("local fixture fact", toolContinuation.RootElement.GetRawText(), StringComparison.Ordinal);
+            using var steering = JsonDocument.Parse(steeringRequestBody!);
+            Assert.Contains("Keep the result and state that steering was applied.", steering.RootElement.GetRawText(), StringComparison.Ordinal);
+
+            client.Dispose();
+            var persisted = PiSharp.Runtime.Sessions.ConversationSession.Parse(await File.ReadAllTextAsync(sessionPath, deadline.Token));
+            Assert.Contains(persisted.ContextMessages(), message => message.Role == Microsoft.Extensions.AI.ChatRole.User &&
+                message.Text == "Read facts.txt and report the result.");
+            Assert.Contains(persisted.ContextMessages(), message => message.Role == Microsoft.Extensions.AI.ChatRole.User &&
+                message.Text == "Keep the result and state that steering was applied.");
+
+            using var resumedOAuthHttp = new HttpClient(new CodexLoginHandler(accessToken, rejectRequests: true));
+            var resumedRuntime = await ProviderModelRuntime.CreateAsync(agentDirectory, false, _ => null,
+                resumedOAuthHttp, offline: true, cancellationToken: deadline.Token);
+            var resumedSelection = await resumedRuntime.ResolveAsync("openai-codex", "gpt-5.5", deadline.Token);
+            resumedSelection = resumedSelection with
+            {
+                Provider = resumedSelection.Provider with { Endpoint = localEndpoint },
+                Model = resumedSelection.Model with { BaseUrl = localEndpoint.ToString() }
+            };
+            using var resumedClient = ProviderChatClientFactory.Create(resumedSelection);
+            var resumedConversation = PiSharp.Runtime.Sessions.ConversationSession.Parse(
+                await File.ReadAllTextAsync(sessionPath, deadline.Token));
+            var resumedAgent = new PiAgent(resumedClient, new CodingTools(cwd), selectedTools: ["read"]);
+            var resumedRun = await PiSharp.Runtime.Sessions.ConversationRun.OpenAsync(resumedAgent,
+                resumedConversation, deadline.Token, token => File.WriteAllTextAsync(sessionPath,
+                    resumedConversation.ToJson(), token), provider: resumedSelection.Provider.Id,
+                reasoningLevel: "off", autoCompactionEnabled: false,
+                providerApi: "openai-codex-responses");
+            var resumedEvents = new List<PiSharp.Runtime.Sessions.AgentLifecycleEvent>();
+            await foreach (var item in resumedRun.RunEventsAsync("Continue after restart.", deadline.Token))
+                resumedEvents.Add(item);
+            await resumedRun.PersistAsync(deadline.Token);
+            await server.WaitAsync(deadline.Token);
+
+            Assert.Contains(resumedEvents, item => item.Type == "model_text_delta" && item.Text == "Resumed successfully.");
+            Assert.Equal("agent_settled", resumedEvents[^1].Type);
+            Assert.Equal("Bearer " + accessToken, resumedAuthorization);
+            Assert.Equal("account-acceptance", resumedAccountId);
+            Assert.Equal(conversation.Id, resumedSessionId);
+            using var resumedRequest = JsonDocument.Parse(resumedRequestBody!);
+            var resumedInput = resumedRequest.RootElement.GetProperty("input").GetRawText();
+            Assert.Contains("local fixture fact", resumedInput, StringComparison.Ordinal);
+            Assert.Contains("Keep the result and state that steering was applied.", resumedInput, StringComparison.Ordinal);
+            Assert.Contains("Continue after restart.", resumedInput, StringComparison.Ordinal);
+        }
+        finally
+        {
+            releaseToolContinuation.TrySetResult();
+            listener.Close();
+            try { await server; }
+            catch (Exception) { }
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CodexResponsesCompactionUsesSummaryStreamAndContinuesWithProjectedHistory()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-codex-compaction-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        using var listener = StartListener(out var port);
+        string? summaryRequestBody = null;
+        string? continuationRequestBody = null;
+        var summaryContextAccepted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var summaryRequestReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = Task.Run(async () =>
+        {
+            var summaryContext = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            summaryContextAccepted.TrySetResult();
+            using (var summarySocket = (await summaryContext.AcceptWebSocketAsync(null)).WebSocket)
+            {
+                summaryRequestBody = await ReceiveWebSocketMessageAsync(summarySocket);
+                summaryRequestReceived.TrySetResult();
+                await SendWebSocketResponseAsync(summarySocket, "resp_compaction", "Summary preserves the prior file decision.");
+            }
+
+            var continuationContext = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            using var continuationSocket = (await continuationContext.AcceptWebSocketAsync(null)).WebSocket;
+            continuationRequestBody = await ReceiveWebSocketMessageAsync(continuationSocket);
+            await SendWebSocketResponseAsync(continuationSocket, "resp_after_compaction", "Continued from the compacted context.");
+        }, deadline.Token);
+
+        try
+        {
+            var endpoint = new Uri($"http://127.0.0.1:{port}/backend-api");
+            var model = new ModelDescriptor("gpt-5.5", "openai-codex", 272_000, "fixture", true,
+                Provider: "openai-codex", Name: "GPT-5.5", MaxOutputTokens: 128_000,
+                Input: ["text", "image"], Api: "openai-codex-responses", BaseUrl: endpoint.ToString());
+            var provider = new ProviderProfile("openai-codex", "OpenAI Codex", endpoint, true,
+                true, null, null, [model], Api: "openai-codex-responses");
+            using var client = ProviderChatClientFactory.Create(new ModelSelection(provider, model,
+                CreateToken("account-compaction"), true, "fixture token"), new ProviderRetrySettings(MaxRetries: 0));
+            var conversation = new PiSharp.Runtime.Sessions.ConversationSession(root, model.Id,
+                endpoint.ToString(), provider.Id);
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User,
+                "Read plan.txt and keep its key decision."));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant,
+                "The file says to preserve the release branch."));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User,
+                "The next step is to verify the branch."));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant,
+                "I will verify the branch next."));
+            var sessionPath = Path.Combine(root, "compacted.session.json");
+            async Task SaveAsync(CancellationToken token) =>
+                await File.WriteAllTextAsync(sessionPath, conversation.ToJson(), token);
+            var agent = new PiAgent(client, new CodingTools(root));
+            var run = await PiSharp.Runtime.Sessions.ConversationRun.OpenAsync(agent, conversation,
+                deadline.Token, SaveAsync, provider: provider.Id, reasoningLevel: "off",
+                autoCompactionEnabled: false, providerApi: "openai-codex-responses");
+
+            var compaction = run.CompactAsync("Preserve the release branch decision.", deadline.Token);
+            await summaryContextAccepted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            await summaryRequestReceived.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            Assert.True(await compaction.WaitAsync(TimeSpan.FromSeconds(3)));
+            var compactedContext = conversation.ContextMessages();
+            Assert.Contains(compactedContext, message => message.Text.Contains("Summary preserves the prior file decision.", StringComparison.Ordinal));
+            Assert.Contains(compactedContext, message => message.Text == "The next step is to verify the branch.");
+
+            var events = new List<PiSharp.Runtime.Sessions.AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("Continue from the compacted context.", deadline.Token))
+                events.Add(item);
+            await run.PersistAsync(deadline.Token);
+            await server.WaitAsync(deadline.Token);
+
+            Assert.Contains(events, item => item.Type == "model_text_delta" && item.Text == "Continued from the compacted context.");
+            Assert.Equal("agent_settled", events[^1].Type);
+            using var summary = JsonDocument.Parse(summaryRequestBody!);
+            Assert.Contains("Read plan.txt and keep its key decision.", summary.RootElement.GetRawText(), StringComparison.Ordinal);
+            Assert.Contains("Preserve the release branch decision.", summary.RootElement.GetRawText(), StringComparison.Ordinal);
+            using var continuation = JsonDocument.Parse(continuationRequestBody!);
+            Assert.Contains("Summary preserves the prior file decision.", continuation.RootElement.GetRawText(), StringComparison.Ordinal);
+            Assert.Contains("The next step is to verify the branch.", continuation.RootElement.GetRawText(), StringComparison.Ordinal);
+            Assert.Contains("Continue from the compacted context.", continuation.RootElement.GetRawText(), StringComparison.Ordinal);
+
+            var persisted = PiSharp.Runtime.Sessions.ConversationSession.Parse(await File.ReadAllTextAsync(sessionPath, deadline.Token));
+            Assert.Contains(persisted.Tree.ActivePath(), entry => entry.Type == "compaction");
+            Assert.Contains(persisted.ContextMessages(), message => message.Text.Contains("Summary preserves the prior file decision.", StringComparison.Ordinal));
+        }
+        finally
+        {
+            deadline.Cancel();
+            listener.Close();
+            try { await server; }
+            catch (Exception) { }
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task CodexResponsesWebSocketProjectsInlinePngAndCompletedUsage()
     {
         using var listener = StartListener(out var port);
@@ -1169,6 +1468,53 @@ public sealed class OpenAiCodexProviderTests
         await socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
+    private static async Task SendWebSocketToolCallAsync(WebSocket socket, string responseId, string callId,
+        string name, string arguments)
+    {
+        var itemId = "item_" + callId;
+        await SendWebSocketEventAsync(socket, new
+        {
+            type = "response.created",
+            response = new { id = responseId, @object = "response", created_at = 1, model = "gpt-5.5", status = "in_progress", output = Array.Empty<object>() }
+        });
+        var call = new
+        {
+            id = itemId,
+            type = "function_call",
+            status = "completed",
+            call_id = callId,
+            name,
+            arguments
+        };
+        await SendWebSocketEventAsync(socket, new
+        {
+            type = "response.output_item.added",
+            output_index = 0,
+            item = new { id = itemId, type = "function_call", status = "in_progress", call_id = callId, name, arguments = "" }
+        });
+        await SendWebSocketEventAsync(socket, new
+        {
+            type = "response.function_call_arguments.done",
+            output_index = 0,
+            item_id = itemId,
+            arguments
+        });
+        await SendWebSocketEventAsync(socket, new { type = "response.output_item.done", output_index = 0, item = call });
+        await SendWebSocketEventAsync(socket, new
+        {
+            type = "response.completed",
+            response = new
+            {
+                id = responseId,
+                @object = "response",
+                created_at = 1,
+                model = "gpt-5.5",
+                status = "completed",
+                output = new object[] { call }
+            }
+        });
+    }
+
     private static async Task SendWebSocketEventAsync(WebSocket socket, object value)
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(value);
@@ -1184,6 +1530,58 @@ public sealed class OpenAiCodexProviderTests
             ["https://api.openai.com/auth"] = new Dictionary<string, string> { ["chatgpt_account_id"] = accountId }
         }));
         return $"{header}.{payload}.fixture-signature";
+    }
+
+    private static HttpResponseMessage JsonResponse(string json) => new(HttpStatusCode.OK)
+    {
+        Content = new StringContent(json, Encoding.UTF8, "application/json")
+    };
+
+    private static HttpResponseMessage TokenResponse(string accessToken) => JsonResponse(JsonSerializer.Serialize(new
+    {
+        access_token = accessToken,
+        refresh_token = "refresh-acceptance",
+        expires_in = 3600
+    }));
+
+    private sealed class CodexLoginInteraction : IProviderOAuthInteraction
+    {
+        public Task<string> SelectLoginMethodAsync(IReadOnlyList<ProviderOAuthLoginMethod> methods,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Assert.Contains(methods, method => method.Id == "device_code");
+            return Task.FromResult("device_code");
+        }
+
+        public void Notify(ProviderOAuthNotice notice)
+        {
+            Assert.Equal("device_code", notice.Kind);
+            Assert.Equal("ABCD-1234", notice.UserCode);
+        }
+    }
+
+    private sealed class CodexLoginHandler(string accessToken, bool rejectRequests = false) : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            if (rejectRequests)
+                throw new InvalidOperationException("A valid saved subscription credential must not need a network refresh.");
+            var path = request.RequestUri?.AbsolutePath;
+            if (path == "/api/accounts/deviceauth/usercode")
+                return JsonResponse("""{"device_auth_id":"device-acceptance","user_code":"ABCD-1234","interval":"0"}""");
+            if (path == "/api/accounts/deviceauth/token")
+                return JsonResponse("""{"authorization_code":"acceptance-code","code_verifier":"acceptance-verifier"}""");
+            if (path == "/oauth/token")
+            {
+                var form = await request.Content!.ReadAsStringAsync(cancellationToken);
+                Assert.Contains("grant_type=authorization_code", form, StringComparison.Ordinal);
+                Assert.Contains("code=acceptance-code", form, StringComparison.Ordinal);
+                return TokenResponse(accessToken);
+            }
+            throw new InvalidOperationException($"Unexpected OAuth request {request.RequestUri}.");
+        }
     }
 
     private static HttpListener StartListener(out int port)

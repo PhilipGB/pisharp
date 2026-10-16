@@ -42,6 +42,16 @@ dynamic router catalog can be listed without selecting a model. A live router
 rerun returned 19 selectable models, including the loaded
 `NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF`; see the compact
 [discovery receipt](parity/fixtures/llama-live-model-discovery-2026-10-16.json).
+The deterministic Codex acceptance fixture now composes fake device-code
+subscription login, model selection, the real MAF `read` tool loop over the
+Responses WebSocket, steering during streamed output, session persistence, and
+resume through a fresh runtime/client. A second Codex fixture exercises manual
+compaction through Responses, then continues with the projected summary and
+persists it in the session. The combined Codex OAuth/Responses focused suite
+passes 29/29 with zero skips; full format verification and the warnings-as-errors
+solution build pass. Cancellation/retry have separate fixtures. These
+deterministic tests do not establish a live-account smoke test, interactive TUI
+login/exit, or the remaining pinned-Pi differential evidence.
 Format verification and the warnings-as-errors build pass; focused regressions
 pass 6/6. The full local suite had 2,086 passes and one ephemeral-port bind
 failure (2,087 total, zero skipped); rerunning the affected classifier test in
