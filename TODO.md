@@ -2,8 +2,8 @@
 
 ## Current integration checkpoint — 2026-10-16
 
-Verified product source is `2a9de290009243903ff6adbe04f8b611790c7b98` on
-`parity/current-pi-completion`; Pi remains pinned at
+Current PR product source is `29d4a993` on `parity/current-pi-completion`, based
+on PR head `4883258303c2f631bcfa9c1607940ec060716282`; Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Current execution prioritizes
 Codex subscription and llama.cpp usability, then core agent/session behavior
 and the interactive application. Codex grammar/custom tools have local
@@ -13,16 +13,19 @@ skipped iteratively. Session discovery skips malformed candidates whose head
 entry is missing. The project session picker toggles recent/name sorting with
 Ctrl+S and preserves the current selection, including while a search is active.
 Linux terminal mode disables XON/XOFF while active and restores it on exit.
-The llama UI has local tool-use
-and stream-cancellation evidence; a real local server/model acceptance run
-remains open. Broad secondary-provider parity is deferred for this goal; queue
-order remains inventory.
+The llama UI has local tool-use and stream-cancellation evidence. A dynamic
+router model-list regression now covers `--provider llama.cpp --list-models`
+without prior model selection, and a live router rerun returned 19 selectable
+models; the full local inference and interactive acceptance remains open.
+Ctrl+R now renames the session selected in the picker while retaining search,
+selection and the saved title. Broad secondary-provider parity is deferred for
+this goal; queue order remains inventory.
 
-The local solution passes **2,086/2,086 .NET tests, zero skips**, a
-warnings-as-errors build with zero warnings, and format verification. Exact-head
-CI for this product source is pending; the last green exact-head checkpoint
-remains docs-only `c7b8a304` at run
-[38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
+Format verification and a warnings-as-errors build pass; the focused discovery
+and Ctrl+R tests pass 6/6. The full local suite had 2,086 passes and one
+ephemeral-port bind failure (2,087 total, zero skipped); the affected
+classifier test passed 2/2 when rerun alone. Exact-head CI for this PR is
+pending.
 Counts are **12 verified, 148 in progress, 34 not started** across the 194
 required capabilities. Full parity and the final source audit remain incomplete.
 

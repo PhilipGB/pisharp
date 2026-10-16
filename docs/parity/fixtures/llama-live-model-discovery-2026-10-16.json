@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-16",
+  "product_commit": "29d4a993efe1a6f521eb45d03ee57cd6745645bc",
+  "product_tree": "eddba3fdf6ad11d83e1899f40bf1635d5ea3cc62",
+  "configured_pi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "scope": "Live llama.cpp router model discovery through the PiSharp CLI.",
+  "invocation": "dotnet PiSharp.Cli.dll --provider llama.cpp --list-models",
+  "endpoint": "Configured local router on a private LAN; address omitted from this committed receipt.",
+  "result": {
+    "exit_code": 0,
+    "selectable_model_count": 19,
+    "loaded_model": "NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF",
+    "loaded_model_context_tokens": 262144,
+    "other_observed_models": [
+      "Google-Gemma-4-12B-it-qat-GGUF",
+      "Google-Gemma-4-26B-A4B-it-qat-GGUF",
+      "Google-Gemma-4-31B-it-qat-GGUF",
+      "K2-Horizon-MoVA-36B-A4B-GGUF",
+      "Laguna-S-2.1-GGUF",
+      "MiniCPM-V-4.7-35B-A3B-gguf",
+      "Muse-Glimmer-30B-GGUF",
+      "Nemotron-3.5-Lightning-30B-A3B-GGUF",
+      "Occamy-1.0-GGUF",
+      "Ornith-1.5-35B-A3B-GGUF",
+      "Qwen3.6-35B-A3B-MTP-GGUF",
+      "Qwen3.8-27B-GGUF",
+      "Qwen3.8-27B-pi-GGUF",
+      "Qwen3.8-Flash-Next-IQ3_S",
+      "Qwen3.8-Flash-Next-IQ3_S-Text-MTP",
+      "Qwen3.8-Flash-Next-Q4-GGUF",
+      "gpt-oss-120b-GGUF",
+      "gpt-oss-20b-GGUF"
+    ]
+  },
+  "limitations": "Captures one discovery run. It does not verify inference, tool use, interactive local-model acceptance, or current-Pi differential behavior."
+}

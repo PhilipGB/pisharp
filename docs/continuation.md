@@ -8,11 +8,9 @@ core agent/session/tool behavior, the interactive experience, and other
 user-facing application features. Keep the configured Pi checkout pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-The last green exact-head checkpoint was the docs-only `c7b8a304` at run
-[38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
-Current integrated product source is
-`2a9de290009243903ff6adbe04f8b611790c7b98` on
-`parity/current-pi-completion`. Codex coverage includes manual
+The current PR product checkpoint is `29d4a993` on
+`parity/current-pi-completion`, based on PR head
+`4883258303c2f631bcfa9c1607940ec060716282`. Codex coverage includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
 account/session WebSocket reuse, cached `previous_response_id` deltas, MAF
 tool-loop continuation with JSON-aware argument matching, inline PNG images,
@@ -37,17 +35,21 @@ steering after a completed tool result, retry restoration failures settle, and
 RPC validates a replacement provider before cancelling the active run. Recent
 session discovery skips a malformed newer session whose selected head is
 missing and continues to an older valid session. The project session picker
-toggles recent/name sorting with Ctrl+S while preserving the selected session,
-including when a search is active. Linux terminal mode restores XON/XOFF after
-using the shortcut. The full local suite passes **2,086/2,086** with zero skips;
-full solution format and the
-warnings-as-errors build pass with zero warnings. Exact-head CI for this product
-source is pending; the last green exact-head checkpoint remains docs-only
-`c7b8a304` at run
-[38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
+toggles recent/name sorting with Ctrl+S and Ctrl+R renames the selected session
+without losing search, selection, or persisted title. The CLI handles
+`--provider llama.cpp --list-models` before startup model selection, so a
+dynamic router catalog can be listed without selecting a model. A live router
+rerun returned 19 selectable models, including the loaded
+`NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF`; see the compact
+[discovery receipt](parity/fixtures/llama-live-model-discovery-2026-10-16.json).
+Format verification and the warnings-as-errors build pass; focused regressions
+pass 6/6. The full local suite had 2,086 passes and one ephemeral-port bind
+failure (2,087 total, zero skipped); rerunning the affected classifier test in
+isolation passed 2/2. Exact-head CI for this PR is pending.
 
 All 194 capability IDs remain in the global inventory at **12 verified, 148 in
-progress, and 34 not started**. Change those totals only when evidence supports
+progress, and 34 not started**. No capability status changed in this checkpoint.
+Change those totals only when evidence supports
 a status change, not simply because this goal reprioritizes work. The existing
 ordered queue remains useful inventory;
 queue 13 is no longer an instruction to implement Anthropic alongside Codex.

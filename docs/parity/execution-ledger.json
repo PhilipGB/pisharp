@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Feature-first functional goal on parity/current-pi-completion. Product source checkpoint 2a9de290009243903ff6adbe04f8b611790c7b98; keep configured Pi pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 12 verified, 148 in progress, 34 not started. Prior queue order is inventory, not current execution priority. Codex subscription and llama.cpp paths lead, followed by core agent/session/tool, TUI/editor and user-facing application behavior. Broad secondary-provider parity is deferred for this goal; full parity remains incomplete.",
+  "source_note": "Feature-first functional goal on parity/current-pi-completion. Product source checkpoint 29d4a993efe1a6f521eb45d03ee57cd6745645bc; keep configured Pi pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 12 verified, 148 in progress, 34 not started. Prior queue order is inventory, not current execution priority. Codex subscription and llama.cpp paths lead, followed by core agent/session/tool, TUI/editor and user-facing application behavior. Broad secondary-provider parity is deferred for this goal; full parity remains incomplete.",
   "feature_first_goal": {
     "updated": "2026-10-16",
     "priority_current_goal_families": [
@@ -40,7 +40,7 @@
     "global_inventory_policy": "Keep required_ids and all per-task statuses. Current counts are 12 verified, 148 in progress and 34 not started; change them only when evidence supports a status change. Priority labels do not close or remove any capability.",
     "mixed_row_policy": "Split Codex, llama.cpp or shared core behavior from unrelated provider-specific behavior. Implement the priority portion and leave deferred provider acceptance tracked in its existing task.",
     "provider_freeze": "Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi, OpenCode, Together, Cloudflare, gateway and unrelated catalog work is intentionally deferred unless a P0/P1 regression or shared Codex/llama contract requires a fix.",
-    "source_checkpoint": "2a9de290009243903ff6adbe04f8b611790c7b98",
+    "source_checkpoint": "29d4a993efe1a6f521eb45d03ee57cd6745645bc",
     "latest_integrated_evidence": {
       "commits": [
         "1cce9abd Preserve Codex tool continuation over WebSocket",
@@ -62,11 +62,13 @@
         "377301f2 Aggregate Codex non-streaming responses",
         "95eaf93c Skip session candidates with missing heads",
         "224a899f Add name sorting to the session picker",
-        "2a9de290 Preserve selection when refreshing filtered lists"
+        "2a9de290 Preserve selection when refreshing filtered lists",
+        "68502e72 List dynamic llama models before startup resolution",
+        "29d4a993 Add Ctrl+R session picker rename"
       ],
-      "verification": ".NET 2,086/2,086 with zero skips; TerminalSelectionListTests 9/9 including active-search selection preservation; OpenAiCodexProviderTests 15/15; SessionCatalogTests 6/6; SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty 1/1; full solution format verification and warnings-as-errors build pass with zero warnings.",
-      "scope": "Codex WebSocket MAF tool-loop continuation, grammar/custom Responses declarations and SSE/WebSocket call projection/replay with provider-switch serialization, images, usage, errors, cancellation and resumed history; llama model switching/resume, local read-tool use and interactive stream cancellation; steering-aware in-flight compaction, retry settlement after restore failure, and provider validation before RPC session-switch cancellation. Codex non-streaming Responses calls aggregate SSE/WebSocket updates for summary text, response ID and usage; the SSE fallback iteratively skips 1,024 empty frames. Session discovery skips a malformed newer native candidate with a missing head and falls back to an older valid session. The project session picker toggles between recent and alphabetical name order with configurable Ctrl+S while preserving the selected item during refresh, including with an active search; Linux raw terminal mode disables IXON for the shortcut and restores the original setting on exit.",
-      "remaining": "Live authenticated-account acceptance, a real local llama.cpp server/model end-to-end run, broader current-Pi differentials, and remaining TUI/CLI/RPC/resources/MCP/Codemode workflows remain open. Exact-head CI is pending."
+      "verification": "Format verification and warnings-as-errors build pass with zero warnings/errors. Focused OfflineCatalogProcessTests and SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty pass 6/6. Full .NET suite: 2,086 passed, 1 failed, 0 skipped; the sole failure was an ephemeral-port bind collision in ClassifierCatalogTests.ConfiguredClassifierUsesRealHttpAndCannotBeSelectedAsChat, whose isolated rerun passed 2/2. Exact-head CI is pending.",
+      "scope": "Codex WebSocket MAF tool-loop continuation, grammar/custom Responses declarations and SSE/WebSocket call projection/replay with provider-switch serialization, images, usage, errors, cancellation and resumed history; llama model switching/resume, local read-tool use and interactive stream cancellation; steering-aware in-flight compaction, retry settlement after restore failure, and provider validation before RPC session-switch cancellation. Codex non-streaming Responses calls aggregate SSE/WebSocket updates for summary text, response ID and usage; the SSE fallback iteratively skips 1,024 empty frames. Session discovery skips a malformed newer native candidate with a missing head and falls back to an older valid session. The project session picker toggles between recent and alphabetical name order with configurable Ctrl+S while preserving the selected item during refresh, including with an active search; Linux raw terminal mode disables IXON for the shortcut and restores the original setting on exit. Dynamic llama router model listing is resolved before startup model selection, with an offline process regression and a live router receipt (19 listed models). The session picker now supports default Ctrl+R rename while preserving active search and selection and persisting the renamed title.",
+      "remaining": "Live authenticated-account acceptance, full local inference and interactive llama.cpp acceptance, broader current-Pi differentials, and remaining TUI/CLI/RPC/resources/MCP/Codemode workflows remain open. Exact-head CI is pending."
     }
   },
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
@@ -495,7 +497,8 @@
         "src/PiSharp.Cli/{Providers/AzureOpenAI/AzureOpenAiRequestHandler,Providers/AzureOpenAI/AzureOpenAiChatOptionsClient,Providers/AzureOpenAI/AzureOpenAiModelCatalog,Providers/ProviderChatClientFactory}.cs: Azure Responses API-key boundary, configurable API-version/deployment mapping, per-session prompt_cache_key and embedded 43-model snapshot. Exact-head CI is green; provider-wide image/tool/usage/error differential evidence remains incomplete.",
         "src/PiSharp.Cli/Providers/Anthropic/AnthropicThinkingSignatureClient.cs: replays unsigned Anthropic-compatible assistant reasoning as text unless model compat.allowEmptySignature is true; preserves signed thinking and applies a request-only MAF projection.",
         "Anthropic now exposes OAuth through `AnthropicOAuthAdapter`: browser PKCE and headless copy-code login, validated callback/input state, token refresh, private AuthStorage persistence, and the existing Anthropic OAuth request-token projection. Console code input is masked; API-key and environment-token precedence remains intact.",
-        "Audit of Pi ee409a85: the key-personalized OpenRouter catalog is not implemented. PiSharp performs generic /models discovery and does not fetch authenticated /models/user data or persist the personalized catalog; this remains queued behind Resources / Instructions / Trust and the named upstream deltas."
+        "Audit of Pi ee409a85: the key-personalized OpenRouter catalog is not implemented. PiSharp performs generic /models discovery and does not fetch authenticated /models/user data or persist the personalized catalog; this remains queued behind Resources / Instructions / Trust and the named upstream deltas.",
+        "src/PiSharp.Cli/Program.cs: --list-models is handled before startup model resolution, allowing dynamic llama.cpp routers to list models without an explicit selection."
       ],
       "evidence": [
         "tests/PiSharp.Tests/Cli/Providers/ProviderModelRuntimeTests.cs: deterministic custom endpoint key isolation, configured metadata and fuzzy lookup, no /models request for exact IDs, private credential restart/symlink/permission checks, and CLI missing-auth rejection.",
@@ -523,7 +526,8 @@
         "AnthropicOAuthTests passes 8/8 with loopback token fixtures for browser callback, copy-code and redirect-URL input, PKCE/state validation, cancellation, malformed responses, private persistence and refresh-token rotation. The full local suite passes 1,047/1,047 with zero skips; format and warnings-as-errors build pass. Exact-head CI for this OAuth slice is pending; see docs/parity/fixtures/upstream-delta-audit-2026-10-01.md.",
         "The llama.cpp subset of model selection/catalogs/credentials is verified at Pi 42a3497d / PiSharp 386644ea: login/env/stored/default precedence, router discovery and model properties, load/unload and sleeping/preset eligibility, /model integration, Hugging Face access/download flows, and cached context reload match current Pi in process and PTY evidence. The broader models capability remains in progress for other providers, auth, selection and catalog gaps. See docs/parity/fixtures/llama-terminal-current-pi-2026-10-10/current-42a3497d-386644ea06/evidence.json.",
         "Current Pi ee409a85 OpenRouter catalog differential: authenticated GET /models/user filters chat models to those accessible to the key and supplies key-specific context length, max output, and prices while preserving image/classifier models and caching the combined catalog. PiSharp current source uses generic ModelCatalog.ListAsync /models for OpenRouter and has no personalized catalog path. Current Pi packages/ai and coding-agent targeted suites pass 56/56. See docs/parity/fixtures/upstream-delta-audit-2026-10-12.md.",
-        "Startup flags network investigation demonstrates that ModelCatalog.ListAsync reads the body after ResponseHeadersRead with the caller token; the startup HttpClient header timeout does not bound that later body read. A loopback sends headers and stalls the body, causing the 12-second startup fixture deadline. The fixture is repaired with explicit offline scope; production catalogue body cancellation/error parity remains open. See docs/parity/fixtures/startup-flags-network-isolation-2026-10-14.json."
+        "Startup flags network investigation demonstrates that ModelCatalog.ListAsync reads the body after ResponseHeadersRead with the caller token; the startup HttpClient header timeout does not bound that later body read. A loopback sends headers and stalls the body, causing the 12-second startup fixture deadline. The fixture is repaired with explicit offline scope; production catalogue body cancellation/error parity remains open. See docs/parity/fixtures/startup-flags-network-isolation-2026-10-14.json.",
+        "OfflineCatalogProcessTests.ProviderModelListDiscoversDynamicRouterModelsWithoutSelectingOneFirst verifies --provider llama.cpp --list-models against a loopback router, including model and props requests. A live run against the configured local router on 2026-10-16 listed 19 selectable entries and marked NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF loaded; see docs/parity/fixtures/llama-live-model-discovery-2026-10-16.json. This is discovery evidence, not full inference or upstream differential evidence."
       ],
       "dependencies": [],
       "handover_review": {
@@ -1211,8 +1215,12 @@
         "abort leaves consistent session",
         "Verify through application workflow and compare same; command/session integration tests"
       ],
-      "implementation": [],
-      "evidence": [],
+      "implementation": [
+        "The shared session picker binds app.session.rename to Ctrl+R by default; rename keeps the current search and selected row, updates the active ConversationSession when needed, and refreshes the persisted session catalog."
+      ],
+      "evidence": [
+        "TerminalPtyTests.SessionDiscoverySortResumeAndCloneWorkThroughLinuxPty now searches for and renames the active session with Ctrl+R, verifies the selected row and search remain stable, and confirms the saved title survives; focused test passes as part of the 6/6 CLI regressions. See the 2026-10-16 PR checkpoint in docs/continuation.md."
+      ],
       "dependencies": [],
       "handover_review": {
         "decision": "required-contract-incomplete-or-not-yet-proven",
