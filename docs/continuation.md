@@ -5,7 +5,8 @@
 This bounded correction is on `milestone/interactive-command-ux`, based on
 `c52f02744f7ef5aa6e7d0202f617ed4e2dda3770`. The configured global Pi reference
 remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; this work does not promote a
-global capability or claim full TUI parity.
+global capability or claim full TUI parity. Product and acceptance-test source
+is commit `d4e94cb7`.
 
 Settings now use a compact searchable in-flow list with the requested initial
 ten-row order, aligned values, selected-setting description, bounded rows,
@@ -31,7 +32,7 @@ discovery and thinking selection. No execution-ledger or feature-matrix status
 changed. Final local verification passes restore, format, and the
 warnings-as-errors solution build; .NET **2,157/2,157** with zero skips;
 architecture **6/6**; Node **24/24**; Python **50/50**; and documentation path
-validation (**135 documents, 524 references**). The .NET suite used `TMPDIR=/tmp`
+validation (**136 documents, 524 references**). The .NET suite used `TMPDIR=/tmp`
 so the terminal path fixtures fit their 120-column displays.
 
 MCP conformance passes **261** checks with the same eight classified baseline
