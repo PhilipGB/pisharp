@@ -59,6 +59,27 @@ public sealed class CodemodeModelTests
     }
 
     [Fact]
+    public async Task GuestClassifierAcceptsUsefulImageContextAboveLegacyCallLimit()
+    {
+        var models = new Models();
+        var registry = new PiSharpToolRegistry([]);
+        var context = PiSharpToolExecutionContext.CreateRoot(registry.CreateLoadout(),
+            () => new Dictionary<string, AIFunction>(), _ => { }, "root", null, "codemode", new Dictionary<string, object?>(), models);
+        var imageData = new string('A', 48 * 1024);
+        var code = """
+            await models.classify({provider:'fixture',id:'one'},{state:{value:7},questions:{q:{type:'bool',instructions:'safe?',criteria:{}}},images:[{type:'image',data:'IMAGE_DATA',mimeType:'image/png'}]});
+            text('classified');
+            """.Replace("IMAGE_DATA", imageData, StringComparison.Ordinal);
+        var result = await CodemodeSandbox.ExecuteAsync(code, context,
+            new Dictionary<string, JsonElement>(), CancellationToken.None);
+
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal("classified", result.Text);
+        Assert.Equal(imageData.Length, models.LastContext.GetProperty("images")[0].GetProperty("data").GetString()!.Length);
+        Assert.Equal(1, models.Calls);
+    }
+
+    [Fact]
     public async Task PaidClassifierUsageIsPublishedEvenWhenTheScriptLaterFails()
     {
         var events = new List<AgentLifecycleEvent>();
