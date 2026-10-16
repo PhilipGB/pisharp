@@ -1,0 +1,106 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "80272e82c4545f64517855ddc7daf2663f4ca658",
+  "scope": "Local package theme availability and selected accent palette, scoped settings/filter/precedence plus actual CLI selected-theme output. Complete theme/resource capability remains in_progress.",
+  "characterization": {
+    "initialLoaderCases": 87,
+    "initialMismatches": [
+      "package-theme-user",
+      "package-theme-project-trusted"
+    ],
+    "nativeCliFailFirst": {
+      "failed": 1,
+      "passed": 1,
+      "skipped": 0
+    },
+    "expandedLoaderCases": 91,
+    "expandedMismatches": [
+      "package-theme-same-configured-disabled-path"
+    ],
+    "nativePrecedenceFailFirst": {
+      "failed": 1,
+      "passed": 5,
+      "skipped": 0
+    }
+  },
+  "implementation": [
+    "ResourcePackageFiles includes themes in the shared scoped manifest/convention/filter/delta/canonical selection. ResourceFileDiscovery adds configured JSON directory recursion with existing hidden/node_modules/ignore/cycle rules.",
+    "TerminalThemeCatalog consumes scoped package theme files behind ordinary local paths, retaining the first package-owned raw path even when disabled. CLI TerminalPresentation passes separate user/project declarations into the theme owner; no changes to Core/provider/agent dependencies."
+  ],
+  "verification": {
+    "totalLoaderCases": 95,
+    "existingFullSkillPromptCases": 83,
+    "newThemeAvailabilityPaletteCases": 12,
+    "mismatches": 0,
+    "focusedPassed": 50,
+    "newNativeRows": 7,
+    "fullSuite": {
+      "passed": 1927,
+      "failed": 0,
+      "skipped": 0
+    },
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "cli": "Original explicit theme/no-themes PTY case retained as control; new package-only selection renders its custom dim palette and exits cleanly.",
+    "exactCi": {
+      "sha": "b1271ad9869b9b6bfd318b5432bd0393483d22dc",
+      "run": 38625569590,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38625569590",
+      "jobs": "test failed; MCP passed",
+      "dotnet": {
+        "passed": 1926,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failure": "CodemodeImagesUseDetectedTypeAndNormalizeWrappedBase64 reached the two-worker admission limit; dedicated shutdown ordering investigation is active."
+    }
+  },
+  "terminal": {
+    "calibrationMatch": true,
+    "calibrationFrames": 4,
+    "pairMatch": false,
+    "pairedFrames": 4,
+    "differences": 66,
+    "renderDifferences": 63,
+    "scenarioErrors": {},
+    "httpMatch": true,
+    "failure": "modifyOtherKeys is 2 in Pi and 0 in PiSharp at all three named checkpoints; canonical render sequence also differs. Keyboard negotiation repair is next, not normalized away.",
+    "initialCalibrationSetupFailure": "Owned fixture workspace was under repository artifacts and encountered ancestor project trust prompts in both Pi runs. Isolated /tmp workspace calibration passes. Initial failing report retained."
+  },
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "package-themes-recovery.log": "f530a72ae9c2b3c5c8806abcbed91541392359833c81f8aa95e800328e18dd63",
+    "package-themes-recovery.json": "3b0d1ddb132b4a81beb9d5cccd856bff6281792d68637547b216fe93188ae72f",
+    "package-themes-first.json": "a6c1a33cf9d21ab0b6cb1dee1c16fc4f52e219e7f77e1b3f02a39bd5684048a8",
+    "package-themes-focused-final.log": "a4b2f3341931998efb2c9f009b8b4f243fb07543f5430d71756822997d126fdb",
+    "package-theme-terminal-pair/report.json": "e54cf265fe596780980b2889e9b501e4a623e3922edc3ad7eea7436cf138c8f0",
+    "package-themes-controls-final.json": "45d8663efa30ae8357f6fdfe3d12bd85a980df59aea834d235ea0ca0bb86b814",
+    "package-themes-focused-recovery.log": "d6e9191e80322fe51162e5bacfb6478d6a89508f5046c5f6884e10a07c8fada1",
+    "package-theme-terminal-calibration/report.json": "e419a02f8c6c0d6822c672de65ddb3ffdd4eccf598abf7c57d017603c1704475",
+    "package-themes-expanded-recovery.json": "56b61fd3037c10fefe30f9ae331b52413df7fd7e28cbed167fe8286c5e0015cb",
+    "package-themes-full.log": "e0c1c9b77cd11e43d05572647a75a251314e5af3d6eacd4c06ef236210cd69c2",
+    "package-themes-precedence-native-first.log": "c887ebc5c4cee2b7fbbed28c39b3af5063696ea9e7e8b48fb1c301a1763fe0f1",
+    "package-theme-terminal-calibration.log": "6335ff97fafc7f563fcb6f60cd9a4d7b43031be03193ffd663670d84baacb3e3",
+    "package-themes-scoped-recovery.json": "7f66929c7bed74c33010e97979906aabe617eb5d86409664f39b71bacd0e8190",
+    "package-theme-terminal-isolated-calibration.log": "2e978523eae05754f198d4a52961d2d975f568a70dc5b571c67237dfda4b425c",
+    "package-themes-fresh-build.log": "5d2ad61524965f47957b94de0adbaea83ac8bfef41f4f450a451e1ce96dbd266",
+    "package-themes-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-themes-controls-final.log": "b3c50414e7f8f1f5552471fcbb72e93ecc56bfa007e74081238270d6030bda37",
+    "package-themes-expanded-first.log": "4cbcb464ba76214b2750a273458e10448765b4a315180e7b6ba64cfdd59caf7c",
+    "package-themes-scoped-recovery.log": "7f63189dc1a4ed7c32559686c91d8c402c5ba8b48eec8fbca5a4804c5109047c",
+    "package-theme-terminal-isolated-calibration/report.json": "74b88b7e99520f69daad483143f2d5836b64977056b92032458c2d30f438284c",
+    "package-theme-cli-first.log": "eaad80ad407f12c2f5088c0610f1785cbbe259d5eb943f5e3e0fdfafde2ebbb6",
+    "package-themes-first.log": "6333ab297857284c79abd94b7864aeba2fb2aa6eeac476221a91e2274aaf2c35",
+    "package-themes-expanded-first.json": "033596211f6adb0f4a37fc2e71bd2b01a90cae8581639a4e19c6696cf6d7a53e",
+    "package-theme-terminal-pair.log": "fc96a62266538f2b6e984dfa64f37d1496b103a7ed48f3644559a056108692ff",
+    "package-themes-expanded-recovery.log": "a49e4e4e13620ff2fc8ab066f05ba2a29e0e7e33e64734ce6d8a724642bd14c8",
+    "package-themes-exact-ci-failed.log": "c66bfe3d5aa8863f6f743f83b323fd9dcc12bb44488fe442f95c366584dc84d0"
+  },
+  "limits": [
+    "Theme SDK comparisons cover available custom names and accent output, not complete metadata/provenance/diagnostic/collision/order semantics.",
+    "The non-Kitty keyboard fallback/render mismatch is unresolved in this candidate. Source-only trust-prompt setup failure is separately explained; earlier quiet-startup/source calibration timing concerns remain retained.",
+    "Package extensions, managed npm/git, CLI package operations and full resources/trust/reload remain required and open."
+  ]
+}

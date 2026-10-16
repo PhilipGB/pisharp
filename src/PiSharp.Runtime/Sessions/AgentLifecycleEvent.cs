@@ -13,6 +13,9 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     long? CachedWriteTokens = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] object? Details = null)
 {
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? DurationMs { get; init; }
+
     [JsonIgnore]
     public IReadOnlyDictionary<string, object?>? ToolArguments { get; init; }
 

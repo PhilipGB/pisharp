@@ -10,6 +10,42 @@ namespace PiSharp.Tests;
 public sealed class InteractiveTranscriptTests
 {
     [Fact]
+    public void TextModeOnlyUsesTheFinalProviderFinishReason()
+    {
+        using var output = new StringWriter();
+        using var status = new StringWriter();
+        var transcript = new InteractiveTranscript(output, status, interactive: false);
+        transcript.Render(new("prompt_accepted"));
+        transcript.Render(new("model_request_completed") { ProviderFinishReason = "length" });
+        transcript.Render(new("model_text_delta", "completed continuation"));
+        transcript.Render(new("model_request_completed") { ProviderFinishReason = "stop" });
+
+        transcript.FinishTurn();
+
+        Assert.Equal(0, transcript.ExitCode);
+        Assert.Equal("", status.ToString());
+        Assert.Equal("completed continuation" + Environment.NewLine, output.ToString());
+    }
+
+    [Theory]
+    [InlineData(false, 1)]
+    [InlineData(true, 0)]
+    public void AnEmptyLengthResponseWarnsOnlyInTextMode(bool interactive, int exitCode)
+    {
+        using var output = new StringWriter();
+        using var status = new StringWriter();
+        var transcript = new InteractiveTranscript(output, status, interactive);
+        transcript.Render(new("model_request_completed") { ProviderFinishReason = "length" });
+
+        transcript.FinishTurn();
+
+        Assert.Equal(exitCode, transcript.ExitCode);
+        Assert.Equal("", output.ToString());
+        Assert.Equal(interactive ? "" : "Response was truncated: the model reached its output token limit." +
+            Environment.NewLine, status.ToString());
+    }
+
+    [Fact]
     public void EarlierStatusRowsAdoptTheLatestMessageOnlyWhenRestoringScrollback()
     {
         var buffer = new TerminalTranscriptBuffer();

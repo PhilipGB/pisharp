@@ -1,0 +1,101 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "b1271ad9869b9b6bfd318b5432bd0393483d22dc",
+  "scope": "Codemode shutdown request ordering, retaining prompt settlement and shared capacity until actual worker exit.",
+  "retainedExactCi": {
+    "run": 38625569590,
+    "sha": "b1271ad9869b9b6bfd318b5432bd0393483d22dc",
+    "passed": 1926,
+    "failed": 1,
+    "skipped": 0,
+    "test": "CodemodeImagesUseDetectedTypeAndNormalizeWrappedBase64",
+    "error": "Two-worker admission limit reached during the unchanged six-image loop."
+  },
+  "characterization": {
+    "shutdownNativeFirst": {
+      "terminationRequestedBeforePoolAvailable": false
+    },
+    "shutdownSource": {
+      "terminationRequestedBeforePoolAvailable": true
+    },
+    "unsupportedEarlyTest": "A proposed capacity-must-be-zero-at-result assertion failed, but source inspection proves Pi deliberately returns before actual exit. The newly proposed assertion was removed; all original tests/scenarios remain. That diagnostic log is retained and is not counted as a valid fail-first regression.",
+    "sourceProbeSetup": "The first source cleanup await had no referenced Node handle after Worker.unref and exited 13. A bounded referenced timer now holds the probe alive until actual worker exit; corrected source probe exits 0."
+  },
+  "implementation": [
+    "Move process termination request out of Task.Run and perform it synchronously before Reap returns. Detached cleanup still awaits actual exit and bounded host/stderr cleanup.",
+    "Do not wait for actual process exit during settlement and do not increase/reset the two-worker limit or release capacity before exit. Existing cancellation/deadline/output/image/store/admission behavior is preserved."
+  ],
+  "verification": {
+    "shutdownDifferential": true,
+    "focusedPassed": 88,
+    "lifecycleAdmissionComparisons": 6,
+    "fullSuite": {
+      "passed": 1927,
+      "failed": 0,
+      "skipped": 0
+    },
+    "originalImageTestRepetitions": 10,
+    "imageExecutions": 60,
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "exactCi": {
+      "sha": "76c7a01e68d24e307d271f8c81e84c13a0f3c9d7",
+      "run": 38629279578,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38629279578",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1927,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
+  },
+  "reproduction": "python3 tools/parity/codemode-shutdown-differential.py --pi <configured-clean-checkout> --output artifacts/parity/<run>/shutdown.json",
+  "sourcePaths": [
+    "packages/codemode/src/runtime/host.ts: workerLauncher.stop invokes Worker.terminate before resolving; exit listener releases capacity.",
+    "packages/codemode/src/runtime/execution.ts: Execution.finish resolves after channel.stop without awaiting worker exit.",
+    "packages/coding-agent/src/extensions/codemode/execute.ts: shared two-worker admission and release callback."
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "codemode-shutdown-probe-build.log": "d73efffd45a320d1c97a8f488e75df100eadd6a05b832597689c407ab34afcc9",
+    "codemode-shutdown-source.json": "48d987a724ea0310afeba9d9d71d6969c11869f05832df91c40ef4fb49d8c198",
+    "codemode-shutdown-probe-build-corrected.log": "1bf36cc811445800b138cf8c2ea0798c0210a935673f8b1e194976ba4c8cf4b3",
+    "codemode-shutdown-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "codemode-shutdown-source-corrected.json": "48d987a724ea0310afeba9d9d71d6969c11869f05832df91c40ef4fb49d8c198",
+    "codemode-shutdown-lifetime-regression.json": "6da4f0378748b8d9085f64c52b0a03e3e1e0210950e529d2557f318f210b9bdd",
+    "codemode-shutdown-native-recovery.json": "48d987a724ea0310afeba9d9d71d6969c11869f05832df91c40ef4fb49d8c198",
+    "codemode-shutdown-lifetime-regression.log": "058c3c734866711f5ff4c6486684430de05759cf0d96f3fd69550a49697ccbd3",
+    "codemode-shutdown-probe-recovery-build.log": "0690ef197f01a4aa00ef06eec81ecc758b77a45d9149a7af62cd189a1d795860",
+    "codemode-shutdown-differential.json": "7662da92bbeefd527ef306117cdbf8642b4b4d467a15b5c11f31567cd03a5424",
+    "codemode-shutdown-focused.log": "c0be3fae2e8ba596e99bbfc3687511edb10bcf81b13e87cc22ae2ceee866027e",
+    "codemode-settlement-native-first.log": "74da3dd9ee8f4a173f9e90096ecab08cb3526ec6a760c34b4193d67623983272",
+    "codemode-shutdown-differential.log": "4d1c36c0ca38d3a9595c435a0ee3a03481abe506781f5db69125007e799cd6f2",
+    "codemode-shutdown-fresh-build.log": "5bda9bc66859a89933a78fbe71fee05596337028a95d1d07eb3149fa5dc9a6ca",
+    "codemode-shutdown-native-first.json": "2fec1dc5177140099f1d8824a906e53fc9d6fb1964428b5e1f11a1be64b3057f",
+    "package-themes-exact-ci-failed.log": "c66bfe3d5aa8863f6f743f83b323fd9dcc12bb44488fe442f95c366584dc84d0",
+    "codemode-shutdown-full.log": "ae4f67d5124990a2f838137fbd091437fe865d68454b692d8a8f6b32d3e7928e",
+    "codemode-shutdown-images-repeat-0.log": "e56eb3457e0dcc5035391651eb3ad5f7d29978231e1751a960079567f631db74",
+    "codemode-shutdown-images-repeat-3.log": "b0bda1057aecd1abcdc5b38b917d91076f571e465b23cd866a67ce856737a836",
+    "codemode-shutdown-images-repeat-1.log": "af569062363a723f4f2bc1f091be8ea2a4ed3b953dcf2bba0879ea93a89c6ab6",
+    "codemode-shutdown-images-repeat-9.log": "af569062363a723f4f2bc1f091be8ea2a4ed3b953dcf2bba0879ea93a89c6ab6",
+    "codemode-shutdown-images-repeat-2.log": "0beaf3ad78d79e3f7431ef2fb82850c40ca335d64b191c5c17a49c3db98958fe",
+    "codemode-shutdown-images-repeat-7.log": "b5c2babf6b929c6eecda30577fcaf008491f3e7c58b90deabe81ac72b6223dc8",
+    "codemode-shutdown-images-repeat-4.log": "b5c2babf6b929c6eecda30577fcaf008491f3e7c58b90deabe81ac72b6223dc8",
+    "codemode-shutdown-images-repeat-6.log": "b137c144dba33204fed751d1d446403ec921bb103662a52ed57f02b9c6ce385e",
+    "codemode-shutdown-images-repeat-8.log": "bb159c06d0907a38ca9241aa4b1bd150d439b73627ca12b2fca22bc2ecb3433a",
+    "codemode-shutdown-images-repeat-5.log": "3bb522692ce2dd418df399a1dacf03708dbe85df0a7ae84537a090bc5f6eca69",
+    "codemode-shutdown-images-repeats.json": "561fd505c256fe5a25b2e56c6baad680ad82c046f31b70d12a01759ab0b7ef79",
+    "codemode-shutdown-exact-ci.log": "1cbe194bb5a2fab248502db05d9fac5bf76d805efe130df149b5184620b265e4",
+    "codemode-shutdown-docs.log": "ec90e586e1b094bde85ef404b7c42c22e29f47fa85c31139bb667b01a5bb5a12"
+  },
+  "limits": [
+    "The controlled cleanup-pool barrier establishes the native/source request-order mismatch and its repair; the original CI log lacks scheduling/exit traces, so its exact failed interleaving is not proven.",
+    "The pending terminal keyboard/render difference and earlier quiet-startup/source calibration timing concerns remain separately open. Passing Codemode/resource suites do not resolve them.",
+    "Broader Codemode formatting/options/memory/nested-call/provider semantics remain in_progress."
+  ]
+}

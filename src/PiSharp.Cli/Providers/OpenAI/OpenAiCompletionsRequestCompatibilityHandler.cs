@@ -9,6 +9,9 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
 {
     private readonly ModelDescriptor _model;
     private readonly bool _supportsStore;
+    private readonly bool _preserveStringUserContent;
+    private readonly bool _mapDeveloperRoleToSystem;
+    private readonly bool _requiresReasoningContentOnAssistantMessages;
     private readonly string _maxTokensField;
 
     public OpenAiCompletionsRequestCompatibilityHandler(ModelDescriptor model, string providerId, Uri endpoint,
@@ -18,6 +21,11 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
         var detected = DetectCompatibility(providerId, endpoint);
         _supportsStore = ReadBoolean(model.Compatibility, "supportsStore") ??
             ReadBoolean(providerCompatibility, "supportsStore") ?? detected.SupportsStore;
+        _preserveStringUserContent = providerId.Equals("azure", StringComparison.Ordinal);
+        _mapDeveloperRoleToSystem = ReadBoolean(model.Compatibility, "supportsDeveloperRole") == false ||
+            ReadBoolean(providerCompatibility, "supportsDeveloperRole") == false;
+        _requiresReasoningContentOnAssistantMessages = model.Reasoning == true &&
+            ReadBoolean(model.Compatibility, "requiresReasoningContentOnAssistantMessages") == true;
         _maxTokensField = ReadString(model.Compatibility, "maxTokensField") ??
             ReadString(providerCompatibility, "maxTokensField") ?? detected.MaxTokensField;
     }
@@ -31,7 +39,8 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
         {
             var content = request.Content;
             var body = await content.ReadAsByteArrayAsync(cancellationToken);
-            var projected = ProjectRequest(body, _model, _supportsStore, _maxTokensField);
+            var projected = ProjectRequest(body, _model, _supportsStore, _maxTokensField,
+                _requiresReasoningContentOnAssistantMessages, _preserveStringUserContent, _mapDeveloperRoleToSystem);
             if (!ReferenceEquals(projected, body))
             {
                 var replacement = new ByteArrayContent(projected);
@@ -49,7 +58,8 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
     }
 
     internal static byte[] ProjectRequest(byte[] body, ModelDescriptor model, bool supportsStore,
-        string maxTokensField)
+        string maxTokensField, bool requiresReasoningContentOnAssistantMessages = false,
+        bool preserveStringUserContent = false, bool mapDeveloperRoleToSystem = false)
     {
         if (JsonNode.Parse(body) is not JsonObject request) return body;
         var changed = false;
@@ -61,7 +71,19 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
                 if (message is not JsonObject messageObject) continue;
                 if (HasStringValue(messageObject["role"], "assistant") && messageObject.Remove("name"))
                     changed = true;
+                if (mapDeveloperRoleToSystem && HasStringValue(messageObject["role"], "developer"))
+                {
+                    messageObject["role"] = "system";
+                    changed = true;
+                }
+                if (requiresReasoningContentOnAssistantMessages && HasStringValue(messageObject["role"], "assistant") &&
+                    messageObject["reasoning_content"] is null)
+                {
+                    messageObject["reasoning_content"] = "";
+                    changed = true;
+                }
                 if (!HasStringValue(messageObject["role"], "user") ||
+                    preserveStringUserContent ||
                     messageObject["content"] is not JsonValue content || !content.TryGetValue<string>(out var text))
                     continue;
 

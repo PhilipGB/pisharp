@@ -1,44 +1,29 @@
 using System.Net.Http;
+using System.Text.Json;
+using ModelContextProtocol;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 
 namespace PiSharp.Runtime.Mcp;
 
 internal sealed class McpConnectedServer(McpClient client, McpOAuthRefreshHandler? refreshHandler,
-    IList<McpClientTool> tools, bool hasResources, IList<McpClientResource>? resources = null,
-    IList<McpClientResourceTemplate>? resourceTemplates = null, SemaphoreSlim? toolsRefreshGate = null,
-    SemaphoreSlim? resourcesRefreshGate = null) : IAsyncDisposable
+    IList<McpClientTool> tools, bool hasResources, SemaphoreSlim? toolsRefreshGate = null) : IAsyncDisposable
 {
     private readonly object _gate = new();
     private IList<McpClientTool> _tools = tools;
-    private IList<McpClientResource> _resources = resources ?? [];
-    private IList<McpClientResourceTemplate> _resourceTemplates = resourceTemplates ?? [];
     private readonly SemaphoreSlim _toolsRefreshGate = toolsRefreshGate ?? new SemaphoreSlim(1, 1);
-    private readonly SemaphoreSlim _resourcesRefreshGate = resourcesRefreshGate ?? new SemaphoreSlim(1, 1);
     private readonly HashSet<Task> _refreshTasks = [];
     private int _disposed;
 
     public McpClient Client { get; } = client;
     public string? Instructions => Client.ServerInstructions;
     public IList<McpClientTool> Tools { get { lock (_gate) return _tools.ToArray(); } }
-    public IList<McpClientResource> Resources { get { lock (_gate) return _resources.ToArray(); } }
-    public IList<McpClientResourceTemplate> ResourceTemplates { get { lock (_gate) return _resourceTemplates.ToArray(); } }
     public bool HasResources { get; } = hasResources;
     public bool IsDisposed => Volatile.Read(ref _disposed) != 0;
 
     public void ReplaceTools(IList<McpClientTool> tools)
     {
         lock (_gate) _tools = tools.ToArray();
-    }
-
-    public void ReplaceResources(IList<McpClientResource> resources,
-        IList<McpClientResourceTemplate> resourceTemplates)
-    {
-        lock (_gate)
-        {
-            _resources = resources.ToArray();
-            _resourceTemplates = resourceTemplates.ToArray();
-        }
     }
 
     public void TrackRefresh(Func<Task> refresh)
@@ -71,7 +56,6 @@ internal sealed class McpConnectedServer(McpClient client, McpOAuthRefreshHandle
         try { await Task.WhenAll(refreshTasks); }
         catch (Exception) { }
         _toolsRefreshGate.Dispose();
-        _resourcesRefreshGate.Dispose();
     }
 }
 
@@ -122,7 +106,7 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
         _ = await GetConnectedAsync(cancellationToken);
     }
 
-    public async Task<CallToolResult> CallToolAsync(string name, IReadOnlyDictionary<string, object?> arguments,
+    public async Task<JsonElement> CallToolAsync(string name, IReadOnlyDictionary<string, object?> arguments,
         CancellationToken cancellationToken)
     {
         for (var attempt = 0; ; attempt++)
@@ -130,10 +114,20 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
             var connected = await GetConnectedAsync(cancellationToken);
             try
             {
-                var tool = connected.Tools.FirstOrDefault(item => item.Name == name) ??
+                using var oauthRequest = McpOAuthRequestContext.Begin();
+                _ = connected.Tools.FirstOrDefault(item => item.Name == name) ??
                     throw new InvalidOperationException("MCP server no longer advertises tool " + name + ".");
-                return await tool.CallAsync(arguments, cancellationToken: cancellationToken);
+                // The SDK's nullable StructuredContent property loses an explicit JSON null.
+                // Keep the native response until model/script projection while using the SDK session transport.
+                return await connected.Client.SendRequestAsync<CallToolRequestParams, JsonElement>("tools/call",
+                    new CallToolRequestParams
+                    {
+                        Name = name,
+                        Arguments = arguments.ToDictionary(item => item.Key,
+                            item => JsonSerializer.SerializeToElement(item.Value, McpJsonUtilities.DefaultOptions))
+                    }, McpJsonUtilities.DefaultOptions, cancellationToken: cancellationToken);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error) when (attempt == 0 && IsSessionExpired(error))
             {
                 await RetireIfCurrentAsync(connected);
@@ -161,7 +155,12 @@ internal sealed class McpServerConnection(string name, bool retryTransientConnec
         for (var attempt = 0; ; attempt++)
         {
             var connected = await GetConnectedAsync(cancellationToken);
-            try { return await action(connected.Client, cancellationToken); }
+            try
+            {
+                using var oauthRequest = McpOAuthRequestContext.Begin();
+                return await action(connected.Client, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception error) when (attempt == 0 && IsSessionExpired(error))
             {
                 await RetireIfCurrentAsync(connected);

@@ -33,6 +33,8 @@ registration.AddTool(new PiSharpToolRegistration(
 
 `PiSharpToolNamespace` accepts aliases for lookup from Codemode's `searchTools` and `describeNamespace`. MCP tool results retain the model-facing text and error state; nested Codemode calls receive the full `CallToolResult` (`content`, `structuredContent`, and `isError`, without protocol `_meta`) and its output schema. A returned MCP error therefore resolves to its result object so the script can inspect `isError` and the content, while the model-facing tool call remains marked as an error.
 
+Set `PiSharpToolRegistration.ConstrainedSampling` to `JsonSerializer.SerializeToElement(new { type = "json_schema", strict = "prefer" })` to request strict JSON-schema sampling. Anthropic uses this when the selected model's `supportsStrictTools` compatibility flag is true. Unsupported preferred schemas use their original non-strict definitions; known strict-tool capacity rejections retry once with those original definitions. Use `strict = "require"` to reject unsupported schemas or models and retain the constraint during capacity fallback. Policies survive tool transcript revisions and native/Pi session persistence, and Pi Messages forwards them to its gateway. Strict sampling on other provider APIs remains in progress.
+
 ## Extension resources
 
 An extension can make skills, prompt templates, and terminal themes available on startup and after `/reload`:
@@ -100,7 +102,7 @@ registration.AddTool(echo, new PiSharpToolRenderer(
         result.Text ?? "No result.", PiSharpToolTextStyle.Output)));
 ```
 
-Call and result renderers receive a stable tool-call ID, working directory, safe snapshot of the call arguments, and lifecycle flags. Result data includes text, structured details, images, error state and error text. A renderer returns a `PiSharpToolRenderView` made from text spans and semantic styles (`Title`, `Output`, `Muted`, `Accent`, `Code`, `Success`, or `Error`). PiSharp sanitizes terminal controls, bounds output size, applies the active theme, wraps text by terminal-cell width and keeps full results compatible with the ten-line collapse/expand behavior. Extensions return text and style intent; they cannot inject ANSI sequences through this API.
+Call and result renderers receive a stable tool-call ID, working directory, safe snapshot of the call arguments, lifecycle flags, and a completed result's `DurationMs` when recorded. Result data includes text, structured details, images, error state and error text. A renderer returns a `PiSharpToolRenderView` made from text spans and semantic styles (`Title`, `Output`, `Muted`, `Accent`, `Code`, `Success`, or `Error`). PiSharp sanitizes terminal controls, bounds output size, applies the active theme, wraps text by terminal-cell width and keeps full results compatible with the ten-line collapse/expand behavior. Extensions return text and style intent; they cannot inject ANSI sequences through this API.
 
 Return `null`, an empty view, or throw to use PiSharp's standard presentation. The host catches renderer exceptions and preserves tool execution/results. Render callbacks are synchronous and receive completed results; partial update rendering, stateful invalidation, custom interactive widgets and image-component composition are not implemented yet.
 

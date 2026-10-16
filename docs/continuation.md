@@ -1,6 +1,472 @@
 # Continuation — PiSharp capability parity
 
-## Current checkpoint — 2026-10-11
+## Daily Driver Core milestone complete — 2026-10-16
+
+This checkpoint completes the bounded Codex subscription and llama.cpp daily
+driver milestone. The configured Pi checkout remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; global Pi parity remains a separate
+roadmap. Stop this milestone here and wait for the next goal before broadening
+provider or application scope.
+
+The current PR product checkpoint is `92fccccc5604f3601a25f84796755208d147efc3`
+on `parity/current-pi-completion`. Codex coverage includes manual
+authorization-code/redirect-URL fallback, temporary subscription-usage retry,
+account/session WebSocket reuse, cached `previous_response_id` deltas, MAF
+tool-loop continuation with JSON-aware argument matching, inline PNG images,
+completed usage, visible stream failures, and cancellation after output begins.
+Supported Codex models now declare grammar tools as Responses custom tools;
+WebSocket and SSE custom-input events map into MAF function calls, custom call
+outputs replay correctly, and switching to a standard Responses provider sends
+ordinary function items. Non-streaming Responses calls now aggregate the
+Codex SSE/WebSocket stream for compaction summaries, preserving summary text,
+response ID and usage; the SSE fallback also skips long runs of empty frames
+iteratively.
+Resumed requests carry the saved Codex session ID as private provider metadata
+while MAF still sends the saved user and assistant history in `input`; the
+focused test also checks refreshed credentials and session headers. The llama
+router keeps models available when optional `/props` requests fail, bare model
+names switch to exact active catalog items, and resuming a session restores its
+saved llama model. Normal interactive llama fixtures now execute a local
+`read` tool and continue with its result; another fixture cancels after visible
+streamed text, settles the run and accepts a later prompt without replay. Core
+fixtures verify steering reaches the first request, compaction retains trailing
+steering after a completed tool result, retry restoration failures settle, and
+RPC validates a replacement provider before cancelling the active run. Recent
+session discovery skips a malformed newer session whose selected head is
+missing and continues to an older valid session. The project session picker
+toggles recent/name sorting with Ctrl+S and Ctrl+R renames the selected session
+without losing search, selection, or persisted title. The CLI handles
+`--provider llama.cpp --list-models` before startup model selection, so a
+dynamic router catalog can be listed without selecting a model. A live router
+rerun returned 19 selectable models, including the loaded
+`NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-GGUF`; see the compact
+[discovery receipt](parity/fixtures/llama-live-model-discovery-2026-10-16.json).
+The deterministic Codex acceptance fixture now composes fake device-code
+subscription login, model selection, the real MAF `read` tool loop over the
+Responses WebSocket, steering during streamed output, session persistence, and
+resume through a fresh runtime/client. A second Codex fixture exercises manual
+compaction through Responses, then continues with the projected summary and
+persists it in the session. An unauthenticated Codex model now opens the TUI
+instead of trying to parse the placeholder credential as a JWT; the client
+rejects any request before transport with a `/login openai-codex oauth` hint.
+A Linux PTY fixture verifies the Codex browser/device choices and cancellation.
+The combined Codex/llama focused acceptance filter passes 32/32 with zero skips;
+format verification and the warnings-as-errors solution build pass. The
+configured local router was reachable during this checkpoint: the opt-in live
+Qwen3.8-27B-GGUF read-tool continuation and post-visible-text cancellation
+fixtures pass 2/2. A live Codex account was not available, and live-server
+manager/TUI load-switch-resume was not exercised; the goal permits deterministic
+fixtures for these acceptance contracts. These live-only checks remain useful
+future evidence, but they do not block this bounded milestone.
+The llama Linux PTY acceptance now composes interactive `read` tool execution,
+tool-result continuation, clean save/exit, fresh-process `--continue`, and a
+successful follow-up using restored history. The llama manager/TUI test class
+passes 11/11 with zero skips; the cross-model resume fixture waits for the
+completed assistant turn before sending exit input.
+Exact-head Linux CI on product source `92fccccc5604f3601a25f84796755208d147efc3`
+passes restore, format, warnings-as-errors build, Node/Python/docs checks, MCP
+conformance and 2,091/2,091 .NET tests with zero skips
+([push run 38837170138](https://github.com/PhilipGB/pisharp/actions/runs/38837170138),
+[pull-request run 38837172889](https://github.com/PhilipGB/pisharp/actions/runs/38837172889)).
+
+All 194 capability IDs remain in the global inventory at **12 verified, 148 in
+progress, and 34 not started**. These global parity counts do not measure this
+milestone. Keep existing statuses and the deferred provider backlog intact.
+
+## Daily Driver Core acceptance
+
+The bounded acceptance scenarios are covered and pass:
+
+- **Codex subscription:** deterministic device-code sign-in, model selection,
+  streamed Responses/WebSocket output, MAF tool execution and result
+  continuation, steering, cancellation/error handling, compaction, session
+  persistence and continuation through a fresh runtime/client.
+- **llama.cpp:** a Linux PTY fixture selects a local model, streams a response,
+  uses `read`, continues from the tool result, saves and exits, resumes through
+  `--continue`, and completes a follow-up using restored history. Separate
+  fixtures cover cancellation, manager load/unload, model switching and
+  cross-model session resume. Live Qwen inference passed tool continuation and
+  cancellation against the configured local router.
+- **Shared behavior:** fixtures cover queued steering, compaction with trailing
+  input, durable sessions, model replacement validation and terminal cleanup
+  after interactive exit.
+
+The llama router manager/TUI class passes **11/11** with zero skips. Full
+milestone verification is green on the product source above. Wider current-Pi
+differentials and non-core resources/MCP/Codemode workflows remain in the global
+inventory; broad secondary-provider parity stays deferred. Do not resume those
+tasks under this completed milestone. Preserve `test.pdf` and unrelated files.
+See the receipts in [the feature matrix](parity/feature-matrix.md) and the
+execution ledger.
+
+## Prior integrated queue checkpoint — 2026-10-15
+
+Queues 1–12 had integrated implementation slices at the source checkpoint
+above. Thinking budgets were verified. Google GenAI/Vertex matched six pinned
+transcript-conversion cases. Azure Responses, Azure Foundry, and Mistral had
+expanded local transport coverage; their broader provider contracts remain in
+the global inventory. These results are historical evidence and do not reopen
+the completed Daily Driver Core milestone above.
+
+## Historical user-requested stop — 2026-10-15 (superseded by this resume)
+
+This prior stop record is preserved as history. Its queue-3 unintegrated state
+and stop instruction were superseded when the user resumed parity work.
+
+Base SHA: `21d5e47e5a4b2cf084ed01b0a0ee7cca9efbc538`. The user cleared the
+goal and requested **stop at the next suitable point**. Both specialists are idle;
+no further task or integration is authorized by this checkpoint alone.
+
+Queue3 is **in progress, unintegrated** on local branch
+`worker/003-package-cli-a2`, committed through
+`ea44cb08cbda35c2e2d152709a532192a13e82f0`. Preserve its clean external worktree
+and private profile at `/tmp/pisharp-sol-orchestration-20261015/pisharp-workers/003-package-cli-a2/`.
+If temporary storage disappears, recover the committed work from the branch;
+do not classify this attempt as an empty preparation or discard its commits.
+
+Luna's final bounded focused run passes **20/20, zero skips**; root inspected
+the log but has **not** independently rerun it or accepted the final commit.
+Package command/settings/store behavior and native process evidence are committed.
+The reusable real Pi/PiSharp package CLI differential, full resource invocation
+proof, compact parity receipt, final root review, integration and verification
+remain unfinished. Self/model update targets remain later queue work. See
+[the stop receipt](parity/fixtures/package-cli-user-stop-2026-10-15.json).
+
+Main product source remains `a33e556b`; last full verification remains
+**1,997 .NET / 24 Node / 50 Python**, six architecture checks and MCP **261/8
+classified/no regressions**. Counts remain **10 verified / 146 in progress /
+38 not started**; no promotion or queue3 completion. Serialized mode, both gates
+not run, unchanged fingerprint, zero milestones since full verification and no
+advisor escalation. Last inspected exact-head CI for pre-stop main `21d5e47e`
+is successful, run **38756890943**. The checkpoint below describes the prior
+startup; this stop record supersedes its active-work instructions.
+
+## Historical Sol orchestration checkpoint — 2026-10-15
+
+Base SHA: `a33e556b1fd88e5c935c9346ad286608f99f7384`; starting handover SHA:
+`77caa3290a0300e2e02d61039b306260f127872a`. Queues **1 and 2 are completed**;
+next is **3, package install/remove/update/list CLI workflows**. The package
+milestone covers tasks1–3. Capability counts remain **10 verified / 146 in
+progress / 38 not started**. Package CLI, configured npm commands and remaining
+registry/legacy package resolution proof are required; no capability promotion.
+No unresolved P0/P1 is established.
+
+Queue2 authorship: **Luna** implemented worker `204f3f9b`; **Root** reviewed the
+exact commit, squash-integrated and independently reran verification. Root made
+no production/test/harness changes after integration. See [the Git receipt](parity/fixtures/managed-git-rpc-process.json).
+The real CLI/RPC pair matches two provider requests, installed skill/template
+expansion, native extension startup, lifecycle counts and peer omission. A direct
+Pi API update probe and native PiSharp store tests establish unpinned v1-to-v2
+refresh. Native tests cover unchanged pinned refs, cached startup without fetch,
+project delta metadata, failed dependency/fetch recovery, and child cancellation.
+This evidence does not claim a package update CLI or Git-specific reload invocation.
+Queue1 remains **Luna** implementation plus documented root integration corrections;
+see [the npm receipt](parity/fixtures/managed-npm-local-tarball-2026-10-15.json).
+
+Root focused verification passes **102** tests. Four real RPC/provider regressions
+match: managed Git, managed npm, deleted skill and local package. Full verification
+with both specialists idle and worker processes exited passes restore, format,
+zero-warning build, **1,997 .NET / 24 Node / 50 Python**, zero skips, six architecture
+checks, documentation paths, clean pinned reference, and MCP **261 passing checks /
+eight classified outcomes / zero regressions**. Default HOME/config/temp/session
+profile is preserved; fixtures own npm caches. The receipt records the tested source
+digest and base/worker SHAs. Milestones since full verification: **0**.
+Raw root logs remain under `artifacts/parity/002-managed-git-root/` (Git ignored).
+
+Concurrency stays **serialized**, both gates not run. Fingerprint: Linux x86_64;
+.NET 10.0.112, Node 24.21.0, Python 3.14.4; 24 CPUs / 32 GiB memory class;
+profile base `/tmp/pisharp-sol-orchestration-20261015`. Queue2 reported and removed
+a Python cache created inside its worker worktree without the assigned profile;
+no default-user-location write is established and no gate is certified. Queue1 and queue2 worker states were removed after publication; reconcile actual
+worktrees/branches on resume. No advisor escalation.
+
+Latest inspected exact-head CI is green at product `a33e556b`, run
+[38726521422](https://github.com/PhilipGB/pisharp/actions/runs/38726521422).
+Queue2 worker state is removed. The temporary filesystem and prior specialists
+were refreshed after publication; no implementation was lost. The missing
+read-only queue3 preparation a1 was explicitly abandoned and its Git registration
+and private branch removed with guards. Queue3 now uses **worker/003-package-cli-a2**
+at product `a33e556b`, with a new external worktree and full private profile under
+`/tmp/pisharp-sol-orchestration-20261015/pisharp-workers/003-package-cli-a2/`.
+Both required specialist probes and isolated SDK/push preflight passed again.
+Toolchain fingerprint is unchanged; continuity uncertainty keeps serialized mode.
+Push with per-command `GIT_SSH_COMMAND='ssh -F /dev/null'`; public GitHub REST
+provides CI reads (`gh` is unauthenticated).
+
+Configured Pi remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` at
+`/tmp/pisharp-luna-pi`. The pinned clone, dependencies and ignored provider model
+data were restored. Normal source CLI version probe now passes, and permanent
+reference validation confirms unchanged tracked source. The initial missing-data
+probe failure and repair are recorded in [the resumed checkpoint](parity/fixtures/sol-orchestration-resume-task3-2026-10-15.json).
+Luna audited eight further commits through `5ab7fe74c400097b386662205cd93900695b8a71`;
+root reviewed the provider image patch/current owners. Anthropic/Claude Bedrock
+error-result image placement is required P2 for queue43. The Kimi revert/restoration
+has no net protocol delta; test-only changes, Chord/Durable and the Nix wrapper
+receive their bounded classifications. No P0/P1 interrupts queue3. The earlier
+[startup review](parity/fixtures/sol-orchestration-upstream-startup-2026-10-15.json)
+retains retry/off-thinking P2 work for tasks43/44. No pin advance; final freeze/audit
+remains required. Full parity is incomplete; continue after each task and milestone.
+
+## Sol-to-Luna handover — 2026-10-15
+
+This checkpoint supersedes the older next-action paragraphs below. This Sol goal
+ends with the verified, pushed handover; the continuing Luna goal owns full parity.
+Do not spend another session extending YAML/resource permutations without a
+supported observable failure. Read `sol_luna_handover` in
+[the execution ledger](parity/execution-ledger.json) before implementing the queue.
+It contains 45 ordered tasks, each with capability IDs, behavior, actual Pi source
+and test paths, PiSharp owners, the established pattern, focused and differential
+verification, and an explicit completion condition. All owner/source paths were
+checked against this worktree and the configured Pi checkout.
+
+### Repository and evidence
+
+- Branch: `parity/current-pi-completion`; starting SHA
+  `cccbf3e069a3e98f5703709df5beec1363eb1c8e`.
+- Merged architecture-refactor main `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`
+  is an ancestor; no main merge/rebase was needed. Starting exact-head CI
+  [38658864333](https://github.com/PhilipGB/pisharp/actions/runs/38658864333) passed.
+- Configured Pi and audited cutoff:
+  `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A fresh remote read still returns
+  that SHA. [The 24-commit audit](parity/fixtures/luna-handover-2026-10-15/upstream-audit.json)
+  classifies nine out of scope, two no behavior change, two matched P1 repairs,
+  and eleven deferred P2/P3 changes. Advancing the reference selects the target;
+  it does not claim those deferred changes are implemented.
+- Local validation: restore, format and zero-warning build; .NET **1,976 passed,
+  zero failed/skipped**, Node **24**, Python **50**, six architecture checks;
+  MCP **261 passing checks / eight classified failures / zero regressions** over
+  26 scenarios. Focused native checks: 130. Pi source suites: 35 provider and
+  106 resource/settings/trust tests, zero skips. See
+  [the verification receipt](parity/fixtures/luna-handover-2026-10-15/verification.json).
+- Verified/pushed product checkpoint: `df163a4704f3a498f40046ae6a289b870a2b8af9`. Exact-head CI
+  [38664105111](https://github.com/PhilipGB/pisharp/actions/runs/38664105111) passes both jobs.
+  [The publication receipt](parity/fixtures/luna-handover-2026-10-15/publication.json)
+  records the thirteen-item stopping audit. Resolve the branch ref for the final
+  docs-only receipt commit; product source/tests/tools are unchanged by it.
+- Reviewed [contract evidence](parity/fixtures/luna-handover-2026-10-15/contracts.json)
+  is committed; generated captures and TRX remain under
+  `artifacts/parity/luna-handover-2026-10-15/` and are not durable backups.
+
+### Capability closure
+
+The required inventory remains **194 IDs: 10 verified, 146 in progress, 38 not
+started**. Three implemented contracts are now deliberately closed:
+
+- `feature-resources-instructions-and-trust`: instruction hierarchy/read recovery,
+  trust before privileged project selection, declined selection, and configure-once
+  pre-trust extension reuse. Fifteen current instruction cases, nine actual
+  provider-request trust cases, current extension ordering and native boundary
+  tests support the original contract. Full-screen trust selector styling remains
+  a separate TUI P2, not a missing trust decision.
+- `settings-defaultprojecttrust`: global-only default/invalid fallback,
+  saved/explicit precedence and inability of project configuration to grant its
+  own trust. The old pre-authentication probe was too weak; the current process
+  probe requires successful HTTP plus the independently expected project prompt
+  expansion in all nine cases.
+- `settings-enableskillcommands`: defaults/precedence, legacy migration,
+  live completion, manual invocation, persistence and reload. The current paired
+  reload and same-Pi calibration match 14 rendered frames with exact normalized
+  HTTP and zero scenario errors; raw byte differences remain explicit.
+
+`feature-resources-skills-templates-themes`, packages and extension API remain in
+progress for actual missing theme/package/public API behavior. Required managed
+npm/git and package CLI workflows are feature work. All 38 not-started IDs still
+lack required behavior; none was promoted from a plan or metadata alone. The
+ledger records exact closure contracts, implementation, remaining work, evidence
+and deferred priorities. A capability is not held open merely for hypothetical
+parser or visual subcases.
+
+### Major family status
+
+| Family | Verified | In progress | Not started | Deferred |
+| --- | --- | --- | --- | --- |
+| Agent execution/context | 0 | 3 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| Providers/models/auth/routing | 5 | 14 | 6 | P2 audited endpoint/profile/catalog/cache/model-selection/stream controls; two Google off request differences. |
+| Tools/loadouts/results | 0 | 10 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| CLI/commands/security | 0 | 20 | 1 | None newly recorded; required feature gaps remain in the ledger. |
+| TUI/editor/input | 0 | 11 | 3 | P2 trust selector presentation and historical calibration/timing limitation; P3 read range display; P4 raw-only bytes. |
+| Sessions/persistence | 0 | 2 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| Resources/packages/trust | 1 | 2 | 0 | P2 empty quoted template argument tokens; P3 repository github-work asset. Required managed package and complete theme/resource behavior remain feature work. |
+| Extensions | 0 | 3 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| RPC | 0 | 42 | 0 | P3 legacy reload assertion diagnostic shadowing is a harness finding; future RPC argument-error serialization remains explicit feature work. |
+| Settings | 3 | 37 | 27 | None newly recorded; required feature gaps remain in the ledger. |
+| Codemode | 0 | 1 | 0 | None newly recorded; required feature gaps remain in the ledger. |
+| MCP | 1 | 1 | 1 | No encountered P0/P1. Existing six elicitation + CIMD + scope-limit client result are classified scope differences; configured CIMD is feature work. |
+
+### Fixed P1 boundaries and representative patterns
+
+Completed tool arguments previously used the partial progress parser. Malformed
+final JSON could execute its parsed prefix. Core `ToolArgumentJson.ParseComplete`
+now requires a complete JSON object after Pi-compatible string-escape repair;
+CLI `ProviderToolArgumentChatClient.Normalize` supplies empty arguments and a
+parsing exception on failure. Both SDK response paths and the native Bedrock
+adapter use that shape. MAF owns function rejection and continuation; tests prove
+zero function invocations. RPC progress still uses `ParseStreaming`. Five SDK
+fail-first rows and Bedrock regressions protect the boundary. A current Pi pair
+matches 175 partial inputs and 18 completed provider calls, including malformed
+objects, non-objects, repaired escapes and ordinary valid calls.
+
+Google and Vertex now share Gemini 4+ `thinkingLevel` selection instead of sending
+a rejected token budget. Corrected fail-first requests and six enabled paired
+controls establish the fix. Two off-thinking controls remain an explicit **P2**
+wire discrepancy; the reviewed report says `match:false` for the full set. Do not
+silently generalize enabled-control evidence to all thinking behavior.
+
+Use these existing examples:
+
+| Surface | Pattern to repeat |
+| --- | --- |
+| Providers | `ProviderToolArgumentChatClient`, `ProviderToolArgumentRepairTests`, native `BedrockProviderTests`, `google-thinking-differential.py` |
+| Resources | `ResourceFileDiscovery`, `ResourceFrontmatter`, `ResourceCatalog`; `resource-selection-differential.py` plus a real RPC/provider input |
+| Process | `default-project-trust-process-differential.py`: successful request plus independent expected outcome, not common failure classification |
+| TUI | `terminal/run.py`, paired and same-Pi calibration, `legacy-project-skills-reload.json`, semantic assertion and direct paired report inspection |
+| RPC | `RpcQueueModeCommandHandler`, `RpcSessionCommandHandler`, `rpc-settlement-differential.py`, current active bindings |
+| MCP | `McpClientConnection`, `McpToolPublication`, `McpResourcePublication`, pinned conformance and per-check classifications |
+
+### Architecture decisions Luna should preserve
+
+Production remains **CLI → Runtime → Core**, using installed **MAF 1.21.0 /
+MEAI 10.10.0**. The invoked framework skill is a newer snapshot; installed
+metadata and the compiled application are authoritative. No framework upgrade or
+new generic infrastructure is needed for this queue.
+
+| Family | Ownership, state, lifetime and contract |
+| --- | --- |
+| Agent/session | MAF owns the function loop. `ConversationRun` owns canonical appends, prompt queue and settlement. `ConversationSession`/tree is durable; MAF sessions are disposable branch projections. Preflight/save replacements before cancelling outgoing work, settle before publishing new active bindings. Preserve unknown-side-effect recovery and stale-writer refusal. |
+| Current state | Read `ActiveModelRuntime`, `ActiveProjectRuntime`, `ActiveConversationRuntime` at callback invocation. Reload/model/session transitions publish explicit bindings. Do not capture stale agents, tools, project settings or stores in new callbacks. |
+| Providers | CLI owns wire protocols/auth/transcript mapping; Runtime owns common execution/metadata/usage. Retry before streamed output only; malformed arguments remain errors through MAF and mapping. Keep provider endpoint identity separate from the display profile. Kimi at this cutoff uses Chat Completions `/coding/v1`, OpenCode uses inference endpoints and per-model APIs. |
+| Sampling/model references | Add a pure Runtime sampling merge over descriptor defaults, exact clamped level and request overrides. A CLI chat-options wrapper handles both response paths; provider adapters map fields. Carry the exact selected level rather than reversing a lossy MEAI effort. A concrete CLI model-reference resolver collects candidates before choosing authenticated named-provider/gateway identity; shared resolver is used by CLI/scopes/auth/model commands. |
+| Managed packages | Add one concrete Runtime managed package store for npm/git process/cache lifetime, cancellation and resolved roots. Feed roots into existing package resource owners. One CLI package command owner handles scopes/persistence/UI; no generic registry. Source/ref identity, lexical provenance and canonical file identity are distinct. Match Pi's supported package execution policy from source; use local tarball/git fixtures. |
+| Resources/extensions | Existing discovery/frontmatter/path/package owners retain parsing/projection. User/global/CLI extensions configure once before trust, project privilege follows trust, final selection controls order/metadata. Catalog owns extension resources/disposal. Reload replaces discovered resources and refreshes active callbacks; failed registrations roll back checkpoints. |
+| MCP | SDK owns protocol transport. Runtime owns naming/exposure, server+URL credential identity, publication/reconnect and startup waits. Catalog owns connections; named indirect operations wait only for the reached server. Never retry an uncertain tool side effect. Keep resource/publication lock order and callback client-identity checks. Add CIMD through actual installed SDK support or a narrowly reproduced adapter. |
+| Codemode | Runtime owns nested pipeline, branch-local store, result/usage contract and Node worker admission. Request termination promptly; release admission only after actual exit. Cancel/dispose work with the owning run. UI details do not replace model-facing results. |
+| TUI/settings | CLI owns settings parser/writer, terminal input/layout/modes/dialogs; Runtime owns original content/execution. Use current immutable snapshots per frame. Restore terminal modes/subscriptions on exit; initial screen renders before replies. Add settings only when a real runtime/render/input consumer exists. |
+| Codex transport | One concrete connection owner keyed by account+session handles serialized socket work, bounded handshake and disposal; SSE fallback is allowed only before output. Canonical app history remains authoritative; cached response IDs never become its persistent format. |
+
+Only changed areas were reviewed. Six architecture regression tests pass; no
+broad architecture redesign was performed or is needed. The concrete strict tool
+boundary and Google shared request mapping prove representative implementations;
+45 queue tasks below specify the remaining shapes instead of empty scaffolding.
+
+### Ordered mechanical queue
+
+The complete task records are in `sol_luna_handover.queue`. Each row below names
+its place in that queue; execute feature tasks before deferred cleanup. When a
+family has variants, prove the difficult and ordinary case then repeat the proven
+adapter/persistence/test pattern. Do not redesign project boundaries.
+
+| Order | Work | Priority |
+| --- | --- | --- |
+| 1 | Install a managed npm package and expose its declared skills/prompts/themes/extensions in startup and reload. | feature |
+| 2 | Resolve pinned git packages and update only sources eligible for update. | feature |
+| 3 | Implement package install/remove/update/list CLI workflows and permitted configuration scope. | feature |
+| 4 | Resolve extension name conflicts and replaceable builtins without discarding unrelated owners. | feature |
+| 5 | Expose native event/context/UI equivalents for supported extension actions and runtime registrations. | feature |
+| 6 | Resolve model defaults, clamped effective thinking-level sampling and request overrides before outbound serialization. | feature |
+| 7 | Persist thinkingBudgets and send bounded budgets where the API supports token budgets. | feature |
+| 8 | Complete Google/Vertex image, reasoning-signature, tools, usage and error differentials. | feature |
+| 9 | Apply the completed-argument/tool-replay pattern to remaining native provider boundaries and establish provider breadth evidence. | feature |
+| 10 | Add Foundry Chat Completions and finish Azure response wire contracts. | feature |
+| 11 | Complete native Mistral Conversations beyond current Chat Completions-compatible slice. | feature |
+| 12 | Close Radius catalog/auth and interactive setup behavior. | feature |
+| 13 | Support the distinct ChatGPT sign-in route and Codex manual/device fallback without borrowing API-key credentials. | feature |
+| 14 | Implement Codex WebSocket and cached continuation with pre-stream SSE fallback. | feature |
+| 15 | Implement missing provider profiles using each current upstream protocol, starting with Kimi and OpenCode. | feature |
+| 16 | Add Cloudflare gateway and Together catalog metadata as established profile/adaptor variants. | feature |
+| 17 | Preserve Responses custom/grammar tool declarations and replay. | feature |
+| 18 | Align published schema fields with runtime parsing and public discovery. | feature |
+| 19 | Apply fullscreen/regular mode, exit output, scrollbar/copy and wheel preferences. | feature |
+| 20 | Apply editor/output geometry and completion/cursor preferences. | feature |
+| 21 | Complete terminal image, link, progress and resize controls. | feature |
+| 22 | Complete tree navigation/filter and branch summary policy. | feature |
+| 23 | Implement visible cache miss notices and provider cache warming policy. | feature |
+| 24 | Implement remaining startup/privacy/diagnostic settings using scoped concrete owners. | feature |
+| 25 | Add actual Mermaid rendering at the Markdown presentation boundary. | feature |
+| 26 | Implement configured MCP Client ID Metadata Document registration with OAuth fallback. | feature |
+| 27 | Complete interactive MCP management using current config and connection owners. | feature |
+| 28 | Finish Codemode output envelopes, model/classifier calls and usage/termination semantics. | feature |
+| 29 | Close route context budget, physical usage attribution and classifier persistence contracts. | feature |
+| 30 | Close narrow RPC command contracts by comparing real supported idle/active/error paths. | feature |
+| 31 | Complete protocol read/event projection for provider partial content and argument errors. | feature |
+| 32 | Close persistence/replacement contracts and platform evidence. | feature |
+| 33 | Close ordinary built-in tool observable contracts and live default-tool reload. | feature |
+| 34 | Close agent/queue/retry lifecycle and settlement contracts. | feature |
+| 35 | Close compaction and context/usage projection. | feature |
+| 36 | Close CLI entry modes and flag/error/output contracts. | feature |
+| 37 | Finish share/HTML export output and theme/resource rendering contracts. | feature |
+| 38 | Close skills/templates/themes/settings resource family while preserving verified instruction/trust behavior. | feature |
+| 39 | Close editor/keymap/input flow semantic parity. | feature |
+| 40 | Finish user-visible provider login copy/cancel and supported interactive effects. | feature |
+| 41 | Implement supported application install/update commands with bounded process ownership. | feature |
+| 42 | Unify ambiguous bare and gateway-qualified model reference selection. | P2 |
+| 43 | Import deferred provider metadata/cache/retry/reasoning deltas at audited cutoff. | P2 |
+| 44 | Resolve explicit off-thinking and empty-quoted template argument discrepancies. | P2 |
+| 45 | Resolve supported residual presentation and repository asset differences after features. | P3 |
+
+### Deferred findings and verification boundaries
+
+There were no P0 findings. Both encountered P1 defects are fixed and verified.
+The upstream audit assigns every in-scope remaining delta P2/P3. P2 includes
+isolated model-reference policy, cache/metadata/retry/streaming controls, missing
+profile variants, empty quoted template arguments and the explicit Google off
+mapping. Feature tasks that implement whole missing families precede those
+isolated deltas. P3 includes read-range presentation, the repository github-work
+asset and an assertion helper's local-variable shadowing. P4 raw-only terminal
+bytes have no demonstrated supported visible consequence and are not scheduled
+for implementation.
+
+The legacy-skill assertion helper overwrites its local pair case with calibration
+when `--calibration-report` is supplied. Its semantic comparison is correct, but
+reported pair diagnostics then come from calibration. This receipt avoids that
+option and independently reads both report files; fixing that P3 helper is deferred.
+Earlier quiet-startup, source-only/resize calibration and timing failures remain
+retained and unexplained. Current passing checks do not retrospectively resolve
+them. Investigate only when a current supported failure changes priority.
+
+MCP's eight classified failures remain six unadvertised elicitation checks,
+CIMD default-registration behavior and the deliberately unsuccessful scope retry
+limit client result. The limit assertion passes. No encountered MCP P0/P1 blocks
+handover; configured CIMD is explicitly queued feature work. Native macOS/Windows,
+paid providers, full provider breadth and complete TUI parity are not established
+by this Linux run. Full final parity source audit remains a future Luna gate;
+the Sol upstream delta is nevertheless completely bounded and classified.
+
+The shared workspace required writable NuGet caches under `/tmp`; use the
+recorded environment in the verification receipt if the sandbox is still active.
+`git -c core.sshCommand='ssh -F /dev/null'` bypassed a host SSH include ownership
+error without changing host configuration. Do not inspect or alter `test.pdf`.
+Explicit staging paths exclude it and all unrelated user files.
+
+Luna readiness: the next 45 tasks have concrete ownership, state/lifetime,
+persistence/cancellation rules, source references, representative examples and
+verification/completion conditions. Stop architectural exploration and execute
+the queue. The product checkpoint is pushed with exact-head CI green; the publication receipt records the stopping audit. **READY FOR LUNA HANDOVER**.
+
+---
+
+## Current post-merge checkpoint — 2026-10-15
+
+PiSharp merged `main` is `22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed`; exact-head Linux CI [38427397999](https://github.com/PhilipGB/pisharp/actions/runs/38427397999) passes. Work continues on `parity/current-pi-completion`. The major architecture refactor and composition review are complete; only the bounded final architecture regression review remains. Production dependencies remain CLI → Runtime → Core, with MAF 1.21.0 and Microsoft.Extensions.AI 10.10.0.
+
+Fresh local baseline: restore/format/warnings-as-errors build pass; .NET 1,390/1,390 with zero skips, Node 24/24, Python 47/47, documentation 131 documents / 457 references, MCP with no regressions against eight classified failures. All 17 existing process differential drivers ran; the classifier probe required valid boolean criteria and updated item extraction, then its billing/authority comparisons passed. This probe retains Pi output items and does not verify the open Codemode formatting contract. All 33 terminal fixtures ran at one explicitly selected case each: initial calibration 30/33 and pairs 24/33; seven repeats/corrections retain all failures. The harness teardown and Markdown input defects are fixed; Python terminal tests now pass 48/48. Product presentation and one thinking-toggle HTTP mismatch remain open.
+
+The baseline comparisons used `ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e`. The deliberately advanced configured Pi reference is `3daa20280f6a7c7cbe0935680c9a38fdc3863005`: all 50 new commits are classified (19 out of scope, 13 no behavior change, zero needing work, 18 matched contracts). The audited delta is reconciled; resume Resources / Instructions / Trust and every remaining ledger requirement. The latest fully verified presentation checkpoint passes 1,934 tests with zero skips and a zero-warning build; eighteen named current-source contracts now match. Resources work has resumed: fifteen instruction-file loading/order/warning comparisons match; twenty-seven trusted system/append/CLI-input comparisons and four real CLI/provider selection cases now pass. Fourteen skill/template text/recovery comparisons and four CLI/provider expansion cases pass. Nineteen explicit-path comparisons and two named-pipe CLI/provider controls now pass. Ninety-eight frontmatter/typed-metadata/warning comparisons and two invalid-YAML CLI/provider recovery cases pass. Full discovery, remaining YAML edge/error cases and terminal presentation remain open; both retained CI timing failures now have focused repairs: five terminal fail-first regressions, two RPC fail-first barrier regressions, six matching fullscreen checkpoints, and ten repetitions of each original process test. Both focused repair commits pass exact-head Linux CI (38532839354 and 38533106677); five immediate persisted RPC turns also match Pi. Seventeen directory discovery comparisons match, including 1,002 skills and root declaration stopping; sixty ignore-file/order/pattern comparisons now match too. Discovery source 0eb7b114 passes exact-head CI 38535070869. Thirty-two full-loader canonical/validation/collision/source/configuration/ancestor/extension comparisons now match, with 17 discovery/60 ignore regressions retained. Ignore source 9bf391b900 passes exact-head CI 38538502785. Selection source 0672b794 passes exact-head CI 38546090541. Forty-seven skill/template invocation and error-recovery comparisons plus a real RPC/provider deletion replay now match; 49 focused native tests cover recovery, all three input commands, JSON stderr and cancellation. Invocation source 96fa481f33 passes exact-head CI 38554053384. Typed prompt hints and the repository dup prompt now match 131 loader comparisons and 15 fullscreen render frames with provider traces; 88 focused checks cover metadata, trust/discovery, reload and suggestion columns/newlines. Hint source 42ae67c471 passes exact-head CI 38556219134. Explicit YAML scalar tags now match 181 paired cases plus a real RPC/provider input; 60 focused checks pass. Scalar source 6cec6f7104 passes exact-head CI 38557804529. The expanded YAML document/key/alias/error corpus now matches all 311 cases and a real malformed-flow RPC/provider recovery; 96 focused checks pass. Newly found port retry and inherited dumb-terminal fixture failures are separately repaired at 79b2b5e4f7 with deterministic reproduction, isolated 1850-test verification and exact CI 38564664115. Invocation-error terminal presentation now matches six fullscreen frames in two pairs and same-Pi calibration, with six native rows and 50 Python checks; source-only calibration stalls and active-resize calibration remain unresolved. See [skill-error evidence](parity/fixtures/skill-invocation-error-terminal-current-pi-2026-10-14.json). Wider resources/trust/reload remain open. Remaining settings/package/ignore/YAML/error edges, remaining tag/key/error metadata and terminal/trust/reload presentation stay open. All 194 capabilities remain required: 7 verified, 149 in progress and 38 not started; schema publication now has bounded artifact evidence with runtime alignment open. Local package skill/prompt loading now matches 83 full-loader cases, including source whitespace, file URLs/error messages, separator identity and canonical/configured controls, plus URL/padded/original real RPC/provider replays; the expanded native suite passes 1,962 with zero skips. Nested extension declarations and hidden/ignore/node_modules visibility now match eleven normal CLI flow regressions and the 95 resource loader cases. Extension directory index precedence now matches one configuration rather than duplicate sibling loading, with seven normal CLI flow regressions retained. Local package extensions now match six normal CLI/bootstrap/provider comparisons across manifest/convention/file/root/disabled/no-extensions cases; package discovery/alias/error/reload/project overrides and managed/CLI operations remain open. Local package themes now match twelve availability/palette comparisons plus the 83 skill/prompt regressions and actual CLI selection; the initial fullscreen pair exposes a non-Kitty keyboard fallback/render difference. The separate keyboard/startup repair now matches two four-frame package-theme pairs and the original 15-frame Kitty hint regression; relocated-workspace context-footer differences remain retained. Retained process timing failures have separate diagnostics/scheduling mitigation; the exact quiet-startup failure remains unexplained. Complete package extension/theme metadata/errors, managed npm/git and package CLI operations remain open. Full parity and the fresh final source audit remain incomplete. Keep `test.pdf` and unrelated user files untouched.
+
+Whitespace source `bbb0a21606` failed exact CI 38618979075 in the startup-flags process fixture (1,910 passed / one failed / zero skipped). A stalled model-catalogue body deterministically reproduces that fixture timeout. Explicit offline scope and isolated configuration preserve all original persistence/conflict assertions and the 12-second deadline; eight concurrent recovery runs pass with zero catalogue requests, and full local verification passes 1,911 with zero skips. See [startup network isolation](parity/fixtures/startup-flags-network-isolation-2026-10-14.json). Exact-head timing repair CI 38622219705 passes both jobs at 4b3837b19a (1,911 .NET tests, zero skips). The exact historical CI schedule and earlier quiet-startup/source-only calibration failures remain unproven; passing resource runs do not resolve them.
+
+Package theme head `b1271ad986` failed exact CI 38625569590 in the unchanged six-image Codemode loop (1,926 passed / one failed / zero skipped). A controlled cleanup-pool barrier exposes native deferred termination while Pi requests termination before returning. The separate repair requests termination immediately, retains prompt settlement and release only after actual exit, and preserves the two-worker limit. Eighty-eight focused checks, all six lifecycle/admission comparisons and ten original image-test repetitions (60 images) pass. See [Codemode shutdown evidence](parity/fixtures/codemode-shutdown-order-2026-10-14.json). Exact-head shutdown repair CI 38629279578 passes both jobs at 76c7a01e68 (1,927 .NET tests, zero skips). The exact historical CI schedule remains unproven; unrelated green resource runs are not used as resolution evidence.
+
+Extension failure source audit separates SDK recovery from CLI startup: the SDK discards partial registration and keeps valid siblings, while the normal CLI refuses startup with error diagnostics, exit 1 and a -ne hint. Configuration, missing explicit paths and a native dependency resolver each fail first; the candidate now matches thirteen CLI flows and a direct SDK comparison, with 76 focused checks and 95 resource regressions. See [extension error evidence](parity/fixtures/resource-package-extension-errors-current-pi-2026-10-15.json). Full local verification passes 1,954 tests with zero skips, a fresh zero-warning build, format and docs validation; wider conflicts/builtins/aliases/reload and managed package/CLI workflows remain open.
+
+See [the current refresh](parity/fixtures/current-pi-refresh-2026-10-13/README.md) for source findings, plans and evidence scope.
+
+Explicit extension file URLs and canonical aliases now match sixteen normal CLI flows, including padded-path rejection and complete diagnostics. Canonical deduplication retains the first lexical path, with package provenance for exact package-file overlap and CLI provenance for a distinct alias; three actual full-loader metadata pairs and 58 focused native checks support the distinction. The final suite passes 1,957 tests with zero failures/skips, a fresh zero-warning build, format, documentation, Node 24 and Python 50 checks. See [extension path evidence](parity/fixtures/resource-package-extension-paths-current-pi-2026-10-15.json). Configured paths, broader aliases/collisions/reload/project overrides and managed package workflows remain open; no capability is promoted.
+
+Final extension selection after the pre-trust pass now honors trusted-project package disabling and refreshes enabled preloads to project metadata while keeping untrusted-project controls and configured instances. Two native failures before repair and one control are retained; three actual full-loader selection/metadata cases and eighteen normal CLI/provider flows now match. Focused 26 and full 1,960 native checks pass with zero failures/skips, a fresh zero-warning build and format verification. See [pre-trust selection evidence](parity/fixtures/resource-package-extension-pretrust-current-pi-2026-10-15.json). Final module ordering/conflicts, wider filters/aliases/reload and managed package workflows remain open; all 194 capabilities remain required.
+
+Final extension ordering now puts a new project module before retained personal modules while configuring each once. A paired full-loader comparison and the real Pi ExtensionRunner expose both module and resource-discovery callback order before repair; one native failure and an untrusted control are retained. The repaired pair, prior three selection cases and eighteen normal CLI/provider regressions match. Focused 28 and full 1,962 native checks pass with zero failures/skips, a fresh zero-warning build and formatting checks. See [extension ordering evidence](parity/fixtures/resource-package-extension-order-current-pi-2026-10-15.json). Conflicts, replaceable builtins, dynamic registrations, wider filters/aliases/reload and managed package workflows remain open; whole capability statuses are unchanged.
+
+## Historical checkpoint — 2026-10-11
 
 Pi `origin/main` is `04566631c2b51fb688486bc1f040f60d1518c126`; PiSharp `origin/main` is `d8e5411be475a0f4bc3bf3458bc46bdbc8fd40f9`. Exact-head Linux CI [38160159991](https://github.com/PhilipGB/pisharp/actions/runs/38160159991) is green for the current PiSharp main: Node 24/24, Python 37/37, format verification, warnings-as-errors build and .NET 1,289/1,289 with zero skips. The local POSIX matcher change is also verified: 34 focused matcher tests, format, zero-warning build, Node 24/24, Python 37/37 and .NET 1,300/1,300 pass; its exact-head CI will be checked after publication. All direct Python parity scripts apply the shared two-thread/native-pool cap and CPU affinity limit, and child processes inherit the capped environment.
 

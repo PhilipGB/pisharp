@@ -42,6 +42,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private readonly ConcurrentDictionary<Guid, RpcCompactionOperation> _compactionOperations = new();
     private CancellationTokenSource? _abort;
     private Task? _active;
+    private int _activeSettled;
+    private bool IsActive => _active is { IsCompleted: false } && Volatile.Read(ref _activeSettled) == 0;
     private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
     private PiSharp.Runtime.Resources.ResourceCatalog? CurrentResources => getCurrentResources?.Invoke() ?? resources;
     private ExtensionRegistration? CurrentExtensions => getCurrentExtensions?.Invoke() ?? extensions;
@@ -59,11 +61,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             item => Events.EmitCommandLifecycleAsync(CurrentRun, item));
         var queueModeCommands = new RpcQueueModeCommandHandler(RespondAsync, () => CurrentRun, persistQueueMode);
         var stateCommands = new RpcStateCommandHandler(_writer, () => CurrentRun,
-            () => getThinkingLevel?.Invoke(), () => _active is { IsCompleted: false },
+            () => getThinkingLevel?.Invoke(), () => IsActive,
             () => getModelSnapshot?.Invoke(),
             () => Events.ProjectMessagesSnapshot(CurrentRun.Conversation, getSystemMessage?.Invoke()).Count);
         var sessionCommands = new RpcSessionCommandHandler(_writer, RespondAsync, () => CurrentRun,
-            () => _active is { IsCompleted: false }, () => Events, save,
+            () => IsActive, () => Events, save,
             newSession is null ? null : StartNewSessionAsync,
             forkSession is null ? null : StartForkSessionAsync,
             cloneSession is null ? null : StartCloneSessionAsync,
@@ -98,7 +100,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                         StartCompaction(compactionCommands, root.Clone(), id, cancellationToken);
                         continue;
                     }
-                    var busy = _active is { IsCompleted: false };
+                    var busy = IsActive;
                     if (await stateCommands.TryHandleAsync(type, id, cancellationToken)) continue;
                     if (await compactionCommands.TryHandleAsync(type, root, id, cancellationToken)) continue;
                     if (await queueModeCommands.TryHandleAsync(type, root, id, cancellationToken)) continue;
@@ -165,7 +167,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             {
                                 var activeResources = CurrentResources;
                                 expanded = activeResources is null ? message.GetString()! :
-                                await activeResources.ResolveInputAsync(message.GetString()!, cancellationToken);
+                                await activeResources.ResolveInputAsync(message.GetString()!, cancellationToken, ReportResourceErrorAsync);
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
@@ -189,8 +191,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             { await RespondAsync(id, type, false, error.Message); break; }
                             if (!string.IsNullOrWhiteSpace(preflightError))
                             { await RespondAsync(id, type, false, preflightError); break; }
+                            if (_active is { IsCompleted: false } finishing) await finishing;
                             _abort?.Dispose();
                             _abort = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                            Volatile.Write(ref _activeSettled, 0);
                             _active = ExecuteAsync(id, expanded, _abort.Token);
                             break;
                         case "bash":
@@ -219,7 +223,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             {
                                 var activeResources = CurrentResources;
                                 queuedExpanded = activeResources is null ? queuedMessage! :
-                                    await activeResources.ResolveInputAsync(queuedMessage!, cancellationToken);
+                                    await activeResources.ResolveInputAsync(queuedMessage!, cancellationToken, ReportResourceErrorAsync);
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
@@ -383,6 +387,17 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         {
             await Events.RunAsync(CurrentRun, message, token, async item =>
             {
+                if (item.Type == "agent_settled")
+                {
+                    if (save is not null)
+                    {
+                        try { await save(CancellationToken.None); }
+                        catch (Exception error)
+                        { await _writer.EmitAsync(new { type = "error", error = error.Message }, CancellationToken.None); }
+                    }
+                    Volatile.Write(ref _activeSettled, 1);
+                    return;
+                }
                 if (responded) return;
                 if (item.Type == "prompt_accepted")
                 {
@@ -395,7 +410,6 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     await RespondPromptAsync(id, false, error: item.Error ?? "Prompt was rejected.");
                 }
             }, getApi?.Invoke());
-            if (save is not null) await save(CancellationToken.None);
         }
         catch (OperationCanceledException error) when (token.IsCancellationRequested)
         {
@@ -509,6 +523,15 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         public CancellationTokenSource Cancellation { get; } = cancellation;
         public TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
+
+    private Task ReportResourceErrorAsync(PiSharp.Runtime.Resources.ResourceExpansionError error) =>
+        _writer.EmitAsync(new
+        {
+            type = "extension_error",
+            extensionPath = error.ExtensionPath,
+            @event = error.Event,
+            error = error.Error
+        }, CancellationToken.None);
 
     private Task RespondAsync(JsonElement? id, string command, bool success, string? error = null) => success
         ? _writer.EmitAsync(new { id, type = "response", command, success = true })

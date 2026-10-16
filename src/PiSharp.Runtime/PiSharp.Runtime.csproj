@@ -13,6 +13,7 @@
     <PackageReference Include="ModelContextProtocol.Core" Version="2.2.0" />
     <PackageReference Include="System.ClientModel" Version="1.14.0" />
     <PackageReference Include="SkiaSharp" Version="4.151.1" />
+    <PackageReference Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
 
   <ItemGroup>

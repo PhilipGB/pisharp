@@ -95,6 +95,7 @@ public sealed class ProviderCodemodeModels(ProviderModelRuntime providers, HttpC
             model.ThinkingLevelMap,
             model.PromptCache,
             samplingParams = model.SamplingParameters,
+            samplingParamsByThinkingLevel = model.SamplingParametersByThinkingLevel,
             compat = model.Compatibility
         }, s_json);
 

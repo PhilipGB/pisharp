@@ -16,7 +16,8 @@ internal enum TerminalSelectionAction { Continue, Accept, AcceptAsDefault, Cance
 /// <summary>Searchable, width-aware list state shared by application pickers.</summary>
 internal sealed class TerminalSelectionList<T>
 {
-    private readonly string _title;
+    private string _title;
+    private readonly string? _actionHint;
     private IReadOnlyList<TerminalSelectionOption<T>> _allOptions;
     private IReadOnlyList<TerminalSelectionOption<T>>? _scopedOptions;
     private readonly string _emptyMessage;
@@ -36,9 +37,11 @@ internal sealed class TerminalSelectionList<T>
 
     public TerminalSelectionList(string title, IReadOnlyList<TerminalSelectionOption<T>> allOptions,
         string? selectedKey = null, IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
-        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items")
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null)
     {
         _title = Clean(title);
+        _actionHint = string.IsNullOrWhiteSpace(actionHint) ? null : Clean(actionHint);
         _allOptions = Sanitize(allOptions);
         _scopedOptions = scopedOptions is null ? null : Sanitize(scopedOptions);
         _emptyMessage = Clean(emptyMessage);
@@ -51,6 +54,7 @@ internal sealed class TerminalSelectionList<T>
     }
 
     public bool IsScoped { get; private set; }
+    public void SetTitle(string title) => _title = Clean(title);
     public TerminalSelection<T>? Selected
     {
         get
@@ -71,13 +75,10 @@ internal sealed class TerminalSelectionList<T>
         _activeOptions = IsScoped && _scopedOptions is not null ? _scopedOptions : _allOptions;
         if (_scopedOptions is null) IsScoped = false;
         FilterOptions();
-        if (_query.Length == 0)
-        {
-            var selectedIndex = IndexOf(selectedKey, _filteredOptions);
-            _selectedIndex = selectedIndex >= 0
-                ? selectedIndex
-                : Math.Clamp(_selectedIndex, 0, Math.Max(0, _filteredOptions.Count - 1));
-        }
+        var selectedIndex = IndexOf(selectedKey, _filteredOptions);
+        _selectedIndex = selectedIndex >= 0
+            ? selectedIndex
+            : Math.Clamp(_selectedIndex, 0, Math.Max(0, _filteredOptions.Count - 1));
     }
 
     public TerminalSelectionAction HandleInput(TerminalInputEvent input, int? mouseContentLine = null)
@@ -184,9 +185,10 @@ internal sealed class TerminalSelectionList<T>
                 lines.Add($"({_selectedIndex + 1}/{_filteredOptions.Count})");
         }
 
+        var actionHint = _actionHint is null ? "" : $" · {_actionHint}";
         lines.Add(_scopedOptions is not null
-            ? "↑↓ move · type to filter · Tab scope · Enter select · Esc close"
-            : "↑↓ move · type to filter · Enter select · Esc close");
+            ? $"↑↓ move · type to filter · Tab scope{actionHint} · Enter select · Esc close"
+            : $"↑↓ move · type to filter{actionHint} · Enter select · Esc close");
         var maximumContentLines = Math.Max(1, height - 2);
         return lines.Take(maximumContentLines).Select(line => TerminalTranscriptViewport.Clip(line, width)).ToArray();
     }

@@ -251,6 +251,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
 
     internal string? GetServerInstructions(string name) => Find(name)?.Connection?.Instructions;
 
+    internal bool OffersResources(string name) => Find(name)?.Connection?.HasResources == true;
+
     private string FormatStatus()
     {
         ServerEntry[] servers;
@@ -261,7 +263,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
             var state = !item.Configuration.Enabled ? "disabled" : item.Connection?.State ?? "unavailable";
             var tools = item.Connection?.Tools.Count ?? 0;
             var line = item.Configuration.Name + ": " + state + " (" + ExposureName(item.Configuration.Exposure)
-                + ", " + item.Configuration.Scope + ", " + tools + " tools)";
+                + ", " + item.Configuration.Scope + ", " + tools + " tools" +
+                (item.Connection?.HasResources == true ? ", resources" : "") + ")";
             return item.Connection?.Error is { } error ? line + " — " + error : line;
         }));
     }

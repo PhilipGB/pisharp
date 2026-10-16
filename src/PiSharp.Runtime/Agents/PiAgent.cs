@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Extensions;
@@ -30,10 +31,14 @@ public sealed class PiAgent
     private readonly string? _projectInstructions;
     private readonly Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? _getSkillInstructions;
     private readonly PiSharpContextTransformPipeline _contextTransforms;
+    private readonly IReadOnlyList<ExtensionLifecycleHandlerRegistration> _extensionLifecycleHandlers;
+    private readonly PiSharpExtensionContext _extensionContext;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
     private readonly ToolBatchTermination _toolBatchTermination = new();
     private DurableExecution? _active;
+    private ConversationSession? _extensionConversation;
+    private int _isRunning;
     private Action<AgentLifecycleEvent>? _events;
     private Func<bool, IReadOnlyList<ChatMessage>>? _takeSteering;
     private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
@@ -50,7 +55,22 @@ public sealed class PiAgent
         _toolTranscripts.GetValue(session, _ => new());
 
     public string SystemInstructions { get; }
+    internal JsonElement GetSharePresentation(AgentSession session)
+    {
+        var loadout = GetToolLoadout(session).Snapshot;
+        return JsonSerializer.SerializeToElement(new
+        {
+            systemPrompt = BuildSystemPrompt(loadout.Declared, loadout.ActiveToolNames).Text,
+            tools = loadout.Declared.Select(tool => new
+            {
+                name = tool.Registration.Function.Name,
+                description = tool.Description,
+                parameters = tool.Registration.Function.JsonSchema
+            })
+        });
+    }
     public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => _toolCatalog.ToolDeclarations;
+    internal bool RestoresRecordedToolLoadout => _toolCatalog.RestoresRecordedToolLoadout;
     /// <summary>Gets the independent tool loadout associated with one agent session.</summary>
     public ToolLoadout GetToolLoadout(AgentSession session) => _toolCatalog.GetToolLoadout(session);
 
@@ -74,9 +94,19 @@ public sealed class PiAgent
         VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null,
         Func<string?>? getAdditionalSystemInstructions = null,
         IReadOnlyList<PiSharpContextTransform>? extensionContextTransforms = null,
-        Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? getSkillInstructions = null)
+        Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? getSkillInstructions = null,
+        IReadOnlyList<string>? initialActiveToolNames = null,
+        IReadOnlyList<ExtensionLifecycleHandlerRegistration>? extensionLifecycleHandlers = null,
+        PiSharpExtensionContextConfiguration? extensionContextConfiguration = null,
+        IReadOnlyDictionary<string, int>? thinkingBudgets = null)
     {
         _contextTransforms = new(extensionContextTransforms);
+        _extensionLifecycleHandlers = extensionLifecycleHandlers?.ToArray() ?? [];
+        _extensionContext = new(extensionContextConfiguration ?? new PiSharpExtensionContextConfiguration(
+                tools.WorkingDirectory, "print", false, false, UnavailableProjectTrustExtensionUi.Instance),
+            () => Volatile.Read(ref _extensionConversation),
+            () => Volatile.Read(ref _currentToolLoadout)?.Snapshot.ActiveToolNames.ToArray() ?? [],
+            () => Volatile.Read(ref _isRunning) == 0);
         _codemodeModels = codemodeModels;
         _codingTools = tools;
         _customSystemPrompt = systemPrompt;
@@ -86,13 +116,13 @@ public sealed class PiAgent
         _selectedImageResizeOptions = tools.ImageResizeOptions;
         _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
         _chatClient = new MutableChatClient(client);
-        _routedChatClient = new RoutedChatClient(_chatClient, value => _events?.Invoke(value), route => SetPhysicalImageLimits(route.Model));
+        _routedChatClient = new RoutedChatClient(_chatClient, PublishEvent, route => SetPhysicalImageLimits(route.Model));
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         _supportsImages = supportsImages ? 1 : 0;
         _reasoning = reasoning;
         _summarizer = new PiCompactionSummarizer(_routedChatClient);
         _toolCatalog = new AgentToolCatalog(tools, selectedTools, excludedTools, noTools, noBuiltinTools,
-            extensionTools, extensionToolRegistrations);
+            extensionTools, extensionToolRegistrations, initialActiveToolNames);
         lock (_runtimeToolGate)
         {
             foreach (var registration in _toolCatalog.Registrations)
@@ -111,23 +141,24 @@ public sealed class PiAgent
         }
         var initialLoadout = _toolCatalog.CreateLoadout().Snapshot;
         SystemInstructions = BuildSystemInstructions(initialLoadout.Declared, initialLoadout.ActiveToolNames);
-        _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, value => _events?.Invoke(value),
+        _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, PublishEvent,
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
             _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions,
             _contextTransforms.ApplyAsync, (messages, options) =>
-                _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout), new ChatClientAgentOptions
+                _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout,
+            () => thinkingBudgets), new ChatClientAgentOptions
+            {
+                Name = "PiSharp",
+                ChatHistoryProvider = _history,
+                AllowConcurrentInvocation = true,
+                ChatOptions = new ChatOptions
                 {
-                    Name = "PiSharp",
-                    ChatHistoryProvider = _history,
-                    AllowConcurrentInvocation = true,
-                    ChatOptions = new ChatOptions
-                    {
-                        Instructions = SystemInstructions,
-                        Tools = [],
-                        Reasoning = reasoning
-                    }
-                });
+                    Instructions = SystemInstructions,
+                    Tools = [],
+                    Reasoning = reasoning
+                }
+            });
     }
 
     private IReadOnlyList<ChatMessage> TakeSteeringForRequest(IEnumerable<ChatMessage> messages)
@@ -160,9 +191,10 @@ public sealed class PiAgent
         Array.AsReadOnly<AITool>(declarations.Select(declaration =>
         {
             var function = _runtimeToolFunctions[declaration.Registration.Function.Name];
-            return string.Equals(declaration.Description, function.Description, StringComparison.Ordinal)
+            return string.Equals(declaration.Description, function.Description, StringComparison.Ordinal) &&
+                declaration.Registration.ConstrainedSampling is null
                 ? function
-                : new DescribedAIFunction(function, declaration.Description);
+                : new DeclaredAIFunction(function, declaration.Description, declaration.Registration.ConstrainedSampling);
         }).ToArray());
 
     private string GetSystemInstructionsForCurrentLoadout() => GetSystemPromptForCurrentLoadout().Text;
@@ -205,9 +237,30 @@ public sealed class PiAgent
             previous.Namespace == registration.Namespace) return;
         _runtimeToolRegistrations[name] = registration;
         _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
-            value => _events?.Invoke(value), _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
+            PublishEvent, _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
             () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels,
-            registration.ReachesTools, registration.Namespace);
+            registration.ReachesTools, registration.Namespace, () => _extensionContext);
+    }
+
+    internal void SetExtensionConversation(ConversationSession conversation) =>
+        Volatile.Write(ref _extensionConversation, conversation);
+
+    private void PublishEvent(AgentLifecycleEvent item)
+    {
+        foreach (var registration in _extensionLifecycleHandlers)
+        {
+            try { registration.Handler(item, _extensionContext); }
+            catch (Exception error)
+            {
+                try
+                {
+                    _events?.Invoke(new AgentLifecycleEvent("extension_error", Error: error.Message,
+                        Details: new { extensionPath = registration.SourceInfo.Path, eventType = item.Type }));
+                }
+                catch (Exception) { }
+            }
+        }
+        _events?.Invoke(item);
     }
 
     private IReadOnlyList<AITool> GetRuntimeFunctionsForRun() =>
@@ -295,32 +348,32 @@ public sealed class PiAgent
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null) =>
         RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent,
-            takeSteering, projectContext, bashSessionEnvironment);
+            takeSteering, projectContext, bashSessionEnvironment, conversationSessionId);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent = null, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null) =>
         RunStreamingDurableCoreAsync(prompt, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment);
+            projectContext, bashSessionEnvironment, conversationSessionId);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationDurableAsync(AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null) =>
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null) =>
         RunStreamingDurableCoreAsync(null, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment);
+            projectContext, bashSessionEnvironment, conversationSessionId);
 
     private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableCoreAsync(ChatMessage? prompt,
         AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment)
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment, string? conversationSessionId)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
@@ -332,14 +385,24 @@ public sealed class PiAgent
             _currentToolTranscript = GetToolTranscript(session);
             _active = durable;
             _events = onEvent;
+            Volatile.Write(ref _isRunning, 1);
             _takeSteering = takeSteering;
             _projectContext = projectContext;
             _providerRequestIndex = 0;
             _injectedSteering.Clear();
-            var runOptions = new ChatClientAgentRunOptions(new ChatOptions
+            var chatOptions = new ChatOptions
             {
                 Tools = GetRuntimeFunctionsForRun().ToList()
-            });
+            };
+            if (conversationSessionId is { Length: > 0 })
+            {
+                var properties = new AdditionalPropertiesDictionary
+                {
+                    [ProviderSessionMetadata.ConversationSessionIdProperty] = conversationSessionId
+                };
+                chatOptions.AdditionalProperties = properties;
+            }
+            var runOptions = new ChatClientAgentRunOptions(chatOptions);
             if (bashSessionEnvironment is { Count: > 0 })
             {
                 var properties = new AdditionalPropertiesDictionary();
@@ -365,6 +428,7 @@ public sealed class PiAgent
         {
             _projectContext = null;
             _takeSteering = null;
+            Volatile.Write(ref _isRunning, 0);
             _events = null;
             _active = null;
             Volatile.Write(ref _currentToolLoadout, null);

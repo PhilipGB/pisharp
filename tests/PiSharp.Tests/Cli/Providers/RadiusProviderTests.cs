@@ -19,12 +19,16 @@ public sealed class RadiusProviderTests
         Assert.Equal("pi-messages", profile.Api);
         Assert.True(profile.OAuthSupported);
         Assert.Equal("RADIUS_API_KEY", profile.ApiKeyEnvironment);
-        Assert.Equal(25, profile.Models.Count);
+        Assert.Equal(29, profile.Models.Count);
         var balanced = Assert.Single(profile.Models, model => model.Id == "balanced");
         Assert.Equal("pi-messages", balanced.Api);
         Assert.Equal("https://radius.pi.dev/v1", balanced.BaseUrl);
         Assert.Equal(1048576, balanced.ContextLength);
         Assert.Contains("image", balanced.Input!);
+        Assert.Contains(profile.Models, model => model.Id == "cheap");
+        var latest = Assert.Single(profile.Models, model => model.Id == "grok-4.7");
+        Assert.Equal(500000, latest.ContextLength);
+        Assert.Equal(200000, Assert.Single(latest.Pricing!.Tiers!).InputTokensAbove);
 
         var custom = BuiltinProviderProfiles.Create(name => name == "PISHARP_RADIUS_GATEWAY"
             ? "http://radius.internal:8788" : null)["radius"];
@@ -94,6 +98,48 @@ public sealed class RadiusProviderTests
             Assert.Equal("http://models.radius.test/v1", model.BaseUrl);
             Assert.Equal("http://radius.test/v1/config", requestUri);
             Assert.Equal("Bearer radius-api-key", authorization);
+            Assert.Equal(200000, Assert.Single(model.Pricing!.Tiers!).InputTokensAbove);
+            Assert.Equal("high", model.ThinkingLevelMap!.Value.GetProperty("high").GetString());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SuccessfulGatewayCatalogReplacesThePinnedBaseline()
+    {
+        var root = CreateRoot("radius-catalog-replaces-baseline");
+        var response = GatewayConfig("account-only", "Account Only");
+        using var http = new HttpClient(new DelegateHandler((request, _) =>
+        {
+            Assert.Equal("https://radius.pi.dev/v1/config", request.RequestUri?.ToString());
+            return Task.FromResult(JsonResponse(response));
+        }));
+        try
+        {
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "RADIUS_API_KEY" ? "radius-fixture-key" : null, http);
+
+            var models = await runtime.ListModelsAsync("radius");
+
+            var model = Assert.Single(models);
+            Assert.Equal("account-only", model.Id);
+            Assert.DoesNotContain(models, candidate => candidate.Id == "balanced");
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task EmptyGatewayCatalogKeepsTheAccountDisabledModelsEmpty()
+    {
+        var root = CreateRoot("radius-catalog-empty");
+        using var http = new HttpClient(new DelegateHandler((_, _) =>
+            Task.FromResult(JsonResponse("""{"baseUrl":"http://models.radius.test/v1","models":[]}"""))));
+        try
+        {
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "RADIUS_API_KEY" ? "radius-fixture-key" : null, http);
+
+            Assert.Empty(await runtime.ListModelsAsync("radius"));
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -358,7 +404,15 @@ public sealed class RadiusProviderTests
                 name,
                 reasoning = true,
                 input = new[] { "text", "image" },
-                cost = new { input = 1.0, output = 2.0, cacheRead = 0.1, cacheWrite = 0.0 },
+                thinkingLevelMap = new { high = "high" },
+                cost = new
+                {
+                    input = 1.0,
+                    output = 2.0,
+                    cacheRead = 0.1,
+                    cacheWrite = 0.0,
+                    tiers = new[] { new { inputTokensAbove = 200000, input = 3.0, output = 4.0, cacheRead = 0.3, cacheWrite = 0.4 } }
+                },
                 contextWindow = 424242,
                 maxTokens = 32000
             }

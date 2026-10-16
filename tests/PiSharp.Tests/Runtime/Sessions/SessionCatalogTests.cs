@@ -6,6 +6,32 @@ namespace PiSharp.Tests;
 public sealed class SessionCatalogTests
 {
     [Fact]
+    public async Task MostRecentProjectSessionSkipsCandidateWithMissingHead()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-session-recovery-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+        try
+        {
+            var valid = new ConversationSession(cwd, "fixture", null);
+            valid.Append(new ChatMessage(ChatRole.User, "recover me"));
+            var validPath = store.NewPath(valid);
+            await store.SaveAsync(valid, validPath);
+            var invalid = System.Text.Json.Nodes.JsonNode.Parse(valid.ToJson())!;
+            invalid["HeadId"] = "missing-entry";
+            var invalidPath = Path.Combine(store.DirectoryPath, "invalid-head.session.json");
+            await File.WriteAllTextAsync(invalidPath, invalid.ToJsonString());
+            File.SetLastWriteTimeUtc(invalidPath, DateTime.UtcNow.AddMinutes(1));
+
+            Assert.Equal(validPath, store.MostRecentPath());
+        }
+        finally
+        {
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ListsProjectSessionsAndResolvesUniqueIdOrNameWithoutResettingStaleWriterGuard()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-catalog-" + Guid.NewGuid().ToString("N"));

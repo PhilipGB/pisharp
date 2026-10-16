@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 
@@ -11,13 +12,17 @@ internal sealed class ProjectSessionRuntimeFactory(
     CliArguments arguments,
     string? configuredSessionDirectory,
     ProjectTrust trustStore,
-    ProviderModelRuntime modelRuntime, ICodemodeModels? codemodeModels = null)
+    ProviderModelRuntime modelRuntime, ICodemodeModels? codemodeModels = null,
+    bool hasUserInterface = false, IProjectTrustExtensionUi? extensionUi = null)
 {
     public void ValidateExistingSwitchTarget(string sessionReference, string invocationDirectory)
     {
         var path = Path.GetFullPath(sessionReference, invocationDirectory);
-        if (File.Exists(path))
-            _ = PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory);
+        if (!File.Exists(path)) return;
+        _ = PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory);
+        if (path.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)) return;
+        var conversation = ConversationSession.Parse(File.ReadAllText(path));
+        _ = modelRuntime.GetProvider(ResolveProvider(conversation));
     }
 
     public async Task<ProjectSessionRuntime> OpenAsync(string sessionPath, string invocationDirectory,
@@ -30,7 +35,8 @@ internal sealed class ProjectSessionRuntimeFactory(
             ? PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory)
             : Path.GetFullPath(invocationDirectory);
         var configuration = await ProjectRuntimeConfiguration.LoadAsync(workingDirectory, agentDirectory, arguments,
-            trustStore, interactiveTrust: false, TextReader.Null, TextWriter.Null, cancellationToken: cancellationToken);
+            trustStore, interactiveTrust: false, TextReader.Null, TextWriter.Null, cancellationToken: cancellationToken,
+            extensionUi: extensionUi, hasUserInterface: hasUserInterface);
         var sourceSessionDirectory = keepSourceSessionDirectory ? Path.GetDirectoryName(path) : null;
         var project = await ProjectRuntimeContext.LoadAsync(configuration, agentDirectory, arguments,
             configuredSessionDirectory, sourceSessionDirectory, cancellationToken,
@@ -93,7 +99,9 @@ internal sealed class ProjectSessionRuntimeFactory(
                 followUpMode: project.Settings.FollowUpMode ?? PromptDeliveryMode.OneAtATime,
                 autoCompactionEnabled: project.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
                 physicalContextResolver: controller.ResolvePhysicalContextAsync,
-                providerApi: ProviderChatClientFactory.ResolveProtocol(selection));
+                providerApi: ProviderChatClientFactory.ResolveProtocol(selection),
+                activeToolNamesOverride: DefaultToolReloadPolicy.ResolveResumeTools(arguments,
+                    conversation.ActiveToolLoadout(), agent.ToolDeclarations.Select(tool => tool.Name)));
             return new ProjectSessionRuntime(project, conversation, run, destinationPath, selection, chat, agent,
                 thinking, compaction, pricing);
         }

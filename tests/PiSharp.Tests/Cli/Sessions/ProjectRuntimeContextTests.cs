@@ -9,6 +9,7 @@ using Microsoft.Extensions.AI;
 
 namespace PiSharp.Tests;
 
+[Collection("Extension environment")]
 public sealed class ProjectRuntimeContextTests
 {
     [Fact]
@@ -230,6 +231,10 @@ public sealed class ProjectRuntimeContextTests
             output: output, error: interactiveError);
         interactiveUi.Notify("interactive notifications are silent");
         Assert.Equal(string.Empty, interactiveError.ToString());
+        var notification = (Message: "", Type: "");
+        interactiveUi.SetInteractiveNotificationHandler((message, type) => notification = (message, type));
+        interactiveUi.Notify("interactive warning", "warning");
+        Assert.Equal(("interactive warning", "warning"), notification);
     }
 
     [Fact]
@@ -297,9 +302,9 @@ public sealed class ProjectRuntimeContextTests
         Directory.CreateDirectory(privateSkill);
         Directory.CreateDirectory(agent);
         await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
-            "{\"shellCommandPrefix\":\"export PISHARP_PREFIX=user\",\"extensions\":[\"builtin:mcp\",\"builtin:tool-search\"]}");
+            "{\"shellCommandPrefix\":\"export PISHARP_PREFIX=user\",\"extensions\":[\"builtin:mcp\",\"builtin:tool-search\"],\"thinkingBudgets\":{\"medium\":8192,\"high\":32768}}");
         await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
-            "{\"images\":{\"blockImages\":true},\"sessionDir\":\"custom-sessions\",\"terminal\":{\"trueColor\":true},\"enableSkillCommands\":false,\"shellCommandPrefix\":\"export PISHARP_PREFIX=project\",\"skills\":[\"configured-skills\"],\"prompts\":[\"configured-prompts\"]}");
+            "{\"images\":{\"blockImages\":true},\"sessionDir\":\"custom-sessions\",\"terminal\":{\"trueColor\":true},\"enableSkillCommands\":false,\"shellCommandPrefix\":\"export PISHARP_PREFIX=project\",\"skills\":[\"configured-skills\"],\"prompts\":[\"configured-prompts\"],\"thinkingBudgets\":{\"medium\":12288,\"high\":24576}}");
         await File.WriteAllTextAsync(Path.Combine(privateSkill, "SKILL.md"),
             "---\nname: private-guide\ndescription: A trusted project guide\n---\nUse this guide.");
         Directory.CreateDirectory(configuredSkill);
@@ -321,6 +326,8 @@ public sealed class ProjectRuntimeContextTests
             Assert.Equal("true", trusted.Settings.TerminalTrueColor);
             Assert.False(trusted.Settings.SkillCommandsEnabled);
             Assert.Equal("export PISHARP_PREFIX=project", trusted.Settings.ShellCommandPrefix);
+            Assert.Equal(12288, trusted.Settings.ThinkingBudgets!["medium"]);
+            Assert.Equal(24576, trusted.Settings.ThinkingBudgets["high"]);
             var privateSkillResource = Assert.Single(trusted.Resources.Skills, skill => skill.Name == "private-guide");
             Assert.Equal("auto", privateSkillResource.SourceInfo.Source);
             Assert.Equal("project", privateSkillResource.SourceInfo.Scope);
@@ -341,6 +348,8 @@ public sealed class ProjectRuntimeContextTests
             Assert.Null(untrusted.Settings.TerminalTrueColor);
             Assert.True(untrusted.Settings.SkillCommandsEnabled);
             Assert.Equal("export PISHARP_PREFIX=user", untrusted.Settings.ShellCommandPrefix);
+            Assert.Equal(8192, untrusted.Settings.ThinkingBudgets!["medium"]);
+            Assert.Equal(32768, untrusted.Settings.ThinkingBudgets["high"]);
             Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "private-guide");
             Assert.DoesNotContain(untrusted.Resources.Skills, skill => skill.Name == "configured-first");
             Assert.DoesNotContain(untrusted.Resources.Prompts, prompt => prompt.Name == "configured-review");
@@ -379,12 +388,15 @@ public sealed class ProjectRuntimeContextTests
             await File.WriteAllTextAsync(Path.Combine(secondSkill, "SKILL.md"),
                 "---\nname: configured-second\ndescription: A reloaded project guide\n---\nUse the reloaded guide.");
             await File.WriteAllTextAsync(Path.Combine(project, ".pi", "settings.json"),
-                "{\"skills\":[\"configured-skills-next\"]}");
+                "{\"skills\":[\"configured-skills-next\"],\"thinkingBudgets\":{\"low\":3072}}");
             var reloadedConfiguration = await ProjectRuntimeConfiguration.LoadAsync(project, agent, arguments,
                 trust, interactiveTrust: false, TextReader.Null, TextWriter.Null, trustedOverride: true);
             using var reloaded = await ProjectRuntimeContext.LoadAsync(reloadedConfiguration, agent, arguments, null);
             Assert.Contains(reloaded.Resources.Skills, skill => skill.Name == "configured-second");
             Assert.DoesNotContain(reloaded.Resources.Skills, skill => skill.Name == "configured-first");
+            Assert.Equal(3072, reloaded.Settings.ThinkingBudgets!["low"]);
+            Assert.Equal(8192, reloaded.Settings.ThinkingBudgets["medium"]);
+            Assert.Equal(32768, reloaded.Settings.ThinkingBudgets["high"]);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

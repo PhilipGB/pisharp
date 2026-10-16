@@ -184,14 +184,17 @@ public sealed class ContextInstructionsTests
     }
 
     [Fact]
-    public async Task RefusesOversizedFileWithoutSilentlyTruncatingInstructions()
+    public async Task LoadsTheCompleteLargeFileWithoutSilentlyTruncatingInstructions()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-context-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(root, "AGENTS.md"), new string('x', 65 * 1024));
-            await Assert.ThrowsAsync<InvalidDataException>(() => ContextInstructions.LoadAsync(root, Path.Combine(root, "user")));
+            var path = Path.Combine(root, "AGENTS.md");
+            var contents = new string('x', 65 * 1024);
+            await File.WriteAllTextAsync(path, contents);
+            var text = await ContextInstructions.LoadAsync(root, Path.Combine(root, "user"));
+            Assert.Equal($"<project_instructions path=\"{path}\">\n{contents}\n</project_instructions>\n\n", text);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

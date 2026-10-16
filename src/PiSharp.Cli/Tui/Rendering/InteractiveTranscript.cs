@@ -18,6 +18,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     private readonly TerminalToolPresentation _toolPresentation = new(toolRenderer,
         workingDirectory ?? Environment.CurrentDirectory, () => screen?.ToolResultsExpanded ?? false);
     private bool _hideThinkingBlock = hideThinking;
+    private string? _lastFinishReason;
 
     public bool HasAssistantOutput { get; private set; }
     public int ExitCode { get; private set; }
@@ -102,9 +103,13 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                     var failed = result.Exception is not null;
                     var update = new AgentLifecycleEvent("tool_execution_finished", Text: ToolResultText(result.Result),
                         Tool: name, OperationId: result.CallId, IsError: failed,
-                        Error: result.Exception?.Message, Details: result.Result);
+                        Error: result.Exception?.Message, Details: result.Result)
+                    {
+                        DurationMs = ToolExecutionDuration.Get(result)
+                    };
                     var views = _toolPresentation.RenderResultViews(update, failed);
-                    target.AppendToolResult(views.Collapsed, views.Expanded, images);
+                    if (name == "codemode") target.CompleteToolRow(result.CallId, views.Collapsed, views.Expanded, failed, images);
+                    else target.AppendToolResult(views.Collapsed, views.Expanded, images);
                     if (nestedCalls.TryGetValue(result.CallId, out var nested))
                         target.AppendToolResult(RenderNestedToolCalls(nested));
                 }
@@ -123,6 +128,12 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         }
         switch (update.Type)
         {
+            case "prompt_accepted" when !interactive:
+                _lastFinishReason = null;
+                break;
+            case "model_request_completed" when !interactive:
+                _lastFinishReason = update.ProviderFinishReason;
+                break;
             case "prompt_accepted" when interactive && screen is not null:
                 screen.AppendUserMessage(Safe(update.Text ?? ""), update.Images);
                 break;
@@ -163,14 +174,20 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
             case "tool_execution_update" when interactive && update.Tool == "bash" && !string.IsNullOrEmpty(update.Text):
                 WriteBashUpdate(update);
                 break;
+            case "tool_execution_update" when interactive && update.Tool == "codemode" && screen is not null &&
+                (update.OperationId ?? update.ToolCallId) is { } progressId:
+                screen.UpdateToolTimer(progressId, update.IsError == true);
+                break;
             case "tool_execution_finished" when interactive:
                 FinishTool(update);
                 break;
             case "turn_failed" or "prompt_rejected":
+                screen?.ClearToolTimers();
                 ExitCode = Math.Max(ExitCode, 1);
                 status.WriteLine($"Agent error: {Safe(update.Error ?? update.Type)}");
                 break;
             case "turn_interrupted":
+                screen?.ClearToolTimers();
                 status.WriteLine("Interrupted.");
                 break;
         }
@@ -178,8 +195,14 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     public void FinishTurn()
     {
+        screen?.ClearToolTimers();
         CommitAssistantThinkingText();
         CommitAssistantText();
+        if (!interactive && _lastFinishReason == "length")
+        {
+            status.WriteLine("Response was truncated: the model reached its output token limit.");
+            ExitCode = Math.Max(ExitCode, 1);
+        }
         if (!HasAssistantOutput) return;
         output.WriteLine();
         HasAssistantOutput = false;
@@ -285,6 +308,8 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     private void WriteToolCall(AgentLifecycleEvent update)
     {
         if (!interactive) return;
+        if (update.Tool == "codemode" && (update.OperationId ?? update.ToolCallId) is { } id)
+            screen?.StartToolTimer(id);
         var collapsed = _toolPresentation.RenderCall(update, expanded: false);
         if (screen is null)
             status.WriteLine(Environment.NewLine + TerminalToolPresentation.Render(collapsed, theme: null));
@@ -299,9 +324,13 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     private void WriteToolResultViews(AgentLifecycleEvent update)
     {
+        var timed = update.Tool == "codemode" && screen is not null && (update.OperationId ?? update.ToolCallId) is not null;
+        var id = update.OperationId ?? update.ToolCallId;
+        if (timed) update = update with { DurationMs = screen!.CompleteToolTimer(id!, update.DurationMs) };
         var views = _toolPresentation.RenderResultViews(update, update.IsError == true);
         if (screen is null)
             status.WriteLine(TerminalToolPresentation.Render(views.Collapsed, theme: null));
+        else if (timed) screen.CompleteToolRow(id!, views.Collapsed, views.Expanded, update.IsError == true, update.Images);
         else screen.AppendToolResult(views.Collapsed, views.Expanded, update.Images);
     }
 

@@ -18,6 +18,15 @@ public sealed class CapacityRetryTests
     }
 
     [Theory]
+    [InlineData("subscription_sharing_usage_unavailable", true)]
+    [InlineData("subscription_sharing_user_unavailable", true)]
+    [InlineData("subscription_sharing_usage_limit_exceeded", false)]
+    public void CodexSubscriptionFailuresRetryOnlyWhenUsageIsTemporarilyUnavailable(string message, bool expected)
+    {
+        Assert.Equal(expected, AgentRunRetryPolicy.Default.CanRetry(new IOException(message), message, 0, true));
+    }
+
+    [Theory]
     [InlineData(true, 1, 2)]
     [InlineData(true, 0, 1)]
     [InlineData(false, 2, 1)]

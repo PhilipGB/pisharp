@@ -56,6 +56,31 @@ public sealed class InFlightContextBudgetTests
     }
 
     [Fact]
+    public async Task SteeringAfterOversizedToolResultDoesNotHideTheActiveTurnFromCompaction()
+    {
+        var budget = new InFlightContextBudget(() => new AutoCompactionPolicy(2700, 300, 200),
+            (_, _) => Task.FromResult(new PiAgent.CompactionSummary("older tool output summarized", null)),
+            (_, _) => Task.CompletedTask);
+        var messages = new ChatMessage[]
+        {
+            new(ChatRole.User, "older question"),
+            new(ChatRole.Assistant, "older answer"),
+            new(ChatRole.User, "read the large file"),
+            new(ChatRole.Assistant,
+                [new FunctionCallContent("call-1", "read", new Dictionary<string, object?> { ["path"] = "big.txt" })]),
+            new(ChatRole.Tool, [new FunctionResultContent("call-1", new string('x', 20_000))]),
+            new(ChatRole.User, "change direction")
+        };
+
+        var projected = await budget.ProjectAsync(messages, force: true, CancellationToken.None);
+
+        Assert.Contains(projected, message => message.Text == "change direction");
+        Assert.DoesNotContain(projected.SelectMany(message => message.Contents), content => content is FunctionCallContent);
+        Assert.DoesNotContain(projected.SelectMany(message => message.Contents), content => content is FunctionResultContent);
+        Assert.Contains(projected, message => message.Text.Contains("older tool output summarized", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task ActivePolicyChangeAppliesToTheNextProviderRequest()
     {
         var policy = new AutoCompactionPolicy(100_000, 100);

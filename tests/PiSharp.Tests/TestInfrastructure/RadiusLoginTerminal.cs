@@ -22,7 +22,8 @@ internal sealed class RadiusLoginTerminal : IAsyncDisposable
     public int Mark { get { lock (_gate) return _output.Length; } }
     public string Output { get { lock (_gate) return _output.ToString(); } }
 
-    public RadiusLoginTerminal(string gateway, string initialMcp, bool customInterrupt = false, bool trueColor = false)
+    public RadiusLoginTerminal(string gateway, string initialMcp, bool customInterrupt = false, bool trueColor = false,
+        bool browserFixture = false)
     {
         Directory.CreateDirectory(AgentDirectory);
         File.WriteAllText(Path.Combine(AgentDirectory, "settings.json"), "{\"quietStartup\":true}");
@@ -42,6 +43,18 @@ internal sealed class RadiusLoginTerminal : IAsyncDisposable
             start.Environment.Remove(name);
         start.Environment["PISHARP_AGENT_DIR"] = AgentDirectory;
         start.Environment["PISHARP_RADIUS_GATEWAY"] = gateway;
+        if (browserFixture)
+        {
+            foreach (var name in new[] { "DISPLAY", "WAYLAND_DISPLAY", "TERMUX_VERSION", "SSH_CONNECTION", "SSH_CLIENT", "MOSH_CONNECTION" })
+                start.Environment.Remove(name);
+            var bin = Path.Combine(Root, "bin");
+            Directory.CreateDirectory(bin);
+            var openBrowser = Path.Combine(bin, "xdg-open");
+            File.WriteAllText(openBrowser, "#!/bin/sh\nexit 0\n");
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(openBrowser, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            start.Environment["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH");
+        }
         if (trueColor)
         {
             start.Environment.Remove("NO_COLOR");
@@ -63,6 +76,25 @@ internal sealed class RadiusLoginTerminal : IAsyncDisposable
     public Task<string> WaitTextAsync(string text, int after = 0) =>
         WaitAsync(output => StripAnsi(output[after..]).Contains(text, StringComparison.Ordinal)
             ? output[after..] : null);
+
+    public string ReadAuthorizationUrl(int after = 0)
+    {
+        const string marker = "\u001b]8;;";
+        var output = Output;
+        for (var offset = after; (offset = output.IndexOf(marker, offset, StringComparison.Ordinal)) >= 0;)
+        {
+            var start = offset + marker.Length;
+            var bell = output.IndexOf('\u0007', start);
+            var stringTerminator = output.IndexOf("\u001b\\", start, StringComparison.Ordinal);
+            var end = bell < 0 ? stringTerminator : stringTerminator < 0 ? bell : Math.Min(bell, stringTerminator);
+            if (end < 0) break;
+            var candidate = output[start..end];
+            if (Uri.TryCreate(candidate, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
+                return candidate;
+            offset = end + 1;
+        }
+        throw new InvalidOperationException("The Radius sign-in URL was not rendered as a terminal link.");
+    }
 
     public Task<string> WaitFrameAsync(Func<string, bool> predicate, int after = 0, bool preserveAnsi = false) =>
         WaitAsync(output =>

@@ -1,10 +1,70 @@
 using System.Diagnostics;
+using System.Net;
+using System.Text;
 using PiSharp.Cli;
 
 namespace PiSharp.Tests;
 
 public sealed class OfflineCatalogProcessTests
 {
+    [Fact]
+    public async Task ProviderModelListDiscoversDynamicRouterModelsWithoutSelectingOneFirst()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-router-model-list-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        var (listener, port) = TestLoopbackListener.Start();
+        using var serverCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var requests = new List<string>();
+        var server = Task.Run(async () =>
+        {
+            for (var i = 0; i < 2; i++)
+            {
+                var context = await listener.GetContextAsync().WaitAsync(serverCancellation.Token);
+                requests.Add(context.Request.Url!.AbsolutePath + context.Request.Url.Query);
+                var body = context.Request.Url.AbsolutePath == "/models"
+                    ? """{"data":[{"id":"loaded-router-model","status":{"value":"loaded"},"architecture":{"input_modalities":["text"],"output_modalities":["text"]}}]}"""
+                    : "{}";
+                context.Response.ContentType = "application/json";
+                var bytes = Encoding.UTF8.GetBytes(body);
+                context.Response.ContentLength64 = bytes.Length;
+                await context.Response.OutputStream.WriteAsync(bytes, serverCancellation.Token);
+                context.Response.Close();
+            }
+        }, serverCancellation.Token);
+
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            foreach (var argument in new[] { typeof(CliArguments).Assembly.Location, "--provider", "llama.cpp", "--list-models" })
+                start.ArgumentList.Add(argument);
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            start.Environment["LLAMA_BASE_URL"] = $"http://127.0.0.1:{port}";
+            using var process = Process.Start(start)!;
+            var output = process.StandardOutput.ReadToEndAsync();
+            var errors = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await process.WaitForExitAsync(timeout.Token);
+            await server;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal("", await errors);
+            Assert.StartsWith("llama.cpp/loaded-router-model\t", await output);
+            Assert.Equal(["/models", "/props?model=loaded-router-model&autoload=false"], requests);
+        }
+        finally
+        {
+            serverCancellation.Cancel();
+            listener.Close();
+            Directory.Delete(root, true);
+        }
+    }
+
     [Theory]
     [InlineData(false, "STATIC", false)]
     [InlineData(true, "STATIC", false)]

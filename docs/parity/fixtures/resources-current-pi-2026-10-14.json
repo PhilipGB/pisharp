@@ -1,0 +1,46 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpSha": "98e0cf9f4b3dd29808921eb3212486c348fc6e96",
+  "harnessCorrection": "Current Pi removed src/experimental/cli.ts. The source runner now launches src/cli.ts with the existing audited source resolver. Fixture arguments, comparison normalization and assertions are unchanged.",
+  "characterization": {
+    "commandRegressionFailed": 1,
+    "path": "artifacts/parity/resources-current-pi-2026-10-14/trust-selector-command-fail-first.log",
+    "sha256": "defff691b32ee1016a338b36572b91522c5f40392f22e48c662ff1cd3674a811",
+    "failedCapture": "artifacts/parity/resources-current-pi-2026-10-14/trust-selector-calibration/report.json"
+  },
+  "verification": {
+    "pythonPassed": 49,
+    "pythonFailed": 0,
+    "nodePassed": 24,
+    "nodeFailed": 0,
+    "samePiCalibration": {
+      "match": true,
+      "renderFrames": 10,
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/trust-selector-current-cli-calibration/report.json",
+      "sha256": "26ea84bc387354896ee1e0f37e864c0be171fb825295e4ad445b4c0ab65eb26a"
+    },
+    "paired": {
+      "match": false,
+      "differences": 43316,
+      "renderDifferences": 28184,
+      "comparedRenderFrameCount": 10,
+      "scenarioErrors": {},
+      "httpMatch": true,
+      "rawHttpMatch": true,
+      "terminalMatch": false,
+      "rawMatch": false,
+      "controlBoundaryDifferenceCount": 470
+    }
+  },
+  "pairedReport": {
+    "path": "artifacts/parity/resources-current-pi-2026-10-14/trust-selector-paired/report.json",
+    "sha256": "82418c5f0a069be97cdcc207891903ac4ee939d726844efd47d8c45497f2a678"
+  },
+  "limitations": "Only the named 120x40 dark fullscreen trust-selector case was rerun. Startup branding/colors, other terminal/state/render differences and broader fixture matrices remain open. This proves the runner reaches the real current CLI and measures differences; it does not declare terminal parity.",
+  "publishedVerification": {
+    "piSharpSha": "f8a353742b44df118a6a4d0b807c23c9a78aaedd",
+    "ciRun": 38492462330,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38492462330",
+    "conclusion": "success"
+  }
+}

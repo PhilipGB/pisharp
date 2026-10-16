@@ -1,0 +1,359 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "1542322b2955d2ebd2c05f41c4481fe113413270",
+  "candidate": "Base plus typed package settings, local package skill/prompt manifest/convention/filter/scope/identity selection and exact SKILL.md parent overrides in this commit.",
+  "scope": "Local user/trusted-project package skill and prompt resources only. Full package extension/theme loading, managed npm/git sources and CLI package operations remain required and incomplete.",
+  "match": true,
+  "loaderCases": 60,
+  "existingLoaderRegressionCases": 32,
+  "newPackageLoaderCases": 28,
+  "comparison": "Actual pinned DefaultResourceLoader and SettingsManager versus native UserSettings and ResourceCatalog. Exact metadata/sourceInfo/order, complete body UTF16 length/SHA256 and raw diagnostics. A separate normal RPC/provider replay compares command metadata, skill expansion, request count, acknowledgement and settlement.",
+  "characterization": {
+    "normalCliStartup": {
+      "pi": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/package/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/package/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": "Package review"
+      },
+      "pisharp": {
+        "startupAccepted": false,
+        "exitCode": 2,
+        "error": "settings.json property 'packages' must be a string.",
+        "providerRequests": 0
+      }
+    },
+    "nativeSettingsFailFirst": {
+      "failed": 3,
+      "passed": 1,
+      "skipped": 0
+    },
+    "afterSettings": {
+      "pi": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/package/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/package/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": "Package review"
+      },
+      "pisharp": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "/skill:guide args",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": null,
+        "startupAccepted": true,
+        "packagePrompt": null
+      }
+    },
+    "nativeLoaderFailFirst": {
+      "failed": 2,
+      "passed": 0,
+      "skipped": 0
+    },
+    "firstLoaderMatrix": {
+      "cases": 57,
+      "mismatches": 0
+    },
+    "lowercaseAliasMatrix": {
+      "cases": 60,
+      "mismatches": 3
+    },
+    "nativeLowercaseAliasFailFirst": {
+      "failed": 3,
+      "passed": 3,
+      "skipped": 0
+    }
+  },
+  "implementation": [
+    "PackageSettingsReader adapts string/object declarations to ResourcePackageSource without losing omitted versus empty filter arrays or the source declaration form. UserSettings retains separate personal/project declarations for resource selection.",
+    "ResourcePackageFiles selects local roots, manifest entries or convention fallback, per-kind filters, package identity and project autoload deltas. ResourcePathSelection retains package provenance, disabled entries and the lower package precedence behind ordinary local/automatic resources. The runtime owns filesystem discovery; CLI composition passes scoped settings.",
+    "Parent directory glob/exact overrides apply only to the exact declaration filename SKILL.md. Lowercase skill.md aliases remain ordinary files, as measured against Pi."
+  ],
+  "verification": {
+    "focusedPassed": 143,
+    "newNativeRows": 12,
+    "fullSuite": {
+      "passed": 1904,
+      "failed": 0,
+      "skipped": 0
+    },
+    "format": "passed",
+    "build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "pythonPassed": 50,
+    "normalRpcProvider": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "scenario": "local-package",
+      "piSharpBaseSha": "1542322b2955d2ebd2c05f41c4481fe113413270",
+      "assemblySha256": "0b460d3c851cde97b9248624872d6277fc9b5c1e4d004250f61f1cc1e1e329a2",
+      "dependencyAssemblySha256": {
+        "PiSharp.Runtime.dll": "79314bbdbad00a4338e52fa4b24998bd4d73395ae52db518c5ec20737035c86e",
+        "PiSharp.Core.dll": "7b7026095df8caf5159c7ec2b263443f09274a0f97d264f6dd859e33d7beb8b3"
+      },
+      "results": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/package/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/package/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": "Package review"
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/package/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/package/skills/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide",
+          "startupAccepted": true,
+          "packagePrompt": "Package review"
+        }
+      },
+      "match": true
+    },
+    "exactHeadCi": {
+      "sha": "3a2add26f8812f9e36badd68c2e5b1fe5d2cc124",
+      "run": 38608677579,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38608677579",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1904,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    },
+    "deletedSkillRegression": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "scenario": "deleted-skill",
+      "piSharpBaseSha": "1542322b2955d2ebd2c05f41c4481fe113413270",
+      "assemblySha256": "aba53ad49a3ad91a77a31fd0bb9af2f08bf772ec3b69599697cfae1a5049cc36",
+      "dependencyAssemblySha256": {
+        "PiSharp.Runtime.dll": "a082590678b1de13ae9f8ce4b57b3e69835787b2f6516f46251ec9374ca869e7",
+        "PiSharp.Core.dll": "7b7026095df8caf5159c7ec2b263443f09274a0f97d264f6dd859e33d7beb8b3"
+      },
+      "results": {
+        "pi": {
+          "errorBeforeResponse": true,
+          "event": "skill_expansion",
+          "error": "ENOENT: no such file or directory, open '<workspace>/guide/SKILL.md'",
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide"
+        },
+        "pisharp": {
+          "errorBeforeResponse": true,
+          "event": "skill_expansion",
+          "error": "ENOENT: no such file or directory, open '<workspace>/guide/SKILL.md'",
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "Guide"
+        }
+      },
+      "match": true
+    },
+    "failedExactHeadCi": {
+      "sha": "68e98f81ff3f1569ac48d61cad5b90cb67d02f18",
+      "run": 38607877544,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38607877544",
+      "testJob": "failed warnings-as-errors build: CS8602 at ResourcePackageLoadingTests diagnostic.Path predicate",
+      "mcpConformance": "passed",
+      "cause": "The nullable Path predicate produced a compiler warning during the focused test build. The subsequent local incremental warnings-as-errors build reused that output; it did not prove a fresh warning-free compilation.",
+      "repair": "Use a null-safe package-path predicate and force --no-incremental --warnaserror before publication."
+    },
+    "historicalBuildLimit": "The recorded zero-warning incremental build did not recompile the warning-producing test. The failed exact CI is retained; fresh compilation is required for the repair.",
+    "nullableTestRepair": {
+      "freshBuild": {
+        "command": "dotnet build PiSharp.slnx --no-restore --no-incremental --warnaserror",
+        "warnings": 0,
+        "errors": 0
+      },
+      "focused": {
+        "passed": 81,
+        "failed": 0,
+        "skipped": 0
+      },
+      "format": "passed",
+      "exactCi": {
+        "sha": "3a2add26f8812f9e36badd68c2e5b1fe5d2cc124",
+        "run": 38608677579,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38608677579",
+        "jobs": "both pass",
+        "dotnet": {
+          "passed": 1904,
+          "failed": 0,
+          "skipped": 0
+        },
+        "nodePassed": 24,
+        "pythonPassed": 50
+      }
+    }
+  },
+  "scenarioIds": [
+    "repeated-file",
+    "linked-file",
+    "linked-parent",
+    "linked-loser",
+    "linked-root-first-name-fallback",
+    "linked-invalid-name-file",
+    "distinct-roots-shared-file",
+    "distinct-roots-shared-file-warnings",
+    "auto-file-and-directory-warnings",
+    "skill-warning-before-collision",
+    "prompt-invalid-loser",
+    "prompt-warning-before-collision",
+    "prompt-linked-file-different-name",
+    "prompt-one-directory-aliases",
+    "prompt-distinct-directories-shared-file",
+    "auto-trust-false",
+    "auto-trust-true",
+    "configured-user-before-auto-user",
+    "configured-project-before-project-auto-user-configured",
+    "explicit-user-file-defaults-disabled",
+    "explicit-untrusted-project-file",
+    "configured-defaults-disabled",
+    "auto-prompts-filter-hidden-and-ignored",
+    "configured-prompts-recurse-with-ignore",
+    "agents-root-versus-nested-aliases",
+    "unicode-file-order",
+    "ancestor-agents-stop-at-git-root",
+    "cli-before-extension-resources",
+    "extension-overlays-existing-source-info",
+    "missing-prompt-app-diagnostic",
+    "skill-missing-warning-position",
+    "prompt-missing-after-warnings-collisions",
+    "package-manifest",
+    "package-conventions",
+    "package-invalid-json-conventions",
+    "package-invalid-pi-conventions",
+    "package-empty-manifest",
+    "package-empty-manifest-object-fallback",
+    "package-empty-manifest-skills",
+    "package-empty-filter-skills",
+    "package-empty-filter-prompts",
+    "package-positive-filter",
+    "package-negative-filter",
+    "package-force-include",
+    "package-force-exclude",
+    "package-filter-cannot-expose-undeclared",
+    "package-manifest-glob",
+    "package-manifest-exclusion",
+    "package-lowercase-skill-alias-16",
+    "package-lowercase-skill-alias-17",
+    "package-lowercase-skill-alias-18",
+    "package-project-trusted",
+    "package-project-untrusted",
+    "package-project-replaces-personal",
+    "package-project-delta",
+    "package-delta-without-personal",
+    "package-disabled-discovery",
+    "package-explicit-disabled-package-file",
+    "package-local-before-package",
+    "package-personal-auto-before-package"
+  ],
+  "sourcePaths": [
+    "packages/coding-agent/src/core/package-manager.ts",
+    "packages/coding-agent/src/core/pi-manifest.ts",
+    "packages/coding-agent/src/core/resource-loader.ts",
+    "packages/coding-agent/src/core/source-info.ts",
+    "packages/coding-agent/docs/packages.md"
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "package-alias-focused-recovery.log": "bbefdb29f2ea25373343a5f797a334aafef6c0358489a1dad82c697bd8f95e22",
+    "package-alias-parent-fail-first.log": "b06a59a31111cba2337201e7f6cd0d04a7f19843faabab886caa99e51a62ef14",
+    "package-build-first.log": "c8bb80fab136d7268dbf7d1ad482e2824f0851d355e4fd4142673130da6f1bc5",
+    "package-final-build.log": "b7ade2ebff47c8488a33709de4c80bc0a4c0552323e098195cfeb84c58e4c551",
+    "package-final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-final-full.log": "e6f5c87e3a9219d7712350358720838860758a9d3ddcb1b0ca63ef239c84fd5e",
+    "package-format-first.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-full-first.log": "71999b329955e247e908aecbee1d0d1368623b64ed411d11445a4e2d8f57a79e",
+    "package-invocation-deletion-regression-pi.http.json": "194048b16e5a8656bef5faf07120791400434d8da6b7350519900293ba48b3a3",
+    "package-invocation-deletion-regression-pi.records.json": "ce7a51034efed2f0ac0fa1ec828e7ae9b4fc680fcf22332af690a212cf545843",
+    "package-invocation-deletion-regression-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-invocation-deletion-regression-pisharp.http.json": "ced6173ad2aa5fcdad8ed6da75a94da2c418ae49a93f56910b7880d3e6f0021d",
+    "package-invocation-deletion-regression-pisharp.records.json": "e83b4579e17f9ce97748347a36941530b9ea0f90e447c79635ed4d20d87b8969",
+    "package-invocation-deletion-regression-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-invocation-deletion-regression.json": "9d91d0f7ea880dc6facef4e3e3727306b476cdd05205dbc4a59fdd2ccf8b90c7",
+    "package-invocation-deletion-regression.log": "9d378cbe903b5a5520345add39f23900a1618d59d0dbd3c737b02413a4dd6e75",
+    "package-loading-first-recovery.log": "389da04f2a872278b72f1f6454f81e70cef3706fb66b2b3986781300a4b3781b",
+    "package-loading-focused.log": "f1e25c9ac33eabfd4ee6ef2f467f094f1211cc06c9fe8554db9e18115de12a01",
+    "package-loading-second-recovery.log": "9e8f9f398b69e87328a30d36535a4de28f138526db1d25424de3a3ab3b0cfd1c",
+    "package-python.log": "ce3637bc394efd096e3c387d5952ebd49874f6858c03e60faaa6645af9c80091",
+    "package-resource-loading-fail-first.log": "ea61756b4dc0479b2cca179a256d512f192374fd45936780c66b998bbd2efb85",
+    "package-selection-alias-fail-first.json": "33705b60635fd23d0deb16ad26ba1c4a4a7ef6e0a19a28147172514c0a2ffd9a",
+    "package-selection-alias-fail-first.log": "5087e27546539b43507f87c7fcf0515cc8b6e4546c89a176b04778ad2f50c5ff",
+    "package-selection-alias-recovery.json": "09f6f0fc7b3b69fd00da723e0cfe87f3ebf4fe380a2f0f5c9416124770b3c4fe",
+    "package-selection-alias-recovery.log": "9d9a5c8621eadf8842733af3ab6013f4af6782b15dadfaa3856330725d1c28fc",
+    "package-selection-first-matrix.json": "6350b395994fcd56a5d72f53eb59fc7d580fa02b0402127279f65fdba524ffdb",
+    "package-selection-first-matrix.log": "6e8f946899d62f7602d8be07dfd76db3117833bb999c388f3476878fea01b81a",
+    "package-settings-fail-first.log": "58b310136b4d2b7bd421557bbbc6be4f92a68ed314b753d7b1af21779f06d36f",
+    "package-settings-first-recovery.log": "9ca09c619eeaddae54baaa122ca976e2504cf21bd7d0b962d077b061fecafd88",
+    "package-exact-ci-failed.log": "adad631b4f27ac7689f71b2fca207aa0616c7ab5db2b79e168e7e934e9347694",
+    "package-nullable-fresh-build.log": "1df20c482a4e74db6cbf185a40ec74b19a61f04aa1d5d7bd26b0209df6b66363",
+    "package-nullable-focused.log": "3b4dcce4c69df4c02b5ffab124d420dccf5d31a8815e2aa6bf7accb383605f0b",
+    "package-nullable-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-nullable-exact-ci.log": "5561e49ecfe147002544e52c029913db14047b41eeca209b2a89d2cb64534be4"
+  },
+  "processArtifacts": {
+    "local-package-after-settings-pi.http.json": "ac585767000c1a48f94677a2b8c9e0824bde07879a059f7fd3143b5fa0c589f5",
+    "local-package-after-settings-pi.records.json": "c573cd3beed64be5d755307c9f0f63a9567e054fb3af50b259a43a1174dedc01",
+    "local-package-after-settings-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-package-after-settings-pisharp.http.json": "2d9a14ab4ee9422785ea43beb381bf388df18f0f4639a5b4b8e36a39132d7506",
+    "local-package-after-settings-pisharp.records.json": "f254d2cc359d151609bb3e3d90ce39515127e5979abb3181e77a51f23f5d3896",
+    "local-package-after-settings-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-package-after-settings.json": "24c8f2918aa3df915dfbf4495999dad4e472e7aef57d6d35bff817db3669694c",
+    "local-package-after-settings.log": "d98ecabf1c11486f6edcfed3a30a59e6a51e89133a29aaeb143e3a4e348a0d70",
+    "local-package-first-recovery-pi.http.json": "74093e6feb246434446584aac96cca773e197e56f1e8e3a1220123826a22eeb6",
+    "local-package-first-recovery-pi.records.json": "07d76380a9f06e6378f920c4853d1558c1d0bb9e346f273853944a2b506b92f3",
+    "local-package-first-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-package-first-recovery-pisharp.http.json": "f7a52fdc60d25eafa2c4bdc31245e7fd2f967f2e52ce649dde46c5dd43830ee2",
+    "local-package-first-recovery-pisharp.records.json": "cfadd5cddd47abce2088f8fa5ae0952b4a0d6ada2f778941e0972aebb63cdf81",
+    "local-package-first-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-package-first-recovery.json": "4d3e1eda38698ca1a570c33398bddf3c9825dc69367dbc062083aedd762059fe",
+    "local-package-first-recovery.log": "0b8ff37c5c54fc536c245b12e5c96207932d5364747744bd0cedef3cb90d38de",
+    "local-package-invocation-fail-first-pi.http.json": "7bb90da7f1e00d9ba437789629b0729118704298ac8f1d76cd7676c7554041e5",
+    "local-package-invocation-fail-first-pi.records.json": "8a62ddfcd6a66d901bccf2018dea1a0938794df9a0cace33681280019ea6aea1",
+    "local-package-invocation-fail-first-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-package-invocation-fail-first-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "local-package-invocation-fail-first-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "local-package-invocation-fail-first-pisharp.stderr.log": "1e826034d1e3e9be0612c60d3b7bbb22d96db98e0a374427f90c770064343cb1",
+    "local-package-invocation-fail-first.log": "51ceff3b2c69c00bc4099698e4adc63a5aa384dcba5001a9b23321c737287722",
+    "local-package-startup-fail-first-pi.http.json": "871cde834e1523df16f0a4f859e0b7effe3c2a494476e642926a6f215fd0e450",
+    "local-package-startup-fail-first-pi.records.json": "61f8092c8194aa0ada3d512d74b6c35a6fff688d8464c92d02a2d2fdf959269a",
+    "local-package-startup-fail-first-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-package-startup-fail-first-pisharp.http.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "local-package-startup-fail-first-pisharp.records.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "local-package-startup-fail-first-pisharp.stderr.log": "1e826034d1e3e9be0612c60d3b7bbb22d96db98e0a374427f90c770064343cb1",
+    "local-package-startup-fail-first.json": "bf8cb42dc61a014dd8b96e40fcb843a5071fd80c7e7972395d86eca2f2a2cb52",
+    "local-package-startup-fail-first.log": "995bd862dc0fa0f034e7bd9de18ca7a90cb9a0e964ddcc0b546fea4293011819"
+  },
+  "limits": [
+    "No capability is marked verified. Installed/missing npm and git packages, install/remove/update/list/config commands, npmCommand, package extension bootstrap/trust, package themes/reload and full startup/terminal presentation remain open.",
+    "The local loader comparison covers its named scenarios. Further malformed settings, glob/filesystem/alias edge cases and collisions need complete boundary evidence.",
+    "The normal CLI probe uses owned isolated configuration and a local provider, with no live provider or package-registry credentials. Only temporary product workspace roots are normalized in invocation text."
+  ]
+}

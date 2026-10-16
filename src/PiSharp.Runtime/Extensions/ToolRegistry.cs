@@ -48,7 +48,8 @@ public sealed record PiSharpToolRegistration(
     System.Text.Json.JsonElement? OutputSchema = null,
     string? PromptSnippet = null,
     IReadOnlyList<string>? PromptGuidelines = null,
-    Func<IDictionary<string, object?>, PiSharpToolReach?>? ReachesTools = null);
+    Func<IDictionary<string, object?>, PiSharpToolReach?>? ReachesTools = null,
+    System.Text.Json.JsonElement? ConstrainedSampling = null);
 
 /// <summary>Changes an active loadout's model-facing declaration projection.</summary>
 public sealed record ToolLoadoutChanges(
@@ -58,10 +59,21 @@ public sealed record ToolLoadoutChanges(
 /// <summary>A tool declaration and its current model-facing description.</summary>
 public sealed record PiSharpToolDeclaration(PiSharpToolRegistration Registration, string Description);
 
-/// <summary>Session-specific controls available to an invoked extension tool.</summary>
-internal sealed class DescribedAIFunction(AIFunction inner, string description) : DelegatingAIFunction(inner)
+/// <summary>A request declaration with its loadout description and constrained-sampling policy.</summary>
+internal sealed class DeclaredAIFunction(AIFunction inner, string description,
+    System.Text.Json.JsonElement? constrainedSampling) : DelegatingAIFunction(inner)
 {
     public override string Description => description;
+    private readonly IReadOnlyDictionary<string, object?> _properties = CreateProperties(inner, constrainedSampling);
+    public override IReadOnlyDictionary<string, object?> AdditionalProperties => _properties;
+
+    private static IReadOnlyDictionary<string, object?> CreateProperties(AIFunction function,
+        System.Text.Json.JsonElement? constrainedSampling)
+    {
+        var properties = function.AdditionalProperties.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        if (constrainedSampling is { } policy) properties["constrainedSampling"] = policy.Clone();
+        return new System.Collections.ObjectModel.ReadOnlyDictionary<string, object?>(properties);
+    }
 }
 
 /// <summary>An immutable view of registered, callable, active, and declared tools.</summary>

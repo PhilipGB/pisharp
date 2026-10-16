@@ -25,7 +25,7 @@ internal static class RadiusProviderOptions
 /// <summary>Loads the pinned public Radius catalogue and the authenticated gateway catalogue.</summary>
 internal static class RadiusModelCatalog
 {
-    public const string SourcePiRevision = "fd889a2741891ee45116cb6131052d7fad220886";
+    public const string SourcePiRevision = "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6";
     private const string ResourceName = "PiSharp.Cli.Providers.Data.radius-models.json";
     private const int MaxCatalogBytes = 1024 * 1024;
     private static readonly Lazy<IReadOnlyList<ModelDescriptor>> BuiltinModels = new(LoadEmbedded);
@@ -61,19 +61,6 @@ internal static class RadiusModelCatalog
         {
             var model = ParseModel(value, providerId, "Radius gateway", baseUrl, requireProviderFields: true);
             if (model is not null && seen.Add(model.Id)) models.Add(model);
-        }
-        return models;
-    }
-
-    public static IReadOnlyList<ModelDescriptor> Merge(IReadOnlyList<ModelDescriptor> baseline,
-        IReadOnlyList<ModelDescriptor> refreshed)
-    {
-        var models = baseline.ToList();
-        foreach (var model in refreshed)
-        {
-            var existing = models.FindIndex(candidate => candidate.Id.Equals(model.Id, StringComparison.Ordinal));
-            if (existing >= 0) models[existing] = model;
-            else models.Add(model);
         }
         return models;
     }
@@ -125,13 +112,14 @@ internal static class RadiusModelCatalog
 
         var cachedRead = TryGetDecimal(costValue, "cacheRead", out var read) ? read : (decimal?)null;
         var cachedWrite = TryGetDecimal(costValue, "cacheWrite", out var write) ? write : (decimal?)null;
+        var tiers = ParsePricingTiers(costValue);
         var thinkingMap = value.TryGetProperty("thinkingLevelMap", out var map) && map.ValueKind == JsonValueKind.Object
             ? map.Clone() : (JsonElement?)null;
         var limits = ModelInputLimitsParser.Parse(value, $"{source} model '{id}'", strict: false);
         var modelBaseUrl = baseUrl ?? GetString(value, "baseUrl");
         var modelStatus = GetBoolean(value, "enabled") == false ? "disabled" : source;
         return new ModelDescriptor(id, GetString(value, "lab"), contextWindow, modelStatus, reasoning,
-            new ModelPricing(inputCost, outputCost, cachedRead, CachedWrite: cachedWrite), providerId,
+            new ModelPricing(inputCost, outputCost, cachedRead, tiers, cachedWrite), providerId,
             Available: GetBoolean(value, "enabled") != false, Name: name, MaxOutputTokens: maxTokens,
             Input: input, Api: "pi-messages", InputLimits: limits, BaseUrl: modelBaseUrl,
             ThinkingLevelMap: thinkingMap);
@@ -176,5 +164,21 @@ internal static class RadiusModelCatalog
         if (value.ValueKind != JsonValueKind.Object || !value.TryGetProperty(property, out var child) ||
             child.ValueKind != JsonValueKind.Number || !child.TryGetDecimal(out result)) return false;
         return result >= 0;
+    }
+
+    private static IReadOnlyList<ModelPricingTier>? ParsePricingTiers(JsonElement cost)
+    {
+        if (!cost.TryGetProperty("tiers", out var tiers) || tiers.ValueKind != JsonValueKind.Array) return null;
+        var result = new List<ModelPricingTier>();
+        foreach (var tier in tiers.EnumerateArray())
+        {
+            if (tier.ValueKind != JsonValueKind.Object || GetPositiveInt(tier, "inputTokensAbove") is not int threshold ||
+                !TryGetDecimal(tier, "input", out var input) || !TryGetDecimal(tier, "output", out var output))
+                return null;
+            decimal? cachedRead = TryGetDecimal(tier, "cacheRead", out var read) ? read : null;
+            decimal? cachedWrite = TryGetDecimal(tier, "cacheWrite", out var write) ? write : null;
+            result.Add(new ModelPricingTier(threshold, input, output, cachedRead, cachedWrite));
+        }
+        return result.OrderBy(tier => tier.InputTokensAbove).ToArray();
     }
 }

@@ -10,6 +10,7 @@ using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Tests;
 
+[Collection("Codemode workers")]
 public sealed class CodemodeModelTests
 {
     [Fact]

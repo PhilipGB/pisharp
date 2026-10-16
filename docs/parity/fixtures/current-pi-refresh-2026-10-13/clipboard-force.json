@@ -1,0 +1,233 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "scenarios": [
+    {
+      "platform": "darwin",
+      "force": "1"
+    },
+    {
+      "platform": "darwin",
+      "force": "0"
+    },
+    {
+      "platform": "darwin",
+      "force": "true"
+    },
+    {
+      "platform": "darwin",
+      "force": ""
+    },
+    {
+      "platform": "win32",
+      "force": "1"
+    },
+    {
+      "platform": "win32",
+      "force": "0"
+    },
+    {
+      "platform": "win32",
+      "force": "true"
+    },
+    {
+      "platform": "win32",
+      "force": ""
+    },
+    {
+      "platform": "linux",
+      "force": "1"
+    },
+    {
+      "platform": "linux",
+      "force": "0"
+    },
+    {
+      "platform": "linux",
+      "force": "true"
+    },
+    {
+      "platform": "linux",
+      "force": ""
+    }
+  ],
+  "pi": [
+    {
+      "platform": "darwin",
+      "force": "1",
+      "order": [
+        "native",
+        "\u001b]52;c;aGVsbG8g8J+YgA==\u0007"
+      ]
+    },
+    {
+      "platform": "darwin",
+      "force": "0",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "darwin",
+      "force": "true",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "darwin",
+      "force": "",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "win32",
+      "force": "1",
+      "order": [
+        "native",
+        "\u001b]52;c;aGVsbG8g8J+YgA==\u0007"
+      ]
+    },
+    {
+      "platform": "win32",
+      "force": "0",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "win32",
+      "force": "true",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "win32",
+      "force": "",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "linux",
+      "force": "1",
+      "order": [
+        "native",
+        "\u001b]52;c;aGVsbG8g8J+YgA==\u0007"
+      ]
+    },
+    {
+      "platform": "linux",
+      "force": "0",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "linux",
+      "force": "true",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "linux",
+      "force": "",
+      "order": [
+        "native"
+      ]
+    }
+  ],
+  "pisharp": [
+    {
+      "platform": "darwin",
+      "force": "1",
+      "order": [
+        "native",
+        "\u001b]52;c;aGVsbG8g8J+YgA==\u0007"
+      ]
+    },
+    {
+      "platform": "darwin",
+      "force": "0",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "darwin",
+      "force": "true",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "darwin",
+      "force": "",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "win32",
+      "force": "1",
+      "order": [
+        "native",
+        "\u001b]52;c;aGVsbG8g8J+YgA==\u0007"
+      ]
+    },
+    {
+      "platform": "win32",
+      "force": "0",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "win32",
+      "force": "true",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "win32",
+      "force": "",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "linux",
+      "force": "1",
+      "order": [
+        "native",
+        "\u001b]52;c;aGVsbG8g8J+YgA==\u0007"
+      ]
+    },
+    {
+      "platform": "linux",
+      "force": "0",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "linux",
+      "force": "true",
+      "order": [
+        "native"
+      ]
+    },
+    {
+      "platform": "linux",
+      "force": "",
+      "order": [
+        "native"
+      ]
+    }
+  ],
+  "match": true,
+  "comparison": "Exact successful-native-write/OSC52 order and UTF-8 terminal payload; platform and native writer are injected in both real implementations. Covers only exact force value 1 and negative controls; no real OS clipboard or remote-terminal availability claim."
+}

@@ -73,8 +73,8 @@ try
 }
 catch (Exception e) when (e is not OperationCanceledException)
 {
-    Console.Error.WriteLine($"Could not load project runtime: {e.Message}");
-    Environment.ExitCode = 2;
+    Console.Error.WriteLine(e is ExtensionStartupFailure ? e.Message : $"Could not load project runtime: {e.Message}");
+    Environment.ExitCode = e is ExtensionStartupFailure ? 1 : 2;
     return;
 }
 
@@ -83,6 +83,12 @@ using var projectRuntimeOwner = projectRuntime;
 modelRuntime.SetVirtualModelRegistry(projectRuntime.Extensions.Registration.VirtualModels);
 
 var projectBinding = new ActiveProjectRuntime(projectConfiguration, projectRuntime, cli);
+
+if (cli.ListModels)
+{
+    await CliStartupCommands.ListModelsAsync(modelRuntime, cli, Console.Out);
+    return;
+}
 
 var initialSelection = await InitialModelComposition.ResolveAsync(
     modelRuntime, cli, explicitThinking, userSettings);
@@ -103,12 +109,6 @@ using var codemodeHttp = new HttpClient
 var codemodeModels = new ProviderCodemodeModels(modelRuntime, codemodeHttp);
 var modelRuntimeController = new ModelRuntimeController(modelRuntime, () => projectBinding.Settings,
     Environment.GetEnvironmentVariable);
-
-if (cli.ListModels)
-{
-    await CliStartupCommands.ListModelsAsync(modelRuntime, cli, Console.Out);
-    return;
-}
 
 IChatClient chat;
 

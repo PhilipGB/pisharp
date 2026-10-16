@@ -23,6 +23,29 @@ apply_test_thread_limit()
 
 
 class DriverTests(unittest.TestCase):
+    def test_current_pin_launches_the_normal_coding_agent_cli_with_fixture_argument_overrides(self):
+        for scenario in ({}, {'arguments': {'pi': ['--no-session']}}, {'mockHuggingFace': True}):
+            command = commands(Path('/current-pi'), Path('/pisharp.dll'), scenario)['pi']
+            self.assertIn('/current-pi/packages/coding-agent/src/cli.ts', command)
+            self.assertNotIn('/current-pi/packages/coding-agent/src/experimental/cli.ts', command)
+            self.assertIn('file:///current-pi/packages/coding-agent/src/experimental/source-resolver.ts', command)
+
+    def test_emulator_shutdown_drains_a_snapshot_larger_than_the_pipe(self):
+        terminal = TerminalProcess([sys.executable, '-c', 'import time; time.sleep(30)'],
+                                   Path('/tmp'), dict(os.environ), dict(columns=120, rows=40),
+                                   spool_render_frames=True)
+        try:
+            terminal.emulator.stdin.write(json.dumps(dict(op='snapshot')) + '\n')
+            terminal.emulator.stdin.flush()
+            terminal.close()
+            self.assertEqual(0, terminal.emulator.returncode)
+            self.assertTrue(terminal.emulator.stdout.closed)
+        finally:
+            if terminal.emulator.poll() is None:
+                terminal.emulator.kill()
+                terminal.emulator.wait(timeout=5)
+            terminal.render_frames.close()
+
     def test_session_imports_use_the_owned_agent_directory(self):
         child_environment = environment(Path('/tmp/parity-agent'), persist_sessions=True)
         self.assertEqual('/tmp/parity-agent/sessions', child_environment['PISHARP_SESSION_DIR'])
@@ -127,6 +150,14 @@ class DriverTests(unittest.TestCase):
             self.assertEqual('{}', (workspace / '.pi/settings.json').read_text())
             with self.assertRaises(ValueError):
                 prepare_workspace({'workingDirectory': '../outside'}, workspace)
+
+    def test_default_workspace_uses_the_selected_fixture_root_at_execution_time(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary) / 'workspace'
+            with patch('run.WORKSPACE', workspace):
+                working = prepare_workspace({'workingDirectory': 'project'})
+            self.assertEqual(workspace / 'project', working)
+            self.assertTrue((workspace / '.pisharp-terminal-harness').is_file())
 
     def test_fixture_can_load_a_native_extension_only_in_the_pisharp_process(self):
         with tempfile.TemporaryDirectory() as temporary:

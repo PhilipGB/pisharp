@@ -52,6 +52,7 @@ internal static class BuiltinProviderProfiles
             mistralModels.Insert(0, new(mistralDefault, "mistral", null, "configured",
                 Provider: "mistral", Api: "mistral-conversations"));
         var azureModels = AzureOpenAiModelCatalog.Load();
+        var azureFoundryModels = AzureFoundryModelCatalog.Load();
         var googleModels = GoogleGenAiModelCatalog.Load();
         var googleDefault = environment("PISHARP_GOOGLE_MODEL") ?? "gemini-3.5-flash";
         var googleDefaultIndex = googleModels.ToList().FindIndex(model => model.Id == googleDefault);
@@ -119,6 +120,10 @@ internal static class BuiltinProviderProfiles
             ["azure-openai-responses"] = new("azure-openai-responses", "Azure OpenAI",
                 AzureOpenAiEndpoint.FromEnvironment(environment), true, false,
                 "AZURE_OPENAI_API_KEY", null, azureModels, Api: "azure-openai-responses",
+                AzureOpenAi: AzureOpenAiProviderOptions.FromEnvironment(environment)),
+            ["azure"] = new("azure", "Azure Foundry",
+                AzureOpenAiEndpoint.FromEnvironment(environment), true, false,
+                "AZURE_OPENAI_API_KEY", null, azureFoundryModels, Api: "openai-completions",
                 AzureOpenAi: AzureOpenAiProviderOptions.FromEnvironment(environment)),
             ["google"] = new("google", "Google", new Uri("https://generativelanguage.googleapis.com/v1beta"), true, false,
                 "GEMINI_API_KEY", null, googleModels, Api: "google-generative-ai"),

@@ -1,0 +1,480 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "96fa481f33feba14cc478c111ba60bc5bbef419f",
+  "candidate": "Base plus typed prompt argument metadata/completion/minimum columns/single-line descriptions, repository dup prompt and regression tests in this commit.",
+  "match": true,
+  "loaderCases": 131,
+  "comparison": "Original 98 frontmatter cases plus 32 typed-hint skill/prompt cases and the exact repository dup prompt. Both real loaders retain full typed metadata, body SHA256/UTF16 length and raw diagnostic messages. The probe is strengthened to compare optional argumentHint explicitly; the 98 original scenarios remain. Independent normal CLIs run in PTYs with gated loopback provider request/content/finish checkpoints.",
+  "characterization": {
+    "loaderCases": 130,
+    "loaderMismatches": 9,
+    "nativeFailFirst": {
+      "failed": 12,
+      "passed": 8,
+      "skipped": 0
+    },
+    "columnFailFirst": {
+      "failed": 2,
+      "passed": 0,
+      "skipped": 0
+    },
+    "multilineFailFirst": {
+      "failed": 1,
+      "passed": 0,
+      "skipped": 0
+    },
+    "initialTerminal": {
+      "differences": 8106,
+      "renderDifferences": 7944,
+      "scope": "Ungated original two-template fixture; hint/provider behavior matched while short primary columns differed. Complete failed report/raw evidence retained."
+    }
+  },
+  "implementation": [
+    "ResourceFrontmatter/PromptResource preserve optional argument-hint only for nonempty typed YAML strings, without trimming whitespace or changing template expansion. Quotes, aliases, block styles, Unicode and invalid types are compared.",
+    "TerminalResourceCompletion adds the argument hint before the source-tagged description and reads refreshed resources after project reload. TerminalScreenCompositor uses the source 12-cell minimum/32-cell maximum primary column and collapses CR/LF runs into one trimmed suggestion line.",
+    "The pinned upstream .pi/prompts/dup.md is a repository project prompt rather than a packaged built-in default. The identical native repository asset uses ordinary trusted-project discovery, is suppressed when that project is untrusted, and retains the issue argument metadata and complete prompt text. No default CLI injection is added."
+  ],
+  "repositoryPrompt": {
+    "path": ".pi/prompts/dup.md",
+    "sourcePath": ".pi/prompts/dup.md",
+    "sourceCommit": "bd21693b93cb7ed6863cfc492c782c1b6c1c5658",
+    "sha256": "82dd6c44ac65fbee6a2f1f3ba899da4f03cf4cd87439abb257083b3d5296fc30",
+    "description": "Find potential duplicates of a GitHub issue",
+    "argumentHint": "<issue-url>",
+    "packaging": "Current Pi package files/copy-assets exclude monorepo .pi; the counterpart remains a normal repository resource."
+  },
+  "verification": {
+    "focusedPassed": 88,
+    "fullPassed": 1836,
+    "fullFailed": 0,
+    "fullSkipped": 0,
+    "newNativeRows": 25,
+    "format": "passed",
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "terminal": {
+      "calibrationMatch": true,
+      "match": true,
+      "terminalMatch": true,
+      "canonicalRenderFrames": 15,
+      "renderDifferences": 0,
+      "differences": 0,
+      "httpMatch": true,
+      "rawMatch": false,
+      "scenarioErrors": {},
+      "assertions": {
+        "behaviorMatch": true,
+        "calibrationMatch": true,
+        "terminalMatch": true,
+        "renderDifferences": 0,
+        "httpMatch": true,
+        "scenarioErrors": {}
+      },
+      "fixture": "tools/parity/terminal/fixtures/prompt-argument-hints.json"
+    },
+    "exactHeadCi": {
+      "sha": "42ae67c471fe572d3a8b01c40328865f6a5d1ce2",
+      "run": 38556219134,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38556219134",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1836,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
+  },
+  "results": [
+    {
+      "id": "skill-hint-plain",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-empty",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-whitespace",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-number",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-boolean",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-null",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-map",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-sequence",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-quoted-boolean",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-explicit-string",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-anchor",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-literal",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-folded",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-case-key",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-quoted-number",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "skill-hint-unicode",
+      "prompts": [],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-plain",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": "<subject>",
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-empty",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": null,
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-whitespace",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": " ",
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-number",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": null,
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-boolean",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": null,
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-null",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": null,
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-map",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": null,
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-sequence",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": null,
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-quoted-boolean",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": "true",
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-explicit-string",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": "true",
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-anchor",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": "Guide",
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-literal",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": "<subject>\n[detail]\n",
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-folded",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": "<subject> [detail]",
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-case-key",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": null,
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-quoted-number",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": "123",
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "prompt-hint-unicode",
+      "prompts": [
+        {
+          "name": "guide",
+          "description": "Guide",
+          "argumentHint": "🌍 ﻿",
+          "path": "guide.md",
+          "body": {
+            "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+            "characters": 4
+          }
+        }
+      ],
+      "warningMessages": []
+    },
+    {
+      "id": "repository-dup-prompt",
+      "prompts": [
+        {
+          "name": "dup",
+          "description": "Find potential duplicates of a GitHub issue",
+          "argumentHint": "<issue-url>",
+          "path": "dup.md",
+          "body": {
+            "hash": "db2099030c2276d76fcf9289b62b9d9c4673021df5cc0c47652b9f6381d00d7b",
+            "characters": 860
+          }
+        }
+      ],
+      "warningMessages": []
+    }
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-hints-characterization.json": "17f43c41df26669d7d0880a97a26363f8303092525b0668697484629e0cbdf82",
+    "resource-hints-characterization.log": "c81b11d8e4d243157904a6994d8846b525a942530cd567f0ceba3985229c5bfc",
+    "resource-hints-fail-first-tests.log": "c849535a7c87619680e3e921fb17a68657923479882fb926cb71d50d64aae4e4",
+    "resource-hints-columns-fail-first-tests.log": "0842faa7487d5ff059d6f529e3c1017edae2258b6db0a74f36c2a9823170d8cc",
+    "resource-hints-multiline-fail-first-tests.log": "0c2721b87831e6ef6f14b220e9d53c1dbea76f489514ba99d4cafc180b6a2e4e",
+    "resource-hints-with-dup-final.json": "5c6acab3f095809682c51be3a70e577a2bbdb381583463b40990ac00ea5edcc8",
+    "resource-hints-with-dup-final.log": "a33ae6bf0f06bdfc77da382b0f8493093657f55b9fac6b1ef0100570c67263d9",
+    "resource-hints-final-focused-tests.log": "eb35f62a48294bba4f3f1c094c26a0db408b7236bfaf905c7a9a334ce6bd08fe",
+    "resource-hints-full-tests.log": "121b85e1222748385fef2132e6016a8a4bd717ebe043644aec0e61c15ab2651f",
+    "resource-hints-final-build.log": "108be0e29bf34004efeba44703a42eb5174f5f89fa3f4e8d6d3de0ced30b51a0",
+    "resource-hints-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "prompt-hints-pair/report.json": "ee4a4f8f257995b161a53f423b4e455ce10ab3cda0c02128b87f57d45f085dbe",
+    "prompt-hints-calibration/report.json": "feb4bb97f40fe7435fcbfde969ad1ec7584dc6fe4a11ae53d64af0cbb6f6f0c1",
+    "prompt-hints-ungated-fixture.json": "ae12648fe6f2fb998226103911d4d0c02794c9aa3b37361e199df16824f2b6b1",
+    "prompt-hints-gated-original-fixture.json": "952df56b94b28c42352f0269919eb97279f2d4998a82fa677bffe489e192f22b",
+    "prompt-hints-final-pair/report.json": "e30356684f42055fe81ebe4d530bd6483d34585027db5bec8f89342cfd21dad2",
+    "prompt-hints-final-calibration/report.json": "5f2fde95ae0be7b9ec62d5a7c47292cc6fdfa3e8a372a50b9e03d4b41d4dfa65",
+    "prompt-hints-final-assertions.json": "a0530815a3dc0716b6b9d2c1dfe6c31caa298455b2e9153123a9cfac7e3ecf3a",
+    "resource-yaml-edges-characterization.json": "5891e1e9748c61e41df27f509549dd44702a538fe9947055d6edc87ab6916453",
+    "resource-yaml-edges-characterization.log": "7708e49c2a9bab02413c055f46725272eadd00d783177aaca319d46b4b3aa296",
+    "resource-hints-exact-ci.log": "707cacedfbbc0be841c1add2a7198d20e40608101a7c02be2cebe9472a0e68b9"
+  },
+  "limits": [
+    "One Linux 120x40 dark fullscreen PTY flow proves these hint/empty/multiline/provider and active/idle checkpoints; narrow screens, other palettes/dimensions, arbitrary labels/control characters and wider completion behavior remain open. Raw PTY bytes differ and are retained.",
+    "The extended 181-case YAML probe identifies ten metadata/order/body differences and 29 raw diagnostic differences across invalid explicit tag, alias key, semantic duplicate key and syntax/error classes. These remain open and are not absorbed into passing counts.",
+    "Other ignore/settings/package, invocation race/error, theme/trust/reload and terminal boundaries remain open. No capability status is upgraded and final audit/MCP reconciliation remain required."
+  ],
+  "reproduce": [
+    "python3 tools/parity/resource-frontmatter-differential.py --argument-hints --repository-prompt --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-hints.json",
+    "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-parity-audit-pi --fixture tools/parity/terminal/fixtures/prompt-argument-hints.json --case 120x40-dark-fullscreen --calibrate --output artifacts/parity/<run>/prompt-hints-calibration",
+    "python3 tools/parity/terminal/run.py --pi /tmp/pisharp-parity-audit-pi --fixture tools/parity/terminal/fixtures/prompt-argument-hints.json --case 120x40-dark-fullscreen --output artifacts/parity/<run>/prompt-hints-pair",
+    "python3 tools/parity/terminal/assert_prompt_argument_hints.py --paired artifacts/parity/<run>/prompt-hints-pair --calibration artifacts/parity/<run>/prompt-hints-calibration"
+  ],
+  "next": "Repair characterized YAML tag/key resolution and diagnostics, then continue full Resources / Instructions / Trust boundaries."
+}

@@ -16,7 +16,7 @@ public sealed class RpcModelProcessTests
         Directory.CreateDirectory(agent);
         await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
             {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","api":"openai-completions","compat":{"supportsDeveloperRole":true,"openRouterRouting":{"zdr":false,"maxPrice":0.5}},"apiKeyEnv":"PISHARP_FIXTURE_KEY","headers":{"Authorization":"Bearer fixture-only-secret"},"models":[
-             {"id":"rich","name":"Rich model","baseUrl":"http://127.0.0.1:1/v1/model-rich","api":"openai-responses","contextWindow":8192,"maxTokens":2048,"reasoning":true,"thinkingLevelMap":{"off":"none","high":"extended","max":null},"input":["text","image"],"inputLimits":{"maxRequestBytes":120000,"images":{"maxPerMessage":4,"maxPerRequest":8,"resize":{"maxWidth":512,"maxHeight":768,"maxBytes":1048576,"jpegQuality":80}}},"cost":{"input":1.25,"output":4,"cacheRead":0.2,"cacheWrite":0.5,"tiers":[{"inputTokensAbove":100,"input":2,"output":5,"cacheRead":0.3,"cacheWrite":0.6}]},"promptCache":{"short":300,"long":1800},"samplingParams":{"temperature":0.2,"top_p":0.9},"compat":{"supportsStore":false,"openRouterRouting":{"zdr":true,"allowFallbacks":false}},"headers":{"X-Model-Secret":"fixture-only-secret"}},
+             {"id":"rich","name":"Rich model","baseUrl":"http://127.0.0.1:1/v1/model-rich","api":"openai-responses","contextWindow":8192,"maxTokens":2048,"reasoning":true,"thinkingLevelMap":{"off":"none","high":"extended","max":null},"input":["text","image"],"inputLimits":{"maxRequestBytes":120000,"images":{"maxPerMessage":4,"maxPerRequest":8,"resize":{"maxWidth":512,"maxHeight":768,"maxBytes":1048576,"jpegQuality":80}}},"cost":{"input":1.25,"output":4,"cacheRead":0.2,"cacheWrite":0.5,"tiers":[{"inputTokensAbove":100,"input":2,"output":5,"cacheRead":0.3,"cacheWrite":0.6}]},"promptCache":{"short":300,"long":1800},"samplingParams":{"temperature":0.2,"top_p":0.9},"samplingParamsByThinkingLevel":{"high":{"temperature":0.8,"top_k":64}},"compat":{"supportsStore":false,"openRouterRouting":{"zdr":true,"allowFallbacks":false}},"headers":{"X-Model-Secret":"fixture-only-secret"}},
              {"id":"sparse"}]}}}
             """);
         Process? process = null;
@@ -82,6 +82,8 @@ public sealed class RpcModelProcessTests
             Assert.Equal(300, rich.GetProperty("promptCache").GetProperty("short").GetInt32());
             Assert.Equal(1800, rich.GetProperty("promptCache").GetProperty("long").GetInt32());
             Assert.Equal(0.2, rich.GetProperty("samplingParams").GetProperty("temperature").GetDouble());
+            Assert.Equal(0.8, rich.GetProperty("samplingParamsByThinkingLevel").GetProperty("high").GetProperty("temperature").GetDouble());
+            Assert.Equal(64, rich.GetProperty("samplingParamsByThinkingLevel").GetProperty("high").GetProperty("top_k").GetInt32());
             Assert.False(rich.GetProperty("compat").GetProperty("supportsStore").GetBoolean());
             Assert.True(rich.GetProperty("compat").GetProperty("supportsDeveloperRole").GetBoolean());
             Assert.True(rich.GetProperty("compat").GetProperty("openRouterRouting").GetProperty("zdr").GetBoolean());

@@ -1,0 +1,49 @@
+{
+  "id": "input-run-idle-handoff",
+  "settings": { "quietStartup": true },
+  "environment": {
+    "pi": { "HOME": "{agent}/isolated-home" },
+    "pisharp": { "HOME": "{agent}/isolated-home" }
+  },
+  "files": {
+    "pi": { "isolated-home/.pisharp-terminal-harness": "owned fixture home" },
+    "pisharp": { "isolated-home/.pisharp-terminal-harness": "owned fixture home" }
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": ["handoff-request"],
+    "chatResponseContentGates": ["handoff-content"],
+    "chatResponseFinishGates": ["handoff-finish"],
+    "chatResponseContentByRequest": ["HANDOFF_REPLY"]
+  },
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    {
+      "id": "request-active",
+      "send": "Give the handoff reply\r",
+      "waitGatesAfter": ["handoff-request"],
+      "expect": "Working",
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "reply-active",
+      "releaseGates": ["handoff-content"],
+      "expect": ["HANDOFF_REPLY", "Working"],
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    {
+      "id": "reply-idle",
+      "releaseGates": ["handoff-finish"],
+      "expect": "HANDOFF_REPLY",
+      "notExpect": "Working",
+      "quietMs": 0,
+      "renderMatch": true
+    },
+    { "id": "quit-at-handoff", "send": "/quit\r", "exit": true }
+  ],
+  "dimensions": [{ "columns": 120, "rows": 40 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen", "regular"],
+  "terminal": { "keyboardProtocol": "kitty" }
+}

@@ -96,7 +96,8 @@ public sealed class ResourceCatalogTests
             Assert.Equal("Review API compatibility and security: API compatibility", await untrusted.ResolveInputAsync("/review \"API compatibility\""));
             Assert.Contains("Use references/guide.md", await untrusted.ResolveInputAsync("/skill:unit-guide focus"));
             Assert.Equal("ordinary text", await untrusted.ResolveInputAsync("ordinary text"));
-            await Assert.ThrowsAsync<ArgumentException>(() => untrusted.ResolveInputAsync("/skill:project-secret"));
+            Assert.Equal("/skill:project-secret", await untrusted.ResolveInputAsync("/skill:project-secret"));
+            await Assert.ThrowsAsync<ArgumentException>(() => untrusted.InvokeSkillAsync("project-secret", ""));
             Assert.True(PiSharp.Cli.CliArguments.Parse(["-ns"]).NoSkills);
             Assert.True(PiSharp.Cli.CliArguments.Parse(["--no-skills"]).NoSkills);
             Assert.True(PiSharp.Cli.CliArguments.Parse(["-np"]).NoPromptTemplates);
@@ -105,7 +106,8 @@ public sealed class ResourceCatalogTests
             Assert.Empty(withoutSkills.Skills);
             Assert.Empty(withoutSkills.SystemInstructions());
             Assert.NotEmpty(withoutSkills.Prompts);
-            await Assert.ThrowsAsync<ArgumentException>(() => withoutSkills.ResolveInputAsync("/skill:unit-guide"));
+            Assert.Equal("/skill:unit-guide", await withoutSkills.ResolveInputAsync("/skill:unit-guide"));
+            await Assert.ThrowsAsync<ArgumentException>(() => withoutSkills.InvokeSkillAsync("unit-guide", ""));
             var withoutPrompts = await ResourceCatalog.LoadAsync(project, agent, true, discoverPrompts: false);
             Assert.Empty(withoutPrompts.Prompts);
             Assert.Equal("/review x", await withoutPrompts.ResolveInputAsync("/review x"));
@@ -118,8 +120,8 @@ public sealed class ResourceCatalogTests
             Assert.Single(explicitResources.Skills);
             Assert.Equal("project-secret", explicitResources.Skills[0].Name);
             Assert.Single(explicitResources.Prompts);
-            Assert.Equal("temporary", explicitResources.Skills[0].SourceInfo.Scope);
-            Assert.Equal("temporary", explicitResources.Prompts[0].SourceInfo.Scope);
+            Assert.Equal("project", explicitResources.Skills[0].SourceInfo.Scope);
+            Assert.Equal("user", explicitResources.Prompts[0].SourceInfo.Scope);
             Assert.Contains("Review value", await explicitResources.ResolveInputAsync("/review value"));
             Assert.Equal(
                 $"<skill name=\"project-secret\" location=\"{Path.Combine(projectSkill, "SKILL.md")}\">\n" +
@@ -143,8 +145,10 @@ public sealed class ResourceCatalogTests
             Assert.Contains("Wrong skill", await chosen.InvokeSkillAsync("project-secret", ""));
             Assert.DoesNotContain("Run a script", await chosen.InvokeSkillAsync("project-secret", ""));
             File.Delete(Path.Combine(collidingSkill, "SKILL.md"));
-            await Assert.ThrowsAsync<FileNotFoundException>(() => ResourceCatalog.LoadAsync(project, agent, false,
-                discoverSkills: false, additionalSkills: ["missing-skill"]));
+            var missing = await ResourceCatalog.LoadAsync(project, agent, false,
+                discoverSkills: false, additionalSkills: ["missing-skill"]);
+            Assert.Contains(missing.SkillDiagnostics, diagnostic => diagnostic.Message == "skill path does not exist" &&
+                diagnostic.Path == Path.Combine(project, "missing-skill"));
             Assert.Throws<ArgumentException>(() => PiSharp.Cli.CliArguments.Parse(["--skill"]));
             var trusted = await ResourceCatalog.LoadAsync(project, agent, true);
             Assert.Contains(trusted.Skills, skill => skill.Name == "project-secret");
@@ -210,7 +214,7 @@ public sealed class ResourceCatalogTests
             var userSource = Assert.Single(untrusted.Skills, skill => skill.Name == "user-configured").SourceInfo;
             Assert.Equal("local", userSource.Source);
             Assert.Equal("user", userSource.Scope);
-            Assert.Equal(Path.GetFullPath(agent), userSource.BaseDir);
+            Assert.Null(userSource.BaseDir);
             var autoSource = Assert.Single(untrusted.Skills, skill => skill.Name == "user-auto-keep").SourceInfo;
             Assert.Equal("auto", autoSource.Source);
 
@@ -222,13 +226,13 @@ public sealed class ResourceCatalogTests
             var projectSource = Assert.Single(trusted.Skills, skill => skill.Name == "project-configured").SourceInfo;
             Assert.Equal("local", projectSource.Source);
             Assert.Equal("project", projectSource.Scope);
-            Assert.Equal(Path.Combine(Path.GetFullPath(project), ".pi"), projectSource.BaseDir);
+            Assert.Null(projectSource.BaseDir);
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
 
     [Fact]
-    public async Task OversizedAndInvalidUtf8ResourcesFailClosed()
+    public async Task OversizedAndInvalidUtf8ResourcesPreserveCompleteDecodedText()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-resources-" + Guid.NewGuid().ToString("N"));
         var prompts = Path.Combine(root, "prompts");
@@ -237,11 +241,13 @@ public sealed class ResourceCatalogTests
         try
         {
             await File.WriteAllBytesAsync(path, new byte[64 * 1024 + 1]);
-            await Assert.ThrowsAsync<InvalidDataException>(() => ResourceCatalog.LoadAsync(root, root, false));
+            var large = await ResourceCatalog.LoadAsync(root, root, false);
+            Assert.Equal(new string('\0', 64 * 1024 + 1), Assert.Single(large.Prompts).Template);
             var ignored = await ResourceCatalog.LoadAsync(root, root, false, discoverPrompts: false);
             Assert.Empty(ignored.Prompts);
             await File.WriteAllBytesAsync(path, [0xC3, 0x28]);
-            await Assert.ThrowsAsync<System.Text.DecoderFallbackException>(() => ResourceCatalog.LoadAsync(root, root, false));
+            var replaced = await ResourceCatalog.LoadAsync(root, root, false);
+            Assert.Equal("\uFFFD(", Assert.Single(replaced.Prompts).Template);
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -357,6 +363,7 @@ public sealed class ResourceCatalogTests
 
             var resources = await ResourceCatalog.LoadAsync(project, agent, trusted: true,
                 discoverSkills: false, discoverPrompts: false,
+                additionalSkills: [projectSkill, userSkill], additionalPrompts: [projectPrompt, userPrompt],
                 userSkills: [Path.Combine(agent, "skills")],
                 projectSkills: [Path.Combine(project, ".pi", "skills")],
                 userPrompts: [Path.Combine(agent, "prompts")],
@@ -429,7 +436,7 @@ public sealed class ResourceCatalogTests
             await WriteSkill(userShared, "shared");
             await WriteSkill(temporaryShared, "shared");
 
-            var resources = await ResourceCatalog.LoadAsync(project, agent, trusted: true, discoverSkills: false,
+            var resources = await ResourceCatalog.LoadAsync(project, agent, trusted: true,
                 additionalSkills: [Path.Combine(root, "temporary")], userSkills: ["custom-skills"],
                 projectSkills: ["custom-skills"]);
 

@@ -274,12 +274,15 @@ internal static class PiMessagesRequestMapper
             var parameters = declaration.JsonSchema is { } schema
                 ? JsonNode.Parse(schema.GetRawText()) as JsonObject
                 : new JsonObject { ["type"] = "object", ["properties"] = new JsonObject() };
-            tools.Add(new JsonObject
+            var tool = new JsonObject
             {
                 ["name"] = declaration.Name,
                 ["description"] = declaration.Description,
                 ["parameters"] = parameters ?? new JsonObject { ["type"] = "object" }
-            });
+            };
+            if (declaration.AdditionalProperties.TryGetValue("constrainedSampling", out var value) && value is JsonElement policy)
+                tool["constrainedSampling"] = JsonNode.Parse(policy.GetRawText());
+            tools.Add(tool);
         }
         return tools;
     }

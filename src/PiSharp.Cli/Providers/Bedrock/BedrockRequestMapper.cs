@@ -27,9 +27,16 @@ internal static class BedrockRequestMapper
             .Where(text => !string.IsNullOrWhiteSpace(text)).Select(Sanitize));
 
         var requestMessages = ConvertHistory(history, model);
-        var additionalFields = BuildAdditionalModelRequestFields(model, options, region);
         var inference = new InferenceConfiguration();
         var maxTokens = options?.MaxOutputTokens ?? (IsClaude(model) ? model.MaxOutputTokens : null);
+        if (options?.Reasoning is not null && IsClaude(model) && !SupportsAdaptiveThinking(model))
+        {
+            var level = RequestedThinkingLevel(model, options);
+            maxTokens = ThinkingBudgetPolicy.AdjustMaxTokens(options.MaxOutputTokens,
+                model.MaxOutputTokens ?? maxTokens ?? 16384, level,
+                ThinkingBudgetPolicy.Read(options.AdditionalProperties)).MaxTokens;
+        }
+        var additionalFields = BuildAdditionalModelRequestFields(model, options, region, maxTokens);
         if (maxTokens is > 0) inference.MaxTokens = maxTokens;
         if (options?.Temperature is { } temperature) inference.Temperature = Convert.ToSingle(temperature);
         if (options?.TopP is { } topP) inference.TopP = Convert.ToSingle(topP);
@@ -241,24 +248,23 @@ internal static class BedrockRequestMapper
         return new ToolConfiguration { Tools = tools, ToolChoice = choice };
     }
 
-    private static Document? BuildAdditionalModelRequestFields(ModelDescriptor model, ChatOptions? options, string? region)
+    private static Document? BuildAdditionalModelRequestFields(ModelDescriptor model, ChatOptions? options, string? region,
+        int? maxTokens)
     {
         if (options?.Reasoning is null || model.Reasoning != true || !IsClaude(model)) return null;
-        var level = options.Reasoning.Effort switch
-        {
-            ReasoningEffort.Low => "low",
-            ReasoningEffort.Medium => "medium",
-            ReasoningEffort.High => "high",
-            ReasoningEffort.ExtraHigh => SupportsNativeXhigh(model) ? "xhigh" : "high",
-            _ => "high"
-        };
-        var mapped = ReadThinkingLevelMap(model, level) ?? level;
+        var mapped = RequestedThinkingLevel(model, options);
         var adaptive = SupportsAdaptiveThinking(model);
         var govCloud = region?.StartsWith("us-gov-", StringComparison.OrdinalIgnoreCase) == true ||
             (BedrockProviderOptions.GetModelArnRegion(model.Id)?.StartsWith("us-gov-", StringComparison.OrdinalIgnoreCase) ?? false);
         var thinking = adaptive
             ? new JsonObject { ["type"] = "adaptive" }
-            : new JsonObject { ["type"] = "enabled", ["budget_tokens"] = ThinkingBudget(mapped) };
+            : new JsonObject
+            {
+                ["type"] = "enabled",
+                ["budget_tokens"] = ThinkingBudgetPolicy.ClampToAnswerRoom(
+                    ThinkingBudgetPolicy.ForLevel(mapped, ThinkingBudgetPolicy.Read(options.AdditionalProperties)),
+                    maxTokens ?? model.MaxOutputTokens ?? 16384)
+            };
         if (!govCloud) thinking["display"] = "summarized";
         var fields = new JsonObject { ["thinking"] = thinking };
         if (adaptive)
@@ -315,20 +321,25 @@ internal static class BedrockRequestMapper
         return value.GetString()?.ToLowerInvariant();
     }
 
+    private static string RequestedThinkingLevel(ModelDescriptor model, ChatOptions options)
+    {
+        var level = options.Reasoning?.Effort switch
+        {
+            ReasoningEffort.Low => "low",
+            ReasoningEffort.Medium => "medium",
+            ReasoningEffort.High => "high",
+            ReasoningEffort.ExtraHigh => SupportsNativeXhigh(model) ? "xhigh" : "high",
+            _ => "high"
+        };
+        return ReadThinkingLevelMap(model, level) ?? level;
+    }
+
     private static string NormalizeEffort(string level) => level switch
     {
         "minimal" or "low" => "low",
         "medium" => "medium",
         "xhigh" => "xhigh",
         _ => "high"
-    };
-
-    private static int ThinkingBudget(string level) => level switch
-    {
-        "minimal" => 1024,
-        "low" => 2048,
-        "medium" => 8192,
-        _ => 16384
     };
 
     private static CachePointBlock CreateCachePoint(bool oneHour) => new()

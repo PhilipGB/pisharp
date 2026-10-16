@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
@@ -18,6 +19,7 @@ public static class McpCommand
         {
             await output.WriteLineAsync("Usage: pisharp mcp list [--json] | add <server> [--local] [options] (--url <url> | -- <command> [args...]) | remove <server> [--local] | login <server> [--timeout <seconds>] | logout <server>");
             await output.WriteLineAsync("Add options: --env KEY=VALUE, --cwd DIR, --header KEY=VALUE, --bearer-token-env-var NAME, --exposure MODE, --oauth-client-id ID, --oauth-client-secret VALUE, --oauth-callback-url URL, --oauth-scope SCOPE, --oauth-client-name NAME.");
+            await output.WriteLineAsync("  --timeout <seconds>     Time limit for the whole sign-in (default: 300)");
             return 0;
         }
         try
@@ -50,7 +52,8 @@ public static class McpCommand
         var trusted = await new ProjectTrust(agentDirectory).GetAsync(cwd, cancellationToken) == true;
         var configuration = await McpConfiguration.LoadAsync(agentDirectory, cwd, trusted, cancellationToken);
         using var catalog = ExtensionCatalog.Load(agentDirectory, cwd, trusted, discover: false);
-        var failures = await McpRuntime.RegisterForStatusAsync(configuration, catalog, cwd, cancellationToken);
+        var manager = new McpRuntimeManager();
+        var failures = await McpRuntime.RegisterForStatusAsync(configuration, catalog, cwd, cancellationToken, manager);
         var reports = configuration.Servers.Select(server =>
         {
             var problem = failures.FirstOrDefault(error => error.StartsWith("MCP server " + server.Name + " ",
@@ -71,17 +74,23 @@ public static class McpCommand
                     problem?.Contains("still connecting", StringComparison.Ordinal) == true ? "connecting" :
                     problem is not null ? "failed" : "connected",
                 tools,
+                resources = manager.OffersResources(server.Name) ? true : (bool?)null,
                 error = problem
             };
         }).ToArray();
         var untrusted = !trusted && File.Exists(Path.Combine(cwd, ".pi", "mcp.json"));
         if (arguments.Contains("--json", StringComparer.Ordinal))
-            await output.WriteLineAsync(JsonSerializer.Serialize(new
+        {
+            var result = JsonSerializer.SerializeToNode(new
             {
                 servers = reports,
                 errors = failures.Where(error => !reports.Any(report => report.error == error)).ToArray(),
                 projectIgnored = untrusted
-            }, s_json));
+            }, s_json)!;
+            foreach (var server in result["servers"]!.AsArray().OfType<JsonObject>())
+                if (server["resources"] is null) server.Remove("resources");
+            await output.WriteLineAsync(result.ToJsonString(s_json));
+        }
         else
         {
             foreach (var report in reports)
@@ -89,6 +98,7 @@ public static class McpCommand
                 await output.WriteLineAsync(report.name + ": " + report.state + " (" + report.exposure + ", " +
                     report.scope + ")");
                 if (report.tools.Length > 0) await output.WriteLineAsync("  tools: " + string.Join(", ", report.tools));
+                if (report.resources == true) await output.WriteLineAsync("  offers resources");
                 if (report.error is not null) await output.WriteLineAsync("  " + report.error);
             }
             foreach (var failure in failures.Where(error => !reports.Any(report => report.error == error)))

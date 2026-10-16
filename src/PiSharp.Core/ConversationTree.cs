@@ -87,7 +87,12 @@ public sealed class ConversationTree
 
     public ConversationTree Clone()
     {
-        lock (_gate) return FromEntries(_entries, _headId);
+        lock (_gate)
+        {
+            var copy = FromEntries(_entries);
+            copy.Select(_headId);
+            return copy;
+        }
     }
 
     /// <summary>Copy one ancestor path through an entry (or an empty path for null).</summary>

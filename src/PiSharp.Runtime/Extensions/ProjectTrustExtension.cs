@@ -6,27 +6,12 @@ namespace PiSharp.Runtime.Extensions;
 /// <param name="WorkingDirectory">The canonical project directory being evaluated.</param>
 /// <param name="Mode">The Pi mode name: tui, print, json, or rpc.</param>
 /// <param name="HasUserInterface">Whether interactive terminal dialogs are available.</param>
-/// <param name="Ui">The startup UI methods, with Pi's headless return behavior.</param>
+/// <param name="Ui">The CLI UI methods, with Pi's headless return behavior.</param>
 public sealed record ProjectTrustExtensionContext(string WorkingDirectory, string Mode, bool HasUserInterface,
     IProjectTrustExtensionUi Ui);
 
-/// <summary>The startup UI operations available to a project-trust extension.</summary>
-public interface IProjectTrustExtensionUi
-{
-    /// <summary>Show a selector and return the selected option; returns null when unavailable or cancelled.</summary>
-    Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>Show a confirmation dialog; returns false when unavailable or cancelled.</summary>
-    Task<bool> ConfirmAsync(string title, string message, CancellationToken cancellationToken = default);
-
-    /// <summary>Show a text input dialog; returns null when unavailable or cancelled.</summary>
-    Task<string?> InputAsync(string title, string? placeholder = null,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>Show a non-interactive notification for info, warning, or error messages.</summary>
-    void Notify(string message, string type = "info");
-}
+/// <summary>UI operations available to project-trust and agent extensions.</summary>
+public interface IProjectTrustExtensionUi : IPiSharpExtensionUi { }
 
 public enum ProjectTrustExtensionDecision
 {

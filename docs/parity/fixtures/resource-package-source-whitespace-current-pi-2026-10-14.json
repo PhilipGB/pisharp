@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "cc1720f1ff0bbf7b47527551cf75fe1dc5a13248",
+  "scope": "Local package source path whitespace resolution and original declaration provenance; user and trusted-project scope, empty roots and canonical/configured precedence controls.",
+  "characterization": {
+    "loaderCases": 67,
+    "mismatches": [
+      "package-padded-source",
+      "package-padded-project-source"
+    ],
+    "nativeFailFirst": {
+      "failed": 3,
+      "passed": 1,
+      "skipped": 0
+    }
+  },
+  "implementation": [
+    "Trim ECMAScript whitespace before resolving a local package path. Empty results use the settings scope directory; metadata preserves the original source declaration.",
+    "U+FEFF is removed and U+0085 is preserved, rather than relying on the different .NET whitespace set."
+  ],
+  "verification": {
+    "loaderCases": 71,
+    "mismatches": 0,
+    "focusedPassed": 88,
+    "newNativeRows": 4,
+    "fullSuite": {
+      "passed": 1911,
+      "failed": 0,
+      "skipped": 0
+    },
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "rpcProvider": {
+      "pi": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/package/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/package/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": "Package review"
+      },
+      "pisharp": {
+        "errorBeforeResponse": null,
+        "event": null,
+        "error": null,
+        "providerInput": "<skill name=\"guide\" location=\"<workspace>/package/skills/guide/SKILL.md\">\nReferences are relative to <workspace>/package/skills/guide.\n\nbody\n</skill>\n\nargs",
+        "providerRequests": 1,
+        "promptAccepted": true,
+        "commandDescription": "Guide",
+        "startupAccepted": true,
+        "packagePrompt": "Package review"
+      }
+    },
+    "originalLocalPackageRpcControl": "matched",
+    "pythonPassed": 50,
+    "nodePassed": 24,
+    "docs": "132 documents / 499 references",
+    "exactCi": {
+      "sha": "bbb0a2160670d17fa5f102ab7b900f1b67f54a63",
+      "run": 38618979075,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38618979075",
+      "jobs": "test failed; MCP passed",
+      "dotnet": {
+        "passed": 1910,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failure": "TerminalPtyTests.StartupModelAndNameArePersistedAndConflictingResumeIsRejected timed out at WaitForExitAsync after 12 seconds. Separate fixture investigation is active; local green run is not resolution evidence."
+    }
+  },
+  "newScenarioIds": [
+    "package-padded-source",
+    "package-padded-project-source",
+    "package-unicode-padded-source",
+    "package-nel-preserved-source",
+    "package-blank-source",
+    "package-empty-source",
+    "package-configured-file-before-package-directory",
+    "package-configured-prompt-before-disabled-package-alias"
+  ],
+  "comparison": "Actual pinned DefaultResourceLoader/SettingsManager versus UserSettings/ResourceCatalog: exact metadata, ordering, sourceInfo, complete body hashes/UTF16 lengths and raw diagnostics. Normal RPC replay compares command descriptions, skill expansion, provider input/request count, acknowledgement and settlement.",
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "package-source-padding-first.json": "3fee15c77aa79eadbc832bc455827c2607b11ce757ec168660d237f577545378",
+    "package-source-padding-first.log": "3222e0494f028058e695eb640a18228eb8d337c013c8e81c29e509668065209e",
+    "package-source-native-first.log": "1baa44cb0a8694835f690b0c5386a4098688bbe364f3f6ed9099aa751caa162c",
+    "package-source-padding-recovery.json": "080c3bae9e4c1e08362b7edd893af1b007c914ddb2f21f35166cd32c3b27b583",
+    "package-source-padding-recovery.log": "35c46124db4e9772b1452be7cecc76ca0fce8a8702af466f65bcdef49cd461a5",
+    "package-source-focused-recovery.log": "041ae34aad81dd46d3b53a14d5b75befa8180ca9c3a3b8fa979f25fbee162f3b",
+    "package-source-rpc-recovery.json": "977d752523d4838c59bcffdbaa791d63cafd3f2e8882ec04e7ae9d161a8b1623",
+    "package-source-rpc-recovery.log": "63075beef9b4173db9246d6edf64bcb153d6b37eb61edf0cf33b4664e8db4eba",
+    "package-source-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-source-fresh-build.log": "78dc22c7e3b2f9717f39ae5dcc80e99aaac6cdbfa3aba9723a91393967aeaaaf",
+    "package-root-precedence-first.json": "088067cfa8834a42f2913a78abfa3b39c6d48837694ce7900f12328fb1d9a7a5",
+    "package-source-rpc-control.json": "ff5f4b296bddd0a34e4b8f612c4f9b86aeb6b0a5a2627d8b35b3327be2fa0de5",
+    "package-source-rpc-control.log": "0b8ff37c5c54fc536c245b12e5c96207932d5364747744bd0cedef3cb90d38de",
+    "package-source-full.log": "e71e275488a6dbddcc5202d2fb94b8597c9cdf8f8b1fa4262f4fe6b6d95d94f0",
+    "package-source-python.log": "4c740713d3f22a33773d714c9d79fd1b6a36cce370f2394daea6a96070e81ab3",
+    "package-source-node.log": "0325078ebed71ee26cc6b4e8b874ffa0a68aa4129f04c8cc9be8af8adf0b7b59",
+    "package-source-docs.log": "9cde57f79d2c6bd8a1299935ab94f798279f96cc2f47fcd19b55b8f7f183cc49",
+    "package-source-exact-ci-failed.log": "0d2cd9141d879388167a3bb2b976958319b6a9b482ffbac96f17f7063d054a5c"
+  },
+  "limits": [
+    "Bounded local skill/prompt evidence; package extensions/themes, managed npm/git, package CLI operations and wider trust/reload remain open.",
+    "Previous process/PTY failures remain recorded separately. These passing resource checks do not resolve unexplained historical timing schedules."
+  ]
+}

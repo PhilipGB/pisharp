@@ -1,0 +1,515 @@
+{
+  "date": "2026-10-15",
+  "previousReference": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "auditedCutoff": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "observedUpstreamMain": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "startingPiSharp": "cccbf3e069a3e98f5703709df5beec1363eb1c8e",
+  "commitCount": 24,
+  "classifications": {
+    "OUT_OF_SCOPE": 9,
+    "NEEDS_WORK": 11,
+    "MATCHED": 2,
+    "NO_BEHAVIOR_CHANGE": 2
+  },
+  "entries": [
+    {
+      "sha": "2688aba7dc177020ef5da5492a966ed28ad619bd",
+      "subject": "refactor(chord): name things after the concepts; object variants; link protocol version; object lifetimes",
+      "classification": "OUT_OF_SCOPE",
+      "priority": null,
+      "family": "alternate runtimes",
+      "reason": "Only Chord or alternate durable-runtime source/tests change; normal coding-agent/agent/Codemode sources do not import these runtimes.",
+      "files": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/README.md",
+        "packages/chord/docs/guide.md",
+        "packages/chord/docs/spec.md",
+        "packages/chord/docs/tutorial.md",
+        "packages/chord/src/cell.ts",
+        "packages/chord/src/cluster.ts",
+        "packages/chord/src/connection.ts",
+        "packages/chord/src/contract.ts",
+        "packages/chord/src/declare.ts",
+        "packages/chord/src/errors.ts",
+        "packages/chord/src/host.ts",
+        "packages/chord/src/index.ts",
+        "packages/chord/src/manager.ts",
+        "packages/chord/src/object.ts",
+        "packages/chord/src/record.ts",
+        "packages/chord/src/registry.ts",
+        "packages/chord/src/reload.ts",
+        "packages/chord/src/remote.ts",
+        "packages/chord/src/types.ts",
+        "packages/chord/src/websocket.ts",
+        "packages/chord/src/wire.ts",
+        "packages/chord/test/cluster.test.ts",
+        "packages/chord/test/contract.test.ts",
+        "packages/chord/test/eager-reload.test.ts",
+        "packages/chord/test/fixtures/loader.ts",
+        "packages/chord/test/fixtures/worker.ts",
+        "packages/chord/test/flow.test.ts",
+        "packages/chord/test/host-objects-reload.test.ts",
+        "packages/chord/test/host.test.ts",
+        "packages/chord/test/link.test.ts",
+        "packages/chord/test/links-review.test.ts",
+        "packages/chord/test/readiness.test.ts",
+        "packages/chord/test/reload.test.ts",
+        "packages/chord/test/requests.test.ts",
+        "packages/chord/test/review.test.ts",
+        "packages/chord/test/state-draft.test.ts",
+        "packages/chord/test/state.test.ts",
+        "packages/chord/test/tutorial.test.ts",
+        "packages/chord/test/websocket.test.ts"
+      ]
+    },
+    {
+      "sha": "d20c6e96625143bdb6fc533843d30601a9f6fcf8",
+      "subject": "refactor(chord): declarations by name, void and no-argument methods, per-cell state versions",
+      "classification": "OUT_OF_SCOPE",
+      "priority": null,
+      "family": "alternate runtimes",
+      "reason": "Only Chord or alternate durable-runtime source/tests change; normal coding-agent/agent/Codemode sources do not import these runtimes.",
+      "files": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/README.md",
+        "packages/chord/docs/guide.md",
+        "packages/chord/docs/spec.md",
+        "packages/chord/docs/tutorial.md",
+        "packages/chord/src/cell.ts",
+        "packages/chord/src/contract.ts",
+        "packages/chord/src/declare.ts",
+        "packages/chord/src/index.ts",
+        "packages/chord/src/link.ts",
+        "packages/chord/src/object.ts",
+        "packages/chord/src/reload.ts",
+        "packages/chord/src/remote.ts",
+        "packages/chord/src/wire.ts",
+        "packages/chord/test/cluster.test.ts",
+        "packages/chord/test/contract.test.ts",
+        "packages/chord/test/fixtures/echo.ts",
+        "packages/chord/test/fixtures/loader.ts",
+        "packages/chord/test/flow.test.ts",
+        "packages/chord/test/host-objects-reload.test.ts",
+        "packages/chord/test/host.test.ts",
+        "packages/chord/test/link.test.ts",
+        "packages/chord/test/links-review.test.ts",
+        "packages/chord/test/readiness.test.ts",
+        "packages/chord/test/reload.test.ts",
+        "packages/chord/test/requests.test.ts",
+        "packages/chord/test/review.test.ts",
+        "packages/chord/test/state.test.ts",
+        "packages/chord/test/tutorial.test.ts",
+        "packages/chord/test/websocket.test.ts"
+      ]
+    },
+    {
+      "sha": "00d8d049552281f051418e52b5ffff34269a732a",
+      "subject": "fix(chord): reload and retirement correctness across hosts; no leaked code generations",
+      "classification": "OUT_OF_SCOPE",
+      "priority": null,
+      "family": "alternate runtimes",
+      "reason": "Only Chord or alternate durable-runtime source/tests change; normal coding-agent/agent/Codemode sources do not import these runtimes.",
+      "files": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/docs/guide.md",
+        "packages/chord/docs/spec.md",
+        "packages/chord/src/cluster.ts",
+        "packages/chord/src/connection.ts",
+        "packages/chord/src/host.ts",
+        "packages/chord/src/object.ts",
+        "packages/chord/src/reload.ts",
+        "packages/chord/test/cluster.test.ts",
+        "packages/chord/test/generations.test.ts",
+        "packages/chord/test/reload.test.ts"
+      ]
+    },
+    {
+      "sha": "39294a5e957f73a58818db9cb586771096d8c3d1",
+      "subject": "fix(chord): a failed IPC write ends the link instead of raising an unhandled error",
+      "classification": "OUT_OF_SCOPE",
+      "priority": null,
+      "family": "alternate runtimes",
+      "reason": "Only Chord or alternate durable-runtime source/tests change; normal coding-agent/agent/Codemode sources do not import these runtimes.",
+      "files": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/src/link.ts",
+        "packages/chord/src/manager.ts",
+        "packages/chord/test/link.test.ts"
+      ]
+    },
+    {
+      "sha": "195120a9156b79b0fab67d3a458b5315bed7a33f",
+      "subject": "fix(ai): move OpenCode providers to inference endpoints",
+      "classification": "NEEDS_WORK",
+      "priority": "P2",
+      "family": "provider profiles",
+      "reason": "OpenCode inference endpoints and Go Gemini/Minimax mappings remain part of missing built-in profile coverage; no existing PiSharp built-in profile is regressed.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/scripts/generate-models.ts",
+        "packages/ai/src/providers/opencode-go.ts",
+        "packages/ai/test/classifier-models.test.ts",
+        "packages/ai/test/supports-xhigh.test.ts"
+      ]
+    },
+    {
+      "sha": "60ac3bcc3b8d6df34a44c0ed677a9eb9c74e52ac",
+      "subject": "feat(ai): keep the prompt cache when changing thinking level on OpenAI GPT-6 (#10930)",
+      "classification": "NEEDS_WORK",
+      "priority": "P2",
+      "family": "provider responses transcript",
+      "reason": "GPT-6 API-key mid-conversation effort/cache preservation needs per-message effort metadata and Responses projection; ordinary requests still function.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/scripts/generate-models.ts",
+        "packages/ai/src/api/openai-responses-shared.ts",
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/providers/compat-schema.ts",
+        "packages/ai/test/openai-responses-mid-convo-effort.test.ts",
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/schemas/models.schema.json"
+      ]
+    },
+    {
+      "sha": "7efebff189ddc4077b332e1552fff899ed387d28",
+      "subject": "fix(ai): retry gateway 'Unable to forward upstream stream' errors",
+      "classification": "NEEDS_WORK",
+      "priority": "P2",
+      "family": "provider retry",
+      "reason": "Add the supported gateway error phrase to retry classification; isolated recovery mismatch, ordinary requests remain usable.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/src/utils/retry.ts"
+      ]
+    },
+    {
+      "sha": "b0429971781faed17f1b4d3ababfd47e989bfedf",
+      "subject": "fix(durable): encode base64 with btoa, without retaining concatenation trees",
+      "classification": "OUT_OF_SCOPE",
+      "priority": null,
+      "family": "alternate runtimes",
+      "reason": "Only Chord or alternate durable-runtime source/tests change; normal coding-agent/agent/Codemode sources do not import these runtimes.",
+      "files": [
+        "packages/durable/CHANGELOG.md",
+        "packages/durable/src/tools/image-processor.ts",
+        "packages/durable/test/tools-images.test.ts"
+      ]
+    },
+    {
+      "sha": "301617df7b88951c328f8a7b6a732e590713df07",
+      "subject": "feat(chord): lifetime \"host\" is checked by the type system",
+      "classification": "OUT_OF_SCOPE",
+      "priority": null,
+      "family": "alternate runtimes",
+      "reason": "Only Chord or alternate durable-runtime source/tests change; normal coding-agent/agent/Codemode sources do not import these runtimes.",
+      "files": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/docs/guide.md",
+        "packages/chord/docs/spec.md",
+        "packages/chord/src/host.ts",
+        "packages/chord/src/index.ts",
+        "packages/chord/src/object.ts",
+        "packages/chord/test/host.test.ts"
+      ]
+    },
+    {
+      "sha": "5713c9507c9dceab289de3defe41f24611a7d757",
+      "subject": "fix(durable): lead with the system baseline after a compaction that keeps assistant messages",
+      "classification": "OUT_OF_SCOPE",
+      "priority": null,
+      "family": "alternate runtimes",
+      "reason": "Only Chord or alternate durable-runtime source/tests change; normal coding-agent/agent/Codemode sources do not import these runtimes.",
+      "files": [
+        "packages/durable/CHANGELOG.md",
+        "packages/durable/docs/spec.md",
+        "packages/durable/src/harness/context.ts",
+        "packages/durable/test/harness-compaction.test.ts",
+        "packages/durable/test/harness-context.test.ts"
+      ]
+    },
+    {
+      "sha": "47fc5f38ec18d56fe64abd41a2dcf9e5170a3dcf",
+      "subject": "docs: add github-work skill pointing to the issue, PR, and wrap-up prompts",
+      "classification": "NEEDS_WORK",
+      "priority": "P3",
+      "family": "project resources",
+      "reason": "Repository github-work skill is a discoverable project asset, as dup.md was; import it with provenance during resource asset work.",
+      "files": [
+        ".pi/skills/github-work.md"
+      ]
+    },
+    {
+      "sha": "d7f7e0dfee05acabd61451362c3375b36862b458",
+      "subject": "fix(coding-agent): resolve model references through one provider selection policy (#10913)",
+      "classification": "NEEDS_WORK",
+      "priority": "P2",
+      "family": "model selection",
+      "reason": "Shared provider/model reference selection needs candidate collection and authenticated ambiguity resolution; explicit provider/model remains available and existing credential authority checks are retained.",
+      "files": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/docs/cli.md",
+        "packages/coding-agent/src/cli/credential-print.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/main.ts",
+        "packages/coding-agent/test/credential-print.test.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "sha": "63035734f2714a20f8c9ed382e256a73760f3571",
+      "subject": "fix(ai): order thinking before text when a completions chunk has both",
+      "classification": "NEEDS_WORK",
+      "priority": "P2",
+      "family": "provider streaming",
+      "reason": "Paired reasoning/text chunks need reasoning-first ordering at the adapter; queue a real proxy-shaped response fixture.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/test/openai-completions-reasoning-details.test.ts",
+        "packages/ai/test/openai-completions-tool-choice.test.ts"
+      ]
+    },
+    {
+      "sha": "1692bba6347a287ab0f3cb554a4430fafffc474b",
+      "subject": "fix(ai): send thinkingLevel for Gemini 4 models",
+      "classification": "MATCHED",
+      "priority": "P1",
+      "family": "provider Google thinking",
+      "reason": "Gemini 4+ enabled thinkingLevel mapping is repaired in shared Google/Vertex adapter. Two corrected fail-first native request rows, six enabled paired payload controls and 35 Pi provider source tests pass. Two existing off-control differences remain explicit P2 and are not part of this enabled-control match.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/src/api/google-shared.ts",
+        "packages/ai/test/google-thinking-level-map.test.ts"
+      ]
+    },
+    {
+      "sha": "6374c2baf432419ccb4541a99ce4958ecd03dae0",
+      "subject": "fix(ai): send only thinking on/off toggle for Xiaomi MiMo models",
+      "classification": "NEEDS_WORK",
+      "priority": "P2",
+      "family": "provider profiles",
+      "reason": "Xiaomi on/off-only maps belong with missing built-in Xiaomi profiles; do not expose unsupported reasoning_effort.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/scripts/generate-models.ts",
+        "packages/ai/test/xiaomi-models.test.ts"
+      ]
+    },
+    {
+      "sha": "aa9cf15be4fd9b7a362404b39bfdcc04b083ad29",
+      "subject": "feat(chord): init for state, typed principals, contract placement (protocol 3)",
+      "classification": "OUT_OF_SCOPE",
+      "priority": null,
+      "family": "alternate runtimes",
+      "reason": "Only Chord or alternate durable-runtime source/tests change; normal coding-agent/agent/Codemode sources do not import these runtimes.",
+      "files": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/README.md",
+        "packages/chord/docs/guide.md",
+        "packages/chord/docs/spec.md",
+        "packages/chord/docs/tutorial.md",
+        "packages/chord/src/cell.ts",
+        "packages/chord/src/connection.ts",
+        "packages/chord/src/contract.ts",
+        "packages/chord/src/declare.ts",
+        "packages/chord/src/host.ts",
+        "packages/chord/src/index.ts",
+        "packages/chord/src/object.ts",
+        "packages/chord/src/reload.ts",
+        "packages/chord/src/remote.ts",
+        "packages/chord/src/types.ts",
+        "packages/chord/src/websocket.ts",
+        "packages/chord/src/wire.ts",
+        "packages/chord/test/cluster.test.ts",
+        "packages/chord/test/contract.test.ts",
+        "packages/chord/test/fixtures/echo.ts",
+        "packages/chord/test/fixtures/loader.ts",
+        "packages/chord/test/fixtures/worker.ts",
+        "packages/chord/test/flow.test.ts",
+        "packages/chord/test/generations.test.ts",
+        "packages/chord/test/host-objects-reload.test.ts",
+        "packages/chord/test/host.test.ts",
+        "packages/chord/test/link.test.ts",
+        "packages/chord/test/links-review.test.ts",
+        "packages/chord/test/loader.test.ts",
+        "packages/chord/test/manager.test.ts",
+        "packages/chord/test/placement.test.ts",
+        "packages/chord/test/principals.test.ts",
+        "packages/chord/test/readiness.test.ts",
+        "packages/chord/test/reload.test.ts",
+        "packages/chord/test/requests.test.ts",
+        "packages/chord/test/review.test.ts",
+        "packages/chord/test/state-init.test.ts",
+        "packages/chord/test/state.test.ts",
+        "packages/chord/test/tutorial.test.ts",
+        "packages/chord/test/websocket.test.ts"
+      ]
+    },
+    {
+      "sha": "b39979799f49ee92dde79d8f5e0bfdce744d54f9",
+      "subject": "feat(ai): remove unused assistant-message frame API",
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "priority": null,
+      "family": "public library/test maintenance",
+      "reason": "Unused assistant-message frame library API removal or test-only replay correction; no supported normal CLI behavior changes.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/README.md",
+        "packages/ai/src/index.ts",
+        "packages/ai/src/utils/assistant-message-frame.ts",
+        "packages/ai/test/assistant-message-frame.test.ts"
+      ]
+    },
+    {
+      "sha": "381a2d8eb62b9f7e4c710cf66aa516f8a92cb9bd",
+      "subject": "fix(ai): update Xiaomi replay test for removed reasoning_effort",
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "priority": null,
+      "family": "public library/test maintenance",
+      "reason": "Unused assistant-message frame library API removal or test-only replay correction; no supported normal CLI behavior changes.",
+      "files": [
+        "packages/ai/test/openai-completions-tool-choice.test.ts"
+      ]
+    },
+    {
+      "sha": "5712b134edc54875c21707260362336e04b811d5",
+      "subject": "fix(ai): use 500K context window for Codex GPT-6.1 Sol",
+      "classification": "NEEDS_WORK",
+      "priority": "P2",
+      "family": "provider catalog",
+      "reason": "Import Codex GPT-6.1 Sol 500000 context window in catalog work; current smaller value causes early compaction rather than overflow.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/scripts/generate-models.ts",
+        "packages/ai/test/supports-xhigh.test.ts"
+      ]
+    },
+    {
+      "sha": "910149912ca29d7ae4eaa945bb2b53eb84c68264",
+      "subject": "fix(coding-agent): normalize read line-range labels (#10938)",
+      "classification": "NEEDS_WORK",
+      "priority": "P3",
+      "family": "tool presentation",
+      "reason": "Share numeric/null read line-range formatting between TUI and HTML; execution arguments are unchanged.",
+      "files": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/examples/extensions/minimal-mode.ts",
+        "packages/coding-agent/examples/extensions/subagent/index.ts",
+        "packages/coding-agent/src/core/export-html/template.js",
+        "packages/coding-agent/src/core/tools/render-utils.ts",
+        "packages/coding-agent/src/core/tools/renderers/read.ts",
+        "packages/coding-agent/src/index.ts",
+        "packages/coding-agent/src/modes/interactive/components/tree-selector.ts",
+        "packages/coding-agent/test/read-line-range-display.test.ts"
+      ]
+    },
+    {
+      "sha": "9fe3f371622cad9cc1a3cbf044288abd0252192f",
+      "subject": "fix(coding-agent): keep empty quoted prompt template arguments",
+      "classification": "NEEDS_WORK",
+      "priority": "P2",
+      "family": "resource templates",
+      "reason": "Preserve empty quoted arguments in template tokenization; defer this supported isolated discrepancy rather than expanding resources now.",
+      "files": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/src/core/prompt-templates.ts",
+        "packages/coding-agent/test/prompt-templates.test.ts"
+      ]
+    },
+    {
+      "sha": "b45e0ebcc5ae2fc42a6f2f23104d10e656e6bedb",
+      "subject": "feat(chord): references hydrate their state before use (protocol 4)",
+      "classification": "OUT_OF_SCOPE",
+      "priority": null,
+      "family": "alternate runtimes",
+      "reason": "Only Chord or alternate durable-runtime source/tests change; normal coding-agent/agent/Codemode sources do not import these runtimes.",
+      "files": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/README.md",
+        "packages/chord/docs/guide.md",
+        "packages/chord/docs/spec.md",
+        "packages/chord/docs/tutorial.md",
+        "packages/chord/src/cell.ts",
+        "packages/chord/src/connection.ts",
+        "packages/chord/src/contract.ts",
+        "packages/chord/src/host.ts",
+        "packages/chord/src/index.ts",
+        "packages/chord/src/link.ts",
+        "packages/chord/src/object.ts",
+        "packages/chord/src/reload.ts",
+        "packages/chord/src/remote.ts",
+        "packages/chord/src/types.ts",
+        "packages/chord/src/wire.ts",
+        "packages/chord/test/awaiting.test.ts",
+        "packages/chord/test/bindings.test.ts",
+        "packages/chord/test/cluster.test.ts",
+        "packages/chord/test/fixtures/counting.ts",
+        "packages/chord/test/fixtures/loader.ts",
+        "packages/chord/test/flow-units.test.ts",
+        "packages/chord/test/flow.test.ts",
+        "packages/chord/test/generations.test.ts",
+        "packages/chord/test/host-objects-reload.test.ts",
+        "packages/chord/test/host.test.ts",
+        "packages/chord/test/hydration.test.ts",
+        "packages/chord/test/link.test.ts",
+        "packages/chord/test/links-review.test.ts",
+        "packages/chord/test/manager.test.ts",
+        "packages/chord/test/placement.test.ts",
+        "packages/chord/test/principals.test.ts",
+        "packages/chord/test/provider-cost.test.ts",
+        "packages/chord/test/readiness.test.ts",
+        "packages/chord/test/reload.test.ts",
+        "packages/chord/test/requests.test.ts",
+        "packages/chord/test/review.test.ts",
+        "packages/chord/test/state-init.test.ts",
+        "packages/chord/test/state.test.ts",
+        "packages/chord/test/tutorial.test.ts",
+        "packages/chord/test/types.test.ts",
+        "packages/chord/test/variants.test.ts",
+        "packages/chord/test/websocket.test.ts"
+      ]
+    },
+    {
+      "sha": "87f9a36419e8164bba77397d15c54ff39fac5e8a",
+      "subject": "fix(ai): report malformed final tool-call arguments instead of keeping the parsed prefix (#10944)",
+      "classification": "MATCHED",
+      "priority": "P1",
+      "family": "tool argument boundary",
+      "reason": "Completed calls require strict objects plus existing escape repair in SDK normalization and native Bedrock. Five SDK fail-first rows, Core/Bedrock tests, MAF zero-invocation rejection and 175 partial/18 completed current-source paired calls pass. Partial RPC JSON progress remains unchanged.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/src/api/anthropic-messages.ts",
+        "packages/ai/src/api/bedrock-converse-stream.ts",
+        "packages/ai/src/api/mistral-conversations.ts",
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/api/openai-responses-shared.ts",
+        "packages/ai/src/types.ts",
+        "packages/ai/src/utils/json-parse.ts",
+        "packages/ai/src/utils/validation.ts",
+        "packages/ai/test/json-parse.test.ts",
+        "packages/ai/test/openai-responses-partial-json-cleanup.test.ts",
+        "packages/ai/test/validation.test.ts"
+      ]
+    },
+    {
+      "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "subject": "feat(ai): use Chat Completions for the kimi-coding provider",
+      "classification": "NEEDS_WORK",
+      "priority": "P2",
+      "family": "provider profiles",
+      "reason": "Implement missing built-in Kimi profile on Chat Completions coding/v1 with per-model later-tool declarations; this changes the blueprint for the queued provider family.",
+      "files": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/scripts/generate-models.ts",
+        "packages/ai/src/providers/kimi-coding.ts",
+        "packages/ai/test/anthropic-adaptive-thinking-models.test.ts",
+        "packages/ai/test/anthropic-empty-thinking-signature-compat.test.ts",
+        "packages/ai/test/anthropic-force-adaptive-thinking.test.ts",
+        "packages/ai/test/stream.test.ts",
+        "packages/ai/test/supports-xhigh.test.ts",
+        "packages/ai/test/transcript-tool-changes.test.ts"
+      ]
+    }
+  ],
+  "policy": "All 24 commits classified before pin advance. Two P1 repairs pass native and paired current-source verification; 11 P2/P3 delta items remain deferred below feature completion. MATCHED means the named changed contract, not full provider/capability parity."
+}

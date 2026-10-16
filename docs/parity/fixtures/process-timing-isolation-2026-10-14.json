@@ -1,0 +1,123 @@
+{
+  "date": "2026-10-14",
+  "piSharpBaseSha": "3a2add26f8812f9e36badd68c2e5b1fe5d2cc124",
+  "scope": "Process fixture diagnostics, owned child cleanup and scheduler isolation; provider and CLI production behavior unchanged.",
+  "originalFullRun": {
+    "passed": 1905,
+    "failed": 2,
+    "skipped": 0,
+    "failures": [
+      "QuietStartupTests.TerminalStartupVisibilityFollowsQuietStartup(false, verbose:true)",
+      "ProviderTimeoutProcessTests.SavedProviderTimeoutStopsARealCliRequest"
+    ]
+  },
+  "characterization": {
+    "isolatedAffectedCases": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "resolutionClaim": false
+    },
+    "diagnosticFull": {
+      "passed": 1907,
+      "failed": 0,
+      "skipped": 0,
+      "resolutionClaim": false
+    },
+    "invalidSolutionConcurrency": "MSBuild socket conflicts affected the intended four-command concurrent workload; retained without claiming valid fixture stress evidence.",
+    "compiledAssemblyFourRuns": {
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0
+    },
+    "compiledAssemblyEightRuns": {
+      "passed": 48,
+      "failed": 8,
+      "skipped": 0
+    },
+    "isolatedHomeEightRuns": {
+      "passed": 49,
+      "failed": 7,
+      "skipped": 0,
+      "resolutionClaim": false
+    }
+  },
+  "observations": [
+    "Five heavy-load provider exit failures had requests=0 and empty output at the original deadline. Another had requests=1 and had already printed the correct configured 1000ms provider timeout before missing process exit. Other failures occurred at request-count and server-cleanup assertions.",
+    "The provider fixture deadline began before settings creation/process startup and also governed server body reads, delayed responses and cleanup. It could expire outside the provider operation that the test intends to observe.",
+    "All quiet-startup cases passed in the compiled-assembly concurrent workloads. The historical quiet-startup timeout has not been independently reproduced or causally explained."
+  ],
+  "change": [
+    "Keep the existing 12-second deadlines, 1000ms provider setting, late response, exactly-one-request and all startup visibility/output assertions.",
+    "Capture stdout/stderr/request count when process wait expires and terminate owned child processes before reporting failure.",
+    "Give the provider child an owned isolated HOME; observed heavy-load failures show that home isolation alone is insufficient.",
+    "Run the two short-deadline fixture classes in a nonparallel xUnit collection so they are scheduled outside the rest of the suite. This controls suite contention; it does not make arbitrary concurrent test-runner workloads supported."
+  ],
+  "verification": {
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "workingFull": {
+      "passed": 1907,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Includes pending package-filesystem changes/three new rows; fixture-only head has 1904 tests."
+    },
+    "exactHeadCi": {
+      "sha": "391cb8ac638517ae2baff657253c317cab722e90",
+      "run": 38614693502,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38614693502",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1904,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
+  },
+  "limits": [
+    "Collection isolation is a mitigation supported by the reproduced contention sensitivity. No claim is made that the previously failed quiet-startup schedule was exactly reproduced or that independent eight-runner overload has been repaired.",
+    "Later green runs do not erase the retained failures; final verification still requires unexplained process outcomes to be reconciled."
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "new-process-diagnostics-fresh-build.log": "b550c6684e4e0158ccb8c21edccecb452b69a9007d3d3e35b04cc0afff6771b6",
+    "new-process-diagnostics-full.log": "77a355227165ac2b87ee5018016c011ba42488341eb5d25c91324412baa078cf",
+    "new-process-timeouts-concurrent-1.log": "cfd4acadbb963ac906c67ebd2ad90d5aa628c76ece8f54208c15acc46ed5e6d1",
+    "new-process-timeouts-concurrent-2.log": "20c0fae76b2c7c1be9934f770cfd396ece71283f14d3476698d4b11c2437ac74",
+    "new-process-timeouts-concurrent-3.log": "14ec4aa574355bc9581de327a416f363ccd6ab9122010328aa46ac73b1e6c862",
+    "new-process-timeouts-concurrent-4.log": "535378081837e30a44679ed5075ef030c45f1e9856e29ecdec1409f18112bc2f",
+    "new-process-timeouts-first-diagnostics.log": "c496a130c5a4e69cdd6e5a292603f714d29ced353fd2049b95e4960e46160446",
+    "new-process-vstest-concurrent-1.log": "bd2fdc77ea3d4409a1a818ac7d643c95b31d1df1be0af5284d4427d8e7e89be3",
+    "new-process-vstest-concurrent-2.log": "bd2fdc77ea3d4409a1a818ac7d643c95b31d1df1be0af5284d4427d8e7e89be3",
+    "new-process-vstest-concurrent-3.log": "1cb7a43617454383f3fea7270cf754f9d55becf3392b05f18b9c4e13a99b9a90",
+    "new-process-vstest-concurrent-4.log": "bd2fdc77ea3d4409a1a818ac7d643c95b31d1df1be0af5284d4427d8e7e89be3",
+    "new-process-vstest-concurrent-driver.log": "98f85b214a18115b5ab2ba3e77150ca217da04b46fa86cf3a56f3997e9d8f04e",
+    "new-process-vstest-isolated-1.log": "d9e2252d5a5e1f29fd3e39de779cc2b808ce5843a7c98a15764730e4875f6a02",
+    "new-process-vstest-isolated-2.log": "55c834a5310068789ea5aee14441595f40a78e15620730d53aabd02716a51ff4",
+    "new-process-vstest-isolated-3.log": "48f6c71495de2526e82cf3f856f8235ef696c931db5ed240392f46b714457e9d",
+    "new-process-vstest-isolated-4.log": "b5da1bf8e0c78e6d2727856c1c351c75fc294c11f1aaa2dc904f53b54051b22d",
+    "new-process-vstest-isolated-5.log": "899ade6458019c48128a74b2bf0031838cf30aa652102c4e8abb81f3cbbfbd33",
+    "new-process-vstest-isolated-6.log": "84b1c8a12abd31fb8b552b72bd262d9ed5bd374d5728bb0cf2d433bb6ca21065",
+    "new-process-vstest-isolated-7.log": "0f59a4b6b33b25e9bfa580515c07440539b58eac36c7de1bb6011f43517dd7af",
+    "new-process-vstest-isolated-8.log": "d1ff95f45ce94ae8bf3916dd04a5295a39bccd0bfc6c1607f86554d2312b0b36",
+    "new-process-vstest-isolated-driver.log": "de35def61aac4f4d3fdadf9d06e6e1e2b20649d8188bf55329c83f4745a8fe45",
+    "new-process-vstest-stress-1.log": "3c6973e69d265a777c28df9d773c7ad816e291a224bc522b8e89788c5a824572",
+    "new-process-vstest-stress-2.log": "c986f3810f30a01920a7360ed2d1811f4199407da8604652da8e265783aa1eaa",
+    "new-process-vstest-stress-3.log": "8bdccf3d58afc6d27734c90993d3fec46d99dfb78b5efdfd635282b38ac0ec63",
+    "new-process-vstest-stress-4.log": "afb458e444d2a8ede80274df599bc4e16b34d2e3f72718407b27b8d6e9d49671",
+    "new-process-vstest-stress-5.log": "986ad39638e6a40a82a330ac04355b89033442d44f7eed90214a0e002ca87f50",
+    "new-process-vstest-stress-6.log": "e905ceb09d2c539a1f7401096f400dc196fcb210884dd50bf0cceb668c31b62c",
+    "new-process-vstest-stress-7.log": "629bdfeba8cf2896c18a7792ab1f80260698db2ccb29cc1be8e20dad58331783",
+    "new-process-vstest-stress-8.log": "c090c1bf76e583cf38d50a5a782510ed799a83d8579966fa082278e75a6ef590",
+    "new-process-vstest-stress-driver.log": "50e2e3e2a4edeaccc9afa63f676040f6b2756694b37ff79c57418b0b41f6de9b",
+    "provider-timeout-isolation-build.log": "f1bbb59e286a9cd53e9558ca8fd4f8b420417cdf4bd9ae2e3582131f2800759c",
+    "process-timing-collection-build.log": "1ea6ab820d46c0dd7918f50456b6d1dbcf2aef2339ae6194273e092759719f02",
+    "process-timing-collection-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "process-timing-collection-full.log": "4c3bc5f07c807100567f12005820878d2a1d67a93fd443dfaa70741670120598",
+    "package-filesystem-full.log": "54e9e5664659348ed94ced5ec443ddb519e20a8b25ce96d4c77c94746249908c",
+    "process-timing-isolation-exact-ci.log": "483ff860bb807a4e68860364e8565b1ec27a45e16f8ac09a7d6ea0e0cd1318c4"
+  }
+}

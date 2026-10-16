@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace PiSharp.Cli.Tui;
 
 internal enum TerminalStatusNotificationKind
@@ -51,8 +53,8 @@ internal sealed class TerminalScreenCompositor
         var suggestionHeight = Math.Min(editorSuggestions?.Count ?? 0,
             Math.Max(0, height - footerHeight - borderHeight - 2));
         var suggestionNameWidth = editorSuggestions is { Count: > 0 }
-            ? editorSuggestions.Max(suggestion => Math.Min(30, TerminalTextLayout.Width(
-                suggestion.Command.StartsWith('/') ? suggestion.Command[1..] : suggestion.Command)))
+            ? Math.Clamp(editorSuggestions.Max(suggestion => TerminalTextLayout.Width(
+                suggestion.Command.StartsWith('/') ? suggestion.Command[1..] : suggestion.Command)), 10, 30)
             : 0;
         var maxEditorLines = Math.Max(1,
             Math.Min((int)(height * 0.3), height - footerHeight - borderHeight - suggestionHeight - 1));
@@ -113,7 +115,8 @@ internal sealed class TerminalScreenCompositor
             var spacing = hasDescription
                 ? new string(' ', Math.Max(0, suggestionNameWidth + 2 - TerminalTextLayout.Width(name)))
                 : "";
-            var description = hasDescription ? TerminalSafeText.Normalize(suggestion.Description!) : "";
+            var description = hasDescription
+                ? TerminalSafeText.Normalize(Regex.Replace(suggestion.Description!, @"[\r\n]+", " ").Trim()) : "";
             var suggestionText = selected
                 ? activeTheme.Style("accent", marker + name + spacing + description)
                 : marker + name + (hasDescription ? activeTheme.Style("muted", spacing + description) : "");

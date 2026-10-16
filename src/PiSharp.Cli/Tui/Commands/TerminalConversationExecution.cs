@@ -60,8 +60,8 @@ internal sealed class TerminalConversationExecution
                 catch (Exception e) { Console.Error.WriteLine($"Could not save session: {e.Message}"); Environment.ExitCode = 1; }
             _activeRun = null;
             if (ReferenceEquals(ActiveTranscript, transcript)) ActiveTranscript = null;
-            _presentation.Screen?.SetWorkingStatus(null, render: false);
-            _presentation.Screen?.SetFooter(_presentation.IdleFooter());
+            _presentation.Screen?.SetFooter(_presentation.IdleFooter(), render: false);
+            _presentation.Screen?.SetWorkingStatus(null);
         }
     }
 

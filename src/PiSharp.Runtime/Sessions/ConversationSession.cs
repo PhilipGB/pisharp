@@ -164,8 +164,20 @@ public sealed class ConversationSession
     /// <summary>Returns the active branch's last persisted declaration set, if one exists.</summary>
     internal IReadOnlyList<string>? ActiveToolLoadout()
     {
-        var payload = Tree.ActivePath().Select(node => ToolLoadoutPayload(node)).LastOrDefault(value => value is not null);
-        if (payload is null) return null;
+        var path = Tree.ActivePath();
+        var latestRecord = path.Select((node, index) => (Payload: ToolLoadoutPayload(node), Index: index))
+            .LastOrDefault(item => item.Payload is not null);
+        var payload = latestRecord.Payload;
+        if (payload is null || path.Skip(latestRecord.Index + 1).Any(node =>
+                (ConversationContextProjection.ContextMessageForNode(node) ??
+                    (node.Type == "compaction" ? PiJsonlEntryCodec.CompactionSystemMessage(node) : null)) is { } message &&
+                SystemMessageTranscript.HasToolDeclarations(message)))
+        {
+            var messages = ContextMessages();
+            return messages.Any(SystemMessageTranscript.HasToolDeclarations)
+                ? SystemMessageTranscript.CurrentTools(messages).Select(tool => tool.GetProperty("name").GetString()!).ToArray()
+                : null;
+        }
         if (!payload.Value.TryGetProperty("activeTools", out var tools) || tools.ValueKind != JsonValueKind.Array ||
             tools.EnumerateArray().Any(item => item.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(item.GetString())))
             throw new InvalidDataException("Invalid tool loadout in the selected conversation branch.");

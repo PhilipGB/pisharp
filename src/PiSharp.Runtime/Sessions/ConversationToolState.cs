@@ -7,13 +7,15 @@ internal sealed class ConversationToolState(PiAgent agent, ConversationSession c
 {
     private AgentSession? _execution;
 
-    internal void Restore(AgentSession execution, IReadOnlyList<string>? activeToolNamesOverride = null)
+    internal void Restore(AgentSession execution, IReadOnlyList<string>? activeToolNamesOverride = null,
+        bool openingSession = false)
     {
         var path = conversation.Tree.ActivePath();
         var boundary = path.ToList().FindLastIndex(node => node.Type == "compaction");
         var saved = path.Skip(boundary + 1).Select(TranscriptPayload).LastOrDefault(value => value is not null);
         agent.GetToolTranscript(execution).Restore(saved);
-        if ((activeToolNamesOverride ?? conversation.ActiveToolLoadout()) is { } activeTools)
+        if ((!openingSession || agent.RestoresRecordedToolLoadout || activeToolNamesOverride is not null) &&
+            (activeToolNamesOverride ?? conversation.ActiveToolLoadout()) is { } activeTools)
             agent.RestoreToolLoadout(execution, activeTools);
         if (conversation.ActiveCodemodeStore() is { } codemodeStore)
             agent.RestoreCodemodeStore(execution, codemodeStore);

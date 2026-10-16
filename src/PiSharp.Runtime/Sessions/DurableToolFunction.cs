@@ -1,4 +1,5 @@
 using System.Runtime.ExceptionServices;
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
@@ -14,7 +15,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
     Func<IReadOnlyDictionary<string, AIFunction>>? allToolFunctions = null,
     PiSharpToolHookPipeline? toolHooks = null, JsonElement? outputSchema = null, ICodemodeModels? codemodeModels = null,
     Func<IDictionary<string, object?>, PiSharpToolReach?>? reachesTools = null,
-    PiSharpToolNamespace? toolNamespace = null) : DelegatingAIFunction(inner)
+    PiSharpToolNamespace? toolNamespace = null,
+    Func<PiSharpExtensionContext?>? currentExtensionContext = null) : DelegatingAIFunction(inner)
 {
     private readonly ToolResultSchemaValidator _outputValidator = new(outputSchema);
 
@@ -50,7 +52,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             toolExecutionContext = nestedInvocation is null
                 ? PiSharpToolExecutionContext.CreateRoot(loadout,
                     allToolFunctions ?? (() => new Dictionary<string, AIFunction>(StringComparer.Ordinal)),
-                    publish, toolCallId, id, Name, callArguments ?? displayArguments, codemodeModels)
+                    publish, toolCallId, id, Name, callArguments ?? displayArguments, codemodeModels,
+                    currentExtensionContext?.Invoke())
                 : nestedInvocation.Parent.ForToolCall(toolCallId, parentToolCallId, id, Name,
                     callArguments ?? displayArguments, onNestedUpdate);
         }
@@ -62,6 +65,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         });
         object? value = null;
         Exception? failure = null;
+        long? startedAt = null;
+        double? durationMs = null;
         IDictionary<object, object?>? argumentContext = null;
         object? previousUpdate = null;
         var hadUpdate = false;
@@ -98,11 +103,14 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             await (toolHooks?.BeforeAsync(new PiSharpToolCallContext(Name, toolCallId, parentToolCallId,
                 invocationArguments, reachesTools, toolNamespace), cancellationToken) ?? ValueTask.CompletedTask);
             displayArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+            startedAt = Stopwatch.GetTimestamp();
             value = await base.InvokeCoreAsync(invocationArguments, cancellationToken);
         }
         catch (Exception error) { failure = error; }
         finally
         {
+            if (startedAt is { } timestamp)
+                durationMs = Math.Floor(Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds + 0.5);
             if (argumentContext is not null)
             {
                 if (Name == "bash")
@@ -206,10 +214,18 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         if (nestedInvocation is null && FunctionInvokingChatClient.CurrentContext is { } invocationContext &&
             termination.Record(invocationContext, failure is null && contract?.Terminate == true))
             invocationContext.Terminate = true;
+        ChatMessage? toolResultMessage = null;
+        if (callContent is not null)
+        {
+            var resultContent = new FunctionResultContent(callContent.CallId, value) { Exception = failure };
+            ToolExecutionDuration.Set(resultContent, durationMs);
+            toolResultMessage = new ChatMessage(ChatRole.Tool, [resultContent]);
+        }
         publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
             IsError: resultContext.IsError, Error: resultContext.Error,
             Details: hasStructuredOutput ? details : null, Cost: contract?.Cost)
         {
+            DurationMs = durationMs,
             Images = toolImages,
             StructuredContent = contract?.StructuredContent,
             ToolUsage = contract?.Usage,
@@ -218,8 +234,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             ToolCallId = toolCallId,
             ParentToolCallId = parentToolCallId,
             NestedToolCalls = toolExecutionContext?.NestedCalls,
-            ToolResultMessage = callContent is null ? null : new ChatMessage(ChatRole.Tool,
-                [new FunctionResultContent(callContent.CallId, value) { Exception = failure }])
+            ToolResultMessage = toolResultMessage
         });
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
         return value;

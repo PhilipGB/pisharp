@@ -7,6 +7,39 @@ namespace PiSharp.Tests;
 public sealed class UserSettingsTests
 {
     [Fact]
+    public async Task ThinkingBudgetsLoadAndMergePerLevelAcrossTrustedProjectSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-thinking-budget-settings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, ".pi"));
+        try
+        {
+            var userPath = Path.Combine(root, "settings.json");
+            await File.WriteAllTextAsync(userPath, "{\"thinkingBudgets\":{\"low\":4096,\"high\":32768}}");
+            await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"thinkingBudgets\":{\"medium\":12288,\"high\":24576}}");
+
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            var effective = user.Overlay(await UserSettings.LoadProjectAsync(root));
+
+            Assert.Equal(4096, user.ThinkingBudgets!["low"]);
+            Assert.Equal(32768, user.ThinkingBudgets["high"]);
+            Assert.Equal(4096, effective.ThinkingBudgets!["low"]);
+            Assert.Equal(12288, effective.ThinkingBudgets["medium"]);
+            Assert.Equal(24576, effective.ThinkingBudgets["high"]);
+
+            foreach (var invalid in new[]
+            {
+                "null", "[]", "{\"unknown\":1}", "{\"low\":-1}", "{\"low\":1.5}",
+                "{\"low\":2147483648}", "{\"low\":1,\"low\":2}"
+            })
+            {
+                await File.WriteAllTextAsync(userPath, "{\"thinkingBudgets\":" + invalid + "}");
+                await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));
+            }
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task PromptDeliveryModesLoadWithDefaultsAndTrustedProjectOverrides()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-queue-settings-" + Guid.NewGuid().ToString("N"));

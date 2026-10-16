@@ -1,0 +1,155 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "bf4565da181230f72d1d43cfad5985a8b221efe6",
+  "scope": "A root index entry stops extension-directory sibling discovery, using equivalent native index.dll and source index.ts entry points.",
+  "characterization": {
+    "normalCliFirst": {
+      "pi": [
+        "configured",
+        "trust-undecided:false",
+        "trust-decision:false"
+      ],
+      "pisharp": [
+        "configured",
+        "configured",
+        "trust-undecided:false",
+        "trust-decision:false"
+      ]
+    },
+    "nativeFailFirst": {
+      "failed": 1,
+      "passed": 1,
+      "skipped": 0
+    }
+  },
+  "implementation": [
+    "ExtensionCatalog.FindAssemblies returns the directory index.dll when present before enumerating sibling assemblies. Automatic, configured and package directory paths reuse that same owner."
+  ],
+  "verification": {
+    "normalCliRecovery": {
+      "pi": [
+        "configured",
+        "trust-undecided:false",
+        "trust-decision:false"
+      ],
+      "pisharp": [
+        "configured",
+        "trust-undecided:false",
+        "trust-decision:false"
+      ]
+    },
+    "normalCliRegressionCases": 7,
+    "mismatches": 0,
+    "focusedPassed": 25,
+    "newNativeRows": 2,
+    "fullSuite": {
+      "passed": 1942,
+      "failed": 0,
+      "skipped": 0
+    },
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "exactCi": {
+      "sha": "fd30e4dec77f0b192202619d222aad070719582c",
+      "run": 38650603945,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38650603945",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1942,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
+  },
+  "comparison": "Normal CLI bootstrap/trust trace, skill metadata/expansion, provider input/request count and settlement match in all seven entry-point/filter flows. Native test fails on two loaded resources before repair and expects one afterward; no-extensions control stays empty.",
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "package-extension-index-index-with-sibling-regression-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-file-regression-pi.records.json": "365de40c2281e80b8fa9803c36b6ca95e47b1a37b52886b4597fcfa0d3edd14f",
+    "package-extension-index-disabled-regression-pisharp.http.json": "8ce04cd1b9d13544145e7176d6afa74d2b88ed981d30fca32c3ad1f54bc3be16",
+    "package-extension-index-file-regression-pisharp.records.json": "a5977194d1132d010771f1950992db990aa586b02069ee6f07b3472105562400",
+    "package-extension-index-no-extensions-regression.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-index-disabled-regression.json": "4328e3970107c36b9ca198dcb1099fb005fcafbaeb60ab1c010cc5ff4b6cb1c1",
+    "package-extension-index-sibling-first-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-index-with-sibling-regression.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-index-manifest-regression-pi.records.json": "42300277fa0ab6672b923034321fe01404dcda73dd8d98db8022075730b15bee",
+    "package-extension-index-index-with-sibling-regression-pi.http.json": "4de9548692ca39a23ed19218d96d7a42593b279658050f677c2a3a1efe8c7759",
+    "package-extension-index-root-regression.json": "aeb0ca20834916b0daa6a05f394d6521616d55e5c8649bfe716453f96c7a616a",
+    "package-extension-index-index-with-sibling-regression.json": "4d8a5b1baa99cf33cea509e8db8eae818d329cda73a5a929b69ef64d39429b6c",
+    "package-extension-index-no-extensions-regression-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-file-regression-pi.stderr.log": "23c97f9e2a987badd82c2ba76d4c50cad4ca38c7dd6b2e2445ba2c9f77b9357a",
+    "package-extension-index-disabled-regression-pisharp.records.json": "f1f15fd9bf23c417feedda0d54b01b8ba1468fe97a036be870adf0e3a0deb536",
+    "package-extension-index-sibling-recovery-pisharp.http.json": "3ea4d6217a1cc222523912835d64512e2cf4f70c1e4b573cd12c3546c1125b6d",
+    "package-extension-index-no-extensions-regression-pisharp.records.json": "5225d9017b7e523c271475140618230a45aec8b350d847bb3be6a2528b638f35",
+    "package-extension-index-sibling-recovery-pi.records.json": "7bb1c006a81366cc52bd3bdb413991bbee36f70c2163d3d2849e2a15f76265b9",
+    "package-extension-index-sibling-recovery-pisharp.records.json": "d6c7b71a5e2fe52e7bdfd5787f28f9a282f8b9dedd9d3a13a33d049cd56a1b14",
+    "package-extension-index-conventions-regression.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-index-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-index-disabled-regression.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-index-no-extensions-regression.json": "126eb97862d34b46f7d9d0b6c7d5c08d46002ad3c9b006fabe27d6fe2c4edfd9",
+    "package-extension-index-sibling-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-index-with-sibling-regression-pisharp.http.json": "38167965a6ab2fdb16ee93e682e88a9f9d16eebf643b159db222878cecdff213",
+    "package-extension-index-no-extensions-regression-pi.records.json": "e5705b8dc6f82260599cad113c4575df40a0541bbeced73fab18bafdf0861389",
+    "package-extension-index-root-regression-pisharp.http.json": "dad55ae6bd1e23fabd53261694f791594caa405d200430a39ba51ed45e391a96",
+    "package-extension-index-sibling-first-pi.http.json": "36b1a3c1cd0db1d7e0d381c3104197087bd2b9f5f73a351d599bbcb00508c9d8",
+    "package-extension-index-full.log": "dc6ed4b1fc86de41eae3872dcbc3fe91c5efd11776b18ca216392be54fe72877",
+    "package-extension-index-root-regression.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-index-no-extensions-regression-pisharp.http.json": "533953f721aa48d8d171ffc8a2e2b50858c2096f5a79c9c9f31e933073348817",
+    "package-extension-index-root-regression-pi.stderr.log": "8153228d2665b206fa5c759669de88b25be062bad41f9924ae76537913063657",
+    "package-extension-index-manifest-regression-pisharp.records.json": "c7cda48350c2d280ef4343b480e0d422675da4471dc642f74ba4c5442d7d3fca",
+    "package-extension-index-manifest-regression-pisharp.http.json": "14eed958947169f8032fbc1a1b1112a2830fd33de534e45f25c260f747a7b78e",
+    "package-extension-index-file-regression-pisharp.http.json": "b0f545b1098ada5acf8064f7b002ea6be50306fdbcd96788e20cac63dcd6ab3d",
+    "package-extension-index-no-extensions-regression-pi.http.json": "ca2d31333ba74b11c2981efef9ebcf3ce4aef7ad5dd89c9d411bafcaf2c88754",
+    "package-extension-index-file-regression-pi.http.json": "1f533380831cde524f80e511a1db8051bd1ce97fbc6c1e562f75b9911604c3a7",
+    "package-extension-index-disabled-regression-pi.http.json": "ebb62aa1833d7ef49f0b01a8c2769a733687697f1e9fd8f8ea45844ba84123d7",
+    "package-extension-index-index-with-sibling-regression-pi.records.json": "8f0916a21f34731221149a9e5a4e39ff6f1ca31285150f4fb43e88122ab4f974",
+    "package-extension-index-conventions-regression-pisharp.http.json": "b1eb30a34c8b980fd427bcb2619fdc0e30852258c4d9fbdcf294028cef86386f",
+    "package-extension-index-file-regression.json": "be51134e2e43588a33df93dd29dd226c34ac986c018132170aefe0e5b87d9ecd",
+    "package-extension-index-disabled-regression-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-manifest-regression-pi.http.json": "eb243c94e84ac1cdd623285ee066a989315f3da8bc4609348721ae0cde874640",
+    "package-extension-index-manifest-regression-pi.stderr.log": "7c100d1baf75a0298b466da8b87c10393473b69f42e8426465e05112dd6e8666",
+    "package-extension-index-manifest-regression.json": "a06e9c72d9cf0551494ed12bfc5367bde0b67f5f9e5f9b58c4e2875f150c02be",
+    "package-extension-index-sibling-first-pi.stderr.log": "f26919fda46cbba2eabfab56a3c77144006ad401bff30053bcad7c73d598ad16",
+    "package-extension-index-disabled-regression-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-manifest-regression-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-sibling-recovery-pi.http.json": "640405eeaa491ee73f171cb59e022dcf7b0953417d705402dc99d44d1914ca41",
+    "package-extension-index-sibling-first.json": "f35114fa67e934a03f78d1102e102874e4f1e066ae280073cc49311fb881581b",
+    "package-extension-index-manifest-regression.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-index-no-extensions-regression-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-sibling-first-pi.records.json": "749509ecc63d7b22aeae26c02ae5f63ddfcd898b746120395aff64c76d37eafc",
+    "package-extension-index-focused-recovery.log": "e8c6902cfbbcc8607ab0d4468b4b385a0247e9721b4d81df5267be2d2f773205",
+    "package-extension-index-sibling-recovery.json": "4d8a5b1baa99cf33cea509e8db8eae818d329cda73a5a929b69ef64d39429b6c",
+    "package-extension-index-root-regression-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-root-regression-pisharp.records.json": "ada536186d02395538377e7832f625167bfc42fb55c6c35042be9b1322f1e3c1",
+    "package-extension-index-index-with-sibling-regression-pi.stderr.log": "da49881dc7b94c5bd2153f34df9a2e7b807e117f9849fbf0fed6fc4241cbedbc",
+    "package-extension-index-native-first.log": "dd10dd9f4bb7fdcdc04de5fd1b208a1e835a06937dab30ab1b685559565d3e0c",
+    "package-extension-index-conventions-regression-pi.stderr.log": "3d2b0deddc8616302f939c3d29a609bcf602bfb7898ae0410495c5d6d2c2ea00",
+    "package-extension-index-conventions-regression.json": "6b43f950f9ee309596406b36531f7a79ad652e6e39b5f64df33b1be8dd80d698",
+    "package-extension-index-conventions-regression-pi.http.json": "212211ac886fca73adddede0bdf9681843e89b027a0a54d727a308a2d2801323",
+    "package-extension-index-root-regression-pi.http.json": "8fc709acab9e31bf4c97948688d962318bca08b3a29e5165d6278d8985cd8a69",
+    "package-extension-index-root-regression-pi.records.json": "eb0bbc3e2f9c776272c1f14c1ca355c49e332d3716655f5bc18eeba47a71e874",
+    "package-extension-index-conventions-regression-pi.records.json": "1f3c175f628f1ff63f061b2aca7b8490ece3d2d730513ef5caf3cd9071ec2074",
+    "package-extension-index-sibling-recovery-pi.stderr.log": "b1fb73332a90aa2a6c9c813a3825a2e9e6e080a89e23c4fda457e0ac575fb345",
+    "package-extension-index-sibling-first-pisharp.http.json": "7a3007c57c73be3c270cbc8430a9420cf4255dce70b664d21183dd6d06380172",
+    "package-extension-index-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-disabled-regression-pi.records.json": "985264c57d33dd09396b03c11bad1c23d94f1de8a416c05559f88f8df7ed9d31",
+    "package-extension-index-conventions-regression-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-conventions-regression-pisharp.records.json": "5e498284fdc2e0ee7769ee28d70019ccbbff90333474474729dea4ae7ea63da9",
+    "package-extension-index-fresh-build.log": "25d577e5a6499cab5777e0b094bb526bcccc0034e9ee9c815ffa989c357c6987",
+    "package-extension-index-index-with-sibling-regression-pisharp.records.json": "6a4cf508b6ca84bc5a88f96b3dcdfce110975b91390667c779b0b511c06efc87",
+    "package-extension-index-file-regression-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-index-file-regression.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-index-sibling-first.log": "1a4453f10ed0b153491b448d2f5e10dc7ec484e08cd06498e301ac772bc41042",
+    "package-extension-index-sibling-first-pisharp.records.json": "d863226de819d18ae1167b6dbcc455a1bc97be9c3ab38143c309d44bb3bbb1c9",
+    "package-extension-index-exact-ci.log": "0160ccbdde29f5f93efe5f968b17ab2d876cc632b892312872d5e23c7add7012",
+    "package-extension-index-docs.log": "ec90e586e1b094bde85ef404b7c42c22e29f47fa85c31139bb667b01a5bb5a12"
+  },
+  "limits": [
+    "This checkpoint proves root index precedence. Manifest-declared entry discovery, ignore files, aliases/collisions, missing/error/reload/project scope semantics and managed package/CLI workflows remain open.",
+    "No resource/extension/package capability is marked verified; historical process and source-only calibration/relocated context-footer concerns remain separately retained."
+  ]
+}

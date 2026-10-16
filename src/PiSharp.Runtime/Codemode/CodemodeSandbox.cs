@@ -23,6 +23,7 @@ internal static class CodemodeSandbox
         IReadOnlyDictionary<string, JsonElement> store, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(code);
+        if (cancellationToken.IsCancellationRequested) return new(false, "", "Codemode was cancelled.");
         if (code.Length is 0 or > MaximumCodeCharacters)
             return new(false, "", $"Codemode source must be 1 to {MaximumCodeCharacters} characters.");
 
@@ -30,9 +31,10 @@ internal static class CodemodeSandbox
         try { source = CodemodeSource.Parse(code); }
         catch (Exception error) when (error is ArgumentException or JsonException or InvalidOperationException)
         {
-            return new(false, "", "Invalid Codemode @options/source: " + error.Message);
+            return new(false, "", error.Message);
         }
         code = source.Code;
+        context.ReportProgress("");
         var worker = Path.Combine(AppContext.BaseDirectory, "Codemode", "Engine", "worker.mjs");
         if (!File.Exists(worker)) return new(false, "", "Codemode worker assets are unavailable.");
         var tools = context.Snapshot.Callable.Where(tool => tool.Function.Name != "codemode")
@@ -42,10 +44,12 @@ internal static class CodemodeSandbox
                 jsName = CodemodeToolCatalog.JavascriptIdentifier(tool.Function.Name),
                 description = CodemodeToolCatalog.RenderToolSample(tool)
             }).ToArray();
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        if (!CodemodeWorkerLifetime.TryAcquire(out var lifetime))
+            return new(false, "", CodemodeWorkerLifetime.AdmissionError);
+        var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(source.TimeoutMilliseconds);
         var token = deadline.Token;
-        using var process = new Process
+        var process = new Process
         {
             StartInfo = new ProcessStartInfo("node")
             {
@@ -57,15 +61,25 @@ internal static class CodemodeSandbox
                 CreateNoWindow = true
             }
         };
-        try { process.Start(); }
+        try
+        {
+            process.Start();
+            lifetime!.TrackExit(process.WaitForExitAsync(CancellationToken.None));
+        }
         catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
+            process.Dispose();
+            deadline.Dispose();
+            lifetime!.Release();
             return new(false, "", "Codemode requires Node.js 22.19 or newer: " + error.Message);
         }
         var outstanding = new List<Task>();
+        var output = new List<string>();
+        var images = new List<PiSharpToolImage>();
+        var writeGate = new SemaphoreSlim(1, 1);
+        var stderr = process.StandardError.ReadToEndAsync(token);
         try
         {
-            var stderr = process.StandardError.ReadToEndAsync(token);
             await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new
             {
                 code,
@@ -75,11 +89,8 @@ internal static class CodemodeSandbox
                 memoryLimitBytes = 32 * 1024 * 1024
             }, s_json));
             await process.StandardInput.FlushAsync(token);
-            var output = new List<string>();
-            var images = new List<PiSharpToolImage>();
             var outputLength = 0;
             var callCount = 0;
-            var writeGate = new SemaphoreSlim(1, 1);
             while (true)
             {
                 var line = await process.StandardOutput.ReadLineAsync(token);
@@ -147,21 +158,17 @@ internal static class CodemodeSandbox
         }
         catch (OperationCanceledException)
         {
-            return new(false, "", cancellationToken.IsCancellationRequested
-                ? "Codemode was cancelled." : $"Codemode timed out after {source.TimeoutMilliseconds} ms.");
+            return new(false, string.Join('\n', output), cancellationToken.IsCancellationRequested
+                ? "Codemode was cancelled." : $"Codemode timed out after {source.TimeoutMilliseconds} ms.", Images: images);
         }
         catch (Exception error) when (error is JsonException or IOException or InvalidOperationException)
         {
-            return new(false, "", "Codemode worker protocol error: " + error.Message);
+            return new(false, string.Join('\n', output), "Codemode worker protocol error: " + error.Message, Images: images);
         }
         finally
         {
             deadline.Cancel();
-            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
-            catch (InvalidOperationException) { }
-            await process.WaitForExitAsync(CancellationToken.None);
-            try { await Task.WhenAll(outstanding).WaitAsync(TimeSpan.FromSeconds(2)); }
-            catch (Exception error) when (error is OperationCanceledException or TimeoutException or IOException or InvalidOperationException) { }
+            lifetime!.Reap(process, deadline, writeGate, stderr, outstanding);
         }
     }
 

@@ -1,0 +1,125 @@
+{
+  "fixture": "managed-git-rpc-process",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpBaseSha": "cc7c7f1ebf067c6594f318c17b883cda240910f8",
+  "scenario": "managed-git-package",
+  "source": "git:git://127.0.0.1:<ephemeral-port>/fixture/repo.git@v1",
+  "scope": "Real Pi and PiSharp RPC startup using a local loopback Git daemon and offline local dependency. Both install the package and dependency lifecycle scripts once, omit the unavailable host peer, expose the declared skill and prompt template, and send identical expanded skill and template content to the provider. A direct Pi DefaultPackageManager update probe advances an unpinned checkout from v1 to v2; native PiSharp store tests cover the matching explicit update behavior.",
+  "observed": {
+    "rpcProviderInputsMatch": true,
+    "providerRequests": 2,
+    "packageExtensionConfiguredOnce": true,
+    "packageAndDependencyScriptsEachRunOnce": true,
+    "hostPeerInstalled": false,
+    "piUnpinnedUpdateAdvancedFromV1ToV2": true,
+    "piUpdateReplayedLifecycleScriptsOncePerInstall": true,
+    "piSharpUnpinnedStartupDidNotFetch": true,
+    "piSharpPinnedUnchangedRefDidNotReplayScripts": true,
+    "piSharpDependencyFailureAndCancellationPreservedOldCheckout": true,
+    "userAndProjectGitRootsHaveGitignore": true
+  },
+  "nativeEvidence": [
+    "ManagedGitPackageStoreTests.ManagedGitLoadsResourcesAndNativeExtensionWithoutStartupFetchAndUpdatesConfiguredRef",
+    "ManagedGitPackageStoreTests.CachedUnpinnedGitSourceRefreshesOnlyOnExplicitUpdate",
+    "ManagedGitPackageStoreTests.OfflineMissingDeltaAndFailedOrCancelledUpdatesKeepTheLastUsableCheckout",
+    "ManagedGitPackageStoreTests.UserAndProjectGitCacheRootsAreIgnoredByGit",
+    "ManagedResourcePackageStoreTests.LocalTarballsLoadResourcesAndNativeExtensionOncePerStartupAndReload"
+  ],
+  "limitations": [
+    "The differential uses a loopback daemon, a local file dependency, and a compiled native extension fixture; it does not exercise hosted Git authentication.",
+    "Explicit update is tested through Pi's package-manager API and PiSharp's Runtime store API; this task adds no package update CLI command or RPC reload command.",
+    "PiSharp extension implementations are native C# assemblies while Pi loads the paired TypeScript extension entry point."
+  ],
+  "upstreamReferences": [
+    "packages/coding-agent/src/utils/git.ts",
+    "packages/coding-agent/src/core/package-manager.ts",
+    "packages/coding-agent/test/git-update.test.ts",
+    "packages/coding-agent/test/git-ssh-url.test.ts",
+    "packages/coding-agent/test/package-manager.test.ts"
+  ],
+  "workerVerification": {
+    "commit": "204f3f9bb6a2b46793a013c4dfdc1cbc60d57570",
+    "focusedPassed": 17,
+    "regressionPassed": 68,
+    "format": "passed",
+    "profile": "/tmp/pisharp-sol-orchestration-20261015/pisharp-workers/002-managed-git-a1/profile",
+    "isolationNote": "One unprofiled py_compile briefly created tools/parity/__pycache__ inside the worker worktree; removed immediately and reported. No default-user-location write established; serialized mode retained.",
+    "commands": [
+      "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter FullyQualifiedName~ManagedGitPackageStoreTests --no-restore --disable-build-servers -m:1 -p:UseSharedCompilation=false",
+      "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --filter 'FullyQualifiedName~ManagedResourcePackageStoreTests|FullyQualifiedName~ResourcePackageLoadingTests|FullyQualifiedName~ProjectTrustTests|FullyQualifiedName~ExtensionCatalogTests|FullyQualifiedName~TerminalThemeTests|FullyQualifiedName~ProjectRuntimeContextTests' --no-restore --disable-build-servers -m:1 -p:UseSharedCompilation=false",
+      "python3 tools/parity/resource-invocation-process-differential.py --pi /tmp/pisharp-luna-pi --profile <worker-profile> --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll --scenario managed-git-package --output artifacts/parity/002-managed-git/managed-git-rpc.json"
+    ]
+  },
+  "rootVerification": {
+    "baseSha": "cc7c7f1ebf067c6594f318c17b883cda240910f8",
+    "workerSha": "204f3f9bb6a2b46793a013c4dfdc1cbc60d57570",
+    "review": "Concrete Runtime store, argument-array processes, separate source/ref/cache identity and lexical metadata, staged successful publication, cancellation kill+await, trust and cache-only startup preserved. No added production project, framework or provider/terminal dependencies. Root requested mechanical source corrections before worker commit; Luna implemented them. Root made no production/test/harness corrections after squash integration.",
+    "focused": {
+      "passed": 102,
+      "failed": 0,
+      "skipped": 0
+    },
+    "differentialReruns": {
+      "managed-git-package": true,
+      "managed-npm-package": true,
+      "deleted-skill": true,
+      "local-package": true
+    },
+    "gitUpdateScope": "Pi API unpinned update probe and native PiSharp store lifecycle tests independently establish the same v1-to-v2 update behavior. The real CLI pair covers startup/invocation, not a package CLI update or Git-specific reload invocation.",
+    "fullVerification": {
+      "environment": "Both specialists idle and all worker-owned processes exited. Default HOME/config/temp/session environment; only .NET/NuGet infrastructure caches and processor count two overridden. Fixtures own npm caches.",
+      "restore": "pass",
+      "format": "pass",
+      "warningsAsErrorsBuild": {
+        "warnings": 0,
+        "errors": 0
+      },
+      "dotnet": {
+        "passed": 1997,
+        "failed": 0,
+        "skipped": 0
+      },
+      "node": {
+        "passed": 24,
+        "failed": 0,
+        "skipped": 0
+      },
+      "python": {
+        "passed": 50,
+        "failed": 0,
+        "skipped": 0
+      },
+      "architecture": {
+        "passed": 6,
+        "failed": 0
+      },
+      "documentation": {
+        "documents": 132,
+        "references": 507
+      },
+      "referenceValidation": "configured pin verified clean",
+      "mcp": {
+        "scenarios": 26,
+        "passedChecks": 261,
+        "classifiedOutcomes": 8,
+        "regressions": 0
+      }
+    },
+    "testedSourceDigest": {
+      "algorithm": "SHA256 of concatenated 8-byte big-endian path length, UTF8 path, SHA256 file bytes for sorted unique git ls-files under src/tests/tools/.github",
+      "sha256": "8f5feed5d2899fa3b25fbdb8be7be4cc4d9b2e18ca265d9118aa35828f342dc7",
+      "files": 903
+    },
+    "logDirectory": "artifacts/parity/002-managed-git-root",
+    "limitations": [
+      "Hosted Git authentication and native non-Linux execution are not exercised.",
+      "npmCommand variants, real registry and legacy-global package resolution, and package CLI workflows remain required closure work.",
+      "No capability promotion: feature-pi-packages remains in_progress."
+    ],
+    "documentationAfterReceiptUpdate": {
+      "documents": 132,
+      "references": 510,
+      "result": "pass"
+    }
+  }
+}

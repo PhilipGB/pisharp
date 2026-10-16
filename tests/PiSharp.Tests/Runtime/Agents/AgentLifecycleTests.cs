@@ -238,6 +238,41 @@ public sealed class AgentLifecycleTests
     }
 
     [Fact]
+    public async Task SteeringQueuedBeforeTheFirstProviderRequestReachesThatRequest()
+    {
+        var checkpointReached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseCheckpoint = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var checkpointCount = 0;
+        Task Save(CancellationToken _)
+        {
+            if (Interlocked.Increment(ref checkpointCount) == 1)
+            {
+                checkpointReached.TrySetResult();
+                return releaseCheckpoint.Task;
+            }
+            return Task.CompletedTask;
+        }
+
+        var client = new OrderedQueueClient();
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath())),
+            new ConversationSession(Path.GetTempPath(), "fixture", null), save: Save);
+        var active = Task.Run(async () =>
+        {
+            await foreach (var _ in run.RunEventsAsync("initial")) { }
+        });
+
+        await checkpointReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(run.TrySteer("change direction"));
+        releaseCheckpoint.TrySetResult();
+        await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        client.ReleaseFirstRequest.TrySetResult();
+        await active.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(["initial", "change direction"], client.UserMessagesByRequest[0]);
+        Assert.Single(client.UserMessagesByRequest);
+    }
+
+    [Fact]
     public async Task AllSteeringMessagesDuringToolExecutionRemainDistinctAndOrdered()
     {
         var fixture = new SteeringToolFixture();

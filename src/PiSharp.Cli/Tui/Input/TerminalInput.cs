@@ -20,6 +20,7 @@ public sealed class TerminalInput
     internal event Action<TerminalColorResponse>? TerminalColorReceived;
     internal event Action? TerminalDeviceAttributesReceived;
     internal event Action<string>? TerminalColorSchemeReceived;
+    internal event Action<int>? TerminalKeyboardFlagsReceived;
 
     public TerminalInput(Stream input) => _input = input;
     private TerminalInput() => _standardInput = true;
@@ -76,6 +77,16 @@ public sealed class TerminalInput
         return value;
     }
 
+    internal bool TryReadActive(int timeoutMilliseconds, CancellationToken activityEnded, out TerminalInputEvent value)
+    {
+        value = new(null, null);
+        if (activityEnded.IsCancellationRequested || !TryRead(timeoutMilliseconds, out value)) return false;
+        if (!activityEnded.IsCancellationRequested) return true;
+        PushBack(value);
+        value = new(null, null);
+        return false;
+    }
+
     internal string ReadAvailableText(TerminalInputEvent first, out TerminalInputEvent? following)
     {
         var text = new StringBuilder();
@@ -110,7 +121,13 @@ public sealed class TerminalInput
         return false;
     }
 
-    internal void PushBack(TerminalInputEvent value) => _retainedEvents.Enqueue(value);
+    internal void PushBack(TerminalInputEvent value)
+    {
+        var following = _retainedEvents.ToArray();
+        _retainedEvents.Clear();
+        _retainedEvents.Enqueue(value);
+        foreach (var item in following) _retainedEvents.Enqueue(item);
+    }
 
     internal void CompletePendingReplies(Func<bool> hasPendingReplies, int timeoutMilliseconds)
     {
@@ -163,7 +180,12 @@ public sealed class TerminalInput
                 if (value is >= 0x40 and <= 0x7E) break;
             }
             var code = sequence.ToString();
-            if (code.StartsWith('?') && code.EndsWith('u')) return new(null, null);
+            if (code.StartsWith('?') && code.EndsWith('u'))
+            {
+                if (int.TryParse(code.AsSpan(1, code.Length - 2), NumberStyles.None, CultureInfo.InvariantCulture, out var flags))
+                    TerminalKeyboardFlagsReceived?.Invoke(flags);
+                return new(null, null);
+            }
             if (code.StartsWith('?') && code.EndsWith('c'))
             {
                 TerminalDeviceAttributesReceived?.Invoke();
@@ -495,12 +517,6 @@ public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text, Termi
     internal bool IsControl => !IsEndOfStream && Key is null && Text is null && Mouse is null;
 }
 
-internal static class TerminalKeyboardMode
-{
-    public const string Enable = "\u001b[>7u\u001b[?u";
-    public const string Disable = "\u001b[<u";
-}
-
 /// <summary>SGR mouse report coordinates are one-based terminal columns and rows.</summary>
 public readonly record struct TerminalMouseEvent(int Button, int Column, int Row, bool IsRelease)
 {
@@ -525,6 +541,7 @@ public readonly record struct TerminalMouseEvent(int Button, int Column, int Row
 internal sealed class TerminalMode : IDisposable
 {
     private const string LinuxTermiosPrefix = "linux-termios:";
+    private const uint LinuxInputXon = 0x0400;
     private const uint LinuxCanonical = 0x0002;
     private const uint LinuxEcho = 0x0008;
     private const uint LinuxSignal = 0x0001;
@@ -572,7 +589,7 @@ internal sealed class TerminalMode : IDisposable
         }
         var state = Stty("-g").Trim();
         if (string.IsNullOrEmpty(state)) throw new IOException("Could not read terminal settings.");
-        Stty("-icanon", "-echo", "-isig", "-iexten", "min", "1", "time", "0");
+        Stty("-icanon", "-echo", "-isig", "-iexten", "-ixon", "min", "1", "time", "0");
         try { WriteControl(screen, "\u001b[?2004h"); }
         catch { Stty(state); throw; }
         var owner = new TerminalMode(state, screen, ownsMode: true);
@@ -651,7 +668,7 @@ internal sealed class TerminalMode : IDisposable
     {
         if (!_ownsMode || _disposed || !_suspended) return;
         Stty(_original);
-        Stty("-icanon", "-echo", "-isig", "-iexten", "min", "1", "time", "0");
+        Stty("-icanon", "-echo", "-isig", "-iexten", "-ixon", "min", "1", "time", "0");
         try { WriteControl(_screen, "\u001b[?2004h"); }
         catch
         {
@@ -694,6 +711,7 @@ internal sealed class TerminalMode : IDisposable
             throw new IOException($"tcgetattr: {Marshal.GetLastPInvokeError()}");
         if (args.Length == 1 && args[0] == "-g") return LinuxTermiosPrefix + SerializeLinuxTermios(current);
 
+        if (args.Contains("-ixon", StringComparer.Ordinal)) current.InputFlags &= ~LinuxInputXon;
         current.LocalFlags &= ~(LinuxCanonical | LinuxEcho | LinuxSignal | LinuxExtendedInput);
         current.ControlCharacters[LinuxVminIndex] = 1;
         current.ControlCharacters[LinuxVtimeIndex] = 0;

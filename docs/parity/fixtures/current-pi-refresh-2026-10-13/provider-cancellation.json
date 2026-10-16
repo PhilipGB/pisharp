@@ -1,0 +1,85 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "pi": [
+    {
+      "streaming": false,
+      "maxRetries": 0,
+      "requests": 1,
+      "canceled": true
+    },
+    {
+      "streaming": false,
+      "maxRetries": 1,
+      "requests": 1,
+      "canceled": true
+    },
+    {
+      "streaming": true,
+      "maxRetries": 0,
+      "requests": 1,
+      "canceled": true
+    },
+    {
+      "streaming": true,
+      "maxRetries": 1,
+      "requests": 1,
+      "canceled": true
+    }
+  ],
+  "pisharp": [
+    {
+      "streaming": false,
+      "maxRetries": 0,
+      "requests": 1,
+      "canceled": true
+    },
+    {
+      "streaming": false,
+      "maxRetries": 1,
+      "requests": 1,
+      "canceled": true
+    },
+    {
+      "streaming": true,
+      "maxRetries": 0,
+      "requests": 1,
+      "canceled": true
+    },
+    {
+      "streaming": true,
+      "maxRetries": 1,
+      "requests": 1,
+      "canceled": true
+    }
+  ],
+  "match": true,
+  "comparison": "Semantic cancellation at the actual request-retry boundary, with one request and no replay, for native streaming/nonstreaming calls and enabled/disabled retries. Pi checks AbortError and its aborted signal; .NET checks OperationCanceledException carrying the exact caller token.",
+  "limitations": "The injected native client rejects synchronously after canceling the caller; Pi request() does the same. This isolates retry-boundary ordering. Existing HTTP retry-delay cancellation controls cover real SDK/loopback calls. Later stream failures, all event envelopes and provider error formatting remain separately ledgered.",
+  "characterization": {
+    "log": "artifacts/parity/current-pi-deltas-2026-10-13/provider-cancellation-fail-first.log",
+    "sha256": "d2a585d52048b982c139246838c0e600d591220752e387f8833b0c6f9971cb36",
+    "failed": 2,
+    "passed": 0,
+    "skipped": 0,
+    "finding": "Both native call modes surfaced the original provider rejection despite the caller token already being canceled; neither returned the cancellation contract."
+  },
+  "trigger": "The first auth-lock broad run exposed the same race in the existing real HTTP retry-delay cancellation control. Deterministic rejecting clients confirm the retry-boundary ordering independently of auth locking and scheduler timing.",
+  "verification": {
+    "focusedNewCases": 4,
+    "combinedProviderControlsPassed": 16,
+    "fullWorkingTreePassed": 1581,
+    "failed": 0,
+    "skipped": 0,
+    "fullLog": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-final-full-tests.log",
+    "fullLogSha256": "14b1964a6da534709a2ad79f7e07023e12fdb4104b387891916c6f8651a6e5ec",
+    "scope": "Full run includes the separate auth/timeout and fixture corrections recorded alongside this evidence."
+  },
+  "implementation": "ProviderRetryChatClient checks caller cancellation before retry budget and error classification in both call modes, preserving the caller token and preventing replay.",
+  "publishedVerification": {
+    "piSharpSha": "90dded7bd57ef8c7dfa0d1b1225450636b68612f",
+    "ciRun": 38486201109,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38486201109",
+    "conclusion": "success",
+    "scope": "Exact published source includes its independently committed earlier fixes. Both jobs pass; broader MCP classifications remain open."
+  }
+}

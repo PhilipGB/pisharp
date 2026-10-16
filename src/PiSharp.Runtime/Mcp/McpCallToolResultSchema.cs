@@ -32,7 +32,7 @@ internal static class McpCallToolResultSchema
                     "additionalProperties": true
                   }
                 },
-                "structuredContent": { "type": "object" },
+                "structuredContent": {},
                 "isError": { "type": "boolean" }
               },
               "required": ["content"],

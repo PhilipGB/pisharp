@@ -33,15 +33,16 @@ public sealed class CliPromptOverridesTests
     }
 
     [Fact]
-    public async Task OversizedOverrideFailsInsteadOfSilentlyTruncating()
+    public async Task LargeOverrideLoadsCompletelyAndMissingOptionValuesAreRejected()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-cli-prompt-large-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(root, "large.txt"), new string('X', 65537));
-            await Assert.ThrowsAsync<InvalidDataException>(() => CliPromptOverrides.ResolveAsync(
-                CliArguments.Parse(["--system-prompt", "large.txt"]), (null, null), root));
+            var contents = new string('X', 65537);
+            await File.WriteAllTextAsync(Path.Combine(root, "large.txt"), contents);
+            var result = await CliPromptOverrides.ResolveAsync(CliArguments.Parse(["--system-prompt", "large.txt"]), (null, null), root);
+            Assert.Equal(contents, result.System);
             Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--append-system-prompt"]));
         }
         finally { Directory.Delete(root, true); }

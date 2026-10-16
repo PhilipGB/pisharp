@@ -342,7 +342,167 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("Model: target", mark);
             await terminal.WaitTextAsync("Model: target", mark);
             Assert.Equal("loaded", server.Statuses["target"]);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("/model qwen\n");
+            await terminal.WaitTextAsync("Model: qwen", mark);
+            Assert.Equal("loaded", server.Statuses["qwen"]);
             await terminal.QuitAsync();
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ResumeSwitchesToSavedLlamaModelAndRestoresHistory()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-resume-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var sessions = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        await using var server = new RouterServer(chatResponse: "TARGET_MODEL_REPLY");
+        server.Statuses["target"] = "loaded";
+        var store = new PiSharp.Runtime.Sessions.ConversationStore(root, sessions);
+        var saved = new PiSharp.Runtime.Sessions.ConversationSession(root, "target",
+            server.Origin + "/v1", "llama.cpp");
+        saved.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "prior target context"));
+        var savedPath = store.NewPath(saved);
+        await store.SaveAsync(saved, savedPath);
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+            sessionDirectory: sessions);
+        try
+        {
+            await terminal.WaitTextAsync("qwen");
+            var mark = terminal.Mark;
+            await terminal.SendAsync($"/resume {saved.Id[..12]}\n");
+            await terminal.WaitTextAsync($"Resumed {saved.Id[..12]}", mark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("Continue with the target model.\n");
+            await terminal.WaitTextAsync("TARGET_MODEL_REPLY", mark);
+            await terminal.WaitFrameAsync(frame => frame.Contains("TARGET_MODEL_REPLY", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), mark);
+
+            var request = Assert.Single(server.Requests, item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions");
+            using var body = JsonDocument.Parse(request.Body!);
+            Assert.Equal("target", body.RootElement.GetProperty("model").GetString());
+            Assert.Contains("prior target context", body.RootElement.GetProperty("messages").ToString());
+            await terminal.QuitAsync();
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task LocalModelCanUseReadToolAndContinueThroughTheInteractiveRoute()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-tools-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var sessions = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        await File.WriteAllTextAsync(Path.Combine(root, "facts.txt"), "local fixture fact");
+        await using var server = new RouterServer(chatResponse: "LOCAL_TOOL_OK", readToolCallFirst: true,
+            resumedChatResponse: "LLAMA_RESUMED_OK");
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+            sessionDirectory: sessions, noTools: false);
+        try
+        {
+            await terminal.WaitTextAsync("qwen");
+            var mark = terminal.Mark;
+            await terminal.SendAsync("Read facts.txt and answer with its content.\n");
+            await terminal.WaitTextAsync("LOCAL_TOOL_OK", mark);
+            await terminal.WaitFrameAsync(frame => frame.Contains("LOCAL_TOOL_OK", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), mark);
+
+            var requests = server.Requests.Where(item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions").ToArray();
+            Assert.Equal(2, requests.Length);
+            using var firstBody = JsonDocument.Parse(requests[0].Body!);
+            Assert.Contains(firstBody.RootElement.GetProperty("tools").EnumerateArray(), tool =>
+                tool.GetProperty("function").GetProperty("name").GetString() == "read");
+            using var continuationBody = JsonDocument.Parse(requests[1].Body!);
+            Assert.Contains("local fixture fact", continuationBody.RootElement.GetProperty("messages").ToString());
+            Assert.Contains("read-1", continuationBody.RootElement.GetProperty("messages").ToString());
+            Assert.All(requests, request => Assert.Equal("qwen", JsonDocument.Parse(request.Body!).RootElement.GetProperty("model").GetString()));
+            await terminal.QuitAsync();
+
+            await using var resumed = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+                sessionDirectory: sessions, noTools: false, continueSession: true);
+            await resumed.WaitTextAsync("qwen");
+            var resumeMark = resumed.Mark;
+            await resumed.WaitTextAsync("LOCAL_TOOL_OK", resumeMark);
+            resumeMark = resumed.Mark;
+            await resumed.SendAsync("Continue from the saved local tool result.\n");
+            await resumed.WaitTextAsync("LLAMA_RESUMED_OK", resumeMark);
+            await resumed.WaitFrameAsync(frame => frame.Contains("LLAMA_RESUMED_OK", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), resumeMark);
+
+            var allRequests = server.Requests.Where(item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions").ToArray();
+            Assert.Equal(3, allRequests.Length);
+            using var resumedBody = JsonDocument.Parse(allRequests[2].Body!);
+            var resumedMessages = resumedBody.RootElement.GetProperty("messages").ToString();
+            Assert.Contains("local fixture fact", resumedMessages);
+            Assert.Contains("Continue from the saved local tool result.", resumedMessages);
+            await resumed.QuitAsync();
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task CancellingLocalModelStreamAfterVisibleTextSettlesAndAcceptsNextPrompt()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-stream-cancel-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var sessions = Path.Combine(root, "sessions");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        await using var server = new RouterServer(chatResponse: "AFTER_CANCEL_OK", holdChatAfterPartial: true);
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+            sessionDirectory: sessions);
+        try
+        {
+            await terminal.WaitTextAsync("qwen");
+            var mark = terminal.Mark;
+            await terminal.SendAsync("cancel the partial local response\n");
+            await server.ChatPartialSent.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await terminal.WaitTextAsync("LLAMA_PARTIAL_VISIBLE", mark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("\u001b");
+            await terminal.WaitFrameAsync(frame => frame.Contains("Interrupted.", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), mark);
+            server.ReleaseChatStream();
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("continue after interruption\n");
+            await terminal.WaitTextAsync("AFTER_CANCEL_OK", mark);
+            await terminal.WaitFrameAsync(frame => frame.Contains("AFTER_CANCEL_OK", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), mark);
+            await terminal.QuitAsync();
+
+            var requests = server.Requests.Where(item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions").ToArray();
+            Assert.Equal(2, requests.Length);
+            Assert.Contains("cancel the partial local response", requests[0].Body, StringComparison.Ordinal);
+            Assert.Contains("continue after interruption", requests[1].Body, StringComparison.Ordinal);
+
+            var sessionPath = Assert.Single(Directory.EnumerateFiles(sessions, "*.session.json"));
+            var persisted = await new PiSharp.Runtime.Sessions.ConversationStore(root, sessions).LoadAsync(sessionPath);
+            Assert.Contains(persisted.Tree.Entries, entry => entry.Type == "interrupted" &&
+                entry.Payload.GetProperty("partialText").GetString() == "LLAMA_PARTIAL_VISIBLE");
+            Assert.Contains(persisted.Tree.Entries, entry => entry.Type == "run_finished" &&
+                entry.Payload.GetProperty("completed").GetBoolean());
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -385,13 +545,20 @@ public sealed class LlamaRouterManagerTuiTests
         private readonly bool _holdDownload;
         private readonly bool _holdRestore;
         private readonly bool _failFirstCatalog;
+        private readonly string? _chatResponse;
+        private readonly string? _resumedChatResponse;
+        private readonly bool _readToolCallFirst;
+        private readonly bool _holdChatAfterPartial;
+        private int _chatRequestCount;
         private readonly ConcurrentBag<Task> _background = [];
         private readonly TaskCompletionSource _downloadRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _loadProgressRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _chatRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _catalogRequests;
         public ConcurrentQueue<(string Method, string Path, string? Authorization, string? Body)> Requests { get; } = new();
         public TaskCompletionSource LoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource RestoreLoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource ChatPartialSent { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _restoreLoadRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource DownloadRequested => _downloadRequested;
         public int CatalogRequests => Volatile.Read(ref _catalogRequests);
@@ -403,12 +570,17 @@ public sealed class LlamaRouterManagerTuiTests
         public string Origin { get; }
 
         public RouterServer(bool holdLoad = false, bool failFirstCatalog = false, bool holdDownload = false,
-            bool sleepingQwen = false, bool holdRestore = false)
+            bool sleepingQwen = false, bool holdRestore = false, string? chatResponse = null,
+            bool readToolCallFirst = false, bool holdChatAfterPartial = false, string? resumedChatResponse = null)
         {
             _holdLoad = holdLoad;
             _failFirstCatalog = failFirstCatalog;
             _holdDownload = holdDownload;
             _holdRestore = holdRestore;
+            _chatResponse = chatResponse;
+            _resumedChatResponse = resumedChatResponse;
+            _readToolCallFirst = readToolCallFirst;
+            _holdChatAfterPartial = holdChatAfterPartial;
             if (sleepingQwen) Statuses["qwen"] = "sleeping";
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
@@ -502,6 +674,102 @@ public sealed class LlamaRouterManagerTuiTests
                     }
                     else if (context.Request.HttpMethod == "GET" && path.StartsWith("/props", StringComparison.Ordinal))
                         response = "{}";
+                    else if (context.Request.HttpMethod == "POST" && path == "/v1/chat/completions" &&
+                             _holdChatAfterPartial && Interlocked.Increment(ref _chatRequestCount) == 1)
+                    {
+                        using var payload = JsonDocument.Parse(body!);
+                        var model = payload.RootElement.GetProperty("model").GetString()!;
+                        var first = new
+                        {
+                            id = "chatcmpl_local_cancel",
+                            @object = "chat.completion.chunk",
+                            created = 1,
+                            model,
+                            choices = new[] { new
+                            {
+                                index = 0,
+                                delta = new { role = "assistant", content = "LLAMA_PARTIAL_VISIBLE" },
+                                finish_reason = (string?)null
+                            } }
+                        };
+                        context.Response.ContentType = "text/event-stream";
+                        context.Response.SendChunked = true;
+                        var partialBytes = Encoding.UTF8.GetBytes($"data: {JsonSerializer.Serialize(first)}\n\n");
+                        await context.Response.OutputStream.WriteAsync(partialBytes, _shutdown.Token);
+                        await context.Response.OutputStream.FlushAsync(_shutdown.Token);
+                        ChatPartialSent.TrySetResult();
+                        await _chatRelease.Task.WaitAsync(_shutdown.Token);
+                        try { context.Response.Close(); }
+                        catch (Exception error) when (error is HttpListenerException or IOException or ObjectDisposedException) { }
+                        continue;
+                    }
+                    else if (context.Request.HttpMethod == "POST" && path == "/v1/chat/completions" &&
+                             (_chatResponse is not null || _readToolCallFirst))
+                    {
+                        using var payload = JsonDocument.Parse(body!);
+                        var model = payload.RootElement.GetProperty("model").GetString()!;
+                        var chatRequestNumber = _readToolCallFirst ? Interlocked.Increment(ref _chatRequestCount) : 0;
+                        var responseText = _readToolCallFirst && chatRequestNumber >= 3
+                            ? _resumedChatResponse ?? _chatResponse
+                            : _chatResponse;
+                        if (_readToolCallFirst && chatRequestNumber == 1)
+                        {
+                            var first = new
+                            {
+                                id = "chatcmpl_local",
+                                @object = "chat.completion.chunk",
+                                created = 1,
+                                model,
+                                choices = new[] { new
+                                {
+                                    index = 0,
+                                    delta = new { role = "assistant", tool_calls = new[] { new
+                                    {
+                                        index = 0,
+                                        id = "read-1",
+                                        type = "function",
+                                        function = new { name = "read", arguments = "{\"path\":\"facts.txt\"}" }
+                                    } } },
+                                    finish_reason = (string?)null
+                                } }
+                            };
+                            var last = new
+                            {
+                                id = "chatcmpl_local",
+                                @object = "chat.completion.chunk",
+                                created = 1,
+                                model,
+                                choices = new[] { new { index = 0, delta = new { }, finish_reason = "tool_calls" } }
+                            };
+                            response = $"data: {JsonSerializer.Serialize(first)}\n\ndata: {JsonSerializer.Serialize(last)}\n\ndata: [DONE]\n\n";
+                        }
+                        else
+                        {
+                            var first = new
+                            {
+                                id = "chatcmpl_local",
+                                @object = "chat.completion.chunk",
+                                created = 1,
+                                model,
+                                choices = new[] { new
+                                {
+                                    index = 0,
+                                    delta = new { role = "assistant", content = responseText },
+                                    finish_reason = (string?)null
+                                } }
+                            };
+                            var last = new
+                            {
+                                id = "chatcmpl_local",
+                                @object = "chat.completion.chunk",
+                                created = 1,
+                                model,
+                                choices = new[] { new { index = 0, delta = new { }, finish_reason = "stop" } }
+                            };
+                            response = $"data: {JsonSerializer.Serialize(first)}\n\ndata: {JsonSerializer.Serialize(last)}\n\ndata: [DONE]\n\n";
+                        }
+                        contentType = "text/event-stream";
+                    }
                     else
                     {
                         context.Response.StatusCode = 404;
@@ -561,9 +829,12 @@ public sealed class LlamaRouterManagerTuiTests
 
         public void ReleaseLoadProgress() => _loadProgressRelease.TrySetResult();
 
+        public void ReleaseChatStream() => _chatRelease.TrySetResult();
+
         public async ValueTask DisposeAsync()
         {
             _restoreLoadRelease.TrySetResult();
+            _chatRelease.TrySetResult();
             _shutdown.Cancel();
             _listener.Close();
             await _serve;
@@ -642,7 +913,8 @@ public sealed class LlamaRouterManagerTuiTests
         public int Mark { get { lock (_gate) return _output.Length; } }
 
         public ManagerTerminal(string root, string agent, string serverUrl, string? hfEndpoint = null,
-            string? hfToken = null, bool llamaProvider = false)
+            string? hfToken = null, bool llamaProvider = false, string? sessionDirectory = null, bool noTools = true,
+            bool continueSession = false)
         {
             _editorModelText = llamaProvider ? "llama.cpp/qwen" : "fixture-model";
             var start = new ProcessStartInfo("/usr/bin/script")
@@ -656,8 +928,11 @@ public sealed class LlamaRouterManagerTuiTests
             start.ArgumentList.Add("-e");
             start.ArgumentList.Add("-c");
             var arguments = llamaProvider
-                ? " --provider llama.cpp --model qwen --no-session --no-tools"
-                : " --provider fixture --model fixture-model --offline --no-session --no-tools";
+                ? " --provider llama.cpp --model qwen"
+                : " --provider fixture --model fixture-model --offline";
+            arguments += sessionDirectory is null ? " --no-session" : " --session-dir " + ShellQuote(sessionDirectory);
+            if (continueSession) arguments += " --continue";
+            if (noTools) arguments += " --no-tools";
             start.ArgumentList.Add("stty rows 30 cols 100; exec dotnet " + ShellQuote(typeof(CliArguments).Assembly.Location) + arguments);
             start.ArgumentList.Add("/dev/null");
             foreach (var name in new[] { "LLAMA_BASE_URL", "LLAMA_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL",

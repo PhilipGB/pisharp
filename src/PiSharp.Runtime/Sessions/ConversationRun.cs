@@ -44,6 +44,8 @@ public sealed class ConversationRun
     public IReadOnlyList<string> ActiveToolNames =>
         _agent.GetToolLoadout(_execution).Snapshot.ActiveToolNames;
     public string? SessionFile => _sessionFile;
+    public JsonElement SharePresentation => _agent.GetSharePresentation(_execution);
+    public string ExportForShare() => SessionShareExport.ExportBranch(Conversation, SharePresentation);
     public Task PersistAsync(CancellationToken cancellationToken = default) =>
         _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
     public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;
@@ -123,7 +125,7 @@ public sealed class ConversationRun
         var run = new ConversationRun(agent, conversation, execution, save, autoCompaction, pricing, sessionFile, provider,
             reasoningLevel, retryPolicy ?? AgentRunRetryPolicy.Default, steeringMode, followUpMode,
             autoCompactionEnabled, keepRecentTokens, retryDelay, physicalContextResolver, providerApi);
-        run._toolState.Restore(execution, restoredToolNames);
+        run._toolState.Restore(execution, restoredToolNames, openingSession: true);
         await run.RestorePhysicalContextPolicyAsync(cancellationToken);
         if (restoredToolNames is not null)
         {
@@ -567,6 +569,7 @@ public sealed class ConversationRun
         var accepted = false;
         var attribution = new ProviderRequestAttribution(Conversation.Model, Conversation.Provider,
             _providerApi, _pricing, _reasoningLevel);
+        _agent.SetExtensionConversation(Conversation);
         _agent.SetVirtualModelSession(Conversation, _reasoningLevel ?? "off", _save);
         VirtualModelContextCoordinator? virtualContext = null;
         IReadOnlyList<JsonElement>? expectedProviderPrefix = null;
@@ -739,13 +742,14 @@ public sealed class ConversationRun
                     onEvent?.Invoke(new("context_compacted_in_flight", Text: "Continuation request summarized; canonical history was not changed."));
                 });
             lock (_runtimeStateGate) _toolState.BeginRun(_execution);
+            var codexSessionId = _providerApi == "openai-codex-responses" ? Conversation.Id : null;
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
-                    CreateBashSessionEnvironment())
+                    CreateBashSessionEnvironment(), codexSessionId)
                 : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
-                    CreateBashSessionEnvironment());
+                    CreateBashSessionEnvironment(), codexSessionId);
             await foreach (var update in attemptStream.PumpAsync(updates, durable,
                 usage => Conversation.AppendUsage(attribution.Usage(usage)), cancellationToken))
                 yield return update;

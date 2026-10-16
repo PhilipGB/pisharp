@@ -166,10 +166,15 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         if (!string.IsNullOrWhiteSpace(options?.Instructions))
             systemParts.Add(SanitizeSurrogates(options.Instructions));
         var callNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        var callIds = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var message in messages)
         {
             foreach (var call in message.Contents.OfType<FunctionCallContent>())
-                callNames[NormalizeCallId(call.CallId)] = call.Name;
+            {
+                var callId = ResolveCallId(call.CallId, call.AdditionalProperties);
+                callIds[call.CallId] = callId;
+                callNames[callId] = call.Name;
+            }
         }
 
         foreach (var message in messages)
@@ -196,9 +201,10 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
                     var images = message.Contents.OfType<DataContent>().Where(IsImage).ToArray();
                     var responseText = GetResultText(result.Result);
                     if (responseText.Length == 0 && images.Length > 0) responseText = "(see attached image)";
+                    var callId = callIds.GetValueOrDefault(result.CallId, ResolveCallId(result.CallId, null));
                     var functionResponse = new JsonObject
                     {
-                        ["name"] = callNames.GetValueOrDefault(NormalizeCallId(result.CallId), "unknown"),
+                        ["name"] = callNames.GetValueOrDefault(callId, "unknown"),
                         ["response"] = new JsonObject
                         {
                             [result.Exception is null ? "output" : "error"] = result.Exception is null
@@ -206,7 +212,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
                                 : JsonValue.Create(result.Exception.Message)
                         }
                     };
-                    if (RequiresToolCallId(_modelId)) functionResponse["id"] = NormalizeCallId(result.CallId);
+                    if (RequiresToolCallId(_modelId)) functionResponse["id"] = callId;
                     if (images.Length > 0 && SupportsMultimodalFunctionResponse(_modelId))
                     {
                         var imageParts = new JsonArray();
@@ -254,7 +260,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
                         partsForMessage.Add(ToInlineData(data));
                         break;
                     case FunctionCallContent call:
-                        var callId = NormalizeCallId(call.CallId);
+                        var callId = ResolveCallId(call.CallId, call.AdditionalProperties);
                         var functionCall = new JsonObject
                         {
                             ["name"] = call.Name,
@@ -290,7 +296,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             root["generationConfig"] = generation;
         }
 
-        AddThinkingConfig(root, options?.Reasoning);
+        AddThinkingConfig(root, options);
         AddTools(root, options);
         return root;
     }
@@ -353,7 +359,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             var total = ReadLong(usage, "totalTokenCount");
             updateCandidate.Contents.Add(new UsageContent(new UsageDetails
             {
-                InputTokenCount = prompt,
+                InputTokenCount = (prompt ?? 0) - (cached ?? 0),
                 OutputTokenCount = candidatesTokens + thoughts,
                 CachedInputTokenCount = cached,
                 ReasoningTokenCount = thoughts,
@@ -372,7 +378,10 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
                 "STOP" when hasCalls => ChatFinishReason.ToolCalls,
                 "STOP" => ChatFinishReason.Stop,
                 "MAX_TOKENS" => ChatFinishReason.Length,
-                "SAFETY" or "PROHIBITED_CONTENT" or "SPII" or "IMAGE_SAFETY" or "IMAGE_PROHIBITED_CONTENT" or "IMAGE_RECITATION" => ChatFinishReason.ContentFilter,
+                "BLOCKLIST" or "PROHIBITED_CONTENT" or "SPII" or "SAFETY" or "IMAGE_SAFETY" or
+                    "IMAGE_PROHIBITED_CONTENT" or "IMAGE_RECITATION" or "IMAGE_OTHER" or "RECITATION" or
+                    "FINISH_REASON_UNSPECIFIED" or "OTHER" or "LANGUAGE" or "MALFORMED_FUNCTION_CALL" or
+                    "UNEXPECTED_TOOL_CALL" or "TOO_MANY_TOOL_CALLS" or "NO_IMAGE" => new ChatFinishReason("error"),
                 _ => new ChatFinishReason("error")
             };
             updateCandidate.AdditionalProperties ??= new AdditionalPropertiesDictionary();
@@ -385,9 +394,11 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         return true;
     }
 
-    private void AddThinkingConfig(JsonObject root, ReasoningOptions? reasoning)
+    private void AddThinkingConfig(JsonObject root, ChatOptions? options)
     {
         if (model.Reasoning != true) return;
+        var reasoning = options?.Reasoning;
+        var thinkingBudgets = ThinkingBudgetPolicy.Read(options?.AdditionalProperties);
         var enabled = reasoning is not null;
         var requested = reasoning?.Effort switch
         {
@@ -404,7 +415,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
                 ? mappedValue.GetString()?.ToLowerInvariant() : level;
             var config = new JsonObject { ["includeThoughts"] = enabled };
             if (UsesThinkingLevel(_modelId)) config["thinkingLevel"] = ToApiThinkingLevel(mapped);
-            else config["thinkingBudget"] = enabled ? GetThinkingBudget(_modelId, mapped ?? requested) : 0;
+            else config["thinkingBudget"] = enabled ? GetThinkingBudget(_modelId, mapped ?? requested, thinkingBudgets) : 0;
             AddThinkingConfigNode(root, config);
         }
         else if (UsesThinkingLevel(_modelId))
@@ -421,7 +432,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             AddThinkingConfigNode(root, new JsonObject
             {
                 ["includeThoughts"] = enabled,
-                ["thinkingBudget"] = enabled ? GetThinkingBudget(_modelId, requested) : 0
+                ["thinkingBudget"] = enabled ? GetThinkingBudget(_modelId, requested, thinkingBudgets) : 0
             });
         }
     }
@@ -471,11 +482,10 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
 
     private void MarkSignatureSource(AIContent content, string? signature)
     {
-        if (!IsValidSignature(signature)) return;
         content.AdditionalProperties ??= new AdditionalPropertiesDictionary();
-        content.AdditionalProperties[SignatureKey] = signature!;
         content.AdditionalProperties[SignatureProviderKey] = SignatureProvider;
         content.AdditionalProperties[SignatureModelKey] = _modelId;
+        if (IsValidSignature(signature)) content.AdditionalProperties[SignatureKey] = signature!;
     }
 
     private bool IsSameModel(AdditionalPropertiesDictionary? properties) =>
@@ -523,14 +533,17 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         GetGeminiMajorVersion(modelId) is >= 3 || modelId.StartsWith("claude-", StringComparison.OrdinalIgnoreCase) ||
         modelId.StartsWith("gpt-oss-", StringComparison.OrdinalIgnoreCase);
 
-    private static bool SupportsMultimodalFunctionResponse(string modelId) => GetGeminiMajorVersion(modelId) is >= 3;
+    private static bool SupportsMultimodalFunctionResponse(string modelId)
+    {
+        var major = GetGeminiMajorVersion(modelId);
+        return major is null || major >= 3;
+    }
 
     private static int? GetGeminiMajorVersion(string modelId)
     {
-        const string prefix = "gemini-";
-        if (!modelId.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return null;
-        var digits = new string(modelId[prefix.Length..].TakeWhile(char.IsAsciiDigit).ToArray());
-        return int.TryParse(digits, out var major) ? major : null;
+        var match = System.Text.RegularExpressions.Regex.Match(modelId, "^gemini(?:-live)?-(\\d+)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        return match.Success && int.TryParse(match.Groups[1].Value, out var major) ? major : null;
     }
 
     private static string NormalizeCallId(string id)
@@ -539,6 +552,9 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             ? character : '_').Take(64).ToArray());
         return sanitized.Length == 0 ? "call" : sanitized;
     }
+
+    private string ResolveCallId(string id, AdditionalPropertiesDictionary? properties) =>
+        !RequiresToolCallId(_modelId) || IsSameModel(properties) ? id : NormalizeCallId(id);
 
     private static void StripSchemaMetadata(JsonNode? schema)
     {
@@ -556,7 +572,9 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
     }
 
     private static bool IsValidSignature(string? signature) => !string.IsNullOrEmpty(signature) &&
-        signature.Length % 4 == 0 && signature.All(character => char.IsAsciiLetterOrDigit(character) || character is '+' or '/' or '=');
+        System.Text.RegularExpressions.Regex.IsMatch(signature,
+            "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
     private static string ToApiThinkingLevel(string? level) => level?.ToLowerInvariant() switch
     {
@@ -567,8 +585,11 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         _ => "THINKING_LEVEL_UNSPECIFIED"
     };
 
-    private static int GetThinkingBudget(string modelId, string level)
+    private static int GetThinkingBudget(string modelId, string level,
+        IReadOnlyDictionary<string, int>? customBudgets = null)
     {
+        var budgetLevel = level is "xhigh" or "max" ? "high" : level;
+        if (customBudgets?.TryGetValue(budgetLevel, out var customBudget) == true) return customBudget;
         if (modelId.Contains("2.5-pro", StringComparison.OrdinalIgnoreCase))
             return level switch { "minimal" => 128, "low" => 2048, "medium" => 8192, "high" or "max" => 32768, _ => -1 };
         if (modelId.Contains("2.5-flash-lite", StringComparison.OrdinalIgnoreCase))
@@ -582,6 +603,8 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         modelId.Equals("gemini-flash-latest", StringComparison.OrdinalIgnoreCase) ||
         modelId.Equals("gemini-flash-lite-latest", StringComparison.OrdinalIgnoreCase) ||
         System.Text.RegularExpressions.Regex.IsMatch(modelId, "^gemini-3(?:\\.\\d+)?-(?:pro|flash)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant) ||
+        System.Text.RegularExpressions.Regex.IsMatch(modelId, "gemini-(?:[4-9]|[1-9]\\d)",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant) ||
         System.Text.RegularExpressions.Regex.IsMatch(modelId, "^gemma-?4", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 

@@ -1,0 +1,361 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "fd30e4dec77f0b192202619d222aad070719582c",
+  "scope": "Local extension directory manifest declarations and hidden/ignore/node_modules visibility, using equivalent .ts and .dll extensions through real CLI bootstrap/trust/discovery/provider flows.",
+  "characterization": {
+    "sourceMismatches": [
+      "nested-manifest",
+      "ignored-sibling",
+      "hidden-sibling",
+      "node-modules-sibling"
+    ],
+    "firstConfigurationTraces": {
+      "nested-manifest": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "ignored-sibling": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "hidden-sibling": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "node-modules-sibling": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      }
+    },
+    "nativeFailFirst": {
+      "failed": 4,
+      "passed": 12,
+      "skipped": 0
+    }
+  },
+  "implementation": [
+    "ResourceExtensionFiles owns declared-entry/index precedence and immediate-directory visibility, reusing ResourceIgnoreRules and canonical ancestry checks. A declared directory or root index selects its entry points before default discovery.",
+    "ResourcePackageManifest shares typed pi manifest parsing across resource kind selection and extension directory entry resolution. Package selection and ExtensionCatalog consume the same discovery owner; provider/Core dependencies remain unchanged.",
+    "Extension directory collection no longer silently truncates at 100 assemblies. The named comparisons cover visibility/entry rules; wider cardinality evidence remains open."
+  ],
+  "verification": {
+    "normalCliCases": 11,
+    "mismatches": 0,
+    "configurationTraces": {
+      "manifest": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "conventions": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "disabled": {
+        "pi": [],
+        "pisharp": []
+      },
+      "no-extensions": {
+        "pi": [],
+        "pisharp": []
+      },
+      "file": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "root": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "index-with-sibling": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "nested-manifest": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "ignored-sibling": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "hidden-sibling": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      },
+      "node-modules-sibling": {
+        "pi": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ],
+        "pisharp": [
+          "configured",
+          "trust-undecided:false",
+          "trust-decision:false"
+        ]
+      }
+    },
+    "focusedPassed": 73,
+    "newNativeRows": 8,
+    "existingLoaderRegressionCases": 95,
+    "loaderMismatches": 0,
+    "fullSuite": {
+      "passed": 1950,
+      "failed": 0,
+      "skipped": 0
+    },
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "exactCi": {
+      "sha": "2c911341c4fca6d42ac885ee62b7171e893eb7bd",
+      "run": 38651424268,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38651424268",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1950,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
+  },
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "package-extension-discovery-node-modules-sibling-first-pi.http.json": "bb4b1cae4ab387b2f76cf09e82fde688e8bde19fea0a1f0117f2572646f872f9",
+    "package-extension-discovery-nested-manifest-first-pisharp.records.json": "d6ac0b79fbda66b18d78de62a805b23dd9958a4349894b72eec39a6b6d81a44c",
+    "package-extension-discovery-nested-manifest-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-hidden-sibling-recovery-pi.http.json": "4b6c99be3737f1f407c991f8d58b24f8b617a69391879fba5635fae3e2820956",
+    "package-extension-discovery-node-modules-sibling-recovery-pi.records.json": "5f2f1ebde6ba18b6ee3d9eb730695e5abb19a5068cc3afa4939d0c0d33026b2a",
+    "package-extension-discovery-node-modules-sibling-first-pi.records.json": "51e8511dc34c40e49888eadfe064689b173117be28d750699a72be3e3f5bee36",
+    "package-extension-discovery-nested-manifest-first-pisharp.http.json": "08559bbc57afd59e16fecc5e30e8edb93f444b9c4cdba57d529137a872536cec",
+    "package-extension-discovery-no-extensions-recovery.json": "f10cdce81d1d134a6de75f80fd16cc539c3db407735ba9476bd08f77d0b98a26",
+    "package-extension-discovery-node-modules-sibling-recovery-pisharp.records.json": "4e5e8fad95a4e49803efdeb684608d6c7d41995c8241f1d1afc1fd4adedd948f",
+    "package-extension-discovery-disabled-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-disabled-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-manifest-recovery-pisharp.http.json": "78b457454551ce7b183bbcf59bf7fa6027cc3e34f294655b631d6d30b25193e0",
+    "package-extension-discovery-nested-manifest-recovery-pi.stderr.log": "8ee341a9ada20408de970e57555bfbc02d9f970ed39452965e42fe0765094d5c",
+    "package-extension-discovery-index-with-sibling-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-no-extensions-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-ignored-sibling-recovery-pi.stderr.log": "604c8c3eac30ca70f414f9f037e827fb9210a8e8aa9d0ed6e658956aaa5c2e81",
+    "package-extension-discovery-node-modules-sibling-recovery-pi.http.json": "47c754fd4d9545945761eed4b86fe7287dc64ba4b5551ffb48d68aa1c2c4b4e9",
+    "package-extension-discovery-disabled-recovery-pi.http.json": "710e05c05576cec611458bb2b31a7c3f6e3d20f481fd3d3e1b2385680e4cde1a",
+    "package-extension-discovery-hidden-sibling-recovery-pi.stderr.log": "84af2f26f4b6e8fcca4d4beab655149c835207b27cbd0b4ae1bb4ee9e7d03308",
+    "package-extension-discovery-hidden-sibling-recovery-pisharp.http.json": "de27e50f07317c12278a8d5509e705ac4799c54633590cbaa12ff1a66f073e3f",
+    "package-extension-discovery-ignored-sibling-recovery-pisharp.http.json": "3f6ea2813d2738c244e019a7c983c517dcc2aa44dc72cf8a508877705a5bcee8",
+    "package-extension-discovery-no-extensions-recovery-pisharp.http.json": "5d16cc31612bbc519576e45b57de18d3c60715a56a5dd59f7cd2ff62ef7449b7",
+    "package-extension-discovery-index-with-sibling-recovery-pisharp.http.json": "5e8cbc403d0e634988afc6b4906f7b89ea8b1e2a8f7a47a1cb2a5e3ab613f8cf",
+    "package-extension-discovery-node-modules-sibling-first-pisharp.http.json": "1da5d6d07560bbf131a0632fadf4b485896716eacfff25831401444245867fbe",
+    "package-extension-discovery-file-recovery-pisharp.http.json": "93031b9dbd954ea8d4c31d55d0c4996be0b6bf20c2ba0c91316791bec05da231",
+    "package-extension-discovery-nested-manifest-first-pi.records.json": "dc7afc8a5d863cafc9cd09f487ac724d2433df7295f447c4016effb3690bf91a",
+    "package-extension-discovery-file-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-ignored-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-conventions-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-ignored-sibling-first-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-conventions-recovery-pisharp.records.json": "ed0b8885e5e2575bcffadf0148937b293d1fd692f906025f11a1871a2aac7989",
+    "package-extension-discovery-file-recovery-pi.records.json": "37ce3c314fe47c01d59e286fbc2fa405053f5c36970fe32413810c5a1e6cd76e",
+    "package-extension-discovery-ignored-sibling-first.log": "0dc2f3ec6ad345941350b08af1a838f8a01b9ebf3f5a49a07b59ee2dd71dfaf5",
+    "package-extension-discovery-manifest-recovery-pi.stderr.log": "dbd9fd6c01e36eaa966218b8857807af02628bfb0d65a8eae85769e718ecb105",
+    "package-extension-discovery-fresh-build.log": "6494bcd629c2e3f2b25797405538ee84c8fedb47311be3f3b75c6a72810467c5",
+    "package-extension-discovery-no-extensions-recovery-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-node-modules-sibling-first-pisharp.records.json": "18a3aa2b7f23640f2b767f14d189f19d45108d05a9d9b190e852f5d66aa299da",
+    "package-extension-discovery-file-recovery-pisharp.records.json": "07ff44d8feec8f9725088642bd739e8a5b3e5f8597189092c68ac5521b5987a6",
+    "package-extension-discovery-conventions-recovery-pi.records.json": "bca92b6b0d4a0b4b9ffade75f4b3a375a8e452f9561b51aa04e05463b0cc1647",
+    "package-extension-discovery-root-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-root-recovery-pi.http.json": "050b6125331e80c8cc7b832d1d33eb228589dfa504fed71fc04fea40a2523f4f",
+    "package-extension-discovery-no-extensions-recovery-pisharp.records.json": "98586584bdeecf3965086000e208e416e959d2287cdc6f601de25c123c6909d2",
+    "package-extension-discovery-hidden-sibling-recovery-pi.records.json": "fcde47c2766927f39ced0b166c63c2068e3d4db9628730e1065bb45b3a21f558",
+    "package-extension-discovery-manifest-recovery-pisharp.records.json": "a832ff8ae25c663e8bce00ee49741416ca2c7d294426a3eba608a4ed108941b7",
+    "package-extension-discovery-manifest-recovery-pi.http.json": "57df239544645ac57a01254ba7b8ed4c85e9754910b67df7aee427374c43eeb5",
+    "package-extension-discovery-node-modules-sibling-first.json": "6bbf4bb7b089e9c0f10224773fcef0cb82160b54c9c090c9063fa8a93f027474",
+    "package-extension-discovery-loader-regression.json": "051523bf83f072f55b68a7fc118f6cc37ee95271ce3ab4982cc6c050ede121d1",
+    "package-extension-discovery-nested-manifest-first-pi.stderr.log": "f4da3d03d6d93b22eb297c0399854ffd166c92615fdb6c5b4157609e31e53fa9",
+    "package-extension-discovery-index-with-sibling-recovery-pisharp.records.json": "98094f352dbfbb095339aadb160f0f3414c2dbfe8fce2b1ff770640f7e9330ee",
+    "package-extension-discovery-conventions-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-node-modules-sibling-first-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-nested-manifest-recovery-pisharp.http.json": "eebc1201980a9ad70f4c168eec8f4efc16031a6ec71977471f541a2089d39b39",
+    "package-extension-discovery-hidden-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-manifest-recovery.json": "f88a959a2f0953d03ef7502df78da3f6b38a9335443ca3176a86dcfe731b9e5f",
+    "package-extension-discovery-nested-manifest-recovery-pi.http.json": "960d36f34cb47483cdf3d0b0cc1659dc7d8457858b08b9f173cdd1d1bbed5631",
+    "package-extension-discovery-ignored-sibling-first-pisharp.records.json": "61b5c9ee5060979d2bd5872e36247ca71eb4c9d0f205339222ff6f6fa6401807",
+    "package-extension-discovery-root-recovery.json": "134c297125691946a56bf082008b9c9471cc8fdfdf27065b3ac4aebadf54f92f",
+    "package-extension-discovery-ignored-sibling-first-pisharp.http.json": "76214c6ccb5eaa032abcd2d3a000cd99b89df511d6aab9b5682397dae804f635",
+    "package-extension-discovery-ignored-sibling-first.json": "a2437c08f62111993f7ab97033a0ff39b57ee3e73aed38f6c4be7879aacd7fd4",
+    "package-extension-discovery-focused-recovery.log": "557163c89bf28dba048cef2e2f5a7ea39aa4d3594ab5bdbcbd8332d2aff90da6",
+    "package-extension-discovery-index-with-sibling-recovery-pi.http.json": "7b1238488f30c98201ef09002b6f6610d910096ae34a17ba12366595a401aeb2",
+    "package-extension-discovery-ignored-sibling-recovery-pi.http.json": "48c9e4eeb9a302c9988466a42d2282bee9a1e34e9d3f7d231338ed568d1a6225",
+    "package-extension-discovery-file-recovery-pi.http.json": "ce03001431e3a2d8453b266047b434d279119cc10973f58926561f54c59f8275",
+    "package-extension-discovery-root-recovery-pisharp.records.json": "91bba8a38fb4eafdb1476ccf5d763661f6a2065353aad6f4b95dc5d156189cda",
+    "package-extension-discovery-nested-manifest-recovery-pi.records.json": "e58cd01fb1f87eff204b27175a2e478aba93d6439762fd76fa7f3419c4262203",
+    "package-extension-discovery-hidden-sibling-first-pi.http.json": "1b5cb4b8c124567b933cac6d34ae0582fe99060259ba71fb9eb6348f15df3155",
+    "package-extension-discovery-disabled-recovery.json": "e74b4dd2706d1766584493921f48cd8662fa963c402ba540aae4874197b6e49e",
+    "package-extension-discovery-nested-manifest-recovery-pisharp.records.json": "3f187fdd47e4dc72dae52d872e444f8d77943679548d5acc8f870ab576cd2c26",
+    "package-extension-discovery-manifest-recovery-pi.records.json": "d9f5d7a5bc5dc1b2a2692468b0e0b8975b0c707a8a86787a1cefc39455e011b3",
+    "package-extension-discovery-no-extensions-recovery-pi.http.json": "141e3f7ab871aebea683d28510dacdc6780807ed5fb170b6f9e578eed7cae4f2",
+    "package-extension-discovery-no-extensions-recovery-pi.records.json": "2e860a0177c1bc38435775c81cae99c5de538cc7d58d4aa09d20357d64da11ef",
+    "package-extension-discovery-root-recovery-pi.stderr.log": "679e1c4febb6ec381a30a6e21530cc97ec027deea5f13bc2518b27bac54c2fbb",
+    "package-extension-discovery-node-modules-sibling-recovery-pisharp.http.json": "b08638f961267d7b9c806c13ff2a610057fa6ac65d76d4430185018a25aee701",
+    "package-extension-discovery-hidden-sibling-first.json": "62f4922a654f074ede102962b65c3d523cb8ba5a2d8962bdb1a335eba010cc97",
+    "package-extension-discovery-nested-manifest-first.json": "9a10a2ac1a56bd47336771b6fe0e9cd87e12ffee7de293153e4ebd93aa8d6275",
+    "package-extension-discovery-conventions-recovery.json": "645d0a2aa3b70f350c8a5eebcabc7cb2ccb54dedfa28eb38352ddfd96ebbd916",
+    "package-extension-discovery-index-with-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-node-modules-sibling-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-hidden-sibling-recovery.json": "a1e869562eb0da20c6544ba39c6273cd8639c868c17df4bbf84f1e2141390bbf",
+    "package-extension-discovery-hidden-sibling-first-pi.records.json": "d504311f4d5dfdfdce280ef7e38665ad42cd7704edb52360ded71a7682475f47",
+    "package-extension-discovery-ignored-sibling-recovery-pi.records.json": "31c24609795346729dc55df9986c5da8741b4b012c4b6d354ad10cad0d7d2b45",
+    "package-extension-discovery-hidden-sibling-first-pisharp.records.json": "4cef5fd1be57812e3248c69ccd0a4bd53389d0d740249a6ccdee8b0ae9b3ae7f",
+    "package-extension-discovery-nested-manifest-first-pi.http.json": "72d8eb668abc29bdf8a5dc211f9abd5ba106fc08ce822457e2eff605624fcf48",
+    "package-extension-discovery-loader-regression.log": "3fd3d33686c14776b4047b77bb9fe20ba66ce2a25408bf5ff5befa4358bec0d1",
+    "package-extension-discovery-nested-manifest-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-ignored-sibling-first-pi.stderr.log": "cb483a1727c94f3c833583325614afa00c3061a57a96abdf8f2d3358a424d3ea",
+    "package-extension-discovery-node-modules-sibling-first.log": "baf29f3601448f0b72625edb249afdbbe611bcadfe5f6f2892081bfdc4c319ab",
+    "package-extension-discovery-ignored-sibling-recovery-pisharp.records.json": "22e64548c15c44d455d4f1056e61a4e4948f47380e1359799d3cb56b753bd910",
+    "package-extension-discovery-node-modules-sibling-recovery-pi.stderr.log": "1b2a81962cbb89c920bfa2aa433af0ceea44f0e757f7a23dbf0e171d8ec1e147",
+    "package-extension-discovery-manifest-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-hidden-sibling-first-pi.stderr.log": "386f67dfec8e5586aa78a6e9dc93d504b77a6b28fa7cf86e16236013d5783db4",
+    "package-extension-discovery-hidden-sibling-first-pisharp.http.json": "2dda6f2e730e0bff21c2894b19e1ebb6880be1ae505ef816b5a5a2341b4334b0",
+    "package-extension-discovery-node-modules-sibling-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-ignored-sibling-first-pi.records.json": "f55b4ce4d7b55d257de7d902c0936466f977ba5983e476eb0c21d6166d658d0a",
+    "package-extension-discovery-index-with-sibling-recovery-pi.stderr.log": "7cc955438e289d8ec234400ea686502b1c9d8fae9311b576542488cd727afc87",
+    "package-extension-discovery-node-modules-sibling-first-pi.stderr.log": "f1f431b6a7674510ac0926aa7969e78870363a5ba4e08c5ce5f8ee0ed9291d13",
+    "package-extension-discovery-disabled-recovery-pi.records.json": "c70ad68db933100e8fa786979690be90322d4e639583d0e92c082650df9c5bad",
+    "package-extension-discovery-file-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-root-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-nested-manifest-recovery.json": "7e8566f14ca58a24e62f89d4d4be7e278b18128110cdf833a995770f3aad9a48",
+    "package-extension-discovery-hidden-sibling-recovery-pisharp.records.json": "95f1c73964230b9948f496e8f5a797443e36937b34af605aa2e350eefe22d6a9",
+    "package-extension-discovery-conventions-recovery-pi.stderr.log": "acfc89f39b648960287e8b2c41e36074fc5f871c696a967c050bab1730f5afac",
+    "package-extension-discovery-manifest-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-conventions-recovery-pisharp.http.json": "0c301db231bc7fb65aea88e02c4834db27f6f30c245a0fc78010c358f1284c4f",
+    "package-extension-discovery-root-recovery-pi.records.json": "d5ef06ac21cc0e1abdb446676cf423c294d276253317f161a619329ae3a5427e",
+    "package-extension-discovery-file-recovery-pi.stderr.log": "92cb723b84940c8c9bbbd0e701f147cebdee0f491145a57dd827d100dfee3c84",
+    "package-extension-discovery-index-with-sibling-recovery-pi.records.json": "2874fe44ee728e6b2d50cf10ed775c44e7663a1bd358108aefcdd94796931e85",
+    "package-extension-discovery-hidden-sibling-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-hidden-sibling-first-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-node-modules-sibling-recovery.json": "2ff36025f7843bbb92c065db1b257c77d15060c1d180d7a5ce5e24df7642ea54",
+    "package-extension-discovery-ignored-sibling-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-ignored-sibling-recovery.json": "d84e99b9b114d8323625d7f769f727ae4aebc72f9de1eaa2355d0235edd6b8ef",
+    "package-extension-discovery-index-with-sibling-recovery.json": "2930b6d95efeb80fc0c061628e9385523938ec626f5a1e1a0dddf200bb187286",
+    "package-extension-discovery-disabled-recovery-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-disabled-recovery-pisharp.http.json": "6269ee63e8afb75f10972e0ae02efe295ee4680897c195fc47c7bccf299efcb5",
+    "package-extension-discovery-conventions-recovery-pi.http.json": "80e2ff031f01f2f7a48fd78478929ab68791ad4b5c3357bb57efe0ef6d374775",
+    "package-extension-discovery-disabled-recovery-pisharp.records.json": "15b4267e7c83bcf6f4babb22b0337169ebbc721b8939423f55ba76730a16b125",
+    "package-extension-discovery-hidden-sibling-first.log": "9ec8b796d3cf5bfa8757bf87fc4723a7e8b228352d809ce5697763082eb63914",
+    "package-extension-discovery-root-recovery-pisharp.http.json": "585fda45fab89c8bac936afb571528c3544ebd243cd4b7b0f013ebb28693d080",
+    "package-extension-discovery-ignored-sibling-first-pi.http.json": "f7426c848e2b91430252a03edc9d61b195801fad97d3a1d41f45b9fd77c381cf",
+    "package-extension-discovery-no-extensions-recovery.log": "57f6fda39d2ca99af867be14cc587d09427edfa14974ddd434648631af5124ba",
+    "package-extension-discovery-nested-manifest-first.log": "865ff61a62bc9f99bbd84a40ab03a1c7aac6d228700395b699b85a6281fddb4e",
+    "package-extension-discovery-native-first.log": "b44e65a06924bf9003e3adb662fda30d97b2a649cf224eee6ecb7dc0715a78e9",
+    "package-extension-discovery-file-recovery.json": "b58dfbd8628b1ddd6c8e4f1410d24a5ab052b7a32178e8c6228b1941ba19b39c",
+    "package-extension-discovery-nested-manifest-first-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-extension-discovery-full.log": "4dd99fb2ebab0d2b277b2a6a776b35c0cfe161301f0d36ddaf295361d4c05623",
+    "../resources-current-pi-2026-10-15/package-extension-discovery-exact-ci.log": "34f2cb4643ae0d54418a9c0aeb5856755f74b4e12135c936ec779b949e0e9de7"
+  },
+  "limits": [
+    "These paired flows prove which fixtures configure, trust, discover and expand; they do not establish complete extension diagnostic, partial-registration recovery, aliases/collisions, Unicode ordering, arbitrary directory/cardinality or reload behavior.",
+    "Declared .NET assemblies and Pi TypeScript entry points are framework-equivalent fixtures; literal module-loading implementation and error messages are not claimed identical.",
+    "Managed npm/git sources, normal package CLI workflows and complete resource/extension/trust/reload capability remain in_progress; historical timing/calibration/footer concerns remain separately retained."
+  ]
+}

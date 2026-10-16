@@ -1,0 +1,409 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "cases": [
+    {
+      "id": "transient-windows-permission",
+      "platform": "win32",
+      "codes": [
+        "EPERM"
+      ],
+      "cancel": null
+    },
+    {
+      "id": "persistent-windows-permission",
+      "platform": "win32",
+      "codes": [
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM",
+        "EPERM"
+      ],
+      "cancel": null
+    },
+    {
+      "id": "linux-permission",
+      "platform": "linux",
+      "codes": [
+        "EPERM"
+      ],
+      "cancel": null
+    },
+    {
+      "id": "linux-contention",
+      "platform": "linux",
+      "codes": [
+        "ELOCKED"
+      ],
+      "cancel": null
+    },
+    {
+      "id": "mixed-contention-permission",
+      "platform": "win32",
+      "codes": [
+        "ELOCKED",
+        "EPERM",
+        "ELOCKED",
+        "EPERM",
+        "ELOCKED",
+        "EPERM",
+        "ELOCKED",
+        "EPERM",
+        "ELOCKED",
+        "EPERM"
+      ],
+      "cancel": null
+    },
+    {
+      "id": "missing-file",
+      "platform": "win32",
+      "codes": [
+        "ENOENT"
+      ],
+      "cancel": null
+    },
+    {
+      "id": "disk-error",
+      "platform": "win32",
+      "codes": [
+        "ENOSPC"
+      ],
+      "cancel": null
+    },
+    {
+      "id": "already-canceled",
+      "platform": "win32",
+      "codes": [],
+      "cancel": "before"
+    },
+    {
+      "id": "cancel-after-rejection",
+      "platform": "win32",
+      "codes": [
+        "EPERM"
+      ],
+      "cancel": "rejection"
+    },
+    {
+      "id": "cancel-after-acquisition",
+      "platform": "win32",
+      "codes": [],
+      "cancel": "acquired"
+    }
+  ],
+  "pi": [
+    {
+      "id": "transient-windows-permission",
+      "succeeded": true,
+      "canceled": false,
+      "attempts": 2,
+      "updates": 1,
+      "releases": 1,
+      "delays": [
+        10
+      ]
+    },
+    {
+      "id": "persistent-windows-permission",
+      "succeeded": false,
+      "canceled": false,
+      "attempts": 6,
+      "updates": 0,
+      "releases": 0,
+      "delays": [
+        10,
+        20,
+        40,
+        80,
+        160
+      ]
+    },
+    {
+      "id": "linux-permission",
+      "succeeded": false,
+      "canceled": false,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "linux-contention",
+      "succeeded": true,
+      "canceled": false,
+      "attempts": 2,
+      "updates": 1,
+      "releases": 1,
+      "delays": [
+        10
+      ]
+    },
+    {
+      "id": "mixed-contention-permission",
+      "succeeded": true,
+      "canceled": false,
+      "attempts": 11,
+      "updates": 1,
+      "releases": 1,
+      "delays": [
+        10,
+        20,
+        40,
+        80,
+        160,
+        320,
+        640,
+        1000,
+        1000,
+        1000
+      ]
+    },
+    {
+      "id": "missing-file",
+      "succeeded": false,
+      "canceled": false,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "disk-error",
+      "succeeded": false,
+      "canceled": false,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "already-canceled",
+      "succeeded": false,
+      "canceled": true,
+      "attempts": 0,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "cancel-after-rejection",
+      "succeeded": false,
+      "canceled": true,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "cancel-after-acquisition",
+      "succeeded": false,
+      "canceled": true,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 1,
+      "delays": []
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "transient-windows-permission",
+      "succeeded": true,
+      "canceled": false,
+      "attempts": 2,
+      "updates": 1,
+      "releases": 1,
+      "delays": [
+        10
+      ]
+    },
+    {
+      "id": "persistent-windows-permission",
+      "succeeded": false,
+      "canceled": false,
+      "attempts": 6,
+      "updates": 0,
+      "releases": 0,
+      "delays": [
+        10,
+        20,
+        40,
+        80,
+        160
+      ]
+    },
+    {
+      "id": "linux-permission",
+      "succeeded": false,
+      "canceled": false,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "linux-contention",
+      "succeeded": true,
+      "canceled": false,
+      "attempts": 2,
+      "updates": 1,
+      "releases": 1,
+      "delays": [
+        10
+      ]
+    },
+    {
+      "id": "mixed-contention-permission",
+      "succeeded": true,
+      "canceled": false,
+      "attempts": 11,
+      "updates": 1,
+      "releases": 1,
+      "delays": [
+        10,
+        20,
+        40,
+        80,
+        160,
+        320,
+        640,
+        1000,
+        1000,
+        1000
+      ]
+    },
+    {
+      "id": "missing-file",
+      "succeeded": false,
+      "canceled": false,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "disk-error",
+      "succeeded": false,
+      "canceled": false,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "already-canceled",
+      "succeeded": false,
+      "canceled": true,
+      "attempts": 0,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "cancel-after-rejection",
+      "succeeded": false,
+      "canceled": true,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 0,
+      "delays": []
+    },
+    {
+      "id": "cancel-after-acquisition",
+      "succeeded": false,
+      "canceled": true,
+      "attempts": 1,
+      "updates": 0,
+      "releases": 1,
+      "delays": []
+    }
+  ],
+  "piContention": {
+    "blockedUntilRelease": true,
+    "providers": [
+      "first",
+      "second"
+    ],
+    "holderExited": true,
+    "writerExited": true
+  },
+  "pisharpContention": {
+    "blockedUntilRelease": true,
+    "providers": [
+      "first",
+      "second"
+    ],
+    "holderExited": true,
+    "writerExited": true
+  },
+  "match": true,
+  "comparison": "Exact async attempt/update/release counts and deterministic backoff delays for simulated Windows permission errors, persistent/non-Windows errors, ordinary contention, mixed counters and cancellation. Real separate processes verify writes wait for another holder and preserve both provider entries.",
+  "limitations": "Windows platform/error inputs are injected like Pi source tests; a real Windows delete-pending filesystem is unavailable. Pi uses proper-lockfile directories; PiSharp uses persistent private native FileShare.None leases and separate process gates. Both async policy contracts match; PiSharp exposes no synchronous auth-storage API. Cross-language simultaneous locking of the same auth file, lease timeout wording and wider auth refresh/reload semantics remain open.",
+  "characterization": {
+    "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-fail-first.log",
+    "sha256": "b153f1f9654a012fd0ee31899c6729c1c29b1589b86cd9dbae1bd6a50b663f4d",
+    "failed": 2,
+    "passed": 0,
+    "skipped": 0,
+    "finding": "Two deterministic mismatches: 20 independent concurrent storage writes retained one provider entry, and storage writes ignored a held native credential-file lease."
+  },
+  "sourceVerification": {
+    "command": "npx --cache /tmp/pisharp-npm-cache vitest run packages/coding-agent/test/auth-storage.test.ts --reporter=json --outputFile=/tmp/pisharp-current-auth-lock-source-tests.json",
+    "passed": 30,
+    "failed": 0,
+    "skipped": 0
+  },
+  "implementation": "AuthStorage uses a process gate shared by normalized credential-file path and a persistent private .pisharp.lock FileShare.None lease. Mutations hold the native lease until the atomic replacement is complete. Read/list operations retain read-only access and use a shared process gate plus FileShare.Delete snapshots of atomically replaced credential files; lookups do not create absent agent directories. OAuth refresh locks reuse the acquisition owner while retaining their existing two-minute contention budget. Windows access-denied/UnauthorizedAccess acquisition is capped at five retries, separately from sharing contention; auth-file contention has a 30-second budget. Cancellation after successful acquisition closes the lease before returning. Only native sharing/lock codes are retried; unrelated IO errors fail immediately.",
+  "regressionCharacterization": {
+    "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-full-tests.log",
+    "sha256": "91aa8d92bf9f6649e85d74782d966411c0026963e112d554fd999532ce638d11",
+    "failed": 8,
+    "passed": 1559,
+    "skipped": 0,
+    "finding": "Seven PTY checks exposed lock creation during read-only startup; direct CLI execution confirmed read-only filesystem failure at the home credential lock. Reads/listings now avoid file mutation and new absent-directory guards cover both paths. One HTTP retry-delay check exposed a separately reproduced provider-rejection/cancellation race, fixed and recorded independently."
+  },
+  "verification": {
+    "newAuthControls": 16,
+    "piSourcePassed": 30,
+    "failed": 0,
+    "skipped": 0,
+    "fullWorkingTreePassed": 1581,
+    "formatVerified": true,
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "scope": "Combined working tree includes separately committed provider cancellation/deadline and fixture corrections.",
+    "full": {
+      "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-final-full-tests.log",
+      "sha256": "14b1964a6da534709a2ad79f7e07023e12fdb4104b387891916c6f8651a6e5ec"
+    },
+    "build": {
+      "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-final-build.log",
+      "sha256": "a6fa4c5061188e8d11cc2c89d07783b0dd9ff57194fb0321295b546ff5e3f244"
+    },
+    "format": {
+      "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-final-format-verification.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "publishedVerification": {
+    "piSharpSha": "d499697e6abf3aab0e5c7717e2794cba9fe0b156",
+    "ciRun": 38486370551,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38486370551",
+    "conclusion": "success",
+    "scope": "Both Linux CI and MCP jobs pass at the exact published auth/provider/fixture head; classified MCP outcomes remain required work."
+  }
+}

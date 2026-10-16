@@ -4,8 +4,9 @@ using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Sessions;
 
-internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBinding, ActiveModelRuntime modelBinding,
-    ActiveConversationRuntime conversationBinding, ProjectConversationTransitions projectTransitions, TerminalPresentation presentation)
+internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBinding,
+    ActiveConversationRuntime conversationBinding, ProjectConversationTransitions projectTransitions, TerminalPresentation presentation,
+    Action<ProjectSessionRuntime> adoptProjectSession)
 {
     private TerminalSessionPicker? _picker = presentation.Editor is null ? null : new TerminalSessionPicker(projectBinding.Store, presentation.Editor);
     private readonly TerminalForkPicker? _forkPicker = presentation.Editor is null ? null : new TerminalForkPicker(presentation.Editor);
@@ -13,15 +14,13 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
 
     public async Task ResumeSessionAsync(SessionListing listing)
     {
-        var resumed = await projectTransitions.Sessions.ResumeAsync(conversationBinding.Conversation, conversationBinding.Path, listing,
-            modelBinding.Connection.Model, modelBinding.Connection.Endpoint?.ToString(), modelBinding.Selection.Provider.Id);
-        if (resumed is null)
+        if (listing.Path == conversationBinding.Path)
         {
             Console.WriteLine("Already in this session.");
             return;
         }
-        conversationBinding.Adopt(resumed.Conversation, resumed.Run, resumed.Path);
-        presentation.LoadSessionTranscript();
+
+        await projectTransitions.SwitchAsync(listing.Path, adoptProjectSession, CancellationToken.None);
         Console.WriteLine($"Resumed {conversationBinding.Conversation.Id[..12]} · {conversationBinding.Conversation.Name ?? "(unnamed)"}");
     }
 
@@ -33,7 +32,7 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             Console.WriteLine("Use /sessions, then /resume <ID-prefix|exact-name> in interactive mode.");
             return;
         }
-        var listing = await _picker.ShowAsync(conversationBinding.Path);
+        var listing = await _picker.ShowAsync(conversationBinding.Path, conversationBinding.Conversation);
         if (listing is not null) await ResumeSessionAsync(listing);
     }
 

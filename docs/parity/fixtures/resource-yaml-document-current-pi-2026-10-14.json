@@ -1,0 +1,241 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "79b2b5e4f78475d1399afa5a4a9d090a7cc16c0f",
+  "candidate": "Base plus resource YAML document/scalar/diagnostic owners, expanded source corpus and regression tests in this commit.",
+  "match": true,
+  "cases": 311,
+  "comparison": "Actual pinned skill/prompt loaders; exact retained typed metadata/order, full body SHA256/UTF16 length and every resource diagnostic type/path/order/raw message. The entire expanded edge corpus now passes without reducing the comparison. Library runtime warning output stays in raw logs; normal Pi CLI warning suppression was independently tested in the prior scalar slice.",
+  "characterization": [
+    {
+      "cases": 255,
+      "metadataDifferences": 20,
+      "rawWarningDifferences": 42,
+      "diagnosticNativeFailFirst": {
+        "failed": 13,
+        "passed": 0,
+        "skipped": 0
+      },
+      "mappingNativeFailFirst": {
+        "failed": 8,
+        "passed": 2,
+        "skipped": 0
+      }
+    },
+    {
+      "phase": "Alias expansion/order",
+      "nativeFailFirst": {
+        "failed": 4,
+        "passed": 5,
+        "skipped": 0
+      },
+      "nativeCrash": "Malformed missing-flow-terminator/following-block-key case raised an uncaught YamlDotNet InvalidOperationException. Raw aborted probe is retained. The probe then captures that exception per case, preserving it as a mismatch.",
+      "afterAliasAccounting": {
+        "cases": 281,
+        "metadataDifferences": 2,
+        "rawWarningDifferences": 2
+      },
+      "scannerNativeFailFirst": {
+        "failed": 1,
+        "passed": 13,
+        "skipped": 0
+      }
+    },
+    {
+      "cases": 311,
+      "metadataDifferences": 4,
+      "rawWarningDifferences": 6,
+      "collectionNativeFailFirst": {
+        "failed": 3,
+        "passed": 14,
+        "skipped": 0
+      }
+    },
+    {
+      "phase": "Full suite fixture failures",
+      "fixture": "docs/parity/fixtures/process-fixture-recovery-2026-10-14.json",
+      "failedWorkingSuite": {
+        "passed": 1881,
+        "failed": 1,
+        "skipped": 0
+      },
+      "resolution": "Port retry and inherited dumb-terminal failures are separately repaired/evidenced/published at 79b2b5e4f7 with exact CI 38564664115. Pending YAML candidate then passed 1883 tests; final set/end cases add three more."
+    }
+  ],
+  "implementation": [
+    "ResourceYamlDocument uses the installed YamlDotNet parser events while retaining ordered map pairs and scalar/alias/complex key identity. Semantic scalar-key duplicates match JavaScript core scalar equality, including NaN; distinct typed keys and repeated alias/complex keys remain accepted. Consumed alias-key properties use the last projected value.",
+    "ResourceYamlScalar owns the exact consumed YAML core scalar/tag grammar, cached key values and numeric equivalence. ResourceFrontmatter now owns only the envelope/normalization and four consumed metadata fields. Runtime dependency ownership stays intact; no new production project or framework layer is added.",
+    "Alias conversion follows complete syntax/key validation. Previous-anchor resolution, redeclaration, self collections, per-anchor reference counts and nested weights match the source default 100 threshold without expanding the alias graph.",
+    "ResourceYamlDiagnostics owns source-equivalent error titles, line/column/context, long-line clipping and underline spans for the measured classes. Flow scanner state failures become recoverable YAML diagnostics; set values require actual null scalars and trailing root scalars receive source diagnostics."
+  ],
+  "verification": {
+    "focusedPassed": 96,
+    "fullPassed": 1886,
+    "fullFailed": 0,
+    "fullSkipped": 0,
+    "newNativeRows": 36,
+    "format": "passed",
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "realNormalRpcProvider": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "scenario": "malformed-flow",
+      "piSharpBaseSha": "79b2b5e4f78475d1399afa5a4a9d090a7cc16c0f",
+      "assemblySha256": "d04824c0680e331818a02493770025809ec7d497bc78cf374aa82cf8ce7eab00",
+      "dependencyAssemblySha256": {
+        "PiSharp.Runtime.dll": "c240ee74915c058023a493d4aef2f5a36847b66fb0fe6c3e6fcc2578c13a3b51",
+        "PiSharp.Core.dll": "91ceec7016c515bdfd087a0c55a7683f61660ce5e2216bd02f58f532f130f9d9"
+      },
+      "results": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": null
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": null
+        }
+      },
+      "match": true
+    },
+    "realProcessScope": "The formerly aborting malformed skill warns/skips at startup, is absent from get_commands, and original /skill:guide args reaches the loopback provider and settles with successful exit in both products.",
+    "exactHeadCi": {
+      "sha": "018337d80611ee729759ef0393b80ff5de27c7b1",
+      "run": 38566270534,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38566270534",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1886,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
+  },
+  "caseIds": [
+    "skill-duplicate",
+    "skill-unknown-nested-duplicate",
+    "skill-unknown-alias",
+    "skill-complex-key",
+    "skill-root-alias",
+    "skill-key-alias",
+    "skill-duplicate-hex-key",
+    "skill-duplicate-float-key",
+    "skill-duplicate-null-key",
+    "skill-duplicate-bool-key",
+    "skill-distinct-typed-key",
+    "skill-alias-key-space",
+    "skill-repeated-alias-key",
+    "skill-repeated-complex-key",
+    "skill-duplicate-quoted-key",
+    "skill-duplicate-nan-key",
+    "skill-unknown-alias-before-syntax",
+    "skill-unknown-alias-after-syntax",
+    "skill-alias-redefined",
+    "skill-alias-self-collection",
+    "skill-root-explicit-set-invalid",
+    "skill-root-explicit-set-valid",
+    "skill-value-explicit-set-invalid",
+    "skill-value-explicit-set-valid",
+    "skill-alias-key-unknown",
+    "skill-alias-name-colon",
+    "skill-duplicate-collection-description",
+    "skill-root-mapping-trailing-garbage",
+    "skill-block-duplicate-indicator",
+    "skill-alias-scalar-count-1",
+    "skill-alias-scalar-count-98",
+    "skill-alias-scalar-count-99",
+    "skill-alias-scalar-count-100",
+    "skill-alias-scalar-count-101",
+    "skill-alias-nested-2-2",
+    "skill-alias-nested-2-4",
+    "skill-alias-nested-3-3",
+    "skill-alias-nested-4-3",
+    "prompt-duplicate",
+    "prompt-unknown-nested-duplicate",
+    "prompt-unknown-alias",
+    "prompt-complex-key",
+    "prompt-root-alias",
+    "prompt-key-alias",
+    "prompt-duplicate-hex-key",
+    "prompt-duplicate-float-key",
+    "prompt-duplicate-null-key",
+    "prompt-duplicate-bool-key",
+    "prompt-distinct-typed-key",
+    "prompt-alias-key-space",
+    "prompt-repeated-alias-key",
+    "prompt-repeated-complex-key",
+    "prompt-duplicate-quoted-key",
+    "prompt-duplicate-nan-key",
+    "prompt-unknown-alias-before-syntax",
+    "prompt-unknown-alias-after-syntax",
+    "prompt-alias-redefined",
+    "prompt-alias-self-collection",
+    "prompt-root-explicit-set-invalid",
+    "prompt-root-explicit-set-valid",
+    "prompt-value-explicit-set-invalid",
+    "prompt-value-explicit-set-valid",
+    "prompt-alias-key-unknown",
+    "prompt-alias-name-colon",
+    "prompt-duplicate-collection-description",
+    "prompt-root-mapping-trailing-garbage",
+    "prompt-block-duplicate-indicator",
+    "prompt-alias-scalar-count-1",
+    "prompt-alias-scalar-count-98",
+    "prompt-alias-scalar-count-99",
+    "prompt-alias-scalar-count-100",
+    "prompt-alias-scalar-count-101",
+    "prompt-alias-nested-2-2",
+    "prompt-alias-nested-2-4",
+    "prompt-alias-nested-3-3",
+    "prompt-alias-nested-4-3"
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-yaml-keys-characterization.json": "2bc92017502321b5e04a8862e325726f21b8ec596850a3c6c2b784f3ef8d0680",
+    "resource-yaml-diagnostics-fail-first-tests.log": "5abae3a726ea14f7c546df5e2ce30d2bce87e530b4e586855f26b876eed13bad",
+    "resource-yaml-mapping-fail-first-tests.log": "fbe0be8266f276f566af7bb073b8a837b933f094580986205cc2e0ed38e7e554",
+    "resource-yaml-document-first-recovery.json": "b7ac25a9ea68cf5075fcb29ee4a7f549bdefa3327b3060647e16f22e2238f3e6",
+    "resource-yaml-alias-characterization.log": "5e2896be77aa77e742f7ec698a1253c20a5a2029174c0186296368e6c155b6b9",
+    "resource-yaml-alias-fail-first-tests.log": "ef7f44dc737fa1ebfa4ea495b8c734d984c68697ce2db752695eaa8979a7f9ca",
+    "resource-yaml-alias-first.json": "6ebe0a89428689f961ee02bf66abfde323c48ffc2387e53a2beedad771d6cf93",
+    "resource-yaml-scanner-fail-first-tests.log": "54f623c8010fabf88dc9babdf26b6c238e495bbacfb70a51cac4ba91c4685f28",
+    "resource-yaml-scanner-marks.json": "d44ddc5736252acb8db17f1e4e86f40fe2c52e7f3af67277c37f64b06e7cfb33",
+    "resource-yaml-collections-characterization.json": "c93cbc9fc494ace6a0ea2577c1c9ee9c8e951daeac37d585e4814a953839f93d",
+    "resource-yaml-collection-fail-first-tests.log": "d3952fe7fabb847de7d40887429e6a632666e8694f54dc7ac239b3eae8d808be",
+    "resource-yaml-document-expanded-final.json": "47256949bc5dbc6ef69ae8ae6923f3781b757c0376fb17fafc41e1b2f8108a13",
+    "resource-yaml-document-expanded-final.log": "a14d59bdf4d175dae2c730f1909256578a2e451a9d8cdce614be680ca0e9efaa",
+    "resource-yaml-document-expanded-focused-tests.log": "f3e8c6ade8f35f52785ae43956ebba2d2d3b0d5c3d7a7f2fe1e5bb899c4b6856",
+    "resource-yaml-document-expanded-full-tests.log": "5a706c3b415bfabdc762284105f72b0dce1acf8abf7fd038230ffb98f2f43206",
+    "resource-yaml-document-final-build.log": "4da8c53639d8a12ce6e7793d346cfbcd595f5518f2706a18d293b38b595ecb82",
+    "resource-yaml-document-expanded-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "resource-yaml-document-expanded-process.json": "e5a797b6c63b833a5019e190bcf9291f559efea9f979384240974b57634e6979",
+    "resource-yaml-document-expanded-process.log": "99cb3ea8f1d60fe162c0077d89bbbeb745f1f6200cdc076caaf49bfdf6228813",
+    "resource-yaml-document-expanded-process-pi.records.json": "1296b193569bced6534f1132f5f31a7dd5f1c4c360824f5a04872d538fd664dc",
+    "resource-yaml-document-expanded-process-pisharp.records.json": "1731520269f03260842859fb48a27a63ee3b2e2d639b9f8c0c65a41992f1ae8c",
+    "resource-yaml-document-expanded-process-pi.http.json": "7f78235a4f0191c88f5220dad97e5b172f1ed4f3cae3db49795a56f593fa3f7d",
+    "resource-yaml-document-expanded-process-pisharp.http.json": "3c0c1da3ad800e923a8c1fb72ab4b9d6d9c1ddc33a09a81972ece355d19ebc5b",
+    "resource-yaml-document-exact-ci.log": "b9c99d615fbb27fcf9cde53045a8d008ae1ffb06c04219fde48bcea09be90c4e"
+  },
+  "limits": [
+    "This corpus does not establish arbitrary YAML grammar/schema/tag/filename/depth behavior. Remaining error combinations, package/settings/ignore edges and all wider Resources / Instructions / Trust boundaries remain open.",
+    "The event adapter preserves observable consumed metadata and diagnostics; it is not a general exported YAML serialization API. Direct SDK Node warning output is retained and normal CLI suppression is separately evidenced.",
+    "Terminal invocation-error presentation is the next active comparison. Exact full resource/trust/reload UI, MCP classified failures and final audits remain required. No capability is marked verified."
+  ],
+  "reproduce": [
+    "python3 tools/parity/resource-frontmatter-differential.py --argument-hints --repository-prompt --yaml-edges --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-yaml-document.json",
+    "python3 tools/parity/resource-invocation-process-differential.py --scenario malformed-flow --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-yaml-document-process.json"
+  ],
+  "next": "Finish skill-invocation error terminal rendering, then full startup/discovery/settings/package/trust/reload presentation and remaining required ledger work."
+}

@@ -1,0 +1,131 @@
+{
+  "date": "2026-10-14",
+  "piSharpBaseSha": "6cec6f7104da67790810eb81fef33e32dfa9f995",
+  "candidate": "Base plus only TestLoopbackListener, its occupied-port regression and CliThemeProcessTests environment isolation. Unpublished YAML parser work remains separate.",
+  "scope": "Native process-test infrastructure recovery; no product parity status change.",
+  "characterization": [
+    {
+      "test": "PrintModeTruncationProcessTests.OutputLimitKeepsPartialTextAndOnlyTextModeWarns(json, stop, 0)",
+      "fullWorkingTree": {
+        "passed": 1881,
+        "failed": 1,
+        "skipped": 0
+      },
+      "cause": "HttpListener.Start fails after a loopback port collision and disposes the object. The catch handler then accesses listener.Prefixes, masking the original bind error and preventing retry.",
+      "deterministicFailFirst": {
+        "passed": 0,
+        "failed": 1,
+        "skipped": 0
+      }
+    },
+    {
+      "test": "CliThemeProcessTests.ExplicitThemePathAndUseThemeApplyThroughLinuxPtyWithNoThemes",
+      "isolatedFull": {
+        "passed": 1849,
+        "failed": 1,
+        "skipped": 0
+      },
+      "focusedReproduction": {
+        "passed": 0,
+        "failed": 1,
+        "skipped": 0
+      },
+      "cause": "The isolated shell supplies TERM=dumb. TerminalColorMode correctly disables color before checking COLORTERM, so the RGB checkpoint never appears. The visual fixture inherited an incompatible terminal type."
+    }
+  ],
+  "implementation": [
+    "Close the failed listener without accessing its disposed Prefixes. Every retry uses a new listener and port; the first-port parameter provides deterministic collision injection in test infrastructure. The regression holds an occupied TCP port, checks fallback to a different port and completes an actual HTTP request.",
+    "The theme PTY fixture explicitly sets TERM, COLORTERM and PI_TRUE_COLOR, clears NO_COLOR, and uses offline catalog startup. Its assertions and original 12-second deadline remain unchanged."
+  ],
+  "verification": {
+    "focusedPassed": 6,
+    "focusedFailed": 0,
+    "focusedSkipped": 0,
+    "hostileParentEnvironment": {
+      "TERM": "dumb",
+      "PI_TRUE_COLOR": "0"
+    },
+    "isolatedFullPassed": 1850,
+    "isolatedFullFailed": 0,
+    "isolatedFullSkipped": 0,
+    "isolatedWorktree": "/tmp/pisharp-loopback-port-retry",
+    "isolatedRestore": "passed",
+    "isolatedBuildWarnings": 0,
+    "isolatedBuildErrors": 0,
+    "isolatedFormat": "passed",
+    "workingYamlCandidate": {
+      "passed": 1883,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Pending resource parser candidate; these totals are not the fixture-only commit count."
+    },
+    "exactHeadCi": {
+      "sha": "79b2b5e4f78475d1399afa5a4a9d090a7cc16c0f",
+      "run": 38564664115,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38564664115",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1850,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
+  },
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-yaml-document-full-tests.log": "3cf813c648419542e7f92aac90c453f0e02c7f6eb85105c12945ffc51c7c8845",
+    "loopback-port-retry-fail-first-tests.log": "0a5f19336926b56a8f7c32e8d6e93aa9c1220207bc32de593759cfe5d1226f9d",
+    "loopback-port-retry-focused-tests.log": "6c987576bb2fcbed6bc3b8569fcc090180bf6fab893455c7fbe2b76952822a59",
+    "loopback-port-retry-isolated-restore.log": "0473fefa7458bfcc64b555e20f19c09435ad72a0f2b142ddbe66a38ccbcab0f3",
+    "loopback-port-retry-isolated-build.log": "51aa1b1923e2ef8c580ecfbe529cbc9e176cca77cf1ce3c1d1a241e26fe127cf",
+    "loopback-port-retry-isolated-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "loopback-port-retry-isolated-full-tests.log": "2ea2e41abf1ace71fca5842da6c4d1f564a0b41c0c689b4bbeddde692279d0f1",
+    "loopback-isolated-theme-reproduction.log": "9144b87bae60c787086eb21c8f936bbb71f6ec2ca1bc78c588e47b3cc0f94c89",
+    "loopback-theme-environment-cause.json": "c7cf5ced74494dc55984b62d19dc9defb65be0b1130dffd55b0bfe8aa841b451",
+    "loopback-and-theme-isolated-focused-tests.log": "12bce4c9136e8a0b06665656971bb56068c93c6052dd40be4980bcada7bbcc74",
+    "process-fixtures-isolated-final-tests.log": "8cb5e0479736c02e7dbda30c9eac29120e76f5002744889801c126b00bb51533",
+    "process-fixtures-isolated-final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "process-fixtures-working-final-tests.log": "8d329f2edf345b6e3933e716ac007b33d7e25b885a1654b75c9e9f57dfa84461",
+    "resource-yaml-document-after-loopback-tests.log": "2a0ec88ee03b4da30d999a1c472a5564ae17fc10ad22bbac4b7106b6edb51a06",
+    "process-fixtures-exact-ci.log": "a8d58bf1be9ffb419fdccbdaf0fc12620a3f31d0173639e3d887450c9f8bee58",
+    "skill-error-publish-full.log": "f99c53e3501e7155bf1b25d00737bc64c9c14fe1830ebd2c49cd81b55d3176f0",
+    "virtual-port-recovery-focused.log": "baf77afddbbf4ca2bdcc796ec06d5ee6fc6272215ac1038563f5ef85aa6dc5cf",
+    "skill-error-port-recovery-build.log": "f1760bfbfa7e4bafb93bd86b16e9c09d904dffa333c3ee4eb782a7399db0db1a",
+    "skill-error-port-recovery-full.log": "90f9e18938ab95a1ac7abcd8b0dcaee501528aef21882a4bcce846e8a6e17d6b",
+    "skill-error-clean-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "limits": [
+    "The port regression deterministically proves retry cleanup after a bind collision; it does not infer resolution of unrelated process or PTY timing failures from a later green run.",
+    "Validation here is Linux/.NET 10. The original RPC settlement and terminal input-handoff repairs retain their own cause/regression/CI evidence. All 194 capability statuses remain unchanged."
+  ],
+  "reproduce": [
+    "dotnet test PiSharp.slnx --filter FullyQualifiedName~TestLoopbackListenerTests",
+    "TERM=dumb PI_TRUE_COLOR=0 dotnet test PiSharp.slnx --filter FullyQualifiedName~CliThemeProcessTests",
+    "dotnet test PiSharp.slnx"
+  ],
+  "additionalVirtualModelCollision": {
+    "observedFailure": "VirtualModelProcessTests.RpcRoutesUserToolContinuationAndNextTurnWithLogicalSelectionAndDurablePhysicalHistory: HttpListener.Start failed with Address already in use before the provider/run began.",
+    "workingCandidateSuite": {
+      "passed": 1891,
+      "failed": 1,
+      "skipped": 0,
+      "scope": "Unpublished skill-error presentation candidate with six new native tests."
+    },
+    "cause": "This fixture still reserved then released an ephemeral TCP port and started HttpListener once, bypassing the shared retry owner.",
+    "repair": "Reuse TestLoopbackListener.Start; remove the private one-attempt reservation/start sequence. Existing forced occupied-port HTTP recovery test covers the shared owner.",
+    "focused": {
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    "fullRecovery": {
+      "passed": 1892,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Working presentation candidate; six new presentation rows are outside the fixture-only commit."
+    },
+    "remainingScope": "Other private listener fixtures have not all been audited; this evidence covers the observed virtual-model bind collision."
+  }
+}

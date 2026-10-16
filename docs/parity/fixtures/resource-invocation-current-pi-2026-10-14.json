@@ -1,0 +1,416 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "0672b794ac060a967ee4be1e5a43df20452fc5ca",
+  "candidate": "Base plus resource invocation/template expansion/error reporting and regression tests in this commit. Captures use the pre-publication working tree.",
+  "match": true,
+  "cases": 47,
+  "comparison": "Real Pi AgentSession._expandSkillCommand with actual loaded resources followed by actual expandPromptTemplate. Exact expanded text/SHA256 and error event/path/raw message; only owned workspace roots are normalized. Real normal RPC CLI/provider replay separately verifies startup discovery, deleted-file read recovery, error-before-ack ordering and original provider input.",
+  "characterization": [
+    {
+      "cases": 24,
+      "mismatches": 13,
+      "nativeFailFirst": {
+        "failed": 10,
+        "passed": 1,
+        "skipped": 0
+      }
+    },
+    {
+      "cases": 44,
+      "mismatches": 9,
+      "scope": "Expanded defaults, literal escaping, slices and nonrecursive substitution."
+    },
+    {
+      "cases": 47,
+      "mismatches": 3,
+      "scope": "ASCII-only parameter digits versus C# Unicode digit classes."
+    }
+  ],
+  "implementation": [
+    "Unknown and non-ASCII-space-delimited skill commands pass through to the template pipeline. Skill arguments use JavaScript whitespace trimming; manual invocation remains independent of completion visibility.",
+    "Skill read and YAML failures report the skill_expansion diagnostic and continue with the original input. RPC emits extension_error before accepting prompt/steer/follow_up; JSON and interactive execution report errors through their owning output boundary. Cancellation propagates without being reclassified as a resource failure.",
+    "PromptTemplateExpansion owns source-equivalent quote handling, literal backslashes, JavaScript whitespace, defaults, greedy positional indices, argument slices and a single substitution pass. The direct InvokeSkillAsync API still rejects unknown names."
+  ],
+  "verification": {
+    "focusedPassed": 49,
+    "fullPassed": 1811,
+    "fullFailed": 0,
+    "fullSkipped": 0,
+    "newNativeRows": 33,
+    "format": "passed",
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "rpcCommandCases": [
+      "prompt",
+      "steer",
+      "follow_up"
+    ],
+    "jsonRecovery": "Deleted skill reports exact stderr error; original user input runs through the real MAF conversation and settles.",
+    "cancellation": "Pre-cancelled known skill read propagates OperationCanceledException without diagnostic/recovery.",
+    "process": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "piSharpBaseSha": "0672b794ac060a967ee4be1e5a43df20452fc5ca",
+      "assemblySha256": "0a93f97fca96b0d944ce6099b769355c863e9d69775c263071319a3014475c0c",
+      "results": {
+        "pi": {
+          "errorBeforeResponse": true,
+          "event": "skill_expansion",
+          "error": "ENOENT: no such file or directory, open '<workspace>/guide/SKILL.md'",
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true
+        },
+        "pisharp": {
+          "errorBeforeResponse": true,
+          "event": "skill_expansion",
+          "error": "ENOENT: no such file or directory, open '<workspace>/guide/SKILL.md'",
+          "providerInput": "/skill:guide args",
+          "providerRequests": 1,
+          "promptAccepted": true
+        }
+      },
+      "match": true
+    },
+    "exactHeadCi": {
+      "sha": "96fa481f33feba14cc478c111ba60bc5bbef419f",
+      "run": 38554053384,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38554053384",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1811,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
+  },
+  "results": [
+    {
+      "id": "input-00",
+      "textSha256": "cf7e0cb3799813c75eb1ec05482a20a640dd269ce5c6479dbda0a88a0a0a0e01",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-01",
+      "textSha256": "2c3196b8fe3fe25f78bdbb3f19d2fae0cb7eed9ddeccbb58e9432c068d80e779",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-02",
+      "textSha256": "505732e6fe8a5b549846f7ddaaa3ad267818c26db18cf08330901b426414d4ad",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-03",
+      "textSha256": "e8ebeb2538b3823799472cc00aad66e025548cb6699f4e0b4203d16839db4f57",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-04",
+      "textSha256": "e1b8a74379812674b10da7d41dbf30da547e99f3d2850e4c9c451dbb3ccb0228",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-05",
+      "textSha256": "1546813c9d8306de8652d93a4ae413b24ab8f95e876fcde0a6cd51fc20989c59",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-06",
+      "textSha256": "dbe0cd9432006b7354decb37d8333f96c9bba4ce1431bcd0f1506bd6c3483abd",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-07",
+      "textSha256": "624318369039a3fd936a1e6b1049fcdf2b32310c6ee34806e153c9cdb5456f46",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-08",
+      "textSha256": "f8d72abf7cee951d2e6aed5092794e867501370d509353dcb11d42d66d2213f7",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-09",
+      "textSha256": "26cdd7fd6ed1dcee401369d421211459b04cb249f2439bbf82d46d6a6dc066ae",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-10",
+      "textSha256": "5382ba4f7551e6f0d0fb876da8e8450f06a2f4147e83590f339927fb149faf8e",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-11",
+      "textSha256": "292b7c21f65d419d669db368c93345e175a04315de5edad9d8f6245c164d4804",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-12",
+      "textSha256": "4aefb92d8e32dbf9025a87a26a0eebb33fbb7bfd8132ce301732e92c4eb46f6c",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-13",
+      "textSha256": "505732e6fe8a5b549846f7ddaaa3ad267818c26db18cf08330901b426414d4ad",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-14",
+      "textSha256": "b2cc39f8067d2fc3edcf09f6b8ced072fc5e874ff5b8d048b217951a772d6a7e",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-15",
+      "textSha256": "b7864c7235d6ad3b96d12ed0da4516b4c83c530d0963580d89cb5efd3370c511",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-16",
+      "textSha256": "b7864c7235d6ad3b96d12ed0da4516b4c83c530d0963580d89cb5efd3370c511",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-17",
+      "textSha256": "529243fa86ab238fca1ec95476c54ad2aaf5d35494ed1c40e50a697887e0b0c3",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-18",
+      "textSha256": "a054defbd77ae911a41a164ee7a2dda1660a0b964289c939bb464a8227e64dd6",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "input-19",
+      "textSha256": "4a2c5ef3a3eca56e7c388f11063d194c85c211606ae8954317d8902c072b1943",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "after-changed",
+      "textSha256": "9ce0040c4a15a933ee05a7cb919fd957851def612f4cbafe6ebbd04dce097640",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "after-delete",
+      "textSha256": "ce2f7d82b636fb94e68e78cf27384a9186191aefd4c8d69f93d65a3ffcb7d1df",
+      "errorEvents": [
+        "skill_expansion"
+      ],
+      "errorMessages": [
+        "ENOENT: no such file or directory, open '<workspace>/guide/SKILL.md'"
+      ]
+    },
+    {
+      "id": "after-invalid-yaml",
+      "textSha256": "ce2f7d82b636fb94e68e78cf27384a9186191aefd4c8d69f93d65a3ffcb7d1df",
+      "errorEvents": [
+        "skill_expansion"
+      ],
+      "errorMessages": [
+        "Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 21:\n\ndescription: [broken\n                    ^\n"
+      ]
+    },
+    {
+      "id": "after-denied",
+      "textSha256": "ce2f7d82b636fb94e68e78cf27384a9186191aefd4c8d69f93d65a3ffcb7d1df",
+      "errorEvents": [
+        "skill_expansion"
+      ],
+      "errorMessages": [
+        "EACCES: permission denied, open '<workspace>/guide/SKILL.md'"
+      ]
+    },
+    {
+      "id": "template-00",
+      "textSha256": "5c7ee2074b65853f71fc5a01ce194ff26deedf6daacdb715c6beefdfd3f31b35",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-01",
+      "textSha256": "8ab63e29a4ba14e4e1688f9c15e5af90895421358c945b0431f85d66977bd3d2",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-02",
+      "textSha256": "5c7ee2074b65853f71fc5a01ce194ff26deedf6daacdb715c6beefdfd3f31b35",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-03",
+      "textSha256": "5c7ee2074b65853f71fc5a01ce194ff26deedf6daacdb715c6beefdfd3f31b35",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-04",
+      "textSha256": "2f5d3156ef88427511ef37243b08ad5aee03c2397885637eddf793cdcbb6ac87",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-05",
+      "textSha256": "1ab23de9e6639bc8bc31b239f7b384ff879f3b31672ed7dcc604944aae4b2fc7",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-06",
+      "textSha256": "3fc4ccfe745870e2c0d99f71f30ff0656c8dedd41cc1d7d3d376b0dbe685e2f3",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-07",
+      "textSha256": "8ab63e29a4ba14e4e1688f9c15e5af90895421358c945b0431f85d66977bd3d2",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-08",
+      "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-09",
+      "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-10",
+      "textSha256": "5c7ee2074b65853f71fc5a01ce194ff26deedf6daacdb715c6beefdfd3f31b35",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-11",
+      "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-12",
+      "textSha256": "6c932337310a616b70ba19161f8b8aa6660615052385811bcf7a6db820ae498a",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-13",
+      "textSha256": "cbc0e07daa5a0d7658f907f1691a1f02f3a023eac5f92911b205e984d4b759c4",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-14",
+      "textSha256": "8b7f3269b28b1ec495cbf9ce03154ff6a3245b9ac2d695c9262c4cbd435e2158",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-15",
+      "textSha256": "8d8838eee9eaec73972cf181347d95f2fa3baff9427300426978fdf5661ed930",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-16",
+      "textSha256": "e003d0186f5969777e11ab41444cb64ebd4ac796dbff522fcf0f7d2ad6fe88e8",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-17",
+      "textSha256": "4b066c446ec61d96c4a13b10dbf8066e41d236571fc4ac5e9c2c1586fb491d84",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-18",
+      "textSha256": "dbce5440e50a12245702aec70b2512465ff9c804b03ece4cf471ae6e81c1a39c",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-19",
+      "textSha256": "76cc7eb8b8b976acebd948033e55b392576aa213aeae89841dd6d7f9b9216514",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-20",
+      "textSha256": "85279e5a47e0ec20ebd53bf1b84f543031a0a878ffcc9139cdc17d8f4c3c7b9a",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-21",
+      "textSha256": "fc8335341baa75eaf51227857ef303c0dc99b1b2bc832712ddc3e9cb58c5e56c",
+      "errorEvents": [],
+      "errorMessages": []
+    },
+    {
+      "id": "template-22",
+      "textSha256": "516a4cf4a40a7deeaac4f78f345d64dcb679df4a911d0415a549485572ec4bd6",
+      "errorEvents": [],
+      "errorMessages": []
+    }
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-invocation-fail-first.json": "aec5ea0aba9a70de3b4faa7d46f3da4e1f401f8c404de2bf3631d527fb244110",
+    "resource-invocation-fail-first-tests.log": "591ffc31da14bd0c4012177d47f16b038d457cc32b2b1dd7c96673c881022338",
+    "resource-invocation-template-characterization.json": "1cecd782d1b2f98c3562cf4cbc076b45d5ec8e109970d4cff8a4a8cf42160824",
+    "resource-invocation-unicode-characterization.json": "b4880f574ba49154196e5a326aa1701234398a2b5e5d63b4d7e5d9e2d57a7854",
+    "resource-invocation-final.json": "2d88ecc2d90690c2580da428f027e351df549ae5d59f098857f846dc09a98654",
+    "resource-invocation-final.log": "a6dfb2b3b4c0982ef62014cd0c1cb09a7a6460b1ed842559241df2a74977eadf",
+    "resource-invocation-final-focused-tests.log": "aa1aa9fa9f744ac9016a4b75bb67d3843b0e7d9dc922308b2fd66d85b49388a1",
+    "resource-invocation-full-tests.log": "1696dd6d047a4f3977b2bf8557e757c2558f7374106be7a6dc5ce9c974abdf5a",
+    "resource-invocation-build.log": "4cd2fe5c15b25bdc295deffded7059fac336b21d96f1e7adec9350323d73c839",
+    "resource-invocation-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "resource-invocation-process-final.json": "9774d5faa9705a9dec17dab852f44c23116c4b291c981ac5af0cd82e0b02e5b7",
+    "resource-invocation-process-final.log": "b7ccb14593eae831745d85b098bf518cd6fc65a218f4b9390ee5e3bb16db5689",
+    "resource-invocation-process-final-pi.records.json": "f626dbbcafac055bc050b2d6760ac752b1094eab7c8122c9d289f93aa83fba66",
+    "resource-invocation-process-final-pisharp.records.json": "303f5a3bc49f8322661e9aea8e3aeb329e080fda302a83c27a7747839c81ba29",
+    "resource-invocation-process-final-pi.http.json": "5358a7867cd71c1adb887e901e756bdf157729e11da83750761bddd741dd54c3",
+    "resource-invocation-process-final-pisharp.http.json": "9c7d32c402c56591feddc1a89f8a14ef322481b35174b1ec929694fece21aefa",
+    "resource-invocation-exact-ci.log": "55b00e58a6c75b40f6e0b4d28dc70fca361a8e209ab4c0f385a60789cef9a9f5"
+  },
+  "limits": [
+    "The AgentSession method receiver supplies a structural resource-loader/error-runner boundary; the method and all template/skill parsing/expansion logic are real Pi source. The normal RPC CLI replay supplies separate application/provider integration evidence.",
+    "Only the compared YAML read failure class is matched here; remaining tag/alias/error diagnostics, nonregular-file races and platform error codes still require evidence.",
+    "Interactive error routing is implemented, but exact interactive extension-error terminal rendering is not verified by this slice. The colon-named template fallback fixture is unavailable on Windows and returns without running that platform-specific scenario. No capability status is upgraded.",
+    "All 194 capabilities remain required; Resources / Instructions / Trust, MCP reconciliation and final audits remain incomplete."
+  ],
+  "reproduce": [
+    "python3 tools/parity/resource-invocation-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-invocation.json",
+    "python3 tools/parity/resource-invocation-process-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-invocation-process.json"
+  ],
+  "next": "Finish prompt argument metadata/built-in prompts and remaining YAML/error semantics, then full resource/trust/reload terminal boundaries."
+}

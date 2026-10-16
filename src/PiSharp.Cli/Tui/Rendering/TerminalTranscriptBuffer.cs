@@ -16,6 +16,7 @@ internal sealed class TerminalTranscriptBuffer
     private bool _captureTruncated;
     private Func<TerminalTheme, string>? _latestStatusRenderer;
     private string? _latestCapturedStatus;
+    private readonly Dictionary<string, (TranscriptSegment Segment, CapturedChunkBuilder? Capture)> _liveTools = new(StringComparer.Ordinal);
 
     public bool IsExpanded { get; private set; }
     public bool HasContent => _segments.Count > 0;
@@ -115,6 +116,40 @@ internal sealed class TerminalTranscriptBuffer
             _transcriptCharacters += rendered.Length;
         }
 
+        TrimTranscript();
+        Revision++;
+    }
+
+    internal void SetToolResult(string id, string rendered, string collapsed,
+        Func<TerminalTheme, string> expandedRenderer, Func<TerminalTheme, string> collapsedRenderer,
+        string captured, bool isError, bool finished)
+    {
+        if (!_liveTools.TryGetValue(id, out var row) || !_segments.Contains(row.Segment))
+        {
+            var chunk = row.Capture;
+            if (chunk is null && _capturedCharacters < MaximumCapturedCharacters)
+            {
+                chunk = new CapturedChunkBuilder(isError, new StringBuilder(), isReplaceable: true);
+                _captured.Add(chunk);
+            }
+            if (chunk is null) _captureTruncated = true;
+            var segment = new TranscriptSegment(true, new StringBuilder(), collapsed) { KeepLastPreviewLine = true };
+            _segments.Add(segment);
+            row = (segment, chunk);
+        }
+        _transcriptCharacters += rendered.Length - row.Segment.Text.Length;
+        row.Segment.Text.Clear().Append(rendered);
+        row.Segment.CollapsedPreviewSource = collapsed;
+        row.Segment.InvalidateCollapsedPreview();
+        row.Segment.ThemeRenderer = expandedRenderer;
+        row.Segment.CollapsedRenderer = collapsedRenderer;
+        if (row.Capture is { } capture)
+        {
+            capture.IsError = isError;
+            ReplaceCapturedThinking(capture, captured);
+        }
+        if (finished) _liveTools.Remove(id);
+        else _liveTools[id] = row;
         TrimTranscript();
         Revision++;
     }
@@ -220,6 +255,7 @@ internal sealed class TerminalTranscriptBuffer
 
     public void Clear()
     {
+        _liveTools.Clear();
         _captured.Clear();
         _segments.Clear();
         _capturedCharacters = 0;
@@ -294,7 +330,7 @@ internal sealed class TerminalTranscriptBuffer
             text = text[..remaining];
             _captureTruncated = true;
         }
-        if (_captured.Count > 0 && _captured[^1].IsError == isError && !_captured[^1].IsStatusMessage)
+        if (_captured.Count > 0 && _captured[^1].IsError == isError && !_captured[^1].IsStatusMessage && !_captured[^1].IsReplaceable)
             _captured[^1].Text.Append(text);
         else
             _captured.Add(new(isError, new StringBuilder(text)));
@@ -376,6 +412,16 @@ internal sealed class TerminalTranscriptBuffer
         var hasTrailingNewline = text.EndsWith('\n');
         var visibleRows = layout.RowCount - (hasTrailingNewline ? 1 : 0);
         var hiddenRows = visibleRows - ToolPreviewContentRows;
+        if (hiddenRows > 0 && segment.KeepLastPreviewLine)
+        {
+            hiddenRows--;
+            var footer = layout.Rows[visibleRows - 1];
+            var body = string.Join('\n', layout.Rows.Take(ToolPreviewContentRows));
+            var notice = hiddenRows > 0 ? "\n" + FormatPreviewHint(hiddenRows, width) : "";
+            segment.CollapsedPreview = body + notice + "\n" + footer + (hasTrailingNewline ? "\n" : "");
+            segment.CollapsedPreviewWidth = width;
+            return segment.CollapsedPreview;
+        }
         var preview = hiddenRows <= 0
             ? text
             : string.Join('\n', layout.Rows.Take(ToolPreviewContentRows)) + "\n" + FormatPreviewHint(hiddenRows, width) +
@@ -404,6 +450,7 @@ internal sealed class TerminalTranscriptBuffer
         CapturedChunkBuilder? capturedThinkingChunk = null)
     {
         public bool IsCollapsible { get; } = isCollapsible;
+        public bool KeepLastPreviewLine { get; set; }
         public bool IsStatusMessage { get; } = isStatusMessage;
         public bool IsThinkingBlock { get; set; } = isThinkingBlock;
         public bool ThinkingHidden { get; set; } = thinkingHidden;
@@ -428,10 +475,11 @@ internal sealed class TerminalTranscriptBuffer
         }
     }
 
-    private sealed class CapturedChunkBuilder(bool isError, StringBuilder text, bool isStatusMessage = false)
+    private sealed class CapturedChunkBuilder(bool isError, StringBuilder text, bool isStatusMessage = false, bool isReplaceable = false)
     {
-        public bool IsError { get; } = isError;
+        public bool IsError { get; set; } = isError;
         public bool IsStatusMessage { get; } = isStatusMessage;
+        public bool IsReplaceable { get; } = isReplaceable;
         public StringBuilder Text { get; } = text;
     }
 

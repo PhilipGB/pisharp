@@ -1,0 +1,35 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "finding": "ConversationTree.Clone passed its explicit null head to FromEntries, which interprets null as the final entry. A canonical snapshot therefore restored history after the user selected the empty branch. Clone now copies entries then explicitly selects the original head, including null.",
+  "characterization": {
+    "coreFailed": 1,
+    "shareWithRetainedHistoryFailed": 1,
+    "trulyEmptySharePassed": 1,
+    "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-null-selection-fail-first.log",
+    "sha256": "759f8d08018c62aab9cf92ab727f866f1b21c8836b0ae050373774f563d7b751"
+  },
+  "upstreamEvidence": {
+    "boundary": "SessionManager.resetLeaf/getBranch and real exportSessionForShare",
+    "comparison": "The source share oracle exports only header and pi.share for a retained-history null selection; the old native snapshot exported the previous branch. Initial comparison retained this mismatch without normalization.",
+    "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-first-comparison.json",
+    "sha256": "efe0f852ffcede38904b3db22575e13b8d7e55e2ef13fbca20c51afa57bfd902"
+  },
+  "verification": {
+    "coreControls": 8,
+    "shareEmptyCases": 2,
+    "fullWorkingTreePassed": 1636,
+    "failed": 0,
+    "skipped": 0,
+    "scope": "Combined worktree includes the separately recorded share and schema implementation.",
+    "path": "artifacts/parity/current-pi-deltas-2026-10-13/session-share-schema-full-tests.log",
+    "sha256": "3d19c7013797b05ab79c5461efe21c2a4bd98f29b37c47caaa1f656560964f86"
+  },
+  "limitations": "This fixes explicit null snapshots/clones; complete session branching, recovery and persistence parity remain ledgered.",
+  "publishedVerification": {
+    "piSharpSha": "e6e6dfe07dcdae6410868ac050aecc4079502e26",
+    "ciRun": 38491895089,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38491895089",
+    "conclusion": "success",
+    "scope": "Exact published head passed Linux test and MCP jobs; independently recorded later changes are not attributed to this head."
+  }
+}

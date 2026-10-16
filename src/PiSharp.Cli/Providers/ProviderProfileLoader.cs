@@ -30,6 +30,9 @@ internal static class ProviderProfileLoader
             length += read;
         if (length > maxBytes) throw new InvalidDataException("models.json exceeds 1MB.");
         using var document = JsonDocument.Parse(buffer.AsMemory(0, length));
+        if (document.RootElement.ValueKind == JsonValueKind.Object &&
+            document.RootElement.TryGetProperty("$schema", out var schema) && schema.ValueKind != JsonValueKind.String)
+            throw new InvalidDataException("models.json $schema must be a string.");
         if (document.RootElement.ValueKind != JsonValueKind.Object ||
             !document.RootElement.TryGetProperty("providers", out var configured) || configured.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException("models.json must contain a providers object.");
@@ -98,6 +101,9 @@ internal static class ProviderProfileLoader
                         ThinkingLevelMap: ModelMetadataJson.MergeObjects(ModelMetadataJson.ReadObject(model, "thinkingLevelMap", source, strict: true), defaults?.ThinkingLevelMap),
                         PromptCache: ModelMetadataJson.MergeObjects(ModelMetadataJson.ReadObject(model, "promptCache", source, strict: true), defaults?.PromptCache),
                         SamplingParameters: ModelMetadataJson.MergeObjects(ModelMetadataJson.ReadObject(model, "samplingParams", source, strict: true), defaults?.SamplingParameters),
+                        SamplingParametersByThinkingLevel: ModelMetadataJson.MergeSamplingParametersByThinkingLevel(
+                            ModelMetadataJson.ReadObject(model, "samplingParamsByThinkingLevel", source, strict: true),
+                            defaults?.SamplingParametersByThinkingLevel),
                         Compatibility: ModelMetadataJson.MergeCompatibility(
                             ModelMetadataJson.ReadObject(model, "compat", source, strict: true),
                             ModelMetadataJson.MergeCompatibility(compatibility, defaults?.Compatibility))));
@@ -139,7 +145,13 @@ internal static class ProviderProfileLoader
                      StringComparison.OrdinalIgnoreCase) ||
                  models.Any(model => model.Api is not null && !string.Equals(model.Api, "openai-completions", StringComparison.Ordinal))))
                 throw new InvalidDataException("The built-in llama.cpp provider must retain its router protocol and credential environment.");
-            foreach (var reserved in providers.Values.Where(profile => ClassifierCatalog.IsBuiltinProvider(profile.Id) || profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "radius"))
+            if (existing?.Id == "azure" &&
+                (!string.Equals(api, "openai-completions", StringComparison.Ordinal) ||
+                 !string.Equals(apiKeyEnvironment ?? existing.ApiKeyEnvironment, existing.ApiKeyEnvironment,
+                     StringComparison.OrdinalIgnoreCase) ||
+                 models.Any(model => model.Api is not null && !string.Equals(model.Api, "openai-completions", StringComparison.Ordinal))))
+                throw new InvalidDataException("The built-in azure provider must retain the Foundry Chat Completions protocol and credential environment.");
+            foreach (var reserved in providers.Values.Where(profile => ClassifierCatalog.IsBuiltinProvider(profile.Id) || profile.Id is "openai" or "openrouter" or "mistral" or "xai" or "anthropic" or "azure" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "radius"))
                 if (apiKeyEnvironment?.Equals(reserved.ApiKeyEnvironment, StringComparison.OrdinalIgnoreCase) == true &&
                     (!item.Name.Equals(reserved.Id, StringComparison.OrdinalIgnoreCase) || !SameEndpoint(endpoint, reserved.Endpoint)))
                     throw new InvalidDataException($"Provider '{item.Name}' cannot borrow {reserved.ApiKeyEnvironment}; use its own credential environment variable.");

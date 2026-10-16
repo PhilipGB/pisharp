@@ -59,13 +59,15 @@ public sealed class PiSharpToolExecutionContext
     private readonly string? _operationId;
     private readonly string _toolName;
     private readonly IReadOnlyDictionary<string, object?> _arguments;
+    private readonly PiSharpExtensionContext? _extensionContext;
 
     internal static object ContextKey => s_contextKey;
     internal static object InvocationKey => s_invocationKey;
 
     private PiSharpToolExecutionContext(ToolLoadout loadout, ToolInvocationScope scope, string toolCallId,
         string? parentToolCallId, string? operationId, string toolName,
-        IReadOnlyDictionary<string, object?> arguments, Action<string>? nestedUpdate, ICodemodeModels? models = null, CodemodeModelCalls? modelCalls = null)
+        IReadOnlyDictionary<string, object?> arguments, Action<string>? nestedUpdate, ICodemodeModels? models = null,
+        CodemodeModelCalls? modelCalls = null, PiSharpExtensionContext? extensionContext = null)
     {
         _loadout = loadout;
         _scope = scope;
@@ -75,6 +77,7 @@ public sealed class PiSharpToolExecutionContext
         _toolName = toolName;
         _arguments = arguments;
         _nestedUpdate = nestedUpdate;
+        _extensionContext = extensionContext;
         Models = models;
         _modelCalls = modelCalls ?? (models is null ? null : new(models, _scope.Publish, _scope.Usage, _scope.RegisterOrder));
     }
@@ -82,11 +85,15 @@ public sealed class PiSharpToolExecutionContext
     internal static PiSharpToolExecutionContext CreateRoot(ToolLoadout loadout,
         Func<IReadOnlyDictionary<string, AIFunction>> functions, Action<AgentLifecycleEvent> publish,
         string toolCallId, string? operationId, string toolName,
-        IReadOnlyDictionary<string, object?> arguments, ICodemodeModels? models = null) =>
+        IReadOnlyDictionary<string, object?> arguments, ICodemodeModels? models = null,
+        PiSharpExtensionContext? extensionContext = null) =>
         new(loadout, new ToolInvocationScope(functions, publish), toolCallId, null, operationId,
-            toolName, arguments, null, models);
+            toolName, arguments, null, models, extensionContext: extensionContext);
 
     internal ICodemodeModels? Models { get; }
+
+    /// <summary>Live project and conversation context for this extension invocation.</summary>
+    public PiSharpExtensionContext? ExtensionContext => _extensionContext;
 
     internal string ToolCallId { get; }
     internal string? ParentToolCallId { get; }
@@ -191,7 +198,8 @@ public sealed class PiSharpToolExecutionContext
     internal PiSharpToolExecutionContext ForToolCall(string toolCallId, string? parentToolCallId,
         string? operationId, string toolName, IReadOnlyDictionary<string, object?> arguments,
         Action<string>? nestedUpdate = null) =>
-        new(_loadout, _scope, toolCallId, parentToolCallId, operationId, toolName, arguments, nestedUpdate, Models, _modelCalls);
+        new(_loadout, _scope, toolCallId, parentToolCallId, operationId, toolName, arguments, nestedUpdate, Models,
+            _modelCalls, _extensionContext);
 
     internal sealed class NestedInvocation(PiSharpToolExecutionContext parent, string callId,
         string parentCallId, Action<PiSharpToolExecutionResult>? onUpdate)

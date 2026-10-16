@@ -137,6 +137,38 @@ public sealed class TerminalScreenCompositorTests
         Assert.EndsWith("\u001b[0m  ", selectedRow);
     }
 
+    [Theory]
+    [InlineData(80)]
+    [InlineData(120)]
+    public void ShortSlashCompletionLabelsKeepTheMinimumDescriptionColumn(int columns)
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var theme = TerminalTheme.Default;
+        var frame = compositor.Compose("/gui", 4, null, null, "", "fixture-model", overlay: null,
+            scrollOffset: 0, columns: columns, height: 32, new TranscriptSearchController(),
+            new TerminalMouseRouter(), theme,
+            editorSuggestions: [new EditorCompletionSuggestion("/guide", "<subject> — [t] Guide")]);
+
+        var row = Assert.Single(frame.Rows, row => row.Contains("<subject>", StringComparison.Ordinal));
+        Assert.StartsWith(theme.Style("accent", "→ guide       <subject> — [t] Guide"), row);
+        Assert.Equal(columns, TerminalTextLayout.Width(row));
+    }
+
+    [Fact]
+    public void MultilineArgumentHintsAreRenderedOnOneSuggestionRow()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var theme = TerminalTheme.Default;
+        var frame = compositor.Compose("/mul", 4, null, null, "", "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 120, height: 32, new TranscriptSearchController(), new TerminalMouseRouter(), theme,
+            editorSuggestions: [new EditorCompletionSuggestion("/multi", " <subject>\r\n\n[detail] — [t] Guide ")]);
+
+        var row = Assert.Single(frame.Rows, row => row.Contains("<subject>", StringComparison.Ordinal));
+        Assert.StartsWith(theme.Style("accent", "→ multi       <subject> [detail] — [t] Guide"), row);
+        Assert.DoesNotContain('\n', row);
+        Assert.DoesNotContain('\r', row);
+    }
+
     [Fact]
     public void StartupHeaderStaysAboveTranscriptAndStatusNotifications()
     {

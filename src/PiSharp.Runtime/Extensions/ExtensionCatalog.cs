@@ -1,9 +1,9 @@
-using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
 using PiSharp.Runtime.VirtualModels;
 
@@ -23,14 +23,24 @@ public delegate Task<BashExecutionResult?> UserBashHandler(UserBashContext conte
 
 public sealed record ExtensionCommandInfo(string? Description, ResourceSourceInfo SourceInfo);
 
+public sealed record ExtensionConflictDiagnostic(string Path, string Error);
+
+public sealed record ExtensionLoadWarning(string Path, string Warning);
+
+internal sealed record RegisteredExtensionCommand(string Name,
+    Func<string, CancellationToken, Task<string>> Handler, ExtensionCommandInfo Info);
+
+internal sealed record RegisteredExtensionTool(PiSharpToolRegistration Definition,
+    ResourceSourceInfo SourceInfo, PiSharpToolRenderer? Renderer);
+
 /// <summary>An MCP server declared by a loaded extension. It is scoped to this runtime session.</summary>
 public sealed record ExtensionMcpServerRegistration(McpServerConfiguration Configuration, string ExtensionPath);
 
 /// <summary>A capability registered through the same extension surface as loaded assemblies.</summary>
 public sealed record BuiltinExtensionDefinition(string Name, Action<ExtensionRegistration> Configure,
-    bool AutoEnable = true, Func<ExtensionRegistration, bool>? ShouldAutoEnable = null);
+    bool AutoEnable = true, Func<ExtensionRegistration, bool>? ShouldAutoEnable = null, bool Replaceable = false);
 
-public sealed class ExtensionRegistration
+public sealed partial class ExtensionRegistration
 {
     private static readonly HashSet<string> s_reserved = new(StringComparer.Ordinal)
     {
@@ -43,12 +53,13 @@ public sealed class ExtensionRegistration
     private readonly Dictionary<string, PiSharpToolRenderer> _toolRenderers = new(StringComparer.Ordinal);
     private readonly Dictionary<string, HashSet<string>> _ownedToolNames = new(StringComparer.Ordinal);
     private readonly object _toolGate = new();
-    private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _commands = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, ExtensionCommandInfo> _commandInfo = new(StringComparer.Ordinal);
-    private readonly List<UserBashHandler> _userBashHandlers = [];
-    private readonly List<PiSharpToolCallHook> _toolCallHooks = [];
-    private readonly List<PiSharpToolResultHook> _toolResultHooks = [];
-    private readonly List<PiSharpContextTransform> _contextTransforms = [];
+    private readonly List<RegisteredExtensionCommand> _commands = [];
+    private readonly Dictionary<string, List<RegisteredExtensionTool>> _toolCandidates = new(StringComparer.Ordinal);
+    private readonly List<ExtensionHandlerRegistration<UserBashHandler>> _userBashHandlers = [];
+    private readonly List<ExtensionHandlerRegistration<PiSharpToolCallHook>> _toolCallHooks = [];
+    private readonly List<ExtensionHandlerRegistration<PiSharpToolResultHook>> _toolResultHooks = [];
+    private readonly List<ExtensionHandlerRegistration<PiSharpContextTransform>> _contextTransforms = [];
+    private readonly List<ExtensionLifecycleHandlerRegistration> _lifecycleHandlers = [];
     private readonly List<RegisteredResourceDiscoveryHandler> _resourceDiscoveryHandlers = [];
     private readonly List<RegisteredProjectTrustHandler> _projectTrustHandlers = [];
     private readonly object _mcpGate = new();
@@ -68,12 +79,18 @@ public sealed class ExtensionRegistration
     {
         get { lock (_toolGate) return new Dictionary<string, PiSharpToolRenderer>(_toolRenderers, StringComparer.Ordinal); }
     }
-    public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => _commands;
-    public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => _commandInfo;
-    public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers;
-    public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks;
-    public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks;
-    public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.ToArray();
+    public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => ResolveCommands()
+        .ToDictionary(entry => entry.Name, entry => entry.Command.Handler, StringComparer.Ordinal);
+    public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => ResolveCommands()
+        .ToDictionary(entry => entry.Name, entry => entry.Command.Info, StringComparer.Ordinal);
+    public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<PiSharpExtensionLifecycleHandler> LifecycleHandlers =>
+        _lifecycleHandlers.Select(entry => entry.Handler).ToArray();
+    internal IReadOnlyList<ExtensionLifecycleHandlerRegistration> RegisteredLifecycleHandlers =>
+        _lifecycleHandlers.ToArray();
     internal IReadOnlyList<RegisteredResourceDiscoveryHandler> ResourceDiscoveryHandlers =>
         _resourceDiscoveryHandlers.ToArray();
     private IReadOnlyList<RegisteredProjectTrustHandler> ProjectTrustHandlers => _projectTrustHandlers.ToArray();
@@ -145,7 +162,7 @@ public sealed class ExtensionRegistration
         IReadOnlyCollection<PiSharpToolRegistration> changed;
         lock (_toolGate)
         {
-            AddToolCore(definition);
+            AddToolCore(definition, null);
             changed = _toolDefinitions.Values.ToArray();
         }
         ToolDefinitionsChanged?.Invoke(changed);
@@ -160,8 +177,7 @@ public sealed class ExtensionRegistration
         lock (_toolGate)
         {
             var definition = new PiSharpToolRegistration(tool);
-            AddToolCore(definition);
-            _toolRenderers.Add(tool.Name, renderer);
+            AddToolCore(definition, renderer);
             changed = _toolDefinitions.Values.ToArray();
         }
         ToolDefinitionsChanged?.Invoke(changed);
@@ -175,8 +191,7 @@ public sealed class ExtensionRegistration
         IReadOnlyCollection<PiSharpToolRegistration> changed;
         lock (_toolGate)
         {
-            AddToolCore(definition);
-            _toolRenderers.Add(definition.Function.Name, renderer);
+            AddToolCore(definition, renderer);
             changed = _toolDefinitions.Values.ToArray();
         }
         ToolDefinitionsChanged?.Invoke(changed);
@@ -252,21 +267,36 @@ public sealed class ExtensionRegistration
     public void AddToolCallHook(PiSharpToolCallHook hook)
     {
         ArgumentNullException.ThrowIfNull(hook);
-        _toolCallHooks.Add(hook);
+        _toolCallHooks.Add(new(hook, _currentSourceInfo ?? SourceInfoFromHandler(hook)));
     }
 
     /// <summary>Registers an asynchronous result hook for model-issued and nested tool calls.</summary>
     public void AddToolResultHook(PiSharpToolResultHook hook)
     {
         ArgumentNullException.ThrowIfNull(hook);
-        _toolResultHooks.Add(hook);
+        _toolResultHooks.Add(new(hook, _currentSourceInfo ?? SourceInfoFromHandler(hook)));
     }
 
     /// <summary>Registers an asynchronous transform applied to provider-bound conversation context.</summary>
     public void AddContextTransform(PiSharpContextTransform transform)
     {
         ArgumentNullException.ThrowIfNull(transform);
-        _contextTransforms.Add(transform);
+        _contextTransforms.Add(new(transform, _currentSourceInfo ?? SourceInfoFromHandler(transform)));
+    }
+
+    /// <summary>Registers a synchronous callback for agent lifecycle events emitted during a run.</summary>
+    public void AddLifecycleHandler(PiSharpExtensionLifecycleHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        _lifecycleHandlers.Add(new(handler, _currentSourceInfo ?? SourceInfoFromHandler(handler)));
+    }
+
+    /// <summary>Registers an event-only lifecycle callback.</summary>
+    public void AddLifecycleHandler(Action<AgentLifecycleEvent> handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        var sourceInfo = _currentSourceInfo ?? SourceInfoFromHandler(handler);
+        _lifecycleHandlers.Add(new((eventData, _) => handler(eventData), sourceInfo));
     }
 
     /// <summary>Registers resources that become available after extension startup and each reload.</summary>
@@ -319,10 +349,14 @@ public sealed class ExtensionRegistration
         ArgumentNullException.ThrowIfNull(handler);
         if (string.IsNullOrWhiteSpace(name) || !name.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
             throw new ArgumentException("Extension command names must be alphanumeric, '_' or '-'.", nameof(name));
-        if (s_reserved.Contains(name) || !_commands.TryAdd(name, handler))
-            throw new ArgumentException($"Reserved or duplicate extension command: {name}");
         var sourceInfo = _currentSourceInfo ?? SourceInfoFromHandler(handler);
-        _commandInfo.Add(name, new(description, sourceInfo));
+        if (s_reserved.Contains(name))
+            throw new ArgumentException($"Reserved extension command: {name}");
+        var replacement = new RegisteredExtensionCommand(name, handler, new(description, sourceInfo));
+        var ownedCommand = _commands.FindIndex(command => command.Name == name &&
+            command.Info.SourceInfo.Path == sourceInfo.Path);
+        if (ownedCommand >= 0) _commands[ownedCommand] = replacement;
+        else _commands.Add(replacement);
     }
 
     internal void SetCurrentSourceInfo(ResourceSourceInfo? sourceInfo) => _currentSourceInfo = sourceInfo;
@@ -340,18 +374,99 @@ public sealed class ExtensionRegistration
         ToolDefinitionsChanged?.Invoke(changed);
     }
 
-    private void AddToolCore(PiSharpToolRegistration definition)
+    private void AddToolCore(PiSharpToolRegistration definition, PiSharpToolRenderer? renderer)
     {
         var name = definition.Function.Name;
-        if (!_tools.TryAdd(name, definition.Function))
-            throw new ArgumentException($"Duplicate extension tool: {name}");
-        _toolDefinitions.Add(name, definition);
         var assemblyPath = definition.Function.GetType().Assembly.Location;
-        _toolSourceInfo.Add(name, _currentSourceInfo ??
+        var sourceInfo = _currentSourceInfo ??
             (string.IsNullOrWhiteSpace(assemblyPath)
                 ? new("<unknown>", "local", "temporary", "top-level", null)
                 : new(Path.GetFullPath(assemblyPath), "local", "temporary", "top-level",
-                    Path.GetDirectoryName(assemblyPath))));
+                    Path.GetDirectoryName(assemblyPath)));
+        if (!_toolCandidates.TryGetValue(name, out var candidates))
+        {
+            candidates = [];
+            _toolCandidates.Add(name, candidates);
+        }
+        var sameOwner = candidates.FindIndex(candidate => candidate.SourceInfo.Path == sourceInfo.Path);
+        if (sameOwner >= 0)
+        {
+            candidates[sameOwner] = new(definition, sourceInfo, renderer);
+            if (sameOwner == 0) SetToolWinner(name, candidates[0]);
+            return;
+        }
+        candidates.Add(new(definition, sourceInfo, renderer));
+        if (candidates.Count == 1) SetToolWinner(name, candidates[0]);
+    }
+
+    private void SetToolWinner(string name, RegisteredExtensionTool winner)
+    {
+        _tools[name] = winner.Definition.Function;
+        _toolDefinitions[name] = winner.Definition;
+        _toolSourceInfo[name] = winner.SourceInfo;
+        if (winner.Renderer is null) _toolRenderers.Remove(name);
+        else _toolRenderers[name] = winner.Renderer;
+    }
+
+    private void RefreshToolWinner(string name)
+    {
+        if (_toolCandidates.TryGetValue(name, out var candidates) && candidates.Count > 0)
+        {
+            SetToolWinner(name, candidates[0]);
+            return;
+        }
+        _toolCandidates.Remove(name);
+        _tools.Remove(name);
+        _toolDefinitions.Remove(name);
+        _toolSourceInfo.Remove(name);
+        _toolRenderers.Remove(name);
+    }
+
+    private (string Name, RegisteredExtensionCommand Command)[] ResolveCommands()
+    {
+        var counts = _commands.GroupBy(command => command.Name, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+        var occurrences = new Dictionary<string, int>(StringComparer.Ordinal);
+        return _commands.Select(command =>
+        {
+            var occurrence = occurrences.GetValueOrDefault(command.Name) + 1;
+            occurrences[command.Name] = occurrence;
+            return (counts[command.Name] == 1 ? command.Name : $"{command.Name}:{occurrence}", command);
+        }).ToArray();
+    }
+
+    internal (string Kind, string Name, string Owner)? FindReplaceableCollision(string builtinPath)
+    {
+        foreach (var (name, candidates) in _toolCandidates)
+        {
+            if (!candidates.Any(candidate => candidate.SourceInfo.Path == builtinPath)) continue;
+            var owner = candidates.FirstOrDefault(candidate => candidate.SourceInfo.Path != builtinPath &&
+                !candidate.SourceInfo.Path.StartsWith("builtin:", StringComparison.Ordinal));
+            if (owner is not null) return ("tool", name, owner.SourceInfo.Path);
+        }
+        foreach (var command in _commands.Where(command => command.Info.SourceInfo.Path == builtinPath))
+        {
+            var owner = _commands.FirstOrDefault(candidate => candidate.Name == command.Name &&
+                candidate.Info.SourceInfo.Path != builtinPath &&
+                !candidate.Info.SourceInfo.Path.StartsWith("builtin:", StringComparison.Ordinal));
+            if (owner is not null) return ("command", command.Name, owner.Info.SourceInfo.Path);
+        }
+        return null;
+    }
+
+    internal IReadOnlyList<ExtensionConflictDiagnostic> FindToolConflicts()
+    {
+        var conflicts = new List<ExtensionConflictDiagnostic>();
+        foreach (var (name, candidates) in _toolCandidates)
+        {
+            if (candidates.Count < 2) continue;
+            var firstOwner = candidates[0].SourceInfo.Path;
+            foreach (var candidate in candidates.Skip(1))
+                if (candidate.SourceInfo.Path != firstOwner)
+                    conflicts.Add(new(candidate.SourceInfo.Path,
+                        $"Tool \"{name}\" conflicts with {firstOwner}"));
+        }
+        return conflicts;
     }
 
     private static ResourceSourceInfo SourceInfoFromHandler(Delegate handler)
@@ -366,7 +481,7 @@ public sealed class ExtensionRegistration
     public void AddUserBashHandler(UserBashHandler handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
-        _userBashHandlers.Add(handler);
+        _userBashHandlers.Add(new(handler, _currentSourceInfo ?? SourceInfoFromHandler(handler)));
     }
 }
 
@@ -384,16 +499,24 @@ public sealed class ExtensionLease(ExtensionCatalog initial) : IDisposable
     public void Dispose() => Current.Dispose();
 }
 
+public sealed record ExtensionLoadError(string Path, string Error);
+
 /// <summary>Loads personal and trust-gated project assemblies, plus caller-selected paths, in isolated contexts for reload.</summary>
-public sealed class ExtensionCatalog : IDisposable
+public sealed partial class ExtensionCatalog : IDisposable
 {
     private readonly List<AssemblyLoadContext> _contexts = [];
     private readonly List<IAsyncDisposable> _ownedConnections = [];
     private readonly List<ResourceSourceInfo> _loadedExtensions = [];
+    private readonly List<ExtensionLoadError> _loadErrors = [];
+    private readonly List<ExtensionConflictDiagnostic> _conflicts = [];
+    private readonly List<ExtensionLoadWarning> _warnings = [];
     private readonly HashSet<string> _loadedBuiltins = new(StringComparer.Ordinal);
     public ExtensionRegistration Registration { get; } = new();
     public IReadOnlySet<string> LoadedBuiltins => _loadedBuiltins;
     public IReadOnlyList<ResourceSourceInfo> LoadedExtensions => _loadedExtensions.ToArray();
+    public IReadOnlyList<ExtensionLoadError> LoadErrors => _loadErrors.ToArray();
+    public IReadOnlyList<ExtensionConflictDiagnostic> ConflictDiagnostics => _conflicts.ToArray();
+    public IReadOnlyList<ExtensionLoadWarning> Warnings => _warnings.ToArray();
 
     public async Task<ExtensionResourceDiscovery> DiscoverResourcesAsync(string workingDirectory,
         ExtensionResourceDiscoveryReason reason, CancellationToken cancellationToken = default)
@@ -456,22 +579,16 @@ public sealed class ExtensionCatalog : IDisposable
     public void EnableBuiltinIfAllowed(BuiltinExtensionDefinition builtin,
         IReadOnlyList<string>? userPaths, IReadOnlyList<string>? projectPaths)
     {
-        if (_loadedBuiltins.Contains(builtin.Name) || !IsBuiltinEnabled(builtin.Name, userPaths, projectPaths) ||
-            Registration.ToolDefinitions.Any(tool => tool.Function.Name ==
-                (builtin.Name == "tool-search" ? "tool_search" : builtin.Name))) return;
-        Registration.SetCurrentSourceInfo(new("builtin:" + builtin.Name, "builtin", "builtin", "top-level", null));
-        try
-        {
-            builtin.Configure(Registration);
-            _loadedBuiltins.Add(builtin.Name);
-        }
-        finally { Registration.SetCurrentSourceInfo(null); }
+        if (_loadedBuiltins.Contains(builtin.Name) || !IsBuiltinEnabled(builtin.Name, userPaths, projectPaths)) return;
+        ConfigureBuiltin(builtin);
     }
 
     public static ExtensionCatalog Load(string agentDirectory, string cwd, bool projectTrusted, bool discover = true,
         IReadOnlyList<string>? additionalPaths = null, IReadOnlyList<string>? userPaths = null,
         IReadOnlyList<string>? projectPaths = null, IReadOnlyList<BuiltinExtensionDefinition>? builtins = null,
-        ExtensionCatalog? preloaded = null)
+        ExtensionCatalog? preloaded = null,
+        IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null,
+        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null)
     {
         var catalog = preloaded ?? new ExtensionCatalog();
         try
@@ -480,8 +597,12 @@ public sealed class ExtensionCatalog : IDisposable
             var selectedBuiltins = new List<BuiltinExtensionDefinition>();
             var builtinByName = (builtins ?? []).ToDictionary(builtin => builtin.Name, StringComparer.Ordinal);
             var seenBuiltins = new HashSet<string>(StringComparer.Ordinal);
-            var seenPaths = new HashSet<string>(catalog._loadedExtensions.Select(extension => extension.Path),
+            var seenPaths = new HashSet<string>(catalog._loadErrors.Select(error => error.Path).Select(ResourcePathIdentity.Canonicalize),
                 OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+            var packageFiles = discover ? ResourcePackageFiles.Load(cwd, agentDirectory, projectTrusted,
+                userPackages, projectPackages, CancellationToken.None, managedPackageRoots).Extensions : [];
+            var packagePaths = packageFiles.Select(file => file.Path).ToHashSet(seenPaths.Comparer);
+            var packageMetadata = packageFiles.ToDictionary(file => file.Path, file => file.Source, seenPaths.Comparer);
             foreach (var entry in additionalPaths ?? [])
             {
                 if (entry.StartsWith("builtin:", StringComparison.Ordinal))
@@ -489,12 +610,18 @@ public sealed class ExtensionCatalog : IDisposable
                     AddBuiltin(entry);
                     continue;
                 }
-                var path = Path.GetFullPath(entry, cwd);
+                var path = ResourceLocalPath.Resolve(entry, cwd);
                 IEnumerable<string> paths;
                 if (Directory.Exists(path)) paths = FindAssemblies(path);
                 else if (File.Exists(path) && Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase))
                     paths = [path];
-                else throw new FileNotFoundException("Explicit extension must be a .dll file or an existing directory.", path);
+                else
+                {
+                    if (seenPaths.Add(ResourcePathIdentity.Canonicalize(path))) catalog._loadErrors.Add(new(path, File.Exists(path)
+                        ? "Explicit extension must be a .dll file or an existing directory."
+                        : "Extension path does not exist: " + path));
+                    continue;
+                }
                 foreach (var assemblyPath in paths)
                     AddPath(assemblyPath, new(Path.GetFullPath(assemblyPath), "cli", "temporary", "top-level",
                         null));
@@ -510,31 +637,32 @@ public sealed class ExtensionCatalog : IDisposable
                     if (Directory.Exists(projectRoot))
                         foreach (var path in LocalResourcePathRules.ApplyOverrides(FindAssemblies(projectRoot), projectPaths,
                             Path.GetFullPath(Path.Combine(cwd, ".pi"))))
-                            AddPath(path, new(Path.GetFullPath(path), "auto", "project", "top-level",
+                            if (!packagePaths.Contains(path)) AddPath(path, new(Path.GetFullPath(path), "auto", "project", "top-level",
                                 Path.GetFullPath(Path.Combine(cwd, ".pi"))));
                 }
                 var userRoot = Path.Combine(agentDirectory, "extensions");
                 if (Directory.Exists(userRoot))
                     foreach (var path in LocalResourcePathRules.ApplyOverrides(FindAssemblies(userRoot), userPaths,
                         Path.GetFullPath(agentDirectory)))
-                        AddPath(path, new(Path.GetFullPath(path), "auto", "user", "top-level", Path.GetFullPath(agentDirectory)));
+                        if (!packagePaths.Contains(path)) AddPath(path, new(Path.GetFullPath(path), "auto", "user", "top-level", Path.GetFullPath(agentDirectory)));
+                foreach (var file in packageFiles)
+                    if (file.Enabled) AddPath(file.Path, file.Source);
             }
+            catalog.SelectPreloadedExtensions(selectedPaths);
+            var retainedPaths = catalog._loadedExtensions.Select(extension => ResourcePathIdentity.Canonicalize(extension.Path))
+                .ToHashSet(seenPaths.Comparer);
             foreach (var (path, sourceInfo) in selectedPaths)
             {
-                catalog._loadedExtensions.Add(sourceInfo with { Path = path });
-                var context = new PluginLoadContext(path);
-                catalog._contexts.Add(context);
-                var assembly = context.LoadFromAssemblyPath(path);
-                foreach (var type in assembly.GetExportedTypes().Where(type =>
-                    typeof(IPiSharpExtension).IsAssignableFrom(type) && !type.IsAbstract && !type.IsInterface))
+                if (retainedPaths.Contains(ResourcePathIdentity.Canonicalize(path))) continue;
+                var loaded = ExtensionAssemblyLoader.Load(path, sourceInfo, catalog.Registration);
+                if (loaded.Error is { } error) catalog._loadErrors.Add(new(path, error));
+                else
                 {
-                    if (Activator.CreateInstance(type) is not IPiSharpExtension extension)
-                        throw new InvalidDataException($"Extension {type.FullName} needs a public parameterless constructor.");
-                    catalog.Registration.SetCurrentSourceInfo(sourceInfo);
-                    try { extension.Configure(catalog.Registration); }
-                    finally { catalog.Registration.SetCurrentSourceInfo(null); }
+                    catalog._loadedExtensions.Add(sourceInfo with { Path = path });
+                    catalog._contexts.Add(loaded.Context!);
                 }
             }
+            catalog.OrderSelectedExtensions(selectedPaths);
             if (discover)
                 foreach (var builtin in builtins ?? [])
                     if (builtin.AutoEnable && (builtin.ShouldAutoEnable?.Invoke(catalog.Registration) ?? true) &&
@@ -542,15 +670,10 @@ public sealed class ExtensionCatalog : IDisposable
                         AddBuiltin("builtin:" + builtin.Name);
             foreach (var builtin in selectedBuiltins)
             {
-                catalog.Registration.SetCurrentSourceInfo(new("builtin:" + builtin.Name, "builtin", "builtin",
-                    "top-level", null));
-                try
-                {
-                    builtin.Configure(catalog.Registration);
-                    catalog._loadedBuiltins.Add(builtin.Name);
-                }
-                finally { catalog.Registration.SetCurrentSourceInfo(null); }
+                catalog.ConfigureBuiltin(builtin);
             }
+            catalog._conflicts.Clear();
+            catalog._conflicts.AddRange(catalog.Registration.FindToolConflicts());
             return catalog;
 
             void AddBuiltin(string identifier)
@@ -564,7 +687,8 @@ public sealed class ExtensionCatalog : IDisposable
             void AddPath(string path, ResourceSourceInfo sourceInfo)
             {
                 var fullPath = Path.GetFullPath(path);
-                if (seenPaths.Add(fullPath)) selectedPaths.Add((fullPath, sourceInfo with { Path = fullPath }));
+                sourceInfo = packageMetadata.GetValueOrDefault(fullPath, sourceInfo);
+                if (seenPaths.Add(ResourcePathIdentity.Canonicalize(fullPath))) selectedPaths.Add((fullPath, sourceInfo with { Path = fullPath }));
             }
 
             void AddConfiguredPaths(IReadOnlyList<string>? entries, string baseDirectory, string scope)
@@ -575,7 +699,7 @@ public sealed class ExtensionCatalog : IDisposable
                     .SelectMany(entry => EnumerateConfiguredAssemblies(LocalResourcePathRules.ResolvePath(entry, fullBase)))
                     .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal).ToArray();
                 foreach (var path in LocalResourcePathRules.ApplyOverrides(candidates, entries, fullBase))
-                    AddPath(path, new(Path.GetFullPath(path), "local", scope, "top-level", fullBase));
+                    if (!packagePaths.Contains(path)) AddPath(path, new(Path.GetFullPath(path), "local", scope, "top-level", fullBase));
                 foreach (var entry in LocalResourcePathRules.GetPaths(entries).Where(entry =>
                     entry.StartsWith("builtin:", StringComparison.Ordinal)))
                     if (IsBuiltinEnabled(entry["builtin:".Length..], userPaths, projectTrusted ? projectPaths : null))
@@ -583,6 +707,34 @@ public sealed class ExtensionCatalog : IDisposable
             }
         }
         catch { catalog.Dispose(); throw; }
+    }
+
+    private void ConfigureBuiltin(BuiltinExtensionDefinition builtin)
+    {
+        var source = new ResourceSourceInfo("builtin:" + builtin.Name, "builtin", "builtin", "top-level", null);
+        var restore = Registration.CreateConfigurationCheckpoint();
+        Registration.SetCurrentSourceInfo(source);
+        try { builtin.Configure(Registration); }
+        finally { Registration.SetCurrentSourceInfo(null); }
+
+        var collision = builtin.Replaceable ? Registration.FindReplaceableCollision(source.Path) : null;
+        if (collision is { } replacement)
+        {
+            restore();
+            var registeredName = replacement.Kind switch
+            {
+                "command" => "/" + replacement.Name,
+                "flag" => "--" + replacement.Name,
+                _ => replacement.Name
+            };
+            _warnings.Add(new(source.Path,
+                $"Extension {replacement.Owner} registers {replacement.Kind} `{registeredName}`, so built-in extension " +
+                $"`{builtin.Name}` was not loaded. To use `{builtin.Name}`, run `pi config` and make sure it is enabled " +
+                "under Built-in extensions, then disable or remove the existing extension. We recommend only having " +
+                "one or the other loaded at a time."));
+            return;
+        }
+        _loadedBuiltins.Add(builtin.Name);
     }
 
     private static bool IsBuiltinEnabled(string name, IReadOnlyList<string>? userPaths,
@@ -598,10 +750,7 @@ public sealed class ExtensionCatalog : IDisposable
                 ignoreCase: false));
     }
 
-    private static IEnumerable<string> FindAssemblies(string root) =>
-        Directory.EnumerateFiles(root, "*.dll", SearchOption.TopDirectoryOnly)
-            .Concat(Directory.EnumerateDirectories(root).Select(path => Path.Combine(path, "index.dll"))
-                .Where(File.Exists)).Order(StringComparer.Ordinal).Take(100).Select(Path.GetFullPath).ToArray();
+    private static IEnumerable<string> FindAssemblies(string root) => ResourceExtensionFiles.Enumerate(root);
 
     private static IEnumerable<string> EnumerateConfiguredAssemblies(string root)
     {
@@ -622,15 +771,4 @@ public sealed class ExtensionCatalog : IDisposable
         _contexts.Clear();
     }
 
-    private sealed class PluginLoadContext(string path) : AssemblyLoadContext(isCollectible: true)
-    {
-        private readonly AssemblyDependencyResolver _resolver = new(path);
-        protected override Assembly? Load(AssemblyName name)
-        {
-            if (Default.Assemblies.Any(assembly => AssemblyName.ReferenceMatchesDefinition(assembly.GetName(), name)))
-                return null; // Share PiSharp and MEAI contracts with the host.
-            var resolved = _resolver.ResolveAssemblyToPath(name);
-            return resolved is null ? null : LoadFromAssemblyPath(resolved);
-        }
-    }
 }

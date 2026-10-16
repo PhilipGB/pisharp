@@ -21,6 +21,25 @@ internal sealed class AnthropicSystemMessageHandler(AnthropicTranscriptRequest c
                 assistant++;
             }
             while (inserted < updates.Count) messages.Add(updates[inserted++].Message.DeepClone());
+            foreach (var message in messages.OfType<JsonObject>())
+            {
+                if (message["content"] is not JsonArray contentBlocks) continue;
+                foreach (var toolResult in contentBlocks.OfType<JsonObject>())
+                {
+                    if (toolResult["type"]?.GetValue<string>() != "tool_result" ||
+                        toolResult["is_error"]?.GetValue<bool>() != true ||
+                        toolResult["content"] is not JsonArray resultBlocks) continue;
+                    for (var index = 0; index < resultBlocks.Count; index++)
+                        if (resultBlocks[index]?["type"]?.GetValue<string>() == "image")
+                            resultBlocks[index] = new JsonObject
+                            {
+                                ["type"] = "text",
+                                ["text"] = AnthropicToolResultProjection.ImageOmissionNote
+                            };
+                    if (resultBlocks.All(block => block?["type"]?.GetValue<string>() == "text"))
+                        toolResult["content"] = string.Join('\n', resultBlocks.Select(block => block!["text"]!.GetValue<string>()));
+                }
+            }
             if (messages.LastOrDefault() is JsonObject last && last["role"]?.GetValue<string>() is "user" or "system")
             {
                 if (last["content"] is JsonValue text && text.TryGetValue<string>(out var value))
@@ -35,6 +54,8 @@ internal sealed class AnthropicSystemMessageHandler(AnthropicTranscriptRequest c
             request.Content = replacement;
             content.Dispose();
         }
-        return await base.SendAsync(request, cancellationToken);
+        var response = await base.SendAsync(request, cancellationToken);
+        if (context.Attempt.Value is { } attempt) attempt.StatusCode = response.StatusCode;
+        return response;
     }
 }

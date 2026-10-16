@@ -1,0 +1,1403 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "match": true,
+  "comparison": "Exact repair strings and JSON values across captured prefixes; nine native streaming tool results through real Pi provider adapters and native PiSharp SDKs. Pi HTTP is an injected fetch; PiSharp uses loopback HTTP. Depths above 64, non-JSON numeric values/unsafe integer rounding, browser services and full event envelopes are not covered.",
+  "parserCaseCount": 175,
+  "nativeCaseCount": 9,
+  "canonicalOutputSha256": {
+    "pi": "dd043c6205fd3fda1b26b201b0bf04522d012b78b542d05bab7ffbc88e5e7bb6",
+    "pisharp": "dd043c6205fd3fda1b26b201b0bf04522d012b78b542d05bab7ffbc88e5e7bb6"
+  },
+  "parserCases": [
+    {
+      "input": "",
+      "repaired": "",
+      "parsed": {}
+    },
+    {
+      "input": "{",
+      "repaired": "{",
+      "parsed": {}
+    },
+    {
+      "input": "{\"",
+      "repaired": "{\"",
+      "parsed": {}
+    },
+    {
+      "input": "{\"t",
+      "repaired": "{\"t",
+      "parsed": {}
+    },
+    {
+      "input": "{\"te",
+      "repaired": "{\"te",
+      "parsed": {}
+    },
+    {
+      "input": "{\"tex",
+      "repaired": "{\"tex",
+      "parsed": {}
+    },
+    {
+      "input": "{\"text",
+      "repaired": "{\"text",
+      "parsed": {}
+    },
+    {
+      "input": "{\"text\"",
+      "repaired": "{\"text\"",
+      "parsed": {}
+    },
+    {
+      "input": "{\"text\":",
+      "repaired": "{\"text\":",
+      "parsed": {}
+    },
+    {
+      "input": "{\"text\":\"",
+      "repaired": "{\"text\":\"",
+      "parsed": {
+        "text": ""
+      }
+    },
+    {
+      "input": "{\"text\":\"\\",
+      "repaired": "{\"text\":\"\\\\",
+      "parsed": {
+        "text": ""
+      }
+    },
+    {
+      "input": "{\"text\":\"\\u",
+      "repaired": "{\"text\":\"\\\\u",
+      "parsed": {
+        "text": ""
+      }
+    },
+    {
+      "input": "{\"text\":\"\\ur",
+      "repaired": "{\"text\":\"\\\\ur",
+      "parsed": {
+        "text": ""
+      }
+    },
+    {
+      "input": "{\"text\":\"\\url",
+      "repaired": "{\"text\":\"\\\\url",
+      "parsed": {
+        "text": ""
+      }
+    },
+    {
+      "input": "{\"text\":\"\\url{",
+      "repaired": "{\"text\":\"\\\\url{",
+      "parsed": {
+        "text": ""
+      }
+    },
+    {
+      "input": "{\"text\":\"\\url{x",
+      "repaired": "{\"text\":\"\\\\url{x",
+      "parsed": {
+        "text": ""
+      }
+    },
+    {
+      "input": "{\"text\":\"\\url{x}",
+      "repaired": "{\"text\":\"\\\\url{x}",
+      "parsed": {
+        "text": ""
+      }
+    },
+    {
+      "input": "{\"text\":\"\\url{x}\"",
+      "repaired": "{\"text\":\"\\\\url{x}\"",
+      "parsed": {}
+    },
+    {
+      "input": "{\"text\":\"\\url{x}\"}",
+      "repaired": "{\"text\":\"\\\\url{x}\"}",
+      "parsed": {
+        "text": "\\url{x}"
+      }
+    },
+    {
+      "input": "{\"p",
+      "repaired": "{\"p",
+      "parsed": {}
+    },
+    {
+      "input": "{\"pa",
+      "repaired": "{\"pa",
+      "parsed": {}
+    },
+    {
+      "input": "{\"pat",
+      "repaired": "{\"pat",
+      "parsed": {}
+    },
+    {
+      "input": "{\"path",
+      "repaired": "{\"path",
+      "parsed": {}
+    },
+    {
+      "input": "{\"path\"",
+      "repaired": "{\"path\"",
+      "parsed": {}
+    },
+    {
+      "input": "{\"path\":",
+      "repaired": "{\"path\":",
+      "parsed": {}
+    },
+    {
+      "input": "{\"path\":\"",
+      "repaired": "{\"path\":\"",
+      "parsed": {
+        "path": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a",
+      "repaired": "{\"path\":\"a",
+      "parsed": {
+        "path": "a"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.",
+      "repaired": "{\"path\":\"a.",
+      "parsed": {
+        "path": "a."
+      }
+    },
+    {
+      "input": "{\"path\":\"a.t",
+      "repaired": "{\"path\":\"a.t",
+      "parsed": {
+        "path": "a.t"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.te",
+      "repaired": "{\"path\":\"a.te",
+      "parsed": {
+        "path": "a.te"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex",
+      "repaired": "{\"path\":\"a.tex",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\"",
+      "repaired": "{\"path\":\"a.tex\"",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",",
+      "repaired": "{\"path\":\"a.tex\",",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"",
+      "repaired": "{\"path\":\"a.tex\",\"",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"c",
+      "repaired": "{\"path\":\"a.tex\",\"c",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"co",
+      "repaired": "{\"path\":\"a.tex\",\"co",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"con",
+      "repaired": "{\"path\":\"a.tex\",\"con",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"cont",
+      "repaired": "{\"path\":\"a.tex\",\"cont",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"conte",
+      "repaired": "{\"path\":\"a.tex\",\"conte",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"conten",
+      "repaired": "{\"path\":\"a.tex\",\"conten",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content",
+      "repaired": "{\"path\":\"a.tex\",\"content",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\"",
+      "repaired": "{\"path\":\"a.tex\",\"content\"",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":",
+      "repaired": "{\"path\":\"a.tex\",\"content\":",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\u",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\u",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\us",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\us",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\use",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\use",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usep",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usep",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepa",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepa",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepac",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepac",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepack",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepack",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepacka",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepacka",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackag",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackag",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}",
+      "parsed": {
+        "path": "a.tex",
+        "content": ""
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\"",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\"",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"m",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"m",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"mo",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"mo",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"mod",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"mod",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"mode",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"mode",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"mode\"",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"mode\"",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"mode\":",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"mode\":",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"mode\":\"",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"mode\":\"",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"mode\":\"w",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"mode\":\"w",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"mode\":\"w\"",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"mode\":\"w\"",
+      "parsed": {
+        "path": "a.tex"
+      }
+    },
+    {
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x}\",\"mode\":\"w\"}",
+      "repaired": "{\"path\":\"a.tex\",\"content\":\"\\\\usepackage{x}\",\"mode\":\"w\"}",
+      "parsed": {
+        "path": "a.tex",
+        "content": "\\usepackage{x}",
+        "mode": "w"
+      }
+    },
+    {
+      "input": "{\"text\":\"c",
+      "repaired": "{\"text\":\"c",
+      "parsed": {
+        "text": "c"
+      }
+    },
+    {
+      "input": "{\"text\":\"ca",
+      "repaired": "{\"text\":\"ca",
+      "parsed": {
+        "text": "ca"
+      }
+    },
+    {
+      "input": "{\"text\":\"caf",
+      "repaired": "{\"text\":\"caf",
+      "parsed": {
+        "text": "caf"
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\",
+      "repaired": "{\"text\":\"caf\\\\",
+      "parsed": {
+        "text": "caf"
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u",
+      "repaired": "{\"text\":\"caf\\\\u",
+      "parsed": {
+        "text": "caf"
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u0",
+      "repaired": "{\"text\":\"caf\\\\u0",
+      "parsed": {
+        "text": "caf"
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u00",
+      "repaired": "{\"text\":\"caf\\\\u00",
+      "parsed": {
+        "text": "caf"
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u00e",
+      "repaired": "{\"text\":\"caf\\\\u00e",
+      "parsed": {
+        "text": "caf"
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u00e9",
+      "repaired": "{\"text\":\"caf\\u00e9",
+      "parsed": {
+        "text": "caf\u00e9"
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u00e9 ",
+      "repaired": "{\"text\":\"caf\\u00e9 ",
+      "parsed": {
+        "text": "caf\u00e9"
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u00e9 \\",
+      "repaired": "{\"text\":\"caf\\u00e9 \\\\",
+      "parsed": {
+        "text": "caf\u00e9 "
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u00e9 \\u",
+      "repaired": "{\"text\":\"caf\\u00e9 \\\\u",
+      "parsed": {
+        "text": "caf\u00e9 "
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u00e9 \\ur",
+      "repaired": "{\"text\":\"caf\\u00e9 \\\\ur",
+      "parsed": {
+        "text": "caf\u00e9 "
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u00e9 \\url",
+      "repaired": "{\"text\":\"caf\\u00e9 \\\\url",
+      "parsed": {
+        "text": "caf\u00e9 "
+      }
+    },
+    {
+      "input": "{\"text\":\"caf\\u00e9 \\url\"",
+      "repaired": "{\"text\":\"caf\\u00e9 \\\\url\"",
+      "parsed": {}
+    },
+    {
+      "input": "{\"text\":\"caf\\u00e9 \\url\"}",
+      "repaired": "{\"text\":\"caf\\u00e9 \\\\url\"}",
+      "parsed": {
+        "text": "caf\u00e9 \\url"
+      }
+    },
+    {
+      "input": "{\"text\":\"l",
+      "repaired": "{\"text\":\"l",
+      "parsed": {
+        "text": "l"
+      }
+    },
+    {
+      "input": "{\"text\":\"li",
+      "repaired": "{\"text\":\"li",
+      "parsed": {
+        "text": "li"
+      }
+    },
+    {
+      "input": "{\"text\":\"lit",
+      "repaired": "{\"text\":\"lit",
+      "parsed": {
+        "text": "lit"
+      }
+    },
+    {
+      "input": "{\"text\":\"lite",
+      "repaired": "{\"text\":\"lite",
+      "parsed": {
+        "text": "lite"
+      }
+    },
+    {
+      "input": "{\"text\":\"liter",
+      "repaired": "{\"text\":\"liter",
+      "parsed": {
+        "text": "liter"
+      }
+    },
+    {
+      "input": "{\"text\":\"litera",
+      "repaired": "{\"text\":\"litera",
+      "parsed": {
+        "text": "litera"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal",
+      "repaired": "{\"text\":\"literal",
+      "parsed": {
+        "text": "literal"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\",
+      "repaired": "{\"text\":\"literal\\\\",
+      "parsed": {
+        "text": "literal"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\",
+      "repaired": "{\"text\":\"literal\\\\",
+      "parsed": {
+        "text": "literal\\"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\u",
+      "repaired": "{\"text\":\"literal\\\\u",
+      "parsed": {
+        "text": "literal\\u"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\us",
+      "repaired": "{\"text\":\"literal\\\\us",
+      "parsed": {
+        "text": "literal\\us"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\use",
+      "repaired": "{\"text\":\"literal\\\\use",
+      "parsed": {
+        "text": "literal\\use"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\usep",
+      "repaired": "{\"text\":\"literal\\\\usep",
+      "parsed": {
+        "text": "literal\\usep"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\usepa",
+      "repaired": "{\"text\":\"literal\\\\usepa",
+      "parsed": {
+        "text": "literal\\usepa"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\usepac",
+      "repaired": "{\"text\":\"literal\\\\usepac",
+      "parsed": {
+        "text": "literal\\usepac"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\usepack",
+      "repaired": "{\"text\":\"literal\\\\usepack",
+      "parsed": {
+        "text": "literal\\usepack"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\usepacka",
+      "repaired": "{\"text\":\"literal\\\\usepacka",
+      "parsed": {
+        "text": "literal\\usepacka"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\usepackag",
+      "repaired": "{\"text\":\"literal\\\\usepackag",
+      "parsed": {
+        "text": "literal\\usepackag"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\usepackage",
+      "repaired": "{\"text\":\"literal\\\\usepackage",
+      "parsed": {
+        "text": "literal\\usepackage"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\usepackage\"",
+      "repaired": "{\"text\":\"literal\\\\usepackage\"",
+      "parsed": {
+        "text": "literal\\usepackage"
+      }
+    },
+    {
+      "input": "{\"text\":\"literal\\\\usepackage\"}",
+      "repaired": "{\"text\":\"literal\\\\usepackage\"}",
+      "parsed": {
+        "text": "literal\\usepackage"
+      }
+    },
+    {
+      "input": "{\"n",
+      "repaired": "{\"n",
+      "parsed": {}
+    },
+    {
+      "input": "{\"ne",
+      "repaired": "{\"ne",
+      "parsed": {}
+    },
+    {
+      "input": "{\"nes",
+      "repaired": "{\"nes",
+      "parsed": {}
+    },
+    {
+      "input": "{\"nest",
+      "repaired": "{\"nest",
+      "parsed": {}
+    },
+    {
+      "input": "{\"neste",
+      "repaired": "{\"neste",
+      "parsed": {}
+    },
+    {
+      "input": "{\"nested",
+      "repaired": "{\"nested",
+      "parsed": {}
+    },
+    {
+      "input": "{\"nested\"",
+      "repaired": "{\"nested\"",
+      "parsed": {}
+    },
+    {
+      "input": "{\"nested\":",
+      "repaired": "{\"nested\":",
+      "parsed": {}
+    },
+    {
+      "input": "{\"nested\":[",
+      "repaired": "{\"nested\":[",
+      "parsed": {
+        "nested": []
+      }
+    },
+    {
+      "input": "{\"nested\":[{",
+      "repaired": "{\"nested\":[{",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"",
+      "repaired": "{\"nested\":[{\"",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"t",
+      "repaired": "{\"nested\":[{\"t",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"te",
+      "repaired": "{\"nested\":[{\"te",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"tex",
+      "repaired": "{\"nested\":[{\"tex",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text",
+      "repaired": "{\"nested\":[{\"text",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\"",
+      "repaired": "{\"nested\":[{\"text\"",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":",
+      "repaired": "{\"nested\":[{\"text\":",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"",
+      "repaired": "{\"nested\":[{\"text\":\"",
+      "parsed": {
+        "nested": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\",
+      "parsed": {
+        "nested": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\u",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\u",
+      "parsed": {
+        "nested": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\ur",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\ur",
+      "parsed": {
+        "nested": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url",
+      "parsed": {
+        "nested": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{",
+      "parsed": {
+        "nested": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x",
+      "parsed": {
+        "nested": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}",
+      "parsed": {
+        "nested": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"}",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"}",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},t",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},t",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},tr",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},tr",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},tru",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},tru",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,n",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,n",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,nu",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,nu",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,nul",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,nul",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3]",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3]",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"a",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"a",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"af",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"af",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"aft",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"aft",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"afte",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"afte",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\"",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\"",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"p",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"p",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"pr",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"pr",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"pre",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"pre",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"pres",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"pres",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"prese",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"prese",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"presen",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"presen",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"present",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"present",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"present\"",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"present\"",
+      "parsed": {
+        "nested": [
+          {}
+        ]
+      }
+    },
+    {
+      "input": "{\"nested\":[{\"text\":\"\\url{x}\"},true,null,3],\"after\":\"present\"}",
+      "repaired": "{\"nested\":[{\"text\":\"\\\\url{x}\"},true,null,3],\"after\":\"present\"}",
+      "parsed": {
+        "nested": [
+          {
+            "text": "\\url{x}"
+          },
+          true,
+          null,
+          3
+        ],
+        "after": "present"
+      }
+    },
+    {
+      "input": "{\"text\":\"ab\\u00",
+      "repaired": "{\"text\":\"ab\\\\u00",
+      "parsed": {
+        "text": "ab"
+      }
+    },
+    {
+      "input": "{\"text\":\"\\uD83D\\uDE00\"}",
+      "repaired": "{\"text\":\"\\uD83D\\uDE00\"}",
+      "parsed": {
+        "text": "\ud83d\ude00"
+      }
+    },
+    {
+      "input": "{\"text\":\"line\n\t\u0000\\\"quoted\\\"\",\"mode\":\"w\"}",
+      "repaired": "{\"text\":\"line\\n\\t\\u0000\\\"quoted\\\"\",\"mode\":\"w\"}",
+      "parsed": {
+        "text": "line\n\t\u0000\"quoted\"",
+        "mode": "w"
+      }
+    },
+    {
+      "input": "{\"a\":1,\"n\":1e",
+      "repaired": "{\"a\":1,\"n\":1e",
+      "parsed": {
+        "a": 1,
+        "n": 1
+      }
+    },
+    {
+      "input": "{\"a\":1,\"n\":1.",
+      "repaired": "{\"a\":1,\"n\":1.",
+      "parsed": {
+        "a": 1
+      }
+    },
+    {
+      "input": "{\"a\":tru",
+      "repaired": "{\"a\":tru",
+      "parsed": {
+        "a": true
+      }
+    },
+    {
+      "input": "{\"a\":nul",
+      "repaired": "{\"a\":nul",
+      "parsed": {
+        "a": null
+      }
+    },
+    {
+      "input": "{\"a\":[1,2,",
+      "repaired": "{\"a\":[1,2,",
+      "parsed": {
+        "a": [
+          1,
+          2
+        ]
+      }
+    }
+  ],
+  "nativeCases": [
+    {
+      "protocol": "openai-completions",
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x} caf\\u00e9 \\url{x}\",\"mode\":\"w\"}",
+      "arguments": {
+        "path": "a.tex",
+        "content": "\\usepackage{x} caf\u00e9 \\url{x}",
+        "mode": "w"
+      }
+    },
+    {
+      "protocol": "openai-completions",
+      "input": "{\"text\":\"valid\\\\usepackage \\u00e9\"}",
+      "arguments": {
+        "text": "valid\\usepackage \u00e9"
+      }
+    },
+    {
+      "protocol": "openai-completions",
+      "input": "{\"text\":\"ab\\u00",
+      "arguments": {
+        "text": "ab"
+      }
+    },
+    {
+      "protocol": "openai-responses",
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x} caf\\u00e9 \\url{x}\",\"mode\":\"w\"}",
+      "arguments": {
+        "path": "a.tex",
+        "content": "\\usepackage{x} caf\u00e9 \\url{x}",
+        "mode": "w"
+      }
+    },
+    {
+      "protocol": "openai-responses",
+      "input": "{\"text\":\"valid\\\\usepackage \\u00e9\"}",
+      "arguments": {
+        "text": "valid\\usepackage \u00e9"
+      }
+    },
+    {
+      "protocol": "openai-responses",
+      "input": "{\"text\":\"ab\\u00",
+      "arguments": {
+        "text": "ab"
+      }
+    },
+    {
+      "protocol": "anthropic-messages",
+      "input": "{\"path\":\"a.tex\",\"content\":\"\\usepackage{x} caf\\u00e9 \\url{x}\",\"mode\":\"w\"}",
+      "arguments": {
+        "path": "a.tex",
+        "content": "\\usepackage{x} caf\u00e9 \\url{x}",
+        "mode": "w"
+      }
+    },
+    {
+      "protocol": "anthropic-messages",
+      "input": "{\"text\":\"valid\\\\usepackage \\u00e9\"}",
+      "arguments": {
+        "text": "valid\\usepackage \u00e9"
+      }
+    },
+    {
+      "protocol": "anthropic-messages",
+      "input": "{\"text\":\"ab\\u00",
+      "arguments": {
+        "text": "ab"
+      }
+    }
+  ]
+}

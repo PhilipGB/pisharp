@@ -1,0 +1,394 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "9bf391b90025309d7af64e8e4abab65987c0d9e9",
+  "candidate": "Base plus path selection/canonical identity/context-dependent discovery/catalog diagnostics and tests in this commit; captures use the pre-publication working tree.",
+  "match": true,
+  "cases": 32,
+  "comparison": "Actual DefaultResourceLoader.reload/extendResources with real SettingsManager/project trust, local settings files and an isolated existing HOME. Exact skill/prompt metadata, order, sourceInfo including absent baseDir, relative file paths, complete body UTF16 length/SHA256 and raw diagnostic type/message/path/collision winner/loser/order. Only fixture-root paths are made relative.",
+  "characterization": [
+    {
+      "phase": "Initial full-loader boundary",
+      "cases": 21,
+      "mismatches": 18
+    },
+    {
+      "phase": "Automatic/configured/agents/ancestor/extension/Unicode contexts",
+      "cases": 29,
+      "mismatches": 26,
+      "nativeFailFirst": {
+        "failed": 11,
+        "passed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "phase": "Missing-root diagnostic sequence",
+      "cases": 32,
+      "mismatches": 2,
+      "result": "Root skill warning positions and trailing app-level prompt errors corrected."
+    }
+  ],
+  "implementation": [
+    "ResourcePathSelection separates default metadata inventory, enabled resource roots, canonical root merging, additional CLI and extension paths. ResourcePathIdentity follows leaf and ancestor links while preserving the selected display path.",
+    "Skills preserve per-read validation warnings across distinct roots, suppress already-loaded canonical files, and append name collisions after all read/metadata warnings. Prompts read/parse before name resolution and use slash-prefixed collision names.",
+    "Configured resources retain absent baseDir. Additional selections inherit known application metadata even when default loading is disabled; outside selected roots retain local temporary scope. No-skills/no-prompt defaults suppress configured resources while explicit/extension roots remain reachable.",
+    "Automatic prompts hide dotfiles and honor ignore files; configured prompt directories recurse with ignores; direct CLI prompt directories retain direct hidden Markdown files. .agents skill roots use nested aliases and project ancestor discovery stops at the Git root.",
+    "Filesystem entry ordering compares Unicode scalars across the BMP boundary. Extension resources follow CLI roots in selection order while their source metadata can overlay an existing selected path.",
+    "Root warnings remain interleaved with file validation, before collision reports; app-level missing prompt errors follow read/metadata warnings and collisions."
+  ],
+  "verification": {
+    "focusedPassed": 108,
+    "fullPassed": 1778,
+    "fullFailed": 0,
+    "fullSkipped": 0,
+    "newNativeRows": 17,
+    "format": "passed",
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "explicitPathRegressionCases": 19,
+    "basicDiscoveryRegressionCases": 17,
+    "ignoreRegressionCases": 60,
+    "exactHeadCi": {
+      "sha": "0672b794ac060a967ee4be1e5a43df20452fc5ca",
+      "run": 38546090541,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38546090541",
+      "jobs": "both pass",
+      "dotnetPassed": 1778,
+      "failed": 0,
+      "skipped": 0,
+      "nodePassed": 24,
+      "pythonPassed": 49,
+      "documentation": "132 documents / 486 references"
+    }
+  },
+  "existingScenarioChanges": [
+    "Configured source baseDir assertions now require absence, and explicit project/user scope assertions use the current full-loader observations. All original trust, selection, invocation and collision checks remain.",
+    "Startup scope rendering still asserts exact grouped/compact output. Its no-default fixture now explicitly selects the same four paths; disabled configured resources are independently regression tested.",
+    "The precedence fixture enables default/configured loading as Pi requires and retains every winner/loser/order assertion.",
+    "Missing/broken prompt assertions now require the actual DefaultResourceLoader error with exact type/message/path. The 19-case path source probe uses the full app loader; lower-loader directory/ignore probes retain a separate unchanged source entry point."
+  ],
+  "results": [
+    {
+      "id": "repeated-file",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "5c039bdfa4e604ac66c6476be021703463aead2c328647676fb7aef4bbfaabb0"
+    },
+    {
+      "id": "linked-file",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "68f161352967f1689bf7565dde1f67c4a6d9b9ab14e81a2bab84b5847ef23497"
+    },
+    {
+      "id": "linked-parent",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "61186caa3982b9697688ad06472d057153a4a9a51ae457882ec7655a8284b9ce"
+    },
+    {
+      "id": "linked-loser",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [
+        "collision"
+      ],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "c2d6902a434d88bc117dc4fa25618305fe653bade536260db7e7740a51e7e290"
+    },
+    {
+      "id": "linked-root-first-name-fallback",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "4e34db3fe77299f86d1513c673686cd6cc494fddc42f1e641d3c9288b5bcb3c5"
+    },
+    {
+      "id": "linked-invalid-name-file",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [
+        "warning"
+      ],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "8da836092f546b99a648b9664ffcb806ada65495b54bde1746c4f43dda7a5eee"
+    },
+    {
+      "id": "distinct-roots-shared-file",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "4eb812ba2b5fb7a3e8cc08f785baa7f8f68e10ce59e987ae85f40a586459e161"
+    },
+    {
+      "id": "distinct-roots-shared-file-warnings",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [
+        "warning",
+        "warning"
+      ],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "510f37b05f64267bbd51be616204e4124060182e51c775905d1accf0da1a08e3"
+    },
+    {
+      "id": "auto-file-and-directory-warnings",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [
+        "warning",
+        "warning"
+      ],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "3a13c48f265d2b064278b313eea024deeb2124b2799fb4a52ba6c93b755f26fa"
+    },
+    {
+      "id": "skill-warning-before-collision",
+      "skills": 2,
+      "prompts": 0,
+      "skillDiagnosticTypes": [
+        "warning",
+        "collision"
+      ],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "e2c2f771fc0abb80d3aea34b7450002efff28f6927329a2636edc6570ea4b838"
+    },
+    {
+      "id": "prompt-invalid-loser",
+      "skills": 0,
+      "prompts": 1,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [
+        "warning"
+      ],
+      "resultSha256": "33849dfc9e59528acdd608f91bc8d37c1fe49f196a345d9757acdc459a10bd2b"
+    },
+    {
+      "id": "prompt-warning-before-collision",
+      "skills": 0,
+      "prompts": 1,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [
+        "warning",
+        "collision"
+      ],
+      "resultSha256": "7c77bf4e29cbf671b792ce978cd6f009b2110bfdbc68e8084d63158edabbba7a"
+    },
+    {
+      "id": "prompt-linked-file-different-name",
+      "skills": 0,
+      "prompts": 1,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "cce9318515669eb148144d0d56a4ec39683be4b49319526c2bcb72ee4c39f327"
+    },
+    {
+      "id": "prompt-one-directory-aliases",
+      "skills": 0,
+      "prompts": 2,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "2f8c851a2974b6102df9c2ac0b4c7d30516df2a6559aec56e36ddb70c114489a"
+    },
+    {
+      "id": "prompt-distinct-directories-shared-file",
+      "skills": 0,
+      "prompts": 1,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [
+        "collision"
+      ],
+      "resultSha256": "8fac2bfc80ecff60ea29ea43907f991a1a80cec3300d24a765e9b2aa84e57009"
+    },
+    {
+      "id": "auto-trust-false",
+      "skills": 1,
+      "prompts": 1,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "c18b0ee74b75a38ab72d264ef720ef8c492eb951aba0bcd944734c4bf1a60cdf"
+    },
+    {
+      "id": "auto-trust-true",
+      "skills": 1,
+      "prompts": 1,
+      "skillDiagnosticTypes": [
+        "collision"
+      ],
+      "promptDiagnosticTypes": [
+        "collision"
+      ],
+      "resultSha256": "6e931f8b976c2e9f03562e358457c6abe476a6514f7f17960829af9173154617"
+    },
+    {
+      "id": "configured-user-before-auto-user",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [
+        "collision"
+      ],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "fbfcd8b4d82cb0ef2b175bb68791faa56edf14e0a6cc4a8305c7dde7a424ebe6"
+    },
+    {
+      "id": "configured-project-before-project-auto-user-configured",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [
+        "collision",
+        "collision"
+      ],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "1770c5d9ef0f2ebf0c450f49ac84699579beef2280fcbcbbd293c610664b2da5"
+    },
+    {
+      "id": "explicit-user-file-defaults-disabled",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "fabd4ac877d159c1729c9bbe2c01b4ed3ec061dce68ce02f1efdfabfe4a10bd8"
+    },
+    {
+      "id": "explicit-untrusted-project-file",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "0d762a1794836fa12e374ae5956080e3cb4cb0c5d21711cbb11590385fd94c34"
+    },
+    {
+      "id": "configured-defaults-disabled",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "a606ac3b01bee922629478beab63a79aab935d115ba11d9b613f2ec544187755"
+    },
+    {
+      "id": "auto-prompts-filter-hidden-and-ignored",
+      "skills": 0,
+      "prompts": 1,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "3929b594f4cc54f056f9a61ee6a603c9fd89cbb2583c1254ca3f608c6e8d2915"
+    },
+    {
+      "id": "configured-prompts-recurse-with-ignore",
+      "skills": 0,
+      "prompts": 2,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "74e12693aa76aa41064d40ce6874bc00d9486d39be2eba3f0dbce89b231c046f"
+    },
+    {
+      "id": "agents-root-versus-nested-aliases",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "112d6563428b0bf31d5f6e23cbd94dcf6bfd6274cdb1e1ccb5f3f5eb153af127"
+    },
+    {
+      "id": "unicode-file-order",
+      "skills": 2,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "c66600748eecae26bb9ff027fcf54cd7241876c12cf81e241991a1b982b6381f"
+    },
+    {
+      "id": "ancestor-agents-stop-at-git-root",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "25178fc33aff19d810cbfe3085f58b765b3008a397a61b5580f60911ef73deaa"
+    },
+    {
+      "id": "cli-before-extension-resources",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [
+        "collision"
+      ],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "845b17687b4b6ec1572dd5af257c6afdd3b5d6f265e4bd85d5778a7aeee4d9ec"
+    },
+    {
+      "id": "extension-overlays-existing-source-info",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "fb104f164bc6bf70330ce3b0855d9cb9db22c0dd3de4be375f102743e9d4d176"
+    },
+    {
+      "id": "missing-prompt-app-diagnostic",
+      "skills": 0,
+      "prompts": 0,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [
+        "error"
+      ],
+      "resultSha256": "5bbc4c8c5e023434e94e48fd4a3210a9c1859c959394310a8977fa45e2fcb7ba"
+    },
+    {
+      "id": "skill-missing-warning-position",
+      "skills": 1,
+      "prompts": 0,
+      "skillDiagnosticTypes": [
+        "warning",
+        "warning"
+      ],
+      "promptDiagnosticTypes": [],
+      "resultSha256": "cb92268b09c0b42fc341188cb468092cd70f1e4f6dd19369cb09dea0fbe5e307"
+    },
+    {
+      "id": "prompt-missing-after-warnings-collisions",
+      "skills": 0,
+      "prompts": 1,
+      "skillDiagnosticTypes": [],
+      "promptDiagnosticTypes": [
+        "warning",
+        "collision",
+        "error"
+      ],
+      "resultSha256": "ef83f5ae9b1f54b8d94606e3562d29ac99808d2e9523bb695f35066d8d268f40"
+    }
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-selection-fail-first.json": "c9296fe855b33cb18d0dc7c5d607a4705894f4a2143c236a20fa2426e0ea3fe0",
+    "resource-selection-expanded-fail-first.json": "ed844995d0f6d3d731166012cd5ba1bf785e5af470ab29eeea8c5fd3efb3635e",
+    "resource-selection-fail-first-tests.log": "6515863b78f70c169c1268639fae598daab0332197ec2e351c03d8d1a453e657",
+    "resource-selection-first-recovery-tests.log": "620e889c687a8713db2716f78503aff8e406bc6b3c4a5fa6b077897bbb853508",
+    "resource-selection-diagnostic-order-characterization.json": "1d0359344fd9e5a57289469662fc2d8ad8f0e2ec581d71a4761d6ba90cdebe5e",
+    "resource-selection-final.json": "f727833afea969f0af93efa76d0145d49edc889a9ceaa5857e0dd40188cd52a5",
+    "resource-selection-final.log": "33580ad73f25ed6a189e70833c14632384eb03800d0224556bd63fbee50f25f7",
+    "resource-selection-all-focused-tests.log": "463d120bc79d4cad258d7062b34416473e5c96b54cf86b56ba8f761959c614a3",
+    "resource-selection-full-tests.log": "1803ffaabb7c92fb77b1cab4c6d5e72b95b412283c6c03c99ac94156bf18da48",
+    "resource-selection-build.log": "c1f495c2a2b5d964fa1de8fd21737777a798cab01a904dddadbaba113d51ba56",
+    "resource-selection-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "resource-path-full-loader-regression.json": "b72dd1a06a04a3babd6e40f4b476e821aecd1cf9199e22c9bbe0d0c669578707",
+    "resource-selection-basic-regression.json": "377ea21b393aa711111d3f2c1702d16c4e20d724d71d392650f047eb2c86f9e7",
+    "resource-selection-ignore-regression.json": "ab81c906a1c35f0a2d73753397f45a7bebeafb6d03d0115c12206a588fcc722a",
+    "resource-selection-exact-ci.log": "a6b02b9b7eaca04fcbe0e19524f8422060bbc3a43e5339d90204e5767c91e423"
+  },
+  "limits": [
+    "Thirty-two controlled local SDK cases do not establish all package manifest/source installation, malformed settings/YAML/ignore edge cases, resource reload/trust UI and terminal presentation boundaries.",
+    "Linux link/Unicode/ancestor comparisons do not prove every native platform or arbitrary byte filename. Ancestor cycles remain a native safeguard rather than an upstream cycle differential.",
+    "Skill/template invocation errors, argument hints and remaining typed YAML/error classes stay open. No resource capability is marked verified; all 194 capabilities and final audit remain required."
+  ],
+  "reproduce": "python3 tools/parity/resource-selection-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-selection.json",
+  "next": "Characterize skill invocation unknown/read/parse/queue failure behavior and prompt argument-hint/remaining YAML metadata/error semantics; continue full Resources / Instructions / Trust presentation and reload boundaries."
+}

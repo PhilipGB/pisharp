@@ -70,9 +70,9 @@ internal sealed class TerminalPresentation : IDisposable
             _terminalMode = _editor is null ? null : TerminalMode.Enter(_terminalScreen);
             ConfigureMcpAuthorizationUrlPresenter(_projectBinding.Runtime);
             _editor?.AttachScreen(_terminalScreen);
-            _editor?.CompleteInitialTerminalColorQuery();
             _terminalScreen?.SetFooter(IdleFooter(providerCount: 1), render: false);
             _terminalScreen?.RenderInitial();
+            _editor?.CompleteInitialTerminalColorQuery();
             LoadSessionTranscript();
             var startupTrustNotice = !_projectBinding.Trusted && ProjectTrust.HasProtectedResources(_projectBinding.WorkingDirectory)
                 ? "This project is not trusted. Project .pi resources and packages are ignored. Use /trust to save a trust decision, then restart PiSharp."
@@ -120,7 +120,10 @@ internal sealed class TerminalPresentation : IDisposable
         userThemePaths: _projectBinding.BaseUserSettings.Themes, projectThemePaths: _projectBinding.ProjectSettings?.Themes,
         discoverThemes: !_projectBinding.Arguments.NoThemes, explicitThemePaths: (_projectBinding.Arguments.ThemePaths ?? [])
             .Concat(_projectBinding.Runtime.ExtensionResources.ThemePaths.Select(path => path.Path)).ToArray(),
-        explicitThemeBaseDirectory: _invocationDirectory);
+        explicitThemeBaseDirectory: _invocationDirectory,
+        userPackages: _projectBinding.BaseUserSettings.Packages,
+        projectPackages: _projectBinding.ProjectSettings?.Packages,
+        managedPackageRoots: _projectBinding.Configuration.ManagedPackageRoots);
     TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? terminalColors = null)
     {
         var colors = terminalColors ?? new TerminalColorState();

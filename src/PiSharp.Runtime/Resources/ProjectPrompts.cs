@@ -14,30 +14,25 @@ public static class ProjectPrompts
     }
 
     public static async Task<PromptResourceSet> LoadWithSourcesAsync(string cwd, string agentDirectory,
-        bool projectTrusted, CancellationToken cancellationToken = default)
+        bool projectTrusted, CancellationToken cancellationToken = default,
+        Action<ResourceDiagnostic>? reportDiagnostic = null, string? systemPromptOverride = null,
+        IReadOnlyList<string>? appendSystemPromptOverrides = null)
     {
-        async Task<(string? Text, string? Path)> Read(string directory, string name)
-        {
-            var path = Path.Combine(directory, name);
-            if (!File.Exists(path)) return (null, null);
-            if (new FileInfo(path).Length > 64 * 1024) throw new InvalidDataException($"Prompt exceeds 64KB: {path}");
-            var text = await File.ReadAllTextAsync(path, cancellationToken);
-            if (System.Text.Encoding.UTF8.GetByteCount(text) > 64 * 1024)
-                throw new InvalidDataException($"Prompt exceeds 64KB: {path}");
-            return (text.TrimStart('\uFEFF'), Path.GetFullPath(path));
-        }
+        cancellationToken.ThrowIfCancellationRequested();
         var global = Path.GetFullPath(agentDirectory);
         var project = Path.Combine(Path.GetFullPath(cwd), ".pi");
-        (string? Text, string? Path) system = projectTrusted
-            ? await Read(project, "SYSTEM.md") : (null, null);
-        var selectedSystem = system.Text is not null ? system : await Read(global, "SYSTEM.md");
-        var globalAppend = await Read(global, "APPEND_SYSTEM.md");
-        (string? Text, string? Path) projectAppend = projectTrusted
-            ? await Read(project, "APPEND_SYSTEM.md") : (null, null);
-        var appendResources = new[] { globalAppend, projectAppend }
-            .Where(resource => resource.Path is not null).ToArray();
-        return new(selectedSystem.Text,
-            string.Join("\n\n", appendResources.Select(resource => resource.Text).Where(value => !string.IsNullOrEmpty(value))),
-            selectedSystem.Path, appendResources.Select(resource => resource.Path!).ToArray());
+        string? Discover(string name)
+        {
+            var projectPath = Path.Combine(project, name);
+            if (projectTrusted && (File.Exists(projectPath) || Directory.Exists(projectPath))) return projectPath;
+            var globalPath = Path.Combine(global, name);
+            return File.Exists(globalPath) || Directory.Exists(globalPath) ? globalPath : null;
+        }
+        var system = await PromptFileInput.ResolveAsync(systemPromptOverride ?? Discover("SYSTEM.md"), cwd,
+            "system prompt", cancellationToken, reportDiagnostic);
+        var discoveredAppend = appendSystemPromptOverrides is null ? Discover("APPEND_SYSTEM.md") : null;
+        var appendSources = appendSystemPromptOverrides ?? (discoveredAppend is { } source ? [source] : []);
+        var append = await PromptFileInput.ResolveManyAsync(appendSources, cwd, "append system prompt", cancellationToken, reportDiagnostic);
+        return new(system.Text, append.Text, system.Path, append.Paths);
     }
 }

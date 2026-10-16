@@ -10,11 +10,12 @@ internal sealed class ProjectResourceReload(string agentDirectory, string? confi
     ProjectTrust trustStore, ProviderModelRuntime models)
 {
     public async Task<ReloadedProjectResources> LoadAsync(string workingDirectory, Func<UserSettings> getPreviousSettings,
-        Func<CliArguments> getArguments, bool trusted, bool usesDefaultToolsSetting, Func<IEnumerable<string>> getActiveToolNames)
+        Func<CliArguments> getArguments, bool trusted, bool usesDefaultToolsSetting, Func<IEnumerable<string>> getActiveToolNames,
+        bool hasUserInterface = false, IProjectTrustExtensionUi? extensionUi = null)
     {
         var nextConfiguration = await ProjectRuntimeConfiguration.LoadAsync(workingDirectory,
             agentDirectory, getArguments(), trustStore, interactiveTrust: false, Console.In, Console.Error,
-            trustedOverride: trusted);
+            trustedOverride: trusted, extensionUi: extensionUi, hasUserInterface: hasUserInterface);
         try
         {
             var plan = DefaultToolReloadPolicy.Resolve(getArguments(), usesDefaultToolsSetting, getPreviousSettings(),

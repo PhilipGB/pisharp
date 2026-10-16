@@ -1,0 +1,130 @@
+{
+  "date": "2026-10-14",
+  "piSharpBaseSha": "bbb0a2160670d17fa5f102ab7b900f1b67f54a63",
+  "scope": "Startup model/name persistence and conflicting resume process fixture; deterministic isolation from live model catalogue discovery.",
+  "retainedExactCi": {
+    "run": 38618979075,
+    "sha": "bbb0a2160670d17fa5f102ab7b900f1b67f54a63",
+    "failed": 1,
+    "passed": 1910,
+    "skipped": 0,
+    "test": "TerminalPtyTests.StartupModelAndNameArePersistedAndConflictingResumeIsRejected",
+    "failure": "12-second WaitForExitAsync cancellation"
+  },
+  "characterization": {
+    "localOriginalPassed": 1,
+    "slowHeaders": {
+      "passed": 1,
+      "failed": 0,
+      "catalogRequests": 2,
+      "elapsedSeconds": 22.16
+    },
+    "eightSlowHeaders": {
+      "passed": 8,
+      "failed": 0,
+      "catalogRequests": 16
+    },
+    "stalledBody": {
+      "passed": 0,
+      "failed": 1,
+      "catalogRequests": 1,
+      "elapsedSeconds": 13.48
+    },
+    "invalidRecoveryTrial": "Eight runners overlapped a --no-incremental rebuild that temporarily removed xunit.assert; all failed dependency loading before CLI startup. Retained as invalid trial; no behavior claim."
+  },
+  "implementation": [
+    "Use --offline for both original startup/resume calls. The fixture verifies session flags and needs no model discovery; it previously queried the default local endpoint twice.",
+    "Isolate HOME and PISHARP_AGENT_DIR; retain the 12-second deadline, model/name persistence, source session, conflicting-model error and exit-code assertions.",
+    "On timeout terminate/join the child and report stdout/stderr plus invocation arguments. No production changes."
+  ],
+  "verification": {
+    "stalledBodyEightRuns": {
+      "exitCodes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "requests": [],
+      "stall": "body",
+      "elapsedSeconds": 11.54
+    },
+    "fullSuite": {
+      "passed": 1911,
+      "failed": 0,
+      "skipped": 0
+    },
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "exactCi": {
+      "sha": "4b3837b19a91649231d0198b0a65ee86836d25f3",
+      "run": 38622219705,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38622219705",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1911,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    }
+  },
+  "reproduction": "python3 tools/parity/startup-flags-network-probe.py --workers 8 --output artifacts/parity/<run>/startup-flags-network.json (build first; never rebuild concurrently with the probe)",
+  "mechanism": "Unknown explicit local model IDs cause online /models discovery. ModelCatalog.ListAsync uses ResponseHeadersRead and reads the response body with the caller token; the catalogue HttpClient 10-second header timeout does not bound that subsequent body read. A loopback sends headers immediately and delays the body 16 seconds, exceeding the unchanged fixture deadline.",
+  "limits": [
+    "The deterministic catalogue-body failure proves a reachable cause for this fixture timeout; the original CI log lacks HTTP/output traces, so its exact schedule/cause is not proven.",
+    "Earlier quiet-startup and source-only PTY calibration failures remain retained separately; this repair does not classify those as resolved.",
+    "The product model-catalogue body cancellation boundary remains part of the incomplete provider/catalogue audit; this fixture repair changes no production network behavior."
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "startup-flags-stalled-catalog-body-first.json": "a77f3223ef34d39eb2365c2e1261c159134ecee8296a2ae9a5796a9f7dc48d4a",
+    "startup-flags-stalled-body-recovery-6.log": "f4b4c7b1f61dad133ca0e96775c82510965c10acf5bd0edf0b5e1ef108bd26d7",
+    "startup-flags-stalled-body-stable-recovery-5.log": "f6c0f4ead8566fec377d2b2b6b0d60aee2e937ee5dbe4a08fdeffb1e853dfdee",
+    "startup-flags-stalled-body-recovery-3.log": "f46c567db19a911a1159cadf8917e91a3a7134b59af8cbf680f5082c1a64ffe9",
+    "startup-flags-stalled-catalog-body-first.log": "0fd28ed60b3669c96483fa5da5e8280b01d431f115cc6811d41d111c480e6dd4",
+    "startup-flags-stalled-body-stable-recovery-1.log": "c00910865bc12b75d2d5b0510ee12902af483b110be21b5e5eb878293f92517f",
+    "startup-flags-slow-catalog-contention-first-5.log": "4c3085897dbe98ca98f17a5492a99ecb06b5ec334e6c406b8894f6c297f3b225",
+    "startup-flags-slow-catalog-first.log": "4c3085897dbe98ca98f17a5492a99ecb06b5ec334e6c406b8894f6c297f3b225",
+    "startup-flags-offline-focused.log": "445d1cac9804ace9ceb94c2105f32e580c7cb75b40330cfc995a98f7a4bee8cf",
+    "startup-flags-stalled-body-recovery-4.log": "00da7fb4f8e2b75a92742315361adad2e6b2c59743f5b177e4a5360f5183cb52",
+    "startup-flags-fresh-build.log": "8c31c506616db65f715cb44d48e961294986f7f716b6d70a6b2168f1f0dacd91",
+    "startup-flags-slow-catalog-contention-first-7.log": "d0f38649b959597c44ae51a14b469a0d1a954f3aa75dc3574b19ec4702c291bd",
+    "startup-flags-slow-catalog-delayed-first.log": "4c3085897dbe98ca98f17a5492a99ecb06b5ec334e6c406b8894f6c297f3b225",
+    "startup-flags-stalled-body-stable-recovery-2.log": "c00910865bc12b75d2d5b0510ee12902af483b110be21b5e5eb878293f92517f",
+    "startup-flags-slow-catalog-contention-first.json": "88d3dbbf7a8a87df52ecd5b2de7ff73e9aa7758fb83d6e69a5773555193d72cd",
+    "startup-flags-diagnostic-build.log": "c84e81a0ecdd5b613425ad13e2e261ade7575954785e217059c3de387fa879f1",
+    "startup-flags-stalled-body-stable-recovery-7.log": "c00910865bc12b75d2d5b0510ee12902af483b110be21b5e5eb878293f92517f",
+    "startup-flags-slow-catalog-first.json": "c37e08290c92983be16936935a4a4ee34809014866e9eb27ab92fe2eaa74585a",
+    "startup-flags-ci-first-local.log": "353b56751f32db6098fdf7e010eab378a8e92f2ac52f7bfe0384b44d4de471e6",
+    "startup-flags-stalled-body-recovery-0.log": "48ce8cf0d90f886054ad303d5fafc552f4ca6ce06b8dafb8bbfae651aff3e1ec",
+    "startup-flags-slow-catalog-contention-first-6.log": "4c3085897dbe98ca98f17a5492a99ecb06b5ec334e6c406b8894f6c297f3b225",
+    "startup-flags-stalled-body-recovery-1.log": "71e4e4cd9926eeae2e25031969aba680802b574252d280775bba76864badae6e",
+    "startup-flags-stalled-body-recovery-2.log": "32864cf4bf384f739c19843fdacc0a53318f708799c9427ff716ed69b3ea8bca",
+    "startup-flags-slow-catalog-delayed-first.json": "9dca473dd469a97be0db62fa62a6ae34a12b21fe0ec2d1b2b7e08492b2ff6dd6",
+    "startup-flags-slow-catalog-contention-first-1.log": "4c3085897dbe98ca98f17a5492a99ecb06b5ec334e6c406b8894f6c297f3b225",
+    "startup-flags-stalled-body-stable-recovery-0.log": "9c97ce73c3973b6db4548287a2e9571f970626991a424bf0fb115df2265d6887",
+    "startup-flags-stalled-body-recovery-5.log": "5e60eddd289077613e758050d60d95f9b990a555af3deef91e2c324b8bf8f65f",
+    "startup-flags-stalled-body-stable-recovery-4.log": "01d6da5f2b2b9a62426c0697dfb32c9056a0bd869a49f40f9e7c92430d693fe9",
+    "startup-flags-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "startup-flags-stalled-body-recovery-7.log": "51482c9fdf2f33aa4d9c9287ed644b757f10ad0d9deabb39c5919c9cfdd684b4",
+    "startup-flags-slow-catalog-contention-first-0.log": "4c3085897dbe98ca98f17a5492a99ecb06b5ec334e6c406b8894f6c297f3b225",
+    "startup-flags-stalled-body-recovery.json": "1393d6bec3f95ba1168005548f6399a0ed74792aae74a8b7ffb6dbdfca4a385c",
+    "startup-flags-slow-catalog-contention-first-2.log": "4c3085897dbe98ca98f17a5492a99ecb06b5ec334e6c406b8894f6c297f3b225",
+    "startup-flags-slow-catalog-contention-first-3.log": "4c3085897dbe98ca98f17a5492a99ecb06b5ec334e6c406b8894f6c297f3b225",
+    "startup-flags-stalled-body-stable-recovery-3.log": "01d6da5f2b2b9a62426c0697dfb32c9056a0bd869a49f40f9e7c92430d693fe9",
+    "startup-flags-slow-catalog-contention-first-4.log": "4c3085897dbe98ca98f17a5492a99ecb06b5ec334e6c406b8894f6c297f3b225",
+    "startup-flags-stalled-body-stable-recovery.json": "ba742e7d126a8bc412f1e10e74d1ab791adaf59d76372eb712702bb4a13a135e",
+    "startup-flags-full.log": "79e6f08ad9879aa1f96a19f5418f56b99c42c42f12ffac5e7c0cc86bfb54ff22",
+    "startup-flags-stalled-body-stable-recovery-6.log": "c00910865bc12b75d2d5b0510ee12902af483b110be21b5e5eb878293f92517f",
+    "package-source-exact-ci-failed.log": "0d2cd9141d879388167a3bb2b976958319b6a9b482ffbac96f17f7063d054a5c",
+    "startup-flags-exact-ci.log": "d83bacf7fc5b3d593fc1b8a31c86e426a59193b141be15a7aa419cac53af1aae",
+    "startup-flags-docs.log": "b85b4243ac3276ed7c9a60a68a334541c954796a6f2b5dc0db8f982769ad6b52"
+  }
+}

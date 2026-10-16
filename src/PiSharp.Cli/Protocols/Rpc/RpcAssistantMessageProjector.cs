@@ -356,7 +356,8 @@ internal sealed class RpcAssistantMessageProjector
     {
         try
         {
-            if (JsonNode.Parse(string.Concat(call.ArgumentFragments)) is JsonObject arguments)
+            var parsed = PiSharp.Core.ToolArgumentJson.ParseStreaming(string.Concat(call.ArgumentFragments));
+            if (JsonNode.Parse(parsed.GetRawText()) is JsonObject arguments)
                 _content[call.ContentIndex]["arguments"] = arguments;
         }
         catch (JsonException) { }

@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "3a2add26f8812f9e36badd68c2e5b1fe5d2cc124",
+  "candidate": "Base plus manifest glob dot-path filtering and canonical disabled-entry precedence, three native regressions and expanded source fixtures. Fixture scheduling/diagnostics repair is separately published at 391cb8ac63.",
+  "scope": "Local package skill/prompt filesystem selection, with all previous 60 full-loader cases retained.",
+  "characterization": {
+    "cases": 63,
+    "mismatches": [
+      "package-hidden-glob",
+      "package-disabled-first-canonical-alias"
+    ],
+    "nativeFailFirst": {
+      "failed": 2,
+      "passed": 1,
+      "skipped": 0
+    }
+  },
+  "implementation": [
+    "Manifest glob matches exclude lexical dot-path components even when the pattern explicitly names that folder. Exact file entries still select hidden files.",
+    "Package entries retain the first canonical file identity before enabled filtering; an earlier disabled project declaration cannot be replaced by a later enabled personal symlink alias."
+  ],
+  "verification": {
+    "loaderCases": 63,
+    "mismatches": 0,
+    "focusedPassed": 101,
+    "fullSuite": {
+      "passed": 1907,
+      "failed": 0,
+      "skipped": 0
+    },
+    "newNativeRows": 3,
+    "freshBuildWarnings": 0,
+    "freshBuildErrors": 0,
+    "format": "passed",
+    "exactCi": {
+      "sha": "cc1720f1ff0bbf7b47527551cf75fe1dc5a13248",
+      "run": 38616495243,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38616495243",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1907,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 50
+    },
+    "fixtureTimingEvidence": "docs/parity/fixtures/process-timing-isolation-2026-10-14.json"
+  },
+  "originalFullFailure": {
+    "passed": 1905,
+    "failed": 2,
+    "skipped": 0,
+    "reason": "Quiet-startup/process-provider timeout fixture waits; raw failed run retained. Diagnostic/collection repair is separately evidenced. Unrelated passing runs do not establish elimination of the exact historical quiet-startup schedule."
+  },
+  "scenarioIds": [
+    "package-hidden-glob",
+    "package-hidden-exact-file",
+    "package-disabled-first-canonical-alias"
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "package-filesystem-edges-first.log": "c009eaa25b7af9f39a433aa0a71a1869126f330f34573e2832928c86019e5c87",
+    "package-filesystem-edges-recovery.log": "0195aff272f6b88fa18a7933650d84550cf880e837f398ddab3cece755d25d7c",
+    "package-filesystem-focused-recovery.log": "8a90297b206d5fa1f5ec79ec47faac3b969d0a00e58674760c2bdf99e0c6901a",
+    "package-filesystem-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-filesystem-fresh-build.log": "5ce873d38620591d25039ab6a7fbf45333b2beec419a332f2cd23e846a40b266",
+    "package-filesystem-full.log": "54e9e5664659348ed94ced5ec443ddb519e20a8b25ce96d4c77c94746249908c",
+    "package-filesystem-native-fail-first.log": "886c0ba3ec803c381ce02854c4d2b6358d50e246b9cba31e9f2be86165f9c501",
+    "package-filesystem-edges-first.json": "f5c7d8d9a353756a41b3f4ce33d78ace373702a6f3d8864d8228c328fe83fa26",
+    "package-filesystem-edges-recovery.json": "ad5f5ff6830625ee475ed482a3e1db31cc06f9c0cace1c1572735a02fffb7ded",
+    "process-timing-collection-build.log": "1ea6ab820d46c0dd7918f50456b6d1dbcf2aef2339ae6194273e092759719f02",
+    "process-timing-collection-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "process-timing-collection-full.log": "4c3bc5f07c807100567f12005820878d2a1d67a93fd443dfaa70741670120598",
+    "package-filesystem-exact-ci.log": "4638b1251a8dd9220981208089df0d9539068709c401052bf8aa215efc6f107b"
+  },
+  "limits": [
+    "The three added cases and original 60 comparisons cover their named local skill/prompt selection behavior; complete package extension/theme loading, managed npm/git, CLI package operations and other path/alias/error semantics remain open.",
+    "The retained quiet-startup failure remains causally unexplained; suite scheduling isolation is a mitigation, not an exact reproduction claim. Final verification must reconcile unexplained outcomes."
+  ],
+  "next": "Continue local package path/alias/error audit, then package extension/theme trust bootstrap and managed package/CLI workflows."
+}

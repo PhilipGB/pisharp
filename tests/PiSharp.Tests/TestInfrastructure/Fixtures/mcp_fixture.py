@@ -14,6 +14,10 @@ def respond(request, result):
 for line in sys.stdin:
     request = json.loads(line)
     method = request.get("method")
+    request_log = os.getenv("MCP_FIXTURE_REQUEST_LOG")
+    if request_log:
+        with open(request_log, "a", encoding="utf-8") as log:
+            log.write(method + "\n")
     if method == "exit":
         break
     if "id" not in request:
@@ -49,7 +53,7 @@ for line in sys.stdin:
             result["instructions"] = instructions
         respond(request, result)
     elif method == "tools/list":
-        respond(request, {"tools": [
+        tools = [
             {"name": "echo", "description": "Echo input text.",
              "inputSchema": {"type": "object", "properties": {"value": {"type": "string"}},
                              "required": ["value"]},
@@ -57,10 +61,19 @@ for line in sys.stdin:
                               "required": ["echo"]}},
             {"name": "fail", "description": "Return a tool error.",
              "inputSchema": {"type": "object", "properties": {}}},
-        ]})
+        ]
+        if "MCP_FIXTURE_STRUCTURED_JSON" in os.environ:
+            tools[0].pop("outputSchema", None)
+        respond(request, {"tools": tools})
     elif method == "tools/call":
         params = request["params"]
         if params["name"] == "echo":
+            if "MCP_FIXTURE_STRUCTURED_JSON" in os.environ:
+                result = {"structuredContent": json.loads(os.environ["MCP_FIXTURE_STRUCTURED_JSON"])}
+                if os.getenv("MCP_FIXTURE_OMIT_CONTENT") != "1":
+                    result["content"] = []
+                respond(request, result)
+                continue
             value = params["arguments"]["value"]
             respond(request, {"content": [{"type": "text", "text": value}],
                               "structuredContent": {"echo": value}, "isError": False,

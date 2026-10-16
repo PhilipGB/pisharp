@@ -16,8 +16,9 @@ public static class McpRuntime
             providerTokenResolver: providerTokenResolver);
 
     internal static Task<IReadOnlyList<string>> RegisterForStatusAsync(McpConfiguration configuration,
-        ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default) =>
-        RegisterAsync(configuration, catalog, workingDirectory, cancellationToken, manager: null,
+        ExtensionCatalog catalog, string workingDirectory, CancellationToken cancellationToken = default,
+        McpRuntimeManager? manager = null) =>
+        RegisterAsync(configuration, catalog, workingDirectory, cancellationToken, manager,
             startupWait: s_startupWait, waitForAllServers: true);
 
     internal static async Task<IReadOnlyList<string>> RegisterAsync(McpConfiguration configuration,

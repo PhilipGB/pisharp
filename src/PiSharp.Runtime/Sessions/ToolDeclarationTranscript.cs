@@ -32,8 +32,7 @@ internal sealed class ToolDeclarationTranscript
         if (_sourceHead is { } previousHead && (head is null || !JsonElement.DeepEquals(previousHead, head.Value)))
             _revisions.Clear();
         _sourceHead = head;
-        var current = (options.Tools ?? []).OfType<AIFunctionDeclaration>().Select(tool =>
-            JsonSerializer.SerializeToElement(new { name = tool.Name, description = tool.Description, parameters = tool.JsonSchema })).ToArray();
+        var current = (options.Tools ?? []).OfType<AIFunctionDeclaration>().Select(ToolDeclarationJson.Create).ToArray();
         var projected = Replay(messages);
         if (projected.FirstOrDefault()?.Role != ChatRole.System)
         {

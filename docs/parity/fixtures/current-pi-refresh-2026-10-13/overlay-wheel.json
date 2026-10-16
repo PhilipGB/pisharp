@@ -1,0 +1,73 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "pi": [
+    {
+      "id": "unhandled-editorpanel",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-extension-input",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-extension-batch",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-inline-select",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-progress",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-search",
+      "scrolledUp": true
+    },
+    {
+      "id": "empty-selection",
+      "scrolledUp": true
+    },
+    {
+      "id": "handled-selection",
+      "scrolledUp": false
+    }
+  ],
+  "pisharp": [
+    {
+      "id": "unhandled-editorpanel",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-extension-input",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-extension-batch",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-inline-select",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-progress",
+      "scrolledUp": true
+    },
+    {
+      "id": "unhandled-search",
+      "scrolledUp": true
+    },
+    {
+      "id": "empty-selection",
+      "scrolledUp": true
+    },
+    {
+      "id": "handled-selection",
+      "scrolledUp": false
+    }
+  ],
+  "match": true,
+  "comparison": "Compare upward transcript movement for five keyboard-only modal hosts, batched extension input, an empty selector and a mouse-aware selector. PiSharp invokes real dialogs/progress/search under a PTY; Pi invokes TuiAltScreen/VirtualTerminal with focused mouse-aware and unaware components. Typed text and selection/progress outcomes are asserted in PiSharp, and wheel never reaches Pi keyboard input. Full cell layout, pointer selection, selector movement increments, keyboard viewport key handling and non-POSIX hosts are not covered."
+}

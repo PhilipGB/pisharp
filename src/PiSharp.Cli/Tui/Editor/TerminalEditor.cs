@@ -39,6 +39,7 @@ public sealed class TerminalEditor
     public string Draft => _buffer.Text;
     public string Hotkeys => _keymap.FormatHotkeys();
     internal string? GetDisplayKeys(string action) => _keymap.GetDisplayKeys(action);
+    internal bool MatchesKeybinding(string action, ConsoleKeyInfo key) => _keymap.Matches(action, key);
     internal TerminalTheme CurrentTheme => _screen?.CurrentTheme ?? TerminalTheme.Default;
     internal string? ActiveAuthorizationUrl => _screen?.ActiveAuthorizationUrl;
     internal bool IsScreenActive => _screen is { IsActive: true };
@@ -76,19 +77,9 @@ public sealed class TerminalEditor
             return _input;
         }
         _input = TerminalInput.OpenConsole();
-        _input.TerminalColorReceived += HandleTerminalColorResponse;
-        _input.TerminalDeviceAttributesReceived += HandleTerminalDeviceAttributes;
-        _input.TerminalColorSchemeReceived += HandleTerminalColorScheme;
         _screen?.AttachTerminalInput(_input);
         return _input;
     }
-
-    private void HandleTerminalColorResponse(TerminalColorResponse response) =>
-        _screen?.HandleTerminalColorResponse(response);
-
-    private void HandleTerminalDeviceAttributes() => _screen?.HandleTerminalDeviceAttributes();
-
-    private void HandleTerminalColorScheme(string appearance) => _screen?.HandleTerminalColorScheme(appearance);
 
     internal void CompleteInitialTerminalColorQuery()
     {
@@ -99,8 +90,21 @@ public sealed class TerminalEditor
     internal TerminalSelection<T>? ShowSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
-        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items") =>
-        _dialogs.ShowSelectionList(title, options, selectedKey, scopedOptions, allLabel, scopedLabel, emptyMessage);
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null) =>
+        _dialogs.ShowSelectionList(title, options, selectedKey, scopedOptions, allLabel, scopedLabel, emptyMessage,
+            actionHint, handleInput);
+
+    internal Task<TerminalSelection<T>?> ShowSelectionListAsync<T>(string title,
+        IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
+        IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
+        CancellationToken cancellationToken = default) =>
+        _dialogs.ShowSelectionListAsync(title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
+            emptyMessage, actionHint, handleInput, cancellationToken);
 
     internal TerminalSelection<T>? ShowModelSelectionList<T>(
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey, string hint,
@@ -125,8 +129,10 @@ public sealed class TerminalEditor
     internal Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
         IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
         bool preservePanelOnCancel = false, CancellationToken cancellationToken = default,
-        bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null) =>
-        _dialogs.PromptSequenceAsync(title, prompts, preservePanelAfterSubmit, preservePanelOnCancel, cancellationToken, extensionDialog, dispatchApplicationAction);
+        bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null,
+        IReadOnlyList<string>? initialValues = null) =>
+        _dialogs.PromptSequenceAsync(title, prompts, preservePanelAfterSubmit, preservePanelOnCancel, cancellationToken,
+            extensionDialog, dispatchApplicationAction, initialValues);
 
     internal void DismissEditorPanel() => _screen?.SetEditorPanel(null);
 
@@ -163,8 +169,8 @@ public sealed class TerminalEditor
     internal Task<TerminalProgressOutcome<T>> RunProgressAsync<T>(string title, string subject,
         string cancelTitle, string cancelMessage,
         Func<CancellationToken, Action<TerminalProgressState>, Task<T>> run, Func<Task> cancelOperation,
-        Func<Task>? afterCancelled = null) =>
-        _progress.RunProgressAsync(title, subject, cancelTitle, cancelMessage, run, cancelOperation, afterCancelled);
+        Func<Task>? afterCancelled = null, bool confirmCancellation = true) =>
+        _progress.RunProgressAsync(title, subject, cancelTitle, cancelMessage, run, cancelOperation, afterCancelled, confirmCancellation);
 
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
     public void Prefill(string text) => _buffer.SetText(text);
@@ -196,7 +202,7 @@ public sealed class TerminalEditor
             Render();
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (!input.TryRead(50, out var next))
+                if (!input.TryReadActive(50, cancellationToken, out var next))
                 {
                     _screen?.RefreshIfResized();
                     await Task.Delay(10, CancellationToken.None);

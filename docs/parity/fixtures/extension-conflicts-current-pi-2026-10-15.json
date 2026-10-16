@@ -1,0 +1,99 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pi": {
+    "loaded": [
+      "<inline:project>",
+      "<inline:user>"
+    ],
+    "tool": {
+      "name": "shared_tool",
+      "description": "project tool"
+    },
+    "tools": [
+      "shared_tool"
+    ],
+    "commands": [
+      {
+        "name": "deploy:1",
+        "description": "project command"
+      },
+      {
+        "name": "deploy:2",
+        "description": "user command"
+      },
+      {
+        "name": "mcp",
+        "description": "project mcp command"
+      },
+      {
+        "name": "user_only",
+        "description": "user command"
+      }
+    ],
+    "errors": [
+      {
+        "path": "<inline:user>",
+        "error": "Tool \"shared_tool\" conflicts with <inline:project>"
+      }
+    ],
+    "warnings": [
+      {
+        "path": "builtin:mcp",
+        "warning": "Extension <inline:project> registers command `/mcp`, so built-in extension `mcp` was not loaded. To use `mcp`, run `pi config` and make sure it is enabled under Built-in extensions, then disable or remove the existing extension. We recommend only having one or the other loaded at a time."
+      }
+    ]
+  },
+  "pisharp": {
+    "loaded": [
+      "<inline:project>",
+      "<inline:user>"
+    ],
+    "tool": {
+      "name": "shared_tool",
+      "description": "project tool"
+    },
+    "tools": [
+      "shared_tool"
+    ],
+    "commands": [
+      {
+        "name": "deploy:1",
+        "description": "project command"
+      },
+      {
+        "name": "deploy:2",
+        "description": "user command"
+      },
+      {
+        "name": "mcp",
+        "description": "project mcp command"
+      },
+      {
+        "name": "user_only",
+        "description": "user command"
+      }
+    ],
+    "errors": [
+      {
+        "path": "<inline:user>",
+        "error": "Tool \"shared_tool\" conflicts with <inline:project>"
+      }
+    ],
+    "warnings": [
+      {
+        "path": "builtin:mcp",
+        "warning": "Extension <inline:project> registers command `/mcp`, so built-in extension `mcp` was not loaded. To use `mcp`, run `pi config` and make sure it is enabled under Built-in extensions, then disable or remove the existing extension. We recommend only having one or the other loaded at a time."
+      }
+    ]
+  },
+  "match": true,
+  "scope": "Actual DefaultResourceLoader conflict selection/ExtensionRunner command resolution versus ExtensionCatalog: compares loaded owners, first tool winner, duplicate-command aliases/descriptions, conflict diagnostics and replaceable-builtin warnings; temporary fixture paths normalize to inline owner labels.",
+  "fixture": "extension-conflicts-current-pi",
+  "queue": 4,
+  "pisharpProductSha": "192f426832f42e01caf06905edeff2bbab4f2403",
+  "verification": {
+    "focusedTests": "ExtensionCatalogTests, ExtensionPreTrustSelectionTests, ExtensionLoadRecoveryTests: included in 157/157 integrated focused suite.",
+    "build": "dotnet build PiSharp.slnx --no-restore --warnaserror: passed, zero warnings/errors.",
+    "format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore: passed."
+  }
+}

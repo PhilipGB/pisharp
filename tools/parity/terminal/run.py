@@ -39,7 +39,8 @@ def write_scenario_files(files, base):
         path.write_text(content if isinstance(content, str) else json.dumps(content))
 
 
-def prepare_workspace(scenario, workspace=WORKSPACE):
+def prepare_workspace(scenario, workspace=None):
+    workspace = WORKSPACE if workspace is None else workspace
     marker = workspace / '.pisharp-terminal-harness'
     if workspace.exists() and not marker.exists():
         raise RuntimeError(f'Refusing to reset unowned fixture directory: {workspace}')
@@ -71,7 +72,7 @@ def commands(pi, pisharp, scenario, pisharp_extension=None):
     pi_command = ['node', '--import', resolver.as_uri()]
     if scenario.get('mockHuggingFace'):
         pi_command.extend(['--import', (ROOT / 'tools/parity/terminal/huggingface-preload.mjs').as_uri()])
-    result = dict(pi=[*pi_command, str(pi / 'packages/coding-agent/src/experimental/cli.ts'), *common],
+    result = dict(pi=[*pi_command, str(pi / 'packages/coding-agent/src/cli.ts'), *common],
                 pisharp=['dotnet', str(pisharp), *common, '--no-approve', '--no-context-files'])
     for product, arguments in scenario.get('arguments', {}).items():
         result[product] = result[product][:-len(common) - (2 if product == 'pisharp' else 0)] + arguments
@@ -341,6 +342,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
 
 
 def main():
+    global WORKSPACE, AGENT_DIRECTORY
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pi', type=Path, required=True)
     parser.add_argument('--pisharp', type=Path, default=ROOT / 'src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll')
@@ -349,8 +351,14 @@ def main():
     parser.add_argument('--fixture', type=Path, default=Path(__file__).with_name('fixtures') / 'startup-editor.json')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--calibrate', action='store_true', help='Compare two independent Pi runs before trusting cross-product evidence')
+    parser.add_argument('--fixture-root', type=Path,
+                        help='Isolate owned workspace and agent directories beneath this root')
     parser.add_argument('--case', help='Run just the named dimension/theme/mode case')
     args = parser.parse_args()
+    if args.fixture_root is not None:
+        root = args.fixture_root.resolve()
+        root.mkdir(parents=True, exist_ok=True)
+        WORKSPACE, AGENT_DIRECTORY = root / 'workspace', root / 'agent'
     verify_pi_checkout(args.pi)
     scenario = json.loads(args.fixture.read_text())
     args.output.mkdir(parents=True, exist_ok=True)

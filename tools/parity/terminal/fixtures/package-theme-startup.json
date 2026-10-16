@@ -1,0 +1,101 @@
+{
+  "id": "package-theme-startup",
+  "settings": {
+    "quietStartup": true,
+    "packages": [
+      "./package"
+    ]
+  },
+  "environment": {
+    "pi": {
+      "HOME": "{agent}/isolated-home"
+    },
+    "pisharp": {
+      "HOME": "{agent}/isolated-home"
+    }
+  },
+  "files": {
+    "pi": {
+      "isolated-home/.pisharp-terminal-harness": "owned fixture home",
+      "package/package.json": {
+        "pi": {
+          "themes": [
+            "themes"
+          ]
+        }
+      },
+      "package/themes/custom.json": "{\"$schema\":\"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\",\"name\":\"package-theme\",\"appearance\":\"dark\",\"vars\":{\"text\":\"okhsl(234 3% 89%)\",\"muted\":\"okhsl(229 6% 67%)\",\"violet\":\"okhsl(295 50% 67%)\",\"blue\":\"okhsl(232 54% 67%)\",\"green\":\"okhsl(159 59% 67%)\",\"red\":\"okhsl(20 72% 67%)\",\"yellow\":\"okhsl(83 88% 67%)\",\"blueBg\":\"okhsl(233 41% 24%)\"},\"colors\":{\"accent\":\"#112233\",\"border\":\"okhsl(231 57% 65%)\",\"borderAccent\":\"okhsl(295 53% 64%)\",\"borderMuted\":\"okhsl(229 8% 53%)\",\"success\":\"green\",\"error\":\"red\",\"warning\":\"yellow\",\"muted\":\"muted\",\"dim\":\"#010203\",\"text\":\"text\",\"thinkingText\":\"okhsl(226 7% 65%)\",\"selectedBg\":\"blueBg\",\"scrollbarTrack\":\"okhsl(237 7% 33%)\",\"scrollbarThumb\":\"okhsl(232 7% 65%)\",\"searchMatchBg\":\"okhsl(53 51% 24%)\",\"searchMatchText\":\"muted\",\"userMessageBg\":\"blueBg\",\"userMessageText\":\"text\",\"customMessageBg\":\"okhsl(295 42% 24%)\",\"customMessageText\":\"muted\",\"customMessageLabel\":\"violet\",\"toolPendingBg\":\"okhsl(229 5% 24%)\",\"toolSuccessBg\":\"okhsl(158 46% 25%)\",\"toolErrorBg\":\"okhsl(19 54% 25%)\",\"toolTitle\":\"text\",\"toolOutput\":\"muted\",\"mdHeading\":\"yellow\",\"mdLink\":\"blue\",\"mdLinkUrl\":\"muted\",\"mdCode\":\"violet\",\"mdCodeBlock\":\"green\",\"mdCodeBlockBorder\":\"muted\",\"mdQuote\":\"muted\",\"mdQuoteBorder\":\"muted\",\"mdHr\":\"muted\",\"mdListBullet\":\"violet\",\"toolDiffAdded\":\"green\",\"toolDiffRemoved\":\"red\",\"toolDiffContext\":\"muted\",\"syntaxComment\":\"muted\",\"syntaxKeyword\":\"blue\",\"syntaxFunction\":\"yellow\",\"syntaxVariable\":\"okhsl(202 58% 67%)\",\"syntaxString\":\"okhsl(52 67% 67%)\",\"syntaxNumber\":\"green\",\"syntaxType\":\"violet\",\"syntaxOperator\":\"muted\",\"syntaxPunctuation\":\"muted\",\"thinkingOff\":\"okhsl(229 8% 49%)\",\"thinkingMinimal\":\"okhsl(232 20% 52%)\",\"thinkingLow\":\"okhsl(232 45% 54%)\",\"thinkingMedium\":\"okhsl(263 59% 56%)\",\"thinkingHigh\":\"okhsl(295 73% 59%)\",\"thinkingXhigh\":\"okhsl(337 81% 61%)\",\"thinkingMax\":\"okhsl(20 99% 63%)\",\"bashMode\":\"okhsl(159 64% 65%)\"},\"export\":{\"pageBg\":\"okhsl(262 14% 16%)\",\"cardBg\":\"okhsl(264 13% 19%)\",\"infoBg\":\"okhsl(53 51% 24%)\"}}"
+    },
+    "pisharp": {
+      "isolated-home/.pisharp-terminal-harness": "owned fixture home",
+      "package/package.json": {
+        "pi": {
+          "themes": [
+            "themes"
+          ]
+        }
+      },
+      "package/themes/custom.json": "{\"$schema\":\"https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json\",\"name\":\"package-theme\",\"appearance\":\"dark\",\"vars\":{\"text\":\"okhsl(234 3% 89%)\",\"muted\":\"okhsl(229 6% 67%)\",\"violet\":\"okhsl(295 50% 67%)\",\"blue\":\"okhsl(232 54% 67%)\",\"green\":\"okhsl(159 59% 67%)\",\"red\":\"okhsl(20 72% 67%)\",\"yellow\":\"okhsl(83 88% 67%)\",\"blueBg\":\"okhsl(233 41% 24%)\"},\"colors\":{\"accent\":\"#112233\",\"border\":\"okhsl(231 57% 65%)\",\"borderAccent\":\"okhsl(295 53% 64%)\",\"borderMuted\":\"okhsl(229 8% 53%)\",\"success\":\"green\",\"error\":\"red\",\"warning\":\"yellow\",\"muted\":\"muted\",\"dim\":\"#010203\",\"text\":\"text\",\"thinkingText\":\"okhsl(226 7% 65%)\",\"selectedBg\":\"blueBg\",\"scrollbarTrack\":\"okhsl(237 7% 33%)\",\"scrollbarThumb\":\"okhsl(232 7% 65%)\",\"searchMatchBg\":\"okhsl(53 51% 24%)\",\"searchMatchText\":\"muted\",\"userMessageBg\":\"blueBg\",\"userMessageText\":\"text\",\"customMessageBg\":\"okhsl(295 42% 24%)\",\"customMessageText\":\"muted\",\"customMessageLabel\":\"violet\",\"toolPendingBg\":\"okhsl(229 5% 24%)\",\"toolSuccessBg\":\"okhsl(158 46% 25%)\",\"toolErrorBg\":\"okhsl(19 54% 25%)\",\"toolTitle\":\"text\",\"toolOutput\":\"muted\",\"mdHeading\":\"yellow\",\"mdLink\":\"blue\",\"mdLinkUrl\":\"muted\",\"mdCode\":\"violet\",\"mdCodeBlock\":\"green\",\"mdCodeBlockBorder\":\"muted\",\"mdQuote\":\"muted\",\"mdQuoteBorder\":\"muted\",\"mdHr\":\"muted\",\"mdListBullet\":\"violet\",\"toolDiffAdded\":\"green\",\"toolDiffRemoved\":\"red\",\"toolDiffContext\":\"muted\",\"syntaxComment\":\"muted\",\"syntaxKeyword\":\"blue\",\"syntaxFunction\":\"yellow\",\"syntaxVariable\":\"okhsl(202 58% 67%)\",\"syntaxString\":\"okhsl(52 67% 67%)\",\"syntaxNumber\":\"green\",\"syntaxType\":\"violet\",\"syntaxOperator\":\"muted\",\"syntaxPunctuation\":\"muted\",\"thinkingOff\":\"okhsl(229 8% 49%)\",\"thinkingMinimal\":\"okhsl(232 20% 52%)\",\"thinkingLow\":\"okhsl(232 45% 54%)\",\"thinkingMedium\":\"okhsl(263 59% 56%)\",\"thinkingHigh\":\"okhsl(295 73% 59%)\",\"thinkingXhigh\":\"okhsl(337 81% 61%)\",\"thinkingMax\":\"okhsl(20 99% 63%)\",\"bashMode\":\"okhsl(159 64% 65%)\"},\"export\":{\"pageBg\":\"okhsl(262 14% 16%)\",\"cardBg\":\"okhsl(264 13% 19%)\",\"infoBg\":\"okhsl(53 51% 24%)\"}}"
+    }
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--use-theme",
+      "package-theme",
+      "--offline",
+      "--no-session",
+      "--no-tools",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--use-theme",
+      "package-theme",
+      "--offline",
+      "--no-session",
+      "--no-tools",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files"
+    ]
+  },
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "draft",
+      "send": "PACKAGE_THEME",
+      "expect": "PACKAGE_THEME"
+    },
+    {
+      "id": "clear-draft",
+      "send": "\u0003",
+      "expect": "fixture-model"
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ]
+}

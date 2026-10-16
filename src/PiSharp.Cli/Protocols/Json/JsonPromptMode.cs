@@ -18,7 +18,8 @@ internal static class JsonPromptMode
             CliFileArguments.PromptFiles? expanded = null;
             try
             {
-                var resolved = await resources.ResolveInputAsync(prompt);
+                var resolved = await resources.ResolveInputAsync(prompt, reportError: diagnostic =>
+                    error.WriteLineAsync($"Extension error ({diagnostic.ExtensionPath}): {diagnostic.Error}"));
                 expanded = await CliFileArguments.ProcessFilesAsync(resolved, cli.FileArguments, currentDirectory);
                 expanded = expanded with { Text = stdinContent + expanded.Text };
             }

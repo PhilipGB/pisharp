@@ -1,0 +1,68 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "pi": [
+    {
+      "streaming": false,
+      "requests": 1,
+      "canceled": true,
+      "completed": false
+    },
+    {
+      "streaming": true,
+      "requests": 1,
+      "canceled": true,
+      "completed": false
+    }
+  ],
+  "pisharp": [
+    {
+      "streaming": false,
+      "requests": 1,
+      "canceled": true,
+      "completed": false
+    },
+    {
+      "streaming": true,
+      "requests": 1,
+      "canceled": true,
+      "completed": false
+    }
+  ],
+  "match": true,
+  "comparison": "Semantic caller cancellation after silent inner completion: one provider request, cancellation reported and no successful completion. Pi uses its real OpenAI SDK stream for both native stream consumption and final-result consumption; .NET exercises both IChatClient call modes.",
+  "limitations": "Pi fetch returns an empty SSE stream and onResponse aborts the caller before completion. The .NET native client cancels the caller and returns silently. Request/idle deadline guards are separately covered by deterministic native tests and a real saved-settings CLI loopback; this comparison does not establish timeout error text, all SDK adapters, or bounded settlement for an indefinitely uncooperative inner client.",
+  "characterization": {
+    "log": "artifacts/parity/current-pi-deltas-2026-10-13/provider-silent-timeout-fail-first.log",
+    "sha256": "f88b93ca2aae95a4e4824a106c48c7679701e081d06a01ad4bdf2c93330e0851",
+    "failed": 5,
+    "passed": 1,
+    "skipped": 0,
+    "finding": "Both call modes accepted empty completion after the request deadline or caller cancellation; a stream also accepted empty completion after its idle deadline. The existing throwing-provider idle test still passed."
+  },
+  "trigger": {
+    "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-reviewed-full-tests.log",
+    "sha256": "ef34cf221ce58474647babe3434a19bfbdb7083817566230b2d7a2eec6a85bdc",
+    "failed": 1,
+    "passed": 1572,
+    "skipped": 0,
+    "finding": "The real saved-settings CLI timeout fixture returned success instead of exit 1. This newly discovered provider gap is independent of auth locking."
+  },
+  "implementation": "The timeout boundary checks caller cancellation and monotonic request/last-wire-activity deadlines after each inner response or stream advance, including empty completion. Wire bytes still reset idle timing; request deadline has priority. Existing thrown cancellation/timeout translation remains.",
+  "verification": {
+    "newDeadlineCancellationControls": 8,
+    "focusedProviderControls": 16,
+    "fullWorkingTreePassed": 1581,
+    "failed": 0,
+    "skipped": 0,
+    "log": "artifacts/parity/current-pi-deltas-2026-10-13/auth-lock-final-full-tests.log",
+    "sha256": "14b1964a6da534709a2ad79f7e07023e12fdb4104b387891916c6f8651a6e5ec",
+    "scope": "Combined working tree includes the separately recorded auth and fixture corrections. The real saved-settings CLI test verifies timeout exit 1 and no late content."
+  },
+  "publishedVerification": {
+    "piSharpSha": "6f1f06dc08c69f095e993ed895d4720eb754ad1e",
+    "ciRun": 38486255190,
+    "url": "https://github.com/PhilipGB/pisharp/actions/runs/38486255190",
+    "conclusion": "success",
+    "scope": "Exact published source includes its independently committed earlier fixes. Both jobs pass; broader MCP classifications remain open."
+  }
+}

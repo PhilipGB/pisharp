@@ -1,0 +1,806 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "scenarios": [
+    {
+      "id": "trusted-project-replaces-both",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "untrusted-project-is-never-read",
+      "trusted": false,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "empty-project-files-still-override",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "no-discovered-prompts",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 0
+    },
+    {
+      "id": "discovered-SYSTEM.md-large",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "discovered-SYSTEM.md-two-boms",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "discovered-SYSTEM.md-invalid-utf8",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "discovered-SYSTEM.md-denied",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "discovered-SYSTEM.md-directory",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-large",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-two-boms",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-invalid-utf8",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-denied",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-directory",
+      "trusted": true,
+      "system": null,
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "explicit-system-literal",
+      "trusted": true,
+      "system": "override literal",
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "explicit-system-whitespace",
+      "trusted": true,
+      "system": "  ",
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "explicit-system-empty",
+      "trusted": true,
+      "system": "",
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "explicit-system-dash-prefix",
+      "trusted": true,
+      "system": "--literal",
+      "append": null,
+      "files": 4
+    },
+    {
+      "id": "explicit-system-large-file",
+      "trusted": true,
+      "system": "input.txt",
+      "append": null,
+      "files": 5
+    },
+    {
+      "id": "explicit-system-two-boms",
+      "trusted": true,
+      "system": "input.txt",
+      "append": null,
+      "files": 5
+    },
+    {
+      "id": "explicit-system-invalid-utf8",
+      "trusted": true,
+      "system": "input.txt",
+      "append": null,
+      "files": 5
+    },
+    {
+      "id": "explicit-system-denied-file",
+      "trusted": true,
+      "system": "input.txt",
+      "append": null,
+      "files": 5
+    },
+    {
+      "id": "explicit-system-directory",
+      "trusted": true,
+      "system": "input-dir",
+      "append": null,
+      "files": 5
+    },
+    {
+      "id": "explicit-append-mix",
+      "trusted": true,
+      "system": null,
+      "append": [
+        "literal",
+        "input.txt"
+      ],
+      "files": 5
+    },
+    {
+      "id": "explicit-append-empty-literal-is-ignored",
+      "trusted": true,
+      "system": null,
+      "append": [
+        "",
+        "literal"
+      ],
+      "files": 4
+    },
+    {
+      "id": "explicit-append-empty-file-is-retained",
+      "trusted": true,
+      "system": null,
+      "append": [
+        "empty.txt",
+        "literal"
+      ],
+      "files": 5
+    },
+    {
+      "id": "explicit-overrides-do-not-read-unused-discovered-files",
+      "trusted": true,
+      "system": "literal",
+      "append": [
+        "literal"
+      ],
+      "files": 4
+    }
+  ],
+  "match": true,
+  "comparison": "Exact full normalized-content SHA256/UTF16 length, source-path projections and warning prefix/order from real DefaultResourceLoader/CLI parsing versus native prompt discovery/CLI override resolution. Only isolated workspace prefixes are normalized.",
+  "limitations": [
+    "Real non-root Linux files and trusted/untrusted discovery; exact native warning error text/colors and complete provider/startup/reload traces remain separately required.",
+    "Missing prompt flag arguments still follow the native error path, while Pi routes them through unknown extension flags; broader CLI extension-flag parsing remains open.",
+    "Source projections cover these inputs; full provider/system prompt composition, startup/reload UI, runtime extremes and non-Linux platforms remain open."
+  ],
+  "piSharpBaseSha": "aaac7fd8b5f82c8c979a0d4f190859336e6852f2",
+  "implementation": "Shared Runtime PromptFileInput resolves complete UTF8 file text, strips exactly one BOM, and reports read errors before retaining the original literal. Trusted project SYSTEM/APPEND files replace global discovery. Explicit CLI/SDK overrides select before reading, including empty inputs/lists; missing CLI append flags remain null. CLI accepts whitespace and dash-prefixed literal values. No provider or filesystem behavior moved into Core.",
+  "characterization": {
+    "initialComparison": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/system-prompt-files-first-comparison.json",
+      "sha256": "946eb93ef492ed5df78a7e716c898e3a01db820ab3bfcafbbec17d385ad0cab6",
+      "mismatches": 22,
+      "scenarios": 26
+    },
+    "nativeFailFirst": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/system-prompt-loading-fail-first-tests.log",
+      "sha256": "8a5c289b55a4369d3c904c6b637409b9b1f417317188fe6c909c5fffc6f9107b",
+      "failed": 10,
+      "passed": 1,
+      "skipped": 0
+    },
+    "unusedDiscoveryRead": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/system-prompt-files-unused-read-comparison.json",
+      "sha256": "a9fb7709ea29442766497afd26aa780bcaf3e71ce3cf862b08e1c9eaa6a30f4d"
+    },
+    "absentAppendParser": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/system-prompt-files-reviewed.json",
+      "sha256": "fe358f9ec08bd4fc7c9c0670e39ceca4ab5ca2bd4254e976506ec40b21f4feb2"
+    }
+  },
+  "rawComparison": {
+    "path": "artifacts/parity/resources-current-pi-2026-10-14/system-prompt-files-final-validated.json",
+    "sha256": "934c30be98eb100e797bb1039e166c40b06d3688c3d128a17596dbfe81ecbb77"
+  },
+  "verification": {
+    "focused": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/system-prompt-final-validation-controls.log",
+      "sha256": "c254d063fcfc481f56e83218f14776f99b1ef9dbf6d86da3cee7dab4f2b4fdf0",
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0
+    },
+    "full": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/system-prompt-final-full-tests.log",
+      "sha256": "ff9fc9b866322663597b45765fd8dfc9cb81e39b99a6818e153ed0f3b28189e5",
+      "passed": 1666,
+      "failed": 0,
+      "skipped": 0
+    },
+    "build": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/system-prompt-final-build.log",
+      "sha256": "6c7ad3c985c64627683d284e5a121943df41e66f1e159d16c1180aea894e34b6",
+      "warnings": 0,
+      "errors": 0
+    },
+    "source": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/source-prompt-args-loader-reviewed.json",
+      "sha256": "21fc5c13a4f302af97cf70e6a628c5301d16b7c5a898b539be1208f52fbb6d5c",
+      "passed": 145,
+      "failed": 0,
+      "skipped": 0
+    },
+    "format": {
+      "path": "artifacts/parity/resources-current-pi-2026-10-14/system-prompt-confirmed-format-verification.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0
+    },
+    "exactHeadCi": {
+      "sha": "23fbbfbdca8b75d8151a85e48f55a4e5e26fd168",
+      "run": 38496421223,
+      "conclusion": "success"
+    }
+  },
+  "testContractCorrections": [
+    "Preserved the original 65537-byte prompt case and asserted complete contents rather than the unmatched size error.",
+    "Trusted project APPEND_SYSTEM.md expectation now asserts replacement of global content; trust/source-path assertions remain."
+  ],
+  "reproduce": [
+    "python3 tools/parity/system-prompt-files-differential.py --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/resources-current-pi-2026-10-14/system-prompt-files-final-validated.json",
+    "dotnet test PiSharp.slnx --filter \"FullyQualifiedName~ProjectPromptLoadingTests|FullyQualifiedName~CliPromptInputTests|FullyQualifiedName~PromptResourceProcessTests|FullyQualifiedName~CliPromptOverridesTests|FullyQualifiedName~ProjectTrustTests\"",
+    "dotnet format PiSharp.slnx --verify-no-changes --no-restore",
+    "dotnet build PiSharp.slnx --warnaserror --no-restore",
+    "dotnet test PiSharp.slnx --no-restore"
+  ],
+  "matchedResults": [
+    {
+      "id": "trusted-project-replaces-both",
+      "result": {
+        "system": {
+          "hash": "3843408b6c444fb3539849a650183cbffbc5ea33ade4b8992309cb7def8bfdcc",
+          "characters": 14
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "untrusted-project-is-never-read",
+      "result": {
+        "system": {
+          "hash": "9920eb0904b01fef5de747ac630d9e7ffe8346a11d0396b57c8c08e629fbb0ca",
+          "characters": 13
+        },
+        "append": {
+          "hash": "e365ec8984e11e5f1406d22020f9defe142723357200103d931db8a8889c0944",
+          "characters": 13
+        },
+        "systemPath": "agent/SYSTEM.md",
+        "appendPaths": [
+          "agent/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "empty-project-files-still-override",
+      "result": {
+        "system": {
+          "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "characters": 0
+        },
+        "append": {
+          "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "characters": 0
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "no-discovered-prompts",
+      "result": {
+        "system": null,
+        "append": {
+          "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "characters": 0
+        },
+        "systemPath": null,
+        "appendPaths": []
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "discovered-SYSTEM.md-large",
+      "result": {
+        "system": {
+          "hash": "feb2900ff3315a9a5dba7b73b771c2880d0f28b9de45d2abfa54dcaf1632892c",
+          "characters": 66560
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "discovered-SYSTEM.md-two-boms",
+      "result": {
+        "system": {
+          "hash": "40e1ee7c86b2f1cceadc5def8c336fb9bfbd53d07f3f50555b28690fdc61c5a8",
+          "characters": 9
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "discovered-SYSTEM.md-invalid-utf8",
+      "result": {
+        "system": {
+          "hash": "f531e791ba41cf041555c3f11473697a71bbb8c16fc378096663fb143884192d",
+          "characters": 10
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "discovered-SYSTEM.md-denied",
+      "result": {
+        "system": {
+          "hash": "8664253399d2a1f3c53ac1c1935ed4574b803e32c10edb42071e6f74735cb8c9",
+          "characters": 33
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": [
+        "Warning: Could not read system prompt file <workspace>/project/.pi/SYSTEM.md"
+      ]
+    },
+    {
+      "id": "discovered-SYSTEM.md-directory",
+      "result": {
+        "system": {
+          "hash": "8664253399d2a1f3c53ac1c1935ed4574b803e32c10edb42071e6f74735cb8c9",
+          "characters": 33
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": [
+        "Warning: Could not read system prompt file <workspace>/project/.pi/SYSTEM.md"
+      ]
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-large",
+      "result": {
+        "system": {
+          "hash": "3843408b6c444fb3539849a650183cbffbc5ea33ade4b8992309cb7def8bfdcc",
+          "characters": 14
+        },
+        "append": {
+          "hash": "feb2900ff3315a9a5dba7b73b771c2880d0f28b9de45d2abfa54dcaf1632892c",
+          "characters": 66560
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-two-boms",
+      "result": {
+        "system": {
+          "hash": "3843408b6c444fb3539849a650183cbffbc5ea33ade4b8992309cb7def8bfdcc",
+          "characters": 14
+        },
+        "append": {
+          "hash": "40e1ee7c86b2f1cceadc5def8c336fb9bfbd53d07f3f50555b28690fdc61c5a8",
+          "characters": 9
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-invalid-utf8",
+      "result": {
+        "system": {
+          "hash": "3843408b6c444fb3539849a650183cbffbc5ea33ade4b8992309cb7def8bfdcc",
+          "characters": 14
+        },
+        "append": {
+          "hash": "f531e791ba41cf041555c3f11473697a71bbb8c16fc378096663fb143884192d",
+          "characters": 10
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-denied",
+      "result": {
+        "system": {
+          "hash": "3843408b6c444fb3539849a650183cbffbc5ea33ade4b8992309cb7def8bfdcc",
+          "characters": 14
+        },
+        "append": {
+          "hash": "6707823d5cc0f74ae2564e06a5dcf4a4ad6699b7cb0c9801fa8c101cc28070f1",
+          "characters": 40
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": [
+        "Warning: Could not read append system prompt file <workspace>/project/.pi/APPEND_SYSTEM.md"
+      ]
+    },
+    {
+      "id": "discovered-APPEND_SYSTEM.md-directory",
+      "result": {
+        "system": {
+          "hash": "3843408b6c444fb3539849a650183cbffbc5ea33ade4b8992309cb7def8bfdcc",
+          "characters": 14
+        },
+        "append": {
+          "hash": "6707823d5cc0f74ae2564e06a5dcf4a4ad6699b7cb0c9801fa8c101cc28070f1",
+          "characters": 40
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": [
+        "Warning: Could not read append system prompt file <workspace>/project/.pi/APPEND_SYSTEM.md"
+      ]
+    },
+    {
+      "id": "explicit-system-literal",
+      "result": {
+        "system": {
+          "hash": "43877f6783f27810aebe92fcda8aef2e9d233855a22b2ee1cfcc2feca6233236",
+          "characters": 16
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": null,
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-system-whitespace",
+      "result": {
+        "system": {
+          "hash": "6c179f21e6f62b629055d8ab40f454ed02e48b68563913473b857d3638e23b28",
+          "characters": 2
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": null,
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-system-empty",
+      "result": {
+        "system": null,
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": null,
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-system-dash-prefix",
+      "result": {
+        "system": {
+          "hash": "53e4ecebcc3c3d52d86b4dd0ab21ce52bbb4fa462cf9ddc1dba849ea0c08e0ca",
+          "characters": 9
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": null,
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-system-large-file",
+      "result": {
+        "system": {
+          "hash": "feb2900ff3315a9a5dba7b73b771c2880d0f28b9de45d2abfa54dcaf1632892c",
+          "characters": 66560
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/input.txt",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-system-two-boms",
+      "result": {
+        "system": {
+          "hash": "40e1ee7c86b2f1cceadc5def8c336fb9bfbd53d07f3f50555b28690fdc61c5a8",
+          "characters": 9
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/input.txt",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-system-invalid-utf8",
+      "result": {
+        "system": {
+          "hash": "f531e791ba41cf041555c3f11473697a71bbb8c16fc378096663fb143884192d",
+          "characters": 10
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/input.txt",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-system-denied-file",
+      "result": {
+        "system": {
+          "hash": "0e5523056ab6dbb2a3bfa672b305d76b003954fa5a1bcc8de29528c2ad79b2ed",
+          "characters": 9
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/input.txt",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": [
+        "Warning: Could not read system prompt file input.txt"
+      ]
+    },
+    {
+      "id": "explicit-system-directory",
+      "result": {
+        "system": {
+          "hash": "ebced87e45dbc076301d4774986952a769418e4bfcdd6805300575b3d3c4242d",
+          "characters": 9
+        },
+        "append": {
+          "hash": "e062eef809d0640d65268b81170511505b4867af7d68594dba320c572eee29df",
+          "characters": 14
+        },
+        "systemPath": "project/input-dir",
+        "appendPaths": [
+          "project/.pi/APPEND_SYSTEM.md"
+        ]
+      },
+      "error": null,
+      "warnings": [
+        "Warning: Could not read system prompt file input-dir"
+      ]
+    },
+    {
+      "id": "explicit-append-mix",
+      "result": {
+        "system": {
+          "hash": "3843408b6c444fb3539849a650183cbffbc5ea33ade4b8992309cb7def8bfdcc",
+          "characters": 14
+        },
+        "append": {
+          "hash": "b0d4b2941c295f73815a14a5f0beaa088412098df7c8e0d9a0db870a4e0dc46e",
+          "characters": 13
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/input.txt"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-append-empty-literal-is-ignored",
+      "result": {
+        "system": {
+          "hash": "3843408b6c444fb3539849a650183cbffbc5ea33ade4b8992309cb7def8bfdcc",
+          "characters": 14
+        },
+        "append": {
+          "hash": "829f8d848b44fa3098194754af5b60e2fb1517b0195956841beb6cac9bc68067",
+          "characters": 7
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": []
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-append-empty-file-is-retained",
+      "result": {
+        "system": {
+          "hash": "3843408b6c444fb3539849a650183cbffbc5ea33ade4b8992309cb7def8bfdcc",
+          "characters": 14
+        },
+        "append": {
+          "hash": "b9b8539fde43f7198845d9fd74ba837fd8697b8b4116bcd54d3c5ef063e66e8d",
+          "characters": 9
+        },
+        "systemPath": "project/.pi/SYSTEM.md",
+        "appendPaths": [
+          "project/empty.txt"
+        ]
+      },
+      "error": null,
+      "warnings": []
+    },
+    {
+      "id": "explicit-overrides-do-not-read-unused-discovered-files",
+      "result": {
+        "system": {
+          "hash": "829f8d848b44fa3098194754af5b60e2fb1517b0195956841beb6cac9bc68067",
+          "characters": 7
+        },
+        "append": {
+          "hash": "829f8d848b44fa3098194754af5b60e2fb1517b0195956841beb6cac9bc68067",
+          "characters": 7
+        },
+        "systemPath": null,
+        "appendPaths": []
+      },
+      "error": null,
+      "warnings": []
+    }
+  ]
+}

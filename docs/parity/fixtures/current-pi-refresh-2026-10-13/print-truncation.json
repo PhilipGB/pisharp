@@ -1,0 +1,74 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "cases": [
+    {
+      "mode": "text",
+      "finishReason": "stop",
+      "match": true,
+      "pi": {
+        "exitCode": 0,
+        "stdout": "partial response\n",
+        "stderr": "",
+        "requests": 1
+      },
+      "pisharp": {
+        "exitCode": 0,
+        "stdout": "partial response\n",
+        "stderr": "",
+        "requests": 1
+      }
+    },
+    {
+      "mode": "text",
+      "finishReason": "length",
+      "match": true,
+      "pi": {
+        "exitCode": 1,
+        "stdout": "partial response\n",
+        "stderr": "Response was truncated: the model reached its output token limit.\n",
+        "requests": 1
+      },
+      "pisharp": {
+        "exitCode": 1,
+        "stdout": "partial response\n",
+        "stderr": "Response was truncated: the model reached its output token limit.\n",
+        "requests": 1
+      }
+    },
+    {
+      "mode": "json",
+      "finishReason": "stop",
+      "match": true,
+      "pi": {
+        "exitCode": 0,
+        "stdout": "partial response",
+        "stderr": "",
+        "requests": 1
+      },
+      "pisharp": {
+        "exitCode": 0,
+        "stdout": "partial response",
+        "stderr": "",
+        "requests": 1
+      }
+    },
+    {
+      "mode": "json",
+      "finishReason": "length",
+      "match": true,
+      "pi": {
+        "exitCode": 0,
+        "stdout": "partial response",
+        "stderr": "",
+        "requests": 1
+      },
+      "pisharp": {
+        "exitCode": 0,
+        "stdout": "partial response",
+        "stderr": "",
+        "requests": 1
+      }
+    }
+  ],
+  "comparison": "Real isolated CLI processes. Text-mode stdout/stderr/exit status and provider request count match exactly. JSON mode compares assistant text, stderr/exit status and request count only. The different PiSharp event envelope and missing public stop reason remain open protocol requirements; this probe does not claim JSON format compatibility. Compaction and retry are disabled in both processes to isolate the final output-limit response."
+}

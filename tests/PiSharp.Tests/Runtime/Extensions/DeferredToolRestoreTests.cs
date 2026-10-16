@@ -9,6 +9,20 @@ namespace PiSharp.Tests;
 public sealed class DeferredToolRestoreTests
 {
     [Fact]
+    public async Task ExplicitSelectionOverridesRecordedToolsWhileDefaultActivationKeepsTheCatalogAvailable()
+    {
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        conversation.AppendToolLoadout(["read", "grep"]);
+        var tools = new CodingTools(Path.GetTempPath());
+        var explicitAgent = new PiAgent(new ToolRecordingClient(), tools, selectedTools: ["read", "write"]);
+        var explicitRun = await ConversationRun.OpenAsync(explicitAgent, conversation);
+        Assert.Equal(["read", "write"], explicitRun.ActiveToolNames);
+
+        var defaultAgent = new PiAgent(new ToolRecordingClient(), tools, initialActiveToolNames: ["read"]);
+        var defaultRun = await ConversationRun.OpenAsync(defaultAgent, conversation);
+        Assert.Equal(["read", "grep"], defaultRun.ActiveToolNames);
+    }
+    [Fact]
     public async Task ResumedToolBecomesDeclaredWhenItsServerRegisters()
     {
         var registration = new ExtensionRegistration();

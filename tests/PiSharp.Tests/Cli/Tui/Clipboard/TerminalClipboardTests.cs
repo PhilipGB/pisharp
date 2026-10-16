@@ -6,6 +6,43 @@ namespace PiSharp.Tests;
 
 public sealed class TerminalClipboardTests
 {
+    [Theory]
+    [InlineData((int)ClipboardPlatform.MacOS, "pbcopy")]
+    [InlineData((int)ClipboardPlatform.Windows, "clip")]
+    [InlineData((int)ClipboardPlatform.Linux, "xclip")]
+    public async Task ForcedOsc52FollowsSuccessfulNativeCopyWithoutSshMarkers(int platform, string command)
+    {
+        var order = new List<string>();
+        var commands = new FakeCommands((name, _, _) =>
+        {
+            order.Add(name);
+            return new(0, []);
+        });
+        var clipboard = new TerminalClipboard(commands,
+            Env(("DISPLAY", ":99"), ("PI_CLIPBOARD_OSC52", "1")), order.Add, (ClipboardPlatform)platform);
+
+        await clipboard.CopyTextAsync("hello");
+
+        Assert.Equal([command, "\u001b]52;c;aGVsbG8=\u0007"], order);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("true")]
+    [InlineData("")]
+    public async Task OnlyTheValueOneForcesOsc52AfterSuccessfulNativeCopy(string setting)
+    {
+        var commands = new FakeCommands((_, _, _) => new(0, []));
+        var controls = new List<string>();
+        var clipboard = new TerminalClipboard(commands,
+            Env(("PI_CLIPBOARD_OSC52", setting)), controls.Add, ClipboardPlatform.MacOS);
+
+        await clipboard.CopyTextAsync("hello");
+
+        Assert.Empty(controls);
+        Assert.Equal("pbcopy", Assert.Single(commands.Invocations).Command);
+    }
+
     [Fact]
     public async Task WaylandReadReturnsEmptyInsteadOfFallingThroughToStaleX11Text()
     {

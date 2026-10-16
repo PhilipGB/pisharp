@@ -19,11 +19,13 @@ internal sealed class AgentToolCatalog
     private readonly bool _noExtensionTools;
 
     public IReadOnlyList<PiSharpToolRegistration> Registrations { get; private set; }
+    internal bool RestoresRecordedToolLoadout => _selectedExtensionTools is null && !_noExtensionTools;
 
     public AgentToolCatalog(CodingTools tools, IReadOnlyList<string>? selectedTools,
         IReadOnlyList<string>? excludedTools, bool noTools, bool noBuiltinTools,
         IReadOnlyCollection<AIFunction>? extensionTools,
-        IReadOnlyCollection<PiSharpToolRegistration>? extensionToolRegistrations)
+        IReadOnlyCollection<PiSharpToolRegistration>? extensionToolRegistrations,
+        IReadOnlyList<string>? initialActiveToolNames = null)
     {
         var registeredExtensions = new List<PiSharpToolRegistration>();
         foreach (var function in extensionTools ?? [])
@@ -68,18 +70,20 @@ internal sealed class AgentToolCatalog
             .ToArray();
         Registrations = _builtinRegistrations.Concat(external).ToArray();
         _toolRegistry = new PiSharpToolRegistry(Registrations);
-        _initialActiveToolNames = selectedTools is null
+        var initialNames = initialActiveToolNames ?? selectedTools;
+        _initialActiveToolNames = initialNames is null
             ? null
-            : selectedTools.Where(name => _toolRegistry.Registered.Any(registration =>
+            : initialNames.Where(name => _toolRegistry.Registered.Any(registration =>
                 string.Equals(registration.Function.Name, name, StringComparison.Ordinal))).ToArray();
     }
 
     public IReadOnlyList<AIFunctionDeclaration> ToolDeclarations => Array.AsReadOnly(
         _toolRegistry.CreateLoadout(_initialActiveToolNames).Snapshot.Declared.Select(declaration =>
             (AIFunctionDeclaration)(string.Equals(declaration.Description, declaration.Registration.Function.Description,
-                StringComparison.Ordinal)
+                StringComparison.Ordinal) && declaration.Registration.ConstrainedSampling is null
                 ? declaration.Registration.Function
-                : new DescribedAIFunction(declaration.Registration.Function, declaration.Description))).ToArray());
+                : new DeclaredAIFunction(declaration.Registration.Function, declaration.Description,
+                    declaration.Registration.ConstrainedSampling))).ToArray());
     public ToolLoadout GetToolLoadout(AgentSession session)
     {
         ArgumentNullException.ThrowIfNull(session);

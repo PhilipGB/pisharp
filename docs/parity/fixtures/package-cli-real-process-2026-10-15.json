@@ -1,0 +1,83 @@
+{
+  "fixture": "package-cli-real-process-differential",
+  "queue": 3,
+  "capabilityIds": [
+    "feature-pi-packages",
+    "cli-resources",
+    "commands-runtime"
+  ],
+  "pins": {
+    "pi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharp": "548f8cd435c78801663a39ee1156ee34a595ed4c",
+    "pisharpCliSha256": "ea9672b2d4e05ce448186f5133eaf6f16ce0c49069d1a868d67b05868a4beea5"
+  },
+  "fixtures": {
+    "npm": "Local tarballs for managed-skill and managed-native-extension, with a local file dependency; npm offline mode enabled.",
+    "git": "Loopback Git daemon with an unpinned main ref advanced from v1 to v2.",
+    "provider": "Local HTTP fixture with a fixture-only key; no paid credentials or external registry access."
+  },
+  "processDifferential": {
+    "driver": "tools/parity/package-cli-process-differential.py",
+    "result": "Pi and PiSharp matched package settings/state, exit status, resource/provider outcomes, npm install/remove output and project Git install output. Git update progress text differs as recorded below.",
+    "operations": {
+      "install": "User npm and project Git install succeeded; persisted sources match their requested scopes.",
+      "list": "User-only and combined user/project lists matched.",
+      "update": "Configured project Git source advanced from v1 to v2 in both CLIs.",
+      "remove": "Project Git and both user npm sources were removed; final list was empty."
+    },
+    "resourceInvocation": {
+      "userNpm": "Normal RPC exposed the installed skill and prompt plus an extension-discovered skill; three matching provider inputs were sent.",
+      "projectGit": "Normal RPC exposed the project skill and prompt plus an extension-discovered skill; three matching provider inputs were sent.",
+      "lifecycleScripts": {
+        "npmInstallRunsPerProduct": {
+          "skillPackage": 1,
+          "extensionPackage": 1,
+          "dependency": 1
+        },
+        "gitInstallRunsPerProduct": {
+          "package": 1,
+          "dependency": 1
+        },
+        "gitUpdateRunsPerProduct": {
+          "package": 2,
+          "dependency": 2
+        }
+      }
+    },
+    "errorStatus": {
+      "missingLocalInstall": "Exit 1 in both; settings and managed package roots unchanged.",
+      "failedGitUpdate": "Exit 1 in both; settings, HEAD, and package files outside .git unchanged.",
+      "removeUnconfiguredSource": "Exit 1 in both; settings and managed package roots unchanged."
+    },
+    "observedDifferences": [
+      "During successful unpinned Git update, Pi streams fetch, checkout and dependency-install progress while PiSharp reports the final update status after its staged clone. Both reach the same v2 content, run the same lifecycle scripts and expose matching resources.",
+      "A failed Pi Git fetch creates .git/FETCH_HEAD; PiSharp leaves Git cache metadata unchanged. Both retain the installed package content and HEAD.",
+      "Failed-update diagnostics differ because Pi fetches the existing checkout while PiSharp stages a clone; both return exit 1 and preserve settings, HEAD and package content."
+    ],
+    "p0p1Findings": [],
+    "commandOutput": {
+      "npmInstall": "Normalized stdout and stderr match for both local npm tarball installs, including npm v11 install-script warnings.",
+      "npmRemove": "Normalized stdout and stderr match for both user package removals.",
+      "projectGitInstall": "Normalized stdout and stderr match; the native staged checkout path is presented as the final package path.",
+      "successfulGitUpdate": "Both update to v2 and run the same lifecycle scripts. Pi streams fetch, checkout and dependency-install output; PiSharp reports the final update status after its staged clone."
+    }
+  },
+  "verification": {
+    "build": "dotnet build PiSharp.slnx --no-restore --warnaserror: passed, zero warnings and errors.",
+    "focusedTests": {
+      "command": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter 'FullyQualifiedName~ResourcePackageCommandProcessTests|FullyQualifiedName~ConfiguredNpmCommandUsesManagerSpecificInstallAndRemoveArgv|FullyQualifiedName~LegacyGlobalUserLookupIsReadOnlyAndManagedInstallTakesPrecedence|FullyQualifiedName~LegacyAlternateManagerLookupsUseReadOnlyManagerSpecificPaths|FullyQualifiedName~MissingOrMalformedLegacyLookupFallsBackToManagedAcquisition|FullyQualifiedName~GitDependencyInstallUsesConfiguredManagerPoliciesAndUnknownFallback|FullyQualifiedName~PackageSettingsReaderTests'",
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    "differentialCommand": "python3 tools/parity/package-cli-process-differential.py --pi /tmp/pisharp-luna-pi --pisharp src/PiSharp.Cli/bin/Debug/net10.0/PiSharp.Cli.dll --profile /tmp/pisharp-sol-orchestration-20261015/root-package-cli/profile --output artifacts/parity/003-package-cli-root/20261015/process.json",
+    "differentialResult": "passed against Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6 and PiSharp 548f8cd435c78801663a39ee1156ee34a595ed4c; all asserted state, status, npm install/remove output, Git install output, resource invocation and lifecycle checks matched. Git update progress differences are retained above.",
+    "profile": "Isolated under /tmp/pisharp-sol-orchestration-20261015/root-package-cli/profile.",
+    "format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore: passed."
+  },
+  "remainingGaps": [
+    "The paired process fixture uses local npm tarballs and a loopback Git daemon. Registry range/latest update, configured npmCommand variants and legacy-global lookup are covered by the named focused tests, not by this paired fixture.",
+    "The paired process fixture updates one configured Git source with --extension; bulk --extensions update is not exercised.",
+    "Pi uses its JavaScript package extension while PiSharp uses the paired native C# extension fixture."
+  ]
+}

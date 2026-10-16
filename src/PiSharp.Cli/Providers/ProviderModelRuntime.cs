@@ -194,7 +194,7 @@ public sealed class ProviderModelRuntime
                 {
                     var refreshed = await RadiusModelCatalog.LoadAsync(_http, provider.Id, provider.Endpoint,
                         auth.Authenticated ? auth.Key : null, cancellationToken).ConfigureAwait(false);
-                    providerModels = RadiusModelCatalog.Merge(provider.Models, refreshed);
+                    providerModels = refreshed;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
                 catch (Exception error) when (error is HttpRequestException or TaskCanceledException or InvalidDataException or JsonException)
@@ -225,7 +225,7 @@ public sealed class ProviderModelRuntime
                 continue;
             }
             // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
-            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "huggingface" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock" or "radius")
+            if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "huggingface" or "azure" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock" or "radius")
             {
                 result.AddRange(providerModels.Select(model => model with { Provider = provider.Id }));
                 result.AddRange(VirtualModelsFor(provider.Id));
@@ -474,6 +474,8 @@ public sealed class ProviderModelRuntime
             ThinkingLevelMap = ModelMetadataJson.MergeObjects(configured?.ThinkingLevelMap, discovered.ThinkingLevelMap),
             PromptCache = ModelMetadataJson.MergeObjects(configured?.PromptCache, discovered.PromptCache),
             SamplingParameters = ModelMetadataJson.MergeObjects(configured?.SamplingParameters, discovered.SamplingParameters),
+            SamplingParametersByThinkingLevel = ModelMetadataJson.MergeSamplingParametersByThinkingLevel(
+                configured?.SamplingParametersByThinkingLevel, discovered.SamplingParametersByThinkingLevel),
             Compatibility = ModelMetadataJson.MergeCompatibility(configured?.Compatibility,
                 ModelMetadataJson.MergeCompatibility(discovered.Compatibility, provider.Compatibility)),
             Available = true,

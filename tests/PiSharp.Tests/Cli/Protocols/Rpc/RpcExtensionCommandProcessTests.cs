@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Net;
-using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading.Channels;
 using PiSharp.Cli;
@@ -177,13 +176,8 @@ public sealed class RpcExtensionCommandProcessTests
 
     private static HttpListener StartLoopbackListener(out int port)
     {
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        var listener = new HttpListener();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
+        var (listener, selectedPort) = TestLoopbackListener.Start();
+        port = selectedPort;
         return listener;
     }
 }

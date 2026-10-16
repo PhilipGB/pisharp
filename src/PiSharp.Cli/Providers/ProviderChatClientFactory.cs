@@ -5,6 +5,7 @@ using Anthropic.Core;
 using Anthropic.Credentials;
 using Microsoft.Extensions.AI;
 using OpenAI;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.VirtualModels;
 
 namespace PiSharp.Cli;
@@ -35,6 +36,12 @@ public static class ProviderChatClientFactory
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
         if (protocol == "azure-openai-responses")
             _ = AzureOpenAiEndpoint.RequireConfigured(selection.Connection.Endpoint ?? selection.Provider.Endpoint);
+        if (selection.Provider.Id == "azure")
+        {
+            if (protocol != "openai-completions")
+                throw new NotSupportedException("The built-in azure provider uses Foundry Chat Completions; Azure Responses uses azure-openai-responses.");
+            _ = AzureOpenAiEndpoint.RequireConfigured(selection.Connection.Endpoint ?? selection.Provider.Endpoint);
+        }
         // The official OpenAI identity must never be redirected by catalog metadata to an alternate endpoint.
         if (selection.Provider.Id == "openai" && !ProviderModelRuntime.IsOfficialOpenAiEndpoint(selection.Provider.Endpoint))
             throw new InvalidOperationException("The built-in OpenAI identity requires the official endpoint.");
@@ -53,7 +60,10 @@ public static class ProviderChatClientFactory
             throw new ArgumentOutOfRangeException(nameof(retrySettings), "Provider timeouts cannot be negative.");
         var requestTimeout = configuredTimeout ?? (idleTimeout == 0 ? int.MaxValue : idleTimeout);
         var sdkTimeout = TimeSpan.FromMilliseconds(requestTimeout);
+        var samplingSupported = protocol is "openai-completions" or "openai-responses" or "azure-openai-responses";
+        var samplingContext = new SamplingParametersRequestContext();
         IChatClient providerClient;
+        ProviderToolCallDeltaCapture? argumentCapture = null;
         if (protocol == "bedrock-converse-stream")
         {
             providerClient = BedrockConverseChatClientFactory.Create(selection);
@@ -61,6 +71,10 @@ public static class ProviderChatClientFactory
         else if (protocol == "pi-messages")
         {
             providerClient = PiMessagesChatClientFactory.Create(selection);
+        }
+        else if (protocol == "mistral-conversations")
+        {
+            providerClient = MistralConversationsChatClientFactory.Create(selection, configuredTimeout ?? 60_000);
         }
         else if (protocol == "google-generative-ai")
         {
@@ -76,6 +90,7 @@ public static class ProviderChatClientFactory
         }
         else if (protocol == "anthropic-messages")
         {
+            argumentCapture = new ProviderToolCallDeltaCapture();
             var transcript = new AnthropicTranscriptRequest();
             var baseUrl = selection.Connection.Endpoint?.ToString() ?? selection.Provider.Endpoint.ToString();
             var options = new ClientOptions
@@ -86,7 +101,7 @@ public static class ProviderChatClientFactory
                 BaseUrl = baseUrl,
                 MaxRetries = 0,
                 Timeout = sdkTimeout,
-                Handlers = [new AnthropicSystemMessageHandler(transcript), new ProviderWireActivityHandler()]
+                Handlers = [new AnthropicSystemMessageHandler(transcript), argumentCapture.CreateHandler(), new ProviderWireActivityHandler()]
             };
             if (selection.AnthropicIsOAuthToken)
             {
@@ -130,7 +145,8 @@ public static class ProviderChatClientFactory
             else if (selection.Connection.Endpoint is not null) options.Endpoint = selection.Connection.Endpoint;
             if (protocol == "openai-responses")
                 options.Transport = new HttpClientPipelineTransport(
-                    new HttpClient(new ProviderWireActivityHandler(new HttpClientHandler()), disposeHandler: true));
+                    new HttpClient(new ProviderSamplingRequestHandler(samplingContext!,
+                        new ProviderWireActivityHandler(new HttpClientHandler())), disposeHandler: true));
             OpenAiToolCallDeltaCapture? toolCallCapture = null;
             MistralChatRequestContext? mistralContext = null;
             AzureOpenAiRequestContext? azureContext = null;
@@ -140,8 +156,9 @@ public static class ProviderChatClientFactory
                 var azureOptions = selection.Provider.AzureOpenAi ??
                     new AzureOpenAiProviderOptions("v1", new Dictionary<string, string>(StringComparer.Ordinal));
                 options.Transport = new HttpClientPipelineTransport(new HttpClient(
-                    new AzureOpenAiRequestHandler(selection.ApiKey, azureOptions, azureContext,
-                        new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false })),
+                    new ProviderSamplingRequestHandler(samplingContext!,
+                        new AzureOpenAiRequestHandler(selection.ApiKey, azureOptions, azureContext,
+                            new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false }))),
                     disposeHandler: true));
             }
             if (protocol is "openai-completions" or "mistral-conversations")
@@ -155,10 +172,18 @@ public static class ProviderChatClientFactory
                 }
                 else
                 {
-                    handler = new OpenAiCompletionsRequestCompatibilityHandler(selection.Model,
+                    var azureFoundry = selection.Provider.Id == "azure";
+                    HttpMessageHandler innerHandler = new OpenAiCompletionsRequestCompatibilityHandler(selection.Model,
                         selection.Provider.Id, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
                         selection.Provider.Compatibility,
-                        new ProviderWireActivityHandler(new HttpClientHandler()));
+                        new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = !azureFoundry }));
+                    if (azureFoundry)
+                    {
+                        var azureOptions = selection.Provider.AzureOpenAi ??
+                            new AzureOpenAiProviderOptions("v1", new Dictionary<string, string>(StringComparer.Ordinal));
+                        innerHandler = new AzureFoundryChatCompletionsRequestHandler(azureOptions, innerHandler);
+                    }
+                    handler = new ProviderSamplingRequestHandler(samplingContext!, innerHandler);
                 }
                 toolCallCapture = new OpenAiToolCallDeltaCapture(handler);
                 options.Transport = toolCallCapture.Transport;
@@ -170,13 +195,17 @@ public static class ProviderChatClientFactory
                 ? new StatelessResponsesChatClient(client.GetResponsesClient().AsIChatClient(selection.Model.Id))
                 : client.GetChatClient(selection.Model.Id).AsIChatClient();
 #pragma warning restore OPENAI001
-            providerClient = toolCallCapture is null ? chat : new OpenAiCompletionsToolCallDeltaClient(chat, toolCallCapture);
+            providerClient = chat;
+            argumentCapture = toolCallCapture?.Capture;
             if (mistralContext is not null)
                 providerClient = new MistralChatOptionsClient(providerClient, selection.Model, mistralContext);
             if (azureContext is not null)
                 providerClient = new AzureOpenAiChatOptionsClient(providerClient, azureContext);
         }
-        var timeoutClient = new ProviderRequestTimeoutChatClient(providerClient, requestTimeout, idleTimeout);
+        providerClient = new ModelSamplingParametersChatClient(providerClient, selection.Model, samplingContext,
+            samplingSupported);
+        var streamRequestTimeout = protocol == "mistral-conversations" ? int.MaxValue : requestTimeout;
+        var timeoutClient = new ProviderRequestTimeoutChatClient(new ProviderToolArgumentChatClient(providerClient, argumentCapture), streamRequestTimeout, idleTimeout);
         return new ProviderRetryChatClient(timeoutClient, providerMaxRetries,
             retrySettings?.MaxRetryDelayMs ?? ProviderRetrySettings.DefaultMaxRetryDelayMs);
     }

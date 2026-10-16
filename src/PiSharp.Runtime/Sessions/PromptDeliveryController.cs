@@ -8,7 +8,7 @@ internal sealed class PromptDeliveryController
     private readonly PromptDeliveryQueue _queue = new();
     private object? _owner;
     private Action<AgentLifecycleEvent>? _events;
-    private int _initialSteeringCount;
+    private bool _firstProviderRequestPending;
 
     public PromptDeliveryController(object stateGate, PromptDeliveryMode steeringMode, PromptDeliveryMode followUpMode)
     {
@@ -83,7 +83,6 @@ internal sealed class PromptDeliveryController
         lock (_stateGate)
         {
             var pending = _queue.Clear();
-            _initialSteeringCount = 0;
             if (publishQueueUpdate is not null) publishQueueUpdate(QueueEvent(PendingPrompts.Empty));
             else _events?.Invoke(QueueEvent(PendingPrompts.Empty));
             return pending;
@@ -97,7 +96,7 @@ internal sealed class PromptDeliveryController
             if (_owner is not null) throw new InvalidOperationException("An agent run is already active.");
             _owner = new object();
             _events = publish;
-            _initialSteeringCount = _queue.SteeringCount;
+            _firstProviderRequestPending = true;
             return _owner;
         }
     }
@@ -106,9 +105,12 @@ internal sealed class PromptDeliveryController
     {
         lock (_stateGate)
         {
-            var prompts = firstProviderRequest
-                ? TakeInitialSteering()
-                : _queue.TakeSteeringForProvider();
+            if (firstProviderRequest)
+            {
+                if (!_firstProviderRequestPending) return [];
+                _firstProviderRequestPending = false;
+            }
+            var prompts = _queue.TakeSteeringForProvider();
             if (prompts.Count == 0) return [];
             _events?.Invoke(QueueEvent(_queue.Snapshot()));
             var messages = new ChatMessage[prompts.Count];
@@ -137,9 +139,9 @@ internal sealed class PromptDeliveryController
                 _events?.Invoke(QueueEvent(_queue.Snapshot()));
                 return batch;
             }
-            _initialSteeringCount = 0;
             _owner = null;
             _events = null;
+            _firstProviderRequestPending = false;
             return null;
         }
     }
@@ -152,16 +154,10 @@ internal sealed class PromptDeliveryController
             beforeEnd();
             _owner = null;
             _events = null;
+            _firstProviderRequestPending = false;
         }
     }
 
     private static AgentLifecycleEvent QueueEvent(PendingPrompts pending) => new("queue_update",
         Text: System.Text.Json.JsonSerializer.Serialize(new { steering = pending.Steering, followUp = pending.FollowUp }));
-
-    private IReadOnlyList<string> TakeInitialSteering()
-    {
-        var initialCount = _initialSteeringCount;
-        _initialSteeringCount = 0;
-        return _queue.TakeSteeringForProvider(initialCount);
-    }
 }

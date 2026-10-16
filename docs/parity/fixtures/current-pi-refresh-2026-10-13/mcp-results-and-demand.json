@@ -1,0 +1,331 @@
+{
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "scenarios": [
+    {
+      "json": "[1,2]",
+      "omitContent": false
+    },
+    {
+      "json": "null",
+      "omitContent": false
+    },
+    {
+      "json": "\"text\"",
+      "omitContent": false
+    },
+    {
+      "json": "3",
+      "omitContent": false
+    },
+    {
+      "json": "false",
+      "omitContent": false
+    },
+    {
+      "json": "[1,2]",
+      "omitContent": true
+    },
+    {
+      "json": "null",
+      "omitContent": true
+    }
+  ],
+  "pi": [
+    {
+      "text": "[\n  1,\n  2\n]",
+      "structuredContent": {
+        "structuredContent": [
+          1,
+          2
+        ],
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "null",
+      "structuredContent": {
+        "structuredContent": null,
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "\"text\"",
+      "structuredContent": {
+        "structuredContent": "text",
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "3",
+      "structuredContent": {
+        "structuredContent": 3,
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "false",
+      "structuredContent": {
+        "structuredContent": false,
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "[\n  1,\n  2\n]",
+      "structuredContent": {
+        "structuredContent": [
+          1,
+          2
+        ],
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "null",
+      "structuredContent": {
+        "structuredContent": null,
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    }
+  ],
+  "pisharp": [
+    {
+      "text": "[\n  1,\n  2\n]",
+      "structuredContent": {
+        "structuredContent": [
+          1,
+          2
+        ],
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "null",
+      "structuredContent": {
+        "structuredContent": null,
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "\"text\"",
+      "structuredContent": {
+        "structuredContent": "text",
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "3",
+      "structuredContent": {
+        "structuredContent": 3,
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "false",
+      "structuredContent": {
+        "structuredContent": false,
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "[\n  1,\n  2\n]",
+      "structuredContent": {
+        "structuredContent": [
+          1,
+          2
+        ],
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    },
+    {
+      "text": "null",
+      "structuredContent": {
+        "structuredContent": null,
+        "content": []
+      },
+      "isError": false,
+      "atConnection": {
+        "tools": 1,
+        "resources": 0,
+        "templates": 0,
+        "calls": 0
+      },
+      "afterDemand": {
+        "tools": 1,
+        "resources": 1,
+        "templates": 1,
+        "calls": 1
+      }
+    }
+  ],
+  "match": true,
+  "comparison": "Exact model text, complete script-visible JSON result (including explicit null and default content), error state and request counts at connection and after demand. Wire IDs, protocol negotiation probes, temporary paths and timings are excluded; no credential/live-service coverage."
+}

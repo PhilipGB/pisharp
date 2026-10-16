@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using PiSharp.Cli;
 
@@ -6,6 +8,56 @@ namespace PiSharp.Tests;
 public sealed class RadiusLoginFlowTests
 {
     private const string ExistingMcp = """{"mcpServers":{"custom":{"url":"https://radius.pi.dev/mcp/","enabled":false,"headers":{"X-Fixture":"preserved"},"oauth":{}}}}""";
+
+    [Fact]
+    public async Task BrowserLoginCopiesTheDiscoveredUrlAndCancelLeavesMcpSetupUntouched()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        await using var server = new RadiusLoginServer();
+        await using var terminal = new RadiusLoginTerminal(server.Origin, ExistingMcp, browserFixture: true);
+        await terminal.OpenRadiusFromMenuAsync();
+        var loginStart = terminal.Mark;
+        await terminal.SendAsync("\n");
+        await terminal.WaitTextAsync("/authorize?", loginStart);
+
+        var authorizationUrl = terminal.ReadAuthorizationUrl(loginStart);
+        var authorize = new Uri(authorizationUrl);
+        var query = System.Web.HttpUtility.ParseQueryString(authorize.Query);
+        Assert.Equal("pi-gateway", query["client_id"]);
+        Assert.Equal("gateway offline_access", query["scope"]);
+        Assert.Equal("S256", query["code_challenge_method"]);
+        Assert.Equal("url", query["handoff"]);
+        Assert.Equal(43, query["code_challenge"]?.Length);
+
+        var copyStart = terminal.Mark;
+        await terminal.SendAsync("\u0018");
+        await terminal.WaitTextAsync("Copied URL to clipboard", copyStart);
+        var osc52 = "\u001b]52;c;" + Convert.ToBase64String(Encoding.UTF8.GetBytes(authorizationUrl)) + "\u0007";
+        Assert.Contains(osc52, terminal.Output, StringComparison.Ordinal);
+
+        var callback = new Uri(query["redirect_uri"]!);
+        var callbackQuery = "code=fixture-browser-code&state=" + Uri.EscapeDataString(query["state"]!);
+        var callbackUri = new UriBuilder(callback) { Query = callbackQuery }.Uri;
+        using var callbackClient = new HttpClient(new HttpClientHandler { UseProxy = false });
+        using var callbackResponse = await callbackClient.GetAsync(callbackUri).WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(System.Net.HttpStatusCode.OK, callbackResponse.StatusCode);
+        await server.TokenFormRead.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal("authorization_code", server.TokenGrantType);
+        Assert.Equal("fixture-browser-code", server.TokenCode);
+        Assert.Equal(callback.ToString(), server.TokenRedirectUri);
+        var challenge = Convert.ToBase64String(SHA256.HashData(Encoding.ASCII.GetBytes(server.TokenCodeVerifier!)))
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        Assert.Equal(query["code_challenge"], challenge);
+
+        await terminal.WaitTextAsync("Configure Radius MCP in ", loginStart);
+        Assert.DoesNotContain("fixture-radius-access", terminal.Output);
+        Assert.DoesNotContain("fixture-radius-refresh", terminal.Output);
+        var offerStart = terminal.Mark;
+        await terminal.SendAsync("\u001b");
+        await terminal.WaitEditorAsync(offerStart);
+        Assert.Equal(ExistingMcp, await File.ReadAllTextAsync(terminal.McpPath));
+        await terminal.QuitAsync();
+    }
 
     [Theory]
     [InlineData("yes", "\n")]

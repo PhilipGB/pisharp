@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime.Providers;
@@ -228,6 +229,130 @@ public sealed class PiMessagesProviderTests
         var diagnostic = PiMessagesRequestMapper.GetStoredJson(response.AdditionalProperties,
             "pisharp.piMessages.responseFailure");
         Assert.DoesNotContain(secret, diagnostic?.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task InvalidPiMessagesToolCallIsRejectedBeforeValidToolContinuation(bool backendReportedError)
+    {
+        System.Text.Json.Nodes.JsonNode? invalidArguments = backendReportedError ? new System.Text.Json.Nodes.JsonObject() :
+            System.Text.Json.Nodes.JsonValue.Create("not-an-object");
+        var responses = new[]
+        {
+            ToolCallEvents("call-invalid", invalidArguments,
+                backendReportedError ? "Tool arguments must be a JSON object.\n\nReceived arguments:\n{BROKEN}" : null,
+                "{\"path\":\"prefix.txt\", BROKEN}"),
+            ToolCallEvents("call-valid", new System.Text.Json.Nodes.JsonObject
+            {
+                ["path"] = "continued.txt",
+                ["content"] = "valid continuation"
+            }, null, "{\"path\":\"continued.txt\",\"content\":\"valid continuation\"}"),
+            TextEvents("completed")
+        };
+        using var handler = new SequencePiMessagesHandler(responses);
+        var endpoint = new Uri("http://127.0.0.1:18764/v1");
+        var model = new ModelDescriptor("fixture-model", "custom", 32000, "configured", Provider: "custom",
+            Api: "pi-messages", BaseUrl: endpoint.ToString());
+        using var client = new PiMessagesChatClient(new HttpClient(handler), endpoint, model, "fixture-key");
+        var invocations = new List<(string Path, string Content)>();
+        var agent = new ChatClientAgent(client, new ChatClientAgentOptions
+        {
+            ChatOptions = new ChatOptions
+            {
+                Tools = [AIFunctionFactory.Create((string path, string content) =>
+                {
+                    invocations.Add((path, content));
+                    return $"wrote {path}";
+                }, name: "fixture_tool")]
+            }
+        });
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        await agent.RunAsync("continue after the malformed tool call", cancellationToken: deadline.Token);
+
+        Assert.Equal([("continued.txt", "valid continuation")], invocations);
+        Assert.Equal(3, handler.RequestBodies.Count);
+        using var afterInvalid = JsonDocument.Parse(handler.RequestBodies[1]);
+        var invalidResult = Assert.Single(afterInvalid.RootElement.GetProperty("context").GetProperty("messages")
+            .EnumerateArray(), message => message.GetProperty("role").GetString() == "toolResult");
+        Assert.Equal("call-invalid", invalidResult.GetProperty("toolCallId").GetString());
+        Assert.True(invalidResult.GetProperty("isError").GetBoolean());
+
+        using var afterValid = JsonDocument.Parse(handler.RequestBodies[2]);
+        var validResult = Assert.Single(afterValid.RootElement.GetProperty("context").GetProperty("messages")
+            .EnumerateArray(), message => message.GetProperty("role").GetString() == "toolResult" &&
+                message.GetProperty("toolCallId").GetString() == "call-valid");
+        Assert.False(validResult.GetProperty("isError").GetBoolean());
+        Assert.Contains(validResult.GetProperty("content").EnumerateArray(), item =>
+            item.GetProperty("text").GetString()!.Contains("wrote continued.txt", StringComparison.Ordinal));
+    }
+
+    private static string ToolCallEvents(string id, System.Text.Json.Nodes.JsonNode? arguments,
+        string? argumentsError, string delta)
+    {
+        var toolCall = new System.Text.Json.Nodes.JsonObject
+        {
+            ["type"] = "toolCall",
+            ["id"] = id,
+            ["name"] = "fixture_tool",
+            ["arguments"] = arguments?.DeepClone()
+        };
+        if (argumentsError is not null) toolCall["argumentsError"] = argumentsError;
+        return Events(
+            new System.Text.Json.Nodes.JsonObject { ["type"] = "start" },
+            new System.Text.Json.Nodes.JsonObject
+            {
+                ["type"] = "toolcall_start",
+                ["contentIndex"] = 0,
+                ["id"] = id,
+                ["toolName"] = "fixture_tool"
+            },
+            new System.Text.Json.Nodes.JsonObject
+            { ["type"] = "toolcall_delta", ["contentIndex"] = 0, ["delta"] = delta },
+            new System.Text.Json.Nodes.JsonObject
+            { ["type"] = "toolcall_end", ["contentIndex"] = 0, ["toolCall"] = toolCall },
+            new System.Text.Json.Nodes.JsonObject
+            {
+                ["type"] = "done",
+                ["reason"] = "toolUse",
+                ["usage"] = new System.Text.Json.Nodes.JsonObject
+                { ["input"] = 1, ["output"] = 1, ["totalTokens"] = 2 }
+            });
+    }
+
+    private static string TextEvents(string text) => Events(
+        new System.Text.Json.Nodes.JsonObject { ["type"] = "start" },
+        new System.Text.Json.Nodes.JsonObject { ["type"] = "text_start", ["contentIndex"] = 0 },
+        new System.Text.Json.Nodes.JsonObject { ["type"] = "text_delta", ["contentIndex"] = 0, ["delta"] = text },
+        new System.Text.Json.Nodes.JsonObject { ["type"] = "text_end", ["contentIndex"] = 0, ["content"] = text },
+        new System.Text.Json.Nodes.JsonObject
+        {
+            ["type"] = "done",
+            ["reason"] = "stop",
+            ["usage"] = new System.Text.Json.Nodes.JsonObject
+            { ["input"] = 1, ["output"] = 1, ["totalTokens"] = 2 }
+        });
+
+    private static string Events(params System.Text.Json.Nodes.JsonObject[] events) =>
+        string.Join("\r\n\r\n", events.Select(item => "data: " + item.ToJsonString())) + "\r\n\r\n";
+
+    private sealed class SequencePiMessagesHandler(IReadOnlyList<string> responses) : HttpMessageHandler
+    {
+        private int _index;
+        public List<string> RequestBodies { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            RequestBodies.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
+            if (_index >= responses.Count)
+                throw new InvalidOperationException("The Pi Messages fixture has no response for this request.");
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(responses[_index++], Encoding.UTF8, "text/event-stream")
+            };
+        }
     }
 
     private static HttpListener StartListener(out int port)

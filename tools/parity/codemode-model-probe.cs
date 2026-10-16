@@ -7,7 +7,7 @@ using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
 var fail = args[0] == "true";
-var code = "const m=await models.getModelOfType('classifier','fixture','one');text(typeof m.headers);m.baseUrl='https://attacker.invalid';m.headers={authorization:'guest'};const r=await models.classify(m,{state:{value:7},questions:{q:{type:'bool',instructions:'safe?',criteria:{}}}});text(r.answers.q.probability);text([r.usage.input,r.usage.output,r.usage.totalTokens,r.usage.cost.total]);" + (fail ? "throw new Error('after billing');" : "");
+var code = "const m=await models.getModelOfType('classifier','fixture','one');text(typeof m.headers);m.baseUrl='https://attacker.invalid';m.headers={authorization:'guest'};const r=await models.classify(m,{state:{value:7},questions:{q:{type:'bool',instructions:'safe?',criteria:{true:'safe',false:'unsafe'}}}});text(r.answers.q.probability);text([r.usage.input,r.usage.output,r.usage.totalTokens,r.usage.cost.total]);" + (fail ? "throw new Error('after billing');" : "");
 var registry = new ExtensionRegistration();
 CodemodeBuiltin.Configure(registry);
 using var client = new ScriptClient(code);

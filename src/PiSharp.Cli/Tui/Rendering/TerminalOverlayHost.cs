@@ -6,15 +6,47 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
     public TerminalSelection<T>? Select<T>(TerminalScreen screen, string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
-        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items")
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null)
+    {
+        Func<TerminalSelectionList<T>, TerminalInputEvent, ValueTask<bool>>? asyncHandler = handleInput is null
+            ? null
+            : (list, input) => ValueTask.FromResult(handleInput(list, input));
+        return SelectCoreAsync(screen, title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
+            emptyMessage, actionHint, asyncHandler, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    public Task<TerminalSelection<T>?> SelectAsync<T>(TerminalScreen screen, string title,
+        IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
+        IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
+        CancellationToken cancellationToken = default)
+    {
+        Func<TerminalSelectionList<T>, TerminalInputEvent, ValueTask<bool>>? asyncHandler = handleInput is null
+            ? null
+            : (list, input) => new ValueTask<bool>(handleInput(list, input));
+        return SelectCoreAsync(screen, title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
+            emptyMessage, actionHint, asyncHandler, cancellationToken);
+    }
+
+    private async Task<TerminalSelection<T>?> SelectCoreAsync<T>(TerminalScreen screen, string title,
+        IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey,
+        IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions, string allLabel, string scopedLabel,
+        string emptyMessage, string? actionHint,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, ValueTask<bool>>? handleInput,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(screen);
         var list = new TerminalSelectionList<T>(title, options, selectedKey, scopedOptions,
-            allLabel, scopedLabel, emptyMessage);
+            allLabel, scopedLabel, emptyMessage, actionHint);
         try
         {
             while (screen.IsActive)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 screen.RefreshIfResized();
                 var content = list.Render(screen.TerminalWidth, screen.TerminalHeight);
                 screen.SetOverlay(content);
@@ -25,6 +57,13 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
                 }
                 else next = input.Read();
                 if (next.IsEndOfStream) return null;
+                if (handleInput is not null)
+                {
+                    var handledTask = handleInput(list, next);
+                    if (!handledTask.IsCompleted) screen.SetOverlay(null);
+                    if (await handledTask.ConfigureAwait(false)) continue;
+                }
+                if (list.Selected is null && TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                 var mouseContentLine = next.Mouse is { } mouse
                     ? TerminalOverlayLayout.ContentLineAt(content, screen.TerminalWidth, screen.TerminalHeight,
                         mouse.Column, mouse.Row)

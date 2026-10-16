@@ -1,6 +1,7 @@
 using System.ClientModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime.Sessions;
@@ -16,7 +17,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<string?>? getAdditionalSystemInstructions = null,
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? transformContext = null,
     Func<IReadOnlyList<ChatMessage>, ChatOptions, System.Text.Json.JsonElement?>? projectToolTranscript = null,
-    Func<string?>? getSystemInstructions = null)
+    Func<string?>? getSystemInstructions = null,
+    Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
@@ -348,86 +350,30 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
 
     private ChatOptions? ApplyCurrentReasoning(ChatOptions? options)
     {
-        if (getReasoning is null) return options;
+        if (getReasoning is null && getThinkingBudgets is null) return options;
         var requestOptions = options?.Clone() ?? new ChatOptions();
-        requestOptions.Reasoning = getReasoning();
+        if (getReasoning is not null) requestOptions.Reasoning = getReasoning();
+        if (routedChatClient is not null)
+        {
+            requestOptions.AdditionalProperties ??= new();
+            requestOptions.AdditionalProperties[ModelSamplingParametersChatClient.ThinkingLevelProperty] =
+                routedChatClient.SelectedThinkingLevel;
+        }
+        if (getThinkingBudgets?.Invoke() is { } thinkingBudgets)
+        {
+            requestOptions.AdditionalProperties ??= new();
+            requestOptions.AdditionalProperties[ThinkingBudgetPolicy.SettingsProperty] = thinkingBudgets;
+        }
         return requestOptions;
     }
 
     // Keep the persisted function result intact. Provider clients see its text plus image content
-    // in a following user message, matching Pi's image-bearing tool result on the wire.
+    // in a following user message; provider adapters retain attribution for their wire rules.
     private IReadOnlyList<ChatMessage> AttachReadImages(IReadOnlyList<ChatMessage> messages) =>
-        ExpandReadImages(messages, getSupportsImages?.Invoke() ?? supportsImages, flattenStructuredResults: true);
+        ToolResultMessageProjection.Expand(messages, getSupportsImages?.Invoke() ?? supportsImages, flattenStructuredResults: true);
 
     internal static IReadOnlyList<ChatMessage> NormalizeReadImagesForHistory(IReadOnlyList<ChatMessage> messages) =>
-        ExpandReadImages(messages, supportsImages: true, flattenStructuredResults: false);
-
-    private static IReadOnlyList<ChatMessage> ExpandReadImages(IReadOnlyList<ChatMessage> messages, bool supportsImages,
-        bool flattenStructuredResults)
-    {
-        var expanded = new List<ChatMessage>(messages.Count);
-        var index = 0;
-        while (index < messages.Count)
-        {
-            if (messages[index].Role != ChatRole.Tool)
-            {
-                expanded.Add(messages[index++]);
-                continue;
-            }
-
-            var attachments = new List<AIContent>();
-            while (index < messages.Count && messages[index].Role == ChatRole.Tool)
-            {
-                var message = messages[index++];
-                var contents = new List<AIContent>(message.Contents.Count);
-                var replaced = false;
-                foreach (var content in message.Contents)
-                {
-                    if (content is FunctionResultContent result && TryGetReadOutput(result.Result, out var output))
-                    {
-                        replaced = true;
-                        var resultText = output.Text;
-                        if (output.ImageMimeType is not null || output.ImageDataBase64 is not null)
-                        {
-                            if (!supportsImages)
-                                resultText += "\n[Current model does not support images. The image will be omitted from this request.]";
-                            else if (TryCreateImage(output, out var image))
-                                attachments.Add(image);
-                            else
-                                resultText += "\n[Image content is unavailable.]";
-                        }
-                        contents.Add(new FunctionResultContent(result.CallId, resultText) { Exception = result.Exception });
-                        continue;
-                    }
-
-                    if (flattenStructuredResults && content is FunctionResultContent structuredResult &&
-                        ToolResultOutput.TryRead(structuredResult.Result, out var structuredText, out _))
-                    {
-                        replaced = true;
-                        contents.Add(new FunctionResultContent(structuredResult.CallId, structuredText)
-                        { Exception = structuredResult.Exception });
-                        if (ToolResultOutput.TryReadContract(structuredResult.Result, out var contract) &&
-                            contract.Images is { Count: > 0 })
-                            attachments.AddRange(contract.Images.Select(image => image.ToDataContent()).OfType<DataContent>());
-                    }
-                    else contents.Add(content);
-                }
-
-                expanded.Add(replaced ? new ChatMessage(message.Role, contents) : message);
-            }
-
-            if (attachments.Count > 0)
-                expanded.Add(new ChatMessage(ChatRole.User,
-                    [new TextContent("Attached image(s) from tool result:"), .. attachments]));
-        }
-        return expanded;
-    }
-
-    private static bool TryGetReadOutput(object? value, out ReadToolOutput output)
-        => ReadToolOutput.TryRead(value, out output);
-
-    private static bool TryCreateImage(ReadToolOutput output, out DataContent image)
-        => output.TryCreateImageContent(out image);
+        ToolResultMessageProjection.Expand(messages, supportsImages: true, flattenStructuredResults: false);
 
     private static bool IsContextOverflow(Exception error)
     {

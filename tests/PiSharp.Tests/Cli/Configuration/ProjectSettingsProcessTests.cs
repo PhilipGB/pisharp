@@ -106,9 +106,10 @@ public sealed class ProjectSettingsProcessTests
             Assert.Contains("not authenticated", defaultDenied.Error);
             Assert.DoesNotContain("compaction", defaultDenied.Error);
             await File.WriteAllTextAsync(Path.Combine(root, "AGENTS.md"), new string('A', 65537));
-            var contextFailure = await Run("--no-approve");
-            Assert.Equal(2, contextFailure.Code);
-            Assert.Contains("exceeds", contextFailure.Error);
+            var completeContext = await Run("--no-approve");
+            Assert.Equal(2, completeContext.Code);
+            Assert.Contains("not authenticated", completeContext.Error);
+            Assert.DoesNotContain("exceeds", completeContext.Error);
             var ignoredContext = await Run("--no-approve", "--no-context-files");
             Assert.Equal(2, ignoredContext.Code);
             Assert.Contains("not authenticated", ignoredContext.Error);

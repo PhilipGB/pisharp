@@ -97,7 +97,7 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
         }
     }
 
-    private IDisposable BeginGrant()
+    internal IDisposable BeginGrant()
     {
         lock (_lifecycleGate)
         {
@@ -123,7 +123,7 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
     private static bool IsExpired(TokenContainer tokens) => tokens.ExpiresIn is int expiresIn &&
         DateTimeOffset.UtcNow >= tokens.ObtainedAt.AddSeconds(expiresIn);
 
-    private static HttpResponseMessage CachedTokenResponse(TokenContainer tokens, HttpRequestMessage request)
+    internal static HttpResponseMessage CachedTokenResponse(TokenContainer tokens, HttpRequestMessage request)
     {
         int? expiresIn = null;
         if (tokens.ExpiresIn is int lifetime)
@@ -206,7 +206,7 @@ internal sealed class McpOAuthRefreshHandler(McpTokenCache.ServerCache tokenCach
     private static bool IsEmptyString(JsonNode node) => node is JsonValue value &&
         value.TryGetValue<string>(out var text) && text.Length == 0;
 
-    private static List<KeyValuePair<string, string>> ParseForm(string value)
+    internal static List<KeyValuePair<string, string>> ParseForm(string value)
     {
         var fields = new List<KeyValuePair<string, string>>();
         foreach (var field in value.Split('&', StringSplitOptions.RemoveEmptyEntries))

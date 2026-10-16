@@ -16,17 +16,25 @@ internal static class InteractiveMode
     {
         var editor = presentation.Editor;
         var terminalScreen = presentation.Screen;
+        if (projectBinding.Configuration.ExtensionUi is ProjectTrustStartupUi extensionUi && terminalScreen is not null)
+            extensionUi.SetInteractiveNotificationHandler((message, type) => terminalScreen.AppendThemedStatusLine(
+                type == "info" ? message : $"{type}: {message}"));
         var terminalClipboard = presentation.Clipboard;
         var trustStore = startup.Trust;
         var usesDefaultToolsSetting = startup.UsesDefaultToolsSetting;
         var prompt = projectBinding.Arguments.Prompt;
+        TerminalSessionNavigation? sessionNavigationReference = null;
         var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding, () => Console.Out);
-        var sessionNavigation = new TerminalSessionNavigation(projectBinding, modelBinding, conversationBinding, projectTransitions, presentation);
+        var sessionNavigation = new TerminalSessionNavigation(projectBinding, conversationBinding, projectTransitions,
+            presentation, AdoptProjectSession);
+        sessionNavigationReference = sessionNavigation;
         var settingsCommands = new TerminalSettingsCommands(agentDirectory, projectBinding, modelBinding, conversationBinding,
             modelTransitions, presentation, execution);
         var modelSelection = new TerminalModelSelectionCommands(modelRuntime, modelRuntimeController, projectBinding, modelBinding,
             modelTransitions, presentation, settingsCommands);
         var inputActions = new TerminalInputActions(projectBinding, conversationBinding, presentation);
+        var sessionShare = editor is null ? null : new TerminalSessionShare(modelRuntime, catalogHttp, editor,
+            () => conversationBinding.Run, () => projectBinding.Settings);
         var applicationActions = new TerminalApplicationActions(settingsCommands, modelSelection, sessionNavigation, inputActions, presentation);
         Task HandleEditorApplicationAction(string action) => applicationActions.HandleAsync(action);
         var terminalTrustPicker = editor is null ? null : new TerminalTrustPicker(editor);
@@ -44,7 +52,7 @@ internal static class InteractiveMode
             ReloadResources, () => HandleEditorApplicationAction("app.message.copy"));
         void RefreshProjectUi()
         {
-            sessionNavigation.RefreshPicker();
+            sessionNavigationReference?.RefreshPicker();
             presentation.RefreshTerminalTheme();
             terminalScreen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
         }
@@ -91,6 +99,9 @@ internal static class InteractiveMode
                     {
                         switch (command)
                         {
+                            case "/share":
+                                await sessionShare!.ShowAsync(argument);
+                                break;
                             case "/import":
                                 await terminalSessionImport!.ImportAsync(argument);
                                 break;

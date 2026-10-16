@@ -1,0 +1,346 @@
+{
+  "date": "2026-10-14",
+  "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "piSharpBaseSha": "42ae67c471fe572d3a8b01c40328865f6a5d1ce2",
+  "candidate": "Base plus tag-specific YAML scalar grammar and regression tests in this commit.",
+  "match": true,
+  "cases": 181,
+  "tagCases": 50,
+  "retainedCases": 131,
+  "comparison": "Real pinned skill/prompt YAML loaders. Exact consumed typed metadata, full body hashes/UTF16 lengths and resource diagnostic type/path/order/text. Explicit scalar-tag matrix is a bounded selection of actual cases, with all 131 prior YAML/hint/repository cases retained. The complete 231-case edge probe remains failing and retained separately; it is not claimed green.",
+  "characterization": {
+    "fullEdgeCases": 231,
+    "initialMetadataDifferences": 32,
+    "initialRawWarningDifferences": 40,
+    "nativeFailFirst": {
+      "failed": 8,
+      "passed": 4,
+      "skipped": 0
+    },
+    "afterScalarRepair": {
+      "metadataDifferences": 4,
+      "rawWarningDifferences": 26
+    }
+  },
+  "implementation": [
+    "Each explicit bool/int/float/null tag uses its own pinned YAML 1.2 core scalar grammar. A valid typed scalar is excluded from consumed string metadata; an invalid value retains its original string, including quoted values.",
+    "Implicit plain scalars retain the existing matching grammar and quoted-string behavior. The same resource-frontmatter owner serves skill names/descriptions, prompt descriptions/argument hints and invocation reads. No new framework layer or provider dependency is introduced."
+  ],
+  "verification": {
+    "focusedPassed": 60,
+    "fullPassed": 1849,
+    "fullFailed": 0,
+    "fullSkipped": 0,
+    "newNativeRows": 13,
+    "format": "passed",
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "normalRpcProvider": {
+      "piSha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "scenario": "invalid-tag",
+      "piSharpBaseSha": "42ae67c471fe572d3a8b01c40328865f6a5d1ce2",
+      "assemblySha256": "9678e6fffd8359d13b2e3c6dc5b5cdb3471d001e8eb4740ceb57c4a54e262a96",
+      "dependencyAssemblySha256": {
+        "PiSharp.Runtime.dll": "cbc1efbcee03ad733f3b6e7a4cdcd7c4eb7ccdd41cc46f22b3feec4f1682a635",
+        "PiSharp.Core.dll": "92afa60840dd39af648dd7f868fe8c14633913f945d89c54dc58b8a83f09c168"
+      },
+      "results": {
+        "pi": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/guide/SKILL.md\">\nReferences are relative to <workspace>/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "word"
+        },
+        "pisharp": {
+          "errorBeforeResponse": null,
+          "event": null,
+          "error": null,
+          "providerInput": "<skill name=\"guide\" location=\"<workspace>/guide/SKILL.md\">\nReferences are relative to <workspace>/guide.\n\nbody\n</skill>\n\nargs",
+          "providerRequests": 1,
+          "promptAccepted": true,
+          "commandDescription": "word"
+        }
+      },
+      "match": true
+    },
+    "warningBoundary": "The real Pi CLI setup replaces process.emitWarning with a no-op before loading resources. Both normal RPC processes load description !!int word as word, expand the skill body into the provider request, emit no extension error or YAMLWarning and settle. The direct SDK probe prints Node YAML tag warnings; their raw stderr is retained and not conflated with resource diagnostics.",
+    "exactHeadCi": {
+      "sha": "6cec6f7104da67790810eb81fef33e32dfa9f995",
+      "run": 38557804529,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38557804529",
+      "jobs": "both pass",
+      "dotnet": {
+        "passed": 1849,
+        "failed": 0,
+        "skipped": 0
+      },
+      "nodePassed": 24,
+      "pythonPassed": 49
+    }
+  },
+  "results": [
+    {
+      "id": "prompt-tag-int-00",
+      "description": "word",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-int-01",
+      "description": "1.2",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-int-02",
+      "description": "1e2",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-int-03",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-int-04",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-int-05",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-int-06",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-int-07",
+      "description": "word",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-float-00",
+      "description": "word",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-float-01",
+      "description": "1",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-float-02",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-float-03",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-float-04",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-float-05",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-bool-00",
+      "description": "no",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-bool-01",
+      "description": "yes",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-bool-02",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-bool-03",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-bool-04",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-bool-05",
+      "description": "tRuE",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-null-00",
+      "description": "text",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-null-01",
+      "description": "0",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-null-02",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-null-03",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    },
+    {
+      "id": "prompt-tag-null-04",
+      "description": "body",
+      "body": {
+        "hash": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+        "characters": 4
+      },
+      "diagnostics": []
+    }
+  ],
+  "artifacts": "artifacts/parity/resources-current-pi-2026-10-14",
+  "logs": {
+    "resource-yaml-tags-characterization.json": "244253acfa143dc41bb8589d774167f9d8a5ed0fbc67569579c2a9d2891c09f2",
+    "resource-yaml-tags-characterization.log": "3cac5b1e18d5feaf3095e7b15bd9f547913722d332702a64f6890a4fecee851a",
+    "resource-yaml-scalars-fail-first-tests.log": "6affbf5b687f22bf4e03ba1d69079c9d138b8c6bb749e887341b2cd0c6eacb56",
+    "resource-yaml-scalars-recovery-tests.log": "6669d0ee578f83a66bd0e92959da91fa3f24bb0be741a991d36cbdb46574f286",
+    "resource-yaml-scalars-recovery.json": "a802836d92284c95cf7a7df8d5bf08a30416d7e8f4d995abeffdeb8dd55b6700",
+    "resource-yaml-scalars-recovery.log": "b10091ba7b943c93633ed5affb06b69b03ba5c865ce80ce63d83af3e4b2cdab8",
+    "resource-yaml-tags-final.json": "234267af4202fc0f7863a45fcb5790ae86b7d7d0d37455fcfc39e125d0f155bc",
+    "resource-yaml-tags-final.log": "de2f99dd6ba3fd220c7588c2a95ca177d192438d3458f8599f3adc6d15ce9ec8",
+    "resource-yaml-tag-process.json": "9177703d6d3dbb94f0a9a260af81738b23a60621fd22b2411b7397967a49b9cf",
+    "resource-yaml-tag-process.log": "0f9bf75d3be73c962d03ab58143749cdf789fc03a7eafa941c5ae512b8b032c7",
+    "resource-yaml-tag-process-pi.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "resource-yaml-tag-process-pisharp.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "resource-yaml-tag-process-pi.records.json": "3b9f51c4da19ba5db47702f796f3d47e553564f2932416e1bac9532404cc2c59",
+    "resource-yaml-tag-process-pisharp.records.json": "ffa0f8fea03c5f71c05b9693ba3fb4f19c0fb67f9c6d7bf5c154ca5bf5c3cbda",
+    "resource-yaml-tag-process-pi.http.json": "e8f5c512a058a4b719f00f9df47f016be9386faad0c6f44b61c7da4949b68abd",
+    "resource-yaml-tag-process-pisharp.http.json": "8288cdf03a708185f45e3ad325651afef68bfcf18daf465ac35abd60914f3470",
+    "resource-yaml-scalars-full-tests.log": "894a82a9421f79df57eb19db6ca2f11ffb502607975561c34b1df4bc6857ab6e",
+    "resource-yaml-scalars-build.log": "621be727b5e0d315f15fa6fd1147c812f7c508fb1f00afea465902941a30594e",
+    "resource-yaml-scalars-verify-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "resource-yaml-error-marks.json": "15ac5b40b2542563a41371ca314b40db23220c27ce7b1d651dfb48a7f6320307",
+    "resource-yaml-scalars-exact-ci.log": "8a65f7c300d312eae29f57c24a4fc1cb1664310c97a18476b3ebc46e3a5ef97a"
+  },
+  "limits": [
+    "The complete 231-case probe still exposes alias-key grammar and semantic numeric-key duplicates plus 26 syntax/alias/key diagnostic text differences. These remain required work.",
+    "This scalar matrix does not establish arbitrary YAML schema/version/tag/alias-limit/complex-map-key behavior. Direct SDK Node process warnings are retained; the normal CLI suppression boundary is separately proved.",
+    "All 194 capabilities, wider Resources / Instructions / Trust, MCP reconciliation and final audits remain required. No capability status is upgraded."
+  ],
+  "reproduce": [
+    "python3 tools/parity/resource-frontmatter-differential.py --argument-hints --repository-prompt --yaml-tags --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-yaml-tags.json",
+    "python3 tools/parity/resource-frontmatter-differential.py --argument-hints --repository-prompt --yaml-edges --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-yaml-edges.json",
+    "python3 tools/parity/resource-invocation-process-differential.py --scenario invalid-tag --pi /tmp/pisharp-parity-audit-pi --output artifacts/parity/<run>/resource-yaml-tag-process.json"
+  ],
+  "next": "Repair alias-key/semantic duplicate-key grammar and source error locations/messages; keep remaining Resources / Instructions / Trust boundaries active."
+}

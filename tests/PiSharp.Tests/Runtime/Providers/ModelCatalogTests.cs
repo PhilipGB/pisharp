@@ -11,7 +11,7 @@ public sealed class ModelCatalogTests
     public async Task CustomModelDiscoveryUsesOnlyExplicitEndpointKeyAndParsesCapabilities()
     {
         var handler = new FixtureHandler("""
-            {"data":[{"id":"local-one","name":"Local One","owned_by":"llamacpp","status":{"value":"loaded"},"context_length":16384,"max_tokens":2048,"input":["text","image"],"api":"openai-completions","inputLimits":{"images":{"resize":{"maxWidth":1568,"maxHeight":1024,"maxBytes":524288,"jpegQuality":75}}}},{"id":"local-one"},{"id":"local-two","context_length":-1}]}
+            {"data":[{"id":"local-one","name":"Local One","owned_by":"llamacpp","status":{"value":"loaded"},"context_length":16384,"max_tokens":2048,"input":["text","image"],"api":"openai-completions","samplingParams":{"top_p":0.9},"samplingParamsByThinkingLevel":{"high":{"temperature":0.8,"top_k":64}},"inputLimits":{"images":{"resize":{"maxWidth":1568,"maxHeight":1024,"maxBytes":524288,"jpegQuality":75}}}},{"id":"local-one"},{"id":"local-two","context_length":-1}]}
             """);
         using var http = new HttpClient(handler);
         var settings = ConnectionSettings.Resolve(true, name => name switch
@@ -31,6 +31,9 @@ public sealed class ModelCatalogTests
         Assert.Equal(2048, models[0].MaxOutputTokens);
         Assert.Equal(["text", "image"], models[0].Input);
         Assert.Equal("openai-completions", models[0].Api);
+        Assert.Equal(0.9, models[0].SamplingParameters?.GetProperty("top_p").GetDouble());
+        Assert.Equal(0.8, models[0].SamplingParametersByThinkingLevel?.GetProperty("high").GetProperty("temperature").GetDouble());
+        Assert.Equal(64, models[0].SamplingParametersByThinkingLevel?.GetProperty("high").GetProperty("top_k").GetInt32());
         Assert.Equal(new ModelImageResizeOptions(1568, 1024, 524288, 75), models[0].InputLimits?.Images?.Resize);
         Assert.Null(models[1].ContextLength);
         Assert.DoesNotContain("unrelated-cloud-secret", handler.Authorization!);

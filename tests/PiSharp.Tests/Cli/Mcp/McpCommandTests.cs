@@ -8,6 +8,18 @@ namespace PiSharp.Tests;
 public sealed class McpCommandTests
 {
     [Fact]
+    public async Task HelpDescribesTheWholeSignInTimeoutAndDefault()
+    {
+        using var output = new StringWriter();
+        using var errors = new StringWriter();
+
+        Assert.Equal(0, await McpCommand.RunAsync(["--help"], Path.GetTempPath(), Path.GetTempPath(), output, errors));
+
+        Assert.Contains("--timeout <seconds>     Time limit for the whole sign-in (default: 300)", output.ToString());
+        Assert.Equal("", errors.ToString());
+    }
+
+    [Fact]
     public async Task AddListRemoveAndProjectScopeWorkWithoutAChatModel()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-command-" + Guid.NewGuid().ToString("N"));
@@ -34,6 +46,8 @@ public sealed class McpCommandTests
             {
                 var server = Assert.Single(listed.RootElement.GetProperty("servers").EnumerateArray());
                 Assert.Equal("connected", server.GetProperty("state").GetString());
+                Assert.True(server.GetProperty("resources").GetBoolean());
+                Assert.False(server.TryGetProperty("resourceTemplates", out _));
                 Assert.Contains(server.GetProperty("tools").EnumerateArray(), item =>
                     item.GetString() == "mcp__fixture__echo");
             }

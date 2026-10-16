@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli;
@@ -88,7 +89,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     int? HttpIdleTimeoutMs = null, string? MarkdownCodeBlockIndent = null, string? TerminalTrueColor = null,
     bool? EnableSkillCommands = null, IReadOnlyList<string>? Extensions = null,
     IReadOnlyList<string>? Skills = null, IReadOnlyList<string>? Prompts = null,
-    IReadOnlyList<string>? Themes = null, string? ShellCommandPrefix = null)
+    IReadOnlyList<string>? Themes = null, string? ShellCommandPrefix = null, string? SessionShareDestination = null,
+    IReadOnlyList<ResourcePackageSource>? Packages = null, IReadOnlyList<string>? NpmCommand = null,
+    IReadOnlyDictionary<string, int>? ThinkingBudgets = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -101,6 +104,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     };
 
     public bool SkillCommandsEnabled => EnableSkillCommands ?? true;
+    public string ShareDestination => SessionShareDestination is "gist" or "radius" ? SessionShareDestination : "auto";
 
     public static async Task<UserSettings> LoadAsync(string agentDirectory, Func<string, string?> environment,
         CancellationToken cancellationToken = default)
@@ -118,7 +122,10 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             externalEditor = null, theme = null;
         IReadOnlyList<string>? tools = null, enabledModels = null;
         IReadOnlyList<string>? extensions = null, skills = null, prompts = null, themes = null;
+        IReadOnlyList<ResourcePackageSource>? packages = null;
+        IReadOnlyList<string>? npmCommand = null;
         IReadOnlyDictionary<string, string>? modelThinkingLevels = null;
+        IReadOnlyDictionary<string, int>? thinkingBudgets = null;
         CompactionSettings? compaction = null;
         RetrySettings? retry = null;
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
@@ -129,10 +136,18 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? markdownCodeBlockIndent = null;
         string? terminalTrueColor = null;
         string? shellCommandPrefix = null;
+        string? sessionShareDestination = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
             if (!seen.Add(property.Name)) throw new InvalidDataException($"settings.json contains duplicate property '{property.Name}'.");
+            if (property.Name == "$schema") continue;
+            if (property.Name == "sessionShareDestination")
+            {
+                var candidate = property.Value.ValueKind == JsonValueKind.String ? property.Value.GetString() : null;
+                sessionShareDestination = candidate is "gist" or "radius" ? candidate : "auto";
+                continue;
+            }
             if (property.Name == "httpIdleTimeoutMs")
             {
                 httpIdleTimeoutMs = ParseIdleTimeout(property.Value);
@@ -230,6 +245,16 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 enabledModels = patterns;
                 continue;
             }
+            if (property.Name == "packages")
+            {
+                packages = PackageSettingsReader.Read(property.Value);
+                continue;
+            }
+            if (property.Name == "npmCommand")
+            {
+                npmCommand = PackageSettingsReader.ReadNpmCommand(property.Value);
+                continue;
+            }
             if (property.Name is "extensions" or "skills" or "prompts" or "themes")
             {
                 if (property.Name == "skills" && property.Value.ValueKind == JsonValueKind.Object)
@@ -260,6 +285,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             if (property.Name == "modelThinkingLevels")
             {
                 modelThinkingLevels = ParseModelThinkingLevels(property.Value);
+                continue;
+            }
+            if (property.Name == "thinkingBudgets")
+            {
+                thinkingBudgets = ParseThinkingBudgets(property.Value);
                 continue;
             }
             if (property.Name == "defaultTools")
@@ -321,7 +351,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         return new(provider, model, thinking, tools, sessionDirectory, compaction, blockImages, defaultTrust, hideThinkingBlock,
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
             modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
-            enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix);
+            enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
+            npmCommand, thinkingBudgets);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -359,7 +390,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         MergeResourcePaths(Skills, project.Skills),
         MergeResourcePaths(Prompts, project.Prompts),
         MergeResourcePaths(Themes, project.Themes),
-        project.ShellCommandPrefix ?? ShellCommandPrefix);
+        project.ShellCommandPrefix ?? ShellCommandPrefix,
+        project.SessionShareDestination ?? SessionShareDestination,
+        project.Packages ?? Packages,
+        project.NpmCommand ?? NpmCommand,
+        MergeThinkingBudgets(ThinkingBudgets, project.ThinkingBudgets));
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");
@@ -442,6 +477,32 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         var merged = global is null ? new Dictionary<string, string>(StringComparer.Ordinal) :
             new Dictionary<string, string>(global, StringComparer.Ordinal);
         foreach (var (model, level) in project) merged[model] = level;
+        return merged;
+    }
+
+    private static IReadOnlyDictionary<string, int>? ParseThinkingBudgets(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object || value.EnumerateObject().Count() > 4)
+            throw new InvalidDataException("settings.json thinkingBudgets must be an object of at most four token budgets.");
+
+        var budgets = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var property in value.EnumerateObject())
+        {
+            if (property.Name is not ("minimal" or "low" or "medium" or "high") ||
+                property.Value.ValueKind != JsonValueKind.Number || !property.Value.TryGetInt32(out var budget) || budget < 0 ||
+                !budgets.TryAdd(property.Name, budget))
+                throw new InvalidDataException("settings.json thinkingBudgets values must be non-negative integers for minimal, low, medium, or high.");
+        }
+        return budgets;
+    }
+
+    private static IReadOnlyDictionary<string, int>? MergeThinkingBudgets(
+        IReadOnlyDictionary<string, int>? user, IReadOnlyDictionary<string, int>? project)
+    {
+        if (project is null) return user;
+        var merged = user is null ? new Dictionary<string, int>(StringComparer.Ordinal) :
+            new Dictionary<string, int>(user, StringComparer.Ordinal);
+        foreach (var (level, budget) in project) merged[level] = budget;
         return merged;
     }
 

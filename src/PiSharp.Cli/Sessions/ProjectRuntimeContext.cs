@@ -6,6 +6,7 @@ using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
+using PiSharp.Cli.Startup;
 
 namespace PiSharp.Cli.Sessions;
 
@@ -18,16 +19,26 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
     public UserSettings BaseUserSettings { get; }
     public UserSettings? ProjectSettings { get; }
     public UserSettings Settings { get; }
+    public IReadOnlyList<ManagedResourcePackageRoot> ManagedPackageRoots { get; }
+    public string ExtensionMode { get; }
+    public bool HasUserInterface { get; }
+    public IProjectTrustExtensionUi ExtensionUi { get; }
 
     private ProjectRuntimeConfiguration(string workingDirectory, bool trusted, UserSettings baseUserSettings,
-        UserSettings? projectSettings, UserSettings settings, ExtensionCatalog? bootstrapExtensions)
+        UserSettings? projectSettings, UserSettings settings, IReadOnlyList<ManagedResourcePackageRoot> managedPackageRoots,
+        ExtensionCatalog? bootstrapExtensions, string extensionMode, bool hasUserInterface,
+        IProjectTrustExtensionUi extensionUi)
     {
         WorkingDirectory = workingDirectory;
         Trusted = trusted;
         BaseUserSettings = baseUserSettings;
         ProjectSettings = projectSettings;
         Settings = settings;
+        ManagedPackageRoots = managedPackageRoots;
         _bootstrapExtensions = bootstrapExtensions;
+        ExtensionMode = extensionMode;
+        HasUserInterface = hasUserInterface;
+        ExtensionUi = extensionUi;
     }
 
     internal ExtensionCatalog? TakeBootstrapExtensions() => Interlocked.Exchange(ref _bootstrapExtensions, null);
@@ -36,16 +47,21 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
 
     public ProjectRuntimeConfiguration WithSettings(UserSettings baseUserSettings, UserSettings? projectSettings,
         UserSettings settings) => new(WorkingDirectory, Trusted, baseUserSettings, projectSettings, settings,
-        bootstrapExtensions: null);
+        ManagedPackageRoots, bootstrapExtensions: null, ExtensionMode, HasUserInterface, ExtensionUi);
 
     public static async Task<ProjectRuntimeConfiguration> LoadAsync(string workingDirectory, string agentDirectory,
         CliArguments arguments, ProjectTrust trustStore, bool interactiveTrust, TextReader input, TextWriter output,
         bool? trustedOverride = null, CancellationToken cancellationToken = default,
-        IProjectTrustExtensionUi? extensionUi = null)
+        IProjectTrustExtensionUi? extensionUi = null, bool? hasUserInterface = null)
     {
         var cwd = Path.GetFullPath(workingDirectory);
         var baseSettings = await UserSettings.LoadAsync(agentDirectory, Environment.GetEnvironmentVariable, cancellationToken);
         baseSettings.ApplyHttpProxyEnvironment(Environment.GetEnvironmentVariable, Environment.SetEnvironmentVariable);
+        var offline = arguments.Offline || IsOfflineEnvironment();
+        var packageStore = new ManagedResourcePackageStore(agentDirectory);
+        packageStore.ConfigureNpmCommand(baseSettings.NpmCommand);
+        var managedPackageRoots = (await packageStore.ResolveAsync(cwd, trusted: false,
+            userPackages: baseSettings.Packages, offline: offline, cancellationToken: cancellationToken)).ToList();
         ExtensionCatalog? bootstrapExtensions = null;
         try
         {
@@ -59,7 +75,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                         "builtin:", StringComparison.Ordinal)).ToArray();
                 bootstrapExtensions = ExtensionCatalog.Load(agentDirectory, cwd, projectTrusted: false,
                     discover: !arguments.NoExtensions, additionalPaths: cliExtensions,
-                    userPaths: userExtensions, builtins: []);
+                    userPaths: userExtensions, builtins: [], userPackages: baseSettings.Packages,
+                    managedPackageRoots: managedPackageRoots);
             }
 
             var trusted = trustedOverride ?? await trustStore.ResolveAsync(cwd, arguments.ProjectTrustOverride,
@@ -69,8 +86,17 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                 mode: arguments.Print ? "print" : arguments.Mode,
                 extensionUi: extensionUi);
             var projectSettings = trusted ? await UserSettings.LoadProjectAsync(cwd, cancellationToken) : null;
+            if (projectSettings?.Packages is { Count: > 0 })
+            {
+                packageStore.ConfigureNpmCommand(baseSettings.Overlay(projectSettings).NpmCommand);
+                managedPackageRoots = (await packageStore.ResolveAsync(cwd, trusted: true,
+                    userPackages: baseSettings.Packages, projectPackages: projectSettings.Packages,
+                    offline: offline, cancellationToken: cancellationToken)).ToList();
+            }
             return new(cwd, trusted, baseSettings, projectSettings,
-                baseSettings.Overlay(projectSettings ?? new UserSettings()), bootstrapExtensions);
+                baseSettings.Overlay(projectSettings ?? new UserSettings()), managedPackageRoots, bootstrapExtensions,
+                ResolveExtensionMode(arguments), hasUserInterface ?? interactiveTrust,
+                extensionUi ?? UnavailableProjectTrustExtensionUi.Instance);
         }
         catch
         {
@@ -85,6 +111,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         if ((arguments.ExtensionPaths ?? []).Any(path => !path.StartsWith("builtin:", StringComparison.Ordinal)))
             return true;
         if (arguments.NoExtensions) return false;
+        if (baseSettings.Packages is { Count: > 0 }) return true;
         if (baseSettings.Extensions?.Any(path => !path.TrimStart('!', '+', '-').StartsWith(
                 "builtin:", StringComparison.Ordinal)) == true)
             return true;
@@ -93,6 +120,16 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
             (Directory.EnumerateFiles(extensionDirectory, "*.dll", SearchOption.TopDirectoryOnly).Any() ||
              Directory.EnumerateDirectories(extensionDirectory).Any(directory => File.Exists(Path.Combine(directory, "index.dll"))));
     }
+
+    private static bool IsOfflineEnvironment() => Environment.GetEnvironmentVariable("PI_OFFLINE") is { } value &&
+        value.ToLowerInvariant() is "1" or "true" or "yes";
+
+    private static string ResolveExtensionMode(CliArguments arguments) => arguments.Print ? "print" : arguments.Mode switch
+    {
+        "interactive" => "tui",
+        "text" => "print",
+        var mode => mode
+    };
 }
 
 internal sealed class ProjectRuntimeContext : IDisposable
@@ -150,15 +187,15 @@ internal sealed class ProjectRuntimeContext : IDisposable
     {
         var cwd = configuration.WorkingDirectory;
         var contextFiles = new List<string>();
-        var discoveredPrompts = await ProjectPrompts.LoadWithSourcesAsync(cwd, agentDirectory,
-            configuration.Trusted, cancellationToken);
-        var promptResources = await CliPromptOverrides.ResolveWithSourcesAsync(arguments, discoveredPrompts, cwd,
-            cancellationToken);
+        var promptResources = await ProjectPrompts.LoadWithSourcesAsync(cwd, agentDirectory,
+            configuration.Trusted, cancellationToken, diagnostic => Console.Error.WriteLine(diagnostic.Message),
+            arguments.SystemPrompt, arguments.AppendSystemPrompts);
         if (promptResources.SystemPath is { } systemPath) contextFiles.Add(systemPath);
         contextFiles.AddRange(promptResources.AppendPaths);
         var prompts = (promptResources.System, promptResources.Append);
         var instructions = arguments.NoContextFiles ? "" :
-            await ContextInstructions.LoadAsync(cwd, agentDirectory, cancellationToken, contextFiles);
+            await ContextInstructions.LoadAsync(cwd, agentDirectory, cancellationToken, contextFiles,
+                diagnostic => Console.Error.WriteLine(diagnostic.Message));
         var sessionDirectory = sessionDirectoryOverride ?? arguments.SessionDirectory ?? configuredSessionDirectory ??
             configuration.Settings.SessionDirectory;
         if (sessionDirectory is not null) sessionDirectory = Path.GetFullPath(sessionDirectory, cwd);
@@ -175,7 +212,10 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 projectPaths: projectExtensionPaths,
                 builtins: [ToolSearchBuiltin.Definition, CodemodeBuiltin.Definition,
                     McpBuiltin.CreateDefinition(mcpManager)],
-                preloaded: configuration.TakeBootstrapExtensions());
+                preloaded: configuration.TakeBootstrapExtensions(),
+                userPackages: configuration.BaseUserSettings.Packages,
+                projectPackages: configuration.ProjectSettings?.Packages,
+                managedPackageRoots: configuration.ManagedPackageRoots);
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
             var effectiveMcpServers = McpRuntime.SelectEffectiveServers(mcp.Servers,
                 extensions.Registration.McpServers);
@@ -216,6 +256,10 @@ internal sealed class ProjectRuntimeContext : IDisposable
                     userExtensionPaths, projectPaths);
                 ActivateReachTool(extensions.Registration, "codemode");
             }
+            foreach (var conflict in extensions.ConflictDiagnostics)
+                Console.Error.WriteLine($"Extension conflict ({conflict.Path}): {conflict.Error}");
+            foreach (var warning in extensions.Warnings)
+                Console.Error.WriteLine(warning.Warning);
             var extensionResources = await extensions.DiscoverResourcesAsync(cwd, resourceDiscoveryReason,
                 cancellationToken);
             foreach (var error in extensionResources.Errors)
@@ -225,7 +269,10 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 additionalSkills: arguments.SkillPaths, additionalPrompts: arguments.PromptTemplatePaths,
                 userSkills: configuration.BaseUserSettings.Skills, projectSkills: configuration.ProjectSettings?.Skills,
                 userPrompts: configuration.BaseUserSettings.Prompts, projectPrompts: configuration.ProjectSettings?.Prompts,
-                extensionResources: extensionResources);
+                extensionResources: extensionResources,
+                userPackages: configuration.BaseUserSettings.Packages, projectPackages: configuration.ProjectSettings?.Packages,
+                managedPackageRoots: configuration.ManagedPackageRoots);
+            if (extensions.LoadErrors.Count > 0) throw new ExtensionStartupFailure(extensions.LoadErrors);
             return new ProjectRuntimeContext(configuration, prompts, instructions, contextFiles,
                 resources, extensions, extensionResources, store, sessionImport, mcpManager, effectiveMcpServers);
         }
@@ -265,8 +312,14 @@ internal sealed class ProjectRuntimeContext : IDisposable
         VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null)
     {
         var effectiveSettings = settings ?? Settings;
+        var usesDefaults = DefaultToolReloadPolicy.UsesSettingsDefaults(arguments);
+        var initialNames = usesDefaults && arguments.Tools is not null
+            ? arguments.Tools.Concat(Extensions.Registration.ToolDefinitions
+                .Where(tool => tool.DefaultActive != false && tool.Exposure is ToolExposure.Direct or ToolExposure.ModelOnly)
+                .Select(tool => tool.Function.Name)).Distinct(StringComparer.Ordinal).ToArray()
+            : null;
         return new PiAgent(chat, new CodingTools(WorkingDirectory, effectiveSettings.ShellPath,
-                selection.Model.InputLimits?.Images?.Resize, effectiveSettings.ShellCommandPrefix), arguments.Tools, arguments.ExcludeTools,
+                selection.Model.InputLimits?.Images?.Resize, effectiveSettings.ShellCommandPrefix), usesDefaults ? null : arguments.Tools, arguments.ExcludeTools,
             arguments.NoTools, Instructions, Prompts.System, Prompts.Append,
             reasoning: ThinkingLevels.ToOptions(thinking, selection.Model.ThinkingLevelMap), blockImages: effectiveSettings.BlockImages == true,
             extensionToolRegistrations: Extensions.Registration.ToolDefinitions,
@@ -278,9 +331,14 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensionContextTransforms: Extensions.Registration.ContextTransforms,
             virtualModelRequestRouter: virtualModelRequestRouter,
             codemodeModels: codemodeModels,
+            initialActiveToolNames: initialNames,
+            extensionLifecycleHandlers: Extensions.Registration.RegisteredLifecycleHandlers,
+            extensionContextConfiguration: new PiSharpExtensionContextConfiguration(WorkingDirectory,
+                Configuration.ExtensionMode, Configuration.HasUserInterface, Trusted, Configuration.ExtensionUi),
             getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),
             getSkillInstructions: (activeToolNames, declaredToolNames) => Resources.SystemInstructions(
                 ResolveSkillFileReadTool(arguments, activeToolNames, declaredToolNames)),
+            thinkingBudgets: effectiveSettings.ThinkingBudgets,
             // ProviderChatClientFactory applies retry.provider.maxRetries inside the SDK adapter.
             // Avoid adding PiAgent's independent fallback retry loop on top of that configured count.
             retryPolicy: ProviderRetryPolicy.None);

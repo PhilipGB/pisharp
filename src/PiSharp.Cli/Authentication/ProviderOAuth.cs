@@ -165,23 +165,8 @@ internal sealed class OAuthRefreshLease : IAsyncDisposable
                 File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             var lockPath = fullPath + "." + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
                 System.Text.Encoding.UTF8.GetBytes(provider.ToUpperInvariant())))[..16] + ".refresh.lock";
-            var deadline = DateTimeOffset.UtcNow + TimeSpan.FromMinutes(2);
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                try
-                {
-                    var lockFile = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite,
-                        FileShare.None, 1, FileOptions.Asynchronous);
-                    if (OperatingSystem.IsLinux())
-                        File.SetUnixFileMode(lockPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-                    return new OAuthRefreshLease(processGate, lockFile);
-                }
-                catch (IOException) when (DateTimeOffset.UtcNow < deadline)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken).ConfigureAwait(false);
-                }
-            }
+            var lockFile = await AuthFileLock.AcquireAsync(lockPath, cancellationToken, timeout: TimeSpan.FromMinutes(2));
+            return new OAuthRefreshLease(processGate, lockFile);
         }
         catch
         {

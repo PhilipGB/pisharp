@@ -28,6 +28,8 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "markdown.codeBlockIndent", ">>", userScope: true);
             await UserSettingsWriter.SetAsync(path, "terminal.trueColor", "true", userScope: true);
             await UserSettingsWriter.SetAsync(path, "enableSkillCommands", "false", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "thinkingBudgets.low", "4096", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "thinkingBudgets.high", "32768", userScope: true);
             var settings = await UserSettings.LoadAsync(root, _ => null);
 
             Assert.True(settings.HideThinkingBlock);
@@ -47,6 +49,8 @@ public sealed class UserSettingsWriterTests
             Assert.Equal("true", settings.TerminalTrueColor);
             Assert.True(settings.TerminalTrueColorOverride);
             Assert.False(settings.SkillCommandsEnabled);
+            Assert.Equal(4096, settings.ThinkingBudgets!["low"]);
+            Assert.Equal(32768, settings.ThinkingBudgets["high"]);
 
             await UserSettingsWriter.SetAsync(path, "images.blockImages", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.enabled", null, userScope: true);
@@ -60,6 +64,7 @@ public sealed class UserSettingsWriterTests
             Assert.Equal("auto", (await UserSettings.LoadAsync(root, _ => null)).TerminalTrueColor);
             await UserSettingsWriter.SetAsync(path, "terminal.trueColor", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "enableSkillCommands", null, userScope: true);
+            await UserSettingsWriter.SetAsync(path, "thinkingBudgets.low", null, userScope: true);
             Assert.Null((await UserSettings.LoadAsync(root, _ => null)).BlockImages);
             var cleared = await UserSettings.LoadAsync(root, _ => null);
             Assert.Null(cleared.Retry);
@@ -75,6 +80,10 @@ public sealed class UserSettingsWriterTests
                 UserSettingsWriter.SetAsync(path, "retry.provider.maxRetries", "21", userScope: true));
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "retry.provider.timeoutMs", "-1", userScope: true));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "thinkingBudgets.low", "-1", userScope: true));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "thinkingBudgets.high", "1.5", userScope: true));
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "retry.provider.maxRetryDelayMs", "-1", userScope: true));
             await Assert.ThrowsAsync<ArgumentException>(() =>

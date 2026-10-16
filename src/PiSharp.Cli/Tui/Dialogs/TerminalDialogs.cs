@@ -6,13 +6,30 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
     public TerminalSelection<T>? ShowSelectionList<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
-        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items")
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, bool>? handleInput = null)
     {
         if (getScreen() is not { IsActive: true } screen) return null;
         var input = getInput();
         using var mode = TerminalMode.Enter(screen);
         return new TerminalOverlayHost(input).Select(screen, title, options, selectedKey, scopedOptions,
-            allLabel, scopedLabel, emptyMessage);
+            allLabel, scopedLabel, emptyMessage, actionHint, handleInput);
+    }
+
+    public async Task<TerminalSelection<T>?> ShowSelectionListAsync<T>(string title,
+        IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
+        IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
+        string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
+        string? actionHint = null,
+        Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (getScreen() is not { IsActive: true } screen) return null;
+        var input = getInput();
+        using var mode = TerminalMode.Enter(screen);
+        return await new TerminalOverlayHost(input).SelectAsync(screen, title, options, selectedKey, scopedOptions,
+            allLabel, scopedLabel, emptyMessage, actionHint, handleInput, cancellationToken).ConfigureAwait(false);
     }
 
     public TerminalSelection<T>? ShowModelSelectionList<T>(
@@ -79,6 +96,7 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                 }
 
                 if (!input.TryRead(40, out var next)) continue;
+                if (list.Selected is null && TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                 TerminalSelectionAction action;
                 if (TerminalInput.TryGetText(next, out _))
                 {
@@ -150,6 +168,11 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                 while (true)
                 {
                     if (next.IsEndOfStream) return null;
+                    if (TerminalWheelInput.TryRouteUnhandled(screen, next))
+                    {
+                        if (!extensionDialog || !input.TryRead(0, out next)) break;
+                        continue;
+                    }
                     if (next.Key is { } key)
                     {
                         if (key.Key == ConsoleKey.Escape || keymap.Matches("app.interrupt", key) ||
@@ -196,7 +219,8 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
     public async Task<IReadOnlyList<string>?> PromptSequenceAsync(string title,
         IReadOnlyList<(string Message, string? Placeholder)> prompts, bool preservePanelAfterSubmit = false,
         bool preservePanelOnCancel = false, CancellationToken cancellationToken = default,
-        bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null)
+        bool extensionDialog = false, Func<string, Task>? dispatchApplicationAction = null,
+        IReadOnlyList<string>? initialValues = null)
     {
         if (prompts.Count == 0) return [];
         if (getScreen() is not { IsActive: true } screen)
@@ -231,6 +255,8 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
             for (var promptIndex = 0; promptIndex < prompts.Count; promptIndex++)
             {
                 var promptBuffer = new EditorBuffer(keymap);
+                if (initialValues is not null && promptIndex < initialValues.Count)
+                    _ = promptBuffer.InsertText(initialValues[promptIndex]);
                 var needsRender = true;
                 var renderedWidth = -1;
                 var renderedHeight = -1;
@@ -260,6 +286,7 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                     }
 
                     if (!input.TryRead(40, out var next)) continue;
+                    if (TerminalWheelInput.TryRouteUnhandled(screen, next)) continue;
                     if (extensionDialog)
                     {
                         var submitted = false;
@@ -269,6 +296,11 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
                             {
                                 preservePanel = preservePanelOnCancel;
                                 return null;
+                            }
+                            if (TerminalWheelInput.TryRouteUnhandled(screen, next))
+                            {
+                                if (!input.TryRead(0, out next)) break;
+                                continue;
                             }
                             if (next.Key is { } extensionKey && (extensionKey.Key == ConsoleKey.Escape ||
                                 keymap.Matches("app.interrupt", extensionKey) ||

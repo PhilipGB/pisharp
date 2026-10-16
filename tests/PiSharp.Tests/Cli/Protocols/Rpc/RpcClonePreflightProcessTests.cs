@@ -132,6 +132,8 @@ public sealed class RpcClonePreflightProcessTests
 
             await process.StandardInput.WriteLineAsync("{\"id\":\"active-prompt\",\"type\":\"prompt\",\"message\":\"remain active\"}");
             await process.StandardInput.FlushAsync(timeout.Token);
+            var activeResponse = await ReadResponseAsync("active-prompt");
+            Assert.True(activeResponse.GetProperty("success").GetBoolean(), activeResponse.GetRawText());
             var partialSeen = false;
             while (!partialSeen)
             {

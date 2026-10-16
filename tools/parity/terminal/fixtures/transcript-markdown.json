@@ -3,6 +3,9 @@
   "settings": {
     "quietStartup": true
   },
+  "fixtureBehavior": {
+    "chatResponseContentByRequest": ["## Fixture reply\n\n**bold** and `code`\n\n- first\n- second\n"]
+  },
   "dimensions": [
     {
       "columns": 80,

@@ -4,12 +4,42 @@ using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Cli.Protocols;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
 
 public sealed class JsonEventModeTests
 {
+    [Fact]
+    public async Task FailedSkillReadIsReportedOnStderrAndOriginalInputStillSettles()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-json-resource-" + Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(root, "guide", "SKILL.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        try
+        {
+            await File.WriteAllTextAsync(path, "---\nname: guide\ndescription: Guide\n---\nbody");
+            var resources = await ResourceCatalog.LoadAsync(root, root, false, discoverSkills: false,
+                discoverPrompts: false, additionalSkills: [path]);
+            File.Delete(path);
+            var conversation = new ConversationSession(root, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new ChatFixture(), new CodingTools(root)), conversation);
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+
+            await JsonPromptMode.RunAsync(conversation, run, new ConversationStore(root, Path.Combine(root, "sessions")),
+                null, resources, "/skill:guide args", "", CliArguments.Parse(["--mode", "json"]), root, output, error);
+
+            Assert.Equal($"Extension error ({path}): ENOENT: no such file or directory, open '{path}'{Environment.NewLine}",
+                error.ToString());
+            Assert.Equal("/skill:guide args", conversation.ActiveMessages().First(m => m.Role == ChatRole.User).Text);
+            Assert.Contains("agent_settled", output.ToString());
+            Assert.DoesNotContain("run_rejected", output.ToString());
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task EventStreamIsJsonlWithSingleHeaderAndSettledTerminator()
     {

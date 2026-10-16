@@ -52,6 +52,31 @@ public sealed class ExtensionCatalogTests
     }
 
     [Fact]
+    public void RegistrationsFromOneOwnerReplaceEarlierToolAndCommandDefinitions()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-extension-replacement-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            BuiltinExtensionDefinition[] builtins = [new("replace", registration =>
+            {
+                registration.AddTool(AIFunctionFactory.Create(() => "first", name: "replaceable_tool",
+                    description: "first tool"));
+                registration.AddTool(AIFunctionFactory.Create(() => "last", name: "replaceable_tool",
+                    description: "last tool"));
+                registration.AddCommand("replaceable", (_, _) => Task.FromResult("first"), "first command");
+                registration.AddCommand("replaceable", (_, _) => Task.FromResult("last"), "last command");
+            })];
+
+            using var catalog = ExtensionCatalog.Load(root, root, false, builtins: builtins);
+
+            Assert.Equal("last tool", Assert.Single(catalog.Registration.ToolDefinitions).Function.Description);
+            Assert.Equal("last command", catalog.Registration.CommandInfo["replaceable"].Description);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task ResourceDiscoveryIsOrderedAndAnExtensionFailureDoesNotDiscardOtherPaths()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-resource-discovery-" + Guid.NewGuid().ToString("N"));
@@ -158,8 +183,9 @@ public sealed class ExtensionCatalogTests
             using (var deduplicated = ExtensionCatalog.Load(agent, cwd, false,
                 additionalPaths: [Path.Combine(agent, "extensions", "fixture.dll")]))
                 Assert.Single(deduplicated.Registration.Tools);
-            Assert.Throws<FileNotFoundException>(() => ExtensionCatalog.Load(agent, cwd, false, discover: false,
-                additionalPaths: ["missing.dll"]));
+            using var missing = ExtensionCatalog.Load(agent, cwd, false, discover: false, additionalPaths: ["missing.dll"]);
+            Assert.Equal("Extension path does not exist: " + Path.Combine(cwd, "missing.dll"),
+                Assert.Single(missing.LoadErrors).Error);
             Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--extension"]));
             using var personal = ExtensionCatalog.Load(agent, cwd, false);
             Assert.Single(personal.Registration.Tools);
@@ -167,9 +193,61 @@ public sealed class ExtensionCatalogTests
             Assert.Equal("auto", personalCommand.SourceInfo.Source);
             Assert.Equal("user", personalCommand.SourceInfo.Scope);
             Assert.Equal(agent, personalCommand.SourceInfo.BaseDir);
-            Assert.Throws<ArgumentException>(() => ExtensionCatalog.Load(agent, cwd, true)); // duplicate names fail closed
+            using var conflicted = ExtensionCatalog.Load(agent, cwd, true);
+            Assert.Single(conflicted.Registration.Tools);
+            Assert.Empty(conflicted.LoadErrors);
+            var toolConflict = Assert.Single(conflicted.ConflictDiagnostics);
+            Assert.Equal(Path.Combine(agent, "extensions", "fixture.dll"), toolConflict.Path);
+            Assert.Contains("Tool \"echo_ext\" conflicts with " + Path.Combine(project, "fixture.dll"), toolConflict.Error);
+            Assert.Equal(Path.Combine(project, "fixture.dll"), conflicted.Registration.ToolSourceInfo["echo_ext"].Path);
+            Assert.Equal(new[] { "fixture:1", "fixture:2" }, conflicted.Registration.Commands.Keys
+                .Where(name => name.StartsWith("fixture:", StringComparison.Ordinal)));
+            Assert.Equal(Path.Combine(project, "fixture.dll"), conflicted.Registration.CommandInfo["fixture:1"].SourceInfo.Path);
+            Assert.Equal(Path.Combine(agent, "extensions", "fixture.dll"), conflicted.Registration.CommandInfo["fixture:2"].SourceInfo.Path);
+
+            var explicitCopy = Path.Combine(cwd, "explicit-fixture.dll");
+            File.Copy(typeof(FixtureExtension).Assembly.Location, explicitCopy);
+            using var explicitConflict = ExtensionCatalog.Load(agent, cwd, true, additionalPaths: [explicitCopy]);
+            Assert.Equal(Path.GetFullPath(explicitCopy), explicitConflict.Registration.ToolSourceInfo["echo_ext"].Path);
+            var fixtureCommands = explicitConflict.Registration.CommandInfo.Where(pair =>
+                pair.Key.StartsWith("fixture:", StringComparison.Ordinal)).ToDictionary(pair => pair.Key,
+                    pair => pair.Value, StringComparer.Ordinal);
+            Assert.Equal(Path.GetFullPath(explicitCopy), fixtureCommands["fixture:1"].SourceInfo.Path);
+            Assert.Equal(Path.Combine(project, "fixture.dll"), fixtureCommands["fixture:2"].SourceInfo.Path);
+            Assert.Equal(Path.Combine(agent, "extensions", "fixture.dll"), fixtureCommands["fixture:3"].SourceInfo.Path);
         }
         finally { Directory.Delete(cwd, true); }
+    }
+
+    [Fact]
+    public void ReplaceableBuiltinWithANameConflictIsOmittedWithoutDiscardingOtherExtensionRegistrations()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-replaceable-builtin-" + Guid.NewGuid().ToString("N"));
+        var extensionPath = Path.Combine(cwd, "extension.dll");
+        Directory.CreateDirectory(cwd);
+        File.Copy(typeof(FixtureExtension).Assembly.Location, extensionPath);
+        try
+        {
+            BuiltinExtensionDefinition[] builtins =
+            [
+                new("fixture-builtin", registration =>
+                {
+                    registration.AddTool(AIFunctionFactory.Create(() => "unused", name: "builtin_marker"));
+                    registration.AddCommand("fixture", (_, _) => Task.FromResult("replaced"), "replacement");
+                }, Replaceable: true)
+            ];
+            using var catalog = ExtensionCatalog.Load(cwd, cwd, false, discover: false,
+                additionalPaths: [extensionPath, "builtin:fixture-builtin"], builtins: builtins);
+
+            Assert.Equal("echo_ext", Assert.Single(catalog.Registration.Tools).Name);
+            Assert.DoesNotContain("builtin_marker", catalog.Registration.ToolSourceInfo.Keys);
+            Assert.DoesNotContain("fixture-builtin", catalog.LoadedBuiltins);
+            Assert.Equal("Fixture extension command.", catalog.Registration.CommandInfo["fixture"].Description);
+            Assert.Contains(catalog.Warnings, warning => warning.Path == "builtin:fixture-builtin" &&
+                warning.Warning.Contains("registers command `/fixture`", StringComparison.Ordinal) &&
+                warning.Warning.Contains("was not loaded", StringComparison.Ordinal));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
     }
 
     [Fact]

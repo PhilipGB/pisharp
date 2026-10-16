@@ -35,7 +35,7 @@ Common options:
 | List discoverable models | `pisharp --list-models` |
 | Check local credential setup | `pisharp auth check --provider <id> --local` |
 
-Run `pisharp --help` for the full CLI. Interactive commands include `/model`, `/settings`, `/thinking`, `/sessions`, `/resume`, `/tree`, `/branch`, `/compact`, `/import` and `/export`.
+Run `pisharp --help` for the full CLI. Interactive commands include `/model`, `/settings`, `/thinking`, `/sessions`, `/resume`, `/tree`, `/branch`, `/compact`, `/import`, `/export` and `/share`.
 
 Start PiSharp from the project directory its tools should use. The terminal includes a persistent transcript/editor, streaming tool feedback, model/session/settings pickers, and keyboard and mouse input; key bindings are listed in [`docs/keybindings.md`](docs/keybindings.md).
 
@@ -57,6 +57,10 @@ Built-in provider profiles use separate credentials:
 | Mistral | Chat Completions | `MISTRAL_API_KEY` |
 
 Custom providers and static model metadata can be declared in `models.json` under `PISHARP_AGENT_DIR` (default `~/.pisharp/agent`). Provider discovery, model catalogues, reasoning and authentication are partial. OpenAI Codex and Anthropic support OAuth login and refresh; several other current-Pi OAuth profiles and provider-specific behaviors remain open. See the [provider/auth parity inventory](docs/parity/feature-matrix.md). See the [settings inventory](docs/parity/detailed-inventory.md#settings-inventory) for the supported settings subset.
+
+`/share` uploads the active branch to Radius when authenticated, otherwise creates a private GitHub Gist using `gh`. Set `sessionShareDestination` to `auto`, `gist` or `radius` in settings or the settings picker. Gist sharing requires `gh auth login`; Radius sharing uses `/login radius`. Escape cancels an upload.
+
+The CLI ships the audited Pi JSON schemas in `schemas/` beside its assembly and exposes embedded copies through `ConfigSchemaCatalog`. They describe the parity target; some fields and runtime validation rules remain incomplete. See the [schema provenance](src/PiSharp.Cli/Configuration/Schemas/README.md).
 
 The default coding tools are `read`, `bash`, `edit` and `write`. `grep`, `find` and `ls` are opt-in. Use `--tools`, `--exclude-tools` or `--no-tools` to adjust the set. Images are supported on selected provider paths; RPC image prompts and broader multimodal parity remain open.
 

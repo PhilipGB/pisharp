@@ -1,0 +1,1218 @@
+{
+  "date": "2026-10-13",
+  "old_reference": "ee409a85f6ad92bf8c6ab8ed735c6cd24f2e749e",
+  "audit_cutoff": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+  "pisharp_baseline": "22eeb2a53dbaa94e41f78a40a997e3b3156bb3ed",
+  "source_review": "Full changed-path enumeration for every commit; relevant source/test patches inspected for normal coding-agent, ai, tui, codemode and MCP changes. Independent Chord/Durable/Env changes classified by owning source paths and removed-stack/import boundaries. No classifications infer behavioral equivalence from titles.",
+  "commit_count": 50,
+  "classifications": {
+    "OUT_OF_SCOPE": 19,
+    "MATCHED": 18,
+    "NO_BEHAVIOR_CHANGE": 13,
+    "NEEDS_WORK": 0
+  },
+  "commits": [
+    {
+      "sha": "eb2fce43d22cb41771c4538e0c9f5e9614e5e2a1",
+      "title": "fix(durable): reject waits that close a wait cycle",
+      "changed_paths": [
+        "packages/durable/CHANGELOG.md",
+        "packages/durable/docs/spec.md",
+        "packages/durable/src/harness/scheduler.ts",
+        "packages/durable/test/harness-scheduler-retention.test.ts",
+        "packages/durable/test/harness-structured.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent durable runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "148622bc6f8d0ffd64e33cbc0e1e66754f45d32c",
+      "title": "fix(coding-agent): describe pi mcp login --timeout as a limit on the whole sign-in",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/docs/cli.md",
+        "packages/coding-agent/src/extensions/mcp/cli.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "MCP login help describes a whole-sign-in timeout; PiSharp help lists the flag without its scope or default.",
+      "capability_ids": [
+        "mcp-runtime"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Cli/Mcp/McpCommand.cs"
+      ],
+      "implementation_plan": "Add the timeout scope/default to help and verify the existing deadline covers discovery, registration, grants and browser wait.",
+      "differential_plan": "Compare help and delayed loopback authorization phases with the same timeout.",
+      "resolved": true,
+      "resolution": "The standalone MCP help now matches Pi's timeout description and 300-second default exactly in real isolated CLI processes. Existing login code already creates a linked deadline before token-cache lookup and passes it to SDK initialization, OAuth metadata/grants and callback handling; this upstream commit changes its description only. A focused help assertion passes; all 26 print/help/transcript checks pass.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-timeout-help.json",
+        "src/PiSharp.Runtime/Mcp/McpOAuthLogin.cs",
+        "tests/PiSharp.Tests/Cli/Mcp/McpCommandTests.cs"
+      ]
+    },
+    {
+      "sha": "2ee5c1e56d51694d113c3f1f1c9c2d7386cbfacd",
+      "title": "docs(durable): drop the Chord facet usage guide and its test",
+      "changed_paths": [
+        "packages/durable/README.md",
+        "packages/durable/docs/pico-v5-chord-usage.md",
+        "packages/durable/docs/pico-v5-handoff.md",
+        "packages/durable/docs/spec.md",
+        "packages/durable/test/chord-guide.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent durable runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "7472cda0d6e51dfbf53c03f46b47aa42ac64bf64",
+      "title": "feat(coding-agent): remove the experimental server stack and the client, protocol, and server packages",
+      "changed_paths": [
+        "package-lock.json",
+        "package.json",
+        "packages/client/CHANGELOG.md",
+        "packages/client/README.md",
+        "packages/client/package.json",
+        "packages/client/src/client.ts",
+        "packages/client/src/connection.ts",
+        "packages/client/src/errors.ts",
+        "packages/client/src/index.ts",
+        "packages/client/src/promise.ts",
+        "packages/client/src/transport.ts",
+        "packages/client/src/types.ts",
+        "packages/client/src/unix.ts",
+        "packages/client/test/client.test.ts",
+        "packages/client/test/fixtures/stale-socket-server.mjs",
+        "packages/client/test/support.ts",
+        "packages/client/test/unix-transport.test.ts",
+        "packages/client/test/unix.test.ts",
+        "packages/client/tsconfig.build.json",
+        "packages/client/tsconfig.test.json",
+        "packages/client/vitest.config.ts",
+        "packages/coding-agent/examples/README.md",
+        "packages/coding-agent/examples/plugins/pi-example-plugin/README.md",
+        "packages/coding-agent/examples/plugins/pi-example-plugin/package.json",
+        "packages/coding-agent/examples/plugins/pi-example-plugin/src/contract.ts",
+        "packages/coding-agent/examples/plugins/pi-example-plugin/src/session.ts",
+        "packages/coding-agent/examples/plugins/pi-example-plugin/src/tui.ts",
+        "packages/coding-agent/install-lock/package-lock.json",
+        "packages/coding-agent/package.json",
+        "packages/coding-agent/src/cli/experimental/cli.ts",
+        "packages/coding-agent/src/cli/experimental/command-options.ts",
+        "packages/coding-agent/src/cli/experimental/command.ts",
+        "packages/coding-agent/src/cli/experimental/commands/client.ts",
+        "packages/coding-agent/src/cli/experimental/commands/server.ts",
+        "packages/coding-agent/src/client/index.ts",
+        "packages/coding-agent/src/experimental/cli.ts",
+        "packages/coding-agent/src/experimental/client-runtime.ts",
+        "packages/coding-agent/src/experimental/client-tui-chat.ts",
+        "packages/coding-agent/src/experimental/client-tui.ts",
+        "packages/coding-agent/src/experimental/client.ts",
+        "packages/coding-agent/src/experimental/commands.ts",
+        "packages/coding-agent/src/experimental/coordinator-entry.ts",
+        "packages/coding-agent/src/experimental/coordinator.ts",
+        "packages/coding-agent/src/experimental/durable/README.md",
+        "packages/coding-agent/src/experimental/durable/harness-setup.ts",
+        "packages/coding-agent/src/experimental/durable/main.ts",
+        "packages/coding-agent/src/experimental/durable/prompt.ts",
+        "packages/coding-agent/src/experimental/durable/runtime.ts",
+        "packages/coding-agent/src/experimental/durable/sessions.ts",
+        "packages/coding-agent/src/experimental/durable/subagent.ts",
+        "packages/coding-agent/src/experimental/durable/tui.ts",
+        "packages/coding-agent/src/experimental/plugin.ts",
+        "packages/coding-agent/src/experimental/plugins/bundled.ts",
+        "packages/coding-agent/src/experimental/plugins/package.ts",
+        "packages/coding-agent/src/experimental/process.ts",
+        "packages/coding-agent/src/experimental/radius-auth.ts",
+        "packages/coding-agent/src/experimental/radius-relay.ts",
+        "packages/coding-agent/src/experimental/server.ts",
+        "packages/coding-agent/src/experimental/services/README.md",
+        "packages/coding-agent/src/experimental/services/agent-controller-provider.ts",
+        "packages/coding-agent/src/experimental/services/agent-controller.ts",
+        "packages/coding-agent/src/experimental/services/connection.ts",
+        "packages/coding-agent/src/experimental/services/models-provider.ts",
+        "packages/coding-agent/src/experimental/services/models.ts",
+        "packages/coding-agent/src/experimental/services/plugins.ts",
+        "packages/coding-agent/src/experimental/services/presentation-ui.ts",
+        "packages/coding-agent/src/experimental/services/server.ts",
+        "packages/coding-agent/src/experimental/services/sessions.ts",
+        "packages/coding-agent/src/experimental/services/slash-commands-provider.ts",
+        "packages/coding-agent/src/experimental/services/slash-commands.ts",
+        "packages/coding-agent/src/experimental/services/transcript-provider.ts",
+        "packages/coding-agent/src/experimental/services/transcript.ts",
+        "packages/coding-agent/src/experimental/services/worker.ts",
+        "packages/coding-agent/src/experimental/session-catalog.ts",
+        "packages/coding-agent/src/experimental/session-worker-manager.ts",
+        "packages/coding-agent/src/experimental/session-worker.ts",
+        "packages/coding-agent/src/experimental/vacation/README.md",
+        "packages/coding-agent/src/experimental/vacation/harness-setup.ts",
+        "packages/coding-agent/src/experimental/vacation/main.ts",
+        "packages/coding-agent/src/experimental/vacation/runtime.ts",
+        "packages/coding-agent/src/experimental/vacation/sessions.ts",
+        "packages/coding-agent/src/experimental/vacation/tui.ts",
+        "packages/coding-agent/src/experimental/vacation/vacation.ts",
+        "packages/coding-agent/test/experimental-agent-controller.test.ts",
+        "packages/coding-agent/test/experimental-cli-command.test.ts",
+        "packages/coding-agent/test/experimental-cli-entry.test.ts",
+        "packages/coding-agent/test/experimental-cli-resolution.test.ts",
+        "packages/coding-agent/test/experimental-client-tui.test.ts",
+        "packages/coding-agent/test/experimental-durable-support.ts",
+        "packages/coding-agent/test/experimental-internal-process.test.ts",
+        "packages/coding-agent/test/experimental-plugin-reload.test.ts",
+        "packages/coding-agent/test/experimental-presentation-facets.test.ts",
+        "packages/coding-agent/test/experimental-radius-relay.test.ts",
+        "packages/coding-agent/test/experimental-remote-runtime.test.ts",
+        "packages/coding-agent/test/experimental-server-lifecycle.test.ts",
+        "packages/coding-agent/test/experimental-server-profile.test.ts",
+        "packages/coding-agent/test/experimental-service-binding.ts",
+        "packages/coding-agent/test/experimental-session-directory.test.ts",
+        "packages/coding-agent/test/experimental-session-support.ts",
+        "packages/coding-agent/test/experimental-session-worker-lifecycle.test.ts",
+        "packages/coding-agent/test/experimental-session-worker-manager.test.ts",
+        "packages/coding-agent/test/experimental-slash-commands.test.ts",
+        "packages/coding-agent/test/experimental-transcript-provider.test.ts",
+        "packages/coding-agent/test/fixtures/faux-session-worker.ts",
+        "packages/coding-agent/test/fixtures/keyed-service.ts",
+        "packages/coding-agent/test/package-distribution.test.ts",
+        "packages/coding-agent/tsconfig.build.json",
+        "packages/protocol/CHANGELOG.md",
+        "packages/protocol/README.md",
+        "packages/protocol/package.json",
+        "packages/protocol/src/cbor/decoder.ts",
+        "packages/protocol/src/cbor/encoder.ts",
+        "packages/protocol/src/cbor/index.ts",
+        "packages/protocol/src/cbor/options.ts",
+        "packages/protocol/src/codec.ts",
+        "packages/protocol/src/framing.ts",
+        "packages/protocol/src/index.ts",
+        "packages/protocol/src/protocol.ts",
+        "packages/protocol/test/cbor/cbor.test.ts",
+        "packages/protocol/test/framing.test.ts",
+        "packages/protocol/test/protocol.test.ts",
+        "packages/protocol/tsconfig.build.json",
+        "packages/protocol/tsconfig.test.json",
+        "packages/protocol/vitest.config.ts",
+        "packages/server/CHANGELOG.md",
+        "packages/server/README.md",
+        "packages/server/package.json",
+        "packages/server/src/connection.ts",
+        "packages/server/src/errors.ts",
+        "packages/server/src/index.ts",
+        "packages/server/src/listener.ts",
+        "packages/server/src/server.ts",
+        "packages/server/src/session-router.ts",
+        "packages/server/src/testing/client.ts",
+        "packages/server/src/testing/host.ts",
+        "packages/server/src/testing/index.ts",
+        "packages/server/src/testing/server.ts",
+        "packages/server/src/transports/unix/address.ts",
+        "packages/server/src/transports/unix/index.ts",
+        "packages/server/src/transports/unix/listener.ts",
+        "packages/server/src/transports/unix/preset.ts",
+        "packages/server/src/transports/unix/types.ts",
+        "packages/server/src/types.ts",
+        "packages/server/test/conformance.test.ts",
+        "packages/server/test/fixtures/stale-socket-server.mjs",
+        "packages/server/test/listener.test.ts",
+        "packages/server/test/protocol.test.ts",
+        "packages/server/test/server.test.ts",
+        "packages/server/test/unix-connection.test.ts",
+        "packages/server/test/unix.test.ts",
+        "packages/server/tsconfig.build.json",
+        "packages/server/tsconfig.test.json",
+        "packages/server/vitest.config.ts",
+        "scripts/browser-smoke-entry.ts",
+        "scripts/build-coding-agent-bundle.mjs",
+        "scripts/coding-agent-smoke.mjs",
+        "scripts/coding-agent-smoke.test.mjs",
+        "scripts/generate-coding-agent-install-lock.mjs",
+        "scripts/profile-coding-agent-node.mjs",
+        "tsconfig.json",
+        "vitest.base.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Removes the separately excluded experimental server/client/protocol/plugin stack. Reviewed distribution changes remove those exports/dependencies; normal src/cli.ts and RPC entry remain. No equivalent C# capability is being removed."
+    },
+    {
+      "sha": "0104fef1e95e07c19d63e4eb9f63c7ca1dc01b2d",
+      "title": "feat(chord): replace the facet and service runtime with the chord2 host runtime",
+      "changed_paths": [
+        "README.md",
+        "package-lock.json",
+        "packages/chord/PLANNING.md",
+        "packages/chord/README.md",
+        "packages/chord/docs/guide.md",
+        "packages/chord/docs/notes.md",
+        "packages/chord/docs/requests.md",
+        "packages/chord/docs/spec.md",
+        "packages/chord/docs/tutorial.md",
+        "packages/chord/package.json",
+        "packages/chord/src/api.ts",
+        "packages/chord/src/bundler.ts",
+        "packages/chord/src/cell.ts",
+        "packages/chord/src/cluster.ts",
+        "packages/chord/src/connection.ts",
+        "packages/chord/src/context/index.ts",
+        "packages/chord/src/contract.ts",
+        "packages/chord/src/declare.ts",
+        "packages/chord/src/delta/README.md",
+        "packages/chord/src/delta/apply-immutable-trusted.ts",
+        "packages/chord/src/delta/diff.ts",
+        "packages/chord/src/delta/index.ts",
+        "packages/chord/src/delta/revision-validator.ts",
+        "packages/chord/src/delta/tracker.ts",
+        "packages/chord/src/errors.ts",
+        "packages/chord/src/facets/host.ts",
+        "packages/chord/src/facets/loader.ts",
+        "packages/chord/src/host.ts",
+        "packages/chord/src/index.ts",
+        "packages/chord/src/json.ts",
+        "packages/chord/src/link.ts",
+        "packages/chord/src/loader.ts",
+        "packages/chord/src/manager.ts",
+        "packages/chord/src/node.ts",
+        "packages/chord/src/node/bundle-loader.ts",
+        "packages/chord/src/node/bundle.ts",
+        "packages/chord/src/node/manifest.ts",
+        "packages/chord/src/node/package.ts",
+        "packages/chord/src/publish.ts",
+        "packages/chord/src/record.ts",
+        "packages/chord/src/registry.ts",
+        "packages/chord/src/reload.ts",
+        "packages/chord/src/remote.ts",
+        "packages/chord/src/schema.ts",
+        "packages/chord/src/services/consumer.ts",
+        "packages/chord/src/services/errors.ts",
+        "packages/chord/src/services/handle.ts",
+        "packages/chord/src/services/instances.ts",
+        "packages/chord/src/services/loopback.ts",
+        "packages/chord/src/services/provider.ts",
+        "packages/chord/src/services/state-codec.ts",
+        "packages/chord/src/services/state-internals.ts",
+        "packages/chord/src/services/state.ts",
+        "packages/chord/src/services/wire.ts",
+        "packages/chord/src/state.ts",
+        "packages/chord/src/types.ts",
+        "packages/chord/src/websocket.ts",
+        "packages/chord/src/wire.ts",
+        "packages/chord/test/bundle.test.ts",
+        "packages/chord/test/cluster.test.ts",
+        "packages/chord/test/contract.test.ts",
+        "packages/chord/test/delta-diff.test.ts",
+        "packages/chord/test/eager-reload.test.ts",
+        "packages/chord/test/facet-loader.test.ts",
+        "packages/chord/test/facets.test.ts",
+        "packages/chord/test/fixtures/echo.ts",
+        "packages/chord/test/fixtures/loader.ts",
+        "packages/chord/test/fixtures/worker.ts",
+        "packages/chord/test/helpers.ts",
+        "packages/chord/test/host.test.ts",
+        "packages/chord/test/link.test.ts",
+        "packages/chord/test/links-review.test.ts",
+        "packages/chord/test/loader.test.ts",
+        "packages/chord/test/manager.test.ts",
+        "packages/chord/test/readiness.test.ts",
+        "packages/chord/test/reload.test.ts",
+        "packages/chord/test/replicated-state-delivery.test.ts",
+        "packages/chord/test/replicated-state.test.ts",
+        "packages/chord/test/requests.test.ts",
+        "packages/chord/test/review.test.ts",
+        "packages/chord/test/service-delivery.test.ts",
+        "packages/chord/test/service-wire.test.ts",
+        "packages/chord/test/services.test.ts",
+        "packages/chord/test/state-delivery.test.ts",
+        "packages/chord/test/state-diff.test.ts",
+        "packages/chord/test/state.test.ts",
+        "packages/chord/test/tutorial.test.ts",
+        "packages/chord/test/websocket.test.ts",
+        "packages/durable/docs/chord-delta-findings.md",
+        "packages/durable/test/session-states.test.ts",
+        "scripts/browser-smoke-entry.ts",
+        "scripts/check-entry-graphs.mjs",
+        "tsconfig.json",
+        "vitest.base.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Replaces the independent Chord host/facet/service runtime and its tests. Root browser/entry-graph tooling follows that package; normal coding-agent runtime remains separate."
+    },
+    {
+      "sha": "066ebe4ca117eb20bdc145d285fc7e4726bc831e",
+      "title": "docs(coding-agent): changelog entries for the chord runtime replacement",
+      "changed_paths": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/package.json",
+        "packages/coding-agent/CHANGELOG.md"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Changelog and Chord package metadata record the already classified runtime replacement; no normal CLI source changes."
+    },
+    {
+      "sha": "6db4070f175b55c76dfb4a292716c76368e7f31d",
+      "title": "docs: describe only the current Chord, Durable, and coding-agent code",
+      "changed_paths": [
+        "packages/chord/README.md",
+        "packages/chord/docs/guide.md",
+        "packages/chord/docs/notes.md",
+        "packages/chord/docs/requests.md",
+        "packages/chord/docs/spec.md",
+        "packages/chord/docs/tutorial.md",
+        "packages/chord/src/delta/README.md",
+        "packages/chord/test/readiness.test.ts",
+        "packages/chord/test/requests.test.ts",
+        "packages/coding-agent/docs/environment-variables.md",
+        "packages/durable/README.md",
+        "packages/durable/docs/chord-delta-findings.md",
+        "packages/durable/docs/pico-v5-handoff.md",
+        "packages/durable/docs/spec.md",
+        "scripts/issues/categories/durable.md"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Documentation and Chord tests remove obsolete architecture descriptions; PI_RADIUS_GATEWAY still serves /bug, and removed relay wording describes the deleted experimental stack."
+    },
+    {
+      "sha": "6a51a39d4230c6a98948c14202ec76ae220232a6",
+      "title": "fix(coding-agent): expand ~ in resource setting patterns",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/src/core/package-manager.ts",
+        "packages/coding-agent/test/package-manager.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "PiSharp already expands the home directory in glob exclusions and exact +/- overrides. Four new capability tests verify glob exclusion, exact reinclusion and final exact exclusion for extension, prompt, theme and skill paths; the current Pi package-manager suite includes its tilde regression and passes 128/128. No product edit was required.",
+      "capability_ids": [
+        "feature-resources-skills-templates-themes"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Runtime/Resources/LocalResourcePathRules.cs"
+      ],
+      "implementation_plan": "Characterize ~/ exclusions and exact overrides across skills, extensions, prompts and themes; change behavior only if a mismatch appears.",
+      "differential_plan": "Use the upstream package-manager regression and direct matcher vectors with home-directory paths.",
+      "resolved": true,
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/home-pattern-evidence.json",
+        "tests/PiSharp.Tests/Runtime/Resources/LocalResourcePathRulesTests.cs:GlobAndExactOverridesExpandHomeForEachResource"
+      ]
+    },
+    {
+      "sha": "f4cca2dc22ee4ce05ad75e185a025f6c664829c8",
+      "title": "fix(coding-agent): stop listing MCP resources when connecting",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/src/extensions/mcp/cli.ts",
+        "packages/coding-agent/src/extensions/mcp/index.ts",
+        "packages/coding-agent/src/extensions/mcp/resources.ts",
+        "packages/coding-agent/src/extensions/mcp/runtime.ts",
+        "packages/coding-agent/test/mcp-extension.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Connecting and list/status no longer enumerate resources or templates; capability availability is reported instead. PiSharp still lists both during connect and on list_changed.",
+      "capability_ids": [
+        "mcp-runtime"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Runtime/Mcp/McpClientConnection.cs"
+      ],
+      "implementation_plan": "Remove eager resource listing and resource-change refresh; retain on-demand listing, and update CLI/UI status contracts.",
+      "differential_plan": "A server advertises resources but blocks list requests; tools must be ready immediately and lists occur only on demand.",
+      "resolved": true,
+      "resolution": "MCP connections and resource-change notifications no longer enumerate resources/templates. Capability status reports resources without counts; shared resource tools list only on demand. The fail-first startup log now shows no listings until requested, and the notification scenario retains tool refresh plus fresh resource/template results. Seven current-Pi real-stdio scenarios match connection/on-demand request counts; CLI status capability checks pass.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-results-and-demand.json",
+        "tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeLifecycleTests.cs",
+        "tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeTests.cs",
+        "tests/PiSharp.Tests/Cli/Mcp/McpCommandTests.cs"
+      ]
+    },
+    {
+      "sha": "67996ab75c2818847423549807eda888db218c1c",
+      "title": "fix(mcp,coding-agent): accept any JSON value as tool structuredContent",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/src/extensions/mcp/tools.ts",
+        "packages/coding-agent/test/mcp-extension.test.ts",
+        "packages/mcp/CHANGELOG.md",
+        "packages/mcp/src/client.ts",
+        "packages/mcp/src/protocol/content.ts",
+        "packages/mcp/test/client.test.ts",
+        "packages/mcp/test/content.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "structuredContent accepts arrays, null, strings, numbers and booleans; absent-schema Codemode type is unknown. PiSharp schema requires object and does not render structured-only results as model text.",
+      "capability_ids": [
+        "mcp-runtime"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Runtime/Mcp/McpCallToolResultSchema.cs",
+        "src/PiSharp.Runtime/Mcp/McpToolFunction.cs"
+      ],
+      "implementation_plan": "Verify SDK deserialization of arbitrary JSON, broaden the wrapper schema, preserve explicit null, and add the JSON fallback for empty model content.",
+      "differential_plan": "Replay the five upstream scalar/array/null vectors through real HTTP or stdio and nested Codemode.",
+      "resolved": true,
+      "resolution": "MCP script results preserve arrays, explicit null, strings, numbers and booleans, including missing content normalized to an empty array. Empty model content falls back to pretty JSON and undeclared structuredContent accepts any JSON value. Native SDK session responses retain field presence before typed block conversion, avoiding nullable-deserialization loss. Seven real-stdio Pi comparisons match complete script JSON, model text and error state; nested null/array Codemode paths and schema validation pass. The full working-tree suite passes 1418/1418, zero skips; official MCP retains 261 passing checks and eight classified failures with no regressions.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-results-and-demand.json",
+        "tools/parity/mcp-result-differential.py",
+        "tests/PiSharp.Tests/Runtime/Mcp/McpRuntimeTests.cs"
+      ]
+    },
+    {
+      "sha": "11f99114506ad2cc759cb389663edaf7546cbe8c",
+      "title": "fix(tui): let unhandled wheel input scroll the transcript under a focused overlay",
+      "changed_paths": [
+        "packages/tui/CHANGELOG.md",
+        "packages/tui/src/tui-alt-screen.ts",
+        "packages/tui/test/tui-alt-screen.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Unhandled wheel input scrolls the transcript below a focused overlay. PiSharp routes mouse input through concrete dialogs and selection lists; no broad current overlay differential proves all paths.",
+      "capability_ids": [
+        "feature-tui-normal-fullscreen-renderer"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalDialogs.cs",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalScreen.cs"
+      ],
+      "implementation_plan": "Characterize wheel dispatch for input and mouse-aware overlays and route only unhandled wheel input to the transcript.",
+      "differential_plan": "PTY fixture with a long transcript and focused input overlay; compare viewport and untouched editor input.",
+      "resolved": true,
+      "resolution": "Unhandled wheel input now scrolls the transcript under extension input dialogs, keyboard-only selection, progress and search panels, including events drained between text fragments. Empty mouse-aware lists decline to the transcript; populated lists consume wheel even at the selection boundary. Focused viewport keys retain their input path. Six PTY cases failed first after correcting non-TTY setup and separating the PTY prologue from tagged JSON. Eight paired cases now match Pi's native focused-overlay routing; typed/selected/progress outcomes stay intact. The full suite passes 1484/1484 with zero skips and a zero-warning build. Full cell layout, selector movement increments, pointer selection and non-POSIX hosts remain outside this bounded proof.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/overlay-wheel.json",
+        "tools/parity/overlay-wheel-differential.py",
+        "tests/PiSharp.Tests/Cli/Tui/Dialogs/TerminalDialogWheelTests.cs"
+      ]
+    },
+    {
+      "sha": "014873d7d58b303bb832d5c9341dcf98ec5d27c9",
+      "title": "feat(coding-agent): show elapsed and total time on codemode rows",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/src/core/tools/render-utils.ts",
+        "packages/coding-agent/src/core/tools/renderers/bash.ts",
+        "packages/coding-agent/src/extensions/codemode/execute.ts",
+        "packages/coding-agent/src/extensions/codemode/renderer.ts",
+        "packages/coding-agent/test/codemode-renderer.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Codemode emits an initial progress update and shows Elapsed while running and recorded Took on completion/reload. PiSharp lacks the timer contract.",
+      "capability_ids": [
+        "codemode-runtime"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Runtime/Codemode/CodemodeBuiltin.cs",
+        "src/PiSharp.Cli/Tui/Rendering/TerminalToolPresentation.cs"
+      ],
+      "implementation_plan": "Use shared tool timing state with initial progress, final monotonic duration and redraw disposal.",
+      "differential_plan": "Deterministic renderer clock vectors plus PTY nested-call, no-call, failure, cancellation and restored-result checkpoints.",
+      "resolved": true,
+      "resolution": "Codemode publishes initial progress before nested calls. Screen-owned row timers show Elapsed with one-second redraws and Took with the recorded monotonic execution duration, retained through native/Pi persistence and reload. Completion/error/interruption/replacement/disposal stop timers, concurrent calls retain independent clocks, and collapsed output keeps the timing footer. Two initial rendering tests and four cleanup/preview controls failed first. Thirteen new timer/runtime cases pass; 143 exact duration vectors and live/final/reload checkpoints match Pi, as do seven real-worker predicates using a native Pi runtime/renderer and a PiSharp MAF run under a PTY. Pi renderer tests pass 5/5. Full suite 1553/1553, zero skips and zero-warning build. Broader layout, preview counts and nested-call/cost presentation remain open.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-timer.json",
+        "tools/parity/codemode-timer-differential.py",
+        "tests/PiSharp.Tests/Cli/Tui/Rendering/CodemodeTimerTests.cs",
+        "tests/PiSharp.Tests/Runtime/Codemode/CodemodeDurationTests.cs"
+      ]
+    },
+    {
+      "sha": "da0eadf0433d29516287c7e3d7b3db325a446281",
+      "title": "fix(mcp): do not retry cancelled HTTP requests after an authorization refresh",
+      "changed_paths": [
+        "packages/mcp/CHANGELOG.md",
+        "packages/mcp/src/client.ts",
+        "packages/mcp/src/index.ts",
+        "packages/mcp/src/transports/streamable-http.ts",
+        "packages/mcp/src/transports/transport.ts",
+        "packages/mcp/test/streamable-http.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Calls cancelled or timed out during shared OAuth recovery never dispatch after refresh; surviving requests still proceed. PiSharp forwards tokens through SDK handlers but lacks this race proof.",
+      "capability_ids": [
+        "mcp-runtime"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Runtime/Mcp/McpOAuthRefreshHandler.cs",
+        "src/PiSharp.Runtime/Mcp/McpServerConnection.cs"
+      ],
+      "implementation_plan": "Exercise the real SDK transport recovery race and adapt its boundary if a settled request is dispatched.",
+      "differential_plan": "Gate one shared refresh, abort one call, time out one and retain one; only the survivor reaches the server.",
+      "resolved": true,
+      "resolution": "Canceled/deadline-expired MCP requests settle before a shared OAuth refresh finishes and never replay afterwards; the surviving caller proceeds across one grant without retiring the connection. A bounded cloned grant persists rotation and client/issuer binding independently of canceled callers. Request-scoped challenge attribution prevents an SDK metadata race from refreshing a newly saved token for an old challenge. Exact-lease removal precedes unlock and failed persistence settles. The real connection race failed first; null-expiry, subsequent valid refresh and failed-write controls now pass. Production Pi OAuth/HTTP and native PiSharp SDK comparisons match caller settlement, executed names, one grant, surviving text and preserved tokens/client. Full suite 1451/1451, zero skips, zero-warning build; official MCP has no regressions against eight classified failures. Close-during-refresh and public exception-shape parity are not established by this slice.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/mcp-oauth-cancellation.json",
+        "tools/parity/mcp-oauth-cancellation-differential.py",
+        "tests/PiSharp.Tests/Runtime/Mcp/McpOAuthCancellationTests.cs"
+      ]
+    },
+    {
+      "sha": "b0ac39687a0a269aed4d5f6c62479306a825b532",
+      "title": "build: retire Pi Mobile's APK workflow and hook; check apps/p2 instead",
+      "changed_paths": [
+        ".github/workflows/android-apk.yml",
+        ".husky/pre-commit"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Private Android Pi Mobile APK workflow and apps/p2 pre-commit checks; neither is a .NET coding-agent surface."
+    },
+    {
+      "sha": "39badde8401c62638ddc510edebea64d6ad769c1",
+      "title": "fix: point pi-test.sh at packages/coding-agent/src/cli.ts",
+      "changed_paths": [
+        "pi-test.sh"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Developer pi-test.sh now starts the normal source CLI; product CLI source/behavior is unchanged. Verification commands must use src/cli.ts."
+    },
+    {
+      "sha": "441f5767c4fe4eebbec6ebe9bb4a57f430871eba",
+      "title": "fix(coding-agent): warn and exit non-zero in print mode on truncated response",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/docs/cli-integration.md",
+        "packages/coding-agent/src/modes/print-mode.ts",
+        "packages/coding-agent/test/print-mode.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Text print mode preserves partial stdout but warns on stderr and exits 1 for a final length stop. PiSharp print execution does not handle output-token-limit finish reason.",
+      "capability_ids": [
+        "cli-prompt-modes"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Cli/Startup/PrintPromptMode.cs",
+        "src/PiSharp.Cli/Tui/Commands/TerminalConversationExecution.cs"
+      ],
+      "implementation_plan": "Propagate the final finish reason to print-mode exit handling without affecting interactive/JSON modes.",
+      "differential_plan": "Paired print CLI processes with a deterministic length-stop provider; assert stdout, stderr and exit status.",
+      "resolved": true,
+      "resolution": "Text print mode preserves partial stdout, emits Pi's exact output-token-limit warning to stderr and exits 1 when the final provider response finishes with length. Successful later continuations override earlier length stops, empty responses still warn, and interactive/JSON modes retain their behavior. One process test failed first; all 25 print/transcript checks pass. Four real Pi/PiSharp CLI scenarios match text-mode stdout/stderr/exit/request count and bounded JSON-mode text/exit behavior with compaction/retry disabled. PiSharp's different JSON envelope and absent public stop reason remain explicitly open protocol requirements.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/print-truncation.json",
+        "tools/parity/print-truncation-differential.py",
+        "tests/PiSharp.Tests/Cli/Startup/PrintModeTruncationProcessTests.cs",
+        "tests/PiSharp.Tests/Cli/Tui/Rendering/InteractiveTranscriptTests.cs"
+      ]
+    },
+    {
+      "sha": "e6fb2581dff67cd9aadb9a626b0b5070d7e83379",
+      "title": "fix(coding-agent): retry transient Windows EPERM when acquiring auth lock",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/src/core/auth-storage.ts",
+        "packages/coding-agent/test/auth-storage.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Windows delete-pending EPERM during auth-lock acquisition is retried briefly; persistent permission errors remain bounded. PiSharp uses different file/refresh locks and has no equivalent Windows evidence.",
+      "capability_ids": [
+        "feature-security-settings-and-authentication"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Cli/Authentication/AuthFileLock.cs",
+        "src/PiSharp.Cli/Authentication/AuthStorage.cs",
+        "src/PiSharp.Cli/Authentication/ProviderOAuth.cs"
+      ],
+      "implementation_plan": "Inspect native credential write/lock semantics and add bounded transient Windows retries only at the equivalent acquisition boundary.",
+      "differential_plan": "Injected native-error regression vectors, cancellation and persistent permission failures; native Windows execution remains platform-unavailable on Linux.",
+      "resolved": true,
+      "resolution": "Native async auth acquisition now retries Windows access-denied/UnauthorizedAccess at most five times with bounded jittered backoff, separately from normal contention. Path-shared process gates and native private leases protect read-modify-write credential mutations; OAuth refresh uses the same acquisition policy with its existing two-minute contention budget. Read-only lookups preserve atomic snapshots without creating agent directories or locks. Two initial fail-first checks exposed lost concurrent writes and ignored file leases; sixteen controls pass. Ten exact injected async policy vectors and real separate-process holder/writer predicates match pinned Pi, whose auth tests pass 30/30. Full working tree passes 1581 tests, zero skips and warnings. Real Windows delete-pending filesystem execution remains unavailable; broader auth coverage stays open.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/auth-lock.json",
+        "tools/parity/auth-lock-differential.py",
+        "tests/PiSharp.Tests/Cli/Authentication/AuthStorageLockTests.cs"
+      ]
+    },
+    {
+      "sha": "19cb534c3b6e3871458a8fa59e98f0312c50e995",
+      "title": "fix(chord): add ws and @types/ws dev dependencies for websocket test types",
+      "changed_paths": [
+        "package-lock.json",
+        "packages/chord/package.json"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent chord runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "d4d53612be709990a3b1e7b6fd770a3030a6bbcb",
+      "title": "fix(ai): fall back on Anthropic strict tool limits",
+      "changed_paths": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/src/api/anthropic-messages.ts",
+        "packages/ai/test/anthropic-strict-tool-fallback.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Known strict grammar capacity HTTP 400 rejections downgrade only prefer constraints once, retain require and original schemas/hooks, and never replay a started stream. PiSharp does not yet encode constrainedSampling strict policies.",
+      "capability_ids": [
+        "provider-anthropic-inline-tools"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Cli/Providers/Anthropic/AnthropicTranscriptChatClient.cs"
+      ],
+      "implementation_plan": "Carry prefer/require tool metadata through projection, implement strict schema mapping and one guarded pre-stream fallback.",
+      "differential_plan": "Real Anthropic SDK loopbacks for the three capacity messages, required/ordinary sets, hooks, cancellation and SSE failure; compare request traces.",
+      "resolved": true,
+      "resolution": "Anthropic strict sampling now projects optional fields to nullable required fields without mutating source schemas. Known invalid_request_error HTTP 400 capacity rejections retry once with only preferred definitions restored to their original non-strict schemas; required and inline same-name definitions retain individual policy. Real-response attribution excludes hook exceptions and accepted SSE responses. Hook changes and diagnostics survive fallback; later requests still use strict sampling. Live extension constraints persist through transcript revisions/native/Pi sessions and Pi Messages forwards original policy/schema. Six real SDK cases failed first. Fifty-seven pinned Pi/native SDK request/schema cases match, current Pi source tests pass 16/16, and 45 new .NET controls pass within the full 1539/1539 zero-skip suite and zero-warning build. Other provider strict APIs, exact error envelopes and wider protocol diagnostics remain open.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/anthropic-strict.json",
+        "tools/parity/anthropic-strict-differential.py",
+        "tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicStrictToolFallbackTests.cs",
+        "tests/PiSharp.Tests/Core/StrictToolJsonSchemaTests.cs"
+      ]
+    },
+    {
+      "sha": "abfe62928b39414ea2be4d6feb65ae608c67674f",
+      "title": "feat(durable): optional ExecutionEnv.listFiles for tree listings",
+      "changed_paths": [
+        "packages/durable/README.md",
+        "packages/durable/docs/spec.md",
+        "packages/durable/src/env/index.ts",
+        "packages/durable/src/testing/env-conformance.ts",
+        "packages/durable/src/testing/runner.ts",
+        "packages/durable/src/testing/types.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent durable runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "aa499c242637e0027b8f07611ea30b95052ccdb9",
+      "title": "feat(env): listFiles operation in the pi-env daemon",
+      "changed_paths": [
+        "packages/env/daemon/Cargo.lock",
+        "packages/env/daemon/Cargo.toml",
+        "packages/env/daemon/src/list.rs",
+        "packages/env/daemon/src/main.rs",
+        "packages/env/docs/protocol.md"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent env runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "b6fda579f41be0d4f08ac6aa8817a2dffcbd2481",
+      "title": "feat(env): listFiles for remote and local environments, nodePlatform",
+      "changed_paths": [
+        "packages/env/README.md",
+        "packages/env/docs/semantics.md",
+        "packages/env/src/connection.ts",
+        "packages/env/src/index.ts",
+        "packages/env/src/list-files.ts",
+        "packages/env/src/remote-env.ts",
+        "packages/env/test/conformance.test.ts",
+        "packages/env/test/old-daemon.ts",
+        "packages/env/test/remote.test.ts",
+        "packages/env/test/ssh-external.test.ts",
+        "packages/env/test/ssh.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent env runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "55df12bf620a14305d0d2041de69199d4e4404a6",
+      "title": "docs(durable,env): changelog entries for listFiles",
+      "changed_paths": [
+        "packages/durable/CHANGELOG.md",
+        "packages/env/CHANGELOG.md"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent durable, env runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "b6d505cd1f00ce7f8eecf5134c4f048d0d3ae852",
+      "title": "fix(codemode): reject // @options: lines that are not the first line",
+      "changed_paths": [
+        "packages/codemode/CHANGELOG.md",
+        "packages/codemode/README.md",
+        "packages/codemode/src/source.ts",
+        "packages/codemode/test/source.test.ts",
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/docs/codemode.md",
+        "packages/coding-agent/test/suite/agent-session-codemode.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Any // @options: line after line one fails before execution, including a second directive. PiSharp only examines the first line.",
+      "capability_ids": [
+        "codemode-runtime"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Runtime/Codemode/CodemodeSource.cs"
+      ],
+      "implementation_plan": "Reject misplaced directives with the upstream line number before starting the sandbox.",
+      "differential_plan": "Replay four upstream source vectors plus inline-string and optionsx negatives through parser and execution.",
+      "resolved": true,
+      "resolution": "Misplaced // @options: lines now fail before worker launch with the exact line-number error, including blank/indented/CRLF/repeated directives. The source parser preserves valid optionsx/string/standalone-CR controls. Eight real current-Pi source comparisons match; 20 focused source tests pass (four fail-first cases plus controls).",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-source.json",
+        "tools/parity/codemode-source-differential.py",
+        "tests/PiSharp.Tests/Runtime/Codemode/CodemodeSourceTests.cs"
+      ]
+    },
+    {
+      "sha": "3e477eab5f7c37015504a6ada56fa1f90aad7e0b",
+      "title": "feat(coding-agent): add PI_CLIPBOARD_OSC52 to force OSC 52 copies",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/docs/environment-variables.md",
+        "packages/coding-agent/src/utils/clipboard.ts",
+        "packages/coding-agent/test/clipboard.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "PI_CLIPBOARD_OSC52=1 forces terminal emission after a successful native clipboard write. PiSharp detects SSH/Mosh only.",
+      "capability_ids": [
+        "commands-output-share"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Cli/Tui/Clipboard/TerminalClipboard.cs"
+      ],
+      "implementation_plan": "Add the force environment value to remote-session detection and cover successful native copies and size failures.",
+      "differential_plan": "Injected platform/clipboard vectors and OSC52 PTY payload checks; only the exact value 1 forces copying.",
+      "resolved": true,
+      "resolution": "PI_CLIPBOARD_OSC52=1 now emits the exact UTF-8 OSC52 payload after a successful native copy on macOS, Windows and Linux. Other values do not force emission. Three cases failed before the fix; the clipboard/retry focused run passes 30/30 and twelve real-Pi comparisons match native-write/terminal ordering with injected platform writers. Native OS clipboard availability remains separately unverified.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/clipboard-force.json",
+        "tools/parity/clipboard-force-differential.py",
+        "tests/PiSharp.Tests/Cli/Tui/Clipboard/TerminalClipboardTests.cs"
+      ]
+    },
+    {
+      "sha": "7bd01fb92485c06f92ecfff7ccf3197148bc16af",
+      "title": "fix(ai): retry \"The upstream provider returned an error\"",
+      "changed_paths": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/src/utils/retry.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Transient wording includes provider returned an error. PiSharp retry regex permits provider returned error but omits an.",
+      "capability_ids": [
+        "feature-agent-multi-turn-and-streaming"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Runtime/Sessions/AgentRunRetryPolicy.cs"
+      ],
+      "implementation_plan": "Broaden the existing transient wording while preserving pre-output retry guards and budgets.",
+      "differential_plan": "Paired retry loop scenarios for old/new wording, exhausted/zero budget, cancellation and no post-content replay.",
+      "resolved": true,
+      "resolution": "The transient retry classifier now accepts provider returned an error while retaining quota/context exclusions and retry budgets. The new wording failed first, then focused tests passed. Twelve current-Pi agent/session comparisons match request contexts/counts, ordered recovery/exhaustion events, disabled/zero budgets, billing exclusions and backoff cancellation for both capacity and gateway messages.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/gateway-retry.json",
+        "tools/parity/capacity-retry-differential.py",
+        "tests/PiSharp.Tests/Runtime/Agents/AgentRunRetryPolicyTests.cs"
+      ]
+    },
+    {
+      "sha": "0d79b74db124f550d1058c2fb10f56bc429ffd74",
+      "title": "docs: audit changelogs and add new features for next release",
+      "changed_paths": [
+        "packages/ai/CHANGELOG.md",
+        "packages/chord/CHANGELOG.md",
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/env/CHANGELOG.md",
+        "packages/tui/CHANGELOG.md"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Changelog-only inventory of changes individually classified in this range; no runtime change."
+    },
+    {
+      "sha": "06a466935536f8c9bcacb2d5efc0fc021be1bdff",
+      "title": "Release v1.2.0",
+      "changed_paths": [
+        "package-lock.json",
+        "packages/agent/CHANGELOG.md",
+        "packages/agent/package.json",
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/package.json",
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/package.json",
+        "packages/codemode/CHANGELOG.md",
+        "packages/codemode/package.json",
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/examples/extensions/custom-provider-anthropic/package-lock.json",
+        "packages/coding-agent/examples/extensions/custom-provider-anthropic/package.json",
+        "packages/coding-agent/examples/extensions/custom-provider-gitlab-duo/package.json",
+        "packages/coding-agent/examples/extensions/gondolin/package-lock.json",
+        "packages/coding-agent/examples/extensions/gondolin/package.json",
+        "packages/coding-agent/examples/extensions/sandbox/package-lock.json",
+        "packages/coding-agent/examples/extensions/sandbox/package.json",
+        "packages/coding-agent/examples/extensions/with-deps/package-lock.json",
+        "packages/coding-agent/examples/extensions/with-deps/package.json",
+        "packages/coding-agent/install-lock/package-lock.json",
+        "packages/coding-agent/install-lock/package.json",
+        "packages/coding-agent/package.json",
+        "packages/durable/CHANGELOG.md",
+        "packages/durable/package.json",
+        "packages/env/CHANGELOG.md",
+        "packages/env/package.json",
+        "packages/evals/package.json",
+        "packages/mcp/CHANGELOG.md",
+        "packages/mcp/package.json",
+        "packages/telemetry/CHANGELOG.md",
+        "packages/telemetry/package.json",
+        "packages/tui/CHANGELOG.md",
+        "packages/tui/package.json"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Release version/changelog and internal dependency-version bump to 1.2.0; reviewed lockfile changes contain workspace version changes, not a new normal coding-agent behavior. Product branding/version output remains PiSharp-owned."
+    },
+    {
+      "sha": "d5479491849127ed7ff1f49f7c5cd5507792154a",
+      "title": "Add [Unreleased] section for next cycle",
+      "changed_paths": [
+        "packages/agent/CHANGELOG.md",
+        "packages/ai/CHANGELOG.md",
+        "packages/chord/CHANGELOG.md",
+        "packages/codemode/CHANGELOG.md",
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/durable/CHANGELOG.md",
+        "packages/env/CHANGELOG.md",
+        "packages/mcp/CHANGELOG.md",
+        "packages/telemetry/CHANGELOG.md",
+        "packages/tui/CHANGELOG.md"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Only adds empty Unreleased changelog headings."
+    },
+    {
+      "sha": "7f022043f57c770b209fbabc47ccc111a500afcf",
+      "title": "fix(chord): never keep a connection whose link was already closed",
+      "changed_paths": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/node_modules",
+        "packages/chord/src/connection.ts",
+        "packages/chord/src/host.ts",
+        "packages/chord/test/link.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent chord runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "235e8886f2af127dff7f7a88bd1e4b74d1e958cf",
+      "title": "chore: remove an accidentally committed node_modules symlink; ignore node_modules symlinks too",
+      "changed_paths": [
+        ".gitignore",
+        "packages/chord/node_modules"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Removes a mistakenly committed Chord node_modules symlink and broadens its ignore rule; no runtime contract changes."
+    },
+    {
+      "sha": "cd6b2a555adaa623dd54631e1dd8c5876809d125",
+      "title": "fix(chord): keep the process lock socket path within sun_path on macOS",
+      "changed_paths": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/src/manager.ts",
+        "packages/chord/test/manager.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent chord runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "0a8cfff4cbcbbdb0071ebe056f1fcb5710e7fcf0",
+      "title": "fix: drop chord and esbuild from the Nix package",
+      "changed_paths": [
+        "nix/package.nix"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Nix packaging drops the deleted Chord dependency and esbuild smoke check; C#/.NET product packaging does not use Nix upstream workspace tarballs."
+    },
+    {
+      "sha": "de022efd6176e7d394e6ae9fc87e22c44f55b3ca",
+      "title": "test(env): wait for the foreground job's name, not just any foreground process",
+      "changed_paths": [
+        "packages/env/test/terminal.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent env runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "d6370b72d0a478a31741a6c44ae7ecdcbd01d0fd",
+      "title": "fix(env): make the listing cancel and platform tests hold in CI",
+      "changed_paths": [
+        "packages/env/test/remote.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent env runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "7d75a0e3eb273dff753d49c066ea29fbe7b3b6f6",
+      "title": "fix(chord): nodeLoader registers every facet root before importing any",
+      "changed_paths": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/src/loader.ts",
+        "packages/chord/test/fixtures/loader.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent chord runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "e6220e1316f86af818a0ccbfe1c09d7e918b41cf",
+      "title": "fix: keep NODE_EXTRA_CA_CERTS in test.sh",
+      "changed_paths": [
+        "test.sh"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Developer test launcher preserves custom CA certificates for network tests; normal product requests are unchanged."
+    },
+    {
+      "sha": "90f17f59a9f5ae48bec15084e298bf8726949c93",
+      "title": "fix(chord): declare wire frames once, as the schema that validates them",
+      "changed_paths": [
+        "packages/chord/src/contract.ts",
+        "packages/chord/src/delta/index.ts",
+        "packages/chord/src/errors.ts",
+        "packages/chord/src/remote.ts",
+        "packages/chord/src/wire.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent chord runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "018c87ddcb33b6784c50b1ab8d0f8856a13b04df",
+      "title": "feat(chord): deflate large frame payloads on links; relays forward them unread",
+      "changed_paths": [
+        "packages/chord/src/connection.ts",
+        "packages/chord/src/index.ts",
+        "packages/chord/src/link.ts",
+        "packages/chord/src/websocket.ts",
+        "packages/chord/test/link.test.ts",
+        "packages/chord/test/websocket.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent chord runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "a4d040d30f2cb30fffbd841b3f0a7052158e2e21",
+      "title": "fix(chord): a forked child host no longer inherits its parent's CHORD2_LOCK",
+      "changed_paths": [
+        "packages/chord/src/manager.ts",
+        "packages/chord/test/manager.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent chord runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "db6497c3d9c33258947fd8ae22973ac26278abdb",
+      "title": "feat(chord): flow control links end to end and limit calls per link",
+      "changed_paths": [
+        "packages/chord/CHANGELOG.md",
+        "packages/chord/docs/guide.md",
+        "packages/chord/docs/spec.md",
+        "packages/chord/src/connection.ts",
+        "packages/chord/src/delta/index.ts",
+        "packages/chord/src/link.ts",
+        "packages/chord/src/wire.ts",
+        "packages/chord/test/flow.test.ts",
+        "packages/chord/test/links-review.test.ts"
+      ],
+      "classification": "OUT_OF_SCOPE",
+      "finding": "Changes only independent chord runtime/source/tests and associated metadata. No normal coding-agent source, imported behavior or .NET equivalent surface changes."
+    },
+    {
+      "sha": "a3a2ee8ec2cbdd41ce8994c570cc6707116d077a",
+      "title": "chore: approve contributors from issue #10870",
+      "changed_paths": [
+        ".github/APPROVED_CONTRIBUTORS"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "GitHub contributor allowlist only."
+    },
+    {
+      "sha": "f13c00fb3a4d77ad3faa815057e31d614d42b3f1",
+      "title": "fix: pin internal dependencies to exact versions",
+      "changed_paths": [
+        "AGENTS.md",
+        "package-lock.json",
+        "packages/agent/package.json",
+        "packages/ai/package.json",
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/install-lock/package-lock.json",
+        "packages/coding-agent/package.json",
+        "packages/durable/package.json",
+        "packages/env/package.json",
+        "packages/evals/package.json",
+        "scripts/check-pinned-deps.mjs",
+        "scripts/check-pinned-deps.test.mjs",
+        "scripts/sync-versions.js",
+        "scripts/sync-versions.test.mjs"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Pins existing internal workspace versions exactly and updates release/check scripts and lockfiles; no source-level inference/CLI contract change at the audited checkout."
+    },
+    {
+      "sha": "746d995b88bf38ee5d987ebb095e2fad6d437060",
+      "title": "docs(coding-agent): add NVIDIA RTX llama.cpp setup",
+      "changed_paths": [
+        "packages/coding-agent/docs/docs.json",
+        "packages/coding-agent/docs/llama-cpp.md",
+        "packages/coding-agent/docs/nvidia-rtx-llama-cpp.md"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Adds platform setup documentation for an external NVIDIA RTX llama.cpp installation; no Pi provider/router code changes."
+    },
+    {
+      "sha": "4b994d5e5ee8b912ef7ec1c9b7c069176e0c8862",
+      "title": "fix(ai): repair invalid \\u escapes in tool-call arguments",
+      "changed_paths": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/src/utils/json-parse.ts",
+        "packages/ai/test/json-parse.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Malformed Unicode escapes such as \\usepackage become literal text while valid/incomplete Unicode escapes retain streaming semantics. PiSharp provider tool argument parsing lacks evidenced repair.",
+      "capability_ids": [
+        "feature-agent-multi-turn-and-streaming"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Cli/Providers"
+      ],
+      "implementation_plan": "Inspect all tool-call parser boundaries and apply shared repair without dropping later fields or altering valid escapes.",
+      "differential_plan": "The upstream three JSON vectors and provider SSE chunk splits; compare tool arguments and actual write-tool content.",
+      "resolved": true,
+      "resolution": "Malformed Unicode escapes are retained as literal text without dropping later fields; valid escapes decode normally and incomplete Unicode escapes keep Pi's prefix semantics. A pure Core parser also matches Pi's trimming and repair ordering. Native Chat/Responses SDK results are repaired before MAF and replay using parsed arguments; the shared raw capture now supports Anthropic streaming, and Bedrock/RPC reuse the parser. Five native SDK cases failed first. Exact comparisons match 175 prefix/repair vectors and nine real Pi/PiSharp provider tool results. SDK replay, a live RPC read spanning valid and malformed Unicode, and Bedrock controls pass; full suite 1478/1478, zero skips, zero-warning build. Depths above 64, non-JSON numeric values/unsafe-integer rounding and complete RPC event envelopes remain outside this bounded proof.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/tool-argument-unicode.json",
+        "tools/parity/tool-argument-json-differential.py",
+        "tests/PiSharp.Tests/Core/ToolArgumentJsonTests.cs",
+        "tests/PiSharp.Tests/Cli/Providers/ProviderToolArgumentRepairTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcToolCallDeltaProcessTests.cs",
+        "tests/PiSharp.Tests/Cli/Providers/Bedrock/BedrockProviderTests.cs"
+      ]
+    },
+    {
+      "sha": "cea257439d5666ad6a987c065eb3ab0e230a135d",
+      "title": "feat(coding-agent): configure session share destination",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/docs/sessions.md",
+        "packages/coding-agent/docs/settings.md",
+        "packages/coding-agent/docs/usage.md",
+        "packages/coding-agent/schemas/settings.schema.json",
+        "packages/coding-agent/src/core/settings-defaults.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-schema.ts",
+        "packages/coding-agent/src/core/slash-commands.ts",
+        "packages/coding-agent/src/modes/interactive/components/settings-selector.ts",
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+        "packages/coding-agent/src/modes/interactive/session-share.ts",
+        "packages/coding-agent/test/session-share.test.ts",
+        "packages/coding-agent/test/settings-selector.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "sessionShareDestination selects auto/gist/radius; gist bypasses Radius, forced radius reports missing auth without gist fallback; selector persists the choice. PiSharp lacks this setting and broader Radius share parity.",
+      "capability_ids": [
+        "commands-output-share"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Cli/Sessions/SessionShare.cs",
+        "src/PiSharp.Cli/Sessions/TerminalSessionShare.cs",
+        "src/PiSharp.Cli/Configuration/UserSettings.cs",
+        "src/PiSharp.Runtime/Sessions/SessionShareExport.cs"
+      ],
+      "implementation_plan": "Integrate setting loading/precedence/persistence/selector and share routing into the existing concrete share owner.",
+      "differential_plan": "Deterministic fake gh and Radius loopback, missing auth, concurrent exports and selector restart; paid upload remains separately unavailable.",
+      "resolved": true,
+      "resolution": "sessionShareDestination now loads with Pi fallback/project precedence, persists and presents auto/gist/radius choices. /share uploads branch JSONL plus pi.share metadata to Radius or private viewer-compatible HTML through gh; forced gist skips Radius auth, forced Radius without credentials has no fallback, handled upload errors stay on their destination, and cancellation cleans isolated exports/terminates the gist child/restores editor. The published pinned settings schema includes this field. Three initial integration cases failed first, and the direct oracle exposed five further mismatches now corrected (including the independently recorded null snapshot). Twenty-eight actual share flows, four branch/HTML metadata exports and twelve settings/persistence vectors match Pi; eight upstream tests and forty-seven native share tests pass, including real HTTP and CLI PTY. Full combined suite 1636/1636, zero skips/warnings. Full terminal/HTML visual rendering, live paid publication and Windows remain open under the broader share capability.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/session-share.json",
+        "tools/parity/session-share-differential.py",
+        "tests/PiSharp.Tests/Cli/Sessions/SessionShareTests.cs",
+        "tests/PiSharp.Tests/Cli/Sessions/SessionShareHttpTests.cs",
+        "tests/PiSharp.Tests/Cli/Sessions/SessionShareTuiTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/SessionShareExportTests.cs"
+      ]
+    },
+    {
+      "sha": "34a8bb38b2592c61bbae69413c89b720366b533c",
+      "title": "fix(ai): drop images from Anthropic error tool results",
+      "changed_paths": [
+        "packages/ai/CHANGELOG.md",
+        "packages/ai/src/api/anthropic-messages.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Anthropic error tool results replace each image with the exact omission note; successful tool images remain intact. PiSharp forwards tool-result images through the SDK.",
+      "capability_ids": [
+        "provider-anthropic-inline-tools"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Cli/Providers/Anthropic/AnthropicTranscriptChatClient.cs"
+      ],
+      "implementation_plan": "Project error tool-result images to the omission note at the Anthropic boundary while retaining canonical content.",
+      "differential_plan": "SDK request loopbacks for mixed text/images on error and success, with retained local history and Pi request comparison.",
+      "resolved": true,
+      "resolution": "Anthropic error tool results replace every image with Pi's exact omission note and collapse text-only blocks to the same newline string; successful tool images remain intact. Live MAF results carry request-only attribution so only failed tool attachments are removed, unrelated user images remain, and the persisted contract is unchanged. Imported streaming/non-streaming and live execution cases failed first and now pass. The real SDK/Pi provider comparison matches ordered result blocks, image sources, error flags and unchanged input; the full suite passes 1432/1432 with zero skips and a zero-warning build. Paid provider and broader conversation-wire equivalence remain outside this bounded evidence.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/anthropic-error-images.json",
+        "tools/parity/anthropic-error-image-differential.py",
+        "tests/PiSharp.Tests/Cli/Providers/Anthropic/AnthropicInlineToolTests.cs"
+      ]
+    },
+    {
+      "sha": "6f2f164ab7e7f1516c4530da396b151ab2f84779",
+      "title": "fix(coding-agent): restore active tools on session resume (#10887)",
+      "changed_paths": [
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/test/default-tools-setting.test.ts",
+        "packages/coding-agent/test/suite/harness.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Default-tool resumes restore transcript loadouts with +/- modifiers; explicit tools and exclusions override restoration. PiSharp restores saved loadouts unconditionally, so explicit/modifier behavior needs reconciliation.",
+      "capability_ids": [
+        "feature-tools-default-set-dynamic-availability"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Runtime/Sessions/ConversationToolState.cs",
+        "src/PiSharp.Cli/Composition/ConversationRunComposition.cs"
+      ],
+      "implementation_plan": "Resolve resume policy in CLI composition and pass the evidenced loadout to the shared runtime, preserving branch/reload semantics.",
+      "differential_plan": "Paired persisted-session resume vectors for defaults, inactive extensions, explicit allowlist, no-tools, exclusions and +/- modifiers.",
+      "resolved": true,
+      "resolution": "Default selections keep all built-ins available and restore recorded loadouts from native records or Pi system declarations, including empty and updated sets. CLI +/- modifiers apply in order to restored names; explicit selections and disabled-tool modes take precedence, and exclusions remain enforced. Selection provenance survives settings application/reload; native runtime explicit selections also override saved tools. Five behavioral cases failed first. All ten real Pi SDK/PiSharp composition scenarios match exact active sets, including fresh-session extension defaults; delayed-registration differential remains matched. The full suite passes 1448/1448 with zero skips and a zero-warning build. Broader allowlist patterns, provider-wire order and SDK surface parity remain open.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/tool-resume.json",
+        "tools/parity/tool-resume-differential.py",
+        "tests/PiSharp.Tests/Cli/Sessions/ConversationCompositionTests.cs",
+        "tests/PiSharp.Tests/Cli/Sessions/DefaultToolReloadPolicyTests.cs",
+        "tests/PiSharp.Tests/Runtime/Extensions/DeferredToolRestoreTests.cs"
+      ]
+    },
+    {
+      "sha": "b9ab2a6238d2c91cf0c6ebf836dfd05883f9db51",
+      "title": "docs(coding-agent): restructure NVIDIA RTX llama.cpp prerequisites",
+      "changed_paths": [
+        "packages/coding-agent/docs/nvidia-rtx-llama-cpp.md"
+      ],
+      "classification": "NO_BEHAVIOR_CHANGE",
+      "finding": "Reorders prerequisites in that external NVIDIA setup guide; no product code change."
+    },
+    {
+      "sha": "3daa20280f6a7c7cbe0935680c9a38fdc3863005",
+      "title": "fix(coding-agent): keep codemode cancellation prompt and bounded",
+      "changed_paths": [
+        "packages/codemode/CHANGELOG.md",
+        "packages/codemode/README.md",
+        "packages/codemode/src/runtime/execution.ts",
+        "packages/codemode/src/runtime/host.ts",
+        "packages/codemode/src/types.ts",
+        "packages/codemode/test/fixtures/worker-process-exit.ts",
+        "packages/codemode/test/worker-lifetime.test.ts",
+        "packages/coding-agent/CHANGELOG.md",
+        "packages/coding-agent/docs/codemode.md",
+        "packages/coding-agent/src/extensions/codemode/execute.ts",
+        "packages/coding-agent/test/codemode-worker-admission.test.ts"
+      ],
+      "classification": "MATCHED",
+      "finding": "Abort/timeout/close settle promptly without waiting on worker exit, retain partial output and account two shared worker slots until actual exit. PiSharp kills a separate Node process then awaits exit without a bound, has no global admission limit and discards cancelled output.",
+      "capability_ids": [
+        "codemode-runtime"
+      ],
+      "pisharp_sources": [
+        "src/PiSharp.Runtime/Codemode/CodemodeSandbox.cs"
+      ],
+      "implementation_plan": "Use process-native shutdown with bounded settlement, shared admission released on actual exit, retained partial output and first-terminal-result ordering.",
+      "differential_plan": "Real spinning/non-interruptible worker tests, delayed exit, cancellation/timeout, capacity burst, replacement and process exit.",
+      "resolved": true,
+      "resolution": "Codemode abort/timeout and session cancellation settle without waiting for host cleanup or process exit, preserve partial text/images and discard failed store writes. Two shared process slots remain occupied until actual exit and failed starts return their reservation. Public AIFunction marshaling preserves the canceled error contract. Original host-hang checks failed at about 2.02 seconds with lost output; a further builtin test exposed canceled-token serialization. Ten new tests, including a six-call concurrent burst and non-interruptible guest work, pass. Six real Pi/Node and native PiSharp process comparisons match lifecycle/admission predicates; upstream lifetime/admission tests pass 16 with three explicit unavailable Bun cases. Full suite 1494/1494, zero skips and zero-warning build. Broader output formatting, options/memory ceilings and nested-call details remain open.",
+      "evidence": [
+        "docs/parity/fixtures/current-pi-refresh-2026-10-13/codemode-lifetime.json",
+        "tools/parity/codemode-lifetime-differential.py",
+        "tests/PiSharp.Tests/Runtime/Codemode/CodemodeWorkerLifecycleTests.cs"
+      ]
+    }
+  ],
+  "limitations": "NEEDS_WORK includes existing code whose full new contract lacks current-source verification. No current-Pi parity or pin advancement claimed by this audit alone."
+}

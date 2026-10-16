@@ -96,6 +96,97 @@ public sealed class ProviderLoginTuiTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public async Task CodexSubscriptionLoginShowsBrowserAndDeviceChoicesAndCanBeCancelled()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-codex-login-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        System.Diagnostics.Process? process = null;
+        try
+        {
+            var start = new System.Diagnostics.ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = root,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("-q");
+            start.ArgumentList.Add("-e");
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --provider openai-codex --model gpt-5.5 --offline --no-session --no-tools");
+            start.ArgumentList.Add("/dev/null");
+            foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH",
+                         "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH" })
+                start.Environment.Remove(name);
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            process = System.Diagnostics.Process.Start(start);
+            Assert.NotNull(process);
+
+            var output = new StringBuilder();
+            var outputGate = new object();
+            var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var methodsVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[4096];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputGate)
+                    {
+                        output.Append(buffer, 0, count);
+                        var current = output.ToString();
+                        if (current.Contains("gpt-5.5", StringComparison.OrdinalIgnoreCase)) ready.TrySetResult();
+                        if (current.Contains("Browser login (default)", StringComparison.Ordinal) &&
+                            current.Contains("Device code login (headless)", StringComparison.Ordinal))
+                            methodsVisible.TrySetResult();
+                        if (current.Contains("Login cancelled.", StringComparison.Ordinal)) cancelled.TrySetResult();
+                    }
+                }
+                lock (outputGate) return output.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            try { await ready.Task.WaitAsync(deadline.Token); }
+            catch (OperationCanceledException error)
+            {
+                string partial;
+                lock (outputGate) partial = output.ToString();
+                throw new TimeoutException("The Codex provider TUI did not become ready.\n" + partial, error);
+            }
+
+            await process.StandardInput.WriteAsync("/login openai-codex oauth\n");
+            await process.StandardInput.FlushAsync();
+            await methodsVisible.Task.WaitAsync(deadline.Token);
+            await process.StandardInput.WriteAsync("\u001b");
+            await process.StandardInput.FlushAsync();
+            await cancelled.Task.WaitAsync(deadline.Token);
+            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(deadline.Token);
+            var transcript = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("Select an OAuth login method:", transcript, StringComparison.Ordinal);
+            Assert.Contains("\u001b[?1049l", transcript, StringComparison.Ordinal);
+            Assert.DoesNotContain("Connection refused", transcript, StringComparison.Ordinal);
+            Assert.DoesNotContain("Error:", await stderr, StringComparison.Ordinal);
+            Assert.False(File.Exists(Path.Combine(agent, "auth.json")));
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]

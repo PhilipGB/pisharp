@@ -5,6 +5,42 @@ namespace PiSharp.Tests;
 public sealed class LocalResourcePathRulesTests
 {
     [Theory]
+    [InlineData("SKILL.md", "!skills/guide", false)]
+    [InlineData("skill.md", "!skills/guide", true)]
+    [InlineData("SKILL.md", "!*.md|+skills/guide", true)]
+    [InlineData("skill.md", "!*.md|+skills/guide", false)]
+    [InlineData("SKILL.md", "+skills/guide|-skills/guide", false)]
+    [InlineData("skill.md", "+skills/guide|-skills/guide", true)]
+    public void ParentOverridesApplyOnlyToTheExactSkillDeclarationFilename(string file, string rules, bool expected)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-skill-declaration-case");
+        var path = Path.Combine(root, "skills", "guide", file);
+
+        Assert.Equal(expected, LocalResourcePathRules.IsEnabledByOverrides(path, rules.Split('|'), root, skillPath: true));
+    }
+
+    [Theory]
+    [InlineData("extensions/plugin.dll", "extensions/*.dll", false)]
+    [InlineData("prompts/review.md", "prompts/*.md", false)]
+    [InlineData("themes/custom.json", "themes/*.json", false)]
+    [InlineData("skills/pdf/SKILL.md", "skills/pdf*", true)]
+    public void GlobAndExactOverridesExpandHomeForEachResource(string relativePath, string glob, bool skillPath)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var root = Path.Combine(home, "pisharp-resource-home-fixture");
+        var path = Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        var exact = skillPath ? "skills/pdf" : relativePath;
+        var exclusion = "!~/pisharp-resource-home-fixture/" + glob;
+        var include = "+~/pisharp-resource-home-fixture/" + exact;
+        var exclude = "-~/pisharp-resource-home-fixture/" + exact;
+        var baseDirectory = Path.Combine(Path.GetTempPath(), "pisharp-resource-home-base");
+
+        Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, [exclusion], baseDirectory, skillPath));
+        Assert.True(LocalResourcePathRules.IsEnabledByOverrides(path, [exclusion, include], baseDirectory, skillPath));
+        Assert.False(LocalResourcePathRules.IsEnabledByOverrides(path, [include, exclude], baseDirectory, skillPath));
+    }
+
+    [Theory]
     [InlineData("docs/.hidden.md", "!docs/**", true)]
     [InlineData("docs/.hidden.md", "!docs/*.md", true)]
     [InlineData("docs/.hidden.md", "!docs/.*", false)]

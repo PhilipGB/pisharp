@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 using PiSharp.Cli;
+using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
 
@@ -198,8 +199,11 @@ public sealed class RpcSessionReplacementProcessTests
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-invalid-switch-" + Guid.NewGuid().ToString("N"));
         var agentDirectory = Path.Combine(root, "agent");
         var invalidSessionPath = Path.Combine(root, "invalid.jsonl");
+        var unknownProviderSessionPath = Path.Combine(root, "unknown-provider.session.json");
         Directory.CreateDirectory(agentDirectory);
         await File.WriteAllTextAsync(invalidSessionPath, "{invalid session entry}\n");
+        await File.WriteAllTextAsync(unknownProviderSessionPath,
+            new ConversationSession(root, "rpc-switch-fixture", null, "missing-provider").ToJson());
         var listener = StartLoopbackListener(out var port);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         var releaseResponse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -300,6 +304,25 @@ public sealed class RpcSessionReplacementProcessTests
                 using var record = JsonDocument.Parse(line!);
                 switchResponded = record.RootElement.TryGetProperty("id", out var id) && id.GetString() == "invalid-switch";
                 if (switchResponded) Assert.False(record.RootElement.GetProperty("success").GetBoolean());
+            }
+
+            await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new
+            {
+                id = "unknown-provider-switch",
+                type = "switch_session",
+                sessionPath = unknownProviderSessionPath
+            }));
+            await process.StandardInput.FlushAsync(timeout.Token);
+            var providerSwitchResponded = false;
+            while (!providerSwitchResponded)
+            {
+                var line = await process.StandardOutput.ReadLineAsync(timeout.Token);
+                Assert.NotNull(line);
+                lines.Add(line!);
+                using var record = JsonDocument.Parse(line!);
+                providerSwitchResponded = record.RootElement.TryGetProperty("id", out var id) &&
+                    id.GetString() == "unknown-provider-switch";
+                if (providerSwitchResponded) Assert.False(record.RootElement.GetProperty("success").GetBoolean());
             }
 
             Assert.DoesNotContain(lines, line =>

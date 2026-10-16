@@ -1,0 +1,38 @@
+{
+  "pi": {
+    "repository": "https://github.com/earendil-works/pi",
+    "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6"
+  },
+  "pisharp": {
+    "commit": "1cdb57f7",
+    "runner": "tools/parity/google-provider-differential.py"
+  },
+  "result": "match",
+  "matchedCases": 6,
+  "cases": [
+    "GenAI Gemini 2.5",
+    "GenAI Gemini 3.5",
+    "GenAI Gemma 4",
+    "Vertex Gemini 2.5",
+    "Vertex Gemini 3.5",
+    "Vertex Gemma 4"
+  ],
+  "scope": [
+    "Ordered Google Content parts for user text and images",
+    "Same-provider/model reasoning, text, and function-call thought signatures",
+    "Same-model tool-call and function-response ID preservation",
+    "Gemini-version routing for tool-result images",
+    "Google GenAI and Vertex shared message conversion"
+  ],
+  "verification": {
+    "googleProviderFocusedTests": "23 passed, zero skipped",
+    "fullDotnetSuite": "2057 passed, zero skipped",
+    "warningsAsErrorsBuild": "passed with zero warnings/errors",
+    "format": "passed"
+  },
+  "limitations": [
+    "The differential compares shared request history conversion, before HTTP transport.",
+    "It does not cover live-provider behavior, retries, every error envelope, or full Google/Vertex parity.",
+    "The Google GenAI and Vertex execution-ledger capabilities remain in progress."
+  ]
+}

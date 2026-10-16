@@ -21,7 +21,8 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
         if (images is { Count: > 0 } && settings.BlockImages != true && selection.Model.Input is { } modalities &&
             !modalities.Contains("image", StringComparer.Ordinal))
             throw new InvalidOperationException($"Model '{selection.Model.Id}' is not declared image-capable; refusing to send image attachments.");
-        var expanded = await getResources().ResolveInputAsync(input, cancellation.Token);
+        var expanded = await getResources().ResolveInputAsync(input, cancellation.Token,
+            error => ReportResourceErrorAsync(error, render: false));
         var contents = new List<AIContent> { new TextContent(expanded) };
         if (images is not null) contents.AddRange(images);
         void ProcessRunUpdate(AgentLifecycleEvent update)
@@ -44,7 +45,8 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
                             await executeBash(command, excludeFromContext, token);
                             return true;
                         }
-                        var queued = await getResources().ResolveInputAsync(text, token);
+                        var queued = await getResources().ResolveInputAsync(text, token,
+                            error => ReportResourceErrorAsync(error, render: true));
                         var accepted = followUp ? getRun().TryFollowUp(queued) : getRun().TrySteer(queued);
                         if (accepted) getError().WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
                         return accepted;
@@ -62,11 +64,6 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             {
                 screen?.SetFooter(getFooter(), render: false);
             }
-            if (update.Type is "turn_completed" or "turn_interrupted" or "turn_failed" or "prompt_rejected")
-            {
-                screen?.SetWorkingStatus(null, render: false);
-                screen?.SetFooter(getFooter(), render: false);
-            }
             transcript.Render(update);
             Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);
         }
@@ -74,6 +71,7 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             new ChatMessage(ChatRole.User, contents), expanded, cancellation.Token))
             ProcessRunUpdate(update);
         transcript.FinishTurn();
+        Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);
     }
 
     public async Task StopMonitoringAsync()
@@ -81,6 +79,16 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
         _monitorStop.Cancel();
         try { await _monitor; }
         catch (OperationCanceledException) { }
+    }
+
+    private Task ReportResourceErrorAsync(ResourceExpansionError error, bool render)
+    {
+        if (screen is { IsActive: true })
+        {
+            screen.AppendExtensionError(error.ExtensionPath, error.Error, render);
+            return Task.CompletedTask;
+        }
+        return getError().WriteLineAsync($"Extension error ({error.ExtensionPath}): {error.Error}");
     }
 
     public void Dispose() => _monitorStop.Dispose();

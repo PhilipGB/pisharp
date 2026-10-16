@@ -4,6 +4,7 @@ using PiSharp.Cli;
 
 namespace PiSharp.Tests;
 
+[Collection("Process timing")]
 public sealed class QuietStartupTests
 {
     [Theory]
@@ -133,7 +134,12 @@ public sealed class QuietStartupTests
             process.StandardInput.Close();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(timeout.Token); }
-            catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+            catch (OperationCanceledException failure)
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+                throw new TimeoutException($"Quiet-startup CLI did not exit within 12 seconds.\nstdout:\n{await output}\nstderr:\n{await error}", failure);
+            }
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await error);
             var text = await output;
