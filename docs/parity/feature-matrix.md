@@ -23,13 +23,18 @@ normal exit, cancellation, double Ctrl+C and render failures remain covered.
 Full local verification passes 2,104 .NET tests with zero skips, six
 architecture checks, 24 Node tests, 50 Python tests, 134 documentation files and
 522 references, format/build, and MCP conformance with no new regressions. Exact
-head Linux CI passes on source `927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f`
+head Linux CI passes on product source `927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f`
 ([run 38889766086](https://github.com/PhilipGB/pisharp/actions/runs/38889766086)).
+The PR review head `8fd77a8289fdf3216e3b674b2869c03b2d791708` also passed Linux
+CI ([run 38892905189](https://github.com/PhilipGB/pisharp/actions/runs/38892905189));
+that head records the live-smoke follow-up without changing product code.
 
-The normal Codex auth store and local llama router were unavailable for live
-smoke tests. Model-picker provider switching used the llama router and an
-authenticated deterministic OpenAI-compatible fixture. These results close
-only the bounded UX milestone; all 194 global
+A follow-up live smoke on 2026-10-16 used the saved Codex and llama.cpp
+credentials. PiSharp discovered both model catalogs and completed short
+no-tools, no-session requests with Codex `gpt-6-luna` and the loaded llama.cpp
+`Qwen3.8-27B-GGUF`. The smoke used a private temporary auth copy for cache
+writes and removed it afterward; the original profile and sessions were not
+modified. These results close only the bounded UX milestone; all 194 global
 capability IDs retain their existing statuses (**12 verified, 148 in progress,
 34 not started**). Broader provider, resource, MCP/Codemode and global parity
 work remains deferred.

@@ -126,13 +126,20 @@
       "head_sha": "927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f",
       "status": "passed"
     },
-    "live_smoke": "Not available: LLAMA_BASE_URL is unset and the normal default auth store is absent. The deterministic model-picker provider switch exercised llama.cpp and an authenticated OpenAI-compatible fixture.",
+    "pr_head_ci": {
+      "run_id": 38892905189,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38892905189",
+      "head_sha": "8fd77a8289fdf3216e3b674b2869c03b2d791708",
+      "status": "passed",
+      "scope": "PR review head after the smoke-evidence follow-up; product-source full verification remains recorded separately at 927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f."
+    },
+    "live_smoke": "Passed 2026-10-16 using saved credentials: model discovery succeeded for Codex and llama.cpp, and short no-tools/no-session requests succeeded with gpt-6-luna and the loaded Qwen3.8-27B-GGUF. A private temporary copy of auth.json kept cache writes under /tmp; the original profile and sessions were untouched and the temporary copy was removed.",
     "global_capability_statuses_unchanged": {
       "verified": 12,
       "in_progress": 148,
       "not_started": 34
     },
-    "remaining": "Broader provider parity, MCP/Codemode expansion, exhaustive terminal differentials and credential-backed live smoke remain deferred; this milestone does not claim global Pi parity.",
+    "remaining": "Broader provider parity, MCP/Codemode expansion, exhaustive terminal differentials and broader live-provider coverage remain deferred; this milestone does not claim global Pi parity.",
     "next_recommended_milestone": "MCP/Codemode interactive workflow completion and conformance, separate from provider breadth and global parity."
   },
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
