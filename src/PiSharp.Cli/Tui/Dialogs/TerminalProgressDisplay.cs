@@ -33,6 +33,7 @@ internal sealed class TerminalProgressDisplay(EditorKeymap keymap, Func<Terminal
         const string confirmationFooter = "enter select • escape/ctrl+c cancel";
         void RenderProgress(TerminalProgressState progress)
         {
+            screen.ReportTerminalProgress(progress.Ratio);
             var theme = screen.CurrentTheme;
             var width = screen.TerminalWidth;
             var lines = new List<string>
@@ -119,6 +120,7 @@ internal sealed class TerminalProgressDisplay(EditorKeymap keymap, Func<Terminal
         finally
         {
             cancellation.Cancel();
+            screen.ClearTerminalProgress();
         }
     }
 }

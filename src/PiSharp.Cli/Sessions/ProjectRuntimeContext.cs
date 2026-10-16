@@ -321,7 +321,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 .Select(tool => tool.Function.Name)).Distinct(StringComparer.Ordinal).ToArray()
             : null;
         return new PiAgent(chat, new CodingTools(WorkingDirectory, effectiveSettings.ShellPath,
-                selection.Model.InputLimits?.Images?.Resize, effectiveSettings.ShellCommandPrefix), usesDefaults ? null : arguments.Tools, arguments.ExcludeTools,
+                effectiveSettings.AutoResizeImages == false ? null : selection.Model.InputLimits?.Images?.Resize,
+                effectiveSettings.ShellCommandPrefix), usesDefaults ? null : arguments.Tools, arguments.ExcludeTools,
             arguments.NoTools, Instructions, Prompts.System, Prompts.Append,
             reasoning: ThinkingLevels.ToOptions(thinking, selection.Model.ThinkingLevelMap), blockImages: effectiveSettings.BlockImages == true,
             extensionToolRegistrations: Extensions.Registration.ToolDefinitions,

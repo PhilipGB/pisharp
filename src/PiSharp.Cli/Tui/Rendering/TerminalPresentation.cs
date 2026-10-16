@@ -64,6 +64,7 @@ internal sealed class TerminalPresentation : IDisposable
         {
             _terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
             _terminalScreen?.SetMarkdownCodeBlockIndent(_projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
+            ApplyTuiSettings(_projectBinding.Settings);
             _hideThinkingBlock = _projectBinding.Settings.HideThinkingBlock == true;
             _terminalScreen?.SetThinkingBlocksHidden(_hideThinkingBlock);
             _terminalScreen?.Activate();
@@ -106,6 +107,17 @@ internal sealed class TerminalPresentation : IDisposable
     {
         _hideThinkingBlock = hide;
         _terminalScreen?.SetThinkingBlocksHidden(hide);
+    }
+
+    public void ApplyTuiSettings(UserSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        _terminalScreen?.SetShowHardwareCursor(settings.ShowHardwareCursor == true);
+        _terminalScreen?.SetEditorPaddingX(settings.EditorPaddingX ?? 0);
+        _terminalScreen?.SetOutputPad(settings.OutputPad ?? 1);
+        _terminalScreen?.SetAutocompleteMaxVisible(settings.AutocompleteMaxVisible ?? 5);
+        _terminalScreen?.SetClearOnShrink(settings.ClearOnShrink == true);
+        _terminalScreen?.SetShowTerminalProgress(settings.ShowTerminalProgress == true);
     }
 
     public void Dispose()

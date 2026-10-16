@@ -190,6 +190,14 @@ internal static class UserSettingsWriter
             "quietStartup" => value is null or "true" or "header" or "false",
             "hideThinkingBlock" or "enableSkillCommands" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
                 value is null or "true" or "false",
+            "images.autoResize" or "showHardwareCursor" or "terminal.clearOnShrink" or "terminal.showTerminalProgress" =>
+                value is null or "true" or "false",
+            "editorPaddingX" => value is null ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var editorPadding) && editorPadding is >= 0 and <= 3,
+            "outputPad" => value is null ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var outputPadding) && outputPadding is 0 or 1,
+            "autocompleteMaxVisible" => value is null ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var autocompleteMaximum) && autocompleteMaximum is >= 3 and <= 20,
             "retry.provider.maxRetries" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var retries) && retries is >= 0 and <= 20,
             "retry.provider.maxRetryDelayMs" => value is null ||
@@ -241,6 +249,10 @@ internal static class UserSettingsWriter
         "quietStartup" when value is "true" or "false" => JsonValue.Create(value == "true"),
         "hideThinkingBlock" or "enableSkillCommands" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
             JsonValue.Create(value == "true"),
+        "images.autoResize" or "showHardwareCursor" or "terminal.clearOnShrink" or "terminal.showTerminalProgress" =>
+            JsonValue.Create(value == "true"),
+        "editorPaddingX" or "outputPad" or "autocompleteMaxVisible" =>
+            JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "terminal.trueColor" when value is "true" or "false" => JsonValue.Create(value == "true"),
         "retry.provider.maxRetries" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "retry.provider.maxRetryDelayMs" => JsonValue.Create(double.Parse(value!, NumberStyles.Float, CultureInfo.InvariantCulture)),

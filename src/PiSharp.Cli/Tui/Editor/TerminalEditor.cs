@@ -104,6 +104,11 @@ public sealed class TerminalEditor
         _dialogs.ShowSelectionList(title, options, selectedKey, scopedOptions, allLabel, scopedLabel, emptyMessage,
             actionHint, handleInput);
 
+    internal TerminalSettingsListSelection? ShowSettingsList(string title,
+        IReadOnlyList<TerminalSettingsListItem> items, string? selectedKey, string scopeLabel,
+        bool canChangeScope, CancellationToken cancellationToken = default) =>
+        _dialogs.ShowSettingsList(title, items, selectedKey, scopeLabel, canChangeScope, cancellationToken);
+
     internal Task<TerminalSelection<T>?> ShowSelectionListAsync<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,

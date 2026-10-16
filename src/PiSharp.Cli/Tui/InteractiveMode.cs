@@ -184,7 +184,8 @@ internal static class InteractiveMode
                                 await InteractiveResourceCommands.ExecuteAsync(command, argument, line, () => projectBinding.Resources,
                                     () => extensionLease.Current.Registration, text => RunAsync(text), editor, terminalScreen,
                                     HandleEditorApplicationAction, ReloadResources,
-                                    projectBinding.Runtime.GetMcpManagementSnapshot);
+                                    projectBinding.Runtime.GetMcpManagementSnapshot,
+                                    () => projectBinding.Settings.SkillCommandsEnabled);
                                 break;
                         }
                     }

@@ -118,6 +118,50 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void SettingsPresentationOptionsAffectTheComposedTerminalFrame()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        EditorCompletionSuggestion[] suggestions =
+        [
+            new("/first", "first suggestion"),
+            new("/second", "second suggestion"),
+            new("/third", "third suggestion")
+        ];
+
+        var frame = compositor.Compose("abc", 2, null, null, "transcript-test", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 44, height: 18,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            editorSuggestions: suggestions, editorPaddingX: 2, outputPad: 1,
+            autocompleteMaxVisible: 2, showHardwareCursor: true);
+        var rows = frame.Rows.Select(TerminalTextLayout.StripFormatting).ToArray();
+
+        Assert.True(frame.CursorVisible);
+        Assert.Contains(rows, row => row.Contains(" transcript-test ", StringComparison.Ordinal));
+        Assert.Contains(rows, row => row.Contains("  abc", StringComparison.Ordinal));
+        Assert.Contains(rows, row => row.Contains("→ first", StringComparison.Ordinal));
+        Assert.Contains(rows, row => row.Contains("second", StringComparison.Ordinal));
+        Assert.DoesNotContain(rows, row => row.Contains("third", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ClearOnShrinkOnlyClearsRowsWhenTheirRenderedWidthGetsSmaller()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer());
+        compositor.SetClearOnShrink(true);
+        var original = new TerminalScreenCompositor.Frame(["longer"], 0, 1, 0, 10, 1);
+        compositor.Render(original);
+        output.GetStringBuilder().Clear();
+
+        compositor.Render(original with { Rows = ["short"] });
+        Assert.Contains("\u001b[2K", output.ToString());
+        output.GetStringBuilder().Clear();
+
+        compositor.Render(original with { Rows = ["other"] });
+        Assert.DoesNotContain("\u001b[2K", output.ToString());
+    }
+
+    [Fact]
     public void ClippedSlashCompletionResetsStyleBeforePaddingTheRow()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());

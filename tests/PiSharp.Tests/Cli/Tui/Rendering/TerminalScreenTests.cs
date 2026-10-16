@@ -65,6 +65,23 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void TerminalProgressSettingEmitsAndClearsOscProgressControls()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9);
+        output.GetStringBuilder().Clear();
+
+        screen.SetShowTerminalProgress(true);
+        screen.ReportTerminalProgress(0.42);
+        screen.ClearTerminalProgress();
+        screen.SetShowTerminalProgress(false);
+
+        Assert.Contains("\u001b]9;4;1;42\u0007", output.ToString());
+        Assert.Contains("\u001b]9;4;0\u0007", output.ToString());
+    }
+
+    [Fact]
     public void AlternateScreenShutdownReleasesModesInPiOrder()
     {
         using var output = new StringWriter();

@@ -29,6 +29,7 @@ internal sealed class TerminalSettingsCommands(string agentDirectory, ActiveProj
         var savedSettings = await UserSettingsPersistence.SaveAsync(agentDirectory, projectBinding.WorkingDirectory,
             projectScope, projectBinding.Trusted, setting, value, projectBinding.BaseUserSettings, projectBinding.ProjectSettings, Environment.GetEnvironmentVariable);
         projectBinding.SetSettings(savedSettings.User, savedSettings.Project, savedSettings.Effective);
+        presentation.ApplyTuiSettings(projectBinding.Settings);
         if (setting == "hideThinkingBlock")
         {
             presentation.SetHideThinking(projectBinding.Settings.HideThinkingBlock == true);
@@ -41,7 +42,7 @@ internal sealed class TerminalSettingsCommands(string agentDirectory, ActiveProj
         else if (setting == "followUpMode")
             conversationBinding.Run.SetFollowUpMode(projectBinding.Settings.FollowUpMode ?? PromptDeliveryMode.OneAtATime);
         if (setting is "images.blockImages" or "compaction.enabled" or "retry.provider.maxRetries" or
-            "retry.provider.maxRetryDelayMs" or "retry.provider.timeoutMs" or "httpIdleTimeoutMs")
+            "retry.provider.maxRetryDelayMs" or "retry.provider.timeoutMs" or "httpIdleTimeoutMs" or "images.autoResize")
             await modelTransitions.ReplaceAsync(modelBinding.Selection, modelBinding.Thinking, recordModelChange: false);
         if (setting is "theme" or "terminal.trueColor")
         {

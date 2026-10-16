@@ -17,6 +17,50 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
             allLabel, scopedLabel, emptyMessage, actionHint, handleInput);
     }
 
+    public TerminalSettingsListSelection? ShowSettingsList(string title,
+        IReadOnlyList<TerminalSettingsListItem> items, string? selectedKey, string scopeLabel,
+        bool canChangeScope, CancellationToken cancellationToken = default)
+    {
+        if (getScreen() is not { IsActive: true } screen) return null;
+        var input = getInput();
+        var list = new TerminalSettingsList(title, items, selectedKey, scopeLabel, canChangeScope);
+        using var mode = TerminalMode.Enter(screen);
+        try
+        {
+            while (screen.IsActive)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                screen.RefreshIfResized();
+                screen.SetEditorPanel(list.Render(screen.TerminalWidth, screen.TerminalHeight, screen.CurrentTheme),
+                    cursorVisible: false, bottomMargin: 2);
+                if (!input.TryRead(40, out var next)) continue;
+                if (next.IsEndOfStream) return null;
+                TerminalSettingsListAction action;
+                if (list.ShouldActivateSpace(next))
+                    action = list.HandleInput(next);
+                else if (TerminalInput.TryGetText(next, out _))
+                {
+                    var text = input.ReadAvailableText(next, out var following);
+                    action = list.HandleInput(new(null, text));
+                    if (following is not null) input.PushBack(following);
+                }
+                else action = list.HandleInput(next);
+                if (action == TerminalSettingsListAction.Activate && list.Selected is { } selected)
+                    return new(selected);
+                if (action == TerminalSettingsListAction.ChangeScope)
+                    return new(null, ChangeScope: true);
+                if (action == TerminalSettingsListAction.ResetValue && list.Selected is { } reset)
+                    return new(reset, ResetValue: true);
+                if (action == TerminalSettingsListAction.Cancel) return null;
+            }
+            return null;
+        }
+        finally
+        {
+            if (screen.IsActive) screen.SetEditorPanel(null);
+        }
+    }
+
     public async Task<TerminalSelection<T>?> ShowSelectionListAsync<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
