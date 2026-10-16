@@ -541,6 +541,7 @@ public readonly record struct TerminalMouseEvent(int Button, int Column, int Row
 internal sealed class TerminalMode : IDisposable
 {
     private const string LinuxTermiosPrefix = "linux-termios:";
+    private const uint LinuxInputCrToNl = 0x0100;
     private const uint LinuxInputXon = 0x0400;
     private const uint LinuxCanonical = 0x0002;
     private const uint LinuxEcho = 0x0008;
@@ -589,7 +590,7 @@ internal sealed class TerminalMode : IDisposable
         }
         var state = Stty("-g").Trim();
         if (string.IsNullOrEmpty(state)) throw new IOException("Could not read terminal settings.");
-        Stty("-icanon", "-echo", "-isig", "-iexten", "-ixon", "min", "1", "time", "0");
+        Stty("-icanon", "-echo", "-isig", "-iexten", "-ixon", "-icrnl", "min", "1", "time", "0");
         try { WriteControl(screen, "\u001b[?2004h"); }
         catch { Stty(state); throw; }
         var owner = new TerminalMode(state, screen, ownsMode: true);
@@ -668,7 +669,7 @@ internal sealed class TerminalMode : IDisposable
     {
         if (!_ownsMode || _disposed || !_suspended) return;
         Stty(_original);
-        Stty("-icanon", "-echo", "-isig", "-iexten", "-ixon", "min", "1", "time", "0");
+        Stty("-icanon", "-echo", "-isig", "-iexten", "-ixon", "-icrnl", "min", "1", "time", "0");
         try { WriteControl(_screen, "\u001b[?2004h"); }
         catch
         {
@@ -712,6 +713,7 @@ internal sealed class TerminalMode : IDisposable
         if (args.Length == 1 && args[0] == "-g") return LinuxTermiosPrefix + SerializeLinuxTermios(current);
 
         if (args.Contains("-ixon", StringComparer.Ordinal)) current.InputFlags &= ~LinuxInputXon;
+        if (args.Contains("-icrnl", StringComparer.Ordinal)) current.InputFlags &= ~LinuxInputCrToNl;
         current.LocalFlags &= ~(LinuxCanonical | LinuxEcho | LinuxSignal | LinuxExtendedInput);
         current.ControlCharacters[LinuxVminIndex] = 1;
         current.ControlCharacters[LinuxVtimeIndex] = 0;

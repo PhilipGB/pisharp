@@ -10,6 +10,30 @@ namespace PiSharp.Tests;
 
 public sealed class TerminalPtyTests
 {
+    private sealed class PtyOutputCapture
+    {
+        private readonly StringBuilder _output = new();
+        private readonly TaskCompletionSource _inputReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public PtyOutputCapture(Process process) => Completion = ReadAsync(process);
+
+        public Task InputReady => _inputReady.Task;
+        public Task<string> Completion { get; }
+
+        private async Task<string> ReadAsync(Process process)
+        {
+            var buffer = new char[1024];
+            int count;
+            while ((count = await process.StandardOutput.ReadAsync(buffer)) > 0)
+            {
+                _output.Append(buffer, 0, count);
+                if (_output.ToString().Contains("\u001b[?2004h", StringComparison.Ordinal))
+                    _inputReady.TrySetResult();
+            }
+            return _output.ToString();
+        }
+    }
+
     [Fact]
     public async Task InteractiveReloadRunsNativeExtensionResourceDiscoveryAgain()
     {
@@ -61,10 +85,10 @@ public sealed class TerminalPtyTests
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             await inputReady.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/reload\n");
+            await process.StandardInput.WriteAsync("/reload\r");
             await process.StandardInput.FlushAsync();
             await reloadCompleted.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
@@ -155,7 +179,7 @@ public sealed class TerminalPtyTests
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             await inputReady.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/trust\n");
+            await process.StandardInput.WriteAsync("/trust\r");
             await process.StandardInput.FlushAsync();
             try { await initialSelector.Task.WaitAsync(timeout.Token); }
             catch (OperationCanceledException)
@@ -164,16 +188,16 @@ public sealed class TerminalPtyTests
                 lock (outputLock) tail = new string(output.ToString().TakeLast(5000).ToArray());
                 throw new InvalidOperationException($"Trust selector did not open. exited={process.HasExited}; stdout tail: {tail}");
             }
-            await process.StandardInput.WriteAsync("\u001b[A\n");
+            await process.StandardInput.WriteAsync("\u001b[A\r");
             await process.StandardInput.FlushAsync();
             await decisionSaved.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/trust\n");
+            await process.StandardInput.WriteAsync("/trust\r");
             await process.StandardInput.FlushAsync();
             await selectorAfterSave.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("\n");
+            await process.StandardInput.WriteAsync("\r");
             await process.StandardInput.FlushAsync();
             await decisionSavedAgain.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
@@ -320,13 +344,13 @@ public sealed class TerminalPtyTests
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             await idle.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("!printf '%s\\n' \"bang-result:$PISHARP_BANG_PREFIX\"\n");
+            await process.StandardInput.WriteAsync("!printf '%s\\n' \"bang-result:$PISHARP_BANG_PREFIX\"\r");
             await process.StandardInput.FlushAsync();
             await normalResult.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("!!printf '%s\\n' \"excluded-result:$PISHARP_BANG_PREFIX\"\n");
+            await process.StandardInput.WriteAsync("!!printf '%s\\n' \"excluded-result:$PISHARP_BANG_PREFIX\"\r");
             await process.StandardInput.FlushAsync();
             await excludedResult.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
@@ -475,34 +499,34 @@ public sealed class TerminalPtyTests
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             await idleReady.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/settings\n");
+            await process.StandardInput.WriteAsync("/settings\r");
             await process.StandardInput.FlushAsync();
             try
             {
                 await settingsScopeShown.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("\n");
+                await process.StandardInput.WriteAsync("\r");
                 await process.StandardInput.FlushAsync();
-                await process.StandardInput.WriteAsync("Steering mode\n");
+                await process.StandardInput.WriteAsync("Steering mode\r");
                 await process.StandardInput.FlushAsync();
                 await steeringOptionsShown.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("All together\n");
+                await process.StandardInput.WriteAsync("All together\r");
                 await process.StandardInput.FlushAsync();
                 await steeringSaved.Task.WaitAsync(timeout.Token);
                 await process.StandardInput.WriteAsync("\u001b");
                 await process.StandardInput.FlushAsync();
                 await settingsClosed.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("Use echo_ext with value pty.\n");
+                await process.StandardInput.WriteAsync("Use echo_ext with value pty.\r");
                 await process.StandardInput.FlushAsync();
                 await firstRequestReceived.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("steering one\n");
+                await process.StandardInput.WriteAsync("steering one\r");
                 await process.StandardInput.FlushAsync();
                 await firstSteeringQueued.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("steering two\n");
+                await process.StandardInput.WriteAsync("steering two\r");
                 await process.StandardInput.FlushAsync();
                 await bothSteeringQueued.Task.WaitAsync(timeout.Token);
                 releaseFirstResponse.TrySetResult();
                 await idleAfterReply.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("/quit\n");
+                await process.StandardInput.WriteAsync("/quit\r");
                 await process.StandardInput.FlushAsync();
                 await process.WaitForExitAsync(timeout.Token);
             }
@@ -617,7 +641,7 @@ public sealed class TerminalPtyTests
             var stderr = process.StandardError.ReadToEndAsync();
             using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             await inputReady.Task.WaitAsync(limit.Token);
-            await process.StandardInput.WriteAsync("/name first\n/new\n/name second\n/sessions\n/resume first\n/resume second\n/resume\n");
+            await process.StandardInput.WriteAsync("/name first\r/new\r/name second\r/sessions\r/resume first\r/resume second\r/resume\r");
             await process.StandardInput.FlushAsync();
             await pickerOpened.Task.WaitAsync(limit.Token);
             var firstId = (await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store))
@@ -641,7 +665,7 @@ public sealed class TerminalPtyTests
             await process.StandardInput.FlushAsync();
             await WaitForOutputAsync(captured => captured.Contains("Already in this session.", StringComparison.Ordinal), limit.Token);
             var beforeReopen = OutputLength();
-            await process.StandardInput.WriteAsync("/resume\n");
+            await process.StandardInput.WriteAsync("/resume\r");
             await process.StandardInput.FlushAsync();
             await WaitForOutputAsync(captured => captured.Length > beforeReopen &&
                 captured[beforeReopen..].Contains("Resume session · Recent", StringComparison.Ordinal), limit.Token);
@@ -653,7 +677,7 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("\u001b[H\r"); // Home, then resume the first name-sorted session.
             await process.StandardInput.FlushAsync();
             await WaitForOutputAsync(captured => captured.Contains($"Resumed {firstId}", StringComparison.Ordinal), limit.Token);
-            await process.StandardInput.WriteAsync($"/session\n/export {cwd}/export.html\n/clone\n/session\n/quit\n");
+            await process.StandardInput.WriteAsync($"/session\r/export {cwd}/export.html\r/clone\r/session\r/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             try { await process.WaitForExitAsync(limit.Token); }
@@ -714,6 +738,7 @@ public sealed class TerminalPtyTests
             process = Process.Start(start);
             Assert.NotNull(process);
             var output = new StringBuilder();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var promptReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var retryPromptReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var cancelledReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -730,6 +755,7 @@ public sealed class TerminalPtyTests
                     {
                         output.Append(buffer, 0, count);
                         var captured = output.ToString();
+                        if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
                         var promptIndex = captured.LastIndexOf(confirmationPrompt, StringComparison.Ordinal);
                         var cancelledIndex = captured.LastIndexOf("Import cancelled.", StringComparison.Ordinal);
                         if (promptIndex >= 0) promptReady.TrySetResult();
@@ -742,25 +768,26 @@ public sealed class TerminalPtyTests
             });
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-            await process.StandardInput.WriteAsync($"/import \"{sourcePath}\"\n");
+            await inputReady.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync($"/import \"{sourcePath}\"\r");
             await process.StandardInput.FlushAsync();
             try
             {
                 await promptReady.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("cancel\n");
+                await process.StandardInput.WriteAsync("cancel\r");
                 await process.StandardInput.FlushAsync();
                 await cancelledReady.Task.WaitAsync(timeout.Token);
                 Assert.DoesNotContain(await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(store),
                     session => session.Id == importedId);
-                await process.StandardInput.WriteAsync($"/import \"{sourcePath}\"\n");
+                await process.StandardInput.WriteAsync($"/import \"{sourcePath}\"\r");
                 await retryPromptReady.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("import\n");
+                await process.StandardInput.WriteAsync("import\r");
                 await process.StandardInput.FlushAsync();
                 await importReady.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync($"/export-jsonl \"{exportPath}\"\n");
+                await process.StandardInput.WriteAsync($"/export-jsonl \"{exportPath}\"\r");
                 await process.StandardInput.FlushAsync();
                 await exportReady.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("/session\n/quit\n");
+                await process.StandardInput.WriteAsync("/session\r/quit\r");
                 await process.StandardInput.FlushAsync();
                 process.StandardInput.Close();
                 await process.WaitForExitAsync(timeout.Token);
@@ -809,12 +836,13 @@ public sealed class TerminalPtyTests
             startup.Environment["PISHARP_AGENT_DIR"] = agent;
             process = Process.Start(startup);
             Assert.NotNull(process);
-            var startupOutput = process.StandardOutput.ReadToEndAsync();
+            var startupOutput = new PtyOutputCapture(process);
             var startupError = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync("/session\n/quit\n");
+            await startupOutput.InputReady.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/session\r/quit\r");
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
-            var startupText = await startupOutput;
+            var startupText = await startupOutput.Completion;
             var startupSession = Assert.Single(await PiSharp.Runtime.Sessions.SessionCatalog.ListAsync(startupStore),
                 session => session.Id == importedId);
             Assert.Equal(sourceCwd, (await startupStore.LoadAsync(startupSession.Path)).WorkingDirectory);
@@ -860,9 +888,10 @@ public sealed class TerminalPtyTests
             };
             using var process = Process.Start(start);
             Assert.NotNull(process);
-            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stdout = new PtyOutputCapture(process);
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync($"/fork {userId[..12]}\n");
+            await stdout.InputReady.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync($"/fork {userId[..12]}\r");
             await process.StandardInput.FlushAsync();
             using (var forkReady = new CancellationTokenSource(TimeSpan.FromSeconds(12)))
             {
@@ -870,12 +899,12 @@ public sealed class TerminalPtyTests
                     await Task.Delay(30, forkReady.Token);
             }
             await Task.Delay(150);
-            await process.StandardInput.WriteAsync("\u0015/name forked\n/quit\n");
+            await process.StandardInput.WriteAsync("\u0015/name forked\r/quit\r");
             process.StandardInput.Close();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(timeout.Token); }
             catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
-            var output = await stdout;
+            var output = await stdout.Completion;
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("draft to change", output);
             Assert.Contains("Forked " + userId[..12], output);
@@ -923,6 +952,7 @@ public sealed class TerminalPtyTests
             Assert.NotNull(process);
             var outputBuilder = new System.Text.StringBuilder();
             var outputLock = new object();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var promptReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var selectedIdPrefix = selectedId[..12];
             var stdout = Task.Run(async () =>
@@ -936,6 +966,7 @@ public sealed class TerminalPtyTests
                     {
                         outputBuilder.Append(buffer, 0, count);
                         var current = outputBuilder.ToString();
+                        if (current.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
                         var forkStatus = current.LastIndexOf($"Forked {selectedIdPrefix}", StringComparison.Ordinal);
                         if (forkStatus >= 0 && current.IndexOf("draft to change", forkStatus, StringComparison.Ordinal) >= 0)
                             promptReady.TrySetResult();
@@ -944,10 +975,11 @@ public sealed class TerminalPtyTests
                 lock (outputLock) return outputBuilder.ToString();
             });
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync("/fork\ndraft to change\n");
+            await inputReady.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("/fork\rdraft to change\r");
             await process.StandardInput.FlushAsync();
             await promptReady.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("\u0015/name forked\n/quit\n");
+            await process.StandardInput.WriteAsync("\u0015/name forked\r/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
@@ -1004,6 +1036,7 @@ public sealed class TerminalPtyTests
             Assert.NotNull(process);
             var outputBuilder = new System.Text.StringBuilder();
             var outputLock = new object();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var saved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var editorPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var externalEditorSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1032,6 +1065,7 @@ public sealed class TerminalPtyTests
                     {
                         outputBuilder.Append(buffer, 0, count);
                         var current = outputBuilder.ToString();
+                        if (current.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
                         if (current.Contains("Saved user setting hideThinkingBlock = true.", StringComparison.Ordinal)) saved.TrySetResult();
                         if (current.Contains("External editor command [", StringComparison.Ordinal)) editorPrompt.TrySetResult();
                         if (current.Contains("Saved user setting externalEditor = code --wait.", StringComparison.Ordinal)) externalEditorSaved.TrySetResult();
@@ -1054,60 +1088,61 @@ public sealed class TerminalPtyTests
                 lock (outputLock) return outputBuilder.ToString();
             });
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync("/settings\n\nHide thinking\nEnabled\n");
+            await inputReady.Task.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("/settings\r\rHide thinking\rEnabled\r");
             await process.StandardInput.FlushAsync();
             await saved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("\u001b[A\n");
+            await process.StandardInput.WriteAsync("\u001b[A\r");
             await process.StandardInput.FlushAsync();
             await editorPrompt.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("code --wait\n");
+            await process.StandardInput.WriteAsync("code --wait\r");
             await process.StandardInput.FlushAsync();
             await externalEditorSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("Theme\nlight\n");
+            await process.StandardInput.WriteAsync("Theme\rlight\r");
             await process.StandardInput.FlushAsync();
             await themeSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("Steering mode\nall\n");
+            await process.StandardInput.WriteAsync("Steering mode\rall\r");
             await process.StandardInput.FlushAsync();
             await steeringSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("Follow-up mode\nOne at a time\n");
+            await process.StandardInput.WriteAsync("Follow-up mode\rOne at a time\r");
             await process.StandardInput.FlushAsync();
             await followUpSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("HTTP proxy\n");
+            await process.StandardInput.WriteAsync("HTTP proxy\r");
             await process.StandardInput.FlushAsync();
             await proxyPrompt.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("https://proxy.example:8443\n");
+            await process.StandardInput.WriteAsync("https://proxy.example:8443\r");
             await process.StandardInput.FlushAsync();
             await proxySaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("HTTP idle timeout\n");
+            await process.StandardInput.WriteAsync("HTTP idle timeout\r");
             await process.StandardInput.FlushAsync();
-            await process.StandardInput.WriteAsync("Disabled\n");
+            await process.StandardInput.WriteAsync("Disabled\r");
             await process.StandardInput.FlushAsync();
             await idleTimeoutSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("Provider request timeout\n");
+            await process.StandardInput.WriteAsync("Provider request timeout\r");
             await process.StandardInput.FlushAsync();
             await providerTimeoutPrompt.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("45000\n");
+            await process.StandardInput.WriteAsync("45000\r");
             await process.StandardInput.FlushAsync();
             await providerTimeoutSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("Provider retry delay limit\nNo limit\n");
+            await process.StandardInput.WriteAsync("Provider retry delay limit\rNo limit\r");
             await process.StandardInput.FlushAsync();
             await providerRetryDelaySaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("Code block indent\n");
+            await process.StandardInput.WriteAsync("Code block indent\r");
             await process.StandardInput.FlushAsync();
             await codeBlockIndentPrompt.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync(" > \n");
+            await process.StandardInput.WriteAsync(" > \r");
             await process.StandardInput.FlushAsync();
             await codeBlockIndentSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("Terminal true color\nEnabled\n");
+            await process.StandardInput.WriteAsync("Terminal true color\rEnabled\r");
             await process.StandardInput.FlushAsync();
             await trueColorSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("Skill commands\nDisabled\n");
+            await process.StandardInput.WriteAsync("Skill commands\rDisabled\r");
             await process.StandardInput.FlushAsync();
             await skillCommandsSaved.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("\u001b");
             await process.StandardInput.FlushAsync();
             await closed.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
@@ -1235,10 +1270,10 @@ public sealed class TerminalPtyTests
                 await process.StandardInput.WriteAsync("\u0015\u0018");
                 await process.StandardInput.FlushAsync();
                 await shortcutCopyCompleted.Task.WaitAsync(TimeSpan.FromSeconds(12));
-                await process.StandardInput.WriteAsync("/copy\n");
+                await process.StandardInput.WriteAsync("/copy\r");
                 await process.StandardInput.FlushAsync();
                 await slashCopyCompleted.Task.WaitAsync(TimeSpan.FromSeconds(12));
-                await process.StandardInput.WriteAsync("/quit\n");
+                await process.StandardInput.WriteAsync("/quit\r");
                 await process.StandardInput.FlushAsync();
                 process.StandardInput.Close();
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
@@ -1470,14 +1505,15 @@ public sealed class TerminalPtyTests
             };
             using var process = Process.Start(start);
             Assert.NotNull(process);
-            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stdout = new PtyOutputCapture(process);
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync($"/sessions Remove\n/delete-session {victim.Id[..12]}\nno\n/delete-session {victim.Id[..12]}\ndelete {victim.Id[..12]}\n/quit\n");
+            await stdout.InputReady.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync($"/sessions Remove\r/delete-session {victim.Id[..12]}\rno\r/delete-session {victim.Id[..12]}\rdelete {victim.Id[..12]}\r/quit\r");
             process.StandardInput.Close();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(timeout.Token); }
             catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
-            var output = await stdout;
+            var output = await stdout.Completion;
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("Remove Me", output);
             Assert.Contains("Deletion cancelled.", output);
@@ -1637,12 +1673,15 @@ public sealed class TerminalPtyTests
                 try:
                     while b'\x1b[c' not in output or b'\x1b[?2026l' not in output:
                         receive()
+                    active_flags = termios.tcgetattr(slave)[0]
+                    assert not active_flags & termios.ICRNL, 'raw mode translated Enter into Ctrl+J'
+                    assert not active_flags & termios.IXON, 'raw mode left XON/XOFF enabled'
                     replies = b'\x1b]10;#f8f8f2\x07\x1b]11;#282a36\x07'
                     replies += b''.join(('\x1b]4;%d;#262626\x07' % i).encode() for i in range(16))
                     replies += b'\x1b[?61;1;21;22c'
                     quit_started = time.monotonic()
                     if sys.argv[2] == 'True': os.write(master, replies)
-                    os.write(master, b'\x03\x03' if sys.argv[3] == 'True' else b'/quit\n')
+                    os.write(master, b'\x03\x03' if sys.argv[3] == 'True' else b'/quit\r')
                     while child.poll() is None:
                         receive()
                     assert child.wait() == 0, repr(output[-2000:])
@@ -1744,11 +1783,11 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync(dark.ToString());
             await process.StandardInput.FlushAsync();
 
-            await process.StandardInput.WriteAsync("\u0015/session\n");
+            await process.StandardInput.WriteAsync("\u0015/session\r");
             await process.StandardInput.FlushAsync();
             Assert.Same(sessionResponse.Task, await Task.WhenAny(sessionResponse.Task, process.WaitForExitAsync(timeout.Token)).WaitAsync(timeout.Token));
             Assert.False(process.HasExited);
-            await process.StandardInput.WriteAsync("/quit\n");
+            await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
@@ -1784,14 +1823,15 @@ public sealed class TerminalPtyTests
             };
             using var process = Process.Start(start);
             Assert.NotNull(process);
-            var stdout = process.StandardOutput.ReadToEndAsync();
+            var stdout = new PtyOutputCapture(process);
             var stderr = process.StandardError.ReadToEndAsync();
-            await process.StandardInput.WriteAsync("/session\n/name café界🙂\n/name smoke\n/session\n\u001b[200~/name pasted\nsecond\u001b[201~\n/quit\n");
+            await stdout.InputReady.WaitAsync(TimeSpan.FromSeconds(12));
+            await process.StandardInput.WriteAsync("/session\r/name café界🙂\r/name smoke\r/session\r\u001b[200~/name pasted\nsecond\u001b[201~\r/quit\r");
             process.StandardInput.Close();
             using var limit = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             try { await process.WaitForExitAsync(limit.Token); }
             catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
-            var output = await stdout;
+            var output = await stdout.Completion;
             Assert.Equal(0, process.ExitCode);
             Assert.Contains("(ephemeral)", output);
             Assert.Contains("Name: smoke", output);
