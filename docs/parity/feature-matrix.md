@@ -1,7 +1,7 @@
 ## Current integration checkpoint and priority reset — 2026-10-16
 
 Current integrated product source is
-`2a9de290009243903ff6adbe04f8b611790c7b98` on
+`95c89a6829fcddb85dcb8a92a1e8dc72ccd94c4c` on
 `parity/current-pi-completion`; configured Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Codex coverage now includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
@@ -23,11 +23,17 @@ bare names select exact active catalog entries, and session resume restores the
 saved llama model. Normal interactive fixtures execute the local `read` tool,
 continue with its result, and cancel streamed output without replay. Core tests
 cover steering-aware compaction, retry settlement after context restoration
-failure, and RPC prevalidation before active-run cancellation. The full local
-suite passes **2,086/2,086** with zero skips; full solution format and the
-warnings-as-errors build pass with zero warnings. Exact-head CI for this source
-is pending; the last green branch checkpoint was docs-only `c7b8a304` at
-[38790299142](https://github.com/PhilipGB/pisharp/actions/runs/38790299142).
+failure, and RPC prevalidation before active-run cancellation. An unauthenticated
+Codex selection now opens the interactive TUI; credential claim validation is
+deferred until a request, which is rejected before transport with a sign-in
+hint. A PTY fixture covers the browser/device login choices and cancellation.
+The opt-in live llama checks passed read-tool continuation and cancellation
+against Qwen3.8-27B-GGUF; full real-server TUI management/resume acceptance
+remains open. The combined Codex/llama focused acceptance filter passes
+**32/32**, and solution format plus the warnings-as-errors build pass. Exact-head
+Linux CI run 38835209720 passes **2,091/2,091** .NET tests with zero skips,
+format, build, Node/Python/docs checks and MCP conformance
+([run 38835209720](https://github.com/PhilipGB/pisharp/actions/runs/38835209720)).
 
 All 194 capability IDs remain tracked: **12 verified, 148 in progress, 34 not
 started**. The grammar/custom Responses slice moved from not started to in

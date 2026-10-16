@@ -8,9 +8,8 @@ core agent/session/tool behavior, the interactive experience, and other
 user-facing application features. Keep the configured Pi checkout pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-The current PR product checkpoint is `29d4a993` on
-`parity/current-pi-completion`, based on PR head
-`4883258303c2f631bcfa9c1607940ec060716282`. Codex coverage includes manual
+The current PR product checkpoint is `95c89a6829fcddb85dcb8a92a1e8dc72ccd94c4c`
+on `parity/current-pi-completion`. Codex coverage includes manual
 authorization-code/redirect-URL fallback, temporary subscription-usage retry,
 account/session WebSocket reuse, cached `previous_response_id` deltas, MAF
 tool-loop continuation with JSON-aware argument matching, inline PNG images,
@@ -47,17 +46,19 @@ subscription login, model selection, the real MAF `read` tool loop over the
 Responses WebSocket, steering during streamed output, session persistence, and
 resume through a fresh runtime/client. A second Codex fixture exercises manual
 compaction through Responses, then continues with the projected summary and
-persists it in the session. The combined Codex OAuth/Responses focused suite
-passes 29/29 with zero skips; full format verification and the warnings-as-errors
-solution build pass. Cancellation/retry have separate fixtures. These
-deterministic tests do not establish a live-account smoke test, interactive TUI
-login/exit, or the remaining pinned-Pi differential evidence.
-Format verification and the warnings-as-errors build pass; focused regressions
-pass 6/6. The full local suite had 2,086 passes and one ephemeral-port bind
-failure (2,087 total, zero skipped); rerunning the affected classifier test in
-isolation passed 2/2. Exact-head Linux CI at PR checkpoint `cc4557a5` passed
-both test and MCP conformance jobs; CI passed 2,087/2,087 .NET tests with zero
-skips ([run 38826952362](https://github.com/PhilipGB/pisharp/actions/runs/38826952362)).
+persists it in the session. An unauthenticated Codex model now opens the TUI
+instead of trying to parse the placeholder credential as a JWT; the client
+rejects any request before transport with a `/login openai-codex oauth` hint.
+A Linux PTY fixture verifies the Codex browser/device choices and cancellation.
+The combined Codex/llama focused acceptance filter passes 32/32 with zero skips;
+format verification and the warnings-as-errors solution build pass. The
+configured local router was reachable during this checkpoint: the opt-in live
+Qwen3.8-27B-GGUF read-tool continuation and post-visible-text cancellation
+fixtures pass 2/2. These checks do not establish a live Codex account or real
+llama manager/TUI load-switch-resume acceptance.
+Exact-head Linux CI run 38835209720 passes restore, format, warnings-as-errors
+build, Node/Python/docs checks, MCP conformance and 2,091/2,091 .NET tests with
+zero skips ([run 38835209720](https://github.com/PhilipGB/pisharp/actions/runs/38835209720)).
 
 All 194 capability IDs remain in the global inventory at **12 verified, 148 in
 progress, and 34 not started**. No capability status changed in this checkpoint.
@@ -78,6 +79,8 @@ Current execution priority is:
    Local request fixtures cover inline images, completed usage, stream errors,
    post-output cancellation, resumed history with refreshed credentials, and
    grammar/custom calls across WebSocket, SSE fallback and provider switching.
+   A PTY fixture covers the interactive browser/device method list and cancel;
+   fake OAuth plus loopback Responses cover successful sign-in and continuation.
    Live authenticated-account acceptance and wider current-Pi behavior
    differentials remain open.
 2. **llama.cpp path:** reuse the verified router configuration, model
@@ -85,10 +88,9 @@ Current execution priority is:
    twelve current-Pi paired terminal flows, fail-soft optional `/props`
    metadata, exact catalog-name model switching, and cross-model session
    resume, local read-tool execution and streamed cancellation through the
-   interactive route. Those deterministic receipts do not substitute for the
-   remaining end-to-end local model acceptance. No `llama-server` or test
-   endpoint is configured in this environment, so a live model smoke test has
-   not run.
+   interactive route. Live Qwen inference also passed a `read` tool continuation
+   and cancellation smoke test through the configured router. Real live
+   manager/TUI load-switch-resume acceptance remains open.
 3. **Core and interactive use:** agent/tool loops, prompt queues, cancellation,
    retries, durable session lifecycle, compaction/context, built-in tools,
    TUI/editor/navigation, normal CLI/RPC, settings/resources/extensions, MCP,
