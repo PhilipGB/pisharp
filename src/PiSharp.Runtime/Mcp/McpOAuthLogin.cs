@@ -37,7 +37,7 @@ public static class McpOAuthLogin
         manualCallbackInput ??= authorizationUrlPresenter is null && ReferenceEquals(output, Console.Out)
             ? Console.In : null;
         using var listener = new HttpListener();
-        listener.Prefixes.Add("http://+:" + callback.Port + "/");
+        listener.Prefixes.Add(callback.GetLeftPart(UriPartial.Authority) + "/");
         listener.Start();
         var authorizationStarted = false;
         var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Name, server.Url);
