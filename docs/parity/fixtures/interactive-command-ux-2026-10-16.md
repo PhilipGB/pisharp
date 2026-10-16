@@ -42,6 +42,9 @@ upstream pin was advanced.
 PiSharp-only settings follow the shared rows. Mutable rows use the existing
 user/project scope behavior; the settings PTY checks filtering, value changes,
 screen resize at 80 and 52 columns, persistence, and reload.
+`Clear on shrink` compares rendered transcript content height and performs a
+full viewport redraw when that content contracts; changed rows retain normal
+erasure behavior when their text becomes narrower.
 
 ## Interaction evidence
 
@@ -56,7 +59,12 @@ screen resize at 80 and 52 columns, persistence, and reload.
 - Bare `/thinking` opens a selector with active-model-supported levels and Pi
   descriptions. PTY evidence covers Enter, Escape, Ctrl+C, model-specific
   Ctrl+S persistence/restart, invalid direct input, and a Shift+Tab update used
-  by the next provider request.
+  by the next provider request. With no persisted default, `medium` is marked as
+  the effective default.
+- `Terminal progress` reports an indeterminate OSC 9;4 state during accepted
+  agent work and compaction, then clears it when the parent run settles or exits;
+  isolated Linux PTY coverage holds a provider response open to verify both
+  transitions. Manual compaction uses the same progress control.
 - The canonical command regression test asserts every registered built-in,
   explicitly including `/thinking`, `/login`, `/logout`, `/copy`,
   `/scoped-models`, `/settings`, `/model`, `/models`, and `/mcp`, plus dynamic

@@ -6,7 +6,7 @@ This bounded correction is on `milestone/interactive-command-ux`, based on
 `c52f02744f7ef5aa6e7d0202f617ed4e2dda3770`. The configured global Pi reference
 remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; this work does not promote a
 global capability or claim full TUI parity. Product and acceptance-test source
-is commit `d4e94cb7`.
+was originally commit `d4e94cb7`; the review corrections are included in PR #5.
 
 Settings now use a compact searchable in-flow list with the requested initial
 ten-row order, aligned values, selected-setting description, bounded rows,
@@ -17,6 +17,9 @@ Show images and Image width before Auto-resize images, so the prompt's explicit
 first-ten sequence remains authoritative for this correction. Supported,
 small-UX-gap and out-of-scope setting classifications are recorded in
 [`interactive-command-ux-2026-10-16.md`](parity/fixtures/interactive-command-ux-2026-10-16.md).
+`Clear on shrink` now tracks rendered transcript content height and requests a
+full viewport redraw when that content contracts; changed rows are still erased
+correctly when their text becomes narrower.
 
 Tab and Shift+Tab cycle slash/path candidates directly in the editor buffer.
 The completion metadata comes from the canonical built-in command catalog,
@@ -25,11 +28,20 @@ which merges dynamic skill, prompt and extension commands. PTY acceptance cycles
 opens the selector with one Enter. The `/thinking` selector shares supported
 level order and descriptions with Shift+Tab cycling, supports direct setters,
 cancel and model-specific Ctrl+S defaults, and is covered by isolated PTY tests
-that verify a later provider request uses the new level.
+that verify a later provider request uses the new level. The selector marks the
+implicit `medium` level as the default when no preference is stored. Terminal
+progress is active during accepted agent runs and compaction, and the parent run
+clears it on completion, cancellation, or error; manual compaction uses the same
+OSC progress control.
+
+The PR #5 review follow-up gives `Clear on shrink` full viewport redraw behavior
+when rendered transcript content contracts, and ties terminal progress to the
+agent and compaction lifecycle while retaining progress-dialog support. The
+focused TUI/PTy regression set passes **115/115** with zero skips.
 
 The correction remains bounded to settings presentation, completion, command
 discovery and thinking selection. No execution-ledger or feature-matrix status
-changed. Final local verification passes restore, format, and the
+changed. Initial milestone local verification passed restore, format, and the
 warnings-as-errors solution build; .NET **2,157/2,157** with zero skips;
 architecture **6/6**; Node **24/24**; Python **50/50**; and documentation path
 validation (**136 documents, 524 references**). The .NET suite used `TMPDIR=/tmp`

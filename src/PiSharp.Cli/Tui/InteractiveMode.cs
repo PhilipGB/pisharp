@@ -124,7 +124,7 @@ internal static class InteractiveMode
                             case "/thinking":
                                 await terminalProviderCommands.SetThinkingAsync(argument,
                                     projectBinding.Settings.GetModelThinkingLevel(modelBinding.Selection) ??
-                                        projectBinding.Settings.DefaultThinkingLevel,
+                                        projectBinding.Settings.DefaultThinkingLevel ?? ThinkingLevels.Default,
                                     settingsCommands.SaveModelThinkingLevelAsync, modelTransitions.ReplaceAsync);
                                 break;
                             case "/login":
@@ -139,9 +139,21 @@ internal static class InteractiveMode
                                 await terminalProviderCommands.LogoutAsync(argument, modelTransitions.ReplaceAsync);
                                 break;
                             case "/compact":
-                                Console.WriteLine(await conversationBinding.Run.CompactAsync(argument) ? "Context compacted; full history retained." :
-                                    "Nothing to compact (at least two completed user turns are required).");
-                                break;
+                                {
+                                    terminalScreen?.ReportTerminalProgress(null);
+                                    bool compacted;
+                                    try
+                                    {
+                                        compacted = await conversationBinding.Run.CompactWithResultAsync(argument) is not null;
+                                    }
+                                    finally
+                                    {
+                                        terminalScreen?.ClearTerminalProgress();
+                                    }
+                                    Console.WriteLine(compacted ? "Context compacted; full history retained." :
+                                        "Nothing to compact (at least two completed user turns are required).");
+                                    break;
+                                }
                             case "/copy":
                                 if (argument.Length != 0) throw new ArgumentException("/copy does not accept arguments.");
                                 await TerminalClipboardActions.CopyLastAssistantAsync(terminalClipboard, conversationBinding.Conversation, terminalScreen, Console.Out);

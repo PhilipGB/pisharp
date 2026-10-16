@@ -19,4 +19,15 @@ public sealed class TerminalThinkingSelectorTests
             options.Single(option => option.Value == "medium").Description);
         Assert.DoesNotContain(options, option => option.Value is "xhigh" or "max");
     }
+
+    [Fact]
+    public void OptionsMarkImplicitMediumDefaultWhenNoDefaultIsConfigured()
+    {
+        var levels = ThinkingLevels.AvailableForModel(true);
+
+        var options = TerminalThinkingSelector.CreateOptions(levels, "low", defaultLevel: null);
+
+        Assert.Contains("Moderate reasoning (~8k tokens) · default",
+            options.Single(option => option.Value == ThinkingLevels.Default).Description);
+    }
 }

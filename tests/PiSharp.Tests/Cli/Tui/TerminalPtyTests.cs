@@ -2486,6 +2486,8 @@ public sealed class TerminalPtyTests
         using var listener = StartLoopbackListener(out var port);
         using var serverTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         var requestBody = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var responseReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseResponse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync().WaitAsync(serverTimeout.Token);
@@ -2496,6 +2498,9 @@ public sealed class TerminalPtyTests
             request.Response.KeepAlive = false;
             await using var writer = new StreamWriter(request.Response.OutputStream);
             await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_cycle\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+            await writer.FlushAsync();
+            responseReady.TrySetResult();
+            await releaseResponse.Task.WaitAsync(serverTimeout.Token);
             await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_cycle\",\"output_index\":0,\"content_index\":0,\"delta\":\"SHIFT_TAB_HIGH_OK\"}\n\n");
             await writer.WriteAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_cycle\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\n");
             await writer.WriteAsync("data: [DONE]\n\n");
@@ -2506,6 +2511,8 @@ public sealed class TerminalPtyTests
         try
         {
             await WriteThinkingFixtureSettingsAsync(agentDirectory);
+            await UserSettingsWriter.SetAsync(Path.Combine(agentDirectory, "settings.json"),
+                "terminal.showTerminalProgress", "true", userScope: true);
             var modelsPath = Path.Combine(agentDirectory, "models.json");
             var models = await File.ReadAllTextAsync(modelsPath);
             await File.WriteAllTextAsync(modelsPath,
@@ -2531,11 +2538,24 @@ public sealed class TerminalPtyTests
             var requestJson = await requestBody.Task.WaitAsync(timeout.Token);
             using var parsedRequest = JsonDocument.Parse(requestJson);
             Assert.Equal("high", parsedRequest.RootElement.GetProperty("reasoning").GetProperty("effort").GetString());
+            await responseReady.Task.WaitAsync(timeout.Token);
+            const string progressStarted = "\u001b]9;4;3\u0007";
+            const string progressCleared = "\u001b]9;4;0\u0007";
+            async Task WaitForOutputAsync(string expected)
+            {
+                while (!screen.CapturedOutput.Contains(expected, StringComparison.Ordinal))
+                    await Task.Delay(10, timeout.Token);
+            }
+
+            await WaitForOutputAsync(progressStarted);
+            Assert.DoesNotContain(progressCleared, screen.CapturedOutput);
+            releaseResponse.TrySetResult();
             await screen.WaitForFrameAsync(frame => frame.Contains("SHIFT_TAB_HIGH_OK", StringComparison.Ordinal) &&
                 !frame.Contains("Enter steers · follow-up queues · Escape aborts", StringComparison.Ordinal) &&
                 !frame.Contains("Working", StringComparison.Ordinal) &&
                 frame.Split('\n').Any(line => line.Contains("fixture-model • high", StringComparison.Ordinal)))
                 .WaitAsync(timeout.Token);
+            await WaitForOutputAsync(progressCleared);
 
             await process.StandardInput.WriteAsync("/quit\r");
             await process.StandardInput.FlushAsync();
@@ -2548,6 +2568,7 @@ public sealed class TerminalPtyTests
         }
         finally
         {
+            releaseResponse.TrySetResult();
             serverTimeout.Cancel();
             if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
             process?.Dispose();

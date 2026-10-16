@@ -21,6 +21,7 @@ internal sealed class TerminalScreenCompositor
     private int _previousColumns;
     private int _previousHeight;
     private bool _clearOnShrink;
+    private int? _previousContentHeight;
     private TerminalTextLayout.LayoutResult? _previousTranscriptLayout;
     private int _previousTranscriptFirstVisualRow;
     private int _previousTranscriptScrollOffset;
@@ -36,7 +37,8 @@ internal sealed class TerminalScreenCompositor
     public void SetClearOnShrink(bool enabled) => _clearOnShrink = enabled;
 
     internal sealed record Frame(IReadOnlyList<string> Rows, int CursorRow, int CursorColumn,
-        int ScrollOffset, int Columns, int Height, bool CursorVisible = true, int RestoreStartRow = 0);
+        int ScrollOffset, int Columns, int Height, bool CursorVisible = true, int RestoreStartRow = 0,
+        int ContentHeight = 0);
 
     public Frame Compose(string editorText, int editorCursor, int? editorSelectionStart, int? editorSelectionEnd,
         string transcriptText, string footer,
@@ -243,12 +245,13 @@ internal sealed class TerminalScreenCompositor
             var cursorColumn = panelCursorColumn ?? 1;
             return new(rows, Math.Clamp(cursorRow, 0, Math.Max(0, height - 1)),
                 Math.Clamp(cursorColumn, 1, columns + 1), scrollOffset, columns, height, panelCursorVisible,
-                RestoreStartRow: panelStart);
+                RestoreStartRow: panelStart, ContentHeight: startupHeight + transcriptRows.Count);
         }
 
         return new(rows, editorStart + borderHeight / 2 + editor.CursorRow,
             editor.CursorColumn + boundedEditorPadding + 1, scrollOffset, columns, height,
-            CursorVisible: showHardwareCursor, RestoreStartRow: editorStart);
+            CursorVisible: showHardwareCursor, RestoreStartRow: editorStart,
+            ContentHeight: startupHeight + transcriptRows.Count);
     }
 
     private static string HighlightCursor(string row, EditorViewport.RowMap rowMap, int cursor)
@@ -265,7 +268,10 @@ internal sealed class TerminalScreenCompositor
         var rendered = _images.PrepareFrame(frame.Rows);
         _output.Write("\u001b[?2026h");
         if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
-        var fullRedraw = _previousRows is null || _previousColumns != frame.Columns || _previousHeight != frame.Height;
+        var contentShrank = _clearOnShrink && _previousContentHeight is { } previousContentHeight &&
+            frame.ContentHeight < previousContentHeight;
+        var fullRedraw = _previousRows is null || _previousColumns != frame.Columns || _previousHeight != frame.Height ||
+            contentShrank;
         var redrawAllRows = fullRedraw || rendered.Preamble.Length > 0;
         if (fullRedraw) _output.Write("\u001b[2J");
         for (var index = 0; index < frame.Rows.Count; index++)
@@ -273,11 +279,7 @@ internal sealed class TerminalScreenCompositor
             if (!redrawAllRows && string.Equals(_previousRows![index], rendered.Rows[index], StringComparison.Ordinal))
                 continue;
             _output.Write($"\u001b[{index + 1};1H");
-            var previousWidth = _previousRows is { Count: > 0 } previousRows && index < previousRows.Count
-                ? TerminalTextLayout.Width(previousRows[index]) : -1;
-            var currentWidth = TerminalTextLayout.Width(rendered.Rows[index]);
-            if (!_clearOnShrink || previousWidth < 0 || currentWidth < previousWidth)
-                _output.Write("\u001b[2K");
+            _output.Write("\u001b[2K");
             _output.Write(rendered.Rows[index]);
             _output.Write("\u001b[0m");
         }
@@ -298,6 +300,7 @@ internal sealed class TerminalScreenCompositor
         _previousRestoreStartRow = frame.RestoreStartRow;
         _previousColumns = frame.Columns;
         _previousHeight = frame.Height;
+        _previousContentHeight = frame.ContentHeight;
     }
 
     public void RestoreLastFrameToNormalBuffer()

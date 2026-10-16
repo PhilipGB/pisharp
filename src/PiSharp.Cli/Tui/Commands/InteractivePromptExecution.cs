@@ -27,6 +27,9 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
         if (images is not null) contents.AddRange(images);
         void ProcessRunUpdate(AgentLifecycleEvent update)
         {
+            if (update.Type is "prompt_accepted" or "agent_attempt_started" or "compaction_start")
+                screen?.ReportTerminalProgress(null);
+
             if (update.Type is "prompt_accepted" or "agent_attempt_started")
             {
                 screen?.SetFooter(getFooter(), render: false);

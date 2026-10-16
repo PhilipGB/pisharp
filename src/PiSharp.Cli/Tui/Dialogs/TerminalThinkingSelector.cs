@@ -17,8 +17,11 @@ internal sealed class TerminalThinkingSelector(TerminalEditor editor)
     }
 
     internal static IReadOnlyList<TerminalSelectionOption<string>> CreateOptions(
-        IReadOnlyList<string> levels, string currentLevel, string? defaultLevel) =>
-        levels.Select(level => new TerminalSelectionOption<string>(level, level, level,
-            ThinkingLevels.Description(level) + (level.Equals(defaultLevel, StringComparison.OrdinalIgnoreCase) ? " · default" : ""),
+        IReadOnlyList<string> levels, string currentLevel, string? defaultLevel)
+    {
+        var effectiveDefault = defaultLevel ?? ThinkingLevels.Default;
+        return levels.Select(level => new TerminalSelectionOption<string>(level, level, level,
+            ThinkingLevels.Description(level) + (level.Equals(effectiveDefault, StringComparison.OrdinalIgnoreCase) ? " · default" : ""),
             IsCurrent: level.Equals(currentLevel, StringComparison.OrdinalIgnoreCase))).ToArray();
+    }
 }

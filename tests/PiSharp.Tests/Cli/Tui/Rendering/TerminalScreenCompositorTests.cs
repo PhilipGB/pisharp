@@ -144,21 +144,27 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
-    public void ClearOnShrinkOnlyClearsRowsWhenTheirRenderedWidthGetsSmaller()
+    public void ClearOnShrinkRedrawsWhenContentShrinksAndStillErasesNarrowerRows()
     {
         using var output = new StringWriter();
         var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer());
         compositor.SetClearOnShrink(true);
-        var original = new TerminalScreenCompositor.Frame(["longer"], 0, 1, 0, 10, 1);
+        var original = new TerminalScreenCompositor.Frame(
+            ["longer content", "second row", "footer"], 0, 1, 0, 20, 3, ContentHeight: 3);
         compositor.Render(original);
         output.GetStringBuilder().Clear();
 
-        compositor.Render(original with { Rows = ["short"] });
-        Assert.Contains("\u001b[2K", output.ToString());
+        compositor.Render(original with { Rows = ["short", "second row", "footer"] });
+        var narrowerRowUpdate = output.ToString();
+        Assert.DoesNotContain("\u001b[2J", narrowerRowUpdate);
+        Assert.Contains("\u001b[2K", narrowerRowUpdate);
         output.GetStringBuilder().Clear();
 
-        compositor.Render(original with { Rows = ["other"] });
-        Assert.DoesNotContain("\u001b[2K", output.ToString());
+        compositor.Render(original with { Rows = ["short", "", "footer"], ContentHeight = 2 });
+        var contentShrinkUpdate = output.ToString();
+        Assert.Equal(1, Count(contentShrinkUpdate, "\u001b[2J"));
+        Assert.Contains("\u001b[2;1H\u001b[2K", contentShrinkUpdate);
+        Assert.Contains("\u001b[3;1H\u001b[2Kfooter", contentShrinkUpdate);
     }
 
     [Fact]
