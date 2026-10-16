@@ -11,7 +11,8 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
     {
         var sessions = await SessionCatalog.ListAsync(store, cancellationToken);
         var sortByName = false;
-        var options = ToOptions(sessions, currentPath, sortByName);
+        var branchHeads = await GetBranchHeadsAsync(sessions, currentPath, currentConversation, cancellationToken);
+        var options = ToOptions(sessions, currentPath, sortByName, branchHeads);
         var current = sessions.FirstOrDefault(session => PathsEqual(session.Path, currentPath));
         var sortKey = editor.GetDisplayKeys("app.session.toggleSort");
         var renameKey = editor.GetDisplayKeys("app.session.rename");
@@ -30,7 +31,7 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
                 {
                     sortByName = !sortByName;
                     list.SetTitle($"Resume session · {(sortByName ? "Name" : "Recent")}");
-                    list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName), scopedOptions: null);
+                    list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName, branchHeads), scopedOptions: null);
                     return true;
                 }
                 if (!editor.MatchesKeybinding("app.session.rename", key)) return false;
@@ -40,7 +41,8 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
                 if (refreshed is not null)
                 {
                     sessions = refreshed;
-                    list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName), scopedOptions: null);
+                    branchHeads = await GetBranchHeadsAsync(sessions, currentPath, currentConversation, cancellationToken);
+                    list.ReplaceOptions(ToOptions(sessions, currentPath, sortByName, branchHeads), scopedOptions: null);
                 }
                 return true;
             }, cancellationToken: cancellationToken);
@@ -68,25 +70,59 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
     }
 
     private static IReadOnlyList<TerminalSelectionOption<SessionListing>> ToOptions(
-        IReadOnlyList<SessionListing> sessions, string? currentPath, bool sortByName)
+        IReadOnlyList<SessionListing> sessions, string? currentPath, bool sortByName,
+        IReadOnlyDictionary<string, SessionPickerBranchHeads> branchHeads)
     {
         IEnumerable<SessionListing> ordered = sortByName
             ? sessions.OrderBy(session => string.IsNullOrWhiteSpace(session.Name) ? 1 : 0)
                 .ThenBy(session => session.Name, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(session => session.Id, StringComparer.Ordinal)
             : sessions;
-        return ordered.Select(session => ToOption(session, currentPath)).ToArray();
+        return ordered.Select(session => ToOption(session, currentPath, branchHeads[session.Path])).ToArray();
     }
 
-    private static TerminalSelectionOption<SessionListing> ToOption(SessionListing session, string? currentPath)
+    internal static TerminalSelectionOption<SessionListing> ToOption(SessionListing session, string? currentPath,
+        SessionPickerBranchHeads branchHeads)
     {
         var id = session.Id[..Math.Min(12, session.Id.Length)];
         var name = string.IsNullOrWhiteSpace(session.Name) ? "(unnamed)" : session.Name;
         var modified = session.ModifiedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-        var description = $"{id} · {session.Model} · {session.MessageCount} messages · {modified}";
-        var searchText = $"{name} {session.Id} {session.Model} {session.Path}";
+        var branchDescription = branchHeads.IsAvailable
+            ? $"head {(branchHeads.HeadId is null ? "(empty)" : branchHeads.HeadId[..Math.Min(12, branchHeads.HeadId.Length)])} · {branchHeads.Count} branch heads"
+            : "branch details unavailable";
+        var current = PathsEqual(session.Path, currentPath);
+        var description = $"{(current ? "Current · " : "")}{branchDescription} · {session.Model} · {session.MessageCount} messages · {modified}";
+        var searchText = $"{name} {session.Id} {session.Model} {session.Path} {branchHeads.HeadId}";
         return new(Key(session), session, $"{name} · {id}", description, searchText,
-            PathsEqual(session.Path, currentPath));
+            current);
+    }
+
+    private async Task<IReadOnlyDictionary<string, SessionPickerBranchHeads>> GetBranchHeadsAsync(
+        IReadOnlyList<SessionListing> sessions, string? currentPath, ConversationSession? currentConversation,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, SessionPickerBranchHeads>(StringComparer.Ordinal);
+        foreach (var listing in sessions)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (PathsEqual(listing.Path, currentPath) && currentConversation?.Id == listing.Id)
+            {
+                result.Add(listing.Path, SessionPickerBranchHeads.From(currentConversation));
+                continue;
+            }
+            try
+            {
+                var conversation = await store.LoadAsync(listing.Path, cancellationToken);
+                result.Add(listing.Path, SessionPickerBranchHeads.From(conversation));
+            }
+            catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException)
+            {
+                // A session can change between cataloguing and opening the picker. Keep its row visible
+                // so one stale file cannot prevent resuming another session.
+                result.Add(listing.Path, new(null, 0, IsAvailable: false));
+            }
+        }
+        return result;
     }
 
     private static string Key(SessionListing session) => session.Id;
@@ -95,4 +131,15 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
         Path.GetFullPath(path).Equals(Path.GetFullPath(other), OperatingSystem.IsWindows()
             ? StringComparison.OrdinalIgnoreCase
             : StringComparison.Ordinal);
+}
+
+internal sealed record SessionPickerBranchHeads(string? HeadId, int Count, bool IsAvailable = true)
+{
+    public static SessionPickerBranchHeads From(ConversationSession conversation)
+    {
+        var entries = conversation.Tree.Entries;
+        var parents = entries.Where(entry => entry.ParentId is not null)
+            .Select(entry => entry.ParentId!).ToHashSet(StringComparer.Ordinal);
+        return new(conversation.Tree.HeadId, entries.Count(entry => !parents.Contains(entry.Id)));
+    }
 }
