@@ -5,30 +5,39 @@
 The bounded MCP/Codemode milestone is on
 `milestone/mcp-codemode-workflows`, based on main
 `28f223c0c3b52ac9cd79a76c35a26c982999eee2`. Product source is
-`cf2929dff3836be931a1c27ebfd60f4b65a75c6d`; the configured Pi reference stays
-at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This completes the requested
-workflow milestone without claiming global parity.
+`9ca5deb4640438893c3bc26a4bf16df3dd7eada7`; the configured Pi reference stays
+pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This completes the
+requested workflow milestone without claiming global parity.
 
-MCP management now exposes useful status and sanitized details, enable/disable,
-exposure, reconnect, login/logout and reload actions. A real CLI PTY observes a
-connected stdio server, disables it, reloads, sees the disabled state, completes
-a provider follow-up and verifies clean CLI/server exit. A composed agent test
-uses the real `PiAgent`/`ConversationRun`, calls one stdio MCP tool, passes the
-result through Codemode nested read/write tools, continues in the parent and
-successfully handles a follow-up.
+Bare `/mcp` opens a selectable server list and per-server details/actions menu
+with status, tool count, transport/source, scope, exposure and safe errors.
+Actions include tools, exposure, sign-in/out, reconnect and enable/disable;
+Escape returns from actions to the list and closes the manager to the prompt.
+A Linux PTY selects and disables a configured stdio server, backs out twice,
+completes a deterministic provider follow-up and verifies clean CLI/fixture
+exit. The existing process PTY also covers typed status, disable and reload.
+A composed agent test uses the real `PiAgent`/`ConversationRun`, calls one stdio
+MCP tool, passes the result through Codemode nested read/write tools, continues
+in the parent and successfully handles a follow-up.
+
+Additional acceptance verifies that a failed MCP server does not prevent a
+healthy configured server from serving tools. Parent cancellation stops a
+blocked MCP call and a blocked Codemode worker, waits for settlement and then
+successfully handles another prompt without replay. Direct Codemode sandbox
+tests cover 64 KiB text output, 256 output items, 4 MiB per nested argument and
+8 MiB aggregate argument limits.
 
 OAuth keeps DCR as the default and supports opt-in CIMD with Pi's issuer-aware
 shared or server-hash metadata document. Tests cover callback host/path
 rejection, configured host/port, manual redirect retry, cancellation, and the
 active TUI paste flow. The pinned MCP SDK remains responsible for PKCE,
 issuer/state validation, token exchange and refresh. Codemode classifier
-contexts now accept 4 MiB per argument and 8 MiB total per run; a deterministic
+contexts accept 4 MiB per argument and 8 MiB total per run; a deterministic
 48 KiB image context reaches the classifier fixture. The named MCP OAuth CIMD
-capability is now verified; broad MCP and Codemode capabilities remain
-in-progress.
+capability is verified; broad MCP and Codemode capabilities remain in progress.
 
 Full local verification passes restore, format, a warnings-as-errors build,
-**2,124/2,124** .NET tests with zero skips, architecture checks **6/6**, Node
+**2,129/2,129** .NET tests with zero skips, architecture checks **6/6**, Node
 **24/24**, Python **50/50**, and documentation validation (**135 documents,
 524 references**). MCP conformance passes **261** checks with the same eight
 classified baseline failures and no new regressions. One saved-Codex and one
@@ -37,10 +46,10 @@ returned its result, and shut down the fixture.
 
 The one promoted capability leaves all 194 IDs at **13 verified, 148 in
 progress and 33 not started**. Broader MCP resource/output semantics, Codemode
-sandbox semantics and the established conformance failures remain open. Exact
-head Linux CI on branch head `bee038cc8d41e8ea964e6c197e088bef2b4aed08`
-passes both required jobs and all **2,124/2,124** .NET tests
-([run 38901880600](https://github.com/PhilipGB/pisharp/actions/runs/38901880600)).
+sandbox semantics and the established conformance failures remain open.
+Exact-head Linux CI on product source
+`9ca5deb4640438893c3bc26a4bf16df3dd7eada7` passed both required jobs and
+**2,129/2,129** tests ([run 38911196308](https://github.com/PhilipGB/pisharp/actions/runs/38911196308)).
 The milestone is complete; stop and wait for the next user goal.
 
 ## Interactive UX milestone complete — 2026-10-16
