@@ -1,5 +1,20 @@
 # PiSharp capability parity
 
+## Active resumed milestone — Resources / Packages / Extensions — 2026-10-16
+
+Work resumed on `milestone/resources-packages-extensions`, based on merged
+`main` `0c94c69d2f416ba0e625e353142b1d695565b75e`. Managed package CLI workflows
+are already verified in the ledger and package process receipt; do not duplicate
+the stale worker branch. Extension conflict/replaceable-builtin and typed
+context/UI receipts are already present. The next concrete extension slice adds
+ordered `before_agent_start` handlers for submitted user prompts. Code source
+`9d5b0a22` passes five focused extension/recovery checks, format verification,
+and a zero-warning warnings-as-errors build. It does not implement idle custom
+`triggerTurn` messages or close the broad .NET extension API capability.
+
+See [the continuation](docs/continuation.md) and the
+[before-agent-start receipt](docs/parity/fixtures/extension-before-agent-start-current-pi-2026-10-16.json).
+
 ## Current integration checkpoint — 2026-10-16
 
 Current PR product source is `29d4a993` on `parity/current-pi-completion`, based

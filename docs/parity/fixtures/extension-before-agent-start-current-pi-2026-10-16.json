@@ -1,0 +1,48 @@
+{
+  "fixture": "extension-before-agent-start-current-pi",
+  "capabilityIds": [
+    "feature-extensions-net-api",
+    "extension-orchestration-api"
+  ],
+  "pins": {
+    "pi": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pisharpBase": "0c94c69d2f416ba0e625e353142b1d695565b75e",
+    "pisharpProduct": "9d5b0a222eded0301989403c57137eed7dceb5d8"
+  },
+  "piSource": {
+    "files": [
+      "packages/coding-agent/src/core/extensions/types.ts",
+      "packages/coding-agent/src/core/extensions/runner.ts",
+      "packages/coding-agent/src/core/agent-session.ts",
+      "packages/coding-agent/test/extensions-runner.test.ts"
+    ],
+    "behavior": [
+      "before_agent_start handlers run in extension order and later handlers see earlier system-prompt changes.",
+      "The event contains the submitted prompt, image attachments, and current system prompt; a handler may replace the system prompt or add a custom message.",
+      "Handler errors are reported without stopping later handlers. Run preparation applies the prompt changes before appending the starting message."
+    ]
+  },
+  "pisharp": {
+    "behavior": [
+      "ExtensionRegistration.AddBeforeAgentStartHandler registers ordered callbacks with source provenance and reload rollback/reselection support.",
+      "ConversationRun invokes the callbacks once before each submitted user turn is accepted or saved. Later handlers observe the latest complete system prompt, including additional MCP server instructions.",
+      "A returned system prompt replaces provider instructions for that turn. Additional MCP instructions are not appended twice, and the override is cleared after settlement.",
+      "Callbacks receive expanded prompt text, image attachments, live extension context, and cancellation. Exceptions emit extension_error and later callbacks continue."
+    ],
+    "limitations": [
+      "Idle custom-message triggerTurn runs, handler-injected custom messages, and mutable system-prompt option sections are not implemented.",
+      "This receipt records focused native behavior; a paired Pi/PiSharp process differential was not run."
+    ]
+  },
+  "verification": {
+    "focusedTests": {
+      "command": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter 'FullyQualifiedName~ExtensionBeforeAgentStartTests|FullyQualifiedName~ExtensionLoadRecoveryTests'",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore: passed.",
+    "build": "dotnet build PiSharp.slnx --no-restore --warnaserror -m:1: passed, zero warnings and errors.",
+    "fullSuite": "Not run for this focused slice."
+  }
+}

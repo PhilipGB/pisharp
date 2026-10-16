@@ -1,5 +1,31 @@
 # Continuation — PiSharp capability parity
 
+## Resources / Packages / Extensions resume — 2026-10-16
+
+The user resumed this milestone after PR #5 merged. Work is on
+`milestone/resources-packages-extensions`, based on merged `main`
+`0c94c69d2f416ba0e625e353142b1d695565b75e`. The package install/remove/update/list
+CLI workflow is already verified by the current ledger and
+[`package-cli-real-process-2026-10-15.json`](parity/fixtures/package-cli-real-process-2026-10-15.json);
+the preserved `worker/003-package-cli-*` refs are an older duplicate and would
+drop newer package-output/settings behavior.
+
+The current extension increment is product source `9d5b0a22`. It adds ordered
+`AddBeforeAgentStartHandler` callbacks for expanded submitted user prompts.
+Handlers receive prompt text, image attachments, the current full system prompt,
+and live extension context. Full prompt replacements apply only to the current
+turn; handler errors emit `extension_error`, cancellation propagates, and failed
+extension configuration rolls the new registrations back. The pinned Pi source
+is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Idle custom-message `triggerTurn`,
+custom-message injection and mutable prompt-option sections remain open.
+
+Focused extension and recovery checks pass **5/5**, format verification passes,
+and the warnings-as-errors build has zero warnings. The full suite and paired
+process differential were not run for this slice. The extension capability
+remains `in_progress`; no global capability status changed. See the
+[before-agent-start receipt](parity/fixtures/extension-before-agent-start-current-pi-2026-10-16.json)
+and [native extension API](extensions.md).
+
 ## Interactive Command UX consistency correction — 2026-10-16
 
 This bounded correction is on `milestone/interactive-command-ux`, based on
