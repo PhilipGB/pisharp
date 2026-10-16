@@ -19,15 +19,19 @@ public sealed class ExtensionBeforeAgentStartTests
             var conversation = new ConversationSession(workingDirectory, "test-model", null);
             var registration = new ExtensionRegistration();
             var order = new List<string>();
+            PiSharpExtensionContext? observedContext = null;
             registration.AddBeforeAgentStartHandler((eventData, context, cancellationToken) =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 Assert.Equal("hello", eventData.Prompt);
+                Assert.Single(eventData.Images);
+                Assert.Equal("image/png", eventData.Images[0].MediaType);
                 Assert.Contains("base prompt", eventData.SystemPrompt, StringComparison.Ordinal);
                 Assert.Contains("mcp context", eventData.SystemPrompt, StringComparison.Ordinal);
                 Assert.Equal(workingDirectory, context.WorkingDirectory);
                 Assert.Equal(conversation.Id, context.SessionId);
-                Assert.True(context.IsIdle);
+                Assert.False(context.IsIdle);
+                observedContext = context;
                 order.Add("first");
                 return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(
                     new(eventData.SystemPrompt + "\nfirst"));
@@ -50,8 +54,12 @@ public sealed class ExtensionBeforeAgentStartTests
             var run = await ConversationRun.OpenAsync(agent, conversation);
             var events = new List<AgentLifecycleEvent>();
 
-            await foreach (var item in run.RunEventsAsync("hello")) events.Add(item);
+            var prompt = new ChatMessage(ChatRole.User,
+                [new TextContent("hello"), new DataContent(new byte[] { 1, 2, 3 }, "image/png")]);
+            await foreach (var item in run.RunEventsAsync(prompt, "hello")) events.Add(item);
 
+            Assert.NotNull(observedContext);
+            Assert.True(observedContext.IsIdle);
             Assert.Equal(["first", "second"], order);
             var error = Assert.Single(events, item => item.Type == "extension_error");
             Assert.Equal("extension setup failed", error.Error);

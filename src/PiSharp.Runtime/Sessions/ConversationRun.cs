@@ -274,9 +274,12 @@ public sealed class ConversationRun
             var accepted = false;
             var activeTurnOutcomeSent = false;
             object? owner = null;
+            var conversationRunActivityStarted = false;
             try
             {
                 owner = BeginPromptLoop(Publish);
+                _agent.BeginConversationRunActivity();
+                conversationRunActivityStarted = true;
                 PromptBatch? current = new([promptMessage], [promptText]);
                 var stopRun = false;
                 while (current is not null)
@@ -361,10 +364,17 @@ public sealed class ConversationRun
             }
             finally
             {
-                if (owner is not null) EndPromptLoop(owner);
-                try { await channel.Writer.WriteAsync(new("agent_settled"), consumerClosed.Token); }
-                catch (OperationCanceledException) { }
-                channel.Writer.TryComplete();
+                try
+                {
+                    if (owner is not null) EndPromptLoop(owner);
+                }
+                finally
+                {
+                    if (conversationRunActivityStarted) _agent.EndConversationRunActivity();
+                    try { await channel.Writer.WriteAsync(new("agent_settled"), consumerClosed.Token); }
+                    catch (OperationCanceledException) { }
+                    channel.Writer.TryComplete();
+                }
             }
         }, CancellationToken.None);
         try

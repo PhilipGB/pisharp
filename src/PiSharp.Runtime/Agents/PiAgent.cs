@@ -41,6 +41,7 @@ public sealed class PiAgent
     private DurableExecution? _active;
     private ConversationSession? _extensionConversation;
     private int _isRunning;
+    private int _activeConversationRuns;
     private Action<AgentLifecycleEvent>? _events;
     private Func<bool, IReadOnlyList<ChatMessage>>? _takeSteering;
     private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
@@ -114,7 +115,7 @@ public sealed class PiAgent
                 tools.WorkingDirectory, "print", false, false, UnavailableProjectTrustExtensionUi.Instance),
             () => Volatile.Read(ref _extensionConversation),
             () => Volatile.Read(ref _currentToolLoadout)?.Snapshot.ActiveToolNames.ToArray() ?? [],
-            () => Volatile.Read(ref _isRunning) == 0);
+            () => Volatile.Read(ref _isRunning) == 0 && Volatile.Read(ref _activeConversationRuns) == 0);
         _codemodeModels = codemodeModels;
         _codingTools = tools;
         _customSystemPrompt = systemPrompt;
@@ -257,6 +258,10 @@ public sealed class PiAgent
     }
 
     internal void ClearRunSystemPromptOverride() => Volatile.Write(ref _runSystemPromptOverride, null);
+
+    internal void BeginConversationRunActivity() => Interlocked.Increment(ref _activeConversationRuns);
+
+    internal void EndConversationRunActivity() => Interlocked.Decrement(ref _activeConversationRuns);
 
     private PiSystemPromptBuilder.Projection GetSystemPromptForCurrentLoadout()
     {
