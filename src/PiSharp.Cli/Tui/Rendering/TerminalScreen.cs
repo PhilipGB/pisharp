@@ -817,7 +817,8 @@ public sealed class TerminalScreen : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
         var safeName = TerminalSafeText.Normalize(serverName);
         AppendAuthorizationUrlNotification("mcp:" + serverName,
-            "Sign in to MCP server \"" + safeName + "\" in your browser:", null, authorizationUrl,
+            "Sign in to MCP server \"" + safeName + "\" in your browser:",
+            "If the browser cannot reach this terminal, paste the redirect URL and press Enter here.", authorizationUrl,
             copyKeyLabel, cancelKeyLabel);
     }
 

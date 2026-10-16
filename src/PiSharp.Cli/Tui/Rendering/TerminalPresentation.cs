@@ -142,7 +142,7 @@ internal sealed class TerminalPresentation : IDisposable
             _terminalScreen.AppendMcpAuthorizationNotification(serverName, url,
                 _editor?.GetDisplayKeys("app.message.copy"), _editor?.GetDisplayKeys("app.interrupt"));
         Action<string>? completed = _terminalScreen is null ? null : _terminalScreen.ClearMcpAuthorizationNotification;
-        context.SetMcpAuthorizationUrlPresenter(presenter, completed);
+        context.SetMcpAuthorizationUrlPresenter(presenter, completed, _editor?.McpAuthorizationCallbackInput);
     }
     public string IdleFooter(int? providerCount = null) => TerminalModelStatus.FormatIdleFooter(_modelBinding.Selection.Model, _modelBinding.Thinking, _conversationBinding.Conversation,
         _conversationBinding.Run.ContextWindowTokens, _projectBinding.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),

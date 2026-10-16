@@ -5,6 +5,11 @@ import os
 import sys
 import time
 
+pid_path = os.getenv("MCP_FIXTURE_PID_PATH")
+if pid_path:
+    with open(pid_path, "w", encoding="utf-8") as pid_file:
+        pid_file.write(str(os.getpid()))
+
 
 def respond(request, result):
     sys.stdout.write(json.dumps({"jsonrpc": "2.0", "id": request["id"], "result": result}) + "\n")

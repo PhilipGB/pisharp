@@ -18,12 +18,14 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
     private readonly Dictionary<string, ServerEntry> _servers = new(StringComparer.Ordinal);
     private Action<string, Uri>? _authorizationUrlPresenter;
     private Action<string>? _authorizationUrlClearer;
+    private TextReader? _manualCallbackInput;
 
     internal void SetAuthorizationUrlPresenter(Action<string, Uri>? presenter,
-        Action<string>? authorizationCompleted = null)
+        Action<string>? authorizationCompleted = null, TextReader? manualCallbackInput = null)
     {
         Volatile.Write(ref _authorizationUrlPresenter, presenter);
         Volatile.Write(ref _authorizationUrlClearer, authorizationCompleted);
+        Volatile.Write(ref _manualCallbackInput, manualCallbackInput);
     }
 
     internal void Register(McpServerConfiguration configuration, McpServerConnection? connection,
@@ -171,7 +173,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
             {
                 await McpOAuthLogin.SignInAsync(entry.Configuration, agentDirectory, Console.Out,
                     openBrowser: !Console.IsInputRedirected, TimeSpan.FromMinutes(5), cancellationToken,
-                    Volatile.Read(ref _authorizationUrlPresenter), entry.Connection.PendingAuthorizationScope);
+                    Volatile.Read(ref _authorizationUrlPresenter), entry.Connection.PendingAuthorizationScope,
+                    Volatile.Read(ref _manualCallbackInput));
                 try
                 {
                     await entry.Connection.ReconnectAsync(cancellationToken);
