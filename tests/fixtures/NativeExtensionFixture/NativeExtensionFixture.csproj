@@ -4,11 +4,30 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>PiSharp.TestExtensions.NativeFixture</PackageId>
-    <Version>1.0.0</Version>
+    <NativeExtensionVersion Condition="'$(NativeExtensionVersion)' == ''">1.0.0</NativeExtensionVersion>
+    <NativeFixtureRevision Condition="'$(NativeFixtureRevision)' == ''">v1</NativeFixtureRevision>
+    <Version>$(NativeExtensionVersion)</Version>
     <Description>External-style fixture for the PiSharp native extension contract.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <DefineConstants>$(DefineConstants);NATIVE_FIXTURE_$(NativeFixtureRevision)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../../src/PiSharp.Extensions.Abstractions/PiSharp.Extensions.Abstractions.csproj" />
+    <ProjectReference Include="../NativeExtensionPrivateDependency/NativeExtensionPrivateDependency.csproj"
+                      PrivateAssets="all" />
+    <None Include="$(TargetDir)$(AssemblyName).deps.json" Pack="true"
+          PackagePath="lib/$(TargetFramework)/" Visible="false" />
+    <None Include="$(TargetDir)NativeExtensionPrivateDependency.dll" Pack="true"
+          PackagePath="lib/$(TargetFramework)/" Visible="false" />
+    <None Include="$(IntermediateOutputPath)pisharp-extension.json" Pack="true"
+          PackagePath="/" Visible="false" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
+
+  <Target Name="GeneratePiSharpExtensionManifest" BeforeTargets="_GetPackageFiles">
+    <WriteLinesToFile File="$(IntermediateOutputPath)pisharp-extension.json"
+                      Lines="{&quot;id&quot;:&quot;$(PackageId)&quot;,&quot;version&quot;:&quot;$(Version)&quot;,&quot;apiVersion&quot;:1,&quot;extensions&quot;:[{&quot;assembly&quot;:&quot;lib/$(TargetFramework)/$(AssemblyName).dll&quot;,&quot;type&quot;:&quot;PiSharp.TestExtensions.NativeFixture.ExampleExtension&quot;}]}"
+                      Overwrite="true" />
+  </Target>
 </Project>
