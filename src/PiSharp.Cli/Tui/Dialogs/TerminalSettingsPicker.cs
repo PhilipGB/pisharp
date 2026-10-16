@@ -3,30 +3,47 @@ using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Tui;
 
-/// <summary>Edits supported settings through the reusable searchable terminal selection overlay.</summary>
+/// <summary>Edits supported settings through a compact, searchable in-flow settings list.</summary>
 internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOnlyList<string>>? themeNames = null)
 {
     private readonly Func<IReadOnlyList<string>> _themeNames = themeNames ?? (() => ["system", "dark", "light"]);
 
-    private sealed record Setting(string Id, string Label, string Description, bool UserOnly = false);
+    internal sealed record Setting(string Id, string Label, string Description, bool UserOnly = false);
 
-    private static readonly Setting[] s_settings =
+    // Source receipt: Pi's settings-selector.ts at
+    // https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/modes/interactive/components/settings-selector.ts
+    // (main, inspected 2026-10-16; item array and insertion order).
+    // The prompt's first-ten order is authoritative; later shared entries follow Pi's current
+    // source order, including session sharing after follow-up mode (Pi's absent Transport item is omitted).
+    // PiSharp-only options follow the shared settings.
+    // Directly relevant Pi entries for Mermaid rendering, cache miss notices and changelog
+    // collapsing are out of scope because PiSharp has no corresponding renderer, cache-cost
+    // diagnostics or update-notification subsystem. Later supported entries retain source order.
+    internal static readonly Setting[] Settings =
     [
-        new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
-        new("httpProxy", "HTTP proxy", "User-wide HTTP proxy for PiSharp-managed HTTP clients; takes effect on the next launch.", UserOnly: true),
-        new("defaultThinkingLevel", "Default thinking level", "Initial thinking level unless overridden by --thinking."),
-        new("theme", "Theme", "Choose the system theme, a named theme, or a light/dark pair."),
-        new("terminal.trueColor", "Terminal true color", "Choose 24-bit colors, 256-color output, or detect terminal support."),
-        new("enableSkillCommands", "Skill commands", "Show /skill:name entries in slash command completion."),
-        new("externalEditor", "External editor", "Command that edits the prompt file; blank uses VISUAL or EDITOR."),
-        new("hideThinkingBlock", "Hide thinking", "Hide reasoning blocks in the interactive transcript."),
-        new("images.blockImages", "Block images", "Replace provider-bound images with text while preserving saved history."),
-        new("compaction.enabled", "Automatic compaction", "Summarize older whole turns before a prompt when the context budget is known."),
-        new("quietStartup", "Quiet startup", "Disable verbose printing at startup (header: keep only the startup header)"),
-        new("sessionShareDestination", "Session share destination", "Where to upload sessions with /share (auto prefers Radius when authenticated, otherwise GitHub Gist)"),
+        new("compaction.enabled", "Auto-compact", "Automatically compact context when it gets too large."),
+        new("images.autoResize", "Auto-resize images", "Resize large images to 2000×2000 maximum before sending them to a model."),
+        new("images.blockImages", "Block images", "Prevent images from being sent to models."),
+        new("enableSkillCommands", "Skill commands", "Register skills as /skill:name commands."),
+        new("showHardwareCursor", "Show hardware cursor", "Show the terminal cursor while positioning it for input methods."),
+        new("editorPaddingX", "Editor padding", "Horizontal padding for the input editor, from 0 to 3 cells."),
+        new("outputPad", "Output padding", "Horizontal padding for transcript content, from 0 to 1 cells."),
+        new("autocompleteMaxVisible", "Autocomplete max items", "Maximum visible entries in the autocomplete list, from 3 to 20."),
+        new("terminal.clearOnShrink", "Clear on shrink", "Clear empty terminal rows when rendered content shrinks."),
+        new("terminal.showTerminalProgress", "Terminal progress", "Show OSC 9;4 progress indicators in the terminal tab bar."),
         new("steeringMode", "Steering mode", "How queued steering messages are delivered during an agent turn."),
         new("followUpMode", "Follow-up mode", "How queued follow-up messages are delivered after an agent turn."),
+        new("sessionShareDestination", "Session share destination", "Where to upload sessions with /share (auto prefers Radius when authenticated, otherwise GitHub Gist)"),
         new("httpIdleTimeoutMs", "HTTP idle timeout", "Maximum wait for provider response headers or body data; 0 disables this idle limit."),
+        new("hideThinkingBlock", "Hide thinking", "Hide reasoning blocks in the interactive transcript."),
+        new("quietStartup", "Quiet startup", "Disable verbose printing at startup; header keeps only the startup header."),
+        new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
+        new("theme", "Theme", "Choose the system theme, a named theme, or a light/dark pair."),
+        // PiSharp-only settings follow Pi's shared selector settings.
+        new("defaultThinkingLevel", "Default thinking level", "Initial thinking level unless overridden by --thinking."),
+        new("httpProxy", "HTTP proxy", "User-wide HTTP proxy for PiSharp-managed HTTP clients; takes effect on the next launch.", UserOnly: true),
+        new("terminal.trueColor", "Terminal true color", "Choose 24-bit colors, 256-color output, or detect terminal support."),
+        new("externalEditor", "External editor", "Command that edits the prompt file; blank uses VISUAL or EDITOR."),
         new("retry.provider.timeoutMs", "Provider request timeout", "Maximum duration for one provider request, in milliseconds."),
         new("retry.provider.maxRetries", "Provider request retries", "Retry transient provider requests before PiSharp handles the failure."),
         new("retry.provider.maxRetryDelayMs", "Provider retry delay limit", "Fail rather than wait when a provider requests a longer delay; 0 removes the limit."),
@@ -39,43 +56,50 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
     {
         ArgumentNullException.ThrowIfNull(userSettings);
         ArgumentNullException.ThrowIfNull(save);
-        var projectOptions = projectSettings is null ? null : new[]
-        {
-            new TerminalSelectionOption<bool>("user", false, "User settings", "Edit settings for this agent installation.", "user global"),
-            new TerminalSelectionOption<bool>("project", true, "Current project settings", "Edit .pi/settings.json; project resources must be trusted.", "project workspace")
-        };
-        var scope = projectOptions is null
-            ? false
-            : editor.ShowSelectionList("Settings scope", projectOptions, selectedKey: "user")?.Option.Value;
-        if (scope is null) return;
-
+        var scope = false;
         string? selectedKey = null;
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var currentSettings = scope.Value ? projectSettings! : userSettings;
-            var options = s_settings.Where(setting => !setting.UserOnly || !scope.Value)
-                .Select(setting => ToOption(setting, currentSettings,
-                    setting.Id == "theme" ? activeThemeSetting?.Invoke() : null)).ToList();
-            if (projectOptions is not null)
-                options.Insert(0, new TerminalSelectionOption<Setting?>("__scope", null,
-                    "Change settings scope", "Choose user or current project settings.", "scope user project"));
-
-            var selected = editor.ShowSelectionList(scope.Value ? "Project settings" : "User settings", options,
-                selectedKey, emptyMessage: "No settings available");
+            var currentSettings = scope ? projectSettings! : userSettings;
+            var effectiveSettings = projectSettings is null ? userSettings : userSettings.Overlay(projectSettings);
+            var options = Settings.Where(setting => !setting.UserOnly || !scope)
+                .Select(setting => ToListItem(setting, currentSettings, effectiveSettings, scope,
+                    setting.Id == "theme" && scope ? activeThemeSetting?.Invoke() : null)).ToArray();
+            var selected = editor.ShowSettingsList("Settings", options, selectedKey,
+                scope ? "Project settings" : "User settings", projectSettings is not null, cancellationToken);
             if (selected is null) return;
-            if (selected.Option.Key == "__scope")
+            if (selected.ChangeScope)
             {
-                var nextScope = editor.ShowSelectionList("Settings scope", projectOptions!, scope.Value ? "project" : "user");
-                if (nextScope is not null) scope = nextScope.Option.Value;
+                scope = !scope;
                 selectedKey = null;
                 continue;
             }
 
-            if (selected.Option.Value is not { } setting) return;
-            var currentValue = setting.Id == "theme"
+            if (selected.Item is not { } selectedItem) return;
+            var setting = Settings.Single(item => item.Id == selectedItem.Key);
+            if (selected.ResetValue)
+            {
+                var reset = await save(scope, setting.Id, null);
+                userSettings = reset.User;
+                projectSettings = reset.Project;
+                selectedKey = setting.Id;
+                continue;
+            }
+
+            var currentValue = setting.Id == "theme" && scope
                 ? activeThemeSetting?.Invoke() ?? GetValue(currentSettings, setting.Id)
                 : GetValue(currentSettings, setting.Id);
+            if (IsBoolean(setting.Id))
+            {
+                var currentBoolean = GetBooleanValue(scope ? effectiveSettings : currentSettings, setting.Id);
+                var updatedBoolean = await save(scope, setting.Id, (!currentBoolean).ToString().ToLowerInvariant());
+                userSettings = updatedBoolean.User;
+                projectSettings = updatedBoolean.Project;
+                selectedKey = setting.Id;
+                continue;
+            }
+
             if (setting.Id is "externalEditor" or "httpProxy" or "retry.provider.timeoutMs" or "markdown.codeBlockIndent")
             {
                 Console.WriteLine(setting.Id switch
@@ -92,7 +116,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
                     : string.IsNullOrWhiteSpace(entered) ? null : entered.Trim();
                 if (!string.Equals(updatedValue, currentValue, StringComparison.Ordinal))
                 {
-                    var savedSettings = await save(scope.Value, setting.Id, updatedValue);
+                    var savedSettings = await save(scope, setting.Id, updatedValue);
                     userSettings = savedSettings.User;
                     projectSettings = savedSettings.Project;
                 }
@@ -115,22 +139,74 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
                 continue;
             }
 
-            var updated = await save(scope.Value, setting.Id, choice.Option.Value);
+            var updated = await save(scope, setting.Id, choice.Option.Value);
             userSettings = updated.User;
             projectSettings = updated.Project;
             selectedKey = setting.Id;
         }
     }
 
-    private static TerminalSelectionOption<Setting?> ToOption(Setting setting, UserSettings settings,
-        string? activeThemeSetting)
+    private static TerminalSettingsListItem ToListItem(Setting setting, UserSettings settings,
+        UserSettings effectiveSettings, bool projectScope, string? activeThemeSetting)
     {
-        var current = setting.Id == "theme" && activeThemeSetting is not null
-            ? activeThemeSetting
-            : GetValue(settings, setting.Id);
-        return new(setting.Id, setting, $"{setting.Label} · {DisplayValue(current, setting.Id)}",
-            setting.Description, $"{setting.Label} {setting.Id} {current}");
+        var current = GetValue(settings, setting.Id);
+        string display;
+        if (IsBoolean(setting.Id))
+        {
+            var resolved = GetBooleanValue(projectScope ? effectiveSettings : settings, setting.Id);
+            display = resolved ? "true" : "false";
+            if (current is null)
+                display += projectScope ? " (inherited)" : " (default)";
+        }
+        else if (setting.Id is "editorPaddingX" or "outputPad" or "autocompleteMaxVisible")
+        {
+            var effective = GetValue(effectiveSettings, setting.Id);
+            var configured = current ?? (projectScope ? effective : null);
+            var resolved = configured ?? (setting.Id switch
+            {
+                "editorPaddingX" => "0",
+                "outputPad" => "1",
+                "autocompleteMaxVisible" => "5",
+                _ => null
+            });
+            display = DisplayValue(resolved, setting.Id);
+            if (current is null)
+                display += projectScope && effective is not null ? " (inherited)" : " (default)";
+        }
+        else
+        {
+            var effective = GetValue(effectiveSettings, setting.Id);
+            var themeValue = setting.Id == "theme" && current is null && projectScope &&
+                activeThemeSetting is not null ? activeThemeSetting : current ?? (projectScope ? effective : null);
+            display = DisplayValue(themeValue, setting.Id);
+            if (current is null && setting.Id == "theme" && !projectScope)
+                display = "system (default)";
+            else if (projectScope && current is null && effective is not null)
+                display += " (inherited)";
+            else if (!projectScope && current is null && setting.Id != "theme")
+                display += " (default)";
+        }
+
+        var search = $"{setting.Label} {setting.Id} {display}";
+        return new(setting.Id, setting.Label, display, setting.Description, search);
     }
+
+    private static bool IsBoolean(string id) => id is "compaction.enabled" or "images.autoResize" or
+        "images.blockImages" or "enableSkillCommands" or "showHardwareCursor" or "terminal.clearOnShrink" or
+        "terminal.showTerminalProgress" or "hideThinkingBlock";
+
+    private static bool GetBooleanValue(UserSettings settings, string id) => id switch
+    {
+        "compaction.enabled" => settings.Compaction?.Enabled ?? true,
+        "images.autoResize" => settings.AutoResizeImages ?? true,
+        "images.blockImages" => settings.BlockImages ?? false,
+        "enableSkillCommands" => settings.EnableSkillCommands ?? true,
+        "showHardwareCursor" => settings.ShowHardwareCursor ?? false,
+        "terminal.clearOnShrink" => settings.ClearOnShrink ?? false,
+        "terminal.showTerminalProgress" => settings.ShowTerminalProgress ?? false,
+        "hideThinkingBlock" => settings.HideThinkingBlock ?? false,
+        _ => false
+    };
 
     private static string? GetValue(UserSettings settings, string id) => id switch
     {
@@ -139,6 +215,13 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "defaultThinkingLevel" => settings.DefaultThinkingLevel,
         "theme" => settings.Theme,
         "terminal.trueColor" => settings.TerminalTrueColor,
+        "images.autoResize" => settings.AutoResizeImages?.ToString().ToLowerInvariant(),
+        "showHardwareCursor" => settings.ShowHardwareCursor?.ToString().ToLowerInvariant(),
+        "editorPaddingX" => settings.EditorPaddingX?.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "outputPad" => settings.OutputPad?.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "autocompleteMaxVisible" => settings.AutocompleteMaxVisible?.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        "terminal.clearOnShrink" => settings.ClearOnShrink?.ToString().ToLowerInvariant(),
+        "terminal.showTerminalProgress" => settings.ShowTerminalProgress?.ToString().ToLowerInvariant(),
         "enableSkillCommands" => settings.EnableSkillCommands?.ToString().ToLowerInvariant(),
         "externalEditor" => settings.ExternalEditor,
         "hideThinkingBlock" => settings.HideThinkingBlock?.ToString().ToLowerInvariant(),
@@ -252,6 +335,25 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
                     choice.Label, choice.Milliseconds == 0
                         ? "Disable the provider HTTP idle limit."
                         : $"Allow up to {choice.Label} of idle time while waiting for provider response data.")));
+        }
+        else if (setting.Id == "editorPaddingX")
+        {
+            var choices = Enumerable.Range(0, 4).Select(value => value.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToHashSet(StringComparer.Ordinal);
+            if (currentValue is not null) choices.Add(currentValue);
+            values.AddRange(choices.OrderBy(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture))
+                .Select(value => (value, (string?)value, value, $"Use {value} cells of horizontal editor padding.")));
+        }
+        else if (setting.Id == "outputPad")
+        {
+            foreach (var value in new[] { "0", "1" })
+                values.Add((value, value, value, $"Use {value} cells of transcript padding."));
+        }
+        else if (setting.Id == "autocompleteMaxVisible")
+        {
+            var choices = new[] { "3", "5", "7", "10", "15", "20" }.ToHashSet(StringComparer.Ordinal);
+            if (currentValue is not null) choices.Add(currentValue);
+            values.AddRange(choices.OrderBy(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture))
+                .Select(value => (value, (string?)value, value, $"Show up to {value} autocomplete entries.")));
         }
         else if (setting.Id == "theme")
         {

@@ -24,32 +24,6 @@ public sealed class EditorCompletion
         _describeCommand = describeCommand;
     }
 
-    private static readonly string[] s_commands =
-    [
-        "/tree",
-        "/branch",
-        "/fork",
-        "/clone",
-        "/new",
-        "/sessions",
-        "/resume",
-        "/delete-session",
-        "/import",
-        "/name",
-        "/model",
-        "/llama",
-        "/models",
-        "/settings",
-        "/compact",
-        "/export",
-        "/share",
-        "/export-jsonl",
-        "/session",
-        "/trust",
-        "/reload",
-        "/hotkeys",
-        "/quit"
-    ];
     private static readonly string s_cjkPunctuation = "，．：；！？（）［］｛｝“”‘’…—、。「」『』《》〈〉【】〔〕〖〗〘〙〚〛〝〞";
     private static readonly IReadOnlyDictionary<char, char> s_pathWrappers = new Dictionary<char, char>
     {
@@ -62,12 +36,12 @@ public sealed class EditorCompletion
     public IReadOnlyList<string> Complete(EditorBuffer buffer)
     {
         ArgumentNullException.ThrowIfNull(buffer);
+        var matches = GetCompletions(buffer);
         var before = buffer.Text[..buffer.Cursor];
         var start = FindTokenStart(before);
         if (IsSlashCommandStart(before, start))
         {
             var slashFragment = before[start..];
-            var matches = FindSlashCommandMatches(slashFragment);
             return Apply(buffer, start, slashFragment, matches);
         }
 
@@ -84,8 +58,29 @@ public sealed class EditorCompletion
         if (hasAtPrefix) path = path[1..];
         if (path.StartsWith('"')) path = path[1..];
         var hasExistingClosingQuote = buffer.Cursor < buffer.Text.Length && buffer.Text[buffer.Cursor] == '"';
-        var matchesForPath = GetPathCompletions(path, hasAtPrefix, quoted, Path.GetFullPath(_workingDirectory()));
-        return Apply(buffer, fragmentStart, fragment, matchesForPath, hasExistingClosingQuote);
+        return Apply(buffer, fragmentStart, fragment, matches, hasExistingClosingQuote);
+    }
+
+    /// <summary>Gets the current slash command or path candidates without changing the editor buffer.</summary>
+    public IReadOnlyList<string> GetCompletions(EditorBuffer buffer)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        var before = buffer.Text[..buffer.Cursor];
+        var start = FindTokenStart(before);
+        if (IsSlashCommandStart(before, start))
+            return FindSlashCommandMatches(before[start..]);
+
+        var wrapperStart = start;
+        while (wrapperStart < before.Length && s_pathWrappers.TryGetValue(before[wrapperStart], out var closing) &&
+            before.IndexOf(closing, wrapperStart + 1) < 0)
+            wrapperStart++;
+        var fragment = before[wrapperStart..];
+        var hasAtPrefix = fragment.StartsWith('@');
+        var quoted = fragment.StartsWith("\"", StringComparison.Ordinal) || fragment.StartsWith("@\"", StringComparison.Ordinal);
+        var path = fragment;
+        if (hasAtPrefix) path = path[1..];
+        if (path.StartsWith('"')) path = path[1..];
+        return GetPathCompletions(path, hasAtPrefix, quoted, Path.GetFullPath(_workingDirectory()));
     }
 
     public IReadOnlyList<EditorCompletionSuggestion> GetSlashCommandSuggestions(EditorBuffer buffer)
@@ -95,13 +90,16 @@ public sealed class EditorCompletion
         var start = FindTokenStart(before);
         return IsSlashCommandStart(before, start)
             ? FindSlashCommandMatches(before[start..])
-                .Select(command => new EditorCompletionSuggestion(command, _describeCommand?.Invoke(command)))
+                .Select(command => new EditorCompletionSuggestion(command,
+                    _describeCommand?.Invoke(command) ?? InteractiveCommandCatalog.Describe(command)))
                 .ToArray()
             : [];
     }
 
-    private string[] FindSlashCommandMatches(string fragment) => s_commands
-        .Concat(_dynamicCommands?.Invoke() ?? [])
+    private IReadOnlyList<string> FindSlashCommandMatches(string fragment) => InteractiveCommandCatalog.Merge(
+            (_dynamicCommands?.Invoke() ?? []).Select(command =>
+                new InteractiveCommandMetadata(command, _describeCommand?.Invoke(command) ?? "")))
+        .Select(command => command.Command)
         .Where(command => command.StartsWith(fragment, StringComparison.OrdinalIgnoreCase))
         .ToArray();
 

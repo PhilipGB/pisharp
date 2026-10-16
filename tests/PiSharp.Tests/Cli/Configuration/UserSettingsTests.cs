@@ -800,7 +800,7 @@ public sealed class UserSettingsTests
     [InlineData("{\"compaction\":{\"modelOverrides\":[]}}")]
     [InlineData("{\"images\":{\"blockImages\":\"true\"}}")]
     [InlineData("{\"images\":{\"blockImages\":true,\"blockImages\":false}}")]
-    [InlineData("{\"images\":{\"autoResize\":true}}")]
+    [InlineData("{\"images\":{\"autoResize\":\"true\"}}")]
     [InlineData("{\"images\":[]}")]
     public async Task InvalidSettingsFailClosed(string json)
     {

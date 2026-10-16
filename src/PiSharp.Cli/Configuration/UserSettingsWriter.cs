@@ -45,6 +45,55 @@ internal static class UserSettingsWriter
         await ReplaceAsync(target, bytes, cancellationToken);
     }
 
+    public static async Task SetModelThinkingLevelAsync(string path, string provider, string modelId, string level,
+        CancellationToken cancellationToken = default)
+    {
+        var modelKey = $"{provider}/{modelId}";
+        if (provider.Length is 0 or > 128 || modelId.Length is 0 or > 384 || modelKey.Length > 512 ||
+            provider.Contains('/') || modelKey.Any(char.IsControl))
+            throw new ArgumentException("A valid provider and model ID are required.", nameof(modelId));
+        var normalized = ThinkingLevels.Normalize(level);
+        var target = Path.GetFullPath(path);
+        if (File.Exists(target)) target = new FileInfo(target).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? target;
+        var directory = Path.GetDirectoryName(target)!;
+        if (OperatingSystem.IsLinux())
+            Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        else
+            Directory.CreateDirectory(directory);
+
+        JsonObject root;
+        if (File.Exists(target))
+        {
+            var info = new FileInfo(target);
+            if (info.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
+            root = JsonNode.Parse(await File.ReadAllTextAsync(target, cancellationToken),
+                documentOptions: new JsonDocumentOptions { MaxDepth = 16 }) as JsonObject ??
+                throw new InvalidDataException("settings.json must contain a JSON object.");
+        }
+        else
+        {
+            root = new JsonObject();
+        }
+
+        JsonObject modelLevels;
+        if (root["modelThinkingLevels"] is JsonObject existing)
+            modelLevels = existing;
+        else if (root.ContainsKey("modelThinkingLevels"))
+            throw new InvalidDataException("settings.json modelThinkingLevels must be an object.");
+        else
+        {
+            modelLevels = new JsonObject();
+            root["modelThinkingLevels"] = modelLevels;
+        }
+        if (!modelLevels.ContainsKey(modelKey) && modelLevels.Count >= 512)
+            throw new InvalidDataException("settings.json modelThinkingLevels cannot contain more than 512 entries.");
+        modelLevels[modelKey] = normalized;
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(root.ToJsonString(s_jsonOptions) + "\n");
+        if (bytes.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
+        await ReplaceAsync(target, bytes, cancellationToken);
+    }
+
     /// <summary>Replaces or removes one package declaration while preserving its filter and custom fields.</summary>
     public static async Task<bool> UpdatePackageSourceAsync(string path, string source, string settingsSource,
         string inputBaseDirectory, string scopeBaseDirectory, bool remove, bool userScope,
@@ -141,6 +190,14 @@ internal static class UserSettingsWriter
             "quietStartup" => value is null or "true" or "header" or "false",
             "hideThinkingBlock" or "enableSkillCommands" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
                 value is null or "true" or "false",
+            "images.autoResize" or "showHardwareCursor" or "terminal.clearOnShrink" or "terminal.showTerminalProgress" =>
+                value is null or "true" or "false",
+            "editorPaddingX" => value is null ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var editorPadding) && editorPadding is >= 0 and <= 3,
+            "outputPad" => value is null ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var outputPadding) && outputPadding is 0 or 1,
+            "autocompleteMaxVisible" => value is null ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var autocompleteMaximum) && autocompleteMaximum is >= 3 and <= 20,
             "retry.provider.maxRetries" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var retries) && retries is >= 0 and <= 20,
             "retry.provider.maxRetryDelayMs" => value is null ||
@@ -192,6 +249,10 @@ internal static class UserSettingsWriter
         "quietStartup" when value is "true" or "false" => JsonValue.Create(value == "true"),
         "hideThinkingBlock" or "enableSkillCommands" or "images.blockImages" or "compaction.enabled" or "retry.enabled" =>
             JsonValue.Create(value == "true"),
+        "images.autoResize" or "showHardwareCursor" or "terminal.clearOnShrink" or "terminal.showTerminalProgress" =>
+            JsonValue.Create(value == "true"),
+        "editorPaddingX" or "outputPad" or "autocompleteMaxVisible" =>
+            JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "terminal.trueColor" when value is "true" or "false" => JsonValue.Create(value == "true"),
         "retry.provider.maxRetries" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "retry.provider.maxRetryDelayMs" => JsonValue.Create(double.Parse(value!, NumberStyles.Float, CultureInfo.InvariantCulture)),

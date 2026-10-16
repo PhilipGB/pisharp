@@ -33,7 +33,7 @@ internal sealed class ModelRuntimeController(
         var pricing = ModelPricing.FromEnvironment(getEnvironment) ?? selection.Model.Pricing;
         return new PreparedModelRuntime(selection, thinking, selection.Connection, keepRecentTokens,
             ProviderChatClientFactory.Create(selection, settings.Retry?.Provider, settings.HttpIdleTimeoutMs), policy, pricing,
-            CreateVirtualModelRouter(selection));
+            CreateVirtualModelRouter(selection), settings.AutoResizeImages != false);
     }
 
     public VirtualModelRequestRouter? CreateVirtualModelRouter(ModelSelection logicalSelection)
@@ -132,9 +132,10 @@ internal sealed class ModelRuntimeController(
 
 internal sealed record PreparedModelRuntime(ModelSelection Selection, string Thinking,
     ConnectionSettings Connection, int KeepRecentTokens, IChatClient ChatClient,
-    AutoCompactionPolicy? ContextPolicy, ModelPricing? Pricing, VirtualModelRequestRouter? VirtualModelRouter)
+    AutoCompactionPolicy? ContextPolicy, ModelPricing? Pricing, VirtualModelRequestRouter? VirtualModelRouter,
+    bool AutoResizeImages = true)
 {
     public bool SupportsImages => Selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false;
-    public ModelImageResizeOptions? ImageResizeOptions => Selection.Model.InputLimits?.Images?.Resize;
+    public ModelImageResizeOptions? ImageResizeOptions => AutoResizeImages ? Selection.Model.InputLimits?.Images?.Resize : null;
     public ReasoningOptions? ReasoningOptions => ThinkingLevels.ToOptions(Thinking, Selection.Model.ThinkingLevelMap);
 }

@@ -54,6 +54,11 @@ public sealed class TerminalScreen : IDisposable
     private int? _panelCursorColumn;
     private bool _panelCursorVisible;
     private int _panelBottomMargin = 1;
+    private int _editorPaddingX;
+    private int _outputPad = 1;
+    private int _autocompleteMaxVisible = 5;
+    private bool _showHardwareCursor;
+    private bool _showTerminalProgress;
     private bool _startupPanelActive;
     private bool _activated;
     private bool _suspended;
@@ -450,6 +455,96 @@ public sealed class TerminalScreen : IDisposable
         {
             if (_conversationPresentation.SetCodeBlockIndent(codeBlockIndent)) _render.Request();
         }
+    }
+
+    internal void SetShowHardwareCursor(bool enabled)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _showHardwareCursor = enabled;
+            _render.Request();
+        }
+    }
+
+    internal void SetEditorPaddingX(int padding)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _editorPaddingX = Math.Clamp(padding, 0, 3);
+            _render.Request();
+        }
+    }
+
+    internal void SetOutputPad(int padding)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _outputPad = Math.Clamp(padding, 0, 1);
+            _render.Request();
+        }
+    }
+
+    internal void SetAutocompleteMaxVisible(int maximum)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _autocompleteMaxVisible = Math.Clamp(maximum, 3, 20);
+            _render.Request();
+        }
+    }
+
+    internal void SetClearOnShrink(bool enabled)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _compositor.SetClearOnShrink(enabled);
+            _render.Request();
+        }
+    }
+
+    internal void SetShowTerminalProgress(bool enabled)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            if (_showTerminalProgress && !enabled) WriteTerminalProgressControl("\u001b]9;4;0\u0007");
+            _showTerminalProgress = enabled;
+        }
+    }
+
+    internal void ReportTerminalProgress(double? ratio)
+    {
+        lock (_gate)
+        {
+            if (!_active || !_showTerminalProgress) return;
+            if (ratio is { } value && double.IsFinite(value))
+            {
+                var percent = Math.Clamp((int)Math.Round(Math.Clamp(value, 0, 1) * 100,
+                    MidpointRounding.AwayFromZero), 0, 100);
+                WriteTerminalProgressControl($"\u001b]9;4;1;{percent}\u0007");
+            }
+            else WriteTerminalProgressControl("\u001b]9;4;3\u0007");
+        }
+    }
+
+    internal void ClearTerminalProgress()
+    {
+        lock (_gate)
+        {
+            if (!_active || !_showTerminalProgress) return;
+            WriteTerminalProgressControl("\u001b]9;4;0\u0007");
+        }
+    }
+
+    private void WriteTerminalProgressControl(string value)
+    {
+        _originalOut.Write(value);
+        _originalOut.Flush();
     }
 
     internal void SetThemeResolver(Func<TerminalColorState, TerminalTheme> resolver)
@@ -1200,7 +1295,8 @@ public sealed class TerminalScreen : IDisposable
             _notifications.Status, _notifications.StatusKind, _notifications.StatusIsExtension,
             _startupHeader?.Invoke(_theme, columns, _startupExpanded),
             _startupContent?.Invoke(_theme, columns, _startupExpanded), _editorSuggestions, _workingStatus,
-            _notifications.CopyStatus, _notifications.CopyStatusKind);
+            _notifications.CopyStatus, _notifications.CopyStatusKind,
+            _editorPaddingX, _outputPad, _autocompleteMaxVisible, _showHardwareCursor);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

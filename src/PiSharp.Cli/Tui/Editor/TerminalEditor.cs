@@ -3,6 +3,12 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Edits drafts and routes idle and active-run input to application actions and terminal dialogs.</summary>
 public sealed class TerminalEditor
 {
+    private sealed record CompletionCycle(IReadOnlyList<string> Candidates, int SelectedIndex,
+        string BufferText, int Cursor)
+    {
+        public bool Matches(EditorBuffer buffer) => BufferText == buffer.Text && Cursor == buffer.Cursor;
+    }
+
     private readonly EditorBuffer _buffer;
     private TerminalInput? _input;
     private readonly EditorCompletion _completion;
@@ -15,6 +21,7 @@ public sealed class TerminalEditor
     private string? _lastRenderedEditorText;
     private bool _toolResultsExpanded;
     private long? _lastClearAtMilliseconds;
+    private CompletionCycle? _completionCycle;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
         Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false,
         Func<string, string?>? describeCommand = null)
@@ -97,6 +104,11 @@ public sealed class TerminalEditor
         _dialogs.ShowSelectionList(title, options, selectedKey, scopedOptions, allLabel, scopedLabel, emptyMessage,
             actionHint, handleInput);
 
+    internal TerminalSettingsListSelection? ShowSettingsList(string title,
+        IReadOnlyList<TerminalSettingsListItem> items, string? selectedKey, string scopeLabel,
+        bool canChangeScope, CancellationToken cancellationToken = default) =>
+        _dialogs.ShowSettingsList(title, items, selectedKey, scopeLabel, canChangeScope, cancellationToken);
+
     internal Task<TerminalSelection<T>?> ShowSelectionListAsync<T>(string title,
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey = null,
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions = null,
@@ -174,10 +186,15 @@ public sealed class TerminalEditor
         _progress.RunProgressAsync(title, subject, cancelTitle, cancelMessage, run, cancelOperation, afterCancelled, confirmCancellation);
 
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
-    public void Prefill(string text) => _buffer.SetText(text);
+    public void Prefill(string text)
+    {
+        _completionCycle = null;
+        _buffer.SetText(text);
+    }
 
     public void InsertTextAtCursor(string text)
     {
+        _completionCycle = null;
         _buffer.InsertText(text);
         Render();
     }
@@ -185,6 +202,7 @@ public sealed class TerminalEditor
     /// <summary>Return queued messages to the editor without discarding a draft typed during the run.</summary>
     public void RestorePending(IEnumerable<string> messages)
     {
+        _completionCycle = null;
         var restored = messages.Where(value => !string.IsNullOrWhiteSpace(value)).ToList();
         if (!string.IsNullOrWhiteSpace(_buffer.Text)) restored.Add(_buffer.Text);
         _buffer.SetText(string.Join("\n\n", restored));
@@ -226,6 +244,9 @@ public sealed class TerminalEditor
         Action abort, CancellationToken cancellationToken = default,
         Func<string, Task>? dispatchApplicationAction = null)
     {
+        var isCompletionKey = next.Key is { } possibleCompletionKey &&
+            _keymap.Matches("tui.input.tab", possibleCompletionKey);
+        if (!isCompletionKey) _completionCycle = null;
         if (next.IsEndOfStream) return false;
         if (next.IsControl) return true;
         if (next.Mouse is { } mouse)
@@ -262,6 +283,7 @@ public sealed class TerminalEditor
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
             {
+                _completionCycle = null;
                 Console.Error.WriteLine($"Completion unavailable: {error.Message}");
             }
             return true;
@@ -364,6 +386,7 @@ public sealed class TerminalEditor
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
+        _completionCycle = null;
         using var mode = TerminalMode.Enter(_screen);
         var input = EnsureInput();
         Render();
@@ -371,6 +394,9 @@ public sealed class TerminalEditor
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (!input.TryRead(40, out var next)) continue;
+            var isCompletionKey = next.Key is { } possibleCompletionKey &&
+                _keymap.Matches("tui.input.tab", possibleCompletionKey);
+            if (!isCompletionKey) _completionCycle = null;
             if (next.Mouse is { } mouse)
             {
                 var result = _screen?.HandleMouse(mouse) ?? default;
@@ -442,6 +468,7 @@ public sealed class TerminalEditor
                 }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
                 {
+                    _completionCycle = null;
                     ClearLine();
                     Console.WriteLine($"\nCompletion unavailable: {error.Message}");
                 }
@@ -495,7 +522,8 @@ public sealed class TerminalEditor
         Action? beforeDispatch = null)
     {
         ArgumentNullException.ThrowIfNull(dispatch);
-        if (_keymap.MatchesEditorAction(key)) return false;
+        if (_keymap.MatchesEditorAction(key) &&
+            !(_keymap.Matches("app.thinking.cycle", key) && _completionCycle is null)) return false;
         var action = _keymap.MatchIdleApplicationAction(key);
         if (action is null) return false;
         beforeDispatch?.Invoke();
@@ -510,28 +538,27 @@ public sealed class TerminalEditor
 
     private void CompleteInput(ConsoleKeyInfo key)
     {
-        var matches = _completion.Complete(_buffer);
-        if (matches.Count == 0)
+        CompletionCycle cycle;
+        if (_completionCycle is { } previous && previous.Matches(_buffer))
         {
-            _buffer.Handle(key);
-            return;
+            var direction = key.Modifiers.HasFlag(ConsoleModifiers.Shift) ? -1 : 1;
+            var selectedIndex = (previous.SelectedIndex + direction + previous.Candidates.Count) % previous.Candidates.Count;
+            cycle = previous with { SelectedIndex = selectedIndex };
         }
-        if (matches.Count == 1) return;
-
-        if (_screen is { IsActive: true })
+        else
         {
-            var options = matches.Select((match, index) => new TerminalSelectionOption<string>(
-                index.ToString(), match, match)).ToArray();
-            var selected = ShowSelectionList("Complete input", options, emptyMessage: "No matching completions");
-            if (selected is not null) _completion.ApplySelected(_buffer, selected.Option.Value);
-            return;
+            var matches = _completion.GetCompletions(_buffer);
+            if (matches.Count == 0)
+            {
+                _completionCycle = null;
+                return;
+            }
+            cycle = new(matches, key.Modifiers.HasFlag(ConsoleModifiers.Shift) ? matches.Count - 1 : 0,
+                _buffer.Text, _buffer.Cursor);
         }
 
-        ClearLine();
-        Console.WriteLine();
-        Console.WriteLine(string.Join("  ", matches.Take(10).Select(match =>
-            new string(match.Select(c => char.IsControl(c) ? ' ' : c).ToArray()))) +
-            (matches.Count > 10 ? "  …" : ""));
+        _completion.ApplySelected(_buffer, cycle.Candidates[cycle.SelectedIndex]);
+        _completionCycle = cycle with { BufferText = _buffer.Text, Cursor = _buffer.Cursor };
     }
 
     private void ClearLine()

@@ -20,6 +20,8 @@ internal sealed class TerminalScreenCompositor
     private int _previousRestoreStartRow;
     private int _previousColumns;
     private int _previousHeight;
+    private bool _clearOnShrink;
+    private int? _previousContentHeight;
     private TerminalTextLayout.LayoutResult? _previousTranscriptLayout;
     private int _previousTranscriptFirstVisualRow;
     private int _previousTranscriptScrollOffset;
@@ -32,8 +34,11 @@ internal sealed class TerminalScreenCompositor
         _images = images;
     }
 
+    public void SetClearOnShrink(bool enabled) => _clearOnShrink = enabled;
+
     internal sealed record Frame(IReadOnlyList<string> Rows, int CursorRow, int CursorColumn,
-        int ScrollOffset, int Columns, int Height, bool CursorVisible = true, int RestoreStartRow = 0);
+        int ScrollOffset, int Columns, int Height, bool CursorVisible = true, int RestoreStartRow = 0,
+        int ContentHeight = 0);
 
     public Frame Compose(string editorText, int editorCursor, int? editorSelectionStart, int? editorSelectionEnd,
         string transcriptText, string footer,
@@ -48,27 +53,33 @@ internal sealed class TerminalScreenCompositor
         IReadOnlyList<EditorCompletionSuggestion>? editorSuggestions = null,
         string? workingStatus = null,
         string? authorizationUrlCopyStatus = null,
-        TerminalStatusNotificationKind authorizationUrlCopyStatusKind = TerminalStatusNotificationKind.Info)
+        TerminalStatusNotificationKind authorizationUrlCopyStatusKind = TerminalStatusNotificationKind.Info,
+        int editorPaddingX = 0, int outputPad = 0, int autocompleteMaxVisible = 5,
+        bool showHardwareCursor = false)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
         var footerHeight = height >= 5 ? 2 : height > 2 ? 1 : 0;
         var borderHeight = height - footerHeight >= 4 ? 2 : 0;
-        var suggestionHeight = Math.Min(editorSuggestions?.Count ?? 0,
+        var suggestionHeight = Math.Min(Math.Min(editorSuggestions?.Count ?? 0, Math.Max(0, autocompleteMaxVisible)),
             Math.Max(0, height - footerHeight - borderHeight - 2));
         var suggestionNameWidth = editorSuggestions is { Count: > 0 }
             ? Math.Clamp(editorSuggestions.Max(suggestion => TerminalTextLayout.Width(
                 suggestion.Command.StartsWith('/') ? suggestion.Command[1..] : suggestion.Command)), 10, 30)
             : 0;
+        var boundedEditorPadding = Math.Clamp(editorPaddingX, 0, Math.Max(0, (columns - 2) / 2));
+        var editorColumns = Math.Max(1, columns - boundedEditorPadding * 2);
         var maxEditorLines = Math.Max(1,
             Math.Min((int)(height * 0.3), height - footerHeight - borderHeight - suggestionHeight - 1));
-        var editor = EditorViewport.Layout(editorText, editorCursor, columns, maxEditorLines, showPrompt: false);
+        var editorLayout = EditorViewport.Layout(editorText, editorCursor, editorColumns, maxEditorLines, showPrompt: false);
+        var editor = editorLayout with { MouseCellOffset = Math.Max(0, editorLayout.MouseCellOffset + boundedEditorPadding) };
         var editorHeight = editor.Rows.Count + borderHeight;
         if (height - editorHeight - footerHeight < 1 && borderHeight > 0)
         {
             borderHeight = 0;
             editorHeight = editor.Rows.Count;
         }
-        var transcriptWidth = Math.Max(1, columns);
+        var boundedOutputPadding = Math.Clamp(outputPad, 0, Math.Max(0, (columns - 2) / 2));
+        var transcriptWidth = Math.Max(1, columns - boundedOutputPadding * 2);
         IReadOnlyList<string> startupRows = string.IsNullOrEmpty(startupHeader)
             ? Array.Empty<string>()
             : TerminalTextLayout.Create(startupHeader, transcriptWidth).Rows.Prepend(string.Empty).ToArray();
@@ -117,7 +128,9 @@ internal sealed class TerminalScreenCompositor
         {
             var row = displayedTranscriptRows[index];
             var rowWidth = TerminalTextLayout.Width(row);
-            if (rowWidth is > 0 && rowWidth < columns) row += new string(' ', columns - rowWidth);
+            if (rowWidth > 0 && rowWidth < transcriptWidth) row += new string(' ', transcriptWidth - rowWidth);
+            if (boundedOutputPadding > 0)
+                row = new string(' ', boundedOutputPadding) + row + new string(' ', boundedOutputPadding);
             rows[transcriptStart + index] = row;
         }
 
@@ -151,8 +164,9 @@ internal sealed class TerminalScreenCompositor
         for (var index = 0; index < editor.Rows.Count; index++)
         {
             var row = displayedEditorRows[index];
-            if (index == editor.CursorRow)
+            if (index == editor.CursorRow && !showHardwareCursor)
                 row = HighlightCursor(row, editor.RowMaps[index], editorCursor);
+            if (boundedEditorPadding > 0) row = new string(' ', boundedEditorPadding) + row;
             var width = TerminalTextLayout.Width(row);
             if (width < columns) row += new string(' ', columns - width);
             rows[editorStart + borderHeight / 2 + index] = row;
@@ -231,11 +245,13 @@ internal sealed class TerminalScreenCompositor
             var cursorColumn = panelCursorColumn ?? 1;
             return new(rows, Math.Clamp(cursorRow, 0, Math.Max(0, height - 1)),
                 Math.Clamp(cursorColumn, 1, columns + 1), scrollOffset, columns, height, panelCursorVisible,
-                RestoreStartRow: panelStart);
+                RestoreStartRow: panelStart, ContentHeight: startupHeight + transcriptRows.Count);
         }
 
-        return new(rows, editorStart + borderHeight / 2 + editor.CursorRow, editor.CursorColumn + 1,
-            scrollOffset, columns, height, CursorVisible: false, RestoreStartRow: editorStart);
+        return new(rows, editorStart + borderHeight / 2 + editor.CursorRow,
+            editor.CursorColumn + boundedEditorPadding + 1, scrollOffset, columns, height,
+            CursorVisible: showHardwareCursor, RestoreStartRow: editorStart,
+            ContentHeight: startupHeight + transcriptRows.Count);
     }
 
     private static string HighlightCursor(string row, EditorViewport.RowMap rowMap, int cursor)
@@ -252,7 +268,10 @@ internal sealed class TerminalScreenCompositor
         var rendered = _images.PrepareFrame(frame.Rows);
         _output.Write("\u001b[?2026h");
         if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
-        var fullRedraw = _previousRows is null || _previousColumns != frame.Columns || _previousHeight != frame.Height;
+        var contentShrank = _clearOnShrink && _previousContentHeight is { } previousContentHeight &&
+            frame.ContentHeight < previousContentHeight;
+        var fullRedraw = _previousRows is null || _previousColumns != frame.Columns || _previousHeight != frame.Height ||
+            contentShrank;
         var redrawAllRows = fullRedraw || rendered.Preamble.Length > 0;
         if (fullRedraw) _output.Write("\u001b[2J");
         for (var index = 0; index < frame.Rows.Count; index++)
@@ -281,6 +300,7 @@ internal sealed class TerminalScreenCompositor
         _previousRestoreStartRow = frame.RestoreStartRow;
         _previousColumns = frame.Columns;
         _previousHeight = frame.Height;
+        _previousContentHeight = frame.ContentHeight;
     }
 
     public void RestoreLastFrameToNormalBuffer()

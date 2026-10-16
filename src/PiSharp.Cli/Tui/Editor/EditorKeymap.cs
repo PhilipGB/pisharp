@@ -13,7 +13,7 @@ public sealed class EditorKeymap
     {
         ["tui.input.submit"] = new("Submit input", ["enter"]),
         ["tui.input.newLine"] = new("Insert a new line", ["shift+enter", "ctrl+j"]),
-        ["tui.input.tab"] = new("Complete input", ["tab"]),
+        ["tui.input.tab"] = new("Complete input", ["tab", "shift+tab"]),
         ["tui.editor.cursorUp"] = new("Move up or browse older history", ["up"]),
         ["tui.editor.cursorDown"] = new("Move down or browse newer history", ["down"]),
         ["tui.editor.historyPrevious"] = new("Browse older prompt history", []),

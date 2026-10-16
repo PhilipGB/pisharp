@@ -6,6 +6,31 @@ namespace PiSharp.Tests;
 public sealed class UserSettingsWriterTests
 {
     [Fact]
+    public async Task SavesModelSpecificThinkingDefaultWithoutDroppingExistingSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-thinking-write-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            await UserSettingsWriter.SetAsync(path, "defaultThinkingLevel", "medium", userScope: true);
+            await UserSettingsWriter.SetModelThinkingLevelAsync(path, "openai", "gpt-5", "low");
+            await UserSettingsWriter.SetModelThinkingLevelAsync(path, "llama.cpp", "Qwen3.8-27B", "xhigh");
+
+            var settings = await UserSettings.LoadAsync(root, _ => null);
+
+            Assert.Equal("medium", settings.DefaultThinkingLevel);
+            Assert.Equal("low", settings.GetModelThinkingLevel("openai", "gpt-5"));
+            Assert.Equal("xhigh", settings.GetModelThinkingLevel("llama.cpp", "Qwen3.8-27B"));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetModelThinkingLevelAsync(path, "llama.cpp", "Qwen3.8-27B", "unsupported"));
+            Assert.Equal("xhigh", (await UserSettings.LoadAsync(root, _ => null))
+                .GetModelThinkingLevel("llama.cpp", "Qwen3.8-27B"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task UpdatesSupportedValuesAndPreservesOtherSettingsAtomically()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-write-" + Guid.NewGuid().ToString("N"));

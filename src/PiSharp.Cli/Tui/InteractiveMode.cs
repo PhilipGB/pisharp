@@ -24,7 +24,9 @@ internal static class InteractiveMode
         var usesDefaultToolsSetting = startup.UsesDefaultToolsSetting;
         var prompt = projectBinding.Arguments.Prompt;
         TerminalSessionNavigation? sessionNavigationReference = null;
-        var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding, () => Console.Out);
+        var terminalThinkingSelector = editor is null ? null : new TerminalThinkingSelector(editor);
+        var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding,
+            () => Console.Out, terminalThinkingSelector);
         var sessionNavigation = new TerminalSessionNavigation(projectBinding, conversationBinding, projectTransitions,
             presentation, AdoptProjectSession);
         sessionNavigationReference = sessionNavigation;
@@ -120,7 +122,10 @@ internal static class InteractiveMode
                                 await terminalProviderCommands.SetScopeAsync(argument, projectBinding.Arguments.Provider);
                                 break;
                             case "/thinking":
-                                await terminalProviderCommands.SetThinkingAsync(argument, modelTransitions.ReplaceAsync);
+                                await terminalProviderCommands.SetThinkingAsync(argument,
+                                    projectBinding.Settings.GetModelThinkingLevel(modelBinding.Selection) ??
+                                        projectBinding.Settings.DefaultThinkingLevel ?? ThinkingLevels.Default,
+                                    settingsCommands.SaveModelThinkingLevelAsync, modelTransitions.ReplaceAsync);
                                 break;
                             case "/login":
                                 await terminalProviderLogin!.ShowAsync(argument);
@@ -134,9 +139,21 @@ internal static class InteractiveMode
                                 await terminalProviderCommands.LogoutAsync(argument, modelTransitions.ReplaceAsync);
                                 break;
                             case "/compact":
-                                Console.WriteLine(await conversationBinding.Run.CompactAsync(argument) ? "Context compacted; full history retained." :
-                                    "Nothing to compact (at least two completed user turns are required).");
-                                break;
+                                {
+                                    terminalScreen?.ReportTerminalProgress(null);
+                                    bool compacted;
+                                    try
+                                    {
+                                        compacted = await conversationBinding.Run.CompactWithResultAsync(argument) is not null;
+                                    }
+                                    finally
+                                    {
+                                        terminalScreen?.ClearTerminalProgress();
+                                    }
+                                    Console.WriteLine(compacted ? "Context compacted; full history retained." :
+                                        "Nothing to compact (at least two completed user turns are required).");
+                                    break;
+                                }
                             case "/copy":
                                 if (argument.Length != 0) throw new ArgumentException("/copy does not accept arguments.");
                                 await TerminalClipboardActions.CopyLastAssistantAsync(terminalClipboard, conversationBinding.Conversation, terminalScreen, Console.Out);
@@ -179,7 +196,8 @@ internal static class InteractiveMode
                                 await InteractiveResourceCommands.ExecuteAsync(command, argument, line, () => projectBinding.Resources,
                                     () => extensionLease.Current.Registration, text => RunAsync(text), editor, terminalScreen,
                                     HandleEditorApplicationAction, ReloadResources,
-                                    projectBinding.Runtime.GetMcpManagementSnapshot);
+                                    projectBinding.Runtime.GetMcpManagementSnapshot,
+                                    () => projectBinding.Settings.SkillCommandsEnabled);
                                 break;
                         }
                     }

@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using PiSharp.Cli;
+using PiSharp.Cli.Tui;
 using PiSharp.ResourceDiscoveryExtension;
 using SkiaSharp;
 
@@ -32,6 +33,62 @@ public sealed class TerminalPtyTests
                     _inputReady.TrySetResult();
             }
             return _output.ToString();
+        }
+    }
+
+    private sealed class PtyScreenCapture(Process process, int rows, int columns)
+    {
+        private readonly object _gate = new();
+        private readonly StringBuilder _output = new();
+        private readonly List<(Func<string, bool> Predicate, TaskCompletionSource<string> Completion)> _waiters = [];
+        private string _lastFrame = "";
+        private readonly TaskCompletionSource _inputReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public PtyScreenCapture(Process process) : this(process, 30, 100)
+        {
+        }
+
+        public Task InputReady => _inputReady.Task;
+        public Task<string> ReadCompletion => ReadAsync(process);
+        public string LastFrame { get { lock (_gate) return _lastFrame; } }
+        public string CapturedOutput { get { lock (_gate) return _output.ToString(); } }
+
+        public Task<string> WaitForFrameAsync(Func<string, bool> predicate)
+        {
+            ArgumentNullException.ThrowIfNull(predicate);
+            lock (_gate)
+            {
+                if (_lastFrame.Length > 0 && predicate(_lastFrame)) return Task.FromResult(_lastFrame);
+                var completion = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _waiters.Add((predicate, completion));
+                return completion.Task;
+            }
+        }
+
+        private async Task<string> ReadAsync(Process process)
+        {
+            var buffer = new char[2048];
+            int count;
+            while ((count = await process.StandardOutput.ReadAsync(buffer)) > 0)
+            {
+                lock (_gate)
+                {
+                    _output.Append(buffer, 0, count);
+                    var captured = _output.ToString();
+                    if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) _inputReady.TrySetResult();
+                    var frames = TerminalOutputFrameReader.Read(captured, rows, columns);
+                    if (frames.Count == 0) continue;
+                    _lastFrame = frames[^1].Screen;
+                    for (var index = _waiters.Count - 1; index >= 0; index--)
+                    {
+                        var waiter = _waiters[index];
+                        if (!waiter.Predicate(_lastFrame)) continue;
+                        _waiters.RemoveAt(index);
+                        waiter.Completion.TrySetResult(_lastFrame);
+                    }
+                }
+            }
+            lock (_gate) return _output.ToString();
         }
     }
 
@@ -483,7 +540,7 @@ public sealed class TerminalPtyTests
                         if (captured.Contains("Session error: fixture command failed", StringComparison.Ordinal)) injectedErrorVisible.TrySetResult();
                         if (captured.Contains("extension call: pty", StringComparison.Ordinal)) toolCallVisible.TrySetResult();
                         if (captured.Contains("extension result: pty / extension: pty", StringComparison.Ordinal)) toolResultVisible.TrySetResult();
-                        if (captured.Contains("Settings scope", StringComparison.Ordinal)) settingsScopeShown.TrySetResult();
+                        if (captured.Contains("Settings · User settings", StringComparison.Ordinal)) settingsScopeShown.TrySetResult();
                         if (captured.Contains("Deliver all queued messages together", StringComparison.Ordinal))
                             steeringOptionsShown.TrySetResult();
                         if (captured.Contains("Saved user setting steeringMode = all.", StringComparison.Ordinal))
@@ -520,13 +577,11 @@ public sealed class TerminalPtyTests
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             await idleReady.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("/settings\r");
-            await process.StandardInput.FlushAsync();
             try
             {
-                await settingsScopeShown.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("\r");
+                await process.StandardInput.WriteAsync("/settings\r");
                 await process.StandardInput.FlushAsync();
+                await settingsScopeShown.Task.WaitAsync(timeout.Token);
                 await process.StandardInput.WriteAsync("Steering mode\r");
                 await process.StandardInput.FlushAsync();
                 await steeringOptionsShown.Task.WaitAsync(timeout.Token);
@@ -568,7 +623,12 @@ public sealed class TerminalPtyTests
                 await drain;
                 string diagnostic;
                 lock (output) diagnostic = output.ToString();
-                throw new TimeoutException($"Active PTY failed to exit. stdout:\n{diagnostic}\nstderr:\n{await stderr}", error);
+                var frames = TerminalOutputFrameReader.Read(diagnostic, rows: 24, columns: 80);
+                var currentFrame = frames.Count == 0 ? "<no frame>" : frames[^1].Screen;
+                var shortcutDiagnostics = string.Join(" | ", new[]
+                    { "Thinking level:", "Shortcut action failed", "Session error:" }
+                    .Where(marker => diagnostic.Contains(marker, StringComparison.Ordinal)));
+                throw new TimeoutException($"Active PTY failed to exit. Latest screen:\n{currentFrame}\nShortcut output: {shortcutDiagnostics}\nstderr:\n{await stderr}", error);
             }
             await drain;
             await server.WaitAsync(timeout.Token);
@@ -967,8 +1027,12 @@ public sealed class TerminalPtyTests
                         output.Append(buffer, 0, count);
                         var captured = output.ToString();
                         if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
-                        var promptIndex = captured.LastIndexOf(confirmationPrompt, StringComparison.Ordinal);
-                        var cancelledIndex = captured.LastIndexOf("Import cancelled.", StringComparison.Ordinal);
+                        var visibleFrames = TerminalOutputFrameReader.Read(captured, rows: 24, columns: 180)
+                            .Select(frame => string.Join(' ', frame.Screen.Split('\n')
+                                .Select(line => line.Trim())));
+                        var visibleOutput = string.Join('\n', visibleFrames);
+                        var promptIndex = visibleOutput.LastIndexOf(confirmationPrompt, StringComparison.Ordinal);
+                        var cancelledIndex = visibleOutput.LastIndexOf("Import cancelled.", StringComparison.Ordinal);
                         if (promptIndex >= 0) promptReady.TrySetResult();
                         if (cancelledIndex >= 0 && promptIndex > cancelledIndex) retryPromptReady.TrySetResult();
                         if (cancelledIndex >= 0) cancelledReady.TrySetResult();
@@ -1021,7 +1085,9 @@ public sealed class TerminalPtyTests
             var imported = await importedStore.LoadAsync(saved.Path);
             Assert.Equal(0, process.ExitCode);
             Assert.Equal(sourceCwd, imported.WorkingDirectory);
-            Assert.Contains("Type import to confirm:", terminalOutput);
+            var visibleTerminalOutput = string.Join('\n', TerminalOutputFrameReader.Read(terminalOutput, rows: 24, columns: 180)
+                .Select(frame => string.Join(' ', frame.Screen.Split('\n').Select(line => line.Trim()))));
+            Assert.Contains("Type import to confirm:", visibleTerminalOutput);
             Assert.Contains("Import cancelled.", terminalOutput);
             Assert.Contains("Exported private Pi JSONL to", terminalOutput);
             Assert.Contains($"Imported Pi session {importedId}", terminalOutput);
@@ -1300,10 +1366,10 @@ public sealed class TerminalPtyTests
             });
             var stderr = process.StandardError.ReadToEndAsync();
             await inputReady.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("/settings\r\rHide thinking\rEnabled\r");
+            await process.StandardInput.WriteAsync("/settings\rHide thinking\r");
             await process.StandardInput.FlushAsync();
             await saved.Task.WaitAsync(TimeSpan.FromSeconds(12));
-            await process.StandardInput.WriteAsync("\u001b[A\r");
+            await process.StandardInput.WriteAsync("External editor\r");
             await process.StandardInput.FlushAsync();
             await editorPrompt.Task.WaitAsync(TimeSpan.FromSeconds(12));
             await process.StandardInput.WriteAsync("code --wait\r");
@@ -1361,7 +1427,7 @@ public sealed class TerminalPtyTests
             catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
             var output = await stdout;
             Assert.Equal(0, process.ExitCode);
-            Assert.Contains("Settings scope", output);
+            Assert.Contains("Settings · User settings", output);
             Assert.Contains("Hide thinking", output);
             Assert.Contains("Saved user setting hideThinkingBlock = true", output);
             Assert.Contains("Saved user setting steeringMode = all", output);
@@ -1387,6 +1453,128 @@ public sealed class TerminalPtyTests
             Assert.Equal(2048, settings.Compaction?.ReserveTokens);
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData(80)]
+    [InlineData(52)]
+    public async Task SettingsListRendersFiltersChangesAndPersistsThroughLinuxPty(int columns)
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-settings-list-pty-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agentDirectory);
+        Process? process = null;
+        Process? restarted = null;
+        try
+        {
+            process = StartSettingsFixtureProcess(cwd, agentDirectory, columns);
+            var screen = new PtyScreenCapture(process, 24, columns);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(Process target, string input)
+            {
+                await target.StandardInput.WriteAsync(input);
+                await target.StandardInput.FlushAsync();
+            }
+
+            await SendAsync(process, "/settings\r");
+            var initial = await screen.WaitForFrameAsync(frame =>
+                frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
+                frame.Contains("Auto-compact", StringComparison.Ordinal) &&
+                frame.Contains("(1/26)", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            var sharedOrder = new[]
+            {
+                "Auto-compact", "Auto-resize images", "Block images", "Skill commands",
+                "Show hardware cursor", "Editor padding", "Output padding", "Autocomplete max items",
+                "Clear on shrink", "Terminal progress"
+            };
+            var positions = sharedOrder.Select(label => initial.IndexOf(label, StringComparison.Ordinal)).ToArray();
+            Assert.All(positions, position => Assert.True(position >= 0, $"Missing setting in initial view: {sharedOrder[Array.IndexOf(positions, position)]}"));
+            Assert.Equal(positions.Order(), positions);
+            var compactRow = initial.Split('\n').Single(line => line.Contains("Auto-compact", StringComparison.Ordinal));
+            var resizeRow = initial.Split('\n').Single(line => line.Contains("Auto-resize images", StringComparison.Ordinal));
+            Assert.Equal(compactRow.IndexOf("true", StringComparison.Ordinal),
+                resizeRow.IndexOf("true", StringComparison.Ordinal));
+            Assert.Contains("Automatically compact context", initial, StringComparison.Ordinal);
+            Assert.Contains("Enter/Space change", initial, StringComparison.Ordinal);
+            Assert.All(initial.Split('\n'), line => Assert.True(TerminalTextLayout.Width(line) <= columns));
+
+            await SendAsync(process, "\u001b[B");
+            var resizedDescription = await screen.WaitForFrameAsync(frame =>
+                frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
+                frame.Contains("Resize large images", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            Assert.Contains("Auto-resize images", resizedDescription, StringComparison.Ordinal);
+
+            await SendAsync(process, "\u001b[A ");
+            var compactDisabled = await screen.WaitForFrameAsync(frame =>
+                frame.Split('\n').Any(line => line.Contains("Auto-compact", StringComparison.Ordinal) &&
+                    line.Contains("false", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            Assert.Contains("Settings · User settings", compactDisabled, StringComparison.Ordinal);
+
+            await SendAsync(process, "show hardware cursor");
+            var filtered = await screen.WaitForFrameAsync(frame =>
+                frame.Contains("Filter: show hardware cursor", StringComparison.Ordinal) &&
+                frame.Contains("(1/1)", StringComparison.Ordinal) &&
+                frame.Contains("Show hardware cursor", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            Assert.DoesNotContain("Auto-compact", filtered, StringComparison.Ordinal);
+            await SendAsync(process, "\r");
+            await screen.WaitForFrameAsync(frame =>
+                frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("Show hardware cursor", StringComparison.Ordinal) &&
+                    line.Contains("true", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+
+            await SendAsync(process, "\u001b");
+            await screen.WaitForFrameAsync(frame =>
+                !frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
+                !frame.Contains("Auto-compact", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            await SendAsync(process, "/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Agent error", await stdout);
+            Assert.DoesNotContain("Exception:", await stderr);
+
+            var settings = await UserSettings.LoadAsync(agentDirectory, _ => null);
+            Assert.False(settings.Compaction?.Enabled);
+            Assert.True(settings.ShowHardwareCursor);
+
+            restarted = StartSettingsFixtureProcess(cwd, agentDirectory, columns);
+            var restartedScreen = new PtyScreenCapture(restarted, 24, columns);
+            var restartedOutput = restartedScreen.ReadCompletion;
+            var restartedError = restarted.StandardError.ReadToEndAsync();
+            await restartedScreen.InputReady.WaitAsync(timeout.Token);
+            await restarted.StandardInput.WriteAsync("/settings\rshow hardware cursor");
+            await restarted.StandardInput.FlushAsync();
+            var restored = await restartedScreen.WaitForFrameAsync(frame =>
+                frame.Contains("Filter: show hardware cursor", StringComparison.Ordinal) &&
+                frame.Contains("(1/1)", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("Show hardware cursor", StringComparison.Ordinal) &&
+                    line.Contains("true", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            Assert.Contains("Settings · User settings", restored, StringComparison.Ordinal);
+            await restarted.StandardInput.WriteAsync("\u001b");
+            await restarted.StandardInput.FlushAsync();
+            await restartedScreen.WaitForFrameAsync(frame =>
+                !frame.Contains("Settings · User settings", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            await restarted.StandardInput.WriteAsync("/quit\r");
+            await restarted.StandardInput.FlushAsync();
+            restarted.StandardInput.Close();
+            await restarted.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, restarted.ExitCode);
+            Assert.DoesNotContain("Agent error", await restartedOutput);
+            Assert.DoesNotContain("Exception:", await restartedError);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            if (restarted is { HasExited: false }) restarted.Kill(entireProcessTree: true);
+            restarted?.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
     }
 
     [Fact]
@@ -2173,67 +2361,29 @@ public sealed class TerminalPtyTests
             using var process = Process.Start(start);
             Assert.NotNull(process);
 
-            var outputBuilder = new System.Text.StringBuilder();
-            var outputLock = new object();
-            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var completionPicker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var selectedPath = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var blankPrompt = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var stdout = Task.Run(async () =>
-            {
-                var buffer = new char[1024];
-                while (true)
-                {
-                    var count = await process.StandardOutput.ReadAsync(buffer);
-                    if (count == 0) break;
-                    lock (outputLock)
-                    {
-                        outputBuilder.Append(buffer, 0, count);
-                        var output = outputBuilder.ToString();
-                        if (output.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
-                        if (output.Contains("Complete input", StringComparison.Ordinal)) completionPicker.TrySetResult();
-                        var frames = TerminalOutputFrameReader.Read(output, rows: 24, columns: 80);
-                        if (frames.Count > 0)
-                        {
-                            var frame = frames[^1].Screen;
-                            if (frame.Contains("@notes.txt", StringComparison.Ordinal) &&
-                                !frame.Contains("Complete input", StringComparison.Ordinal))
-                                selectedPath.TrySetResult();
-                            if (selectedPath.Task.IsCompleted &&
-                                !frame.Contains("Complete input", StringComparison.Ordinal) &&
-                                !frame.Contains("@notes.txt", StringComparison.Ordinal))
-                                blankPrompt.TrySetResult();
-                        }
-                    }
-                }
-                lock (outputLock) return outputBuilder.ToString();
-            });
+            var screen = new PtyScreenCapture(process, rows: 24, columns: 80);
+            var stdout = screen.ReadCompletion;
             var stderr = process.StandardError.ReadToEndAsync();
             try
             {
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
-                await inputReady.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("@\t");
+                await screen.InputReady.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("@n\t");
                 await process.StandardInput.FlushAsync();
-                await completionPicker.Task.WaitAsync(timeout.Token);
-                await process.StandardInput.WriteAsync("\u001b[B\u001b[B\r");
+                var selectedPath = await screen.WaitForFrameAsync(frame => EditorInputLine(frame) == "@notes.txt" &&
+                    !frame.Contains("Complete input", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+                Assert.Contains("@notes.txt", selectedPath);
+                await process.StandardInput.WriteAsync("\u0015");
                 await process.StandardInput.FlushAsync();
-                try { await selectedPath.Task.WaitAsync(TimeSpan.FromSeconds(12)); }
-                catch (TimeoutException error)
-                {
-                    lock (outputLock) throw new TimeoutException("The editor did not render the selected @ path.\n" + outputBuilder, error);
-                }
-                await process.StandardInput.WriteAsync("\u001b");
-                await process.StandardInput.FlushAsync();
-                await blankPrompt.Task.WaitAsync(timeout.Token);
+                await screen.WaitForFrameAsync(frame => EditorInputLine(frame) == "").WaitAsync(timeout.Token);
                 await process.StandardInput.WriteAsync("/quit\r");
                 process.StandardInput.Close();
                 await process.WaitForExitAsync(timeout.Token);
                 var output = await stdout;
 
                 Assert.Equal(0, process.ExitCode);
-                Assert.Contains("Complete input", output);
                 Assert.Contains("@notes.txt", output);
+                Assert.DoesNotContain("Complete input", output);
                 Assert.DoesNotContain("Completion unavailable", output);
                 Assert.DoesNotContain("Error:", await stderr);
             }
@@ -2244,6 +2394,367 @@ public sealed class TerminalPtyTests
             }
         }
         finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task SlashCommandTabCyclesAndOneEnterOpensThinkingSelectorThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-command-completion-pty-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agentDirectory);
+        await WriteThinkingFixtureSettingsAsync(agentDirectory);
+        Process? process = null;
+        try
+        {
+            process = StartThinkingFixtureProcess(cwd, agentDirectory);
+            var screen = new PtyScreenCapture(process);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task WaitForEditorAsync(string expected)
+            {
+                try
+                {
+                    await screen.WaitForFrameAsync(frame =>
+                        string.Equals(EditorInputLine(frame), expected, StringComparison.Ordinal)).WaitAsync(timeout.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"Timed out waiting for editor input '{expected}'. Current screen:\n{screen.LastFrame}");
+                }
+            }
+
+            await SendAsync("/mod");
+            await WaitForEditorAsync("/mod");
+            await SendAsync("\t");
+            await WaitForEditorAsync("/model");
+            await SendAsync("\t");
+            await WaitForEditorAsync("/models");
+            await SendAsync("\u001b[Z");
+            await WaitForEditorAsync("/model");
+
+            await SendAsync("\u0015");
+            await WaitForEditorAsync("");
+            await SendAsync("/thi");
+            await WaitForEditorAsync("/thi");
+            await SendAsync("\t");
+            await WaitForEditorAsync("/thinking");
+            await SendAsync("\r");
+            var selector = await screen.WaitForFrameAsync(frame =>
+                frame.Contains("Thinking Level", StringComparison.Ordinal) &&
+                frame.Contains("medium", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+
+            Assert.DoesNotContain("Complete input", selector);
+            await SendAsync("\u001b");
+            await screen.WaitForFrameAsync(frame => !frame.Contains("Thinking Level", StringComparison.Ordinal) &&
+                EditorInputLine(frame) == "").WaitAsync(timeout.Token);
+            await SendAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            var terminalOutput = await stdout;
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("Thinking Level", terminalOutput);
+            Assert.DoesNotContain("Complete input", terminalOutput);
+            Assert.DoesNotContain("Agent error", terminalOutput);
+            Assert.DoesNotContain("Exception:", await stderr);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ShiftTabCyclesThinkingAndNextRequestUsesTheNewLevelThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-thinking-cycle-pty-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agentDirectory);
+        using var listener = StartLoopbackListener(out var port);
+        using var serverTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var requestBody = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var responseReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseResponse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(serverTimeout.Token);
+            Assert.Equal("/v1/responses", request.Request.Url?.AbsolutePath);
+            using var reader = new StreamReader(request.Request.InputStream);
+            requestBody.TrySetResult(await reader.ReadToEndAsync(serverTimeout.Token));
+            request.Response.ContentType = "text/event-stream";
+            request.Response.KeepAlive = false;
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_cycle\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+            await writer.FlushAsync();
+            responseReady.TrySetResult();
+            await releaseResponse.Task.WaitAsync(serverTimeout.Token);
+            await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_cycle\",\"output_index\":0,\"content_index\":0,\"delta\":\"SHIFT_TAB_HIGH_OK\"}\n\n");
+            await writer.WriteAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_cycle\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\n");
+            await writer.WriteAsync("data: [DONE]\n\n");
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        Process? process = null;
+        try
+        {
+            await WriteThinkingFixtureSettingsAsync(agentDirectory);
+            await UserSettingsWriter.SetAsync(Path.Combine(agentDirectory, "settings.json"),
+                "terminal.showTerminalProgress", "true", userScope: true);
+            var modelsPath = Path.Combine(agentDirectory, "models.json");
+            var models = await File.ReadAllTextAsync(modelsPath);
+            await File.WriteAllTextAsync(modelsPath,
+                models.Replace("http://127.0.0.1:1/v1", $"http://127.0.0.1:{port}/v1", StringComparison.Ordinal));
+            process = StartThinkingFixtureProcess(cwd, agentDirectory);
+            var screen = new PtyScreenCapture(process);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await screen.InputReady.WaitAsync(timeout.Token);
+            await screen.WaitForFrameAsync(frame => frame.Split('\n').Any(line =>
+                line.Contains("fixture-model", StringComparison.Ordinal) &&
+                line.Contains("medium", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+
+            await process.StandardInput.WriteAsync("\u001b[Z");
+            await process.StandardInput.FlushAsync();
+            var highFooter = await screen.WaitForFrameAsync(frame => frame.Split('\n').Any(line =>
+                line.Contains("fixture-model • high", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            Assert.Contains("fixture-model • high", highFooter, StringComparison.Ordinal);
+
+            await process.StandardInput.WriteAsync("request after shift tab\r");
+            await process.StandardInput.FlushAsync();
+            var requestJson = await requestBody.Task.WaitAsync(timeout.Token);
+            using var parsedRequest = JsonDocument.Parse(requestJson);
+            Assert.Equal("high", parsedRequest.RootElement.GetProperty("reasoning").GetProperty("effort").GetString());
+            await responseReady.Task.WaitAsync(timeout.Token);
+            const string progressStarted = "\u001b]9;4;3\u0007";
+            const string progressCleared = "\u001b]9;4;0\u0007";
+            async Task WaitForOutputAsync(string expected)
+            {
+                while (!screen.CapturedOutput.Contains(expected, StringComparison.Ordinal))
+                    await Task.Delay(10, timeout.Token);
+            }
+
+            await WaitForOutputAsync(progressStarted);
+            Assert.DoesNotContain(progressCleared, screen.CapturedOutput);
+            releaseResponse.TrySetResult();
+            await screen.WaitForFrameAsync(frame => frame.Contains("SHIFT_TAB_HIGH_OK", StringComparison.Ordinal) &&
+                !frame.Contains("Enter steers · follow-up queues · Escape aborts", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("fixture-model • high", StringComparison.Ordinal)))
+                .WaitAsync(timeout.Token);
+            await WaitForOutputAsync(progressCleared);
+
+            await process.StandardInput.WriteAsync("/quit\r");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            await server.WaitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Agent error", await stdout);
+            Assert.DoesNotContain("Exception:", await stderr);
+        }
+        finally
+        {
+            releaseResponse.TrySetResult();
+            serverTimeout.Cancel();
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            try { await server; }
+            catch (OperationCanceledException) { }
+            catch (HttpListenerException) { }
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task InvalidDirectThinkingLevelPreservesActiveValueThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-thinking-invalid-pty-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agentDirectory);
+        await WriteThinkingFixtureSettingsAsync(agentDirectory);
+        Process? process = null;
+        try
+        {
+            process = StartThinkingFixtureProcess(cwd, agentDirectory);
+            var screen = new PtyScreenCapture(process);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task WaitForOutputAsync(string expected)
+            {
+                while (!screen.CapturedOutput.Contains(expected, StringComparison.Ordinal))
+                    await Task.Delay(10, timeout.Token);
+            }
+
+            await SendAsync("/thinking xhigh\r");
+            await WaitForOutputAsync("Session error: Thinking level 'xhigh' is not supported");
+            await SendAsync("/thinking\r");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Thinking Level", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains('>') && line.Contains("medium", StringComparison.Ordinal)))
+                .WaitAsync(timeout.Token);
+            await SendAsync("\u001b");
+            await screen.WaitForFrameAsync(frame => !frame.Contains("Thinking Level", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("fixture-model", StringComparison.Ordinal) &&
+                    line.Contains("medium", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            await SendAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+
+            Assert.Equal(1, process.ExitCode);
+            Assert.Contains("Available levels: off, minimal, low, medium, high", await stdout, StringComparison.Ordinal);
+            Assert.DoesNotContain("Unhandled exception", await stderr);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ThinkingSelectorSelectsCancelsAndPersistsModelDefaultThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-thinking-selector-pty-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agentDirectory);
+        await WriteThinkingFixtureSettingsAsync(agentDirectory);
+        Process? process = null;
+        try
+        {
+            process = StartThinkingFixtureProcess(cwd, agentDirectory);
+            var screen = new PtyScreenCapture(process);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task WaitForOutputAsync(string expected)
+            {
+                while (!screen.CapturedOutput.Contains(expected, StringComparison.Ordinal))
+                    await Task.Delay(10, timeout.Token);
+            }
+
+            Task<string> WaitForIdleThinkingAsync(string level) => screen.WaitForFrameAsync(frame =>
+                !frame.Contains("Thinking Level", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("fixture-model", StringComparison.Ordinal) &&
+                    line.Contains(level, StringComparison.Ordinal)));
+
+            async Task<string> WaitForSelectedThinkingLevelAsync(string level)
+            {
+                try
+                {
+                    return await screen.WaitForFrameAsync(frame =>
+                        frame.Contains("Thinking Level", StringComparison.Ordinal) &&
+                        frame.Split('\n').Any(line => line.Contains('>') &&
+                            line.Contains(level, StringComparison.Ordinal)))
+                        .WaitAsync(timeout.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"Timed out waiting for selected thinking level '{level}'. Current screen:\n{screen.LastFrame}");
+                }
+            }
+
+            await SendAsync("/thinking\r");
+            var initialSelector = await WaitForSelectedThinkingLevelAsync("medium");
+            Assert.DoesNotContain("xhigh", initialSelector);
+            Assert.DoesNotContain("max", initialSelector);
+            await SendAsync("\u001b[B");
+            await WaitForSelectedThinkingLevelAsync("high");
+            await SendAsync("\u0003");
+            await WaitForIdleThinkingAsync("medium").WaitAsync(timeout.Token);
+
+            await SendAsync("/thinking\r");
+            await WaitForSelectedThinkingLevelAsync("medium");
+            await SendAsync("\u001b[B");
+            await WaitForSelectedThinkingLevelAsync("high");
+            await SendAsync("\r");
+            await WaitForIdleThinkingAsync("high").WaitAsync(timeout.Token);
+
+            await SendAsync("/thinking\r");
+            await WaitForSelectedThinkingLevelAsync("high");
+            await SendAsync("\u001b");
+            await WaitForIdleThinkingAsync("high").WaitAsync(timeout.Token);
+
+            await SendAsync("/thinking\r");
+            await WaitForSelectedThinkingLevelAsync("high");
+            await SendAsync("\u0013");
+            await screen.WaitForFrameAsync(frame => !frame.Contains("Thinking Level", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("fixture-model", StringComparison.Ordinal) &&
+                    line.Contains("high", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            await WaitForOutputAsync("Saved thinking default for fixture/fixture-model: high.");
+            var savedSettings = await UserSettings.LoadAsync(agentDirectory, _ => null);
+            Assert.Equal("high", savedSettings.GetModelThinkingLevel("fixture", "fixture-model"));
+
+            await SendAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Agent error", await stdout);
+            Assert.DoesNotContain("Exception:", await stderr);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+        }
+
+        Process? restarted = null;
+        try
+        {
+            restarted = StartThinkingFixtureProcess(cwd, agentDirectory);
+            var screen = new PtyScreenCapture(restarted);
+            var stdout = screen.ReadCompletion;
+            var stderr = restarted.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            await screen.InputReady.WaitAsync(timeout.Token);
+            await screen.WaitForFrameAsync(frame => frame.Split('\n').Any(line =>
+                line.Contains("fixture-model", StringComparison.Ordinal) && line.Contains("high", StringComparison.Ordinal)))
+                .WaitAsync(timeout.Token);
+            await restarted.StandardInput.WriteAsync("/quit\r");
+            restarted.StandardInput.Close();
+            await restarted.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, restarted.ExitCode);
+            Assert.DoesNotContain("Agent error", await stdout);
+            Assert.DoesNotContain("Exception:", await stderr);
+        }
+        finally
+        {
+            if (restarted is { HasExited: false }) restarted.Kill(entireProcessTree: true);
+            restarted?.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
     }
 
     [Fact]
@@ -2310,6 +2821,75 @@ public sealed class TerminalPtyTests
             }
         }
         throw new InvalidOperationException("Could not reserve loopback port for active TUI fixture.");
+    }
+
+    private static async Task WriteThinkingFixtureSettingsAsync(string agentDirectory)
+    {
+        await File.WriteAllTextAsync(Path.Combine(agentDirectory, "settings.json"), """
+            {
+              "defaultThinkingLevel": "medium"
+            }
+            """);
+        await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), """
+            {
+              "providers": {
+                "fixture": {
+                  "baseUrl": "http://127.0.0.1:1/v1",
+                  "apiKey": "fixture-key",
+                  "models": [
+                    { "id": "fixture-model", "api": "openai-responses", "reasoning": true }
+                  ]
+                }
+              }
+            }
+            """);
+    }
+
+    private static Process StartThinkingFixtureProcess(string workingDirectory, string agentDirectory)
+    {
+        var start = new ProcessStartInfo("/usr/bin/script")
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add("-q");
+        start.ArgumentList.Add("-e");
+        start.ArgumentList.Add("-c");
+        start.ArgumentList.Add($"stty rows 30 cols 100; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --provider fixture --model fixture-model --no-session --offline --no-tools");
+        start.ArgumentList.Add("/dev/null");
+        foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
+            start.Environment.Remove(name);
+        start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+        return Process.Start(start) ?? throw new InvalidOperationException("Could not start the interactive PTY fixture.");
+    }
+
+    private static Process StartSettingsFixtureProcess(string workingDirectory, string agentDirectory, int columns)
+    {
+        var start = new ProcessStartInfo("/usr/bin/script")
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add("-q");
+        start.ArgumentList.Add("-e");
+        start.ArgumentList.Add("-c");
+        start.ArgumentList.Add($"stty rows 24 cols {columns}; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --local --offline --no-session --no-tools");
+        start.ArgumentList.Add("/dev/null");
+        foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
+            start.Environment.Remove(name);
+        start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+        return Process.Start(start) ?? throw new InvalidOperationException("Could not start the settings PTY fixture.");
+    }
+
+    private static string EditorInputLine(string frame)
+    {
+        return frame.Split('\n').Select(line => line.Trim())
+            .LastOrDefault(line => line.StartsWith('@') ||
+                line.StartsWith('/') && line.Count(character => character == '/') == 1) ?? "";
     }
 
     private static string ShellQuote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";

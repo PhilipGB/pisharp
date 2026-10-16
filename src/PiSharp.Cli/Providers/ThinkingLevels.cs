@@ -7,6 +7,17 @@ public static class ThinkingLevels
 {
     public const string Default = "medium";
     public static readonly IReadOnlyList<string> All = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
+    private static readonly IReadOnlyDictionary<string, string> s_descriptions =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["off"] = "No reasoning",
+            ["minimal"] = "Very brief reasoning (~1k tokens)",
+            ["low"] = "Light reasoning (~2k tokens)",
+            ["medium"] = "Moderate reasoning (~8k tokens)",
+            ["high"] = "Deep reasoning (~16k tokens)",
+            ["xhigh"] = "Extra-high reasoning (~32k tokens)",
+            ["max"] = "Maximum reasoning"
+        };
     private static readonly IReadOnlyList<string> s_offOnly = ["off"];
 
     public static bool IsValid(string? value) => value is not null && All.Contains(value, StringComparer.OrdinalIgnoreCase);
@@ -15,6 +26,16 @@ public static class ThinkingLevels
     {
         if (!IsValid(level)) throw new ArgumentException("Thinking level must be off, minimal, low, medium, high, xhigh, or max.");
         return level.ToLowerInvariant();
+    }
+
+    public static string Description(string level) => s_descriptions[Normalize(level)];
+
+    public static string RequireAvailableForModel(string level, bool? supportsReasoning, JsonElement? thinkingLevelMap = null)
+    {
+        var normalized = Normalize(level);
+        var available = AvailableForModel(supportsReasoning, thinkingLevelMap);
+        if (available.Contains(normalized, StringComparer.Ordinal)) return normalized;
+        throw new ArgumentException($"Thinking level '{normalized}' is not supported by the active model. Available levels: {string.Join(", ", available)}.");
     }
 
     public static IReadOnlyList<string> AvailableForModel(bool? supportsReasoning, JsonElement? thinkingLevelMap = null)

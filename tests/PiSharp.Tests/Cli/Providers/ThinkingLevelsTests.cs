@@ -41,6 +41,24 @@ public sealed class ThinkingLevelsTests
             Map("{\"high\":\"extended\"}"))?.Effort);
     }
 
+    [Fact]
+    public void DescriptionsAndStrictModelValidationFollowTheCanonicalLevelList()
+    {
+        Assert.Equal("No reasoning", ThinkingLevels.Description("off"));
+        Assert.Equal("Very brief reasoning (~1k tokens)", ThinkingLevels.Description("minimal"));
+        Assert.Equal("Light reasoning (~2k tokens)", ThinkingLevels.Description("low"));
+        Assert.Equal("Moderate reasoning (~8k tokens)", ThinkingLevels.Description("medium"));
+        Assert.Equal("Deep reasoning (~16k tokens)", ThinkingLevels.Description("high"));
+        Assert.Equal("Extra-high reasoning (~32k tokens)", ThinkingLevels.Description("xhigh"));
+        Assert.Equal("Maximum reasoning", ThinkingLevels.Description("max"));
+        Assert.Equal("high", ThinkingLevels.RequireAvailableForModel("HIGH", true));
+
+        var unsupported = Assert.Throws<ArgumentException>(() =>
+            ThinkingLevels.RequireAvailableForModel("high", supportsReasoning: false));
+        Assert.Contains("Available levels: off", unsupported.Message);
+        Assert.Throws<ArgumentException>(() => ThinkingLevels.RequireAvailableForModel("unknown", true));
+    }
+
     private static JsonElement Map(string json)
     {
         using var document = JsonDocument.Parse(json);

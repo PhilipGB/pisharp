@@ -11,6 +11,13 @@ namespace PiSharp.Tests;
 
 public sealed class LlamaRouterManagerTuiTests
 {
+    private static string EditorInputLine(string frame)
+    {
+        return frame.Split('\n').Select(line => line.Trim())
+            .LastOrDefault(line => line.StartsWith('@') ||
+                line.StartsWith('/') && line.Count(character => character == '/') == 1) ?? "";
+    }
+
     [Fact]
     public async Task LlamaManagerKeepsOrUnloadsOtherModelsOnlyAfterTheUserChooses()
     {
@@ -647,10 +654,8 @@ public sealed class LlamaRouterManagerTuiTests
                 Regex.Matches(frame, Regex.Escape("Please Read facts.txt and answer with its content.")).Count >= 2 &&
                 !frame.Contains("Working", StringComparison.Ordinal), resubmitMark);
 
-            await terminal.SendRawAsync("@facts\t");
-            await terminal.WaitFrameAsync(frame => frame.Contains("Complete input", StringComparison.Ordinal));
-            await terminal.SendRawAsync("\u001b[B\r");
-            await terminal.WaitFrameAsync(frame => frame.Contains("@facts.txt", StringComparison.Ordinal) &&
+            await terminal.SendRawAsync("@facts.tx\t");
+            await terminal.WaitFrameAsync(frame => EditorInputLine(frame) == "@facts.txt" &&
                 !frame.Contains("Complete input", StringComparison.Ordinal));
             var clearMark = terminal.Mark;
             await terminal.SendRawAsync("\u0001\u000b");

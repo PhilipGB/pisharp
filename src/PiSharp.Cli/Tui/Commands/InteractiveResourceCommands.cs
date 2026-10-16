@@ -9,9 +9,13 @@ internal static class InteractiveResourceCommands
     public static async Task ExecuteAsync(string command, string argument, string line, Func<ResourceCatalog> getResources,
         Func<ExtensionRegistration> getExtensions, Func<string, Task> run, TerminalEditor? editor, TerminalScreen? screen,
         Func<string, Task> applicationAction, Func<Task> reload,
-        Func<IReadOnlyList<McpServerManagementInfo>> getMcpServers)
+        Func<IReadOnlyList<McpServerManagementInfo>> getMcpServers, Func<bool>? skillCommandsEnabled = null)
     {
-        if (command.StartsWith("/skill:", StringComparison.Ordinal)) await run(line);
+        if (command.StartsWith("/skill:", StringComparison.Ordinal))
+        {
+            if (skillCommandsEnabled?.Invoke() ?? true) await run(line);
+            else Console.Error.WriteLine("Skill commands are disabled. Enable them in /settings.");
+        }
         else if (getResources().Prompts.Any(item => "/" + item.Name == command)) await run(line);
         else if (getExtensions().Commands.TryGetValue(command[1..], out var handler))
         {

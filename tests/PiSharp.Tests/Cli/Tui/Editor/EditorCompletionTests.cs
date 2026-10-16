@@ -5,6 +5,101 @@ namespace PiSharp.Tests;
 public sealed class EditorCompletionTests
 {
     [Fact]
+    public async Task SlashCompletionCyclesCandidatesInTheEditorAndWrapsForward()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/mod");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/models", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model", editor.Draft);
+    }
+
+    [Fact]
+    public async Task ShiftTabCyclesBackwardAndWraps()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/mod");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
+        Assert.Equal("/models", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
+        Assert.Equal("/model", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
+        Assert.Equal("/models", editor.Draft);
+    }
+
+    [Fact]
+    public async Task EditingResetsTheCompletionCycle()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/mod");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Backspace, '\b'));
+        Assert.Equal("/mode", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model", editor.Draft);
+    }
+
+    [Fact]
+    public async Task UnrelatedCursorInputResetsTheCompletionCycle()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/mod");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.LeftArrow, '\0'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.RightArrow, '\0'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+
+        Assert.Equal("/model", editor.Draft);
+    }
+
+    [Fact]
+    public async Task UniqueCompletionIsSubmittedByTheFirstEnterAndNoMatchesAreANoop()
+    {
+        var submissions = new List<string>();
+        var editor = new TerminalEditor(commands: () => ["/thinking"]);
+        editor.Prefill("/thi");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'), (text, _, _) =>
+        {
+            submissions.Add(text);
+            return Task.FromResult(true);
+        });
+        Assert.Equal("/thinking", editor.Draft);
+        Assert.Empty(submissions);
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Enter, '\r'), (text, _, _) =>
+        {
+            submissions.Add(text);
+            return Task.FromResult(true);
+        });
+        Assert.Equal(["/thinking"], submissions);
+        Assert.Equal("", editor.Draft);
+
+        editor.Prefill("/does-not-exist");
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/does-not-exist", editor.Draft);
+    }
+
+    private static Task<bool> SendEditorKeyAsync(TerminalEditor editor, ConsoleKeyInfo key,
+        Func<string, bool, CancellationToken, Task<bool>>? queue = null) =>
+        editor.HandleActiveInputAsync(new(key, null), queue ?? ((_, _, _) => Task.FromResult(true)),
+            () => [], () => { });
+
+    private static ConsoleKeyInfo Key(ConsoleKey key, char character,
+        ConsoleModifiers modifiers = ConsoleModifiers.None) =>
+        new(character, key, modifiers.HasFlag(ConsoleModifiers.Shift), modifiers.HasFlag(ConsoleModifiers.Alt),
+            modifiers.HasFlag(ConsoleModifiers.Control));
+
+    [Fact]
     public void SlashCompletionShowsAmbiguityAndCompletesUniqueName()
     {
         var completion = new EditorCompletion(Path.GetTempPath());
@@ -27,6 +122,59 @@ public sealed class EditorCompletionTests
         buffer.SetText("/lla");
 
         Assert.Equal(["/llama"], completion.Complete(buffer));
+    }
+
+    [Fact]
+    public void SlashCompletionCoversCanonicalBuiltInsAndKeepsDynamicCommands()
+    {
+        var dynamicCommands = new[]
+        {
+            new InteractiveCommandMetadata("/skill:local", "Local skill"),
+            new InteractiveCommandMetadata("/review", "Prompt command"),
+            new InteractiveCommandMetadata("/fixture", "Extension command"),
+            new InteractiveCommandMetadata("/model", "Duplicate built-in")
+        };
+        var completion = new EditorCompletion(Path.GetTempPath(),
+            () => dynamicCommands.Select(command => command.Command).ToArray(),
+            command => dynamicCommands.FirstOrDefault(item => item.Command == command)?.Description);
+
+        foreach (var command in InteractiveCommandCatalog.BuiltIns)
+        {
+            var buffer = new EditorBuffer();
+            var uniquePrefix = Enumerable.Range(1, command.Command.Length)
+                .Select(length => command.Command[..length])
+                .FirstOrDefault(prefix => InteractiveCommandCatalog.BuiltIns.Count(candidate =>
+                    candidate.Command.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) == 1)
+                ?? command.Command;
+            buffer.SetText(uniquePrefix);
+            Assert.Contains(command.Command, completion.Complete(buffer));
+        }
+
+        foreach (var command in new[]
+                 { "/thinking", "/login", "/logout", "/copy", "/scoped-models", "/settings", "/model", "/models", "/mcp" })
+        {
+            var buffer = new EditorBuffer();
+            buffer.SetText(command);
+            Assert.Contains(command, completion.Complete(buffer));
+        }
+
+        foreach (var dynamicCommand in dynamicCommands.Take(3))
+        {
+            var dynamicBuffer = new EditorBuffer();
+            dynamicBuffer.SetText(dynamicCommand.Command);
+            Assert.Contains(dynamicCommand.Command, completion.Complete(dynamicBuffer));
+        }
+
+        var duplicateBuffer = new EditorBuffer();
+        duplicateBuffer.SetText("/model");
+        Assert.Equal(1, completion.Complete(duplicateBuffer).Count(command =>
+            command.Equals("/model", StringComparison.OrdinalIgnoreCase)));
+
+        var allBuffer = new EditorBuffer();
+        allBuffer.SetText("/");
+        Assert.Equal(InteractiveCommandCatalog.BuiltIns.Select(command => command.Command)
+                .Concat(dynamicCommands.Take(3).Select(command => command.Command)),
+            completion.Complete(allBuffer));
     }
 
     [Theory]

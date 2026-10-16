@@ -53,6 +53,7 @@ internal sealed class TerminalConversationExecution
         catch (Exception ex) { Console.Error.WriteLine($"Agent error: {ex.Message}"); Environment.ExitCode = 1; }
         finally
         {
+            _presentation.Screen?.ClearTerminalProgress();
             await execution.StopMonitoringAsync();
             // Store the selected branch and any completed/aborted messages even when a turn fails.
             if (_conversationBinding.Path is not null)

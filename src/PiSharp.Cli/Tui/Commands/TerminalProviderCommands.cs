@@ -3,7 +3,7 @@ using PiSharp.Cli.Composition;
 namespace PiSharp.Cli.Tui;
 
 internal sealed class TerminalProviderCommands(ProviderModelRuntime providers, ModelRuntimeController controller,
-    ActiveModelRuntime model, Func<TextWriter> output)
+    ActiveModelRuntime model, Func<TextWriter> output, TerminalThinkingSelector? thinkingSelector = null)
 {
     public async Task ListModelsAsync(string filter, string? providerFilter)
     {
@@ -24,17 +24,26 @@ internal sealed class TerminalProviderCommands(ProviderModelRuntime providers, M
             output().WriteLine($"  {scoped.Provider}/{scoped.Id}{(scoped.Available ? "" : " · unavailable")}");
     }
 
-    public async Task SetThinkingAsync(string argument, Func<ModelSelection, string, bool, bool, Task> replace)
+    public async Task SetThinkingAsync(string argument, string? defaultLevel,
+        Func<string, Task> saveDefaultLevel, Func<ModelSelection, string, bool, bool, Task> replace)
     {
-        if (argument.Length == 0)
+        var available = ThinkingLevels.AvailableForModel(model.Selection.Model.Reasoning,
+            model.Selection.Model.ThinkingLevelMap);
+        if (argument.Length > 0)
         {
-            var available = ThinkingLevels.AvailableForModel(model.Selection.Model.Reasoning,
-                model.Selection.Model.ThinkingLevelMap);
-            output().WriteLine($"Thinking: {model.Thinking}; available: " +
-                (available.Count == 0 ? "none" : string.Join(", ", available)));
+            var requested = ThinkingLevels.RequireAvailableForModel(argument,
+                model.Selection.Model.Reasoning, model.Selection.Model.ThinkingLevelMap);
+            await replace(model.Selection, requested, false, true);
+            output().WriteLine($"Thinking: {model.Thinking}");
             return;
         }
-        await replace(model.Selection, argument, false, true);
+
+        if (thinkingSelector is null) return;
+        var selected = await thinkingSelector.ShowAsync(model.Selection, model.Thinking, defaultLevel);
+        if (selected is null) return;
+        if (!selected.Level.Equals(model.Thinking, StringComparison.Ordinal))
+            await replace(model.Selection, selected.Level, false, true);
+        if (selected.SetAsDefault) await saveDefaultLevel(selected.Level);
         output().WriteLine($"Thinking: {model.Thinking}");
     }
 

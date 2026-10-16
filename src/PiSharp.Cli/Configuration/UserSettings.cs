@@ -91,7 +91,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     IReadOnlyList<string>? Skills = null, IReadOnlyList<string>? Prompts = null,
     IReadOnlyList<string>? Themes = null, string? ShellCommandPrefix = null, string? SessionShareDestination = null,
     IReadOnlyList<ResourcePackageSource>? Packages = null, IReadOnlyList<string>? NpmCommand = null,
-    IReadOnlyDictionary<string, int>? ThinkingBudgets = null)
+    IReadOnlyDictionary<string, int>? ThinkingBudgets = null, bool? AutoResizeImages = null,
+    bool? ShowHardwareCursor = null, int? EditorPaddingX = null, int? OutputPad = null,
+    int? AutocompleteMaxVisible = null, bool? ClearOnShrink = null, bool? ShowTerminalProgress = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -129,7 +131,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         CompactionSettings? compaction = null;
         RetrySettings? retry = null;
         PromptDeliveryMode? steeringMode = null, followUpMode = null;
-        bool? blockImages = null, hideThinkingBlock = null, enableSkillCommands = null;
+        bool? blockImages = null, autoResizeImages = null, hideThinkingBlock = null, enableSkillCommands = null,
+            showHardwareCursor = null, clearOnShrink = null, showTerminalProgress = null;
+        int? editorPaddingX = null, outputPad = null, autocompleteMaxVisible = null;
         QuietStartupMode? quietStartup = null;
         string? httpProxy = null;
         int? httpIdleTimeoutMs = null;
@@ -172,6 +176,28 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 enableSkillCommands = property.Value.GetBoolean();
                 continue;
             }
+            if (property.Name == "showHardwareCursor")
+            {
+                showHardwareCursor = ParseBoolean(property.Value, property.Name);
+                continue;
+            }
+            if (property.Name is "editorPaddingX" or "outputPad" or "autocompleteMaxVisible")
+            {
+                var (minimum, maximum) = property.Name switch
+                {
+                    "editorPaddingX" => (0, 3),
+                    "outputPad" => (0, 1),
+                    _ => (3, 20)
+                };
+                var number = ParseBoundedInteger(property.Value, property.Name, minimum, maximum);
+                switch (property.Name)
+                {
+                    case "editorPaddingX": editorPaddingX = number; break;
+                    case "outputPad": outputPad = number; break;
+                    case "autocompleteMaxVisible": autocompleteMaxVisible = number; break;
+                }
+                continue;
+            }
             if (property.Name == "images")
             {
                 if (property.Value.ValueKind != JsonValueKind.Object)
@@ -179,10 +205,14 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 var imageKeys = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var imageSetting in property.Value.EnumerateObject())
                 {
-                    if (!imageKeys.Add(imageSetting.Name) || imageSetting.Name != "blockImages" ||
-                        imageSetting.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                    if (!imageKeys.Add(imageSetting.Name))
                         throw new InvalidDataException($"settings.json images.{imageSetting.Name} is unsupported, duplicate or invalid.");
-                    blockImages = imageSetting.Value.GetBoolean();
+                    switch (imageSetting.Name)
+                    {
+                        case "blockImages": blockImages = ParseBoolean(imageSetting.Value, "images.blockImages"); break;
+                        case "autoResize": autoResizeImages = ParseBoolean(imageSetting.Value, "images.autoResize"); break;
+                        default: throw new InvalidDataException($"settings.json images.{imageSetting.Name} is unsupported, duplicate or invalid.");
+                    }
                 }
                 continue;
             }
@@ -207,15 +237,23 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 var terminalKeys = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var terminalSetting in property.Value.EnumerateObject())
                 {
-                    if (!terminalKeys.Add(terminalSetting.Name) || terminalSetting.Name != "trueColor")
+                    if (!terminalKeys.Add(terminalSetting.Name))
                         throw new InvalidDataException($"settings.json terminal.{terminalSetting.Name} is unsupported or duplicated.");
-                    terminalTrueColor = terminalSetting.Value.ValueKind switch
+                    switch (terminalSetting.Name)
                     {
-                        JsonValueKind.True => "true",
-                        JsonValueKind.False => "false",
-                        JsonValueKind.String when terminalSetting.Value.GetString() == "auto" => "auto",
-                        _ => throw new InvalidDataException("settings.json terminal.trueColor must be a boolean or 'auto'.")
-                    };
+                        case "trueColor":
+                            terminalTrueColor = terminalSetting.Value.ValueKind switch
+                            {
+                                JsonValueKind.True => "true",
+                                JsonValueKind.False => "false",
+                                JsonValueKind.String when terminalSetting.Value.GetString() == "auto" => "auto",
+                                _ => throw new InvalidDataException("settings.json terminal.trueColor must be a boolean or 'auto'.")
+                            };
+                            break;
+                        case "clearOnShrink": clearOnShrink = ParseBoolean(terminalSetting.Value, "terminal.clearOnShrink"); break;
+                        case "showTerminalProgress": showTerminalProgress = ParseBoolean(terminalSetting.Value, "terminal.showTerminalProgress"); break;
+                        default: throw new InvalidDataException($"settings.json terminal.{terminalSetting.Name} is unsupported or duplicated.");
+                    }
                 }
                 continue;
             }
@@ -352,7 +390,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             quietStartup, enabledModels, shellPath, externalEditor, theme, retry, steeringMode, followUpMode,
             modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
             enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
-            npmCommand, thinkingBudgets);
+            npmCommand, thinkingBudgets, autoResizeImages, showHardwareCursor, editorPaddingX, outputPad,
+            autocompleteMaxVisible, clearOnShrink, showTerminalProgress);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -394,7 +433,14 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.SessionShareDestination ?? SessionShareDestination,
         project.Packages ?? Packages,
         project.NpmCommand ?? NpmCommand,
-        MergeThinkingBudgets(ThinkingBudgets, project.ThinkingBudgets));
+        MergeThinkingBudgets(ThinkingBudgets, project.ThinkingBudgets),
+        project.AutoResizeImages ?? AutoResizeImages,
+        project.ShowHardwareCursor ?? ShowHardwareCursor,
+        project.EditorPaddingX ?? EditorPaddingX,
+        project.OutputPad ?? OutputPad,
+        project.AutocompleteMaxVisible ?? AutocompleteMaxVisible,
+        project.ClearOnShrink ?? ClearOnShrink,
+        project.ShowTerminalProgress ?? ShowTerminalProgress);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");
@@ -576,6 +622,21 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         if (string.IsNullOrWhiteSpace(value) || value.Length > maxLength || value != value.Trim())
             throw new InvalidDataException($"settings.json {property} must be a nonempty string of at most {maxLength} characters.");
         return value;
+    }
+
+    private static bool ParseBoolean(JsonElement value, string setting)
+    {
+        if (value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+            throw new InvalidDataException($"settings.json {setting} must be a boolean.");
+        return value.GetBoolean();
+    }
+
+    private static int ParseBoundedInteger(JsonElement value, string setting, int minimum, int maximum)
+    {
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var parsed) ||
+            parsed < minimum || parsed > maximum)
+            throw new InvalidDataException($"settings.json {setting} must be an integer from {minimum} through {maximum}.");
+        return parsed;
     }
 
     private static int ParseIdleTimeout(JsonElement value)
