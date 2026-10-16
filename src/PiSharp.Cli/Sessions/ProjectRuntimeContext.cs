@@ -154,8 +154,10 @@ internal sealed class ProjectRuntimeContext : IDisposable
     public UserSettings Settings => Configuration.Settings;
 
     public void SetMcpAuthorizationUrlPresenter(Action<string, Uri>? presenter,
-        Action<string>? authorizationCompleted = null) =>
-        McpManager.SetAuthorizationUrlPresenter(presenter, authorizationCompleted);
+        Action<string>? authorizationCompleted = null, TextReader? manualCallbackInput = null) =>
+        McpManager.SetAuthorizationUrlPresenter(presenter, authorizationCompleted, manualCallbackInput);
+
+    public IReadOnlyList<McpServerManagementInfo> GetMcpManagementSnapshot() => McpManager.GetManagementSnapshot();
 
     private ProjectRuntimeContext(ProjectRuntimeConfiguration configuration,
         (string? System, string? Append) prompts, string instructions, IReadOnlyList<string> contextFiles,

@@ -43,6 +43,7 @@ public sealed class TerminalEditor
     internal TerminalTheme CurrentTheme => _screen?.CurrentTheme ?? TerminalTheme.Default;
     internal string? ActiveAuthorizationUrl => _screen?.ActiveAuthorizationUrl;
     internal bool IsScreenActive => _screen is { IsActive: true };
+    internal TextReader McpAuthorizationCallbackInput => _authorizationInput;
     internal bool PresentProviderAuthorizationUrl(string providerId, string providerName,
         string message, Uri authorizationUrl) => _screen?.AppendProviderAuthorizationNotification(
             providerId, providerName, message, authorizationUrl,

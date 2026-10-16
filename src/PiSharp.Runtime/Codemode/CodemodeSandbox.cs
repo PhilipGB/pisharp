@@ -10,7 +10,8 @@ internal static class CodemodeSandbox
     private const int MaximumCodeCharacters = 64 * 1024;
     private const int MaximumOutputCharacters = 64 * 1024;
     private const int MaximumImageCharacters = 4 * 1024 * 1024;
-    private const int MaximumCallArguments = 32 * 1024;
+    private const int MaximumCallArguments = 4 * 1024 * 1024;
+    private const int MaximumTotalCallArguments = 8 * 1024 * 1024;
     private const int MaximumNamespaceMetadataCharacters = 16 * 1024;
     private const int MaximumCalls = 128;
     private static readonly JsonSerializerOptions s_json = new(JsonSerializerDefaults.Web);
@@ -91,6 +92,7 @@ internal static class CodemodeSandbox
             await process.StandardInput.FlushAsync(token);
             var outputLength = 0;
             var callCount = 0;
+            var totalCallArgumentCharacters = 0;
             while (true)
             {
                 var line = await process.StandardOutput.ReadLineAsync(token);
@@ -131,6 +133,9 @@ internal static class CodemodeSandbox
                             var args = root.GetProperty("args").GetString();
                             if (args?.Length > MaximumCallArguments)
                                 return new(false, string.Join('\n', output), "Codemode call arguments exceed the limit.");
+                            totalCallArgumentCharacters += args?.Length ?? 0;
+                            if (totalCallArgumentCharacters > MaximumTotalCallArguments)
+                                return new(false, string.Join('\n', output), "Codemode total call arguments exceed the limit.");
                             outstanding.Add(DispatchAsync(id, name, args, root.GetProperty("type").GetString() == "global",
                                 context, process, writeGate, token));
                             break;

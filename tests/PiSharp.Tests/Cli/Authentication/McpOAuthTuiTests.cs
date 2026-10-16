@@ -10,14 +10,15 @@ namespace PiSharp.Tests;
 public sealed class McpOAuthTuiTests
 {
     [Theory]
-    [InlineData(false, false, false)]
-    [InlineData(false, true, false)]
-    [InlineData(true, false, false)]
-    [InlineData(true, true, false)]
-    [InlineData(false, false, true)]
-    [InlineData(false, true, true)]
+    [InlineData(false, false, false, false)]
+    [InlineData(false, true, false, false)]
+    [InlineData(true, false, false, false)]
+    [InlineData(true, true, false, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(false, true, true, false)]
+    [InlineData(false, false, false, true)]
     public async Task McpLoginUrlKeepsItsHyperlinkAndSupportsConfiguredCopyActionWhenWrappedInTheTui(
-        bool clipboardUnavailable, bool customCopyKey, bool cancelLogin)
+        bool clipboardUnavailable, bool customCopyKey, bool cancelLogin, bool manualRedirect)
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-tui-" + Guid.NewGuid().ToString("N"));
@@ -155,6 +156,7 @@ public sealed class McpOAuthTuiTests
                 "The wrapped authorization URL must reopen its OSC 8 target on each visible row.");
             Assert.Contains(Osc8Open(authorizationUrl!) + "Ctrl+click to open" + Osc8Close, frame!);
             Assert.Contains("Esc to cancel", captured, StringComparison.Ordinal);
+            Assert.Contains("redirect URL", captured, StringComparison.OrdinalIgnoreCase);
             Assert.Contains(customCopyKey ? "Ctrl+Shift+C to copy" : "Ctrl+X to copy", captured,
                 StringComparison.Ordinal);
 
@@ -189,8 +191,16 @@ public sealed class McpOAuthTuiTests
                 {
                     Query = "code=fixture-code&state=" + Uri.EscapeDataString(query["state"]!)
                 }.Uri;
-                using var browser = new HttpClient();
-                Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(callbackUri, deadline.Token)).StatusCode);
+                if (manualRedirect)
+                {
+                    await process.StandardInput.WriteAsync(callbackUri.AbsoluteUri + "\r");
+                    await process.StandardInput.FlushAsync();
+                }
+                else
+                {
+                    using var browser = new HttpClient();
+                    Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(callbackUri, deadline.Token)).StatusCode);
+                }
                 await signedIn.Task.WaitAsync(deadline.Token);
             }
 

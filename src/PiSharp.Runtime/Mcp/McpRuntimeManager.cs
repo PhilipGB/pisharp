@@ -1,5 +1,9 @@
 namespace PiSharp.Runtime.Mcp;
 
+public sealed record McpServerManagementInfo(string Name, string Scope, bool Enabled, string State,
+    McpToolExposure Exposure, string Transport, string Endpoint, string AuthMode,
+    IReadOnlyList<string> Tools, string? Error, bool UsesOAuth);
+
 /// <summary>Session-scoped MCP status and management actions exposed by the built-in /mcp command.</summary>
 public sealed class McpRuntimeManager(string? agentDirectory = null)
 {
@@ -18,12 +22,14 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
     private readonly Dictionary<string, ServerEntry> _servers = new(StringComparer.Ordinal);
     private Action<string, Uri>? _authorizationUrlPresenter;
     private Action<string>? _authorizationUrlClearer;
+    private TextReader? _manualCallbackInput;
 
     internal void SetAuthorizationUrlPresenter(Action<string, Uri>? presenter,
-        Action<string>? authorizationCompleted = null)
+        Action<string>? authorizationCompleted = null, TextReader? manualCallbackInput = null)
     {
         Volatile.Write(ref _authorizationUrlPresenter, presenter);
         Volatile.Write(ref _authorizationUrlClearer, authorizationCompleted);
+        Volatile.Write(ref _manualCallbackInput, manualCallbackInput);
     }
 
     internal void Register(McpServerConfiguration configuration, McpServerConnection? connection,
@@ -46,6 +52,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
         var parts = arguments.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0 || parts is ["status"])
             return FormatStatus();
+        if (parts is ["details", var detailsName])
+            return FormatDetails(detailsName);
         if (parts is ["reconnect", var reconnectName])
             return await ReconnectAsync(reconnectName, cancellationToken);
         if (parts is ["enable", var enableName])
@@ -60,7 +68,7 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
             return await SignInAsync(loginName, cancellationToken);
         if (parts is ["logout", var logoutName])
             return await SignOutAsync(logoutName, cancellationToken);
-        return "Usage: /mcp [status | reconnect <server> | enable <server> | disable <server> | exposure <server> <mode> | login <server> | logout <server>]";
+        return "Usage: /mcp [status | details <server> | reconnect <server> | enable <server> | disable <server> | exposure <server> <mode> | login <server> | logout <server>]";
     }
 
     private async Task<string> ReconnectAsync(string name, CancellationToken cancellationToken)
@@ -169,7 +177,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
             {
                 await McpOAuthLogin.SignInAsync(entry.Configuration, agentDirectory, Console.Out,
                     openBrowser: !Console.IsInputRedirected, TimeSpan.FromMinutes(5), cancellationToken,
-                    Volatile.Read(ref _authorizationUrlPresenter), entry.Connection.PendingAuthorizationScope);
+                    Volatile.Read(ref _authorizationUrlPresenter), entry.Connection.PendingAuthorizationScope,
+                    Volatile.Read(ref _manualCallbackInput));
                 try
                 {
                     await entry.Connection.ReconnectAsync(cancellationToken);
@@ -253,6 +262,32 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
 
     internal bool OffersResources(string name) => Find(name)?.Connection?.HasResources == true;
 
+    public IReadOnlyList<McpServerManagementInfo> GetManagementSnapshot()
+    {
+        ServerEntry[] entries;
+        lock (_gate) entries = _servers.Values.ToArray();
+        return entries.Select(entry =>
+        {
+            var configuration = entry.Configuration;
+            var connection = entry.Connection;
+            var usesAuthorizationHeader = configuration.Headers.Keys.Any(key =>
+                key.Equals("Authorization", StringComparison.OrdinalIgnoreCase));
+            var authMode = configuration.AuthProvider is not null
+                ? "provider sign-in configured"
+                : configuration.Command is not null
+                    ? configuration.Environment.Count > 0 ? "environment may provide credentials" : "none configured"
+                    : usesAuthorizationHeader ? "authorization header configured"
+                    : "OAuth";
+            return new McpServerManagementInfo(configuration.Name, configuration.Scope, configuration.Enabled,
+                !configuration.Enabled ? "disabled" : connection?.State ?? "unavailable", configuration.Exposure,
+                configuration.Command is { } command ? "stdio" : "http",
+                configuration.Command is { } executable ? Path.GetFileName(executable) : SanitizeEndpoint(configuration.Url),
+                authMode, connection?.Tools.Select(tool => tool.Name).Order(StringComparer.Ordinal).ToArray() ?? [],
+                connection?.Error, configuration.AuthProvider is null && configuration.Command is null &&
+                    !usesAuthorizationHeader);
+        }).OrderBy(server => server.Name, StringComparer.Ordinal).ToArray();
+    }
+
     private string FormatStatus()
     {
         ServerEntry[] servers;
@@ -267,5 +302,37 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
                 (item.Connection?.HasResources == true ? ", resources" : "") + ")";
             return item.Connection?.Error is { } error ? line + " — " + error : line;
         }));
+    }
+
+    private string FormatDetails(string name)
+    {
+        var server = GetManagementSnapshot().FirstOrDefault(item => item.Name == name);
+        if (server is null) return "Unknown MCP server: " + name;
+        return string.Join(Environment.NewLine,
+            "MCP server: " + server.Name,
+            "Transport: " + server.Transport + " (" + server.Endpoint + ")",
+            "Scope: " + server.Scope,
+            "Enabled: " + (server.Enabled ? "yes" : "no"),
+            "State: " + server.State,
+            "Exposure: " + ExposureName(server.Exposure),
+            "Tools: " + server.Tools.Count,
+            "Auth: " + (server.AuthMode.Contains("header", StringComparison.Ordinal) ||
+                server.AuthMode.Contains("environment", StringComparison.Ordinal)
+                ? server.AuthMode + (server.AuthMode.Contains("header", StringComparison.Ordinal)
+                    ? " (value hidden)" : " (values hidden)")
+                : server.AuthMode));
+    }
+
+    private static string SanitizeEndpoint(Uri? endpoint)
+    {
+        if (endpoint is null) return "unavailable";
+        var safe = new UriBuilder(endpoint)
+        {
+            UserName = "",
+            Password = "",
+            Query = "",
+            Fragment = ""
+        };
+        return safe.Uri.GetLeftPart(UriPartial.Path);
     }
 }
