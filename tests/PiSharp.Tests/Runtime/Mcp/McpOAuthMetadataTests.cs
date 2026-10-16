@@ -9,6 +9,33 @@ namespace PiSharp.Tests;
 [Collection("MCP OAuth")]
 public sealed class McpOAuthMetadataTests
 {
+    [Fact]
+    public void ParseAcceptsHttpsClientMetadataDocumentUriAndPassesItToOAuthOptions()
+    {
+        using var document = JsonDocument.Parse("""{"clientMetadataDocumentUri":"https://client.example/oauth/client.json"}""");
+
+        var settings = McpOAuthSettings.Parse(document.RootElement);
+        var options = settings.CreateOptions(new Uri("https://mcp.example"), null!,
+            new Uri("http://127.0.0.1:38119/callback"),
+            (_, _) => Task.FromResult<ModelContextProtocol.Authentication.AuthorizationResult?>(null));
+
+        Assert.Equal(new Uri("https://client.example/oauth/client.json"), settings.ClientMetadataDocumentUri);
+        Assert.Equal(settings.ClientMetadataDocumentUri, options.ClientMetadataDocumentUri);
+    }
+
+    [Theory]
+    [InlineData("http://client.example/client.json")]
+    [InlineData("file:///tmp/client.json")]
+    [InlineData("not a URL")]
+    public void ParseRejectsInsecureOrInvalidClientMetadataDocumentUri(string uri)
+    {
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(new { clientMetadataDocumentUri = uri }));
+
+        var error = Assert.Throws<ArgumentException>(() => McpOAuthSettings.Parse(document.RootElement));
+
+        Assert.Contains("clientMetadataDocumentUri", error.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("https://idp.example/oauth-metadata")]
     [InlineData("http://localhost:8080/oauth-metadata")]

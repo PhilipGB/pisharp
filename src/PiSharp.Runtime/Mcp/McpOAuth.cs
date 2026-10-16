@@ -10,6 +10,7 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
 {
     public string? ClientName { get; init; }
     public Uri? AuthServerMetadataUrl { get; init; }
+    public Uri? ClientMetadataDocumentUri { get; init; }
 
     public static McpOAuthSettings Parse(JsonElement value)
     {
@@ -21,7 +22,8 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
             return property.GetString();
         }
 
-        var known = new[] { "clientId", "clientSecret", "callbackUrl", "scope", "clientName", "authServerMetadataUrl" };
+        var known = new[] { "clientId", "clientSecret", "callbackUrl", "scope", "clientName",
+            "authServerMetadataUrl", "clientMetadataDocumentUri" };
         if (value.EnumerateObject().Any(property => !known.Contains(property.Name, StringComparer.Ordinal)))
             throw new ArgumentException("MCP OAuth has an unknown option.");
         var clientName = Read("clientName");
@@ -37,6 +39,12 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
                 throw new ArgumentException(
                     "MCP oauth.authServerMetadataUrl must be an https URL, or http on localhost, 127.0.0.1, or [::1].");
         }
+        var clientMetadataValue = Read("clientMetadataDocumentUri");
+        Uri? clientMetadataDocumentUri = null;
+        if (clientMetadataValue is not null &&
+            (!Uri.TryCreate(clientMetadataValue, UriKind.Absolute, out clientMetadataDocumentUri) ||
+                clientMetadataDocumentUri.Scheme != Uri.UriSchemeHttps))
+            throw new ArgumentException("MCP oauth.clientMetadataDocumentUri must be an https URL.");
         var callback = Read("callbackUrl");
         Uri? redirect = null;
         if (callback is not null)
@@ -48,7 +56,11 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
         }
         return new McpOAuthSettings(Read("clientId"), Read("clientSecret"), redirect,
             (Read("scope") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        { ClientName = clientName, AuthServerMetadataUrl = metadataUrl };
+        {
+            ClientName = clientName,
+            AuthServerMetadataUrl = metadataUrl,
+            ClientMetadataDocumentUri = clientMetadataDocumentUri
+        };
     }
 
     private static bool IsMetadataLoopback(Uri value)
@@ -69,6 +81,7 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
                 @"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", match =>
                     Environment.GetEnvironmentVariable(match.Groups[1].Value) ??
                     throw new InvalidOperationException("Missing MCP OAuth secret environment variable.")),
+            ClientMetadataDocumentUri = ClientMetadataDocumentUri,
             DynamicClientRegistration = new DynamicClientRegistrationOptions
             {
                 ClientName = ClientName ?? "pi"
