@@ -2,10 +2,12 @@
   <Folder Name="/src/">
     <Project Path="src/PiSharp.Cli/PiSharp.Cli.csproj" />
     <Project Path="src/PiSharp.Core/PiSharp.Core.csproj" />
+    <Project Path="src/PiSharp.Extensions.Abstractions/PiSharp.Extensions.Abstractions.csproj" />
     <Project Path="src/PiSharp.Runtime/PiSharp.Runtime.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PiSharp.Tests/PiSharp.Tests.csproj" />
+    <Project Path="tests/fixtures/NativeExtensionFixture/NativeExtensionFixture.csproj" />
     <Project Path="tests/ResourceDiscoveryExtension/ResourceDiscoveryExtension.csproj" />
   </Folder>
   <Folder Name="/tools/">
