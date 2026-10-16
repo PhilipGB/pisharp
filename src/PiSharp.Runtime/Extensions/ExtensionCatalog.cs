@@ -552,6 +552,8 @@ public sealed partial class ExtensionCatalog : IDisposable
     public ExtensionRegistration Registration { get; } = new();
     public IReadOnlySet<string> LoadedBuiltins => _loadedBuiltins;
     public IReadOnlyList<ResourceSourceInfo> LoadedExtensions => _loadedExtensions.ToArray();
+    internal IReadOnlyList<WeakReference> NativePackageLoadContextReferences => _nativePackageHandles
+        .Where(handle => handle is not null).Select(handle => handle!.LoadContextReference).ToArray();
     public IReadOnlyList<ExtensionLoadError> LoadErrors => _loadErrors.ToArray();
     public IReadOnlyList<ExtensionConflictDiagnostic> ConflictDiagnostics => _conflicts.ToArray();
     public IReadOnlyList<ExtensionLoadWarning> Warnings => _warnings.ToArray();

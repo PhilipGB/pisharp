@@ -3,6 +3,8 @@ using System.IO.Compression;
 using System.Net;
 using System.Text.Json;
 using PiSharp.Cli;
+using PiSharp.Cli.Sessions;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 using PiSharp.Tests.TestInfrastructure;
 
@@ -71,6 +73,38 @@ public sealed class ResourcePackageCommandProcessTests
         Assert.False(Directory.Exists(Path.Combine(fixture.AgentDirectory, "native-extensions", "example.native-fixture")));
         using var afterRemoval = JsonDocument.Parse(await File.ReadAllTextAsync(settingsPath));
         Assert.Empty(afterRemoval.RootElement.GetProperty("nativeExtensions").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task DotnetPackedExternalNativeFixtureInstallsAndExecutesInFreshRuntime()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var packageOutput = Path.Combine(fixture.Root, "packed-native-fixture");
+        var packagePath = await PackExternalNativeFixtureAsync(packageOutput);
+
+        using (var package = ZipFile.OpenRead(packagePath))
+        {
+            var entries = package.Entries.Select(entry => entry.FullName).ToHashSet(StringComparer.Ordinal);
+            Assert.Contains("pisharp-extension.json", entries);
+            Assert.Contains("lib/net10.0/NativeExtensionFixture.deps.json", entries);
+            Assert.Contains("lib/net10.0/NativeExtensionPrivateDependency.dll", entries);
+        }
+
+        var installed = await RunAsync(fixture, "install", packagePath);
+        Assert.True(installed.ExitCode == 0, installed.Error + "\n" + installed.Output);
+        Assert.Contains("Installed PiSharp-native extension PiSharp.TestExtensions.NativeFixture 1.0.0",
+            installed.Output, StringComparison.Ordinal);
+
+        var arguments = CliArguments.Parse([]);
+        using var configuration = await ProjectRuntimeConfiguration.LoadAsync(fixture.ProjectDirectory,
+            fixture.AgentDirectory, arguments, new ProjectTrust(fixture.AgentDirectory), interactiveTrust: false,
+            TextReader.Null, TextWriter.Null, trustedOverride: false);
+        using var runtime = await ProjectRuntimeContext.LoadAsync(configuration, fixture.AgentDirectory,
+            arguments, configuredSessionDirectory: null);
+        var command = runtime.Extensions.Registration.Commands["native-fixture"];
+        var result = await command("from packed package", CancellationToken.None);
+        Assert.Equal("v1 command / private dependency 1.0.0.0: from packed package", result);
     }
 
     [Fact]
@@ -547,6 +581,56 @@ public sealed class ResourcePackageCommandProcessTests
             throw;
         }
         return (process.ExitCode, await output, await error);
+    }
+
+    private static async Task<string> PackExternalNativeFixtureAsync(string outputDirectory)
+    {
+        Directory.CreateDirectory(outputDirectory);
+        var repositoryRoot = FindRepositoryRoot();
+        var projectPath = Path.Combine(repositoryRoot, "tests", "fixtures", "NativeExtensionFixture",
+            "NativeExtensionFixture.csproj");
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = repositoryRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        foreach (var argument in new[]
+        {
+            "pack", projectPath, "--configuration", BuildConfiguration(), "--no-restore", "--output", outputDirectory,
+            "--nologo", "--disable-build-servers", "-p:NuGetAudit=false", "-p:NativeFixtureRevision=v1", "-p:NativeExtensionVersion=1.0.0",
+            "-p:NativeFixtureDependencyVersion=1.0.0"
+        }) start.ArgumentList.Add(argument);
+        using var process = Process.Start(start) ?? throw new IOException("Could not start dotnet pack.");
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(90)); }
+        catch
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { }
+            catch (System.ComponentModel.Win32Exception) { }
+            await process.WaitForExitAsync();
+            throw;
+        }
+        var stdout = await output;
+        var stderr = await error;
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException($"dotnet pack failed with exit code {process.ExitCode}:\n{stderr}\n{stdout}");
+
+        var packagePath = Path.Combine(outputDirectory, "PiSharp.TestExtensions.NativeFixture.1.0.0.nupkg");
+        if (!File.Exists(packagePath)) throw new FileNotFoundException("dotnet pack did not create the native fixture package.", packagePath);
+        return packagePath;
+    }
+
+    private static string BuildConfiguration() => new DirectoryInfo(AppContext.BaseDirectory).Parent?.Name ?? "Debug";
+
+    private static string FindRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx")))
+            directory = directory.Parent;
+        return directory?.FullName ?? throw new DirectoryNotFoundException("Could not find PiSharp.slnx.");
     }
 
     private static Task<(int ExitCode, string Output, string Error)> RunAsync(ManagedNpmFixture fixture,

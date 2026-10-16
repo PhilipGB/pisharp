@@ -16,7 +16,6 @@ public sealed class NativeExtensionPackageStore
 {
     private const long MaximumPackageBytes = 256 * 1024 * 1024;
     private const int MaximumPackageEntries = 10_000;
-    private const int MaximumManifestBytes = 64 * 1024;
     private const string ManifestName = "pisharp-extension.json";
 
     private readonly string _agentDirectory;
@@ -39,9 +38,7 @@ public sealed class NativeExtensionPackageStore
         var cwd = Path.GetFullPath(workingDirectory);
         var sourcePath = Path.GetFullPath(source, cwd);
         if (!File.Exists(sourcePath)) throw new FileNotFoundException("Native extension package not found.", sourcePath);
-        var packageBytes = await File.ReadAllBytesAsync(sourcePath, cancellationToken);
-        if (packageBytes.LongLength > MaximumPackageBytes)
-            throw new InvalidDataException("Native extension package exceeds the 256 MB limit.");
+        var packageBytes = await ReadPackageBytesAsync(sourcePath, cancellationToken);
         var packageHash = Convert.ToHexString(SHA256.HashData(packageBytes));
 
         var scopeRoot = GetScopeRoot(cwd, scope);
@@ -97,9 +94,7 @@ public sealed class NativeExtensionPackageStore
             throw new InvalidDataException("PiSharp-native extensions must be provided as a local .nupkg file.");
         var sourcePath = Path.GetFullPath(source, Path.GetFullPath(workingDirectory));
         if (!File.Exists(sourcePath)) throw new FileNotFoundException("Native extension package not found.", sourcePath);
-        var bytes = await File.ReadAllBytesAsync(sourcePath, cancellationToken);
-        if (bytes.LongLength > MaximumPackageBytes)
-            throw new InvalidDataException("Native extension package exceeds the 256 MB limit.");
+        var bytes = await ReadPackageBytesAsync(sourcePath, cancellationToken);
 
         var inspectionRoot = Path.Combine(Path.GetTempPath(), "pisharp-native-package-inspect-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(inspectionRoot);
@@ -200,15 +195,26 @@ public sealed class NativeExtensionPackageStore
         }
     }
 
+    private static async Task<byte[]> ReadPackageBytesAsync(string sourcePath, CancellationToken cancellationToken)
+    {
+        if (new FileInfo(sourcePath).Length > MaximumPackageBytes)
+            throw new InvalidDataException("Native extension package exceeds the 256 MB limit.");
+        var packageBytes = await File.ReadAllBytesAsync(sourcePath, cancellationToken);
+        if (packageBytes.LongLength > MaximumPackageBytes)
+            throw new InvalidDataException("Native extension package exceeds the 256 MB limit.");
+        return packageBytes;
+    }
+
     private static async Task<PackageManifestHeader> ValidatePackageAsync(string packageRoot, CancellationToken cancellationToken)
     {
         var manifestPath = Path.Combine(packageRoot, ManifestName);
         if (!File.Exists(manifestPath)) throw new InvalidDataException($"Native extension package is missing root {ManifestName}.");
         var info = new FileInfo(manifestPath);
-        if (info.Length is <= 0 or > MaximumManifestBytes)
-            throw new InvalidDataException($"Native extension {ManifestName} must be between 1 and {MaximumManifestBytes} bytes.");
+        if (info.Length is <= 0 or > NativeExtensionPackageManifestReader.MaximumManifestBytes)
+            throw new InvalidDataException($"Native extension {ManifestName} must be between 1 and " +
+                $"{NativeExtensionPackageManifestReader.MaximumManifestBytes} bytes.");
         using var document = JsonDocument.Parse(await File.ReadAllBytesAsync(manifestPath, cancellationToken),
-            new JsonDocumentOptions { MaxDepth = 16 });
+            new JsonDocumentOptions { MaxDepth = NativeExtensionPackageManifestReader.MaximumManifestDepth });
         if (document.RootElement.ValueKind != JsonValueKind.Object)
             throw new InvalidDataException($"Native extension {ManifestName} must contain a JSON object.");
         var seen = new HashSet<string>(StringComparer.Ordinal);

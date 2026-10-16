@@ -17,7 +17,6 @@ public sealed class LoaderExtension : IPiSharpExtension
     {
     }
 }
-
 public sealed class NonExtensionType
 {
 }

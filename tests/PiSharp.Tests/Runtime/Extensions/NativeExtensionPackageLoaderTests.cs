@@ -94,6 +94,24 @@ public sealed class NativeExtensionPackageLoaderTests
     }
 
     [Fact]
+    public void ManifestReaderBoundsSizeAndNestingDepth()
+    {
+        using var directory = new TemporaryDirectory();
+        var manifestPath = Path.Combine(directory.Path, NativeExtensionPackageManifestReader.FileName);
+        File.WriteAllText(manifestPath, new string(' ', NativeExtensionPackageManifestReader.MaximumManifestBytes + 1));
+        var oversized = Assert.Throws<InvalidDataException>(() => NativeExtensionPackageManifestReader.Read(directory.Path));
+        Assert.Contains(NativeExtensionPackageManifestReader.MaximumManifestBytes.ToString(), oversized.Message,
+            StringComparison.Ordinal);
+
+        var nested = new string('[', NativeExtensionPackageManifestReader.MaximumManifestDepth) + "0" +
+            new string(']', NativeExtensionPackageManifestReader.MaximumManifestDepth);
+        File.WriteAllText(manifestPath, "{\"ignored\":" + nested + "}");
+        var excessiveDepth = Assert.Throws<InvalidDataException>(() =>
+            NativeExtensionPackageManifestReader.Read(directory.Path));
+        Assert.Contains("invalid JSON", excessiveDepth.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LoaderReportsMissingEntryTypeAndInvalidEntryContract()
     {
         using var missingTypePackage = CreatePackage("V1", "loader.missing-type", "1.0.0");

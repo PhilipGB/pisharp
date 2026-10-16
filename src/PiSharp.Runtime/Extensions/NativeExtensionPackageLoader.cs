@@ -36,12 +36,31 @@ internal sealed class NativeExtensionPackageHandle : IDisposable
 
     internal void Unload()
     {
+        NativeExtensionFunctionCache.ReleaseDefaultOptionsDescriptors();
         ReleaseExtensions();
         var context = Interlocked.Exchange(ref _loadContext, null);
         context?.Unload();
     }
 
     public void Dispose() => Unload();
+}
+
+/// <summary>Releases MEAI reflection descriptors that can otherwise root collectible extension methods.</summary>
+internal static class NativeExtensionFunctionCache
+{
+    private static readonly FieldInfo? s_descriptorCacheField = typeof(AIFunctionFactory)
+        .GetNestedType("ReflectionAIFunctionDescriptor", BindingFlags.NonPublic)?
+        .GetField("_descriptorCache", BindingFlags.Static | BindingFlags.NonPublic);
+
+    internal static void ReleaseDefaultOptionsDescriptors()
+    {
+        // MEAI caches method descriptors against its process-wide default serializer options. Drop that
+        // bucket when a package unloads so the cache cannot retain MethodInfo objects from its ALC.
+        var cache = s_descriptorCacheField?.GetValue(null);
+        var remove = cache?.GetType().GetMethod("Remove", BindingFlags.Instance | BindingFlags.Public,
+            binder: null, types: [typeof(JsonSerializerOptions)], modifiers: null);
+        remove?.Invoke(cache, [AIJsonUtilities.DefaultOptions]);
+    }
 }
 
 /// <summary>Loads explicitly declared compiled extension entry points from an extracted package.</summary>

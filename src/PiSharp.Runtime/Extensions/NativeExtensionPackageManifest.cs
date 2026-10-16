@@ -15,6 +15,8 @@ internal static class NativeExtensionPackageManifestReader
 {
     internal const string FileName = "pisharp-extension.json";
     internal const int HostApiVersion = 1;
+    internal const int MaximumManifestBytes = 64 * 1024;
+    internal const int MaximumManifestDepth = 16;
 
     internal static NativeExtensionPackageManifest Read(string packageRoot)
     {
@@ -27,7 +29,8 @@ internal static class NativeExtensionPackageManifestReader
         JsonDocument document;
         try
         {
-            document = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            document = JsonDocument.Parse(ReadManifestBytes(manifestPath),
+                new JsonDocumentOptions { MaxDepth = MaximumManifestDepth });
         }
         catch (FileNotFoundException)
         {
@@ -89,6 +92,27 @@ internal static class NativeExtensionPackageManifestReader
 
             return new(id, version, apiVersion, entries);
         }
+    }
+
+    private static byte[] ReadManifestBytes(string manifestPath)
+    {
+        using var stream = File.OpenRead(manifestPath);
+        if (stream.Length is <= 0 or > MaximumManifestBytes)
+            throw Invalid($"The manifest must be between 1 and {MaximumManifestBytes} bytes.");
+
+        var buffer = new byte[MaximumManifestBytes + 1];
+        var length = 0;
+        while (length < buffer.Length)
+        {
+            var bytesRead = stream.Read(buffer, length, buffer.Length - length);
+            if (bytesRead == 0) break;
+            length += bytesRead;
+        }
+        if (length is <= 0 or > MaximumManifestBytes)
+            throw Invalid($"The manifest must be between 1 and {MaximumManifestBytes} bytes.");
+
+        var start = length >= 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF ? 3 : 0;
+        return buffer.AsSpan(start, length - start).ToArray();
     }
 
     private static string RequiredString(JsonElement json, string name)
