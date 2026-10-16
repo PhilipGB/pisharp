@@ -1,5 +1,52 @@
 # Continuation — PiSharp capability parity
 
+## Interactive UX milestone complete — 2026-10-16
+
+The bounded Interactive UX milestone is complete on branch
+`milestone/interactive-ux`, product source
+`5a6958bfa4d648095485c1f837136c0d15133ffa`. The configured Pi reference
+remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; global Pi parity
+remains incomplete.
+
+This milestone made terminal ownership resilient through cleanup failures,
+preserved raw Enter and Ctrl+J input correctly, anchored a scrolled transcript
+while output and geometry change, exposed session branch heads, and added a
+searchable conversation-tree picker that switches and persists the selected
+head. A narrow local-resource matcher correction keeps minimatch negation
+consistent across relative, basename and absolute path candidates.
+
+Interactive evidence includes a Linux PTY multiline editor submission that
+pastes a prompt, moves the cursor to revise its beginning, and verifies the
+exact prompt sent to the llama fixture; file completion through a Linux PTY;
+streamed tool call/result/continuation through a Linux PTY; session sorting,
+search, rename, resume and branch selection; settings and model/login dialogs;
+and terminal restoration after normal exit, cancellation, double Ctrl+C and
+render failures. Compositor tests verify that scrolling stays anchored through
+streaming and resize while the live view follows the latest output. A Linux
+PTY acceptance pauses a 60-row stream, scrolls back, resizes, returns to the
+latest row, then resumes the conversation and verifies the first and last
+streamed rows each appear once in follow-up history.
+
+Final local verification on the source commit: restore and format pass;
+warnings-as-errors solution build reports zero warnings/errors; .NET passes
+**2,102/2,102** with zero skips; architecture checks pass **6/6**; Node passes
+**24/24**; Python passes **50/50**; documentation validation finds **134
+documents and 522 references**; MCP conformance reports no regressions against
+its classified baseline. Tests used `TMPDIR=/tmp` because the local default temp
+directory is inside `$HOME` and affected path-display assertions. Live Codex
+and llama smoke tests were unavailable: the normal auth store and
+`LLAMA_BASE_URL` were not configured.
+
+Exact-head Linux CI on source `5a6958bfa4d648095485c1f837136c0d15133ffa`
+passes all required jobs: [run 38883691922](https://github.com/PhilipGB/pisharp/actions/runs/38883691922).
+
+The 194 global capability IDs remain at **12 verified, 148 in progress and 34
+not started**. UX evidence does not claim global parity. Broader provider work,
+MCP/Codemode expansion, full resource/extension parity, exhaustive terminal
+differentials and live credential-backed smokes remain deferred. Recommended
+next bounded milestone: MCP/Codemode interactive workflow completion and
+conformance, kept separate from provider breadth and the global parity audit.
+
 ## Daily Driver Core milestone complete — 2026-10-16
 
 This checkpoint completes the bounded Codex subscription and llama.cpp daily

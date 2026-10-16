@@ -1,3 +1,31 @@
+## Interactive UX milestone complete — 2026-10-16
+
+The bounded UX release is on `milestone/interactive-ux` at product source
+`5a6958bfa4d648095485c1f837136c0d15133ffa`. It covers terminal cleanup and raw
+input, multiline editor use and completion, streamed transcript anchoring and
+resize reflow, and searchable session-tree branch selection.
+
+Linux PTY evidence verifies edited multiline prompts reach the llama fixture
+unchanged, file completion works, tool calls/results continue into a follow-up,
+session search/sort/rename/resume/tree selection persist correctly, settings and
+model/login dialogs work, and terminal state is restored after normal exit,
+cancellation, double Ctrl+C and render failures. A Linux PTY test pauses a
+60-row stream, scrolls back, resizes, returns to latest output, then verifies the
+first and last streamed rows each appear once in follow-up history. Compositor
+tests also cover preserving the user's scroll position during streaming and
+resize. Full local verification passes 2,102 .NET tests with zero skips, six
+architecture checks, 24 Node tests,
+50 Python tests, documentation path validation, format/build and MCP conformance
+with no new regressions. Exact-head Linux CI passes on source
+`5a6958bfa4d648095485c1f837136c0d15133ffa` ([run
+38883691922](https://github.com/PhilipGB/pisharp/actions/runs/38883691922)).
+
+The Codex auth store and local llama router were unavailable for live smoke
+tests. These results close only the bounded UX milestone; all 194 global
+capability IDs retain their existing statuses (**12 verified, 148 in progress,
+34 not started**). Broader provider, resource, MCP/Codemode and global parity
+work remains deferred.
+
 ## Daily Driver Core milestone complete — 2026-10-16
 
 Current integrated product source is
