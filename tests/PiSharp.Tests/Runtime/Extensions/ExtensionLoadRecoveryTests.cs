@@ -61,6 +61,7 @@ public sealed class ExtensionLoadRecoveryTests
             Assert.Empty(catalog.Registration.McpServers);
             Assert.Empty(catalog.Registration.VirtualModels.Models);
             Assert.Empty(catalog.Registration.LifecycleHandlers);
+            Assert.Empty(catalog.Registration.BeforeAgentStartHandlers);
             var failure = Assert.Single(catalog.LoadErrors);
             Assert.Equal(Path.Combine(folder, "bad.dll"), failure.Path);
             if (failureKind == "configure") Assert.Equal("Failed to load extension: fixture extension configuration failure", failure.Error);

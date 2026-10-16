@@ -32,6 +32,8 @@ public sealed class PiAgent
     private readonly Func<IReadOnlyList<string>, IReadOnlyList<string>, string>? _getSkillInstructions;
     private readonly PiSharpContextTransformPipeline _contextTransforms;
     private readonly IReadOnlyList<ExtensionLifecycleHandlerRegistration> _extensionLifecycleHandlers;
+    private readonly IReadOnlyList<PiSharpBeforeAgentStartHandlerRegistration> _beforeAgentStartHandlers;
+    private readonly Func<string?>? _getAdditionalSystemInstructions;
     private readonly PiSharpExtensionContext _extensionContext;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
@@ -48,8 +50,11 @@ public sealed class PiAgent
     private ModelImageResizeOptions? _selectedImageResizeOptions;
     private long _systemMessageTimestamp;
     private ToolLoadout? _currentToolLoadout;
+    private RunSystemPromptOverride? _runSystemPromptOverride;
     private readonly ConditionalWeakTable<AgentSession, ToolDeclarationTranscript> _toolTranscripts = new();
     private ToolDeclarationTranscript? _currentToolTranscript;
+
+    private sealed record RunSystemPromptOverride(string Text);
 
     internal ToolDeclarationTranscript GetToolTranscript(AgentSession session) =>
         _toolTranscripts.GetValue(session, _ => new());
@@ -98,10 +103,13 @@ public sealed class PiAgent
         IReadOnlyList<string>? initialActiveToolNames = null,
         IReadOnlyList<ExtensionLifecycleHandlerRegistration>? extensionLifecycleHandlers = null,
         PiSharpExtensionContextConfiguration? extensionContextConfiguration = null,
-        IReadOnlyDictionary<string, int>? thinkingBudgets = null)
+        IReadOnlyDictionary<string, int>? thinkingBudgets = null,
+        IReadOnlyList<PiSharpBeforeAgentStartHandlerRegistration>? beforeAgentStartHandlers = null)
     {
         _contextTransforms = new(extensionContextTransforms);
         _extensionLifecycleHandlers = extensionLifecycleHandlers?.ToArray() ?? [];
+        _beforeAgentStartHandlers = beforeAgentStartHandlers?.ToArray() ?? [];
+        _getAdditionalSystemInstructions = getAdditionalSystemInstructions;
         _extensionContext = new(extensionContextConfiguration ?? new PiSharpExtensionContextConfiguration(
                 tools.WorkingDirectory, "print", false, false, UnavailableProjectTrustExtensionUi.Instance),
             () => Volatile.Read(ref _extensionConversation),
@@ -144,7 +152,7 @@ public sealed class PiAgent
         _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, PublishEvent,
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
-            _routedChatClient, GetToolsForRequest, _routedChatClient, getAdditionalSystemInstructions,
+            _routedChatClient, GetToolsForRequest, _routedChatClient, GetAdditionalSystemInstructionsForCurrentTurn,
             _contextTransforms.ApplyAsync, (messages, options) =>
                 _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout,
             () => thinkingBudgets), new ChatClientAgentOptions
@@ -197,7 +205,58 @@ public sealed class PiAgent
                 : new DeclaredAIFunction(function, declaration.Description, declaration.Registration.ConstrainedSampling);
         }).ToArray());
 
-    private string GetSystemInstructionsForCurrentLoadout() => GetSystemPromptForCurrentLoadout().Text;
+    private string GetSystemInstructionsForCurrentLoadout() =>
+        Volatile.Read(ref _runSystemPromptOverride)?.Text ?? GetSystemPromptForCurrentLoadout().Text;
+
+    private string? GetAdditionalSystemInstructionsForCurrentTurn() =>
+        Volatile.Read(ref _runSystemPromptOverride) is null
+            ? _getAdditionalSystemInstructions?.Invoke()
+            : null;
+
+    internal async Task PrepareBeforeAgentStartAsync(ChatMessage promptMessage, string promptText,
+        Action<AgentLifecycleEvent> publish, CancellationToken cancellationToken)
+    {
+        ClearRunSystemPromptOverride();
+        if (_beforeAgentStartHandlers.Count == 0) return;
+
+        var currentSystemPrompt = GetSystemPromptForCurrentLoadout().Text;
+        var additionalInstructions = _getAdditionalSystemInstructions?.Invoke();
+        if (!string.IsNullOrWhiteSpace(additionalInstructions))
+            currentSystemPrompt += "\n\n" + additionalInstructions;
+
+        var images = promptMessage.Contents.OfType<DataContent>()
+            .Where(content => content.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true)
+            .ToArray();
+        var imageView = Array.AsReadOnly(images);
+        var hasOverride = false;
+        foreach (var registration in _beforeAgentStartHandlers)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var result = await registration.Handler(
+                    new(promptText, imageView, currentSystemPrompt), _extensionContext, cancellationToken);
+                if (result?.SystemPrompt is { } systemPrompt)
+                {
+                    currentSystemPrompt = systemPrompt;
+                    hasOverride = true;
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception error)
+            {
+                publish(new AgentLifecycleEvent("extension_error", Error: error.Message,
+                    Details: new { extensionPath = registration.SourceInfo.Path, eventType = "before_agent_start" }));
+            }
+        }
+
+        if (hasOverride) Volatile.Write(ref _runSystemPromptOverride, new(currentSystemPrompt));
+    }
+
+    internal void ClearRunSystemPromptOverride() => Volatile.Write(ref _runSystemPromptOverride, null);
 
     private PiSystemPromptBuilder.Projection GetSystemPromptForCurrentLoadout()
     {

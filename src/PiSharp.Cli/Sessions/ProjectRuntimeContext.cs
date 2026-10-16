@@ -338,6 +338,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensionLifecycleHandlers: Extensions.Registration.RegisteredLifecycleHandlers,
             extensionContextConfiguration: new PiSharpExtensionContextConfiguration(WorkingDirectory,
                 Configuration.ExtensionMode, Configuration.HasUserInterface, Trusted, Configuration.ExtensionUi),
+            beforeAgentStartHandlers: Extensions.Registration.BeforeAgentStartHandlers,
             getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),
             getSkillInstructions: (activeToolNames, declaredToolNames) => Resources.SystemInstructions(
                 ResolveSkillFileReadTool(arguments, activeToolNames, declaredToolNames)),

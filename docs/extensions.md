@@ -154,6 +154,33 @@ registration.AddContextTransform((messages, cancellationToken) =>
 
 Transforms run in registration order after PiSharp projects the conversation and before provider-only repair and image preparation. They also run for follow-up requests in a tool loop and after context-overflow compaction. The host copies messages and text, tool-call, and tool-result content between transforms; other content payloads should be treated as read-only. Transformed messages are used for that provider request and do not enter saved conversation history. Cancellation is passed through, and a transform failure fails the provider request. Transforms are captured when an agent is created, so registering one later does not change existing agents.
 
+## Before an agent turn
+
+Use `AddBeforeAgentStartHandler` to inspect the expanded user prompt and replace the
+rendered system prompt for that turn:
+
+```csharp
+registration.AddBeforeAgentStartHandler((eventData, context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var systemPrompt = eventData.SystemPrompt + "\nFollow the user's deployment policy.";
+    return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(new(systemPrompt));
+});
+```
+
+Handlers run in extension order before the prompt is saved or sent to the
+provider. Each handler sees changes made by earlier handlers. `SystemPrompt` is
+the full current text, including additional MCP server instructions; a returned
+value replaces it for the rest of the turn. Returning `null` leaves the current
+text unchanged. The prompt override does not enter conversation history. Handler
+exceptions emit `extension_error` and allow later handlers to run; cancellation
+stops setup. The event also contains image attachments and the live extension
+context.
+
+The current hook covers submitted user prompts. Pi's idle custom-message
+`triggerTurn` flow, handler-injected custom messages, and mutation of individual
+system-prompt options remain unsupported.
+
 ## Current boundaries
 
-The .NET API does not aim for TypeScript source compatibility. Session lifecycle hooks and per-session extension state, late dynamic registration, custom providers, extension keybindings, general extension UI and settings remain open parity work. Resource discovery is currently a startup/reload callback rather than a full resource-management API. Tool output schemas and a complete structured-result contract are also open. See the [parity ledger](parity/execution-ledger.json) for implementation evidence and current gaps.
+The .NET API does not aim for TypeScript source compatibility. Per-session extension state, late dynamic registration, custom providers, extension keybindings, general extension UI and settings remain open parity work. Resource discovery is currently a startup/reload callback rather than a full resource-management API. Tool output schemas and a complete structured-result contract are also open. See the [parity ledger](parity/execution-ledger.json) for implementation evidence and current gaps.
