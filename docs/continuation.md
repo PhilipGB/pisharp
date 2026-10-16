@@ -10,19 +10,28 @@ CLI workflow is already verified by the current ledger and
 the preserved `worker/003-package-cli-*` refs are an older duplicate and would
 drop newer package-output/settings behavior.
 
-The current extension increment is product source `9d5b0a22`. It adds ordered
+The extension increment is merged in PR #6. Its final product source is
+`84d94364adb6a11e582ac917a20d3ef45eb7594b` (main merge commit
+`9a1a3efbfc5a5c663e0d55eec6c08f19042e78f1`); `9d5b0a22` is the initial
+implementation before review corrections. The increment adds ordered
 `AddBeforeAgentStartHandler` callbacks for expanded submitted user prompts.
 Handlers receive prompt text, image attachments, the current full system prompt,
 and live extension context. Full prompt replacements apply only to the current
 turn; handler errors emit `extension_error`, cancellation propagates, and failed
-extension configuration rolls the new registrations back. The pinned Pi source
-is `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Idle custom-message `triggerTurn`,
+extension configuration rolls the new registrations back. `context.IsIdle` is
+false during `before_agent_start` and remains false through provider work and
+retries, then returns to true after the conversation run settles. The existing
+provider streaming/reentrancy guard remains unchanged. The pinned Pi source is
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Idle custom-message `triggerTurn`,
 custom-message injection and mutable prompt-option sections remain open.
 
-Focused extension and recovery checks pass **5/5**, format verification passes,
-and the warnings-as-errors build has zero warnings. The full suite and paired
-process differential were not run for this slice. The extension capability
-remains `in_progress`; no global capability status changed. See the
+Focused extension and recovery checks pass **5/5**, including image delivery and
+the idle-state lifecycle regression. Local format verification and the
+warnings-as-errors build pass. The full local suite was not run; exact-head Linux
+CI passed **2,159/2,159** .NET tests and MCP conformance at the final product
+source ([run 38963167005](https://github.com/PhilipGB/pisharp/actions/runs/38963167005)).
+The paired process differential was not run. The extension capability remains
+`in_progress`; no global capability status changed. See the
 [before-agent-start receipt](parity/fixtures/extension-before-agent-start-current-pi-2026-10-16.json)
 and [native extension API](extensions.md).
 

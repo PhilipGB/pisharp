@@ -6,11 +6,13 @@ Work resumed on `milestone/resources-packages-extensions`, based on merged
 `main` `0c94c69d2f416ba0e625e353142b1d695565b75e`. Managed package CLI workflows
 are already verified in the ledger and package process receipt; do not duplicate
 the stale worker branch. Extension conflict/replaceable-builtin and typed
-context/UI receipts are already present. The next concrete extension slice adds
-ordered `before_agent_start` handlers for submitted user prompts. Code source
-`9d5b0a22` passes five focused extension/recovery checks, format verification,
-and a zero-warning warnings-as-errors build. It does not implement idle custom
-`triggerTurn` messages or close the broad .NET extension API capability.
+context/UI receipts are already present. PR #6 is merged with final product
+source `84d94364` (initial implementation `9d5b0a22`). It adds ordered
+`before_agent_start` handlers for submitted user prompts and reports
+`context.IsIdle == false` during the hook, returning to idle after the run
+settles. Five focused extension/recovery checks pass; exact-head CI passes
+2,159 .NET tests and MCP conformance. Idle custom `triggerTurn` messages remain
+unsupported, and the broad .NET extension API capability remains open.
 
 See [the continuation](docs/continuation.md) and the
 [before-agent-start receipt](docs/parity/fixtures/extension-before-agent-start-current-pi-2026-10-16.json).
