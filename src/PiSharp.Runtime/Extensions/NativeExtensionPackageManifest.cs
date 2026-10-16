@@ -47,13 +47,14 @@ internal static class NativeExtensionPackageManifestReader
             var json = document.RootElement;
             if (json.ValueKind != JsonValueKind.Object)
                 throw Invalid("The root value must be an object.");
+            EnsureUniqueProperties(json, "manifest");
 
             var id = RequiredString(json, "id");
             if (!IsPackageId(id))
                 throw Invalid("The id must contain only ASCII letters, digits, '.', '-', or '_'.");
 
             var version = RequiredString(json, "version");
-            if (!IsPackageVersion(version))
+            if (!IsValidPackageVersion(version))
                 throw Invalid("The version must be a valid numeric package version with an optional prerelease or metadata suffix.");
 
             if (!json.TryGetProperty("apiVersion", out var apiVersionElement) ||
@@ -73,6 +74,7 @@ internal static class NativeExtensionPackageManifestReader
             {
                 if (entryElement.ValueKind != JsonValueKind.Object)
                     throw Invalid("Every extensions entry must be an object.");
+                EnsureUniqueProperties(entryElement, "extension entry");
                 var assembly = RequiredString(entryElement, "assembly");
                 var type = RequiredString(entryElement, "type");
                 if (!IsFullTypeName(type))
@@ -97,10 +99,18 @@ internal static class NativeExtensionPackageManifestReader
         return value.GetString()!.Trim();
     }
 
-    private static bool IsPackageId(string id) => id.Length <= 128 && id.All(character =>
-        char.IsAsciiLetterOrDigit(character) || character is '.' or '-' or '_');
+    private static void EnsureUniqueProperties(JsonElement json, string description)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var property in json.EnumerateObject())
+            if (!seen.Add(property.Name)) throw Invalid($"The {description} contains duplicate property '{property.Name}'.");
+    }
 
-    private static bool IsPackageVersion(string version)
+    private static bool IsPackageId(string id) => id.Length <= 128 && char.IsAsciiLetterOrDigit(id[0]) &&
+        !id.Contains("..", StringComparison.Ordinal) && id.All(character =>
+            char.IsAsciiLetterOrDigit(character) || character is '.' or '-' or '_');
+
+    internal static bool IsValidPackageVersion(string version)
     {
         if (version.Length > 128 || version.Any(char.IsWhiteSpace)) return false;
         var metadataIndex = version.IndexOf('+');

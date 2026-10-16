@@ -567,6 +567,36 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             throw new InvalidDataException("httpProxy is only allowed in user settings.json.");
         return settings;
     }
+
+    /// <summary>Reads only native package references for trust-gated metadata inspection; it never loads package code.</summary>
+    public static async Task<IReadOnlyList<NativeExtensionPackageSource>> ReadProjectNativeExtensionsForInspectionAsync(
+        string workingDirectory, CancellationToken cancellationToken = default)
+    {
+        var path = Path.Combine(workingDirectory, ".pi", "settings.json");
+        if (!File.Exists(path)) return [];
+        try
+        {
+            var info = new FileInfo(path);
+            if (info.Length > 64 * 1024) return [];
+            using var document = JsonDocument.Parse(await File.ReadAllBytesAsync(path, cancellationToken),
+                new JsonDocumentOptions { MaxDepth = 16 });
+            if (document.RootElement.ValueKind != JsonValueKind.Object) return [];
+            JsonElement? nativeExtensions = null;
+            foreach (var property in document.RootElement.EnumerateObject())
+            {
+                if (property.Name != "nativeExtensions") continue;
+                if (nativeExtensions is not null) return [];
+                nativeExtensions = property.Value;
+            }
+            return nativeExtensions is { } value ? PackageSettingsReader.ReadNativeExtensions(value) : [];
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
+        {
+            // Trust-gated settings are fully validated only after trust. Metadata inspection is best effort.
+            return [];
+        }
+    }
+
     public AutoCompactionPolicy? ResolveCompaction(int? contextWindow, Func<string, string?> environment, string? modelKey = null) =>
         (Compaction ?? new CompactionSettings()).Resolve(contextWindow, environment, modelKey);
     public AutoCompactionPolicy? ResolveCompactionPolicy(int? contextWindow, Func<string, string?> environment,

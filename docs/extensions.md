@@ -4,6 +4,63 @@ PiSharp loads user extensions from `<agent-dir>/extensions` and loads project ex
 
 Built-in `tool-search` and `codemode` use the same extension catalog. They have `builtin:` source identities and support normal enable/disable rules and explicit `--extension builtin:<name>` selection. `codemode` is registered inactive by default; select it with `--tools` or activate it through the session loadout. It requires Node.js 22.19 or newer; it runs model JavaScript inside bundled QuickJS/WASM in a separate process and exposes only session-callable tools through the shared nested execution path.
 
+## Compiled extension packages
+
+Third-party compiled extensions reference the lightweight `PiSharp.Extensions.Abstractions` NuGet project. It exposes `IPiSharpExtension.Configure(IPiSharpExtensionBuilder)` for slash commands, `Microsoft.Extensions.AI.AIFunction` tools, and before-agent-start callbacks. The package does not reference PiSharp Runtime or CLI assemblies. The existing in-repository `PiSharp.Runtime.Extensions.IPiSharpExtension` API remains an internal extension surface and is not the external authoring contract.
+
+```csharp
+using Microsoft.Extensions.AI;
+using PiSharp.Extensions.Abstractions;
+
+public sealed class GreetingExtension : IPiSharpExtension
+{
+    public void Configure(IPiSharpExtensionBuilder builder)
+    {
+        builder.AddCommand("hello", (name, _) => Task.FromResult("Hello " + name));
+        builder.AddTool(AIFunctionFactory.Create((string name) => "Hello " + name, name: "greet"));
+        builder.AddBeforeAgentStartHandler((turn, context, _) =>
+            ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(new(
+                turn.SystemPrompt + "\nWorking directory: " + context.WorkingDirectory)));
+    }
+}
+```
+
+Pack the extension as a normal `.nupkg` and include a `pisharp-extension.json` file at the package root. The manifest declares the package identity, extension API version, and every entry assembly and public type explicitly:
+
+```json
+{
+  "id": "Example.Greeting",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "extensions": [
+    {
+      "assembly": "lib/net10.0/Example.Greeting.dll",
+      "type": "Example.Greeting.GreetingExtension"
+    }
+  ]
+}
+```
+
+An entry type must be public, concrete, implement `IPiSharpExtension`, and have a public parameterless constructor. Package-private managed dependencies must be included with the extension assembly and its `.deps.json`. PiSharp validates the manifest and host API version before constructing extension objects, then loads the package in its own collectible .NET load context. Conflicting private dependency versions can coexist in separate packages. Each package configures through the same host command, tool, and lifecycle registration path as the internal extension runtime.
+
+Install a local package with `pisharp install ./Example.Greeting.1.0.0.nupkg`. Add `--local` to store it in the project settings and package directory; project packages execute only after project trust is granted. User packages are stored under the configured agent directory. Settings keep the package identity and source path in a separate collection:
+
+```json
+{
+  "nativeExtensions": [
+    {
+      "id": "Example.Greeting",
+      "version": "1.0.0",
+      "source": "../../packages/Example.Greeting.1.0.0.nupkg"
+    }
+  ]
+}
+```
+
+The source path lets `pisharp update --extension Example.Greeting` read a new local package for deterministic offline updates. `pisharp list` shows configured native packages, and `pisharp remove Example.Greeting` removes the selected package. `/reload` re-reads settings and replaces package registrations; a failed package load or configuration produces a warning and leaves the rest of the agent available. A failed update validation retains the prior active package version.
+
+PiSharp does not run Pi TypeScript or JavaScript extension source and does not compile package source at install or startup. Native extension assemblies execute as trusted in-process .NET code with the application's operating-system permissions; a collectible load context supports dependency isolation and reload, not a security sandbox.
+
 ## MCP namespaces in Codemode
 
 MCP servers use `<agent-dir>/mcp.json` or a trusted project's `.pi/mcp.json`. A server `description` appears in the bounded `mcp_servers` request section after the server connects; the Codemode function description stays server-agnostic. The server's initialize instructions and callable tool names are returned by `await describeNamespace("mcp__<name>")`; the configured server name is also an alias, so `await describeNamespace("docs")` works for `mcp__docs`. Find a tool with `await searchTools(query, { namespace: "docs" })` or the full namespace. This keeps individual MCP tool schemas out of provider instructions while preserving the normal callable-tool policy. The legacy `codemode-deferred` exposure value is accepted as an alias for `codemode`; `deferred` continues to use `tool-search`.

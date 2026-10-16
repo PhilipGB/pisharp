@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Runtime.Resources;
 
@@ -284,10 +285,7 @@ public sealed class NativeExtensionPackageStore
 
     internal static void ValidateVersion(string version)
     {
-        if (string.IsNullOrWhiteSpace(version) || version.Length > 128 || version != version.Trim() ||
-            version.Any(character => !char.IsAsciiLetterOrDigit(character) && character is not ('.' or '-' or '+')) ||
-            version[0] == '.' || version[^1] == '.' ||
-            version.Contains("..", StringComparison.Ordinal))
+        if (!NativeExtensionPackageManifestReader.IsValidPackageVersion(version))
             throw new InvalidDataException($"Invalid native extension package version '{version}'.");
     }
 

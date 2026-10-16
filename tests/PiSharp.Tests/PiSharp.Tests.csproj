@@ -25,6 +25,8 @@
     <ProjectReference Include="..\fixtures\NativeExtensionLoader\ExtensionV1\ExtensionV1.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\fixtures\NativeExtensionLoader\ExtensionV2\ExtensionV2.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\fixtures\NativeExtensionLoader\IncompatibleContract\Extension\Extension.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\fixtures\NativeExtensionFixture\NativeExtensionFixture.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\fixtures\NativeExtensionFixtureV2\NativeExtensionFixtureV2.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TestInfrastructure/Fixtures/mcp_fixture.py" CopyToOutputDirectory="PreserveNewest" />
