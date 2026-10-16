@@ -25,6 +25,14 @@ internal static class McpClientConnection
         var toolsRefreshGate = new SemaphoreSlim(1, 1);
         try
         {
+            var configuredOAuth = server.AuthProvider is not null || server.Headers.Keys.Any(key =>
+                key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)) ? null :
+                (server.OAuth is { } configured ? McpOAuthSettings.Parse(configured) :
+                    new McpOAuthSettings(null, null, null, []));
+            var cimdIdentity = configuredOAuth is { ClientRegistration: "cimd" } && server.Url is { } endpoint
+                ? await McpOAuthCimdDiscovery.ResolveAsync(endpoint, configuredOAuth, cancellationToken)
+                    .ConfigureAwait(false)
+                : null;
             IClientTransport CreateTransport()
             {
                 if (server.Command is { } command)
@@ -43,10 +51,7 @@ internal static class McpClientConnection
                     });
                 }
 
-                var oauth = server.AuthProvider is not null || server.Headers.Keys.Any(key =>
-                    key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)) ? null :
-                    (server.OAuth is { } configured ? McpOAuthSettings.Parse(configured) :
-                        new McpOAuthSettings(null, null, null, []));
+                var oauth = configuredOAuth;
                 var options = new HttpClientTransportOptions
                 {
                     Name = server.Name,
@@ -66,13 +71,17 @@ internal static class McpClientConnection
                         new HttpClient(new McpProtocolCompatibilityHandler(server.Url!, new HttpClientHandler())),
                         ownsHttpClient: true);
                 var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Name, server.Url!);
-                options.OAuth = oauth.CreateOptions(server.Url!, tokenCache,
-                    oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119/callback"),
+                ModelContextProtocol.Authentication.ITokenCache oauthTokenCache = cimdIdentity is null ? tokenCache :
+                    new McpOAuthCimdTokenCache(tokenCache, cimdIdentity.ClientMetadataDocumentUri);
+                var callbackPath = cimdIdentity is { IssuerResponses: false } ? "/callback/" + cimdIdentity.Id : "/callback";
+                var redirectUri = oauth.CallbackUrl ?? new Uri("http://127.0.0.1:38119" + callbackPath);
+                options.OAuth = oauth.CreateOptions(server.Url!, oauthTokenCache,
+                    redirectUri,
                     (context, _) =>
                     {
                         authorizationRequired?.Invoke(context.AuthorizationUri);
                         throw new McpSignInRequiredException();
-                    });
+                    }, cimdIdentity?.ClientMetadataDocumentUri);
                 refreshHandler = new McpOAuthRefreshHandler(tokenCache);
                 HttpMessageHandler handler = new McpSharedOAuthRefreshHandler(tokenCache, refreshHandler);
                 if (oauth.AuthServerMetadataUrl is { } metadataUrl)

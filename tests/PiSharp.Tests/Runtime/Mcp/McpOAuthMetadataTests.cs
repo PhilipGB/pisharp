@@ -10,30 +10,48 @@ namespace PiSharp.Tests;
 public sealed class McpOAuthMetadataTests
 {
     [Fact]
-    public void ParseAcceptsHttpsClientMetadataDocumentUriAndPassesItToOAuthOptions()
+    public void ParseDefaultsClientRegistrationToDcr()
     {
-        using var document = JsonDocument.Parse("""{"clientMetadataDocumentUri":"https://client.example/oauth/client.json"}""");
+        using var document = JsonDocument.Parse("{}");
 
         var settings = McpOAuthSettings.Parse(document.RootElement);
-        var options = settings.CreateOptions(new Uri("https://mcp.example"), null!,
-            new Uri("http://127.0.0.1:38119/callback"),
-            (_, _) => Task.FromResult<ModelContextProtocol.Authentication.AuthorizationResult?>(null));
 
-        Assert.Equal(new Uri("https://client.example/oauth/client.json"), settings.ClientMetadataDocumentUri);
-        Assert.Equal(settings.ClientMetadataDocumentUri, options.ClientMetadataDocumentUri);
+        Assert.Equal("dcr", settings.ClientRegistration);
     }
 
     [Theory]
-    [InlineData("http://client.example/client.json")]
-    [InlineData("file:///tmp/client.json")]
-    [InlineData("not a URL")]
-    public void ParseRejectsInsecureOrInvalidClientMetadataDocumentUri(string uri)
+    [InlineData("automatic")]
+    [InlineData("")]
+    public void ParseRejectsUnknownClientRegistration(string mode)
     {
-        using var document = JsonDocument.Parse(JsonSerializer.Serialize(new { clientMetadataDocumentUri = uri }));
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(new { clientRegistration = mode }));
 
         var error = Assert.Throws<ArgumentException>(() => McpOAuthSettings.Parse(document.RootElement));
 
-        Assert.Contains("clientMetadataDocumentUri", error.Message, StringComparison.Ordinal);
+        Assert.Contains("clientRegistration", error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("clientId")]
+    [InlineData("clientName")]
+    public void CimDRejectsConfiguredClientIdentity(string field)
+    {
+        var values = new Dictionary<string, string> { ["clientRegistration"] = "cimd", [field] = "configured" };
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(values));
+
+        var error = Assert.Throws<ArgumentException>(() => McpOAuthSettings.Parse(document.RootElement));
+
+        Assert.Contains("cannot be combined", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CimDRequiresTheStandardCallbackPathWhenCallbackIsConfigured()
+    {
+        using var document = JsonDocument.Parse("""{"clientRegistration":"cimd","callbackUrl":"http://127.0.0.1:38119/other"}""");
+
+        var error = Assert.Throws<ArgumentException>(() => McpOAuthSettings.Parse(document.RootElement));
+
+        Assert.Contains("/callback", error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -175,6 +193,85 @@ public sealed class McpOAuthMetadataTests
         }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CimDSelectsPinnedDocumentAndCallbackForIssuerSupport(bool issParameterSupported)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-cimd-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await using var server = new OAuthServer(
+            authorizationResponseIssParameterSupported: issParameterSupported,
+            clientIdMetadataDocumentSupported: true);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        try
+        {
+            using var config = JsonDocument.Parse(JsonSerializer.Serialize(new
+            {
+                url = server.Origin + "/mcp",
+                oauth = new { clientRegistration = "cimd" }
+            }));
+            var entry = McpConfiguration.Parse("protected", config.RootElement, "mcp.json", "global");
+            var output = new LoginOutput();
+            var login = McpOAuthLogin.SignInAsync(entry, root, output, false,
+                TimeSpan.FromSeconds(10), deadline.Token);
+            var authorizationUri = new Uri(await output.Authorization.Task.WaitAsync(deadline.Token));
+            var query = System.Web.HttpUtility.ParseQueryString(authorizationUri.Query);
+            var id = GetServerId(entry.Url!);
+            Assert.Equal(issParameterSupported ? "https://pi.dev/oauth/client.json" :
+                "https://pi.dev/oauth/" + id + "/client.json", query["client_id"]);
+            var redirect = new Uri(query["redirect_uri"]!);
+            Assert.Equal(issParameterSupported ? "/callback" : "/callback/" + id, redirect.AbsolutePath);
+
+            var callbackQuery = "code=fixture-code&state=" + Uri.EscapeDataString(query["state"]!);
+            if (issParameterSupported) callbackQuery += "&iss=" + Uri.EscapeDataString(server.Origin);
+            var callbackUri = new UriBuilder(redirect) { Query = callbackQuery }.Uri;
+            using var browser = new HttpClient();
+            var wrongOrigin = new UriBuilder(callbackUri) { Host = "localhost" }.Uri;
+            Assert.Equal(HttpStatusCode.BadRequest, (await browser.GetAsync(wrongOrigin, deadline.Token)).StatusCode);
+            var wrongPath = new UriBuilder(callbackUri) { Path = "/wrong" }.Uri;
+            Assert.Equal(HttpStatusCode.BadRequest, (await browser.GetAsync(wrongPath, deadline.Token)).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync(callbackUri, deadline.Token)).StatusCode);
+            await login.WaitAsync(deadline.Token);
+            Assert.Equal(1, server.TokenRequests);
+        }
+        finally
+        {
+            deadline.Cancel();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CimDRejectsAuthorizationServerWithoutPublicClientSupport()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-cimd-unsupported-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await using var server = new OAuthServer(clientIdMetadataDocumentSupported: false);
+        try
+        {
+            using var config = JsonDocument.Parse(JsonSerializer.Serialize(new
+            {
+                url = server.Origin + "/mcp",
+                oauth = new { clientRegistration = "cimd" }
+            }));
+            var entry = McpConfiguration.Parse("protected", config.RootElement, "mcp.json", "global");
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() => McpOAuthLogin.SignInAsync(entry,
+                root, TextWriter.Null, false, TimeSpan.FromSeconds(5)));
+
+            Assert.Contains("does not advertise CIMD", error.Message, StringComparison.Ordinal);
+            Assert.Equal(0, server.TokenRequests);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static string GetServerId(Uri serverUrl)
+    {
+        var hash = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(serverUrl.AbsoluteUri));
+        return Convert.ToBase64String(hash.AsSpan(0, 9)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
     private sealed class LoginOutput : StringWriter
     {
         public TaskCompletionSource<string> Authorization { get; } =
@@ -196,6 +293,7 @@ public sealed class McpOAuthMetadataTests
         private readonly Task _serve;
         private readonly bool _invalidAuthorizationServerUrl;
         private readonly bool _authorizationResponseIssParameterSupported;
+        private readonly bool _clientIdMetadataDocumentSupported;
         private int _configuredMetadataRequests;
         private int _normalDiscoveryRequests;
         private int _tokenRequests;
@@ -206,10 +304,12 @@ public sealed class McpOAuthMetadataTests
         public int TokenRequests => Volatile.Read(ref _tokenRequests);
 
         public OAuthServer(bool invalidAuthorizationServerUrl = false,
-            bool authorizationResponseIssParameterSupported = true)
+            bool authorizationResponseIssParameterSupported = true,
+            bool clientIdMetadataDocumentSupported = false)
         {
             _invalidAuthorizationServerUrl = invalidAuthorizationServerUrl;
             _authorizationResponseIssParameterSupported = authorizationResponseIssParameterSupported;
+            _clientIdMetadataDocumentSupported = clientIdMetadataDocumentSupported;
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
             var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
@@ -325,7 +425,8 @@ public sealed class McpOAuthMetadataTests
                 response_types_supported = new[] { "code" },
                 token_endpoint_auth_methods_supported = new[] { "none" },
                 code_challenge_methods_supported = new[] { "S256" },
-                authorization_response_iss_parameter_supported = _authorizationResponseIssParameterSupported
+                authorization_response_iss_parameter_supported = _authorizationResponseIssParameterSupported,
+                client_id_metadata_document_supported = _clientIdMetadataDocumentSupported
             });
 
         public async ValueTask DisposeAsync()

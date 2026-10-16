@@ -19,6 +19,10 @@ public static class McpOAuthLogin
             throw new ArgumentException("MCP server does not use OAuth.");
         var settings = server.OAuth is { } value ? McpOAuthSettings.Parse(value) :
             new McpOAuthSettings(null, null, null, []);
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(timeout);
+        var cimdIdentity = await McpOAuthCimdDiscovery.ResolveAsync(server.Url, settings, deadline.Token)
+            .ConfigureAwait(false);
         var callback = settings.CallbackUrl;
         if (callback is null)
         {
@@ -26,13 +30,13 @@ public static class McpOAuthLogin
             reservation.Start();
             var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
             reservation.Stop();
-            callback = new Uri("http://127.0.0.1:" + port + "/callback");
+            var callbackPath = cimdIdentity is { IssuerResponses: false }
+                ? "/callback/" + cimdIdentity.Id : "/callback";
+            callback = new Uri("http://127.0.0.1:" + port + callbackPath);
         }
         using var listener = new HttpListener();
-        listener.Prefixes.Add(callback.GetLeftPart(UriPartial.Authority) + "/");
+        listener.Prefixes.Add("http://+:" + callback.Port + "/");
         listener.Start();
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(timeout);
         var authorizationStarted = false;
         var tokenCache = new McpTokenCache(agentDirectory).ForServerWithRefresh(server.Name, server.Url);
         var existingTokens = await tokenCache.GetTokensAsync(deadline.Token);
@@ -56,8 +60,8 @@ public static class McpOAuthLogin
                 {
                     var request = await listener.GetContextAsync().WaitAsync(token);
                     var uri = request.Request.Url;
-                    var expectedPath = callback.AbsolutePath;
-                    var accepted = uri is not null && uri.AbsolutePath == expectedPath &&
+                    var expectedRedirect = context.RedirectUri;
+                    var accepted = uri is not null && SameCallbackOriginAndPath(uri, expectedRedirect) &&
                         request.Request.RemoteEndPoint is { } remote && IPAddress.IsLoopback(remote.Address);
                     var response = request.Response;
                     response.ContentType = "text/html; charset=utf-8";
@@ -78,13 +82,15 @@ public static class McpOAuthLogin
                         Iss = request.Request.QueryString["iss"]
                     };
                 }
-            });
-        if (options.ClientId is null && existingTokens?.ClientId is { } cachedClientId)
+            }, cimdIdentity?.ClientMetadataDocumentUri);
+        if (cimdIdentity is null && options.ClientId is null && existingTokens?.ClientId is { } cachedClientId)
         {
             options.ClientId = cachedClientId;
             options.ClientSecret = existingTokens.ClientSecret;
         }
-        var signInTokenCache = new SignInTokenCache(tokenCache);
+        ITokenCache registrationTokenCache = cimdIdentity is null ? tokenCache :
+            new McpOAuthCimdTokenCache(tokenCache, cimdIdentity.ClientMetadataDocumentUri);
+        var signInTokenCache = new SignInTokenCache(registrationTokenCache);
         options.TokenCache = signInTokenCache;
         if (!string.IsNullOrWhiteSpace(requestedScope))
         {
@@ -127,6 +133,12 @@ public static class McpOAuthLogin
             await transport.DisposeAsync();
         }
     }
+
+    private static bool SameCallbackOriginAndPath(Uri actual, Uri expected) =>
+        actual.Scheme.Equals(expected.Scheme, StringComparison.OrdinalIgnoreCase) &&
+        actual.Host.Equals(expected.Host, StringComparison.OrdinalIgnoreCase) && actual.Port == expected.Port &&
+        actual.AbsolutePath.Equals(expected.AbsolutePath, StringComparison.Ordinal) &&
+        string.IsNullOrEmpty(actual.UserInfo) && string.IsNullOrEmpty(actual.Fragment);
 
     private sealed class SignInTokenCache(ITokenCache inner) : ITokenCache
     {
