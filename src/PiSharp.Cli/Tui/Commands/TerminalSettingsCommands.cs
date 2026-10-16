@@ -13,6 +13,16 @@ internal sealed class TerminalSettingsCommands(string agentDirectory, ActiveProj
     public async Task<(UserSettings User, UserSettings? Project)> SaveSettingAsync(bool projectScope, string setting,
         string? value) => await SaveSettingCoreAsync(projectScope, setting, value, announce: true);
 
+    public async Task SaveModelThinkingLevelAsync(string level)
+    {
+        var savedSettings = await UserSettingsPersistence.SaveModelThinkingLevelAsync(agentDirectory,
+            modelBinding.Selection.Provider.Id, modelBinding.Selection.Model.Id, level,
+            projectBinding.BaseUserSettings, projectBinding.ProjectSettings, Environment.GetEnvironmentVariable);
+        projectBinding.SetSettings(savedSettings.User, savedSettings.Project, savedSettings.Effective);
+        projectBinding.PublishSettingsConfiguration();
+        Console.WriteLine($"Saved thinking default for {modelBinding.Selection.Provider.Id}/{modelBinding.Selection.Model.Id}: {level}.");
+    }
+
     public async Task<(UserSettings User, UserSettings? Project)> SaveSettingCoreAsync(bool projectScope, string setting,
         string? value, bool announce)
     {

@@ -24,7 +24,9 @@ internal static class InteractiveMode
         var usesDefaultToolsSetting = startup.UsesDefaultToolsSetting;
         var prompt = projectBinding.Arguments.Prompt;
         TerminalSessionNavigation? sessionNavigationReference = null;
-        var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding, () => Console.Out);
+        var terminalThinkingSelector = editor is null ? null : new TerminalThinkingSelector(editor);
+        var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding,
+            () => Console.Out, terminalThinkingSelector);
         var sessionNavigation = new TerminalSessionNavigation(projectBinding, conversationBinding, projectTransitions,
             presentation, AdoptProjectSession);
         sessionNavigationReference = sessionNavigation;
@@ -120,7 +122,10 @@ internal static class InteractiveMode
                                 await terminalProviderCommands.SetScopeAsync(argument, projectBinding.Arguments.Provider);
                                 break;
                             case "/thinking":
-                                await terminalProviderCommands.SetThinkingAsync(argument, modelTransitions.ReplaceAsync);
+                                await terminalProviderCommands.SetThinkingAsync(argument,
+                                    projectBinding.Settings.GetModelThinkingLevel(modelBinding.Selection) ??
+                                        projectBinding.Settings.DefaultThinkingLevel,
+                                    settingsCommands.SaveModelThinkingLevelAsync, modelTransitions.ReplaceAsync);
                                 break;
                             case "/login":
                                 await terminalProviderLogin!.ShowAsync(argument);
