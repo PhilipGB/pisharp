@@ -42,18 +42,25 @@ warnings-as-errors solution build reports zero warnings/errors; .NET passes
 **24/24**; Python passes **50/50**; documentation validation finds **134
 documents and 522 references**; MCP conformance reports no regressions against
 its classified baseline. Tests used `TMPDIR=/tmp` because the local default temp
-directory is inside `$HOME` and affected path-display assertions. Live Codex
-and llama smoke tests were unavailable: the normal auth store and
-`LLAMA_BASE_URL` were not configured. The model-picker provider switch used
-llama.cpp and an authenticated deterministic OpenAI-compatible fixture.
+directory is inside `$HOME` and affected path-display assertions. At source
+acceptance, live Codex and llama smoke tests were unavailable. The model-picker
+provider switch used llama.cpp and an authenticated deterministic
+OpenAI-compatible fixture.
 
 Exact-head Linux CI on source `927b9c8e8f2ff5e1e7f756925dbcc69f63565a5f`
 passes all required jobs: [run 38889766086](https://github.com/PhilipGB/pisharp/actions/runs/38889766086).
 
+A follow-up live smoke on 2026-10-16 used the saved Codex and llama.cpp
+credentials. PiSharp discovered each provider's models and completed one short
+no-tools, no-session request with `gpt-6-luna` and the loaded
+`Qwen3.8-27B-GGUF`. The run used a private temporary copy of the auth file so
+model-cache writes stayed under `/tmp`; the original profile and sessions were
+left untouched, and the temporary copy was removed.
+
 The 194 global capability IDs remain at **12 verified, 148 in progress and 34
 not started**. UX evidence does not claim global parity. Broader provider work,
 MCP/Codemode expansion, full resource/extension parity, exhaustive terminal
-differentials and live credential-backed smokes remain deferred. Recommended
+differentials and broader live provider coverage remain deferred. Recommended
 next bounded milestone: MCP/Codemode interactive workflow completion and
 conformance, kept separate from provider breadth and the global parity audit.
 
