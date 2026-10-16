@@ -176,6 +176,77 @@ internal static class UserSettingsWriter
         return true;
     }
 
+    /// <summary>Activates or removes one versioned PiSharp-native extension package by package ID.</summary>
+    public static async Task<bool> UpdateNativeExtensionAsync(string path, NativeExtensionPackageSource package,
+        bool remove, bool userScope, CancellationToken cancellationToken = default)
+    {
+        var target = Path.GetFullPath(path);
+        if (File.Exists(target)) target = new FileInfo(target).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? target;
+        var directory = Path.GetDirectoryName(target)!;
+        if (userScope && OperatingSystem.IsLinux())
+            Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        else
+            Directory.CreateDirectory(directory);
+
+        JsonObject root;
+        if (File.Exists(target))
+        {
+            var info = new FileInfo(target);
+            if (info.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
+            root = JsonNode.Parse(await File.ReadAllTextAsync(target, cancellationToken),
+                documentOptions: new JsonDocumentOptions { MaxDepth = 16 }) as JsonObject ??
+                throw new InvalidDataException("settings.json must contain a JSON object.");
+        }
+        else
+        {
+            root = new JsonObject();
+        }
+
+        JsonArray nativeExtensions;
+        if (root["nativeExtensions"] is JsonArray existing)
+        {
+            using var document = JsonDocument.Parse(existing.ToJsonString());
+            _ = PackageSettingsReader.ReadNativeExtensions(document.RootElement);
+            nativeExtensions = existing;
+        }
+        else if (root.ContainsKey("nativeExtensions"))
+        {
+            throw new InvalidDataException("settings.json nativeExtensions must be an array.");
+        }
+        else
+        {
+            nativeExtensions = new JsonArray();
+            root["nativeExtensions"] = nativeExtensions;
+        }
+
+        var matches = nativeExtensions.Select((entry, index) => (entry, index))
+            .Where(item => item.entry is JsonObject jsonObject &&
+                jsonObject["id"] is JsonValue idValue && idValue.TryGetValue<string>(out var id) &&
+                string.Equals(id, package.Id, StringComparison.OrdinalIgnoreCase))
+            .Select(item => item.index).ToArray();
+        if (remove)
+        {
+            foreach (var index in matches.Reverse()) nativeExtensions.RemoveAt(index);
+            if (matches.Length == 0) return false;
+        }
+        else
+        {
+            var value = new JsonObject
+            {
+                ["id"] = package.Id,
+                ["version"] = package.Version,
+                ["source"] = package.Source
+            };
+            if (matches.Length == 0) nativeExtensions.Add(value);
+            else nativeExtensions[matches[0]] = value;
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(root.ToJsonString(s_jsonOptions) + "\n");
+        if (bytes.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
+        await ReplaceAsync(target, bytes, cancellationToken);
+        return true;
+    }
+
     private static string PackageIdentity(string source, string baseDirectory)
     {
         if (ManagedResourcePackageStore.GetManagedPackageIdentity(source) is { } managed) return managed;
