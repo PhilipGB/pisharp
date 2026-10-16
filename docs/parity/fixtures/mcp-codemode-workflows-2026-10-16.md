@@ -2,7 +2,8 @@
 
 - Branch: `milestone/mcp-codemode-workflows`
 - Main base: `28f223c0c3b52ac9cd79a76c35a26c982999eee2`
-- Product source: `9ca5deb4640438893c3bc26a4bf16df3dd7eada7`
+- Final product source: `834927bfc984cdc003149b3f15223ecc13f24a2b`
+- Initial product source: `9ca5deb4640438893c3bc26a4bf16df3dd7eada7`
 - Configured Pi source: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`
 - Behavioral source for CIMD: `earendil-works/pi@1499466d8581035a4dec6c869725b8712aea4bbe`
 
@@ -30,11 +31,14 @@ This is a bounded user-workflow checkpoint. It does not claim global Pi parity.
 - MCP OAuth fixtures cover DCR as the default and CIMD opt-in, the shared
   `pi.dev` metadata document when authorization responses support `iss`, and
   the server-hash document plus callback path otherwise. A configured
-  `localhost` callback retains its host and port. Browser callback tests reject
-  mismatched origins and paths; the manual callback fixture rejects a mismatched
-  host before accepting the valid redirect. Runtime uses the official MCP SDK
-  for PKCE, discovery, issuer/state validation, token exchange and refresh. The
-  TUI PTY covers URL presentation, cancel/copy, and manual redirect entry.
+  `localhost` callback retains its host and port. The listener binds to the
+  configured loopback callback authority; origin/path, `Host` header and remote
+  address checks remain as defence in depth. Tests cover configured
+  `localhost` and `127.0.0.1` success, alternate-authority rejection, wrong-path
+  rejection and a mismatched manual redirect before accepting the valid URL.
+  Runtime uses the official MCP SDK for PKCE, discovery, issuer/state
+  validation, token exchange and refresh. The TUI PTY covers URL presentation,
+  cancel/copy, and manual redirect entry.
 - `CodemodeSandbox` accepts classifier context arguments up to 4 MiB each and
   8 MiB total per run. A deterministic 48 KiB image-context case reaches the
   classifier fixture. Direct bounds tests cover 64 KiB text output, 256 output
@@ -49,11 +53,13 @@ This is a bounded user-workflow checkpoint. It does not claim global Pi parity.
 - `dotnet format PiSharp.slnx --verify-no-changes --no-restore`: passed.
 - `dotnet build PiSharp.slnx --no-restore --warnaserror -m:1`: passed, zero
   warnings and errors.
-- Full .NET suite: **2,129 passed, zero failed, zero skipped**. Architecture
+- Full .NET suite: **2,130 passed, zero failed, zero skipped**. Architecture
   checks: **6/6**.
 - Focused workflow acceptance filter: **23/23 passed, zero skipped**, including
   parent cancellation/recovery, failed-server isolation, sandbox limits,
   interactive command behavior and the selectable MCP manager PTY.
+- Focused MCP OAuth and management tests: **59/59**; OAuth metadata tests:
+  **24/24**; TUI OAuth tests: **7/7**.
 - Terminal Node tests: **24/24**. Terminal Python tests: **50/50**.
 - Documentation path validation: **135 documents, 524 references**.
 - MCP conformance: **261 passed** and the same **8 classified failures** as
@@ -83,6 +89,8 @@ OAuth client-metadata-document contract based on its acceptance evidence; it
 does not close the broader MCP or Codemode contracts. The 194 global IDs now
 stand at **13 verified, 148 in progress, and 33 not started**.
 
-Exact-head Linux CI on product source
-`9ca5deb4640438893c3bc26a4bf16df3dd7eada7` passed both required jobs and all
-**2,129/2,129** .NET tests ([run 38911196308](https://github.com/PhilipGB/pisharp/actions/runs/38911196308)).
+The initial product-source CI on `9ca5deb4640438893c3bc26a4bf16df3dd7eada7`
+passed before the OAuth listener correction ([run 38911196308](https://github.com/PhilipGB/pisharp/actions/runs/38911196308)).
+Final product source `834927bfc984cdc003149b3f15223ecc13f24a2b` passed both
+required exact-head Linux CI jobs and all **2,130/2,130** .NET tests
+([run 38917328736](https://github.com/PhilipGB/pisharp/actions/runs/38917328736)).

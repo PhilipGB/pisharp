@@ -4,8 +4,9 @@
 
 The bounded MCP/Codemode milestone is on
 `milestone/mcp-codemode-workflows`, based on main
-`28f223c0c3b52ac9cd79a76c35a26c982999eee2`. Product source is
-`9ca5deb4640438893c3bc26a4bf16df3dd7eada7`; the configured Pi reference stays
+`28f223c0c3b52ac9cd79a76c35a26c982999eee2`. Final product source is
+`834927bfc984cdc003149b3f15223ecc13f24a2b`; the initial product source was
+`9ca5deb4640438893c3bc26a4bf16df3dd7eada7`. The configured Pi reference stays
 pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This completes the
 requested workflow milestone without claiming global parity.
 
@@ -28,16 +29,19 @@ tests cover 64 KiB text output, 256 output items, 4 MiB per nested argument and
 8 MiB aggregate argument limits.
 
 OAuth keeps DCR as the default and supports opt-in CIMD with Pi's issuer-aware
-shared or server-hash metadata document. Tests cover callback host/path
-rejection, configured host/port, manual redirect retry, cancellation, and the
-active TUI paste flow. The pinned MCP SDK remains responsible for PKCE,
-issuer/state validation, token exchange and refresh. Codemode classifier
+shared or server-hash metadata document. The callback listener binds only to
+the configured loopback authority; origin/path, `Host` header and remote-address
+checks remain as defence in depth. Tests cover successful configured
+`localhost` and `127.0.0.1` callbacks, mismatched authority/path rejection,
+manual redirect retry, cancellation, and the active TUI paste flow. The pinned
+MCP SDK remains responsible for PKCE, issuer/state validation, token exchange
+and refresh. Codemode classifier
 contexts accept 4 MiB per argument and 8 MiB total per run; a deterministic
 48 KiB image context reaches the classifier fixture. The named MCP OAuth CIMD
 capability is verified; broad MCP and Codemode capabilities remain in progress.
 
 Full local verification passes restore, format, a warnings-as-errors build,
-**2,129/2,129** .NET tests with zero skips, architecture checks **6/6**, Node
+**2,130/2,130** .NET tests with zero skips, architecture checks **6/6**, Node
 **24/24**, Python **50/50**, and documentation validation (**135 documents,
 524 references**). MCP conformance passes **261** checks with the same eight
 classified baseline failures and no new regressions. One saved-Codex and one
@@ -47,9 +51,11 @@ returned its result, and shut down the fixture.
 The one promoted capability leaves all 194 IDs at **13 verified, 148 in
 progress and 33 not started**. Broader MCP resource/output semantics, Codemode
 sandbox semantics and the established conformance failures remain open.
-Exact-head Linux CI on product source
-`9ca5deb4640438893c3bc26a4bf16df3dd7eada7` passed both required jobs and
-**2,129/2,129** tests ([run 38911196308](https://github.com/PhilipGB/pisharp/actions/runs/38911196308)).
+The initial product-source CI on `9ca5deb4640438893c3bc26a4bf16df3dd7eada7`
+passed before the OAuth listener correction ([run 38911196308](https://github.com/PhilipGB/pisharp/actions/runs/38911196308)).
+Final product source `834927bfc984cdc003149b3f15223ecc13f24a2b` passed both
+required exact-head Linux CI jobs and **2,130/2,130** tests
+([run 38917328736](https://github.com/PhilipGB/pisharp/actions/runs/38917328736)).
 The milestone is complete; stop and wait for the next user goal.
 
 ## Interactive UX milestone complete — 2026-10-16

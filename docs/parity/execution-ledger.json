@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Bounded MCP + Codemode workflow milestone on milestone/mcp-codemode-workflows. Product source 9ca5deb4640438893c3bc26a4bf16df3dd7eada7 is based on main 28f223c0c3b52ac9cd79a76c35a26c982999eee2; configured Pi remains pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 13 verified, 148 in progress, 33 not started. Only the explicitly closed MCP OAuth CIMD contract changed status; broader MCP and Codemode parity remains incomplete.",
+  "source_note": "Bounded MCP + Codemode workflow milestone on milestone/mcp-codemode-workflows. Final product source 834927bfc984cdc003149b3f15223ecc13f24a2b is based on main 28f223c0c3b52ac9cd79a76c35a26c982999eee2; initial source 9ca5deb4640438893c3bc26a4bf16df3dd7eada7 predates the OAuth callback listener hardening. The listener binds only to the configured loopback authority while origin/path, Host, and remote-address checks remain in place. Configured localhost and 127.0.0.1 regression tests pass. Configured Pi remains pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 13 verified, 148 in progress, 33 not started. Only the explicitly closed MCP OAuth CIMD contract changed status; broader MCP and Codemode parity remains incomplete.",
   "feature_first_goal": {
     "updated": "2026-10-16",
     "priority_current_goal_families": [
@@ -147,18 +147,18 @@
     "status": "complete",
     "branch": "milestone/mcp-codemode-workflows",
     "main_base": "28f223c0c3b52ac9cd79a76c35a26c982999eee2",
-    "source_commit": "9ca5deb4640438893c3bc26a4bf16df3dd7eada7",
+    "source_commit": "834927bfc984cdc003149b3f15223ecc13f24a2b",
     "configured_pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "cimd_behavioral_source": "earendil-works/pi@1499466d8581035a4dec6c869725b8712aea4bbe",
     "scope": [
       "selectable /mcp server list/details/actions, typed status and reload, login/logout, enable/disable, exposure and reconnect",
-      "MCP OAuth DCR default, opt-in CIMD selection, callback ownership and manual redirect input",
+      "MCP OAuth DCR default, opt-in CIMD selection, configured loopback callback authority, defence-in-depth validation and manual redirect input",
       "Codemode nested classifier context bounds and composed MCP-to-Codemode agent workflow",
       "real process and Linux PTY acceptance for lifecycle, continuation and cleanup"
     ],
     "acceptance_evidence": {
       "mcp_process": "A Linux PTY opens bare /mcp, selects a configured stdio server, disables it, backs out to the list and conversation, completes a deterministic provider follow-up, and verifies CLI and fixture child exit. InteractiveMcpProcessTests separately covers typed status/disable/reload and changed status.",
-      "mcp_oauth": "McpOAuthMetadataTests covers DCR/CIMD configuration, shared and server-hash metadata documents, issuer-dependent callback paths, configured localhost host/port, browser origin/path rejection, and mismatched-then-valid manual redirects. McpOAuthTuiTests exercises manual redirect entry in the active Linux TUI PTY.",
+      "mcp_oauth": "McpOAuthLogin binds HttpListener to callback.GetLeftPart(UriPartial.Authority) + '/'; no wildcard prefix is used. Origin/path, Host-header and loopback remote-address checks remain. McpOAuthMetadataTests covers successful configured localhost and 127.0.0.1 callbacks, CIMD issuer-dependent paths, alternate-authority rejection, same-authority wrong-path rejection and mismatched-then-valid manual redirects. McpOAuthTuiTests exercises browser callback, manual redirect entry and cancellation in the active Linux TUI PTY.",
       "management_details": "InteractiveMcpCommandTests and McpRuntimeLifecycleTests cover /mcp help/details and lifecycle actions; detail output redacts args, credentials, authorization headers, sensitive URL components and provider identifiers.",
       "mcp_failure_isolation": "McpRuntimeTests.FailedServerDoesNotPreventHealthyConfiguredServerFromServingTools configures a failing server beside a healthy stdio server and verifies the healthy tool still executes.",
       "codemode_composition": "McpCodemodeWorkflowTests composes PiAgent/ConversationRun, one real stdio MCP call, Codemode nested read/write, parent continuation and follow-up; it verifies persisted history and fixture cleanup.",
@@ -171,20 +171,21 @@
       "restore": "dotnet restore PiSharp.slnx passed.",
       "format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed.",
       "build": "dotnet build PiSharp.slnx --no-restore --warnaserror -m:1 passed with 0 warnings and 0 errors.",
-      "dotnet_tests": "2,129 passed, 0 failed, 0 skipped (TMPDIR=/tmp).",
+      "dotnet_tests": "2,130 passed, 0 failed, 0 skipped (TMPDIR=/tmp).",
       "architecture_tests": "6 passed, 0 failed, 0 skipped.",
       "focused_workflow_tests": "Focused MCP/Codemode/manager acceptance filter: 23/23 passed, 0 skipped.",
+      "focused_oauth_tests": "Focused MCP OAuth and management tests: 59/59; OAuth metadata tests: 24/24; TUI OAuth tests: 7/7.",
       "node_terminal_tests": "24 passed, 0 failed, 0 skipped.",
       "python_terminal_tests": "50 passed, 0 failed, 0 skipped.",
-      "documentation_paths": "135 documents and 524 references verified after the milestone documentation update.",
+      "documentation_paths": "135 documents and 524 references verified after the pre-merge evidence update.",
       "mcp_conformance": "261 passed; the same eight classified failures remain as the established baseline (six elicitation cases, auth/basic-cimd, auth/scope-retry-limit); no new regressions.",
       "test_environment": "TMPDIR=/tmp for .NET path-display assertions; npm ci used --cache /tmp/pisharp-npm-cache because /home/philip/.npm is read-only."
     },
     "live_smoke": "One saved-Codex conversation and one local llama.cpp conversation each invoked a deterministic stdio MCP echo tool once, returned the expected result, and shut down the fixture. No private prompts, sessions or credentials were committed.",
     "exact_head_ci": {
-      "run_id": 38911196308,
-      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38911196308",
-      "head_sha": "9ca5deb4640438893c3bc26a4bf16df3dd7eada7",
+      "run_id": 38917328736,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38917328736",
+      "head_sha": "834927bfc984cdc003149b3f15223ecc13f24a2b",
       "status": "passed",
       "jobs": [
         "test",
@@ -7611,6 +7612,7 @@
         "Pinned Pi source earendil-works/pi@1499466d8581035a4dec6c869725b8712aea4bbe confirms DCR default, CIMD selection, supported configuration combinations, shared/hash document IDs, callback path rules and manual redirect completion.",
         "McpOAuthMetadataTests covers issuer-supported and no-issuer metadata/callback selection, configured localhost host/port, browser origin/path rejection, unsupported CIMD servers, clientSecret allowance, IPv6 rejection, and a mismatched-host manual redirect followed by a valid redirect.",
         "McpOAuthTuiTests verifies the manual redirect path through the active Linux TUI PTY while preserving the wrapped authorization hyperlink, copy action and cancellation behavior.",
+        "The pre-merge OAuth callback hardening binds the listener only to the configured loopback authority. Focused coverage verifies configured localhost and 127.0.0.1 sign-in, alternate-authority rejection, same-authority wrong-path rejection, and the existing browser/manual/TUI flows; callback validation remains defence in depth. Exact-head Linux CI passes on product source 834927bfc984cdc003149b3f15223ecc13f24a2b (run 38917328736).",
         "McpCredentialIsolationTests and McpOAuthTests cover per-server token identity and refresh persistence; the combined MCP OAuth/lifecycle/interactive filter passes 62/62, and the full .NET suite passes 2,124/2,124 with zero skips on source cf2929dff3836be931a1c27ebfd60f4b65a75c6d."
       ],
       "dependencies": [

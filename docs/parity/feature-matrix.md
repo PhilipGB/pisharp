@@ -1,9 +1,14 @@
 ## MCP + Codemode Workflow milestone — 2026-10-16
 
 The bounded milestone branch is `milestone/mcp-codemode-workflows`, based on main
-`28f223c0c3b52ac9cd79a76c35a26c982999eee2`, with product source
-`9ca5deb4640438893c3bc26a4bf16df3dd7eada7` and configured Pi pinned at
+`28f223c0c3b52ac9cd79a76c35a26c982999eee2`, with final product source
+`834927bfc984cdc003149b3f15223ecc13f24a2b` and configured Pi pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+The OAuth callback listener binds only to the configured loopback authority;
+origin/path, `Host` header and remote-address checks remain in place. Focused
+tests verify configured `localhost` and `127.0.0.1` callbacks, alternate
+authority and wrong-path rejection, manual redirects and TUI cancellation.
 
 The composed MCP/Codemode agent test verifies one MCP call, nested Codemode
 read/write, parent continuation, session follow-up and fixture cleanup. A Linux
