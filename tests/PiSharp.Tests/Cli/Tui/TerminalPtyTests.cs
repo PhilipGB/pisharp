@@ -387,12 +387,15 @@ public sealed class TerminalPtyTests
         Directory.CreateDirectory(agent);
         using var listener = StartLoopbackListener(out var port);
         var requests = new List<string>();
+        var terminalSettingsBefore = Path.Combine(root, "stty-before");
+        var terminalSettingsAfter = Path.Combine(root, "stty-after");
         using var serverTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
         var firstRequestReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var followUpRequestReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseFirstResponse = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var server = Task.Run(async () =>
         {
-            for (var index = 0; index < 2; index++)
+            for (var index = 0; index < 3; index++)
             {
                 var request = await listener.GetContextAsync().WaitAsync(serverTimeout.Token);
                 Assert.Equal("/v1/responses", request.Request.Url?.AbsolutePath);
@@ -404,18 +407,20 @@ public sealed class TerminalPtyTests
                     firstRequestReceived.TrySetResult();
                     await releaseFirstResponse.Task.WaitAsync(serverTimeout.Token);
                 }
+                if (index == 2) followUpRequestReceived.TrySetResult();
                 request.Response.ContentType = "text/event-stream";
                 request.Response.KeepAlive = false;
                 await using var writer = new StreamWriter(request.Response.OutputStream);
                 await writer.WriteAsync($"data: {{\"type\":\"response.created\",\"response\":{{\"id\":\"resp_{index}\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}}}\n\n");
                 if (index == 0)
                 {
+                    await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_0\",\"output_index\":0,\"content_index\":0,\"delta\":\"Text before tool call.\\n\"}\n\n");
                     await writer.WriteAsync("data: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"id\":\"fc_1\",\"type\":\"function_call\",\"call_id\":\"call_1\",\"name\":\"echo_ext\",\"arguments\":\"\"}}\n\n");
                     await writer.WriteAsync("data: {\"type\":\"response.function_call_arguments.done\",\"output_index\":0,\"item_id\":\"fc_1\",\"arguments\":\"{\\\"value\\\":\\\"pty\\\"}\"}\n\n");
                     await writer.WriteAsync("data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"id\":\"fc_1\",\"type\":\"function_call\",\"call_id\":\"call_1\",\"name\":\"echo_ext\",\"arguments\":\"{\\\"value\\\":\\\"pty\\\"}\"}}\n\n");
                 }
                 else
-                    await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_1\",\"output_index\":0,\"content_index\":0,\"delta\":\"PTY_REPLY_OK\"}\n\n");
+                    await writer.WriteAsync($"data: {{\"type\":\"response.output_text.delta\",\"item_id\":\"msg_{index}\",\"output_index\":0,\"content_index\":0,\"delta\":\"{(index == 1 ? "PTY_REPLY_OK" : "FOLLOWUP_AFTER_TOOL_OK")}\"}}\n\n");
                 await writer.WriteAsync($"data: {{\"type\":\"response.completed\",\"response\":{{\"id\":\"resp_{index}\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}}}\n\n");
                 await writer.WriteAsync("data: [DONE]\n\n");
                 await writer.FlushAsync();
@@ -440,7 +445,7 @@ public sealed class TerminalPtyTests
             start.ArgumentList.Add("-q");
             start.ArgumentList.Add("-e");
             start.ArgumentList.Add("-c");
-            start.ArgumentList.Add($"stty rows 24 cols 80; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --provider fixture --model fixture-model --no-session --offline --extension {ShellQuote(typeof(FixtureExtension).Assembly.Location)}");
+            start.ArgumentList.Add($"stty rows 24 cols 80; stty -g > {ShellQuote(terminalSettingsBefore)}; dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --provider fixture --model fixture-model --no-session --offline --extension {ShellQuote(typeof(FixtureExtension).Assembly.Location)}; command_status=$?; stty -g > {ShellQuote(terminalSettingsAfter)}; exit $command_status");
             start.ArgumentList.Add("/dev/null");
             start.Environment["PISHARP_AGENT_DIR"] = agent;
             start.Environment["PISHARP_FIXTURE_KEY"] = "pty-fixture-key";
@@ -450,6 +455,12 @@ public sealed class TerminalPtyTests
             var output = new StringBuilder();
             var idleReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var idleAfterReply = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var workingVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var preToolTextVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var toolCallVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var toolResultVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var idleAfterFollowUp = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var injectedErrorVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var settingsScopeShown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var steeringOptionsShown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var steeringSaved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -468,6 +479,9 @@ public sealed class TerminalPtyTests
                         var captured = output.ToString();
                         const string idleFrameEnd = "\u001b[?2026l";
                         if (captured.Contains(idleFrameEnd, StringComparison.Ordinal)) idleReady.TrySetResult();
+                        if (captured.Contains("Session error: fixture command failed", StringComparison.Ordinal)) injectedErrorVisible.TrySetResult();
+                        if (captured.Contains("extension call: pty", StringComparison.Ordinal)) toolCallVisible.TrySetResult();
+                        if (captured.Contains("extension result: pty / extension: pty", StringComparison.Ordinal)) toolResultVisible.TrySetResult();
                         if (captured.Contains("Settings scope", StringComparison.Ordinal)) settingsScopeShown.TrySetResult();
                         if (captured.Contains("Deliver all queued messages together", StringComparison.Ordinal))
                             steeringOptionsShown.TrySetResult();
@@ -479,6 +493,8 @@ public sealed class TerminalPtyTests
                         if (frames.Count > 0)
                         {
                             var frame = frames[^1].Screen;
+                            if (frame.Contains("Working", StringComparison.Ordinal)) workingVisible.TrySetResult();
+                            if (frame.Contains("Text before tool call.", StringComparison.Ordinal)) preToolTextVisible.TrySetResult();
                             var queuedCount = 0;
                             for (var position = 0;
                                 (position = frame.IndexOf(queuedMessage, position, StringComparison.Ordinal)) >= 0;
@@ -492,6 +508,10 @@ public sealed class TerminalPtyTests
                                 !frame.Contains(activeFooter, StringComparison.Ordinal) &&
                                 !frame.Contains("Working", StringComparison.Ordinal))
                                 idleAfterReply.TrySetResult();
+                            if (frame.Contains("FOLLOWUP_AFTER_TOOL_OK", StringComparison.Ordinal) &&
+                                !frame.Contains(activeFooter, StringComparison.Ordinal) &&
+                                !frame.Contains("Working", StringComparison.Ordinal))
+                                idleAfterFollowUp.TrySetResult();
                         }
                     }
                 }
@@ -518,6 +538,7 @@ public sealed class TerminalPtyTests
                 await process.StandardInput.WriteAsync("Use echo_ext with value pty.\r");
                 await process.StandardInput.FlushAsync();
                 await firstRequestReceived.Task.WaitAsync(timeout.Token);
+                await workingVisible.Task.WaitAsync(timeout.Token);
                 await process.StandardInput.WriteAsync("steering one\r");
                 await process.StandardInput.FlushAsync();
                 await firstSteeringQueued.Task.WaitAsync(timeout.Token);
@@ -525,7 +546,17 @@ public sealed class TerminalPtyTests
                 await process.StandardInput.FlushAsync();
                 await bothSteeringQueued.Task.WaitAsync(timeout.Token);
                 releaseFirstResponse.TrySetResult();
+                await preToolTextVisible.Task.WaitAsync(timeout.Token);
+                await toolCallVisible.Task.WaitAsync(timeout.Token);
+                await toolResultVisible.Task.WaitAsync(timeout.Token);
                 await idleAfterReply.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("follow up after tool\r");
+                await process.StandardInput.FlushAsync();
+                await followUpRequestReceived.Task.WaitAsync(timeout.Token);
+                await idleAfterFollowUp.Task.WaitAsync(timeout.Token);
+                await process.StandardInput.WriteAsync("/explode\r");
+                await process.StandardInput.FlushAsync();
+                await injectedErrorVisible.Task.WaitAsync(timeout.Token);
                 await process.StandardInput.WriteAsync("/quit\r");
                 await process.StandardInput.FlushAsync();
                 await process.WaitForExitAsync(timeout.Token);
@@ -543,13 +574,19 @@ public sealed class TerminalPtyTests
 
             string terminalOutput;
             lock (output) terminalOutput = output.ToString();
-            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(1, process.ExitCode);
+            Assert.Contains("Text before tool call.", terminalOutput);
             Assert.Contains("extension call: pty", terminalOutput);
             Assert.Contains("extension result: pty / extension: pty", terminalOutput);
             Assert.Contains("PTY_REPLY_OK", terminalOutput);
+            Assert.Contains("FOLLOWUP_AFTER_TOOL_OK", terminalOutput);
+            Assert.Contains("Session error: fixture command failed", terminalOutput);
             Assert.Contains("\u001b[?1049l", terminalOutput);
+            Assert.Equal(await File.ReadAllTextAsync(terminalSettingsBefore), await File.ReadAllTextAsync(terminalSettingsAfter));
             Assert.Contains("function_call_output", requests[1]);
             Assert.Contains("extension: pty", requests[1]);
+            Assert.Contains("follow up after tool", requests[2]);
+            Assert.Contains("extension: pty", requests[2]);
             Assert.Contains("steering one", requests[1]);
             Assert.Contains("steering two", requests[1]);
             Assert.True(requests[1].IndexOf("steering one", StringComparison.Ordinal) <
@@ -1540,9 +1577,14 @@ public sealed class TerminalPtyTests
                 new Uri(ConnectionSettings.LocalEndpoint).ToString());
             conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "first prompt"));
             conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "first answer"));
-            var selectedHead = conversation.Tree.HeadId!;
+            var sharedHead = conversation.Tree.HeadId!;
             conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "second prompt"));
             conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "second answer"));
+            var selectedHead = conversation.Tree.HeadId!;
+            conversation.Tree.Select(sharedHead);
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "alternate prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "alternate answer"));
+            var alternateHead = conversation.Tree.HeadId!;
             var sessionPath = store.NewPath(conversation);
             await store.SaveAsync(conversation, sessionPath);
 
@@ -1591,7 +1633,7 @@ public sealed class TerminalPtyTests
             await process.StandardInput.WriteAsync("/tree\r");
             await process.StandardInput.FlushAsync();
             await pickerOpened.Task.WaitAsync(timeout.Token);
-            await process.StandardInput.WriteAsync("first answer\r");
+            await process.StandardInput.WriteAsync("second answer\r");
             await process.StandardInput.FlushAsync();
             await branchSelected.Task.WaitAsync(timeout.Token);
             await process.StandardInput.WriteAsync("/session\r/quit\r");
@@ -1602,9 +1644,12 @@ public sealed class TerminalPtyTests
             var capturedOutput = await stdout;
             var saved = await store.LoadAsync(sessionPath);
             Assert.Equal(0, process.ExitCode);
-            Assert.Contains("assistant: first answer", capturedOutput);
+            Assert.Contains("assistant: second answer", capturedOutput);
             Assert.Contains($"Selected {selectedHead[..12]}", capturedOutput);
             Assert.Equal(selectedHead, saved.Tree.HeadId);
+            Assert.Contains(saved.Tree.Entries, entry => entry.Id == alternateHead);
+            Assert.Equal(["first prompt", "first answer", "second prompt", "second answer"],
+                saved.ActiveMessages().Select(message => message.Text));
             Assert.DoesNotContain("Session error:", capturedOutput);
             Assert.DoesNotContain("Agent error:", await stderr);
         }

@@ -164,6 +164,34 @@ public sealed class InteractiveTranscriptTests
     }
 
     [Fact]
+    public void InteractiveTranscriptShowsRetryProgressAndOutcomeInTheTerminal()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 12);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+
+        transcript.Render(new AgentLifecycleEvent("auto_retry_start", Error: "overloaded\u001b[2J")
+        {
+            RetryAttempt = 1,
+            RetryMaxAttempts = 3,
+            RetryDelayMs = 1_500
+        });
+        transcript.Render(new AgentLifecycleEvent("auto_retry_end") { RetrySuccess = true });
+        transcript.Render(new AgentLifecycleEvent("auto_retry_end")
+        {
+            RetrySuccess = false,
+            RetryFinalError = "retry budget exhausted"
+        });
+
+        var frame = TerminalOutputFrameReader.Read(output.ToString(), rows: 12, columns: 80)[^1].Screen;
+        Assert.Contains("Retrying provider request (1/3) in 1.5s: overloaded[2J", frame);
+        Assert.Contains("Provider retry succeeded.", frame);
+        Assert.Contains("Provider retry stopped: retry budget exhausted", frame);
+        Assert.DoesNotContain('\u001b', frame);
+    }
+
+    [Fact]
     public void SearchToolDetailsRenderLimitAndByteTruncationSummary()
     {
         using var output = new StringWriter();

@@ -353,6 +353,111 @@ public sealed class LlamaRouterManagerTuiTests
     }
 
     [Fact]
+    public async Task ModelPickerCancelAndFailedSwitchPreserveTheWorkingProviderAcrossSuccessfulSwitches()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-switch-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var sessions = Path.Combine(root, "sessions");
+        var ttyPathFile = Path.Combine(root, "tty-path");
+        Directory.CreateDirectory(agent);
+        await using var server = new RouterServer(chatResponse: "MODEL_SWITCH_OK");
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), $$$"""
+            {"providers":{
+              "fixture":{"baseUrl":"{{{server.Origin}}}/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]},
+              "blocked":{"baseUrl":"{{{server.Origin}}}/v1","apiKeyEnv":"PISHARP_BLOCKED_KEY","models":[{"id":"blocked-model"}]}
+            }}
+            """);
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+            sessionDirectory: sessions, ttyPathFile: ttyPathFile);
+        try
+        {
+            Task<string> WaitForEditorModelAsync(string model, int after = 0, int rows = 30, int columns = 100) => terminal.WaitFrameAsync(frame =>
+                frame.Contains(model, StringComparison.Ordinal) &&
+                !frame.Contains("Model Name:", StringComparison.Ordinal) &&
+                !frame.Contains("Only showing models from configured providers", StringComparison.Ordinal) &&
+                !frame.Contains("llama.cpp models", StringComparison.Ordinal), after, rows, columns);
+            async Task WaitForTurnAsync(string prompt, int expectedRequestCount, int after)
+            {
+                using var requestTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                while (server.Requests.Count(item => item.Method == "POST" &&
+                    item.Path == "/v1/chat/completions") < expectedRequestCount)
+                    await Task.Delay(25, requestTimeout.Token);
+                await terminal.WaitFrameAsync(frame => frame.Contains(prompt, StringComparison.Ordinal) &&
+                    Regex.Matches(frame, Regex.Escape("MODEL_SWITCH_OK")).Count >= expectedRequestCount &&
+                    !frame.Contains("Working", StringComparison.Ordinal), after);
+            }
+            await WaitForEditorModelAsync("qwen");
+
+            var mark = terminal.Mark;
+            await terminal.SendAsync("/model\n");
+            await terminal.WaitFrameAsync(frame => frame.Contains("Model Name: qwen", StringComparison.Ordinal) &&
+                frame.Contains("fixture-model", StringComparison.Ordinal), mark);
+            await ProcessTestHelpers.WaitForFileAsync(ttyPathFile);
+            var ttyPath = (await File.ReadAllTextAsync(ttyPathFile)).Trim();
+            var resizeMark = terminal.Mark;
+            await ResizeLinuxPtyAsync(ttyPath, rows: 18, columns: 60);
+            await terminal.WaitFrameAsync(frame => frame.Contains("Model Name: qwen", StringComparison.Ordinal) &&
+                frame.Contains("fixture-model", StringComparison.Ordinal), resizeMark, rows: 18, columns: 60);
+            var cancelMark = terminal.Mark;
+            await terminal.SendRawAsync("\u001b");
+            await WaitForEditorModelAsync("qwen", cancelMark, rows: 18, columns: 60);
+            var restoreMark = terminal.Mark;
+            await ResizeLinuxPtyAsync(ttyPath, rows: 30, columns: 100);
+            await terminal.SendRawAsync("\u001b[D\u001b[C");
+            await WaitForEditorModelAsync("qwen", restoreMark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("/model blocked/blocked-model\n");
+            await terminal.WaitTextAsync("Provider 'blocked' is not authenticated", mark);
+            await WaitForEditorModelAsync("qwen", mark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("Confirm the active router still works.\n");
+            await WaitForTurnAsync("Confirm the active router still works.", 1, mark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("/model\n");
+            await terminal.WaitFrameAsync(frame => frame.Contains("Model Name: qwen", StringComparison.Ordinal) &&
+                frame.Contains("fixture-model", StringComparison.Ordinal), mark);
+            await terminal.SendAsync("fixture-model");
+            await terminal.WaitFrameAsync(frame => frame.Contains("> fixture-model", StringComparison.Ordinal) &&
+                frame.Contains("Model Name: fixture-model", StringComparison.Ordinal), mark);
+            await terminal.SendRawAsync("\r");
+            await terminal.WaitTextAsync("Model: fixture-model", mark);
+            await WaitForEditorModelAsync("fixture-model", mark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("Check the fixture provider.\n");
+            await WaitForTurnAsync("Check the fixture provider.", 2, mark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("/model\n");
+            await terminal.WaitFrameAsync(frame => frame.Contains("Model Name: fixture-model", StringComparison.Ordinal) &&
+                frame.Contains("qwen", StringComparison.Ordinal), mark);
+            await terminal.SendAsync("qwen");
+            await terminal.WaitFrameAsync(frame => frame.Contains("> qwen", StringComparison.Ordinal) &&
+                frame.Contains("Model Name: qwen", StringComparison.Ordinal), mark);
+            await terminal.SendRawAsync("\r");
+            await terminal.WaitTextAsync("Model: qwen", mark);
+            await WaitForEditorModelAsync("qwen", mark);
+
+            mark = terminal.Mark;
+            await terminal.SendAsync("Continue on the router provider.\n");
+            await WaitForTurnAsync("Continue on the router provider.", 3, mark);
+
+            var requests = server.Requests.Where(item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions").ToArray();
+            Assert.Equal(["qwen", "fixture-model", "qwen"], requests.Select(request =>
+                JsonDocument.Parse(request.Body!).RootElement.GetProperty("model").GetString()));
+            Assert.Equal(["Bearer local", "Bearer fixture-key", "Bearer local"],
+                requests.Select(request => request.Authorization));
+            await terminal.QuitAsync(expectedExitCode: 1);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task ResumeSwitchesToSavedLlamaModelAndRestoresHistory()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
@@ -466,9 +571,12 @@ public sealed class LlamaRouterManagerTuiTests
         await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
             {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
             """);
+        await File.WriteAllTextAsync(Path.Combine(root, "facts.txt"), "fixture facts");
+        await File.WriteAllTextAsync(Path.Combine(root, "facts.md"), "alternate completion");
+        var ttyPathFile = Path.Combine(root, "tty-path");
         await using var server = new RouterServer(chatResponse: "MULTILINE_PROMPT_OK");
         await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
-            sessionDirectory: Path.Combine(root, "sessions"), noTools: true);
+            sessionDirectory: Path.Combine(root, "sessions"), noTools: true, ttyPathFile: ttyPathFile);
         try
         {
             await terminal.WaitFrameAsync(frame => frame.Contains("qwen", StringComparison.Ordinal) &&
@@ -479,6 +587,19 @@ public sealed class LlamaRouterManagerTuiTests
             await terminal.WaitTextAsync("Summarize the answer in one sentence.");
             await terminal.SendRawAsync(string.Concat(Enumerable.Repeat("\u001b[D", originalPrompt.Length)) + "Please ");
             await terminal.WaitTextAsync("Please Read facts.txt and answer with its content.");
+            await ProcessTestHelpers.WaitForFileAsync(ttyPathFile);
+            var ttyPath = (await File.ReadAllTextAsync(ttyPathFile)).Trim();
+            var narrowMark = terminal.Mark;
+            await ResizeLinuxPtyAsync(ttyPath, rows: 18, columns: 60);
+            await terminal.SendRawAsync("\u001b[D\u001b[C");
+            await terminal.WaitFrameAsync(frame => frame.Contains("Please Read facts.txt and answer with its content.", StringComparison.Ordinal) &&
+                frame.Contains("Summarize the answer in one sentence.", StringComparison.Ordinal), narrowMark,
+                rows: 18, columns: 60);
+            var wideMark = terminal.Mark;
+            await ResizeLinuxPtyAsync(ttyPath, rows: 30, columns: 100);
+            await terminal.SendRawAsync("\u001b[D\u001b[C");
+            await terminal.WaitFrameAsync(frame => frame.Contains("Please Read facts.txt and answer with its content.", StringComparison.Ordinal) &&
+                frame.Contains("Summarize the answer in one sentence.", StringComparison.Ordinal), wideMark);
             await terminal.SendRawAsync("\r");
             await terminal.WaitFrameAsync(frame => frame.Contains("MULTILINE_PROMPT_OK", StringComparison.Ordinal) &&
                 !frame.Contains("Working", StringComparison.Ordinal));
@@ -494,6 +615,46 @@ public sealed class LlamaRouterManagerTuiTests
                 : string.Concat(content.EnumerateArray().Select(part => part.GetProperty("text").GetString()));
             Assert.Equal("Please Read facts.txt and answer with its content.\nSummarize the answer in one sentence.",
                 submittedPrompt);
+
+            var historyMark = terminal.Mark;
+            await terminal.SendRawAsync("\u001b[A");
+            var recalled = await terminal.WaitFrameAsync(frame =>
+                Regex.Matches(frame, Regex.Escape("Read facts.txt and answer with its content.")).Count >= 2,
+                historyMark);
+            Assert.Contains("Summarize the answer in one sentence.", recalled);
+            var resubmitMark = terminal.Mark;
+            await terminal.SendRawAsync("\r");
+            using (var requestTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
+            {
+                while (server.Requests.Count(item => item.Method == "POST" &&
+                    item.Path == "/v1/chat/completions") < 2)
+                    await Task.Delay(25, requestTimeout.Token);
+            }
+            var historyRequests = server.Requests.Where(item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions").ToArray();
+            Assert.Equal(2, historyRequests.Length);
+            using var recalledBody = JsonDocument.Parse(historyRequests[1].Body!);
+            var recalledUsers = recalledBody.RootElement.GetProperty("messages").EnumerateArray()
+                .Where(message => message.GetProperty("role").GetString() == "user").ToArray();
+            Assert.Equal(2, recalledUsers.Length);
+            var recalledContent = recalledUsers[^1].GetProperty("content");
+            var recalledPrompt = recalledContent.ValueKind == JsonValueKind.String
+                ? recalledContent.GetString()
+                : string.Concat(recalledContent.EnumerateArray().Select(part => part.GetProperty("text").GetString()));
+            Assert.Equal(submittedPrompt, recalledPrompt);
+            await terminal.WaitFrameAsync(frame => frame.Contains("MULTILINE_PROMPT_OK", StringComparison.Ordinal) &&
+                Regex.Matches(frame, Regex.Escape("MULTILINE_PROMPT_OK")).Count >= 2 &&
+                Regex.Matches(frame, Regex.Escape("Please Read facts.txt and answer with its content.")).Count >= 2 &&
+                !frame.Contains("Working", StringComparison.Ordinal), resubmitMark);
+
+            await terminal.SendRawAsync("@facts\t");
+            await terminal.WaitFrameAsync(frame => frame.Contains("Complete input", StringComparison.Ordinal));
+            await terminal.SendRawAsync("\u001b[B\r");
+            await terminal.WaitFrameAsync(frame => frame.Contains("@facts.txt", StringComparison.Ordinal) &&
+                !frame.Contains("Complete input", StringComparison.Ordinal));
+            var clearMark = terminal.Mark;
+            await terminal.SendRawAsync("\u0001\u000b");
+            await terminal.WaitFrameAsync(frame => !frame.Contains("@facts.txt", StringComparison.Ordinal), clearMark);
             await terminal.QuitAsync();
         }
         finally { Directory.Delete(root, recursive: true); }
@@ -511,74 +672,92 @@ public sealed class LlamaRouterManagerTuiTests
             {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
             """);
         var streamedRows = Enumerable.Range(0, 60).Select(index => $"STREAM_ROW_{index:D2}\n").ToArray();
-        await using var server = new RouterServer(chatResponse: "FOLLOWUP_OK", streamedChatChunks: streamedRows,
-            pauseAfterChunk: 35);
-        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
-            sessionDirectory: Path.Combine(root, "sessions"), noTools: true, ttyPathFile: ttyPathFile);
         try
         {
-            await terminal.WaitTextAsync("qwen");
-            await terminal.SendAsync("Stream a long answer.\n");
-            await server.LongChatPaused.Task.WaitAsync(TimeSpan.FromSeconds(15));
-            await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_34", StringComparison.Ordinal));
-
-            var scrollMark = terminal.Mark;
-            await terminal.SendRawAsync("\u001b[5~");
-            var scrolled = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == "STREAM_ROW_00", scrollMark);
-            var anchor = FirstStreamRow(scrolled);
-            Assert.Equal("STREAM_ROW_00", anchor);
-
-            await ProcessTestHelpers.WaitForFileAsync(ttyPathFile);
-            var ttyPath = (await File.ReadAllTextAsync(ttyPathFile)).Trim();
-            using (var resize = Process.Start(new ProcessStartInfo("stty")
+            await using var server = new RouterServer(chatResponse: "FOLLOWUP_OK", streamedChatChunks: streamedRows,
+                pauseAfterChunk: 35, pauseAgainAfterChunk: 45);
+            await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+                sessionDirectory: Path.Combine(root, "sessions"), noTools: true, ttyPathFile: ttyPathFile);
+            try
             {
-                RedirectStandardError = true,
-                ArgumentList = { "-F", ttyPath, "rows", "18", "cols", "60" }
-            })!)
-            {
-                var error = resize.StandardError.ReadToEndAsync();
-                await resize.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-                Assert.True(resize.ExitCode == 0, await error);
-                Assert.Equal("", await error);
+                await terminal.WaitTextAsync("qwen");
+                await terminal.SendAsync("Stream a long answer.\n");
+                await server.LongChatPaused.Task.WaitAsync(TimeSpan.FromSeconds(15));
+                await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_34", StringComparison.Ordinal));
+
+                var scrollMark = terminal.Mark;
+                await terminal.SendRawAsync("\u001b[5~");
+                var scrolled = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == "STREAM_ROW_00", scrollMark);
+                var anchor = FirstStreamRow(scrolled);
+                Assert.Equal("STREAM_ROW_00", anchor);
+
+                await ProcessTestHelpers.WaitForFileAsync(ttyPathFile);
+                var ttyPath = (await File.ReadAllTextAsync(ttyPathFile)).Trim();
+                using (var resize = Process.Start(new ProcessStartInfo("stty")
+                {
+                    RedirectStandardError = true,
+                    ArgumentList = { "-F", ttyPath, "rows", "18", "cols", "60" }
+                })!)
+                {
+                    var error = resize.StandardError.ReadToEndAsync();
+                    await resize.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                    Assert.True(resize.ExitCode == 0, await error);
+                    Assert.Equal("", await error);
+                }
+
+                var resizeMark = terminal.Mark;
+                var resized = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor,
+                    resizeMark, rows: 18, columns: 60);
+                Assert.Equal(anchor, FirstStreamRow(resized));
+                var initialScrollRows = ScrolledRows(resized);
+                Assert.NotNull(initialScrollRows);
+
+                var continuedMark = terminal.Mark;
+                server.ReleaseLongChatStream();
+                await server.LongChatSecondPaused.Task.WaitAsync(TimeSpan.FromSeconds(15));
+                var continued = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor &&
+                    ScrolledRows(frame) is { } currentScrollRows && currentScrollRows > initialScrollRows,
+                    continuedMark, rows: 18, columns: 60);
+                Assert.Equal(anchor, FirstStreamRow(continued));
+                Assert.True(ScrolledRows(continued) > initialScrollRows);
+
+                var latestMark = terminal.Mark;
+                await terminal.SendRawAsync("\u001b[F");
+                var latest = await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_44", StringComparison.Ordinal) &&
+                    !frame.Contains("↑", StringComparison.Ordinal), latestMark, rows: 18, columns: 60);
+                Assert.NotEqual(anchor, FirstStreamRow(latest));
+
+                server.ReleaseLongChatSecondPause();
+                await server.LongChatCompleted.Task.WaitAsync(TimeSpan.FromSeconds(15));
+                await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_59", StringComparison.Ordinal) &&
+                    !frame.Contains("↑", StringComparison.Ordinal) && !frame.Contains("Working", StringComparison.Ordinal),
+                    terminal.Mark - 1, rows: 18, columns: 60);
+
+                await terminal.SendAsync("follow up prompt\n");
+                await terminal.WaitFrameAsync(frame => frame.Contains("FOLLOWUP_OK", StringComparison.Ordinal) &&
+                    !frame.Contains("Working", StringComparison.Ordinal), rows: 18, columns: 60);
+                await terminal.QuitAsync();
+
+                var requests = server.Requests.Where(item => item.Method == "POST" &&
+                    item.Path == "/v1/chat/completions").ToArray();
+                Assert.Equal(2, requests.Length);
+                using var followUp = JsonDocument.Parse(requests[1].Body!);
+                var history = followUp.RootElement.GetProperty("messages").ToString();
+                Assert.Contains("Stream a long answer.", history, StringComparison.Ordinal);
+                Assert.Contains("STREAM_ROW_00", history, StringComparison.Ordinal);
+                Assert.Contains("STREAM_ROW_59", history, StringComparison.Ordinal);
+                for (var index = 0; index < streamedRows.Length; index++)
+                    Assert.Single(Regex.Matches(history, $"STREAM_ROW_{index:D2}").Cast<Match>());
+                Assert.Contains("follow up prompt", history, StringComparison.Ordinal);
             }
-
-            var resizeMark = terminal.Mark;
-            var resized = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor,
-                resizeMark, rows: 18, columns: 60);
-            Assert.Equal(anchor, FirstStreamRow(resized));
-
-            var latestMark = terminal.Mark;
-            await terminal.SendRawAsync("\u001b[F");
-            var latest = await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_34", StringComparison.Ordinal) &&
-                !frame.Contains("↑", StringComparison.Ordinal), latestMark, rows: 18, columns: 60);
-            Assert.NotEqual(anchor, FirstStreamRow(latest));
-
-            server.ReleaseLongChatStream();
-            await server.LongChatCompleted.Task.WaitAsync(TimeSpan.FromSeconds(15));
-            await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_59", StringComparison.Ordinal) &&
-                !frame.Contains("↑", StringComparison.Ordinal) && !frame.Contains("Working", StringComparison.Ordinal),
-                terminal.Mark - 1, rows: 18, columns: 60);
-
-            await terminal.SendAsync("follow up prompt\n");
-            await terminal.WaitFrameAsync(frame => frame.Contains("FOLLOWUP_OK", StringComparison.Ordinal) &&
-                !frame.Contains("Working", StringComparison.Ordinal), rows: 18, columns: 60);
-            await terminal.QuitAsync();
-
-            var requests = server.Requests.Where(item => item.Method == "POST" &&
-                item.Path == "/v1/chat/completions").ToArray();
-            Assert.Equal(2, requests.Length);
-            using var followUp = JsonDocument.Parse(requests[1].Body!);
-            var history = followUp.RootElement.GetProperty("messages").ToString();
-            Assert.Contains("Stream a long answer.", history, StringComparison.Ordinal);
-            Assert.Contains("STREAM_ROW_00", history, StringComparison.Ordinal);
-            Assert.Contains("STREAM_ROW_59", history, StringComparison.Ordinal);
-            Assert.Single(Regex.Matches(history, "STREAM_ROW_00").Cast<Match>());
-            Assert.Single(Regex.Matches(history, "STREAM_ROW_59").Cast<Match>());
-            Assert.Contains("follow up prompt", history, StringComparison.Ordinal);
+            finally
+            {
+                server.ReleaseLongChatStream();
+                server.ReleaseLongChatSecondPause();
+            }
         }
         finally
         {
-            server.ReleaseLongChatStream();
             Directory.Delete(root, recursive: true);
         }
     }
@@ -587,6 +766,12 @@ public sealed class LlamaRouterManagerTuiTests
     {
         var match = Regex.Match(frame, "STREAM_ROW_\\d+");
         return match.Success ? match.Value : null;
+    }
+
+    private static int? ScrolledRows(string frame)
+    {
+        var match = Regex.Match(frame, "↑ (?<rows>\\d+) rows");
+        return match.Success && int.TryParse(match.Groups["rows"].Value, out var rows) ? rows : null;
     }
 
     [Fact]
@@ -669,6 +854,20 @@ public sealed class LlamaRouterManagerTuiTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    private static async Task ResizeLinuxPtyAsync(string ttyPath, int rows, int columns)
+    {
+        using var resize = Process.Start(new ProcessStartInfo("stty")
+        {
+            RedirectStandardError = true,
+            ArgumentList = { "-F", ttyPath, "rows", rows.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                "cols", columns.ToString(System.Globalization.CultureInfo.InvariantCulture) }
+        })!;
+        var error = resize.StandardError.ReadToEndAsync();
+        await resize.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(resize.ExitCode == 0, await error);
+        Assert.Equal("", await error);
+    }
+
     private sealed class RouterServer : IAsyncDisposable
     {
         private readonly HttpListener _listener = new();
@@ -684,18 +883,21 @@ public sealed class LlamaRouterManagerTuiTests
         private readonly bool _holdChatAfterPartial;
         private readonly string[]? _streamedChatChunks;
         private readonly int _pauseAfterChunk;
+        private readonly int _pauseAgainAfterChunk;
         private int _chatRequestCount;
         private readonly ConcurrentBag<Task> _background = [];
         private readonly TaskCompletionSource _downloadRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _loadProgressRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _chatRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _longChatRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _longChatSecondRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _catalogRequests;
         public ConcurrentQueue<(string Method, string Path, string? Authorization, string? Body)> Requests { get; } = new();
         public TaskCompletionSource LoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource RestoreLoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource ChatPartialSent { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource LongChatPaused { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource LongChatSecondPaused { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource LongChatCompleted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _restoreLoadRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource DownloadRequested => _downloadRequested;
@@ -710,7 +912,7 @@ public sealed class LlamaRouterManagerTuiTests
         public RouterServer(bool holdLoad = false, bool failFirstCatalog = false, bool holdDownload = false,
             bool sleepingQwen = false, bool holdRestore = false, string? chatResponse = null,
             bool readToolCallFirst = false, bool holdChatAfterPartial = false, string? resumedChatResponse = null,
-            string[]? streamedChatChunks = null, int pauseAfterChunk = 0)
+            string[]? streamedChatChunks = null, int pauseAfterChunk = 0, int pauseAgainAfterChunk = 0)
         {
             _holdLoad = holdLoad;
             _failFirstCatalog = failFirstCatalog;
@@ -722,6 +924,7 @@ public sealed class LlamaRouterManagerTuiTests
             _holdChatAfterPartial = holdChatAfterPartial;
             _streamedChatChunks = streamedChatChunks;
             _pauseAfterChunk = pauseAfterChunk;
+            _pauseAgainAfterChunk = pauseAgainAfterChunk;
             if (sleepingQwen) Statuses["qwen"] = "sleeping";
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
@@ -798,6 +1001,8 @@ public sealed class LlamaRouterManagerTuiTests
                             response = JsonSerializer.Serialize(new { data = values });
                         }
                     }
+                    else if (context.Request.HttpMethod == "GET" && path == "/v1/models")
+                        response = "{\"data\":[{\"id\":\"fixture-model\"}]}";
                     else if (context.Request.HttpMethod == "GET" && path == "/models/sse")
                     {
                         contentType = "text/event-stream";
@@ -881,6 +1086,11 @@ public sealed class LlamaRouterManagerTuiTests
                                 {
                                     LongChatPaused.TrySetResult();
                                     await _longChatRelease.Task.WaitAsync(_shutdown.Token);
+                                }
+                                if (index + 1 == _pauseAgainAfterChunk)
+                                {
+                                    LongChatSecondPaused.TrySetResult();
+                                    await _longChatSecondRelease.Task.WaitAsync(_shutdown.Token);
                                 }
                             }
                             var last = new
@@ -1016,12 +1226,14 @@ public sealed class LlamaRouterManagerTuiTests
 
         public void ReleaseChatStream() => _chatRelease.TrySetResult();
         public void ReleaseLongChatStream() => _longChatRelease.TrySetResult();
+        public void ReleaseLongChatSecondPause() => _longChatSecondRelease.TrySetResult();
 
         public async ValueTask DisposeAsync()
         {
             _restoreLoadRelease.TrySetResult();
             _chatRelease.TrySetResult();
             _longChatRelease.TrySetResult();
+            _longChatSecondRelease.TrySetResult();
             _shutdown.Cancel();
             _listener.Close();
             await _serve;
@@ -1101,7 +1313,7 @@ public sealed class LlamaRouterManagerTuiTests
 
         public ManagerTerminal(string root, string agent, string serverUrl, string? hfEndpoint = null,
             string? hfToken = null, bool llamaProvider = false, string? sessionDirectory = null, bool noTools = true,
-            bool continueSession = false, string? ttyPathFile = null)
+            bool continueSession = false, string? ttyPathFile = null, bool offline = false)
         {
             _editorModelText = llamaProvider ? "llama.cpp/qwen" : "fixture-model";
             var start = new ProcessStartInfo("/usr/bin/script")
@@ -1120,12 +1332,14 @@ public sealed class LlamaRouterManagerTuiTests
             arguments += sessionDirectory is null ? " --no-session" : " --session-dir " + ShellQuote(sessionDirectory);
             if (continueSession) arguments += " --continue";
             if (noTools) arguments += " --no-tools";
+            if (offline && llamaProvider) arguments += " --offline";
             var terminalSetup = "stty rows 30 cols 100;";
             if (ttyPathFile is not null) terminalSetup += " tty > " + ShellQuote(ttyPathFile) + ";";
             start.ArgumentList.Add(terminalSetup + " exec dotnet " + ShellQuote(typeof(CliArguments).Assembly.Location) + arguments);
             start.ArgumentList.Add("/dev/null");
             foreach (var name in new[] { "LLAMA_BASE_URL", "LLAMA_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL",
-                         "PISHARP_MODEL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH" })
+                         "PISHARP_MODEL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH",
+                         "PISHARP_BLOCKED_KEY" })
                 start.Environment.Remove(name);
             start.Environment["PISHARP_AGENT_DIR"] = agent;
             start.Environment["LLAMA_BASE_URL"] = serverUrl;
@@ -1205,7 +1419,7 @@ public sealed class LlamaRouterManagerTuiTests
             lock (_gate) { _closed = true; _changed.TrySetResult(); }
         }
 
-        public async Task QuitAsync()
+        public async Task QuitAsync(int expectedExitCode = 0)
         {
             await SendAsync("/quit\n");
             _process.StandardInput.Close();
@@ -1215,7 +1429,7 @@ public sealed class LlamaRouterManagerTuiTests
                 throw new TimeoutException("The llama.cpp manager did not accept /quit.\n" + Output[^Math.Min(Output.Length, 5000)..], error);
             }
             await _readOutput;
-            Assert.Equal(0, _process.ExitCode);
+            Assert.Equal(expectedExitCode, _process.ExitCode);
             Assert.Equal("", await _readError);
         }
 
