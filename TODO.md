@@ -24,8 +24,9 @@ this goal; queue order remains inventory.
 Format verification and a warnings-as-errors build pass; the focused discovery
 and Ctrl+R tests pass 6/6. The full local suite had 2,086 passes and one
 ephemeral-port bind failure (2,087 total, zero skipped); the affected
-classifier test passed 2/2 when rerun alone. Exact-head CI for this PR is
-pending.
+classifier test passed 2/2 when rerun alone. Exact-head Linux CI at PR
+checkpoint `cc4557a5` passed both test and MCP conformance jobs; CI passed
+2,087/2,087 .NET tests with zero skips ([run 38826952362](https://github.com/PhilipGB/pisharp/actions/runs/38826952362)).
 Counts are **12 verified, 148 in progress, 34 not started** across the 194
 required capabilities. Full parity and the final source audit remain incomplete.
 
