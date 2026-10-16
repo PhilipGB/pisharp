@@ -54,6 +54,17 @@ public sealed class McpOAuthMetadataTests
         Assert.Contains("/callback", error.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void CimDAcceptsClientSecretAndRejectsIpv6CallbackHost()
+    {
+        using var accepted = JsonDocument.Parse("""{"clientRegistration":"cimd","clientSecret":"secret"}""");
+        using var rejected = JsonDocument.Parse("""{"clientRegistration":"cimd","callbackUrl":"http://[::1]:38119/callback"}""");
+
+        Assert.Equal("secret", McpOAuthSettings.Parse(accepted.RootElement).ClientSecret);
+        var error = Assert.Throws<ArgumentException>(() => McpOAuthSettings.Parse(rejected.RootElement));
+        Assert.Contains("localhost or 127.0.0.1", error.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("https://idp.example/oauth-metadata")]
     [InlineData("http://localhost:8080/oauth-metadata")]
@@ -206,10 +217,15 @@ public sealed class McpOAuthMetadataTests
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         try
         {
+            var callbackPort = GetLoopbackPort();
             using var config = JsonDocument.Parse(JsonSerializer.Serialize(new
             {
                 url = server.Origin + "/mcp",
-                oauth = new { clientRegistration = "cimd" }
+                oauth = new
+                {
+                    clientRegistration = "cimd",
+                    callbackUrl = "http://localhost:" + callbackPort + "/callback"
+                }
             }));
             var entry = McpConfiguration.Parse("protected", config.RootElement, "mcp.json", "global");
             var output = new LoginOutput();
@@ -221,13 +237,15 @@ public sealed class McpOAuthMetadataTests
             Assert.Equal(issParameterSupported ? "https://pi.dev/oauth/client.json" :
                 "https://pi.dev/oauth/" + id + "/client.json", query["client_id"]);
             var redirect = new Uri(query["redirect_uri"]!);
+            Assert.Equal("localhost", redirect.Host);
+            Assert.Equal(callbackPort, redirect.Port);
             Assert.Equal(issParameterSupported ? "/callback" : "/callback/" + id, redirect.AbsolutePath);
 
             var callbackQuery = "code=fixture-code&state=" + Uri.EscapeDataString(query["state"]!);
             if (issParameterSupported) callbackQuery += "&iss=" + Uri.EscapeDataString(server.Origin);
             var callbackUri = new UriBuilder(redirect) { Query = callbackQuery }.Uri;
             using var browser = new HttpClient();
-            var wrongOrigin = new UriBuilder(callbackUri) { Host = "localhost" }.Uri;
+            var wrongOrigin = new UriBuilder(callbackUri) { Host = "127.0.0.1" }.Uri;
             Assert.Equal(HttpStatusCode.BadRequest, (await browser.GetAsync(wrongOrigin, deadline.Token)).StatusCode);
             var wrongPath = new UriBuilder(callbackUri) { Path = "/wrong" }.Uri;
             Assert.Equal(HttpStatusCode.BadRequest, (await browser.GetAsync(wrongPath, deadline.Token)).StatusCode);
@@ -266,10 +284,59 @@ public sealed class McpOAuthMetadataTests
         finally { Directory.Delete(root, recursive: true); }
     }
 
+    [Fact]
+    public async Task LoginAcceptsManualRedirectUrlMatchingTheExpectedCallback()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-mcp-oauth-manual-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await using var server = new OAuthServer();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        try
+        {
+            using var config = JsonDocument.Parse(JsonSerializer.Serialize(new
+            {
+                url = server.Origin + "/mcp",
+                oauth = new { clientId = "fixture-client" }
+            }));
+            var entry = McpConfiguration.Parse("protected", config.RootElement, "mcp.json", "global");
+            var output = new LoginOutput();
+            var input = new CallbackTextReader();
+            var login = McpOAuthLogin.SignInAsync(entry, root, output, false,
+                TimeSpan.FromSeconds(10), deadline.Token, manualCallbackInput: input);
+            var authorizationUri = new Uri(await output.Authorization.Task.WaitAsync(deadline.Token));
+            var query = System.Web.HttpUtility.ParseQueryString(authorizationUri.Query);
+            var redirect = new Uri(query["redirect_uri"]!);
+            var pasted = new UriBuilder(redirect)
+            {
+                Query = "code=fixture-code&state=" + Uri.EscapeDataString(query["state"]!) +
+                    "&iss=" + Uri.EscapeDataString(server.Origin)
+            }.Uri;
+            input.Submit(new UriBuilder(pasted) { Host = "localhost" }.Uri.AbsoluteUri);
+            input.Submit(pasted.AbsoluteUri);
+
+            await login.WaitAsync(deadline.Token);
+
+            Assert.Equal(1, server.TokenRequests);
+            Assert.Contains("paste the full redirect URL", output.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            deadline.Cancel();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static string GetServerId(Uri serverUrl)
     {
         var hash = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(serverUrl.AbsoluteUri));
         return Convert.ToBase64String(hash.AsSpan(0, 9)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    private static int GetLoopbackPort()
+    {
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        return ((IPEndPoint)reservation.LocalEndpoint).Port;
     }
 
     private sealed class LoginOutput : StringWriter
@@ -284,6 +351,20 @@ public sealed class McpOAuthMetadataTests
                 Authorization.TrySetResult(value.Split('\n').Last());
             return base.WriteLineAsync(value);
         }
+    }
+
+    private sealed class CallbackTextReader : TextReader
+    {
+        private readonly System.Threading.Channels.Channel<string?> _lines =
+            System.Threading.Channels.Channel.CreateUnbounded<string?>();
+
+        public void Submit(string value) => _lines.Writer.TryWrite(value);
+
+        public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken = default) =>
+            ReadNextAsync(cancellationToken);
+
+        private async ValueTask<string?> ReadNextAsync(CancellationToken cancellationToken) =>
+            await _lines.Reader.ReadAsync(cancellationToken);
     }
 
     private sealed class OAuthServer : IAsyncDisposable

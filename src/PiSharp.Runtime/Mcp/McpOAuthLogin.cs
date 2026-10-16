@@ -12,7 +12,8 @@ public static class McpOAuthLogin
 {
     public static async Task SignInAsync(McpServerConfiguration server, string agentDirectory,
         TextWriter output, bool openBrowser, TimeSpan timeout, CancellationToken cancellationToken = default,
-        Action<string, Uri>? authorizationUrlPresenter = null, string? requestedScope = null)
+        Action<string, Uri>? authorizationUrlPresenter = null, string? requestedScope = null,
+        TextReader? manualCallbackInput = null)
     {
         if (server.Url is null || server.Headers.Keys.Any(key =>
             key.Equals("Authorization", StringComparison.OrdinalIgnoreCase)))
@@ -23,17 +24,18 @@ public static class McpOAuthLogin
         deadline.CancelAfter(timeout);
         var cimdIdentity = await McpOAuthCimdDiscovery.ResolveAsync(server.Url, settings, deadline.Token)
             .ConfigureAwait(false);
-        var callback = settings.CallbackUrl;
-        if (callback is null)
+        var callbackBase = settings.CallbackUrl;
+        if (callbackBase is null)
         {
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
             var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
             reservation.Stop();
-            var callbackPath = cimdIdentity is { IssuerResponses: false }
-                ? "/callback/" + cimdIdentity.Id : "/callback";
-            callback = new Uri("http://127.0.0.1:" + port + callbackPath);
+            callbackBase = new Uri("http://127.0.0.1:" + port + "/callback");
         }
+        var callback = McpOAuthCimdDiscovery.ApplyCallbackPath(callbackBase, cimdIdentity);
+        manualCallbackInput ??= authorizationUrlPresenter is null && ReferenceEquals(output, Console.Out)
+            ? Console.In : null;
         using var listener = new HttpListener();
         listener.Prefixes.Add("http://+:" + callback.Port + "/");
         listener.Start();
@@ -48,6 +50,8 @@ public static class McpOAuthLogin
                     await output.WriteLineAsync("Sign in to MCP server \"" + server.Name + "\" in your browser:\n" +
                         context.AuthorizationUri.AbsoluteUri);
                 else authorizationUrlPresenter(server.Name, context.AuthorizationUri);
+                if (manualCallbackInput is not null && authorizationUrlPresenter is null)
+                    await output.WriteLineAsync("If the browser cannot reach this machine, paste the full redirect URL here:");
                 if (openBrowser)
                     try
                     {
@@ -56,12 +60,30 @@ public static class McpOAuthLogin
                     }
                     catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception)
                     { /* The printed URL remains available for a manual browser. */ }
+                Task<string?>? manualLine = manualCallbackInput?.ReadLineAsync(token).AsTask();
+                var callbackTask = listener.GetContextAsync().WaitAsync(token);
                 while (true)
                 {
-                    var request = await listener.GetContextAsync().WaitAsync(token);
+                    if (manualLine is not null && await Task.WhenAny(callbackTask, manualLine).ConfigureAwait(false) == manualLine)
+                    {
+                        var pasted = await manualLine.ConfigureAwait(false);
+                        if (pasted is null) manualLine = null;
+                        else
+                        {
+                            manualLine = manualCallbackInput!.ReadLineAsync(token).AsTask();
+                            if (TryParseManualCallback(pasted, context.RedirectUri, out var manualResult))
+                                return manualResult;
+                            if (authorizationUrlPresenter is null)
+                                await output.WriteLineAsync("The redirect URL does not match this sign-in. Paste the full redirect URL from the browser address bar.");
+                        }
+                        continue;
+                    }
+                    var request = await callbackTask.ConfigureAwait(false);
+                    callbackTask = listener.GetContextAsync().WaitAsync(token);
                     var uri = request.Request.Url;
                     var expectedRedirect = context.RedirectUri;
                     var accepted = uri is not null && SameCallbackOriginAndPath(uri, expectedRedirect) &&
+                        SameCallbackHostHeader(request.Request.Headers["Host"], expectedRedirect) &&
                         request.Request.RemoteEndPoint is { } remote && IPAddress.IsLoopback(remote.Address);
                     var response = request.Response;
                     response.ContentType = "text/html; charset=utf-8";
@@ -139,6 +161,20 @@ public static class McpOAuthLogin
         actual.Host.Equals(expected.Host, StringComparison.OrdinalIgnoreCase) && actual.Port == expected.Port &&
         actual.AbsolutePath.Equals(expected.AbsolutePath, StringComparison.Ordinal) &&
         string.IsNullOrEmpty(actual.UserInfo) && string.IsNullOrEmpty(actual.Fragment);
+
+    private static bool SameCallbackHostHeader(string? actual, Uri expected) =>
+        actual is not null && actual.Equals(expected.Authority, StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryParseManualCallback(string value, Uri expected, out AuthorizationResult result)
+    {
+        result = null!;
+        if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var actual) ||
+            !SameCallbackOriginAndPath(actual, expected)) return false;
+        var query = System.Web.HttpUtility.ParseQueryString(actual.Query);
+        if (string.IsNullOrEmpty(query["code"]) || string.IsNullOrEmpty(query["state"])) return false;
+        result = new AuthorizationResult { Code = query["code"], State = query["state"], Iss = query["iss"] };
+        return true;
+    }
 
     private sealed class SignInTokenCache(ITokenCache inner) : ITokenCache
     {

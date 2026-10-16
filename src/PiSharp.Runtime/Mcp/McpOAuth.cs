@@ -46,8 +46,10 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
         Uri? redirect = null;
         if (callback is not null)
         {
-            if (!Uri.TryCreate(callback, UriKind.Absolute, out redirect) || redirect.Scheme != "http" ||
-                redirect.Host is not ("127.0.0.1" or "localhost" or "::1") || redirect.IsDefaultPort ||
+            if (!Uri.TryCreate(callback, UriKind.Absolute, out redirect))
+                throw new ArgumentException("MCP OAuth callbackUrl must be a loopback HTTP URL with a port.");
+            var callbackHost = redirect.Host.Trim('[', ']');
+            if (redirect.Scheme != "http" || callbackHost is not ("127.0.0.1" or "localhost" or "::1") || redirect.IsDefaultPort ||
                 !string.IsNullOrEmpty(redirect.Query) || !string.IsNullOrEmpty(redirect.Fragment))
                 throw new ArgumentException("MCP OAuth callbackUrl must be a loopback HTTP URL with a port.");
         }
@@ -55,6 +57,8 @@ public sealed record McpOAuthSettings(string? ClientId, string? ClientSecret, Ur
         {
             if (Read("clientId") is not null || clientName is not null)
                 throw new ArgumentException("MCP OAuth clientRegistration cimd cannot be combined with clientId or clientName.");
+            if (redirect?.Host.Trim('[', ']') == "::1")
+                throw new ArgumentException("MCP OAuth callbackUrl with clientRegistration cimd must use localhost or 127.0.0.1.");
             if (redirect is not null && redirect.AbsolutePath != "/callback")
                 throw new ArgumentException("MCP OAuth callbackUrl must use the /callback path with clientRegistration cimd.");
         }

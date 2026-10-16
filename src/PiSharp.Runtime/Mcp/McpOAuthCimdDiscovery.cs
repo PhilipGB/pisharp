@@ -48,8 +48,16 @@ internal static class McpOAuthCimdDiscovery
 
     public static string GetServerId(Uri serverUrl)
     {
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(serverUrl.AbsoluteUri));
+        var normalized = new UriBuilder(serverUrl) { Fragment = string.Empty }.Uri.AbsoluteUri;
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
         return Convert.ToBase64String(hash.AsSpan(0, 9)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    public static Uri ApplyCallbackPath(Uri callback, McpOAuthCimdIdentity? identity)
+    {
+        if (identity is null || identity.IssuerResponses) return callback;
+        var builder = new UriBuilder(callback) { Path = "/callback/" + identity.Id };
+        return builder.Uri;
     }
 
     private static string ReadAuthorizationServer(JsonElement document)
