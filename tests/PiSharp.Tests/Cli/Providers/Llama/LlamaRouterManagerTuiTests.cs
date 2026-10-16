@@ -500,6 +500,96 @@ public sealed class LlamaRouterManagerTuiTests
     }
 
     [Fact]
+    public async Task StreamingTranscriptRemainsAnchoredAcrossScrollAndResizeThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-llama-viewport-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var ttyPathFile = Path.Combine(root, "tty-path");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:1/v1","apiKey":"fixture-key","models":[{"id":"fixture-model"}]}}}
+            """);
+        var streamedRows = Enumerable.Range(0, 60).Select(index => $"STREAM_ROW_{index:D2}\n").ToArray();
+        await using var server = new RouterServer(chatResponse: "FOLLOWUP_OK", streamedChatChunks: streamedRows,
+            pauseAfterChunk: 35);
+        await using var terminal = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
+            sessionDirectory: Path.Combine(root, "sessions"), noTools: true, ttyPathFile: ttyPathFile);
+        try
+        {
+            await terminal.WaitTextAsync("qwen");
+            await terminal.SendAsync("Stream a long answer.\n");
+            await server.LongChatPaused.Task.WaitAsync(TimeSpan.FromSeconds(15));
+            await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_34", StringComparison.Ordinal));
+
+            var scrollMark = terminal.Mark;
+            await terminal.SendRawAsync("\u001b[5~");
+            var scrolled = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == "STREAM_ROW_00", scrollMark);
+            var anchor = FirstStreamRow(scrolled);
+            Assert.Equal("STREAM_ROW_00", anchor);
+
+            await ProcessTestHelpers.WaitForFileAsync(ttyPathFile);
+            var ttyPath = (await File.ReadAllTextAsync(ttyPathFile)).Trim();
+            using (var resize = Process.Start(new ProcessStartInfo("stty")
+            {
+                RedirectStandardError = true,
+                ArgumentList = { "-F", ttyPath, "rows", "18", "cols", "60" }
+            })!)
+            {
+                var error = resize.StandardError.ReadToEndAsync();
+                await resize.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.True(resize.ExitCode == 0, await error);
+                Assert.Equal("", await error);
+            }
+
+            var resizeMark = terminal.Mark;
+            var resized = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor,
+                resizeMark, rows: 18, columns: 60);
+            Assert.Equal(anchor, FirstStreamRow(resized));
+
+            var latestMark = terminal.Mark;
+            await terminal.SendRawAsync("\u001b[F");
+            var latest = await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_34", StringComparison.Ordinal) &&
+                !frame.Contains("↑", StringComparison.Ordinal), latestMark, rows: 18, columns: 60);
+            Assert.NotEqual(anchor, FirstStreamRow(latest));
+
+            server.ReleaseLongChatStream();
+            await server.LongChatCompleted.Task.WaitAsync(TimeSpan.FromSeconds(15));
+            await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_59", StringComparison.Ordinal) &&
+                !frame.Contains("↑", StringComparison.Ordinal) && !frame.Contains("Working", StringComparison.Ordinal),
+                terminal.Mark - 1, rows: 18, columns: 60);
+
+            await terminal.SendAsync("follow up prompt\n");
+            await terminal.WaitFrameAsync(frame => frame.Contains("FOLLOWUP_OK", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal), rows: 18, columns: 60);
+            await terminal.QuitAsync();
+
+            var requests = server.Requests.Where(item => item.Method == "POST" &&
+                item.Path == "/v1/chat/completions").ToArray();
+            Assert.Equal(2, requests.Length);
+            using var followUp = JsonDocument.Parse(requests[1].Body!);
+            var history = followUp.RootElement.GetProperty("messages").ToString();
+            Assert.Contains("Stream a long answer.", history, StringComparison.Ordinal);
+            Assert.Contains("STREAM_ROW_00", history, StringComparison.Ordinal);
+            Assert.Contains("STREAM_ROW_59", history, StringComparison.Ordinal);
+            Assert.Single(Regex.Matches(history, "STREAM_ROW_00").Cast<Match>());
+            Assert.Single(Regex.Matches(history, "STREAM_ROW_59").Cast<Match>());
+            Assert.Contains("follow up prompt", history, StringComparison.Ordinal);
+        }
+        finally
+        {
+            server.ReleaseLongChatStream();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static string? FirstStreamRow(string frame)
+    {
+        var match = Regex.Match(frame, "STREAM_ROW_\\d+");
+        return match.Success ? match.Value : null;
+    }
+
+    [Fact]
     public async Task CancellingLocalModelStreamAfterVisibleTextSettlesAndAcceptsNextPrompt()
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
@@ -592,16 +682,21 @@ public sealed class LlamaRouterManagerTuiTests
         private readonly string? _resumedChatResponse;
         private readonly bool _readToolCallFirst;
         private readonly bool _holdChatAfterPartial;
+        private readonly string[]? _streamedChatChunks;
+        private readonly int _pauseAfterChunk;
         private int _chatRequestCount;
         private readonly ConcurrentBag<Task> _background = [];
         private readonly TaskCompletionSource _downloadRequested = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _loadProgressRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _chatRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _longChatRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _catalogRequests;
         public ConcurrentQueue<(string Method, string Path, string? Authorization, string? Body)> Requests { get; } = new();
         public TaskCompletionSource LoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource RestoreLoadRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource ChatPartialSent { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource LongChatPaused { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource LongChatCompleted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _restoreLoadRelease = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource DownloadRequested => _downloadRequested;
         public int CatalogRequests => Volatile.Read(ref _catalogRequests);
@@ -614,7 +709,8 @@ public sealed class LlamaRouterManagerTuiTests
 
         public RouterServer(bool holdLoad = false, bool failFirstCatalog = false, bool holdDownload = false,
             bool sleepingQwen = false, bool holdRestore = false, string? chatResponse = null,
-            bool readToolCallFirst = false, bool holdChatAfterPartial = false, string? resumedChatResponse = null)
+            bool readToolCallFirst = false, bool holdChatAfterPartial = false, string? resumedChatResponse = null,
+            string[]? streamedChatChunks = null, int pauseAfterChunk = 0)
         {
             _holdLoad = holdLoad;
             _failFirstCatalog = failFirstCatalog;
@@ -624,6 +720,8 @@ public sealed class LlamaRouterManagerTuiTests
             _resumedChatResponse = resumedChatResponse;
             _readToolCallFirst = readToolCallFirst;
             _holdChatAfterPartial = holdChatAfterPartial;
+            _streamedChatChunks = streamedChatChunks;
+            _pauseAfterChunk = pauseAfterChunk;
             if (sleepingQwen) Statuses["qwen"] = "sleeping";
             using var reservation = new TcpListener(IPAddress.Loopback, 0);
             reservation.Start();
@@ -751,10 +849,54 @@ public sealed class LlamaRouterManagerTuiTests
                     {
                         using var payload = JsonDocument.Parse(body!);
                         var model = payload.RootElement.GetProperty("model").GetString()!;
-                        var chatRequestNumber = _readToolCallFirst ? Interlocked.Increment(ref _chatRequestCount) : 0;
+                        var chatRequestNumber = _readToolCallFirst || _streamedChatChunks is not null
+                            ? Interlocked.Increment(ref _chatRequestCount) : 0;
                         var responseText = _readToolCallFirst && chatRequestNumber >= 3
                             ? _resumedChatResponse ?? _chatResponse
                             : _chatResponse;
+                        if (_streamedChatChunks is { } chunks && chatRequestNumber == 1)
+                        {
+                            context.Response.ContentType = "text/event-stream";
+                            context.Response.SendChunked = true;
+                            context.Response.KeepAlive = false;
+                            await using var writer = new StreamWriter(context.Response.OutputStream);
+                            for (var index = 0; index < chunks.Length; index++)
+                            {
+                                var chunk = new
+                                {
+                                    id = "chatcmpl_long_stream",
+                                    @object = "chat.completion.chunk",
+                                    created = 1,
+                                    model,
+                                    choices = new[] { new
+                                    {
+                                        index = 0,
+                                        delta = new { role = "assistant", content = chunks[index] },
+                                        finish_reason = (string?)null
+                                    } }
+                                };
+                                await writer.WriteAsync($"data: {JsonSerializer.Serialize(chunk)}\n\n");
+                                await writer.FlushAsync(_shutdown.Token);
+                                if (index + 1 == _pauseAfterChunk)
+                                {
+                                    LongChatPaused.TrySetResult();
+                                    await _longChatRelease.Task.WaitAsync(_shutdown.Token);
+                                }
+                            }
+                            var last = new
+                            {
+                                id = "chatcmpl_long_stream",
+                                @object = "chat.completion.chunk",
+                                created = 1,
+                                model,
+                                choices = new[] { new { index = 0, delta = new { }, finish_reason = "stop" } }
+                            };
+                            await writer.WriteAsync($"data: {JsonSerializer.Serialize(last)}\n\ndata: [DONE]\n\n");
+                            await writer.FlushAsync(_shutdown.Token);
+                            context.Response.Close();
+                            LongChatCompleted.TrySetResult();
+                            continue;
+                        }
                         if (_readToolCallFirst && chatRequestNumber == 1)
                         {
                             var first = new
@@ -873,11 +1015,13 @@ public sealed class LlamaRouterManagerTuiTests
         public void ReleaseLoadProgress() => _loadProgressRelease.TrySetResult();
 
         public void ReleaseChatStream() => _chatRelease.TrySetResult();
+        public void ReleaseLongChatStream() => _longChatRelease.TrySetResult();
 
         public async ValueTask DisposeAsync()
         {
             _restoreLoadRelease.TrySetResult();
             _chatRelease.TrySetResult();
+            _longChatRelease.TrySetResult();
             _shutdown.Cancel();
             _listener.Close();
             await _serve;
@@ -957,7 +1101,7 @@ public sealed class LlamaRouterManagerTuiTests
 
         public ManagerTerminal(string root, string agent, string serverUrl, string? hfEndpoint = null,
             string? hfToken = null, bool llamaProvider = false, string? sessionDirectory = null, bool noTools = true,
-            bool continueSession = false)
+            bool continueSession = false, string? ttyPathFile = null)
         {
             _editorModelText = llamaProvider ? "llama.cpp/qwen" : "fixture-model";
             var start = new ProcessStartInfo("/usr/bin/script")
@@ -976,7 +1120,9 @@ public sealed class LlamaRouterManagerTuiTests
             arguments += sessionDirectory is null ? " --no-session" : " --session-dir " + ShellQuote(sessionDirectory);
             if (continueSession) arguments += " --continue";
             if (noTools) arguments += " --no-tools";
-            start.ArgumentList.Add("stty rows 30 cols 100; exec dotnet " + ShellQuote(typeof(CliArguments).Assembly.Location) + arguments);
+            var terminalSetup = "stty rows 30 cols 100;";
+            if (ttyPathFile is not null) terminalSetup += " tty > " + ShellQuote(ttyPathFile) + ";";
+            start.ArgumentList.Add(terminalSetup + " exec dotnet " + ShellQuote(typeof(CliArguments).Assembly.Location) + arguments);
             start.ArgumentList.Add("/dev/null");
             foreach (var name in new[] { "LLAMA_BASE_URL", "LLAMA_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL",
                          "PISHARP_MODEL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH" })
@@ -1015,9 +1161,9 @@ public sealed class LlamaRouterManagerTuiTests
             !frame.Contains("llama.cpp models", StringComparison.Ordinal) &&
             !frame.Contains("Unload model?", StringComparison.Ordinal), after);
 
-        public Task<string> WaitFrameAsync(Func<string, bool> predicate, int after = 0) => WaitAsync(output =>
+        public Task<string> WaitFrameAsync(Func<string, bool> predicate, int after = 0, int rows = 30, int columns = 100) => WaitAsync(output =>
         {
-            foreach (var frame in TerminalOutputFrameReader.Read(output, rows: 30, columns: 100))
+            foreach (var frame in TerminalOutputFrameReader.Read(output, rows, columns))
                 if (frame.Start >= after && predicate(frame.Screen)) return frame.Screen;
             return null;
         });
