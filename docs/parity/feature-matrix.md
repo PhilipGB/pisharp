@@ -22,8 +22,10 @@ local llama.cpp smokes each completed one deterministic MCP echo call.
 Only the MCP OAuth CIMD capability moved to verified from its explicit
 acceptance evidence. The broad MCP and Codemode matrix rows remain in progress;
 all 194 IDs now stand at **13 verified, 148 in progress, 33 not started**.
-Exact-head CI is pending the milestone branch push. This is not a global parity
-claim.
+Exact-head Linux CI on branch head `bee038cc8d41e8ea964e6c197e088bef2b4aed08`
+passes both required jobs and all **2,124/2,124** .NET tests
+([run 38901880600](https://github.com/PhilipGB/pisharp/actions/runs/38901880600)).
+This is not a global parity claim.
 
 ## Interactive UX milestone complete — 2026-10-16
 

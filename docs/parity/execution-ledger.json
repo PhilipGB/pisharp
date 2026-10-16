@@ -144,7 +144,7 @@
   },
   "mcp_codemode_workflows_milestone": {
     "updated": "2026-10-16",
-    "status": "local_acceptance_complete_ci_pending",
+    "status": "complete",
     "branch": "milestone/mcp-codemode-workflows",
     "main_base": "28f223c0c3b52ac9cd79a76c35a26c982999eee2",
     "source_commit": "cf2929dff3836be931a1c27ebfd60f4b65a75c6d",
@@ -179,8 +179,14 @@
     },
     "live_smoke": "One saved-Codex conversation and one local llama.cpp conversation each invoked a deterministic stdio MCP echo tool once, returned the expected result, and shut down the fixture. No private prompts, sessions or credentials were committed.",
     "exact_head_ci": {
-      "head_sha": "cf2929dff3836be931a1c27ebfd60f4b65a75c6d",
-      "status": "pending push"
+      "run_id": 38901880600,
+      "url": "https://github.com/PhilipGB/pisharp/actions/runs/38901880600",
+      "head_sha": "bee038cc8d41e8ea964e6c197e088bef2b4aed08",
+      "status": "passed",
+      "jobs": [
+        "test",
+        "mcp-conformance"
+      ]
     },
     "global_capability_statuses": {
       "verified": 13,
@@ -390,7 +396,7 @@
     "complete": false,
     "evidence": [],
     "closure_review_scope": "Every one of the 194 task records has a handover_review: twelve closed contracts, 145 implemented/incomplete or insufficiently proven acceptance contracts, and 37 genuinely missing implementations. The original acceptance/implementation/evidence are preserved. Each open record has finite observable criteria, a supported verification boundary and ordered queue references; no hypothetical parser permutations are required.",
-    "readiness": "GLOBAL PARITY INCOMPLETE; MCP/Codemode workflow milestone awaits exact-head CI."
+    "readiness": "GLOBAL PARITY INCOMPLETE; MCP/Codemode workflow milestone complete; await new user goal."
   },
   "tasks": [
     {

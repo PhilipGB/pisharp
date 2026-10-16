@@ -7,8 +7,7 @@ The bounded MCP/Codemode milestone is on
 `28f223c0c3b52ac9cd79a76c35a26c982999eee2`. Product source is
 `cf2929dff3836be931a1c27ebfd60f4b65a75c6d`; the configured Pi reference stays
 at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This completes the requested
-local acceptance checkpoint without claiming global parity; exact-head CI is
-the final remaining gate.
+workflow milestone without claiming global parity.
 
 MCP management now exposes useful status and sanitized details, enable/disable,
 exposure, reconnect, login/logout and reload actions. A real CLI PTY observes a
@@ -39,8 +38,10 @@ returned its result, and shut down the fixture.
 The one promoted capability leaves all 194 IDs at **13 verified, 148 in
 progress and 33 not started**. Broader MCP resource/output semantics, Codemode
 sandbox semantics and the established conformance failures remain open. Exact
-head CI is pending the branch push. After it is green, stop this milestone and
-wait for the next user goal.
+head Linux CI on branch head `bee038cc8d41e8ea964e6c197e088bef2b4aed08`
+passes both required jobs and all **2,124/2,124** .NET tests
+([run 38901880600](https://github.com/PhilipGB/pisharp/actions/runs/38901880600)).
+The milestone is complete; stop and wait for the next user goal.
 
 ## Interactive UX milestone complete — 2026-10-16
 

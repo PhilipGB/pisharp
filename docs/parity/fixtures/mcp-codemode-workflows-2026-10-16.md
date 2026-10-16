@@ -76,4 +76,6 @@ OAuth client-metadata-document contract based on its acceptance evidence; it
 does not close the broader MCP or Codemode contracts. The 194 global IDs now
 stand at **13 verified, 148 in progress, and 33 not started**.
 
-The CI result is recorded in the execution ledger after the branch push.
+Exact-head Linux CI on branch head `bee038cc8d41e8ea964e6c197e088bef2b4aed08`
+passed both required jobs and all **2,124/2,124** .NET tests
+([run 38901880600](https://github.com/PhilipGB/pisharp/actions/runs/38901880600)).
