@@ -1527,6 +1527,91 @@ public sealed class TerminalPtyTests
     }
 
     [Fact]
+    public async Task ConversationTreeSearchSelectsAndPersistsABranchThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-tree-picker-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(cwd, "agent");
+        Directory.CreateDirectory(agent);
+        try
+        {
+            var store = new PiSharp.Runtime.Sessions.ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var conversation = new PiSharp.Runtime.Sessions.ConversationSession(cwd, ConnectionSettings.LocalModel,
+                new Uri(ConnectionSettings.LocalEndpoint).ToString());
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "first prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "first answer"));
+            var selectedHead = conversation.Tree.HeadId!;
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "second prompt"));
+            conversation.Append(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, "second answer"));
+            var sessionPath = store.NewPath(conversation);
+            await store.SaveAsync(conversation, sessionPath);
+
+            var start = new ProcessStartInfo("/usr/bin/script")
+            {
+                WorkingDirectory = cwd,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                ArgumentList =
+                {
+                    "-q", "-e", "-c",
+                    $"stty rows 24 cols 100; exec dotnet '{typeof(CliArguments).Assembly.Location}' --local --session '{sessionPath}' --session-dir '{store.DirectoryPath}' --no-tools",
+                    "/dev/null"
+                }
+            };
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+            var output = new StringBuilder();
+            var outputLock = new object();
+            var inputReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var pickerOpened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var branchSelected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var stdout = Task.Run(async () =>
+            {
+                var buffer = new char[1024];
+                while (true)
+                {
+                    var count = await process.StandardOutput.ReadAsync(buffer);
+                    if (count == 0) break;
+                    lock (outputLock)
+                    {
+                        output.Append(buffer, 0, count);
+                        var captured = output.ToString();
+                        if (captured.Contains("\u001b[?2004h", StringComparison.Ordinal)) inputReady.TrySetResult();
+                        if (captured.Contains("Conversation tree", StringComparison.Ordinal)) pickerOpened.TrySetResult();
+                        if (captured.Contains($"Selected {selectedHead[..12]}", StringComparison.Ordinal)) branchSelected.TrySetResult();
+                    }
+                }
+                lock (outputLock) return output.ToString();
+            });
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            await inputReady.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/tree\r");
+            await process.StandardInput.FlushAsync();
+            await pickerOpened.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("first answer\r");
+            await process.StandardInput.FlushAsync();
+            await branchSelected.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/session\r/quit\r");
+            await process.StandardInput.FlushAsync();
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+
+            var capturedOutput = await stdout;
+            var saved = await store.LoadAsync(sessionPath);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("assistant: first answer", capturedOutput);
+            Assert.Contains($"Selected {selectedHead[..12]}", capturedOutput);
+            Assert.Equal(selectedHead, saved.Tree.HeadId);
+            Assert.DoesNotContain("Session error:", capturedOutput);
+            Assert.DoesNotContain("Agent error:", await stderr);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task StartupModelAndNameArePersistedAndConflictingResumeIsRejected()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-startup-flags-" + Guid.NewGuid().ToString("N"));

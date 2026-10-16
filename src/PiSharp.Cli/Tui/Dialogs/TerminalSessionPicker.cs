@@ -115,7 +115,7 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
                 var conversation = await store.LoadAsync(listing.Path, cancellationToken);
                 result.Add(listing.Path, SessionPickerBranchHeads.From(conversation));
             }
-            catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException)
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)
             {
                 // A session can change between cataloguing and opening the picker. Keep its row visible
                 // so one stale file cannot prevent resuming another session.

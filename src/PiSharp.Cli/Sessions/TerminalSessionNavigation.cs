@@ -9,6 +9,7 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
     Action<ProjectSessionRuntime> adoptProjectSession)
 {
     private TerminalSessionPicker? _picker = presentation.Editor is null ? null : new TerminalSessionPicker(projectBinding.Store, presentation.Editor);
+    private readonly TerminalTreePicker? _treePicker = presentation.Editor is null ? null : new TerminalTreePicker(presentation.Editor);
     private readonly TerminalForkPicker? _forkPicker = presentation.Editor is null ? null : new TerminalForkPicker(presentation.Editor);
     public void RefreshPicker() => _picker = presentation.Editor is null ? null : new TerminalSessionPicker(projectBinding.Store, presentation.Editor);
 
@@ -62,6 +63,47 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
         }
         var selected = _forkPicker.Show(forkable);
         if (selected is { } message) await ForkFromUserAsync(message.Id);
+    }
+
+    public async Task SelectTreePointAsync()
+    {
+        var conversation = conversationBinding.Conversation;
+        var entries = conversation.Tree.Entries;
+        if (entries.Count == 0)
+        {
+            Console.WriteLine("No entries in session.");
+            return;
+        }
+        if (_treePicker is null)
+        {
+            foreach (var entry in entries)
+                Console.WriteLine($"{entry.Id[..12]} · {entry.Type} · {entry.Timestamp:HH:mm:ss}");
+            return;
+        }
+
+        var selected = _treePicker.Show(entries, conversation.Tree.HeadId);
+        if (selected is null) return;
+        if (selected.Id == conversation.Tree.HeadId)
+        {
+            Console.WriteLine("Already at this point.");
+            return;
+        }
+
+        var previousHead = conversation.Tree.HeadId;
+        await conversationBinding.Run.SelectAsync(selected.Id);
+        try
+        {
+            if (conversationBinding.Path is not null)
+                await projectBinding.Store.SaveAsync(conversation, conversationBinding.Path);
+        }
+        catch
+        {
+            await conversationBinding.Run.SelectAsync(previousHead);
+            throw;
+        }
+
+        presentation.LoadSessionTranscript();
+        Console.WriteLine($"Selected {selected.Id[..12]} · {selected.Type}");
     }
 
     public async Task ResumeCommandAsync(string argument)
