@@ -5,6 +5,101 @@ namespace PiSharp.Tests;
 public sealed class EditorCompletionTests
 {
     [Fact]
+    public async Task SlashCompletionCyclesCandidatesInTheEditorAndWrapsForward()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/mod");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/models", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model", editor.Draft);
+    }
+
+    [Fact]
+    public async Task ShiftTabCyclesBackwardAndWraps()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/mod");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
+        Assert.Equal("/models", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
+        Assert.Equal("/model", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t', ConsoleModifiers.Shift));
+        Assert.Equal("/models", editor.Draft);
+    }
+
+    [Fact]
+    public async Task EditingResetsTheCompletionCycle()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/mod");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Backspace, '\b'));
+        Assert.Equal("/mode", editor.Draft);
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/model", editor.Draft);
+    }
+
+    [Fact]
+    public async Task UnrelatedCursorInputResetsTheCompletionCycle()
+    {
+        var editor = new TerminalEditor();
+        editor.Prefill("/mod");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.LeftArrow, '\0'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.RightArrow, '\0'));
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+
+        Assert.Equal("/model", editor.Draft);
+    }
+
+    [Fact]
+    public async Task UniqueCompletionIsSubmittedByTheFirstEnterAndNoMatchesAreANoop()
+    {
+        var submissions = new List<string>();
+        var editor = new TerminalEditor(commands: () => ["/thinking"]);
+        editor.Prefill("/thi");
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'), (text, _, _) =>
+        {
+            submissions.Add(text);
+            return Task.FromResult(true);
+        });
+        Assert.Equal("/thinking", editor.Draft);
+        Assert.Empty(submissions);
+
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Enter, '\r'), (text, _, _) =>
+        {
+            submissions.Add(text);
+            return Task.FromResult(true);
+        });
+        Assert.Equal(["/thinking"], submissions);
+        Assert.Equal("", editor.Draft);
+
+        editor.Prefill("/does-not-exist");
+        await SendEditorKeyAsync(editor, Key(ConsoleKey.Tab, '\t'));
+        Assert.Equal("/does-not-exist", editor.Draft);
+    }
+
+    private static Task<bool> SendEditorKeyAsync(TerminalEditor editor, ConsoleKeyInfo key,
+        Func<string, bool, CancellationToken, Task<bool>>? queue = null) =>
+        editor.HandleActiveInputAsync(new(key, null), queue ?? ((_, _, _) => Task.FromResult(true)),
+            () => [], () => { });
+
+    private static ConsoleKeyInfo Key(ConsoleKey key, char character,
+        ConsoleModifiers modifiers = ConsoleModifiers.None) =>
+        new(character, key, modifiers.HasFlag(ConsoleModifiers.Shift), modifiers.HasFlag(ConsoleModifiers.Alt),
+            modifiers.HasFlag(ConsoleModifiers.Control));
+
+    [Fact]
     public void SlashCompletionShowsAmbiguityAndCompletesUniqueName()
     {
         var completion = new EditorCompletion(Path.GetTempPath());
