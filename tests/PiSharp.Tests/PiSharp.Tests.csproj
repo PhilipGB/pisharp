@@ -22,10 +22,23 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\PiSharp.Cli\PiSharp.Cli.csproj" />
     <ProjectReference Include="..\ResourceDiscoveryExtension\ResourceDiscoveryExtension.csproj" />
+    <ProjectReference Include="..\fixtures\NativeExtensionLoader\ExtensionV1\ExtensionV1.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\fixtures\NativeExtensionLoader\ExtensionV2\ExtensionV2.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\fixtures\NativeExtensionLoader\IncompatibleContract\Extension\Extension.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TestInfrastructure/Fixtures/mcp_fixture.py" CopyToOutputDirectory="PreserveNewest" />
     <None Include="TestInfrastructure/Fixtures/mcp_notification_fixture.py" CopyToOutputDirectory="PreserveNewest" />
     <None Include="TestInfrastructure/Fixtures/mcp_reconnect_fixture.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <Target Name="CopyNativeExtensionLoaderFixtures" AfterTargets="Build">
+    <ItemGroup>
+      <NativeLoaderV1Files Include="../fixtures/NativeExtensionLoader/ExtensionV1/bin/$(Configuration)/net10.0/*" />
+      <NativeLoaderV2Files Include="../fixtures/NativeExtensionLoader/ExtensionV2/bin/$(Configuration)/net10.0/*" />
+      <NativeLoaderIncompatibleContractFiles Include="../fixtures/NativeExtensionLoader/IncompatibleContract/Extension/bin/$(Configuration)/net10.0/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NativeLoaderV1Files)" DestinationFolder="$(OutDir)NativeExtensionLoaderFixtures/V1" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(NativeLoaderV2Files)" DestinationFolder="$(OutDir)NativeExtensionLoaderFixtures/V2" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(NativeLoaderIncompatibleContractFiles)" DestinationFolder="$(OutDir)NativeExtensionLoaderFixtures/IncompatibleContract" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
