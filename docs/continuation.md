@@ -37,8 +37,10 @@ so the terminal path fixtures fit their 120-column displays.
 
 MCP conformance passes **261** checks with the same eight classified baseline
 failures in elicitation, basic CIMD and scope retry-limit behavior; there are no
-new regressions. The exact-head Linux CI check remains a completion gate. Do not
-start Resources / Packages / Extensions from this task.
+new regressions. Pushed source `77d91043f3826926acaea49b6d76a0174ecc95d5`
+passed both required exact-head Linux CI jobs, `test` and `mcp-conformance`
+([run 38934292564](https://github.com/PhilipGB/pisharp/actions/runs/38934292564)).
+Do not start Resources / Packages / Extensions from this task.
 
 ## MCP + Codemode Workflow milestone — 2026-10-16
 
