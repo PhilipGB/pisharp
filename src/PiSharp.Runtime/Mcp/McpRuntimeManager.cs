@@ -46,6 +46,8 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
         var parts = arguments.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0 || parts is ["status"])
             return FormatStatus();
+        if (parts is ["details", var detailsName])
+            return FormatDetails(detailsName);
         if (parts is ["reconnect", var reconnectName])
             return await ReconnectAsync(reconnectName, cancellationToken);
         if (parts is ["enable", var enableName])
@@ -60,7 +62,7 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
             return await SignInAsync(loginName, cancellationToken);
         if (parts is ["logout", var logoutName])
             return await SignOutAsync(logoutName, cancellationToken);
-        return "Usage: /mcp [status | reconnect <server> | enable <server> | disable <server> | exposure <server> <mode> | login <server> | logout <server>]";
+        return "Usage: /mcp [status | details <server> | reconnect <server> | enable <server> | disable <server> | exposure <server> <mode> | login <server> | logout <server>]";
     }
 
     private async Task<string> ReconnectAsync(string name, CancellationToken cancellationToken)
@@ -267,5 +269,46 @@ public sealed class McpRuntimeManager(string? agentDirectory = null)
                 (item.Connection?.HasResources == true ? ", resources" : "") + ")";
             return item.Connection?.Error is { } error ? line + " — " + error : line;
         }));
+    }
+
+    private string FormatDetails(string name)
+    {
+        var entry = Find(name);
+        if (entry is null) return "Unknown MCP server: " + name;
+
+        var configuration = entry.Configuration;
+        var connection = entry.Connection;
+        var transport = configuration.Command is { } command
+            ? "stdio (" + Path.GetFileName(command) + ")"
+            : "http (" + SanitizeEndpoint(configuration.Url) + ")";
+        var auth = configuration.AuthProvider is not null
+            ? "provider sign-in configured"
+            : configuration.Command is not null
+                ? configuration.Environment.Count > 0 ? "environment may provide credentials (values hidden)" : "none configured"
+                : configuration.Headers.Keys.Any(key => key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                    ? "authorization header configured (value hidden)"
+                    : "OAuth";
+        return string.Join(Environment.NewLine,
+            "MCP server: " + configuration.Name,
+            "Transport: " + transport,
+            "Scope: " + configuration.Scope,
+            "Enabled: " + (configuration.Enabled ? "yes" : "no"),
+            "State: " + (!configuration.Enabled ? "disabled" : connection?.State ?? "unavailable"),
+            "Exposure: " + ExposureName(configuration.Exposure),
+            "Tools: " + (connection?.Tools.Count ?? 0),
+            "Auth: " + auth);
+    }
+
+    private static string SanitizeEndpoint(Uri? endpoint)
+    {
+        if (endpoint is null) return "unavailable";
+        var safe = new UriBuilder(endpoint)
+        {
+            UserName = "",
+            Password = "",
+            Query = "",
+            Fragment = ""
+        };
+        return safe.Uri.GetLeftPart(UriPartial.Path);
     }
 }

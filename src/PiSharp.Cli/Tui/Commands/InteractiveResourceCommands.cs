@@ -22,9 +22,10 @@ internal static class InteractiveResourceCommands
             }
             if (command.Equals("/mcp", StringComparison.Ordinal) && arguments is ["help"])
             {
-                Console.WriteLine("/mcp status | reconnect <server> | enable <server> | disable <server> |");
+                Console.WriteLine("/mcp status | details <server> | reconnect <server> | enable <server> |");
+                Console.WriteLine("  disable <server> |");
                 Console.WriteLine("  exposure <server> <mode> | login <server> | logout <server> | reload");
-                Console.WriteLine("Use /mcp status to inspect server state, tools, exposure, scope, and connection errors.");
+                Console.WriteLine("Use /mcp status to list server states; /mcp details <server> shows sanitized configuration details.");
                 Console.WriteLine("Use /mcp add ... or /mcp remove ... in the shell to change server definitions.");
                 return;
             }
