@@ -178,7 +178,7 @@ internal static class InteractiveMode
                             default:
                                 await InteractiveResourceCommands.ExecuteAsync(command, argument, line, () => projectBinding.Resources,
                                     () => extensionLease.Current.Registration, text => RunAsync(text), editor, terminalScreen,
-                                    HandleEditorApplicationAction);
+                                    HandleEditorApplicationAction, ReloadResources);
                                 break;
                         }
                     }
