@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "plan_received": true,
-  "source_note": "Feature-first functional goal on parity/current-pi-completion. Product source checkpoint 92fccccc5604f3601a25f84796755208d147efc3; keep configured Pi pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 12 verified, 148 in progress, 34 not started. Prior queue order is inventory, not current execution priority. Codex subscription and llama.cpp paths lead, followed by core agent/session/tool, TUI/editor and user-facing application behavior. Broad secondary-provider parity is deferred for this goal; full parity remains incomplete.",
+  "source_note": "Bounded MCP + Codemode workflow milestone on milestone/mcp-codemode-workflows. Product source cf2929dff3836be931a1c27ebfd60f4b65a75c6d is based on main 28f223c0c3b52ac9cd79a76c35a26c982999eee2; configured Pi remains pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 13 verified, 148 in progress, 33 not started. Only the explicitly closed MCP OAuth CIMD contract changed status; broader MCP and Codemode parity remains incomplete.",
   "feature_first_goal": {
     "updated": "2026-10-16",
     "priority_current_goal_families": [
@@ -37,7 +37,7 @@
       "provider-api-azure-foundry-chat-completions",
       "provider-api-mistral-conversations"
     ],
-    "global_inventory_policy": "Keep required_ids and all per-task statuses. Current counts are 12 verified, 148 in progress and 34 not started; change them only when evidence supports a status change. Priority labels do not close or remove any capability.",
+    "global_inventory_policy": "Keep required_ids and all per-task statuses. At this feature-first checkpoint, the counts were 12 verified, 148 in progress and 34 not started; change later counts only when evidence supports a status change. Priority labels do not close or remove any capability.",
     "mixed_row_policy": "Split Codex, llama.cpp or shared core behavior from unrelated provider-specific behavior. Implement the priority portion and leave deferred provider acceptance tracked in its existing task.",
     "provider_freeze": "Broad Anthropic/Bedrock, Google/Vertex, Azure/Foundry, Mistral, Radius, Kimi, OpenCode, Together, Cloudflare, gateway and unrelated catalog work is intentionally deferred unless a P0/P1 regression or shared Codex/llama contract requires a fix.",
     "milestone_status": "complete",
@@ -141,6 +141,53 @@
     },
     "remaining": "Broader provider parity, MCP/Codemode expansion, exhaustive terminal differentials and broader live-provider coverage remain deferred; this milestone does not claim global Pi parity.",
     "next_recommended_milestone": "MCP/Codemode interactive workflow completion and conformance, separate from provider breadth and global parity."
+  },
+  "mcp_codemode_workflows_milestone": {
+    "updated": "2026-10-16",
+    "status": "local_acceptance_complete_ci_pending",
+    "branch": "milestone/mcp-codemode-workflows",
+    "main_base": "28f223c0c3b52ac9cd79a76c35a26c982999eee2",
+    "source_commit": "cf2929dff3836be931a1c27ebfd60f4b65a75c6d",
+    "configured_pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "cimd_behavioral_source": "earendil-works/pi@1499466d8581035a4dec6c869725b8712aea4bbe",
+    "scope": [
+      "interactive MCP status, details, login/logout, enable/disable, exposure, reconnect and reload",
+      "MCP OAuth DCR default, opt-in CIMD selection, callback ownership and manual redirect input",
+      "Codemode nested classifier context bounds and composed MCP-to-Codemode agent workflow",
+      "real process and Linux PTY acceptance for lifecycle, continuation and cleanup"
+    ],
+    "acceptance_evidence": {
+      "mcp_process": "InteractiveMcpProcessTests observes a live stdio server, disables it, reloads, observes disabled status, completes a deterministic provider follow-up, and verifies CLI and fixture child exit.",
+      "mcp_oauth": "McpOAuthMetadataTests covers DCR/CIMD configuration, shared and server-hash metadata documents, issuer-dependent callback paths, configured localhost host/port, browser origin/path rejection, and mismatched-then-valid manual redirects. McpOAuthTuiTests exercises manual redirect entry in the active Linux TUI PTY.",
+      "management_details": "InteractiveMcpCommandTests and McpRuntimeLifecycleTests cover /mcp help/details and lifecycle actions; detail output redacts args, credentials, authorization headers, sensitive URL components and provider identifiers.",
+      "codemode_composition": "McpCodemodeWorkflowTests composes PiAgent/ConversationRun, one real stdio MCP call, Codemode nested read/write, parent continuation and follow-up; it verifies persisted history and fixture cleanup.",
+      "classifier_context": "A deterministic 48 KiB image-context case reaches the classifier; the host accepts up to 4 MiB per argument and 8 MiB aggregate per run.",
+      "credential_isolation": "Existing per-server token-cache and refresh tests remain in the focused MCP filter; the CIMD adapter retains the server-keyed cache and clears incompatible cached DCR registration metadata."
+    },
+    "local_verification": {
+      "restore": "dotnet restore PiSharp.slnx passed.",
+      "format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed.",
+      "build": "dotnet build PiSharp.slnx --no-restore --warnaserror -m:1 passed with 0 warnings and 0 errors.",
+      "dotnet_tests": "2,124 passed, 0 failed, 0 skipped.",
+      "architecture_tests": "6 passed, 0 failed, 0 skipped.",
+      "focused_workflow_tests": "Codemode|Mcp filter: 198/198 passed, 0 skipped; MCP OAuth/lifecycle/interactive filter: 62/62 passed, 0 skipped.",
+      "node_terminal_tests": "24 passed, 0 failed, 0 skipped.",
+      "python_terminal_tests": "50 passed, 0 failed, 0 skipped.",
+      "documentation_paths": "135 documents and 524 references verified after the milestone documentation update.",
+      "mcp_conformance": "261 passed; the same eight classified failures remain as the established baseline (six elicitation cases, auth/basic-cimd, auth/scope-retry-limit); no new regressions.",
+      "test_environment": "TMPDIR=/tmp for .NET path-display assertions; npm ci used --cache /tmp/pisharp-npm-cache because /home/philip/.npm is read-only."
+    },
+    "live_smoke": "One saved-Codex conversation and one local llama.cpp conversation each invoked a deterministic stdio MCP echo tool once, returned the expected result, and shut down the fixture. No private prompts, sessions or credentials were committed.",
+    "exact_head_ci": {
+      "head_sha": "cf2929dff3836be931a1c27ebfd60f4b65a75c6d",
+      "status": "pending push"
+    },
+    "global_capability_statuses": {
+      "verified": 13,
+      "in_progress": 148,
+      "not_started": 33
+    },
+    "remaining": "MCP and Codemode remain in progress as broad global capabilities. Resource/output semantics, broader Codemode sandbox semantics, cross-provider behavior and the eight classified MCP conformance failures remain open. Do not expand this milestone into global parity."
   },
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
@@ -342,8 +389,8 @@
   "final_audit": {
     "complete": false,
     "evidence": [],
-    "closure_review_scope": "Every one of the 194 task records has a handover_review: eleven closed contracts, 145 implemented/incomplete or insufficiently proven acceptance contracts, and 38 genuinely missing implementations. The original acceptance/implementation/evidence are preserved. Each open record has finite observable criteria, a supported verification boundary and ordered queue references; no hypothetical parser permutations are required.",
-    "readiness": "ACTIVE PARITY EXECUTION; queue 7 (thinking budgets) is next."
+    "closure_review_scope": "Every one of the 194 task records has a handover_review: twelve closed contracts, 145 implemented/incomplete or insufficiently proven acceptance contracts, and 37 genuinely missing implementations. The original acceptance/implementation/evidence are preserved. Each open record has finite observable criteria, a supported verification boundary and ordered queue references; no hypothetical parser permutations are required.",
+    "readiness": "GLOBAL PARITY INCOMPLETE; MCP/Codemode workflow milestone awaits exact-head CI."
   },
   "tasks": [
     {
@@ -7539,22 +7586,29 @@
     {
       "id": "mcp-oauth-client-metadata-documents",
       "title": "MCP OAuth Client ID Metadata Documents",
-      "status": "not_started",
+      "status": "verified",
       "source": "earendil-works/pi@1499466d8581035a4dec6c869725b8712aea4bbe",
       "acceptance": [
         "Accept oauth.clientRegistration dcr/cimd, retain dcr default and enforce Pi configuration combinations and callback restrictions.",
         "For supported public clients, use the shared pi.dev client document when authorization responses include iss; otherwise use the server URL hash document and callback path.",
         "Reuse official SDK PKCE/discovery/refresh; reject mismatching callback origin/path in browser/manual flows and preserve per-server credential/registration transitions."
       ],
-      "implementation": [],
+      "implementation": [
+        "McpOAuthSettings.Parse accepts DCR by default and opt-in CIMD, validates Pi-supported client identity combinations, permits clientSecret, and enforces the CIMD callback host/path restrictions.",
+        "McpOAuthCimdDiscovery chooses https://pi.dev/oauth/client.json when the authorization server advertises issuer responses; otherwise it derives the metadata-document URL and callback path from the MCP server URL while preserving configured callback host/port.",
+        "McpOAuthLogin delegates the OAuth code flow to the MCP SDK, validates exact browser callback origin/path/host and supports a pasted redirect with code/state/iss validation. McpOAuthCimdTokenCache preserves the per-server cache key and does not reuse incompatible DCR registration fields."
+      ],
       "evidence": [
-        "Fresh source c10bfb0d7 inspected. PiSharp rejects clientRegistration as an unknown option. The current project pins ModelContextProtocol.Core 2.2.0; inspect its existing client-metadata primitive before implementing Pi-specific document selection and callback ownership."
+        "Pinned Pi source earendil-works/pi@1499466d8581035a4dec6c869725b8712aea4bbe confirms DCR default, CIMD selection, supported configuration combinations, shared/hash document IDs, callback path rules and manual redirect completion.",
+        "McpOAuthMetadataTests covers issuer-supported and no-issuer metadata/callback selection, configured localhost host/port, browser origin/path rejection, unsupported CIMD servers, clientSecret allowance, IPv6 rejection, and a mismatched-host manual redirect followed by a valid redirect.",
+        "McpOAuthTuiTests verifies the manual redirect path through the active Linux TUI PTY while preserving the wrapped authorization hyperlink, copy action and cancellation behavior.",
+        "McpCredentialIsolationTests and McpOAuthTests cover per-server token identity and refresh persistence; the combined MCP OAuth/lifecycle/interactive filter passes 62/62, and the full .NET suite passes 2,124/2,124 with zero skips on source cf2929dff3836be931a1c27ebfd60f4b65a75c6d."
       ],
       "dependencies": [
         "mcp-runtime"
       ],
       "handover_review": {
-        "decision": "required-contract-incomplete-or-not-yet-proven",
+        "decision": "required-contract-complete",
         "priority": "feature",
         "observable_completion_criteria": [
           "Accept oauth.clientRegistration dcr/cimd, retain dcr default and enforce Pi configuration combinations and callback restrictions.",
@@ -7563,7 +7617,7 @@
         ],
         "implemented_source": "implementation field on this task",
         "existing_evidence": "evidence field on this task",
-        "remaining_proof": "Close the explicit acceptance list for MCP OAuth Client ID Metadata Documents with the queue task completion conditions below. Existing implementation and evidence fields enumerate what is already present; no broader internal-equivalence criterion is added.",
+        "remaining_proof": "The named MCP OAuth Client ID Metadata Documents contract is complete at the configured Pi pin. Broader MCP OAuth/provider behavior, MCP resource/output semantics and the global MCP conformance surface remain open under their existing capability records.",
         "queue_orders": [
           26
         ],
