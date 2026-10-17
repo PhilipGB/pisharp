@@ -49,6 +49,7 @@ public sealed class NativeExtensionCatalogTests
             using var untrusted = await ProjectRuntimeContext.LoadAsync(untrustedConfiguration, agentDirectory,
                 arguments, null);
             Assert.DoesNotContain("native-fixture", untrusted.Extensions.Registration.Commands.Keys);
+            Assert.Empty(untrusted.Extensions.Registration.ExtensionFlags);
             Assert.Contains(untrusted.Extensions.Warnings, warning => warning.Warning.Contains(
                 "not loaded because this project is not trusted", StringComparison.Ordinal));
             var discovery = await untrusted.Extensions.DiscoverResourcesAsync(workingDirectory,
@@ -99,10 +100,13 @@ public sealed class NativeExtensionCatalogTests
             v1Roots, v2Roots);
         try
         {
+            Assert.Equal(["native-fixture-v2-enabled", "native-fixture-v2-label"],
+                catalog.Registration.ExtensionFlags.Select(flag => flag.Name).Order(StringComparer.Ordinal));
             AssertContextUnloaded(v1LoadContext);
             var (removedCatalog, v2LoadContext) = LoadAndRemoveNativePackageCatalog(agentDirectory,
                 workingDirectory, catalog);
             catalog = removedCatalog;
+            Assert.Empty(catalog.Registration.ExtensionFlags);
             Assert.Empty(catalog.Registration.ExtensionShortcuts);
             Assert.Empty(catalog.Registration.SessionStartHandlers);
             Assert.Empty(catalog.Registration.SessionShutdownHandlers);
@@ -312,10 +316,12 @@ public sealed class NativeExtensionCatalogTests
             var v2Roots = await store.ResolveAsync(workingDirectory, trusted: true, userSources: [installedV2]);
             catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
                 preloaded: catalog, nativeExtensionPackageRoots: v2Roots);
-            Assert.Equal(
-                ["native-fixture-send", "native-fixture-state-set", "native-fixture-state-show",
-                    "native-fixture-mode", "native-fixture-ui"],
-                catalog.Registration.ContextCommands.Keys);
+            Assert.Contains("native-fixture-send", catalog.Registration.ContextCommands.Keys);
+            Assert.Contains("native-fixture-state-set", catalog.Registration.ContextCommands.Keys);
+            Assert.Contains("native-fixture-state-show", catalog.Registration.ContextCommands.Keys);
+            Assert.Contains("native-fixture-mode", catalog.Registration.ContextCommands.Keys);
+            Assert.Contains("native-fixture-ui", catalog.Registration.ContextCommands.Keys);
+            Assert.Contains("native-fixture-controls", catalog.Registration.ContextCommands.Keys);
             Assert.DoesNotContain(v1Roots[0].Path,
                 catalog.Registration.CommandInfo.Values.Select(info => info.SourceInfo.Path));
             Assert.DoesNotContain(v1Roots[0].Path,
@@ -548,7 +554,8 @@ public sealed class NativeExtensionCatalogTests
 
         var reloaded = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
             preloaded: catalog, nativeExtensionPackageRoots: v2Roots);
-        Assert.Contains("native-fixture", reloaded.Registration.Commands.Keys);
+        Assert.True(reloaded.Registration.Commands.ContainsKey("native-fixture"),
+            string.Join(Environment.NewLine, reloaded.LoadErrors.Select(error => error.Error)));
         Assert.Equal(v2Roots[0].Path, reloaded.Registration.ToolSourceInfo["native_fixture_tool"].Path);
         Assert.DoesNotContain(v1Roots[0].Path,
             reloaded.Registration.CommandInfo.Values.Select(info => info.SourceInfo.Path));

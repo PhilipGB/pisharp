@@ -99,11 +99,7 @@ internal static class InteractiveMode
                 modelBinding,
                 modelTransitions,
                 execution.AbortCurrentRun,
-                _ =>
-                {
-                    execution.AbortCurrentRun();
-                    return Task.CompletedTask;
-                },
+                execution.CancelActiveRunAsync,
                 () =>
                 {
                     Interlocked.Exchange(ref shutdownRequested, 1);
@@ -134,7 +130,9 @@ internal static class InteractiveMode
                 }, projectBinding.Configuration.ExtensionMode, projectBinding.Configuration.HasUserInterface,
                 projectBinding.Configuration.ExtensionUi, controls)
             {
-                Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path)
+                Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path),
+                SettingsAndFlags = PiSharpExtensionSettingsFlagContextFactory.Create(projectBinding,
+                    commandInfo.SourceInfo.Path)
             };
         }
 

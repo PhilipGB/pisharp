@@ -42,7 +42,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     string extensionMode = "rpc",
     bool extensionHasUserInterface = false,
     PublicExtensionUi? extensionUi = null,
-    Func<Action, Func<CancellationToken, Task>, Action, PiSharpExtensionCommandControlOperations>? createCommandControlOperations = null)
+    Func<Action, Func<CancellationToken, Task>, Action, PiSharpExtensionCommandControlOperations>? createCommandControlOperations = null,
+    Func<string, PiSharpExtensionSettingsFlagContext>? createSettingsFlagContext = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -492,7 +493,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                 run.PendingPromptCount > 0, SendUserMessageAsync, SendCustomMessageAsync,
                 extensionMode, extensionHasUserInterface, extensionUi)
             {
-                Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path)
+                Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path),
+                SettingsAndFlags = createSettingsFlagContext?.Invoke(commandInfo.SourceInfo.Path)
             };
         }
 
@@ -500,7 +502,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             run.PendingPromptCount > 0, SendUserMessageAsync, SendCustomMessageAsync,
             extensionMode, extensionHasUserInterface, extensionUi, controls)
         {
-            Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path)
+            Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path),
+            SettingsAndFlags = createSettingsFlagContext?.Invoke(commandInfo.SourceInfo.Path)
         };
     }
 

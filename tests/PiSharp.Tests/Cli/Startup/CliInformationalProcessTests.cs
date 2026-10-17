@@ -160,4 +160,39 @@ public sealed class CliInformationalProcessTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Theory]
+    [InlineData("--help")]
+    [InlineData("--version")]
+    [InlineData("--provider")]
+    public async Task UnknownArgumentIsNotHiddenByInformationalOrProviderOptions(string laterOption)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-unknown-option-order-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        try
+        {
+            var start = new ProcessStartInfo("dotnet")
+            {
+                WorkingDirectory = root,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+            start.ArgumentList.Add("--definitely-unknown-option");
+            start.ArgumentList.Add(laterOption);
+            if (laterOption == "--provider") start.ArgumentList.Add("openai");
+            start.Environment["PISHARP_AGENT_DIR"] = agent;
+            using var process = Process.Start(start)!;
+            var output = process.StandardOutput.ReadToEndAsync();
+            var error = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(2, process.ExitCode);
+            Assert.Equal("", await output);
+            Assert.Equal("Unknown option: --definitely-unknown-option\n",
+                (await error).ReplaceLineEndings("\n"));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

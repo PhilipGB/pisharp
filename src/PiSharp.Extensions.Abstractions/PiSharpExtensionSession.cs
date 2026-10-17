@@ -135,6 +135,7 @@ public sealed class PiSharpExtensionSessionContext : IDisposable
     /// <summary>Sets or clears a label on an existing session entry, then saves through the host session store.</summary>
     /// <param name="entryId">The ID of an existing session entry.</param>
     /// <param name="label">The label to set, or null or empty to clear it.</param>
+    /// <param name="cancellationToken">A token used to cancel the save operation.</param>
     public async Task SetLabelAsync(string entryId, string? label, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _isActive) == 0, this);

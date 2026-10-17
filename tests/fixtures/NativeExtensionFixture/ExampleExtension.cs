@@ -14,6 +14,7 @@ public sealed class ExampleExtension : IPiSharpExtension
 
     public void Configure(IPiSharpExtensionBuilder builder)
     {
+        NativeExtensionControlCommands.Register(builder, FixtureRevision);
         builder.AddCommand("native-fixture", (arguments, _) =>
             Task.FromResult($"{FixtureRevision} command / private dependency {NativeDependencyInfo.Version}: {arguments}"),
             "Run the native extension fixture command.");
@@ -113,19 +114,30 @@ public sealed class ExampleExtension : IPiSharpExtension
                     await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
             }
 
+            var structuredPrompt = eventData.Prompt.StartsWith("native-fixture-structured:", StringComparison.Ordinal);
             var systemPrompt = eventData.SystemPrompt + $"\n{FixtureRevision} extension / private dependency " +
                 NativeDependencyInfo.Version + " / working directory: " + context.WorkingDirectory;
             var messageMarker = eventData.MessageType == PiSharpTurnMessageType.Custom
                 ? $"native-fixture-{FixtureRevision}-before-custom:{eventData.StartingCustomMessage?.CustomType}"
                 : $"native-fixture-{FixtureRevision}-before-user";
             systemPrompt += "\n" + messageMarker;
-            return new PiSharpBeforeAgentStartResult(systemPrompt)
+            return new PiSharpBeforeAgentStartResult(structuredPrompt ? null : systemPrompt)
             {
                 InjectedMessage = eventData.MessageType == PiSharpTurnMessageType.User
                     ? new($"native-fixture-{FixtureRevision}-injected",
                         $"native-fixture-{FixtureRevision}-injected", Display: false)
                     : null
             };
+        });
+        builder.AddBeforeAgentStartHandler((eventData, _, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (eventData.Prompt.StartsWith("native-fixture-structured:", StringComparison.Ordinal))
+            {
+                eventData.SystemPromptOptions.Sections["addendum"] =
+                    $"native-fixture-{FixtureRevision}-structured-prompt-options";
+            }
+            return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
         });
         builder.AddContextTransform((messages, cancellationToken) =>
         {

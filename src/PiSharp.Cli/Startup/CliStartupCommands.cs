@@ -28,10 +28,27 @@ internal static class CliStartupCommands
                 Console.In, output, error, interactive: !Console.IsInputRedirected && !Console.IsOutputRedirected))
             return null;
         CliArguments cli;
-        try { cli = CliArguments.ParseForExtensionDiscovery(args); }
+        string? pendingUnknownOption = null;
+        try { _ = CliArguments.Parse(args); }
+        catch (ArgumentException parseError) when (parseError.Message.StartsWith("Unknown option:", StringComparison.Ordinal))
+        {
+            pendingUnknownOption = parseError.Message;
+        }
+        catch (ArgumentException)
+        {
+            // Extension discovery validates the complete argument set after registrations are available.
+        }
+        try { cli = CliArguments.ParseForExtensionDiscovery(args) with { PendingUnknownOption = pendingUnknownOption }; }
         catch (ArgumentException e)
         {
             error.WriteLine(e.Message);
+            Environment.ExitCode = 2;
+            return null;
+        }
+        if (cli.PendingUnknownOption is { } unknownOption &&
+            (cli.Help || cli.Version || cli.Provider is not null && cli.ModelOverride is null && !cli.ListModels))
+        {
+            error.WriteLine(unknownOption);
             Environment.ExitCode = 2;
             return null;
         }

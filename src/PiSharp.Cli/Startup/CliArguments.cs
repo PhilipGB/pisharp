@@ -5,6 +5,7 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
     string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null, bool NoContextFiles = false, bool NoBuiltinTools = false, bool NoExtensions = false, bool NoSkills = false, bool NoPromptTemplates = false, bool Version = false, bool Offline = false, IReadOnlyList<string>? SkillPaths = null, IReadOnlyList<string>? PromptTemplatePaths = null, IReadOnlyList<string>? ExtensionPaths = null, string? ListModelsFilter = null, bool Verbose = false,
     IReadOnlyList<string>? ThemePaths = null, string? UseTheme = null, bool NoThemes = false)
 {
+    internal string? PendingUnknownOption { get; init; }
     internal bool? UsesDefaultToolSelection { get; init; }
     internal IReadOnlyList<string>? DefaultToolModifiers { get; init; }
     internal IReadOnlyDictionary<string, PiSharp.Extensions.Abstractions.PiSharpExtensionFlagValue> ExtensionFlagValues { get; init; } =

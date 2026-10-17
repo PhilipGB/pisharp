@@ -22,8 +22,10 @@ internal static class RpcModeComposition
 
         IReadOnlyList<PiSharpExtensionCommandInfo> GetExtensionCommands()
         {
-            var commands = extensionLease.Current.Registration.CommandInfo.Select(pair =>
-                new PiSharpExtensionCommandInfo(pair.Key, pair.Value.Description, "extension", pair.Value.SourceInfo.Path)).ToList();
+            var commands = InteractiveCommandCatalog.BuiltIns.Select(command =>
+                new PiSharpExtensionCommandInfo(command.Command, command.Description, "builtin")).ToList();
+            commands.AddRange(extensionLease.Current.Registration.CommandInfo.Select(pair =>
+                new PiSharpExtensionCommandInfo(pair.Key, pair.Value.Description, "extension", pair.Value.SourceInfo.Path)));
             if (projectBinding.Resources is { } resources)
             {
                 commands.AddRange(resources.Prompts.Select(item =>
@@ -129,6 +131,8 @@ internal static class RpcModeComposition
                 modelTransitions,
                 abort,
                 cancel,
-                shutdown)).ServeAsync();
+                shutdown),
+            createSettingsFlagContext: sourcePath =>
+                PiSharpExtensionSettingsFlagContextFactory.Create(projectBinding, sourcePath)).ServeAsync();
     }
 }

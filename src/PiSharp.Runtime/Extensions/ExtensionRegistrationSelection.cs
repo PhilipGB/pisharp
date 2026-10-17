@@ -50,6 +50,7 @@ public sealed partial class ExtensionRegistration
                 Reconcile(_resourceDiscoveryHandlers, entry => entry.ExtensionSource, (entry, source) => entry with { ExtensionSource = source });
                 Reconcile(_projectTrustHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                 Reconcile(_shortcuts, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                Reconcile(_extensionFlags, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
             }
 
         void Reconcile<T>(List<T> entries, Func<T, ResourceSourceInfo> getSource, Func<T, ResourceSourceInfo, T> update)
