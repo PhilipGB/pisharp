@@ -162,7 +162,7 @@ public sealed class ConversationSession
     {
         if (PiSharpCustomMessageProjection.TryRead(message, out var customMessage))
         {
-            AppendCustomMessage(customMessage);
+            message.MessageId = AppendCustomMessage(customMessage).Id;
             return;
         }
         Tree.Append("chat", ConversationMessageCodec.EncodeMessage(message, nestedToolCalls));

@@ -10,7 +10,9 @@ internal static class PiSharpCustomMessageProjection
     private const string DisplayKey = "pisharp.extension.display";
     private const string SourceKey = "pisharp.extension.source";
 
-    public static ChatMessage ToChatMessage(PiSharpCustomMessage message)
+    public static ChatMessage ToChatMessage(PiSharpCustomMessage message) => ToChatMessage(message, null);
+
+    public static ChatMessage ToChatMessage(PiSharpCustomMessage message, string? entryId)
     {
         ArgumentNullException.ThrowIfNull(message);
         ArgumentException.ThrowIfNullOrWhiteSpace(message.CustomType);
@@ -22,7 +24,7 @@ internal static class PiSharpCustomMessageProjection
             [DisplayKey] = message.Display
         };
         if (message.Source is { Length: > 0 } source) properties[SourceKey] = source;
-        return new ChatMessage(ChatRole.User, message.Content) { AdditionalProperties = properties };
+        return new ChatMessage(ChatRole.User, message.Content) { MessageId = entryId, AdditionalProperties = properties };
     }
 
     public static bool TryRead(ChatMessage message, out PiSharpCustomMessage customMessage)

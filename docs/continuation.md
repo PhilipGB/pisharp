@@ -50,6 +50,20 @@ the classified baseline. Exact-head push and PR merge-result CI pass on
 both confirm 2,204/2,204 .NET tests and MCP conformance. See the updated [native
 extension bridge receipt](parity/fixtures/native-extension-runtime-bridge-2026-10-17.md).
 
+The occurrence/persistence review correction assigns custom messages their
+canonical entry IDs, preserves those IDs through request snapshots and session
+restoration, and awaits the context-only message save before provider dispatch.
+Identical sends stay distinct while a cloned snapshot of the same occurrence
+is reconciled once. Eight additional regressions cover repeated messages in a
+real tool loop, a blocked save followed by disk recovery before run completion,
+streaming/non-streaming snapshots and failed-save dispatch prevention. The
+combined focused delivery/turn-start suite passes 23/23. The recovery fixture
+loads the saved file into an independent runtime while the original provider
+continuation is held; it does not kill the process.
+Final local verification passes the complete .NET suite (2,212/2,212, zero
+skipped), format verification, a zero-warning build, and documentation paths
+(137 documents / 531 references).
+
 This completes only the bounded native runtime bridge milestone. The broad
 extension API and orchestration capability remain `in_progress`; there is no
 global parity promotion. Per-session state, settings, UI/keybindings, provider

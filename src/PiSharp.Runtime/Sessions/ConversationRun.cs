@@ -623,15 +623,22 @@ public sealed class ConversationRun
         return appended;
     }
 
-    private IReadOnlyList<ChatMessage> TakePendingProviderContextMessages()
+    private async Task<IReadOnlyList<ChatMessage>> TakePendingProviderContextMessagesAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        ChatMessage[] messages;
         lock (_runtimeStateGate)
         {
             FlushPendingContextCustomMessagesUnsafe(includeInNextProviderRequest: true);
-            var messages = _pendingProviderContextMessages.ToArray();
+            messages = _pendingProviderContextMessages.ToArray();
             _pendingProviderContextMessages.Clear();
-            return messages;
         }
+        if (messages.Length == 0) return messages;
+
+        // A continuation must never observe a canonical message that recovery could lose.
+        // Save before releasing the handoff, including when a request is cancelled.
+        if (_save is not null) await _save(CancellationToken.None);
+        return messages;
     }
 
     private void EndPromptLoop(object owner) => _promptDelivery.End(owner, () =>
@@ -1022,10 +1029,10 @@ public sealed class ConversationRun
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
-                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessages)
+                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync)
                 : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
-                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessages);
+                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync);
             await foreach (var update in attemptStream.PumpAsync(updates, durable,
                 usage => Conversation.AppendUsage(attribution.Usage(usage)), cancellationToken))
                 yield return update;

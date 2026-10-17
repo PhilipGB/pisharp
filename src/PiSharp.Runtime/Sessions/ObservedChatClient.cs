@@ -1,7 +1,6 @@
 using System.ClientModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
-using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Tools;
 
@@ -20,14 +19,14 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<IReadOnlyList<ChatMessage>, ChatOptions, System.Text.Json.JsonElement?>? projectToolTranscript = null,
     Func<string?>? getSystemInstructions = null,
     Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null,
-    Func<IReadOnlyList<ChatMessage>>? takeContextMessagesForRequest = null)
+    Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         publish(new("model_request_started"));
-        var original = WithSteering(WithContextMessages(messages)).ToArray();
+        var original = WithSteering(await WithContextMessagesAsync(messages, cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
@@ -74,7 +73,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         publish(new("model_request_started"));
-        var original = WithSteering(WithContextMessages(messages)).ToArray();
+        var original = WithSteering(await WithContextMessagesAsync(messages, cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
@@ -464,25 +463,24 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         return messages.Concat(steering);
     }
 
-    private IEnumerable<ChatMessage> WithContextMessages(IEnumerable<ChatMessage> messages)
+    private async Task<IEnumerable<ChatMessage>> WithContextMessagesAsync(IEnumerable<ChatMessage> messages,
+        CancellationToken cancellationToken)
     {
-        var contextMessages = takeContextMessagesForRequest?.Invoke() ?? [];
+        var contextMessages = takeContextMessagesForRequestAsync is null ? [] :
+            await takeContextMessagesForRequestAsync(cancellationToken);
         if (contextMessages.Count == 0) return messages;
 
         var combined = messages.ToList();
         foreach (var contextMessage in contextMessages)
         {
-            if (!combined.Any(existing => IsSameCustomMessage(existing, contextMessage)))
+            // Canonical entry IDs survive MAF message cloning. Equal content can describe
+            // different occurrences, so only the same entry is already represented here.
+            if (!combined.Any(existing => ReferenceEquals(existing, contextMessage) ||
+                    contextMessage.MessageId is { Length: > 0 } entryId && existing.MessageId == entryId))
                 combined.Add(contextMessage);
         }
         return combined;
     }
-
-    private static bool IsSameCustomMessage(ChatMessage left, ChatMessage right) =>
-        PiSharpCustomMessageProjection.TryRead(left, out var leftCustom) &&
-        PiSharpCustomMessageProjection.TryRead(right, out var rightCustom) &&
-        leftCustom.CustomType == rightCustom.CustomType && leftCustom.Content == rightCustom.Content &&
-        leftCustom.Display == rightCustom.Display && leftCustom.Source == rightCustom.Source;
 
     private ChatOptions? ApplyCurrentToolLoadout(ChatOptions? options)
     {

@@ -130,7 +130,7 @@ internal static class PiJsonlEntryCodec
             ? PiSharpCustomMessageProjection.ToChatMessage(new PiSharpCustomMessage(customType, contentText, display)
             {
                 Source = StringProperty(node.Payload, "source")
-            })
+            }, node.Id)
             : new ChatMessage(ChatRole.User, contentParts);
     }
 
@@ -163,7 +163,7 @@ internal static class PiJsonlEntryCodec
             return PiSharpCustomMessageProjection.ToChatMessage(customMessage with
             {
                 Content = string.Concat(ReadContent(content).OfType<TextContent>().Select(part => part.Text))
-            });
+            }, message.MessageId);
         return new ChatMessage(message.Role, ReadContent(content));
     }
 

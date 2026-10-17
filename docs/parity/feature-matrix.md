@@ -16,6 +16,16 @@ resume checks. Exact-head push CI and PR merge-result CI pass
 ([push run 38993113554](https://github.com/PhilipGB/pisharp/actions/runs/38993113554),
 [PR run 38993115988](https://github.com/PhilipGB/pisharp/actions/runs/38993115988)).
 
+Custom-delivery review corrections keep `NextTurn` staged independently,
+include context-only messages after tool results in natural continuations,
+reconcile custom occurrences by canonical entry ID, and await their session
+save before provider dispatch. Focused regressions cover identical sends,
+cloned snapshots and recovery from disk before the active run finishes; their
+scope and validation are recorded in the milestone receipt.
+The combined focused suite passes 23/23 and the full local .NET suite passes
+2,212/2,212 with zero skips, with format, zero-warning build and documentation
+validation passing.
+
 This bounded milestone does not claim global extension parity. The broad
 `feature-extensions-net-api` and `extension-orchestration-api` ledger rows stay
 `in_progress`; no capability status changed. See the

@@ -219,6 +219,13 @@
       "external_package": "Normal dotnet pack and child-process installation are followed by a fresh runtime; composed deterministic agent acceptance executes a loaded package tool loop and v2 replacement.",
       "persistence_and_compaction": "A separate runtime process creates and saves a custom-trigger turn, compacts history, exits, and a second process resumes the session without replay before completing an ordinary follow-up. Session type and custom node remain coherent."
     },
+    "context_only_delivery_review": {
+      "occurrence_identity": "Custom messages use canonical session-entry IDs in MEAI projections and cloned request snapshots; identical sends remain separate occurrences and the same occurrence is injected once.",
+      "persistence_boundary": "The asynchronous provider-context handoff awaits the session save after tool results and custom messages are canonical, before dispatch. Failed persistence prevents dispatch.",
+      "focused_tests": "23/23 passed: 15 existing turn-start/delivery checks plus eight occurrence, cloned-snapshot, persistence-gate, recovery and failed-save checks.",
+      "recovery_scope": "Loads the session from disk into an independent runtime while the original continuation is held and before run_finished; verifies the custom message and tool result without tool replay. No separate-process kill is used.",
+      "local_verification": "Format passed; warnings-as-errors solution build passed with zero warnings/errors; full .NET suite 2212/2212, zero skipped, TMPDIR=/tmp; docs paths 137 documents / 531 references. One runner invocation failed before discovery with CLR 0x80131506; the complete rerun passed."
+    },
     "local_verification": {
       "restore": "passed",
       "format": "passed",

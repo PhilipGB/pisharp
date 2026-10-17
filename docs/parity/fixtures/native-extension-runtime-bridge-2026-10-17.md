@@ -68,7 +68,7 @@ message in provider request two, confirms the run uses exactly two requests
 (the first returned the tool call), and confirms a later ordinary prompt still
 sees the single durable custom-message entry.
 
-Focused `ExtensionBeforeAgentStartTests` pass **15/15**. Format verification
+At the continuation-timing checkpoint below, focused `ExtensionBeforeAgentStartTests` pass **15/15**. Format verification
 passes; the warnings-as-errors solution build passes with zero warnings; the
 full .NET suite passes **2,204/2,204**, zero skipped, using `TMPDIR=/tmp` for
 the sandbox's temp-path-sensitive fixtures. Node passes **24/24**, Python
@@ -82,6 +82,44 @@ and [PR merge-result run
 39023997847](https://github.com/PhilipGB/pisharp/actions/runs/39023997847) both
 pass `test` and `mcp-conformance`; both test jobs report 2,204/2,204, zero
 skipped.
+
+## Custom-message occurrence and persistence correction
+
+Custom context messages now carry their canonical session-entry IDs through
+MEAI projection and restoration. The request bridge reconciles by occurrence
+ID, including cloned snapshots; it never uses message content as identity.
+Repeated identical sends therefore remain distinct entries and distinct
+provider context messages.
+
+The bridge awaits the session save after completed tool results and custom
+messages become canonical, before preparing or dispatching the continuation
+request. A failed save prevents dispatch.
+
+- `ExtensionCustomMessageContinuationTests.IdenticalContextOnlyMessagesRemainSeparateOccurrencesThroughContinuationAndLaterPrompt`
+  verifies the earlier identical occurrence precedes the tool result, the
+  second follows it, both canonical entry IDs reach the provider, the run
+  still uses exactly two requests, and a later prompt has no third copy.
+- `ContextOnlyMessageIsSavedBeforeContinuationAndRecoveredBeforeRunFinishes`
+  blocks the custom-message save, verifies the provider has not continued and
+  the disk checkpoint contains the tool outcome but no custom message, then
+  releases the save. While the provider continuation is held, it loads the
+  saved file into an independent runtime and verifies the custom entry and
+  tool result survive recovery without re-executing the tool. The file has no
+  `run_finished` entry at that boundary. This is a disk/recovery test, not a
+  separate-process kill fixture.
+- `ObservedChatClientContextMessagesTests` covers streaming and non-streaming
+  requests with snapshots that do or do not already contain a clone of the
+  pending occurrence, plus dispatch prevention when persistence fails.
+
+The new regressions reproduced both defects before the fix. The combined
+focused suite passes **23/23** (the existing 15 turn-start/delivery checks and
+eight new boundary checks).
+
+Final local verification passes format checking, the warnings-as-errors
+solution build (zero warnings/errors), the full .NET suite **2,212/2,212**
+(zero skips, `TMPDIR=/tmp`), and documentation paths (**137 documents / 531
+references**). One additional local runner invocation exited before discovery
+with internal CLR error `0x80131506`; the retry passed the complete suite.
 
 ## Remaining boundaries
 
