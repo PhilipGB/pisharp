@@ -65,8 +65,13 @@ message.
 Focused `ExtensionBeforeAgentStartTests` pass **15/15**. Format verification
 passes; the warnings-as-errors solution build passes with zero warnings; the
 full .NET suite passes **2,204/2,204**, zero skipped, using `TMPDIR=/tmp` for
-the sandbox's temp-path-sensitive fixtures. Exact-head CI for the correction
-is pending.
+the sandbox's temp-path-sensitive fixtures. Documentation paths verify **137
+documents / 531 references**. Exact-head CI for the correction passes on source
+`d0ee1611ce1aa4008beaf79269cd12ee611e39ed`: [push run
+39021311731](https://github.com/PhilipGB/pisharp/actions/runs/39021311731)
+and [PR merge-result run
+39021313792](https://github.com/PhilipGB/pisharp/actions/runs/39021313792)
+both pass `test` (2,204/2,204, zero skipped) and `mcp-conformance`.
 
 ## Remaining boundaries
 
