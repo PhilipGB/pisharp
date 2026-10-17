@@ -39,6 +39,66 @@ public sealed class ExampleExtension : IPiSharpExtension
 
             return $"{FixtureRevision} command sent {operation}";
         }, "Send user text or a custom message through the host conversation.");
+        builder.AddCommand("native-fixture-state-set", async (value, context, cancellationToken) =>
+        {
+            var session = context.Session ?? throw new InvalidOperationException("The host did not provide session state.");
+            await session.AppendEntryAsync("native-fixture-state",
+                System.Text.Json.JsonSerializer.SerializeToElement(new { revision = FixtureRevision, value }),
+                cancellationToken);
+            return $"{FixtureRevision} state saved";
+        }, "Append a value to the active session's durable extension state.");
+        builder.AddCommand("native-fixture-state-show", (_, context, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var entries = context.Session?.Entries
+                .Where(entry => entry.CustomType == "native-fixture-state")
+                .Select(entry => entry.Data.GetProperty("value").GetString() ?? "")
+                .ToArray() ?? [];
+            return Task.FromResult(entries.Length == 0 ? "no native fixture state" : string.Join("|", entries));
+        }, "Show values reconstructed from the active session branch.");
+        builder.AddCommand("native-fixture-mode", (_, context, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult($"{context.Mode}:{context.HasUserInterface}");
+        }, "Report the current host mode and UI availability.");
+        builder.AddCommand("native-fixture-ui", async (_, context, cancellationToken) =>
+        {
+            var environment = await context.Ui.SelectAsync("Fixture environment", ["Development", "Production"],
+                cancellationToken);
+            if (environment is null) return "native fixture UI selection cancelled";
+            if (environment == "Production" && !await context.Ui.ConfirmAsync("Confirm", "Use production?",
+                    cancellationToken))
+                return "native fixture UI confirmation declined";
+
+            var label = await context.Ui.InputAsync("Environment label", "fixture label", cancellationToken);
+            if (label is null) return "native fixture UI input cancelled";
+            context.Ui.Notify($"native-fixture-ui-{FixtureRevision}:{environment}:{label}");
+            return $"{FixtureRevision} UI completed";
+        }, "Exercise select, confirm, input and notification through the host UI.");
+        builder.AddShortcut(PiSharpShortcutKey.Parse("ctrl+shift+g"), (context, _) =>
+        {
+            context.Ui.Notify($"native-fixture-shortcut-{FixtureRevision}");
+            return Task.CompletedTask;
+        }, description: "Show the native fixture shortcut marker.");
+        builder.AddSessionStartHandler((eventData, context, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var values = context.Session?.Entries
+                .Where(entry => entry.CustomType == "native-fixture-state")
+                .Select(entry => entry.Data.GetProperty("value").GetString() ?? "") ?? [];
+            var marker = $"native-fixture-session-start-{FixtureRevision}:{eventData.Reason}:{string.Join("|", values)}";
+            RecordLifecycleMarker(marker);
+            context.Ui.Notify(marker);
+            return ValueTask.CompletedTask;
+        });
+        builder.AddSessionShutdownHandler((eventData, context, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var marker = $"native-fixture-session-shutdown-{FixtureRevision}:{eventData.Reason}";
+            RecordLifecycleMarker(marker);
+            context.Ui.Notify(marker);
+            return ValueTask.CompletedTask;
+        });
         builder.AddTool(AIFunctionFactory.Create((string value) =>
                 $"{FixtureRevision} tool / private dependency {NativeDependencyInfo.Version}: {value}",
             name: "native_fixture_tool", description: "Returns a fixture response for the supplied value."));
@@ -101,5 +161,11 @@ public sealed class ExampleExtension : IPiSharpExtension
                 PromptPaths: [Path.Combine(resourcePhase, "prompts")],
                 ThemePaths: [Path.Combine(resources, "themes")]));
         });
+    }
+
+    private static void RecordLifecycleMarker(string marker)
+    {
+        var path = Environment.GetEnvironmentVariable("NATIVE_FIXTURE_LIFECYCLE_PATH");
+        if (path is not null) File.AppendAllText(path, marker + Environment.NewLine);
     }
 }

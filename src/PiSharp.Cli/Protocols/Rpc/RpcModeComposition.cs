@@ -27,7 +27,7 @@ internal static class RpcModeComposition
             },
             () => conversationBinding.Run);
 
-        void AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.Adopt(replacement,
+        Task AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.AdoptAsync(replacement,
             presentation.ConfigureMcpAuthorizationUrlPresenter, () =>
             {
                 presentation.RefreshTerminalTheme();

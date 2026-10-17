@@ -465,7 +465,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
                 await StartExtensionRunAsync(token => currentRun.RunCustomMessageEventsAsync(message,
                     commandInfo.SourceInfo.Path, token), cancellationToken);
-            }, extensionMode, extensionHasUserInterface, extensionUi);
+            }, extensionMode, extensionHasUserInterface, extensionUi)
+        {
+            Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path)
+        };
     }
 
     private async Task StartExtensionRunAsync(

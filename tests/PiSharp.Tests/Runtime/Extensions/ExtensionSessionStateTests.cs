@@ -91,6 +91,32 @@ public sealed class ExtensionSessionStateTests
     }
 
     [Fact]
+    public async Task NewConversationDoesNotInheritExtensionEntriesThroughItsParentReference()
+    {
+        var workingDirectory = CreateWorkingDirectory();
+        try
+        {
+            var previous = new ConversationSession(workingDirectory, "fixture-model", null);
+            var previousRun = await ConversationRun.OpenAsync(CreateAgent(new CompleteClient()), previous);
+            using (var previousState = previousRun.CreateExtensionSessionContext())
+            using (var payload = JsonDocument.Parse("""{"value":"previous-only"}"""))
+                await previousState.AppendEntryAsync("counter", payload.RootElement);
+
+            var next = new ConversationSession(workingDirectory, "fixture-model", null,
+                parentSessionPath: Path.Combine(workingDirectory, "previous.session.json"));
+            var nextRun = await ConversationRun.OpenAsync(CreateAgent(new CompleteClient()), next);
+            using var nextState = nextRun.CreateExtensionSessionContext();
+
+            Assert.NotEqual(previous.Id, next.Id);
+            Assert.Empty(nextState.Entries);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ForkAndCompactionKeepOnlyTheStateOnTheirActiveTreePath()
     {
         var workingDirectory = CreateWorkingDirectory();
@@ -156,6 +182,11 @@ public sealed class ExtensionSessionStateTests
             NativeExtensions.PiSharpExtensionSessionShutdownReason? shutdownReason = null;
             adapter.AddSessionShutdownHandler((eventData, _, _) =>
             {
+                calls.Add("failing-shutdown");
+                throw new InvalidOperationException("shutdown failure");
+            });
+            adapter.AddSessionShutdownHandler((eventData, _, _) =>
+            {
                 calls.Add("shutdown");
                 shutdownReason = eventData.Reason;
                 return ValueTask.CompletedTask;
@@ -176,10 +207,13 @@ public sealed class ExtensionSessionStateTests
             await Assert.ThrowsAsync<ObjectDisposedException>(() =>
                 retainedContext!.Session!.AppendEntryAsync("late", latePayload.RootElement));
 
-            await run.NotifySessionShutdownAsync(NativeExtensions.PiSharpExtensionSessionShutdownReason.Quit);
-            await run.NotifySessionShutdownAsync(NativeExtensions.PiSharpExtensionSessionShutdownReason.Quit);
+            var shutdownErrors = await run.NotifySessionShutdownAsync(
+                NativeExtensions.PiSharpExtensionSessionShutdownReason.Quit);
+            Assert.Equal("shutdown failure", Assert.Single(shutdownErrors).Error);
+            Assert.Empty(await run.NotifySessionShutdownAsync(
+                NativeExtensions.PiSharpExtensionSessionShutdownReason.Quit));
             Assert.Equal(NativeExtensions.PiSharpExtensionSessionShutdownReason.Quit, shutdownReason);
-            Assert.Equal(["failing-start", "working-start", "shutdown"], calls);
+            Assert.Equal(["failing-start", "working-start", "failing-shutdown", "shutdown"], calls);
         }
         finally
         {

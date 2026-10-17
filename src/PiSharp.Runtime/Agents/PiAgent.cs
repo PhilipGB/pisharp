@@ -62,7 +62,7 @@ public sealed class PiAgent
     internal ToolDeclarationTranscript GetToolTranscript(AgentSession session) =>
         _toolTranscripts.GetValue(session, _ => new());
 
-    public string SystemInstructions { get; }
+    public string SystemInstructions => GetSystemInstructionsForCurrentLoadout();
     internal JsonElement GetSharePresentation(AgentSession session)
     {
         var loadout = GetToolLoadout(session).Snapshot;
@@ -152,7 +152,8 @@ public sealed class PiAgent
             liveExtensionRegistration.ToolDefinitionsChanged += handler;
         }
         var initialLoadout = _toolCatalog.CreateLoadout().Snapshot;
-        SystemInstructions = BuildSystemInstructions(initialLoadout.Declared, initialLoadout.ActiveToolNames);
+        var initialSystemInstructions = BuildSystemPrompt(initialLoadout.Declared,
+            initialLoadout.ActiveToolNames).Text;
         _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, PublishEvent,
             retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
@@ -166,7 +167,7 @@ public sealed class PiAgent
                 AllowConcurrentInvocation = true,
                 ChatOptions = new ChatOptions
                 {
-                    Instructions = SystemInstructions,
+                    Instructions = initialSystemInstructions,
                     Tools = [],
                     Reasoning = reasoning
                 }
@@ -286,9 +287,6 @@ public sealed class PiAgent
             _toolCatalog.CreateLoadout().Snapshot;
         return BuildSystemPrompt(loadout.Declared, loadout.ActiveToolNames);
     }
-
-    private string BuildSystemInstructions(IReadOnlyList<PiSharpToolDeclaration> declarations,
-        IReadOnlyList<string> activeToolNames) => BuildSystemPrompt(declarations, activeToolNames).Text;
 
     private PiSystemPromptBuilder.Projection BuildSystemPrompt(IReadOnlyList<PiSharpToolDeclaration> declarations,
         IReadOnlyList<string> activeToolNames) => PiSystemPromptBuilder.BuildProjection(_codingTools.WorkingDirectory,

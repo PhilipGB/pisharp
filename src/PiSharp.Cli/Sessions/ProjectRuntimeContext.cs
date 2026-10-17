@@ -149,9 +149,9 @@ internal sealed class ProjectRuntimeContext : IDisposable
     public (string? System, string? Append) Prompts { get; }
     public string Instructions { get; }
     public IReadOnlyList<string> ContextFiles { get; }
-    public ResourceCatalog Resources { get; }
+    public ResourceCatalog Resources { get; private set; }
     public ExtensionCatalog Extensions { get; }
-    public ExtensionResourceDiscovery ExtensionResources { get; }
+    public ExtensionResourceDiscovery ExtensionResources { get; private set; }
     public ConversationStore Store { get; }
     public PiSessionImportService SessionImport { get; }
     public ProjectRuntimeConfiguration Configuration { get; }
@@ -195,7 +195,7 @@ internal sealed class ProjectRuntimeContext : IDisposable
         CancellationToken cancellationToken = default,
         Func<string, CancellationToken, Task<string?>>? providerTokenResolver = null,
         ExtensionResourceDiscoveryReason resourceDiscoveryReason = ExtensionResourceDiscoveryReason.Startup,
-        IReadOnlyList<string>? activeToolNames = null)
+        IReadOnlyList<string>? activeToolNames = null, bool deferExtensionResourceDiscovery = false)
     {
         var cwd = configuration.WorkingDirectory;
         var contextFiles = new List<string>();
@@ -273,10 +273,10 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 Console.Error.WriteLine($"Extension conflict ({conflict.Path}): {conflict.Error}");
             foreach (var warning in extensions.Warnings)
                 Console.Error.WriteLine(warning.Warning);
-            var extensionResources = await extensions.DiscoverResourcesAsync(cwd, resourceDiscoveryReason,
-                cancellationToken);
-            foreach (var error in extensionResources.Errors)
-                Console.Error.WriteLine($"Extension resource discovery failed ({error.ExtensionPath}): {error.Message}");
+            var extensionResources = deferExtensionResourceDiscovery
+                ? EmptyExtensionResources()
+                : await extensions.DiscoverResourcesAsync(cwd, resourceDiscoveryReason, cancellationToken);
+            if (!deferExtensionResourceDiscovery) ReportExtensionResourceErrors(extensionResources);
             var resources = await ResourceCatalog.LoadAsync(cwd, agentDirectory, configuration.Trusted, cancellationToken,
                 discoverSkills: !arguments.NoSkills, discoverPrompts: !arguments.NoPromptTemplates,
                 additionalSkills: arguments.SkillPaths, additionalPrompts: arguments.PromptTemplatePaths,
@@ -294,6 +294,30 @@ internal sealed class ProjectRuntimeContext : IDisposable
             extensions?.Dispose();
             throw;
         }
+    }
+
+    public async Task DiscoverExtensionResourcesAsync(string agentDirectory, CliArguments arguments,
+        ExtensionResourceDiscoveryReason reason, CancellationToken cancellationToken = default)
+    {
+        var extensionResources = await Extensions.DiscoverResourcesAsync(WorkingDirectory, reason, cancellationToken);
+        ReportExtensionResourceErrors(extensionResources);
+        Resources = await ResourceCatalog.LoadAsync(WorkingDirectory, agentDirectory, Configuration.Trusted,
+            cancellationToken, discoverSkills: !arguments.NoSkills, discoverPrompts: !arguments.NoPromptTemplates,
+            additionalSkills: arguments.SkillPaths, additionalPrompts: arguments.PromptTemplatePaths,
+            userSkills: Configuration.BaseUserSettings.Skills, projectSkills: Configuration.ProjectSettings?.Skills,
+            userPrompts: Configuration.BaseUserSettings.Prompts, projectPrompts: Configuration.ProjectSettings?.Prompts,
+            extensionResources: extensionResources, userPackages: Configuration.BaseUserSettings.Packages,
+            projectPackages: Configuration.ProjectSettings?.Packages,
+            managedPackageRoots: Configuration.ManagedPackageRoots);
+        ExtensionResources = extensionResources;
+    }
+
+    private static ExtensionResourceDiscovery EmptyExtensionResources() => new([], [], [], []);
+
+    private static void ReportExtensionResourceErrors(ExtensionResourceDiscovery extensionResources)
+    {
+        foreach (var error in extensionResources.Errors)
+            Console.Error.WriteLine($"Extension resource discovery failed ({error.ExtensionPath}): {error.Message}");
     }
 
     internal static void ActivateReachTool(ExtensionRegistration registration, string name)

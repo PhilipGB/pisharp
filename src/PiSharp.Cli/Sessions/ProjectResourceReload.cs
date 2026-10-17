@@ -22,7 +22,8 @@ internal sealed class ProjectResourceReload(string agentDirectory, string? confi
                 nextConfiguration.Settings, getActiveToolNames(), Environment.GetEnvironmentVariable);
             var nextProject = await ProjectRuntimeContext.LoadAsync(nextConfiguration, agentDirectory, plan.Arguments,
                 configuredSessionDirectory, providerTokenResolver: models.GetApiKeyForProviderAsync,
-                resourceDiscoveryReason: ExtensionResourceDiscoveryReason.Reload, activeToolNames: plan.ActiveToolNames);
+                resourceDiscoveryReason: ExtensionResourceDiscoveryReason.Reload, activeToolNames: plan.ActiveToolNames,
+                deferExtensionResourceDiscovery: true);
             return new(nextConfiguration, nextProject, plan);
         }
         catch

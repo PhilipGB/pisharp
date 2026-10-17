@@ -2,6 +2,7 @@ using PiSharp.Cli.Composition;
 using PiSharp.Runtime.Codemode;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Cli.Sessions;
 
@@ -11,7 +12,8 @@ internal static class ConversationStartup
 {
     public static async Task<OpenedConversation?> OpenAsync(ActiveProjectRuntime projectBinding,
         ActiveModelRuntime initialModel, ProviderModelRuntime modelRuntime, ModelRuntimeController modelRuntimeController,
-        ICodemodeModels codemodeModels, ConversationRunComposition runComposition, string currentDirectory, string? explicitThinking)
+        ICodemodeModels codemodeModels, ConversationRunComposition runComposition, string agentDirectory,
+        string currentDirectory, string? explicitThinking)
     {
         var cli = projectBinding.Arguments;
         var projectRuntime = projectBinding.Runtime;
@@ -51,6 +53,9 @@ internal static class ConversationStartup
             if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
             var initialPath = sessionPath;
             conversationRun = await runComposition.OpenAsync(modelBinding, agent, conversation, initialPath);
+            await ExtensionSessionLifecycleHost.NotifyStartAsync(conversationRun, startupConversation.StartReason);
+            await projectRuntime.DiscoverExtensionResourcesAsync(agentDirectory, cli,
+                ExtensionResourceDiscoveryReason.Startup);
             if ((cli.SessionName is not null || cli.ForkSource is not null) && sessionPath is not null)
                 await store.SaveAsync(conversation, sessionPath);
             initialNameChange?.Commit();

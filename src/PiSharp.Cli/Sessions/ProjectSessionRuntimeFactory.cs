@@ -40,7 +40,7 @@ internal sealed class ProjectSessionRuntimeFactory(
         var sourceSessionDirectory = keepSourceSessionDirectory ? Path.GetDirectoryName(path) : null;
         var project = await ProjectRuntimeContext.LoadAsync(configuration, agentDirectory, arguments,
             configuredSessionDirectory, sourceSessionDirectory, cancellationToken,
-            modelRuntime.GetApiKeyForProviderAsync);
+            modelRuntime.GetApiKeyForProviderAsync, deferExtensionResourceDiscovery: true);
         modelRuntime.SetVirtualModelRegistry(project.Extensions.Registration.VirtualModels);
         var createdImportedSession = false;
         string? destinationPath = null;

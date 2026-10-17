@@ -23,9 +23,12 @@ internal sealed class RpcPromptCommandHandler(JsonLineWriter output, Func<Extens
         if (activeExtensions.ContextCommands.TryGetValue(name, out var contextHandler))
         {
             if (createCommandContext is null || !activeExtensions.CommandInfo.TryGetValue(name, out var info)) return false;
-            var context = createCommandContext(name, info);
             var contextArguments = separator < 0 ? "" : prompt[(separator + 1)..];
-            execute = token => contextHandler(contextArguments, context, token);
+            execute = async token =>
+            {
+                using var context = createCommandContext(name, info);
+                return await contextHandler(contextArguments, context, token);
+            };
         }
         else if (activeExtensions.Commands.TryGetValue(name, out var handler))
         {

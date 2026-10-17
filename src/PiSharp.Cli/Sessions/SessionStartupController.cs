@@ -1,8 +1,10 @@
 using PiSharp.Runtime.Sessions;
+using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Cli.Sessions;
 
-internal sealed record StartupConversation(ConversationSession Conversation, string? Path);
+internal sealed record StartupConversation(ConversationSession Conversation, string? Path,
+    PiSharpExtensionSessionStartReason StartReason);
 internal sealed record StartupModelSelection(ModelSelection Selection, string Thinking, bool RebuildRuntime);
 
 internal static class SessionStartupController
@@ -21,6 +23,7 @@ internal static class SessionStartupController
         ConversationSession conversation;
         if (cli.SessionPath is not null && sessionPath is null)
             sessionPath = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.SessionPath).Path;
+        var resumesExistingSession = sessionPath is not null && File.Exists(sessionPath);
         if (cli.ForkSource is not null)
         {
             var sourcePath = cli.ForkSource.Contains(Path.DirectorySeparatorChar) || cli.ForkSource.EndsWith(".session.json", StringComparison.Ordinal) ||
@@ -46,7 +49,10 @@ internal static class SessionStartupController
             conversation.SelectModel(connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
             if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
         }
-        return new(conversation, sessionPath);
+        var reason = cli.ForkSource is not null
+            ? PiSharpExtensionSessionStartReason.Fork
+            : resumesExistingSession ? PiSharpExtensionSessionStartReason.Resume : PiSharpExtensionSessionStartReason.Startup;
+        return new(conversation, sessionPath, reason);
     }
 
     public static async Task<StartupModelSelection> ResolveModelAsync(ConversationSession conversation,

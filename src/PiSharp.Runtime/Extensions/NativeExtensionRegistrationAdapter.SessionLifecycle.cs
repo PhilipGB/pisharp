@@ -14,13 +14,7 @@ internal sealed partial class NativeExtensionRegistrationAdapter
             var session = context.CreatePublicSessionContext(source);
             try
             {
-                var publicContext = new NativeExtensions.PiSharpExtensionContext(context.WorkingDirectory)
-                {
-                    IsIdle = context.IsIdle,
-                    IsProjectTrusted = context.IsProjectTrusted,
-                    HasPendingMessages = context.HasPendingMessages,
-                    Session = session
-                };
+                var publicContext = NativeExtensionPublicContextMapper.Create(context) with { Session = session };
                 await handler(new(reason), publicContext, cancellationToken).ConfigureAwait(false);
             }
             finally { session?.Dispose(); }
@@ -37,13 +31,7 @@ internal sealed partial class NativeExtensionRegistrationAdapter
             var session = context.CreatePublicSessionContext(source);
             try
             {
-                var publicContext = new NativeExtensions.PiSharpExtensionContext(context.WorkingDirectory)
-                {
-                    IsIdle = context.IsIdle,
-                    IsProjectTrusted = context.IsProjectTrusted,
-                    HasPendingMessages = context.HasPendingMessages,
-                    Session = session
-                };
+                var publicContext = NativeExtensionPublicContextMapper.Create(context) with { Session = session };
                 await handler(new(reason), publicContext, cancellationToken).ConfigureAwait(false);
             }
             finally { session?.Dispose(); }

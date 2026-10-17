@@ -5,7 +5,7 @@ namespace PiSharp.Cli.Sessions;
 
 internal sealed class TerminalSessionImport(ActiveProjectRuntime project, ActiveModelRuntime model,
     ActiveConversationRuntime conversation, Func<Task<string?>> readConfirmation,
-    Func<ProjectSessionRuntimeFactory> getFactory, Action<ProjectSessionRuntime> adopt)
+    Func<ProjectSessionRuntimeFactory> getFactory, Func<ProjectSessionRuntime, Task> adopt)
 {
     public async Task ImportAsync(string argument)
     {
@@ -22,7 +22,7 @@ internal sealed class TerminalSessionImport(ActiveProjectRuntime project, Active
         }
         if (conversation.Path is not null) await project.Store.SaveAsync(conversation.Conversation, conversation.Path);
         using var imported = await getFactory().OpenAsync(path, project.WorkingDirectory, model.Selection, model.Thinking);
-        adopt(imported);
+        await adopt(imported);
         Console.WriteLine($"Imported Pi session {conversation.Conversation.Id} · {conversation.Conversation.ActiveMessages().Count} active messages · {conversation.Path ?? "(ephemeral)"}");
     }
 }

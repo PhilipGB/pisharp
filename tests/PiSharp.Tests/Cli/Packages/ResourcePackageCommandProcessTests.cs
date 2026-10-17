@@ -707,12 +707,14 @@ public sealed class ResourcePackageCommandProcessTests
         return (process.ExitCode, await output, await error);
     }
 
-    private static async Task<string> PackExternalNativeFixtureAsync(string outputDirectory)
+    internal static async Task<string> PackExternalNativeFixtureAsync(string outputDirectory, string revision = "v1",
+        string version = "1.0.0", string dependencyVersion = "1.0.0")
     {
         Directory.CreateDirectory(outputDirectory);
         var repositoryRoot = FindRepositoryRoot();
-        var projectPath = Path.Combine(repositoryRoot, "tests", "fixtures", "NativeExtensionFixture",
-            "NativeExtensionFixture.csproj");
+        var fixtureProject = revision == "v2" ? "NativeExtensionFixtureV2" : "NativeExtensionFixture";
+        var projectPath = Path.Combine(repositoryRoot, "tests", "fixtures", fixtureProject,
+            fixtureProject + ".csproj");
         var start = new ProcessStartInfo("dotnet")
         {
             WorkingDirectory = repositoryRoot,
@@ -722,8 +724,8 @@ public sealed class ResourcePackageCommandProcessTests
         foreach (var argument in new[]
         {
             "pack", projectPath, "--configuration", BuildConfiguration(), "--no-restore", "--output", outputDirectory,
-            "--nologo", "--disable-build-servers", "-p:NuGetAudit=false", "-p:NativeFixtureRevision=v1", "-p:NativeExtensionVersion=1.0.0",
-            "-p:NativeFixtureDependencyVersion=1.0.0"
+            "--nologo", "--disable-build-servers", "-p:NuGetAudit=false", $"-p:NativeFixtureRevision={revision}",
+            $"-p:NativeExtensionVersion={version}", $"-p:NativeFixtureDependencyVersion={dependencyVersion}"
         }) start.ArgumentList.Add(argument);
         using var process = Process.Start(start) ?? throw new IOException("Could not start dotnet pack.");
         var output = process.StandardOutput.ReadToEndAsync();
@@ -742,7 +744,7 @@ public sealed class ResourcePackageCommandProcessTests
         if (process.ExitCode != 0)
             throw new InvalidOperationException($"dotnet pack failed with exit code {process.ExitCode}:\n{stderr}\n{stdout}");
 
-        var packagePath = Path.Combine(outputDirectory, "PiSharp.TestExtensions.NativeFixture.1.0.0.nupkg");
+        var packagePath = Path.Combine(outputDirectory, $"PiSharp.TestExtensions.NativeFixture.{version}.nupkg");
         if (!File.Exists(packagePath)) throw new FileNotFoundException("dotnet pack did not create the native fixture package.", packagePath);
         return packagePath;
     }

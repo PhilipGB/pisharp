@@ -61,7 +61,7 @@ internal static class InteractiveMode
         }
         Task ReloadResources() => projectTransitions.ReloadAsync(usesDefaultToolsSetting,
             presentation.ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, presentation.LoadSessionTranscript);
-        void AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.Adopt(replacement,
+        Task AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.AdoptAsync(replacement,
             presentation.ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, () =>
             {
                 terminalScreen?.SetFooter(presentation.IdleFooter());
@@ -97,14 +97,17 @@ internal static class InteractiveMode
                     await execution.RunCustomMessageAsync(message, commandInfo.SourceInfo.Path,
                         applicationActions.HandleAsync, cancellationToken, HandleExtensionShortcutAsync);
                 }, projectBinding.Configuration.ExtensionMode, projectBinding.Configuration.HasUserInterface,
-                projectBinding.Configuration.ExtensionUi);
+                projectBinding.Configuration.ExtensionUi)
+            {
+                Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path)
+            };
         }
 
         async Task HandleExtensionShortcutAsync(ExtensionShortcutInfo shortcut, CancellationToken cancellationToken)
         {
             try
             {
-                var context = CreateExtensionCommandContext(new(shortcut.Description, shortcut.SourceInfo));
+                using var context = CreateExtensionCommandContext(new(shortcut.Description, shortcut.SourceInfo));
                 await shortcut.Handler(context, cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

@@ -71,6 +71,7 @@ public sealed class NativeExtensionShortcutPtyTests
         fixture.Create();
         var v1Package = await PackExternalFixtureAsync(fixture.Root, "v1", "1.0.0");
         var v2Package = await PackExternalFixtureAsync(fixture.Root, "v2", "2.0.0");
+        var lifecyclePath = Path.Combine(fixture.Root, "lifecycle.log");
         var installed = await RunCliAsync(fixture, "install", v1Package);
         Assert.True(installed.ExitCode == 0, installed.Error + "\n" + installed.Output);
 
@@ -92,6 +93,7 @@ public sealed class NativeExtensionShortcutPtyTests
             start.Environment["PISHARP_AGENT_DIR"] = fixture.AgentDirectory;
             start.Environment["PISHARP_SESSION_DIR"] = Path.Combine(fixture.Root, "sessions");
             start.Environment["PI_OFFLINE"] = "true";
+            start.Environment["NATIVE_FIXTURE_LIFECYCLE_PATH"] = lifecyclePath;
             process = Process.Start(start);
             Assert.NotNull(process);
 
@@ -117,6 +119,12 @@ public sealed class NativeExtensionShortcutPtyTests
             await output.WaitForTextAsync(
                 "Reloaded keybindings, extensions, skills, prompts, themes, and context files",
                 reloadOutputStart, timeout.Token);
+            var lifecycleEvents = await File.ReadAllLinesAsync(lifecyclePath, timeout.Token);
+            Assert.Contains("native-fixture-session-shutdown-v1:Reload", lifecycleEvents);
+            Assert.Contains("native-fixture-session-start-v2:Reload:", lifecycleEvents);
+            Assert.True(Array.IndexOf(lifecycleEvents, "native-fixture-session-shutdown-v1:Reload") <
+                Array.IndexOf(lifecycleEvents, "native-fixture-session-start-v2:Reload:"),
+                string.Join(Environment.NewLine, lifecycleEvents));
 
             var v2OutputStart = output.CapturedOutput.Length;
             await process.StandardInput.WriteAsync("\u001b[103;6u");
@@ -127,6 +135,28 @@ public sealed class NativeExtensionShortcutPtyTests
             await process.StandardInput.WriteAsync("editor-v2");
             await process.StandardInput.FlushAsync();
             await output.WaitForTextAsync("editor-v2", v2EditorStart, timeout.Token);
+            await process.StandardInput.WriteAsync("\u0015");
+            await process.StandardInput.FlushAsync();
+
+            var removed = await RunCliAsync(fixture, "remove", "PiSharp.TestExtensions.NativeFixture");
+            Assert.True(removed.ExitCode == 0, removed.Error + "\n" + removed.Output);
+            var removalReloadStart = output.CapturedOutput.Length;
+            await process.StandardInput.WriteAsync("/reload\r");
+            await process.StandardInput.FlushAsync();
+            await output.WaitForTextAsync(
+                "Reloaded keybindings, extensions, skills, prompts, themes, and context files",
+                removalReloadStart, timeout.Token);
+            var removalEvents = await File.ReadAllLinesAsync(lifecyclePath, timeout.Token);
+            Assert.Contains("native-fixture-session-shutdown-v2:Reload", removalEvents);
+
+            var afterRemovalStart = output.CapturedOutput.Length;
+            await process.StandardInput.WriteAsync("\u001b[103;6u");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("editor-after-removal");
+            await process.StandardInput.FlushAsync();
+            await output.WaitForTextAsync("editor-after-removal", afterRemovalStart, timeout.Token);
+            Assert.DoesNotContain("native-fixture-shortcut-v2",
+                output.CapturedOutput[afterRemovalStart..], StringComparison.Ordinal);
             await process.StandardInput.WriteAsync("\u0015");
             await process.StandardInput.FlushAsync();
 
@@ -152,8 +182,9 @@ public sealed class NativeExtensionShortcutPtyTests
         var outputDirectory = Path.Combine(root, "packed-" + revision);
         Directory.CreateDirectory(outputDirectory);
         var repositoryRoot = FindRepositoryRoot();
-        var projectPath = Path.Combine(repositoryRoot, "tests", "fixtures", "NativeExtensionFixture",
-            "NativeExtensionFixture.csproj");
+        var fixtureProject = revision == "v2" ? "NativeExtensionFixtureV2" : "NativeExtensionFixture";
+        var projectPath = Path.Combine(repositoryRoot, "tests", "fixtures", fixtureProject,
+            fixtureProject + ".csproj");
         var start = new ProcessStartInfo("dotnet")
         {
             WorkingDirectory = repositoryRoot,
