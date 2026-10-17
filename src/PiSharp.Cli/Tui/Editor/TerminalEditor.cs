@@ -1,3 +1,5 @@
+using PiSharp.Runtime.Extensions;
+
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Edits drafts and routes idle and active-run input to application actions and terminal dialogs.</summary>
@@ -13,6 +15,7 @@ public sealed class TerminalEditor
     private TerminalInput? _input;
     private readonly EditorCompletion _completion;
     private readonly EditorKeymap _keymap;
+    private readonly Func<IReadOnlyList<ExtensionShortcutInfo>>? _getExtensionShortcuts;
     private readonly TerminalDialogs _dialogs;
     private readonly TerminalProgressDisplay _progress;
     private readonly TerminalTranscriptSearchInput _transcriptSearch;
@@ -24,12 +27,15 @@ public sealed class TerminalEditor
     private CompletionCycle? _completionCycle;
     public TerminalEditor(Func<IReadOnlyList<string>>? commands = null, string? agentDirectory = null,
         Func<string>? getWorkingDirectory = null, bool initiallyExpanded = false,
-        Func<string, string?>? describeCommand = null)
+        Func<string, string?>? describeCommand = null,
+        Func<IReadOnlyList<ExtensionShortcutInfo>>? getExtensionShortcuts = null)
     {
         _completion = getWorkingDirectory is null
             ? new EditorCompletion(Environment.CurrentDirectory, commands, describeCommand)
             : new EditorCompletion(getWorkingDirectory, commands, describeCommand);
         _keymap = new(agentDirectory);
+        _getExtensionShortcuts = getExtensionShortcuts;
+        RefreshExtensionShortcuts();
         _buffer = new(_keymap);
         _toolResultsExpanded = initiallyExpanded;
         _dialogs = new(_keymap, EnsureInput, () => _screen,
@@ -63,6 +69,7 @@ public sealed class TerminalEditor
     public void ReloadKeybindings()
     {
         _keymap.Reload();
+        RefreshExtensionShortcuts();
         _screen?.SetToolExpandKeyLabel(_keymap.GetDisplayKeys("app.tools.expand"));
     }
 
@@ -212,7 +219,8 @@ public sealed class TerminalEditor
     /// follows up, Alt+Up restores queued input, and Escape aborts after restoring queued input.</summary>
     public async Task MonitorRunAsync(Func<string, bool, CancellationToken, Task<bool>> queue,
         Func<IReadOnlyList<string>> clearQueue, Action abort, CancellationToken cancellationToken,
-        Func<string, Task>? dispatchApplicationAction = null)
+        Func<string, Task>? dispatchApplicationAction = null,
+        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
     {
         try
         {
@@ -227,7 +235,8 @@ public sealed class TerminalEditor
                     await Task.Delay(10, CancellationToken.None);
                     continue;
                 }
-                if (!await HandleActiveInputAsync(next, queue, clearQueue, abort, cancellationToken, dispatchApplicationAction)) break;
+                if (!await HandleActiveInputAsync(next, queue, clearQueue, abort, cancellationToken, dispatchApplicationAction,
+                    dispatchExtensionShortcut)) break;
                 Render();
             }
         }
@@ -242,7 +251,8 @@ public sealed class TerminalEditor
     public async Task<bool> HandleActiveInputAsync(TerminalInputEvent next,
         Func<string, bool, CancellationToken, Task<bool>> queue, Func<IReadOnlyList<string>> clearQueue,
         Action abort, CancellationToken cancellationToken = default,
-        Func<string, Task>? dispatchApplicationAction = null)
+        Func<string, Task>? dispatchApplicationAction = null,
+        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
     {
         var isCompletionKey = next.Key is { } possibleCompletionKey &&
             _keymap.Matches("tui.input.tab", possibleCompletionKey);
@@ -264,6 +274,12 @@ public sealed class TerminalEditor
             }
             if (result.Copy && dispatchApplicationAction is not null)
                 await dispatchApplicationAction("app.message.copy");
+            return true;
+        }
+        if (next.Key is { } extensionKey && dispatchExtensionShortcut is not null &&
+            _keymap.MatchExtensionShortcut(extensionKey) is { } extensionShortcut)
+        {
+            await dispatchExtensionShortcut(extensionShortcut, cancellationToken);
             return true;
         }
         if (_transcriptSearch.IsActive)
@@ -383,7 +399,8 @@ public sealed class TerminalEditor
 
     public async Task<string?> ReadLineAsync(Func<string, Task> dispatchApplicationAction,
         bool enableApplicationActions = true, bool allowEmptySubmit = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
     {
         ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
         _completionCycle = null;
@@ -446,7 +463,8 @@ public sealed class TerminalEditor
                 continue;
             }
             if (enableApplicationActions && next.Key is { } applicationKey &&
-                await HandleApplicationShortcutAsync(applicationKey, dispatchApplicationAction, ClearLine))
+                await HandleApplicationShortcutAsync(applicationKey, dispatchApplicationAction, ClearLine,
+                    dispatchExtensionShortcut, cancellationToken))
             {
                 Render();
                 continue;
@@ -519,9 +537,17 @@ public sealed class TerminalEditor
         _authorizationInput.MonitorMcpAuthorizationAsync(operation, dispatchApplicationAction, cancel);
 
     public async Task<bool> HandleApplicationShortcutAsync(ConsoleKeyInfo key, Func<string, Task> dispatch,
-        Action? beforeDispatch = null)
+        Action? beforeDispatch = null,
+        Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(dispatch);
+        if (dispatchExtensionShortcut is not null && _keymap.MatchExtensionShortcut(key) is { } extensionShortcut)
+        {
+            beforeDispatch?.Invoke();
+            await dispatchExtensionShortcut(extensionShortcut, cancellationToken);
+            return true;
+        }
         if (_keymap.MatchesEditorAction(key) &&
             !(_keymap.Matches("app.thinking.cycle", key) && _completionCycle is null)) return false;
         var action = _keymap.MatchIdleApplicationAction(key);
@@ -534,6 +560,13 @@ public sealed class TerminalEditor
         }
         await dispatch(action);
         return true;
+    }
+
+    private void RefreshExtensionShortcuts()
+    {
+        _keymap.SetExtensionShortcuts(_getExtensionShortcuts?.Invoke() ?? []);
+        foreach (var diagnostic in _keymap.ShortcutDiagnostics)
+            Console.Error.WriteLine($"Extension warning ({diagnostic.SourcePath}): {diagnostic.Message}");
     }
 
     private void CompleteInput(ConsoleKeyInfo key)

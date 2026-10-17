@@ -1,12 +1,23 @@
 using System.Text.Json;
+using PiSharp.Extensions.Abstractions;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Cli.Tui;
 
 public sealed class EditorKeymap
 {
     private sealed record Definition(string Description, string[] DefaultKeys);
-    private readonly record struct KeyStroke(ConsoleKey Key, ConsoleModifiers Modifiers);
-    private sealed record BoundKey(KeyStroke Stroke, string Name);
+    private sealed record BoundKey(PiSharpShortcutKey Stroke, string Name);
+    private sealed record BuiltInBinding(string Action, bool IsReserved);
+    internal sealed record ShortcutDiagnostic(string SourcePath, string Message);
+    private static readonly HashSet<string> s_reservedShortcutActions = new(StringComparer.Ordinal)
+    {
+        "app.interrupt", "app.clear", "app.exit", "app.suspend", "app.thinking.cycle",
+        "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand",
+        "app.thinking.toggle", "app.editor.external", "app.message.copy", "app.message.followUp",
+        "tui.input.submit", "tui.select.confirm", "tui.select.cancel", "tui.input.copy",
+        "tui.editor.deleteToLineEnd"
+    };
     private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
 
     private static readonly IReadOnlyDictionary<string, Definition> s_definitions = new Dictionary<string, Definition>(StringComparer.Ordinal)
@@ -73,6 +84,9 @@ public sealed class EditorKeymap
 
     private readonly string? _path;
     private Dictionary<string, BoundKey[]> _bindings = new(StringComparer.Ordinal);
+    private IReadOnlyList<ExtensionShortcutInfo> _registeredExtensionShortcuts = [];
+    private Dictionary<PiSharpShortcutKey, ExtensionShortcutInfo> _activeExtensionShortcuts = [];
+    private IReadOnlyList<ShortcutDiagnostic> _shortcutDiagnostics = [];
 
     public EditorKeymap(string? agentDirectory = null)
     {
@@ -83,6 +97,24 @@ public sealed class EditorKeymap
     public bool Matches(string action, ConsoleKeyInfo key) =>
         _bindings.TryGetValue(action, out var bindings) && bindings.Any(binding =>
             binding.Stroke.Key == key.Key && binding.Stroke.Modifiers == key.Modifiers);
+
+    internal IReadOnlyList<ShortcutDiagnostic> ShortcutDiagnostics => _shortcutDiagnostics;
+
+    internal IReadOnlyCollection<ExtensionShortcutInfo> ActiveExtensionShortcuts =>
+        _activeExtensionShortcuts.Values.ToArray();
+
+    internal ExtensionShortcutInfo? MatchExtensionShortcut(ConsoleKeyInfo key) =>
+        key.Key != ConsoleKey.NoName &&
+        _activeExtensionShortcuts.TryGetValue(new PiSharpShortcutKey(key.Key, key.Modifiers), out var shortcut)
+            ? shortcut
+            : null;
+
+    internal void SetExtensionShortcuts(IReadOnlyList<ExtensionShortcutInfo> shortcuts)
+    {
+        ArgumentNullException.ThrowIfNull(shortcuts);
+        _registeredExtensionShortcuts = shortcuts.ToArray();
+        ResolveExtensionShortcuts();
+    }
 
     public string? GetDisplayKeys(string action) =>
         _bindings.TryGetValue(action, out var bindings) && bindings.Length > 0
@@ -117,7 +149,7 @@ public sealed class EditorKeymap
             pair => ParseBindings(pair.Value.DefaultKeys), StringComparer.Ordinal);
         if (_path is null || !File.Exists(_path))
         {
-            _bindings = next;
+            SetBindings(next);
             return;
         }
 
@@ -126,14 +158,14 @@ public sealed class EditorKeymap
             var info = new FileInfo(_path);
             if (info.Length > 256 * 1024)
             {
-                _bindings = next;
+                SetBindings(next);
                 return;
             }
             var json = File.ReadAllText(_path).TrimStart('\uFEFF');
             using var document = JsonDocument.Parse(json);
             if (document.RootElement.ValueKind != JsonValueKind.Object)
             {
-                _bindings = next;
+                SetBindings(next);
                 return;
             }
 
@@ -156,128 +188,93 @@ public sealed class EditorKeymap
             next = s_definitions.ToDictionary(pair => pair.Key,
                 pair => ParseBindings(pair.Value.DefaultKeys), StringComparer.Ordinal);
         }
-        _bindings = next;
+        SetBindings(next);
     }
 
     public string FormatHotkeys()
     {
-        return string.Join(Environment.NewLine, s_definitions.Select(pair =>
+        var lines = s_definitions.Select(pair =>
         {
             var keys = _bindings[pair.Key];
             var display = keys.Length == 0 ? "disabled" : string.Join(", ", keys.Select(key => key.Name));
             return $"{display,-32} {pair.Value.Description} ({pair.Key})";
-        }));
+        }).ToList();
+        if (_activeExtensionShortcuts.Count > 0)
+        {
+            lines.Add("");
+            lines.Add("Extensions:");
+            lines.AddRange(_activeExtensionShortcuts.Select(pair =>
+                $"{FormatKeyDisplay(pair.Key),-32} {pair.Value.Description ?? pair.Value.SourceInfo.Path}"));
+        }
+        return string.Join(Environment.NewLine, lines);
     }
 
     private static BoundKey[] ParseBindings(IEnumerable<string> keys)
     {
         var parsed = new List<BoundKey>();
         foreach (var key in keys)
-            if (TryParse(key, out var stroke)) parsed.Add(new(stroke, key));
+            if (PiSharpShortcutKey.TryParse(key, out var stroke)) parsed.Add(new(stroke, key));
         return parsed.ToArray();
     }
 
-    private static bool TryParse(string value, out KeyStroke stroke)
+    private void SetBindings(Dictionary<string, BoundKey[]> bindings)
     {
-        stroke = default;
-        var parts = value.Split('+');
-        var modifiers = ConsoleModifiers.None;
-        var index = 0;
-        while (index < parts.Length - 1)
+        _bindings = bindings;
+        ResolveExtensionShortcuts();
+    }
+
+    private void ResolveExtensionShortcuts()
+    {
+        var builtIns = new Dictionary<PiSharpShortcutKey, BuiltInBinding>();
+        foreach (var (action, bindings) in _bindings)
         {
-            var modifier = parts[index].ToLowerInvariant();
-            var flag = modifier switch
+            var isReserved = s_reservedShortcutActions.Contains(action);
+            foreach (var binding in bindings)
             {
-                "ctrl" => ConsoleModifiers.Control,
-                "shift" => ConsoleModifiers.Shift,
-                "alt" => ConsoleModifiers.Alt,
-                _ => (ConsoleModifiers?)null
-            };
-            if (flag is null) break;
-            if (modifiers.HasFlag(flag.Value)) return false;
-            modifiers |= flag.Value;
-            index++;
+                if (builtIns.TryGetValue(binding.Stroke, out var existing) && existing.IsReserved && !isReserved)
+                    continue;
+                builtIns[binding.Stroke] = new(action, isReserved);
+            }
         }
-        var keyName = string.Join('+', parts.Skip(index));
-        if (!TryParseKey(keyName, out var key, out var impliedModifiers)) return false;
-        stroke = new(key, modifiers | impliedModifiers);
-        return true;
+
+        var active = new Dictionary<PiSharpShortcutKey, ExtensionShortcutInfo>();
+        var diagnostics = new List<ShortcutDiagnostic>();
+        foreach (var shortcut in _registeredExtensionShortcuts)
+        {
+            if (builtIns.TryGetValue(shortcut.Shortcut, out var builtIn))
+            {
+                if (builtIn.IsReserved)
+                {
+                    diagnostics.Add(new(shortcut.SourceInfo.Path,
+                        $"Extension shortcut '{shortcut.Shortcut}' from {shortcut.SourceInfo.Path} conflicts with built-in shortcut. Skipping."));
+                    continue;
+                }
+                diagnostics.Add(new(shortcut.SourceInfo.Path,
+                    $"Extension shortcut conflict: '{shortcut.Shortcut}' is built-in shortcut for {builtIn.Action} and {shortcut.SourceInfo.Path}. Using {shortcut.SourceInfo.Path}."));
+            }
+
+            if (active.TryGetValue(shortcut.Shortcut, out var existing))
+            {
+                diagnostics.Add(new(shortcut.SourceInfo.Path,
+                    $"Extension shortcut conflict: '{shortcut.Shortcut}' registered by both {existing.SourceInfo.Path} and {shortcut.SourceInfo.Path}. Using {shortcut.SourceInfo.Path}."));
+            }
+            active[shortcut.Shortcut] = shortcut;
+        }
+        _activeExtensionShortcuts = active;
+        _shortcutDiagnostics = diagnostics;
     }
 
-    private static bool TryParseKey(string name, out ConsoleKey key, out ConsoleModifiers modifiers)
-    {
-        modifiers = ConsoleModifiers.None;
-        var normalized = name.ToLowerInvariant();
-        var special = normalized switch
+    private static string FormatKeyDisplay(PiSharpShortcutKey shortcut) =>
+        string.Join("+", shortcut.ToString().Split('+').Select(part => part.ToLowerInvariant() switch
         {
-            "esc" or "escape" => nameof(ConsoleKey.Escape),
-            "enter" or "return" => nameof(ConsoleKey.Enter),
-            "tab" => nameof(ConsoleKey.Tab),
-            "space" => nameof(ConsoleKey.Spacebar),
-            "backspace" => nameof(ConsoleKey.Backspace),
-            "delete" => nameof(ConsoleKey.Delete),
-            "insert" => nameof(ConsoleKey.Insert),
-            "clear" => nameof(ConsoleKey.Clear),
-            "home" => nameof(ConsoleKey.Home),
-            "end" => nameof(ConsoleKey.End),
-            "pageup" => nameof(ConsoleKey.PageUp),
-            "pagedown" => nameof(ConsoleKey.PageDown),
-            "up" => nameof(ConsoleKey.UpArrow),
-            "down" => nameof(ConsoleKey.DownArrow),
-            "left" => nameof(ConsoleKey.LeftArrow),
-            "right" => nameof(ConsoleKey.RightArrow),
-            _ => null
-        };
-        if (special is not null) return Enum.TryParse(special, out key);
-
-        if (name.Length == 1 && char.IsAsciiLetter(name[0]))
-            return Enum.TryParse(name, ignoreCase: true, out key);
-        if (name.Length == 1 && char.IsAsciiDigit(name[0]))
-            return Enum.TryParse("D" + name, out key);
-        if (normalized.Length is 2 or 3 && normalized[0] == 'f' && int.TryParse(normalized.AsSpan(1), out var functionKey) &&
-            functionKey is >= 1 and <= 12)
-            return Enum.TryParse(name, ignoreCase: true, out key);
-
-        var symbol = name switch
-        {
-            "`" => (ConsoleKey.Oem3, false),
-            "-" => (ConsoleKey.OemMinus, false),
-            "=" => (ConsoleKey.OemPlus, false),
-            "[" => (ConsoleKey.Oem4, false),
-            "]" => (ConsoleKey.Oem6, false),
-            "\\" => (ConsoleKey.Oem5, false),
-            ";" => (ConsoleKey.Oem1, false),
-            "'" => (ConsoleKey.Oem7, false),
-            "," => (ConsoleKey.OemComma, false),
-            "." => (ConsoleKey.OemPeriod, false),
-            "/" => (ConsoleKey.Oem2, false),
-            "!" => (ConsoleKey.D1, true),
-            "@" => (ConsoleKey.D2, true),
-            "#" => (ConsoleKey.D3, true),
-            "$" => (ConsoleKey.D4, true),
-            "%" => (ConsoleKey.D5, true),
-            "^" => (ConsoleKey.D6, true),
-            "&" => (ConsoleKey.D7, true),
-            "*" => (ConsoleKey.D8, true),
-            "(" => (ConsoleKey.D9, true),
-            ")" => (ConsoleKey.D0, true),
-            "_" => (ConsoleKey.OemMinus, true),
-            "+" => (ConsoleKey.OemPlus, true),
-            "|" => (ConsoleKey.Oem5, true),
-            "~" => (ConsoleKey.Oem3, true),
-            "{" => (ConsoleKey.Oem4, true),
-            "}" => (ConsoleKey.Oem6, true),
-            ":" => (ConsoleKey.Oem1, true),
-            "<" => (ConsoleKey.OemComma, true),
-            ">" => (ConsoleKey.OemPeriod, true),
-            "?" => (ConsoleKey.Oem2, true),
-            _ => (ConsoleKey.NoName, false)
-        };
-        key = symbol.Item1;
-        if (key == ConsoleKey.NoName) return false;
-        if (symbol.Item2) modifiers |= ConsoleModifiers.Shift;
-        return true;
-    }
+            "ctrl" => "Ctrl",
+            "shift" => "Shift",
+            "alt" => "Alt",
+            "esc" => "Esc",
+            "pageup" => "PageUp",
+            "pagedown" => "PageDown",
+            _ => part.Length == 0 ? part : char.ToUpperInvariant(part[0]) + part[1..]
+        }));
 
     private static bool IsWindowsBindings() => OperatingSystem.IsWindows() || OperatingSystem.IsLinux() &&
         (Environment.GetEnvironmentVariable("WSL_DISTRO_NAME") is not null ||

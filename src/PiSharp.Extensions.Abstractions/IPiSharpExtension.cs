@@ -19,6 +19,10 @@ public interface IPiSharpExtensionBuilder
     /// <summary>Registers a command that can submit user or custom messages through its live host context.</summary>
     void AddCommand(string name, PiSharpExtensionCommandHandler handler, string? description = null);
 
+    /// <summary>Registers a keyboard shortcut for the interactive terminal.</summary>
+    void AddShortcut(PiSharpShortcutKey shortcut, PiSharpExtensionShortcutHandler handler,
+        string? description = null);
+
     /// <summary>Registers an AI function tool available to the agent.</summary>
     void AddTool(AIFunction tool);
 

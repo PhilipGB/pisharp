@@ -41,7 +41,8 @@ internal sealed class TerminalPresentation : IDisposable
         var completion = new TerminalResourceCompletion(_projectBinding, _extensionLease);
         _editor = !print && _projectBinding.Arguments.Mode is not ("json" or "rpc")
             ? new TerminalEditor(completion.Commands, _agentDirectory, () => _projectBinding.WorkingDirectory,
-                initiallyExpanded: _projectBinding.Arguments.Verbose, describeCommand: completion.Describe) : null;
+                initiallyExpanded: _projectBinding.Arguments.Verbose, describeCommand: completion.Describe,
+                getExtensionShortcuts: () => _extensionLease.Current.Registration.ExtensionShortcuts) : null;
         _cliThemeOverride = _editor is null ? null : _projectBinding.Arguments.UseTheme;
         _terminalThemeCatalog = CreateTerminalThemeCatalog();
         var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());

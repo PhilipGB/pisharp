@@ -36,25 +36,29 @@ internal sealed class TerminalConversationExecution
 
 
     public Task RunAsync(string input, IReadOnlyList<DataContent>? images = null,
-        Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default) =>
+        Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default,
+        Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut = null) =>
         RunCoreAsync((promptExecution, transcript, cancellation) =>
             promptExecution.ExecuteAsync(input, images, _modelBinding.Selection, _projectBinding.Settings,
-                transcript, cancellation), handleApplicationAction, cancellationToken);
+                transcript, cancellation), handleApplicationAction, cancellationToken, handleExtensionShortcut);
 
     public Task RunCustomMessageAsync(PiSharpCustomMessage message, string sourcePath,
-        Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default) =>
+        Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default,
+        Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut = null) =>
         RunCoreAsync((promptExecution, transcript, cancellation) =>
             promptExecution.ExecuteCustomMessageAsync(message, sourcePath, transcript, cancellation), handleApplicationAction,
-            cancellationToken);
+            cancellationToken, handleExtensionShortcut);
 
     private async Task RunCoreAsync(
         Func<InteractivePromptExecution, InteractiveTranscript, CancellationTokenSource, Task> run,
-        Func<string, Task>? handleApplicationAction, CancellationToken cancellationToken)
+        Func<string, Task>? handleApplicationAction, CancellationToken cancellationToken,
+        Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut)
     {
         using var runCancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _activeRun = runCancel;
         using var execution = new InteractivePromptExecution(_presentation.Editor, _presentation.Screen, () => Console.Error,
-            () => _projectBinding.Resources, () => _conversationBinding.Run, () => _presentation.IdleFooter(), ExecuteInteractiveBashAsync, handleApplicationAction ?? (_ => Task.CompletedTask));
+            () => _projectBinding.Resources, () => _conversationBinding.Run, () => _presentation.IdleFooter(), ExecuteInteractiveBashAsync,
+            handleApplicationAction ?? (_ => Task.CompletedTask), handleExtensionShortcut);
         _presentation.Screen?.Activate();
         _presentation.Editor?.AttachScreen(_presentation.Screen);
         var transcript = _presentation.CreateInteractiveTranscript(interactive: !_print);

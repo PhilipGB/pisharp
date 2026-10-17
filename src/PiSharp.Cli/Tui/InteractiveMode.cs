@@ -68,7 +68,8 @@ internal static class InteractiveMode
                 presentation.LoadSessionTranscript();
             });
         Task RunAsync(string input, IReadOnlyList<DataContent>? images = null) =>
-            execution.RunAsync(input, images, applicationActions.HandleAsync);
+            execution.RunAsync(input, images, applicationActions.HandleAsync,
+                handleExtensionShortcut: HandleExtensionShortcutAsync);
 
         PiSharpExtensionCommandContext CreateExtensionCommandContext(ExtensionCommandInfo commandInfo)
         {
@@ -86,7 +87,7 @@ internal static class InteractiveMode
                         return;
                     }
                     await execution.RunAsync(text, handleApplicationAction: applicationActions.HandleAsync,
-                        cancellationToken: cancellationToken);
+                        cancellationToken: cancellationToken, handleExtensionShortcut: HandleExtensionShortcutAsync);
                 },
                 async (message, triggerTurn, deliveryMode, cancellationToken) =>
                 {
@@ -94,9 +95,27 @@ internal static class InteractiveMode
                     if (!await currentRun.DeliverExtensionCustomMessageAsync(message,
                         commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
                     await execution.RunCustomMessageAsync(message, commandInfo.SourceInfo.Path,
-                        applicationActions.HandleAsync, cancellationToken);
+                        applicationActions.HandleAsync, cancellationToken, HandleExtensionShortcutAsync);
                 }, projectBinding.Configuration.ExtensionMode, projectBinding.Configuration.HasUserInterface,
                 projectBinding.Configuration.ExtensionUi);
+        }
+
+        async Task HandleExtensionShortcutAsync(ExtensionShortcutInfo shortcut, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var context = CreateExtensionCommandContext(new(shortcut.Description, shortcut.SourceInfo));
+                await shortcut.Handler(context, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception error)
+            {
+                if (terminalScreen is not null) terminalScreen.AppendExtensionError(shortcut.SourceInfo.Path, error.Message);
+                else Console.Error.WriteLine($"Extension \"{shortcut.SourceInfo.Path}\" error: {error.Message}");
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(prompt) || (projectBinding.Arguments.FileArguments?.Count ?? 0) > 0)
@@ -109,7 +128,8 @@ internal static class InteractiveMode
         }
         while (true)
         {
-            var line = await editor!.ReadLineAsync(HandleEditorApplicationAction);
+            var line = await editor!.ReadLineAsync(HandleEditorApplicationAction,
+                dispatchExtensionShortcut: HandleExtensionShortcutAsync);
             if (line is null || line.Trim() is "/quit" or "/exit") break;
             if (string.IsNullOrWhiteSpace(line)) continue;
             if (InteractiveBashExecutor.TryParse(line, out var bashCommand, out var excludeFromContext))

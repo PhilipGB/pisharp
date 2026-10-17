@@ -23,6 +23,14 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
         registration.AddContextCommand(name, handler, description);
     }
 
+    public void AddShortcut(NativeExtensions.PiSharpShortcutKey shortcut,
+        NativeExtensions.PiSharpExtensionShortcutHandler handler, string? description = null)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        EnsureConfiguring();
+        registration.AddShortcut(shortcut, handler, description);
+    }
+
     public void AddTool(Microsoft.Extensions.AI.AIFunction tool)
     {
         EnsureConfiguring();
