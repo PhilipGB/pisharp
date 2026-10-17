@@ -36,6 +36,7 @@ public sealed class PiAgent
     private readonly IReadOnlyList<PiSharpBeforeAgentStartHandlerRegistration> _beforeAgentStartHandlers;
     private readonly Func<string?>? _getAdditionalSystemInstructions;
     private readonly PiSharpExtensionContext _extensionContext;
+    private readonly NativeExtensionEventDispatcher _extensionEvents;
     private readonly SemaphoreSlim _runGate = new(1, 1);
     private ReasoningOptions? _reasoning;
     private readonly ToolBatchTermination _toolBatchTermination = new();
@@ -53,6 +54,8 @@ public sealed class PiAgent
     private ModelImageResizeOptions? _selectedImageResizeOptions;
     private long _systemMessageTimestamp;
     private ToolLoadout? _currentToolLoadout;
+    private ActiveRunCancellation? _activeRunCancellation;
+    private int _extensionTurnIndex;
     private RunSystemPromptOverride? _runSystemPromptOverride;
     private readonly ConditionalWeakTable<AgentSession, ToolDeclarationTranscript> _toolTranscripts = new();
     private ToolDeclarationTranscript? _currentToolTranscript;
@@ -61,6 +64,16 @@ public sealed class PiAgent
         PiSharp.Extensions.Abstractions.PiSharpSystemPromptOptions? BaseOptions = null,
         PiSharp.Extensions.Abstractions.PiSharpSystemPromptOptions? EditedOptions = null,
         string? AdditionalInstructions = null);
+
+    private sealed record ActiveRunCancellation(CancellationToken Token);
+
+    internal NativeExtensionEventDispatcher ExtensionEvents => _extensionEvents;
+
+    internal int ExtensionTurnIndex => Volatile.Read(ref _extensionTurnIndex);
+
+    internal void BeginExtensionAgentRun() => Interlocked.Exchange(ref _extensionTurnIndex, 0);
+
+    internal void CompleteExtensionTurn() => Interlocked.Increment(ref _extensionTurnIndex);
 
     internal ToolDeclarationTranscript GetToolTranscript(AgentSession session) =>
         _toolTranscripts.GetValue(session, _ => new());
@@ -122,6 +135,7 @@ public sealed class PiAgent
             () => Volatile.Read(ref _extensionConversation),
             () => Volatile.Read(ref _currentToolLoadout)?.Snapshot.ActiveToolNames.ToArray() ?? [],
             () => Volatile.Read(ref _isRunning) == 0 && Volatile.Read(ref _activeConversationRuns) == 0);
+        _extensionEvents = new(liveExtensionRegistration ?? new ExtensionRegistration(), _extensionContext, PublishEvent);
         _codemodeModels = codemodeModels;
         _codingTools = tools;
         _customSystemPrompt = systemPrompt;
@@ -439,8 +453,51 @@ public sealed class PiAgent
                 catch (Exception) { }
             }
         }
+        DispatchNativeToolEvent(item);
         _events?.Invoke(item);
     }
+
+    private void DispatchNativeToolEvent(AgentLifecycleEvent item)
+    {
+        var cancellationToken = Volatile.Read(ref _activeRunCancellation)?.Token ?? CancellationToken.None;
+        switch (item.Type)
+        {
+            case "tool_execution_started" when item.ToolCallId is { Length: > 0 } callId &&
+                item.Tool is { Length: > 0 } toolName:
+                _extensionEvents.DispatchToolExecutionStartAsync(new(callId, toolName,
+                    SerializeToolArguments(item.ToolArguments), item.ParentToolCallId), cancellationToken)
+                    .GetAwaiter().GetResult();
+                break;
+            case "tool_execution_update" when item.ToolCallId is { Length: > 0 } callId &&
+                item.Tool is { Length: > 0 } toolName:
+                _extensionEvents.DispatchToolExecutionUpdateAsync(new(callId, toolName,
+                    SerializeToolArguments(item.ToolArguments), JsonSerializer.SerializeToElement(item.Text),
+                    item.ParentToolCallId), cancellationToken).GetAwaiter().GetResult();
+                break;
+            case "tool_execution_finished" when item.ToolCallId is { Length: > 0 } callId &&
+                item.Tool is { Length: > 0 } toolName:
+                _extensionEvents.DispatchToolExecutionEndAsync(new(callId, toolName,
+                    SerializeToolArguments(item.ToolArguments), SerializeToolResult(item), item.IsError == true,
+                    item.DurationMs, item.ParentToolCallId), cancellationToken).GetAwaiter().GetResult();
+                break;
+        }
+    }
+
+    private static JsonElement SerializeToolArguments(IReadOnlyDictionary<string, object?>? arguments) =>
+        JsonSerializer.SerializeToElement(arguments ?? new Dictionary<string, object?>(StringComparer.Ordinal),
+            AIJsonUtilities.DefaultOptions);
+
+    private static JsonElement SerializeToolResult(AgentLifecycleEvent item) => JsonSerializer.SerializeToElement(new
+    {
+        content = item.Text,
+        details = item.Details,
+        isError = item.IsError,
+        error = item.Error,
+        structuredContent = item.StructuredContent,
+        usage = item.ToolUsage,
+        terminate = item.Terminate,
+        images = item.Images
+    }, AIJsonUtilities.DefaultOptions);
 
     private IReadOnlyList<AITool> GetRuntimeFunctionsForRun() =>
         Array.AsReadOnly<AITool>(_runtimeToolFunctions.Values.ToArray());
@@ -568,6 +625,7 @@ public sealed class PiAgent
             _currentToolTranscript = GetToolTranscript(session);
             _active = durable;
             _events = onEvent;
+            Volatile.Write(ref _activeRunCancellation, new ActiveRunCancellation(cancellationToken));
             Volatile.Write(ref _isRunning, 1);
             _takeSteering = takeSteering;
             _takeContextMessagesForRequestAsync = takeContextMessagesForRequestAsync;
@@ -615,6 +673,7 @@ public sealed class PiAgent
             _takeContextMessagesForRequestAsync = null;
             Volatile.Write(ref _isRunning, 0);
             _events = null;
+            Volatile.Write(ref _activeRunCancellation, null);
             _active = null;
             Volatile.Write(ref _currentToolLoadout, null);
             _currentToolTranscript = null;
