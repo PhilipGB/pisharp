@@ -89,8 +89,11 @@ assertions. `NativeExtensionCatalogTests`, the external state process test, and
 the shortcut PTY test pass together **8/8**. MCP conformance exits successfully
 with no regressions against its eight classified baseline failures.
 
-Push CI and PR merge-result CI must both cover the final product source; run
-IDs are added after those required gates finish.
+Draft PR [#9](https://github.com/PhilipGB/pisharp/pull/9) is open. The
+exact-head push CI passes both required jobs on `65b81dd20658d9c2a364b76a9e6cff3aae3c9604`
+([run 39039746664](https://github.com/PhilipGB/pisharp/actions/runs/39039746664)).
+The PR merge-result CI also passes both jobs
+([run 39039758081](https://github.com/PhilipGB/pisharp/actions/runs/39039758081)).
 
 Deferred work remains effective settings snapshots, CLI flags, advanced UI,
 session mutation/control, provider/model registration, and broader extension

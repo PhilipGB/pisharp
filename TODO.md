@@ -13,7 +13,8 @@ removal, and editor recovery. Product source commit is `2c24b4fd`; the local
 suite passes 2,237 .NET tests with zero skips, architecture 7/7, Node 24/24,
 Python 50/50, docs 138/532, and MCP conformance has no new regressions. This
 milestone does not promote broad extension parity; provider/model/settings
-registration and advanced UI remain deferred.
+registration and advanced UI remain deferred. Draft PR #9 is open; exact-head
+push CI run 39039746664 and PR merge-result run 39039758081 both pass.
 
 See [the milestone receipt](docs/parity/fixtures/native-extension-state-interactive-controls-2026-10-17.md)
 for source, acceptance, verification, and CI results. Stop after this milestone

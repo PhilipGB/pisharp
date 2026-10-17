@@ -16,8 +16,11 @@ package v1-to-v2 replacement. PTY coverage exercises the shortcut, package
 reload/removal, and editor recovery. Local verification passes 2,237 .NET tests
 with zero skips, architecture 7/7, Node 24/24, Python 50/50, documentation
 paths (138 documents / 532 references), and MCP conformance with no new
-regressions. See the [milestone receipt](parity/fixtures/native-extension-state-interactive-controls-2026-10-17.md)
-for exact-head CI.
+regressions. Draft PR [#9](https://github.com/PhilipGB/pisharp/pull/9) is open;
+exact-head push CI [39039746664](https://github.com/PhilipGB/pisharp/actions/runs/39039746664)
+and PR merge-result CI
+[39039758081](https://github.com/PhilipGB/pisharp/actions/runs/39039758081)
+both pass. See the [milestone receipt](parity/fixtures/native-extension-state-interactive-controls-2026-10-17.md).
 
 This closes only the bounded implementation increment. Keep the broad
 extension API and orchestration ledger rows `in_progress`; provider/model and
