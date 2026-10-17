@@ -28,7 +28,7 @@ internal static class CliStartupCommands
                 Console.In, output, error, interactive: !Console.IsInputRedirected && !Console.IsOutputRedirected))
             return null;
         CliArguments cli;
-        try { cli = CliArguments.Parse(args); }
+        try { cli = CliArguments.ParseForExtensionDiscovery(args); }
         catch (ArgumentException e)
         {
             error.WriteLine(e.Message);

@@ -79,7 +79,44 @@ public sealed class ConversationRun
         new(() => new NativeExtensions.PiSharpExtensionSessionSnapshot(Conversation.Id, Conversation.Name,
                 Conversation.Tree.HeadId, Conversation.ExtensionStateEntries()),
             (customType, data, cancellationToken) => AppendExtensionStateAsync(customType, data, source,
-                cancellationToken));
+                cancellationToken), SetSessionNameAsync, SetEntryLabelAsync);
+
+    /// <summary>Changes the active session name and commits only after its normal save succeeds.</summary>
+    public async Task SetSessionNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
+        if (!ownsGate) await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            using var change = Conversation.BeginSessionNameChange(name);
+            if (_save is not null) await _save(cancellationToken).ConfigureAwait(false);
+            change.Commit();
+        }
+        finally
+        {
+            if (!ownsGate) _gate.Release();
+        }
+    }
+
+    /// <summary>Changes an existing entry label and commits only after its normal save succeeds.</summary>
+    public async Task SetEntryLabelAsync(string entryId, string? label,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entryId);
+        var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
+        if (!ownsGate) await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            using var change = Conversation.BeginSessionLabelChange(entryId, label);
+            if (_save is not null) await _save(cancellationToken).ConfigureAwait(false);
+            change.Commit();
+        }
+        finally
+        {
+            if (!ownsGate) _gate.Release();
+        }
+    }
 
     private async Task<NativeExtensions.PiSharpExtensionSessionEntry> AppendExtensionStateAsync(string customType,
         JsonElement data, string? source, CancellationToken cancellationToken)
