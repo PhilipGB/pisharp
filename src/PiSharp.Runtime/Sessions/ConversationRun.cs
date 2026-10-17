@@ -112,6 +112,15 @@ public sealed class ConversationRun
             (customType, data, cancellationToken) => AppendExtensionStateAsync(customType, data, source,
                 cancellationToken), SetSessionNameAsync, SetEntryLabelAsync);
 
+    /// <summary>Installs the host-owned callback capabilities used by extension event contexts.</summary>
+    internal void SetExtensionCapabilitiesFactory(
+        Func<string?, NativeExtensions.PiSharpExtensionSessionContext?,
+            NativeExtensions.PiSharpExtensionCapabilities?> factory)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        _agent.SetExtensionCapabilitiesFactory(factory);
+    }
+
     /// <summary>Changes the active session name and commits only after its normal save succeeds.</summary>
     public async Task SetSessionNameAsync(string name, CancellationToken cancellationToken = default)
     {

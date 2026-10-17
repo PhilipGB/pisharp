@@ -376,6 +376,11 @@ public sealed class PiAgent
         Func<string?, PiSharp.Extensions.Abstractions.PiSharpExtensionSessionContext?> factory) =>
         _extensionContext.SetSessionContextFactory(factory);
 
+    internal void SetExtensionCapabilitiesFactory(
+        Func<string?, PiSharp.Extensions.Abstractions.PiSharpExtensionSessionContext?,
+            PiSharp.Extensions.Abstractions.PiSharpExtensionCapabilities?> factory) =>
+        _extensionContext.SetCapabilitiesFactory(factory);
+
     internal async Task<IReadOnlyList<AgentLifecycleEvent>> NotifySessionStartAsync(
         PiSharp.Extensions.Abstractions.PiSharpExtensionSessionStartReason reason,
         CancellationToken cancellationToken)

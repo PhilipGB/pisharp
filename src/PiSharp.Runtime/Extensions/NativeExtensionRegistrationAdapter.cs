@@ -44,7 +44,7 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
         var source = registration.CurrentSourceInfo?.Path;
         registration.AddBeforeAgentStartHandler(async (eventData, context, cancellationToken) =>
         {
-            var session = context.CreatePublicSessionContext(source);
+            var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
             try
             {
                 var publicEvent = new NativeExtensions.PiSharpBeforeAgentStartEvent(
@@ -58,7 +58,6 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
                     Images = Array.AsReadOnly(eventData.Images.Select(image =>
                         new NativeExtensions.PiSharpImageAttachment(image.MediaType, image.Data.Length)).ToArray())
                 };
-                var publicContext = NativeExtensionPublicContextMapper.Create(context) with { Session = session };
                 var result = await handler(publicEvent, publicContext, cancellationToken);
                 return result is null
                     ? null
@@ -69,7 +68,7 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
                             : null
                     };
             }
-            finally { session?.Dispose(); }
+            finally { publicContext.Dispose(); }
         });
     }
 

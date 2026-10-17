@@ -50,6 +50,18 @@ public sealed partial class ExtensionRegistration
                     Reconcile(_beforeAgentStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_sessionStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_sessionShutdownHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_sessionInfoChangedHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_sessionCompactHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_sessionCompactFailedHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_agentStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_agentEndHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_turnStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_turnEndHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_toolExecutionStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_toolExecutionUpdateHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_toolExecutionEndHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_modelSelectHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_thinkingLevelSelectHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_resourceDiscoveryHandlers, entry => entry.ExtensionSource, (entry, source) => entry with { ExtensionSource = source });
                     Reconcile(_projectTrustHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_shortcuts, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });

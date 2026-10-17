@@ -55,6 +55,42 @@ public partial interface IPiSharpExtensionBuilder
 
     /// <summary>Registers an asynchronous callback before a session is replaced or the host shuts down.</summary>
     void AddSessionShutdownHandler(PiSharpExtensionSessionShutdownHandler handler);
+
+    /// <summary>Observes a committed change to the active session name.</summary>
+    void AddSessionInfoChangedHandler(PiSharpExtensionSessionInfoChangedHandler handler);
+
+    /// <summary>Observes successful, persisted session compaction.</summary>
+    void AddSessionCompactHandler(PiSharpExtensionSessionCompactHandler handler);
+
+    /// <summary>Observes failed or aborted session compaction.</summary>
+    void AddSessionCompactFailedHandler(PiSharpExtensionSessionCompactFailedHandler handler);
+
+    /// <summary>Observes the start of one logical agent run.</summary>
+    void AddAgentStartHandler(PiSharpExtensionAgentStartHandler handler);
+
+    /// <summary>Observes the end of one logical agent run.</summary>
+    void AddAgentEndHandler(PiSharpExtensionAgentEndHandler handler);
+
+    /// <summary>Observes the start of each logical model turn.</summary>
+    void AddTurnStartHandler(PiSharpExtensionTurnStartHandler handler);
+
+    /// <summary>Observes the finalized or interrupted state of each logical model turn.</summary>
+    void AddTurnEndHandler(PiSharpExtensionTurnEndHandler handler);
+
+    /// <summary>Observes a tool call when it is about to execute.</summary>
+    void AddToolExecutionStartHandler(PiSharpExtensionToolExecutionStartHandler handler);
+
+    /// <summary>Observes actual partial output emitted during tool execution.</summary>
+    void AddToolExecutionUpdateHandler(PiSharpExtensionToolExecutionUpdateHandler handler);
+
+    /// <summary>Observes the finalized result of tool execution.</summary>
+    void AddToolExecutionEndHandler(PiSharpExtensionToolExecutionEndHandler handler);
+
+    /// <summary>Observes an effective model selection.</summary>
+    void AddModelSelectHandler(PiSharpExtensionModelSelectHandler handler);
+
+    /// <summary>Observes an effective thinking-level selection.</summary>
+    void AddThinkingLevelSelectHandler(PiSharpExtensionThinkingLevelSelectHandler handler);
 }
 
 /// <summary>Prompt information supplied immediately before the agent begins a user turn.</summary>

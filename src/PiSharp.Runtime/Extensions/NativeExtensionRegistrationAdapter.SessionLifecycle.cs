@@ -11,13 +11,12 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         var source = registration.CurrentSourceInfo?.Path;
         registration.AddSessionStartHandler(async (reason, context, cancellationToken) =>
         {
-            var session = context.CreatePublicSessionContext(source);
+            var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
             try
             {
-                var publicContext = NativeExtensionPublicContextMapper.Create(context) with { Session = session };
                 await handler(new(reason), publicContext, cancellationToken).ConfigureAwait(false);
             }
-            finally { session?.Dispose(); }
+            finally { publicContext.Dispose(); }
         });
     }
 
@@ -28,13 +27,12 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         var source = registration.CurrentSourceInfo?.Path;
         registration.AddSessionShutdownHandler(async (reason, context, cancellationToken) =>
         {
-            var session = context.CreatePublicSessionContext(source);
+            var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
             try
             {
-                var publicContext = NativeExtensionPublicContextMapper.Create(context) with { Session = session };
                 await handler(new(reason), publicContext, cancellationToken).ConfigureAwait(false);
             }
-            finally { session?.Dispose(); }
+            finally { publicContext.Dispose(); }
         });
     }
 }
