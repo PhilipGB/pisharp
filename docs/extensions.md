@@ -194,6 +194,67 @@ Repeated sends with identical type, content, display flag and source remain sepa
 
 Resource callbacks return paths to the existing skill, prompt-template and theme catalogs. Context transforms receive the provider-bound MEAI conversation and their output is request-local. Tool-call hooks run before normal binding/execution and can mutate arguments or block a call; result hooks can replace the value and explicit error state. All asynchronous callbacks receive the cancellation token for the run or tool operation that owns them.
 
+### Providers, MCP servers and virtual models
+
+`IPiSharpExtensionBuilder` can register a provider, an MCP server, and a logical virtual model during `Configure`. These definitions are collected with the owning package and enter the ordinary provider catalogue, model selection, MCP startup and virtual-model route path.
+
+```csharp
+using System.Text.Json;
+using Microsoft.Extensions.AI;
+using PiSharp.Extensions.Abstractions;
+
+builder.AddProvider(new PiSharpExtensionProviderDefinition(
+    "fixture_provider",
+    "Fixture provider",
+    [new("small", "Fixture small", ContextLength: 32000, MaxOutputTokens: 2048,
+        Input: ["text"], Reasoning: true)],
+    context => CreateClient(context.ModelId, context.ApiKey))
+{
+    Endpoint = new Uri("https://api.example.test/v1"),
+    ApiKeyEnvironment = "FIXTURE_PROVIDER_KEY",
+    AuthRequired = true
+});
+
+builder.AddMcpServer("fixture-tools", new PiSharpExtensionMcpServerConfiguration
+{
+    Type = "stdio",
+    Command = "python3",
+    Arguments = [Path.Combine(extensionDirectory, "mcp_server.py")],
+    WorkingDirectory = extensionDirectory,
+    Exposure = "direct"
+});
+
+builder.AddVirtualModel(new PiSharpExtensionVirtualModelDefinition(
+    "fixture_router", "auto", "Fixture automatic model",
+    (request, cancellationToken) =>
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var priorRoutes = request.State is { ValueKind: JsonValueKind.Object } state &&
+            state.TryGetProperty("routes", out var routes) ? routes.GetInt32() : 0;
+        return Task.FromResult(new PiSharpExtensionVirtualModelRoute(
+            "fixture_provider", "small", request.ThinkingLevel,
+            JsonSerializer.SerializeToElement(new { routes = priorRoutes + 1 })));
+    })
+{
+    ThinkingLevels = ["off", "low", "medium", "high"],
+    ContextLength = 32000,
+    MaxOutputTokens = 2048,
+    Input = ["text"]
+});
+```
+
+The provider's model metadata describes the models shown by normal model discovery. `Input` currently supports `text` and `image`; `Reasoning` and the optional thinking-level map feed PiSharp's usual thinking controls. The provider factory receives only the selected provider/model IDs, configured endpoint, and the resolved API key. `ApiKeyEnvironment` uses the existing host credential resolver; the key is request-time data and is not added to extension metadata or session files. Keep it out of logs and dispose clients according to the `IChatClient` contract. The provider API identity is `PiSharpExtensionProviderContract.ChatApi`; provider-specific OAuth callbacks, browser/device login, and custom protocols outside `IChatClient` are not part of this contract.
+
+MCP definitions use the existing MCP configuration fields and startup manager. Stdio is supported, as are the existing HTTP and streamable-HTTP transports, headers, auth-provider, timeout, exposure, and OAuth configuration fields. The MCP runtime owns connection lifetime and discovered tools/resources. Model-visible tool names use the server's normal `mcp__<namespace>__<tool>` form; configured-tool metadata includes the extension source path. Extension servers are not written to `mcp.json`; configured servers continue to load normally. Names that collide after MCP namespace normalization follow the same deterministic configured-server precedence and diagnostics as other extension MCP registrations.
+
+Virtual-model callbacks receive the logical model, thinking request, route reason, copied MEAI messages, previous successful physical model/thinking level, the prior failed model/thinking level/message/error when retrying, and optional JSON state. The callback chooses a physical provider/model and effective thinking level. PiSharp validates and selects that target through the ordinary provider catalogue, then runs it through the existing routed client. Route state is saved on the active conversation branch and supplied on a later non-direct route; normal session save/resume preserves it. The host applies its existing thinking-level clamping against the selected physical model. A virtual model cannot reuse the identity of a registered physical model under the same provider ID.
+
+Provider, MCP, and virtual-model registrations carry the extension package source that declared them. A failed `Configure` restores all registrations from that package. Reload/replacement removes the old package's catalogue entries and connection ownership before later selection; current provider streams finish on their existing client, while requests through an old removed client fail with a source-aware error. Removing an extension does not rewrite historical session/model or virtual route-state entries.
+
+The external provider/MCP/virtual-model fixture in the test suite is built with an ordinary `.csproj` that references `PiSharp.Extensions.Abstractions`; it does not reference Runtime or CLI. It is packed, installed and exercised in fresh PiSharp processes. This verifies that registration is available through normal startup and the regular provider/tool/session paths.
+
+Provider-specific OAuth extension hooks, provider-specific browser/device flows, arbitrary late registration, classifier/image-provider registration, and the rest of Pi's larger extension event surface remain unsupported.
+
 Pack the extension as a normal `.nupkg` and include a `pisharp-extension.json` file at the package root. The manifest declares the package identity, extension API version, and every entry assembly and public type explicitly:
 
 ```json

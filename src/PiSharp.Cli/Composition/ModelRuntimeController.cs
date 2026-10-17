@@ -51,7 +51,8 @@ internal sealed class ModelRuntimeController(
                 request.Session.ActiveVirtualModelState(logicalSelection.Provider.Id, logicalSelection.Model.Id);
             var routingRequest = new VirtualModelRouteRequest(logicalSelection.Model, request.ThinkingLevel,
                 request.Reason, request.Messages, previous.Model, previous.ThinkingLevel,
-                request.Failed?.Model, request.Failed?.ThinkingLevel, request.Failed?.Message, state);
+                request.Failed?.Model, request.Failed?.ThinkingLevel, request.Failed?.Message, state,
+                request.Failed?.Error);
             var route = await registry.RouteAsync(registered, routingRequest, request.CancellationToken).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(route.Provider) || string.IsNullOrWhiteSpace(route.Model))
                 throw new InvalidOperationException("Virtual model router returned an empty physical model identity.");

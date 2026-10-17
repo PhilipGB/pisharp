@@ -749,6 +749,81 @@ public sealed class ResourcePackageCommandProcessTests
         return packagePath;
     }
 
+    internal static async Task<string> PackExternalNativeModelFixtureAsync(string outputDirectory,
+        string revision = "v1", string version = "1.0.0")
+    {
+        Directory.CreateDirectory(outputDirectory);
+        var repositoryRoot = FindRepositoryRoot();
+        var fixtureProject = Path.Combine(repositoryRoot, "tests", "fixtures", "NativeModelExtensionFixture",
+            "NativeModelExtensionFixture.csproj");
+        var fixtureRoot = Path.GetDirectoryName(fixtureProject)!;
+        foreach (var generatedDirectory in new[] { Path.Combine(fixtureRoot, "obj"), Path.Combine(fixtureRoot, "bin") })
+            if (Directory.Exists(generatedDirectory)) Directory.Delete(generatedDirectory, recursive: true);
+        var feed = Path.Combine(outputDirectory, "feed");
+        Directory.CreateDirectory(feed);
+        var abstractionProject = Path.Combine(repositoryRoot, "src", "PiSharp.Extensions.Abstractions",
+            "PiSharp.Extensions.Abstractions.csproj");
+        await RunDotnetAsync(repositoryRoot, ["pack", abstractionProject, "--configuration", BuildConfiguration(),
+            "--no-restore", "--output", feed, "--nologo", "-p:NuGetAudit=false"], outputDirectory);
+
+        var packageCache = Environment.GetEnvironmentVariable("NUGET_PACKAGES") ??
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+        var aiPackage = Path.Combine(packageCache, "microsoft.extensions.ai.abstractions", "10.10.0",
+            "microsoft.extensions.ai.abstractions.10.10.0.nupkg");
+        if (!File.Exists(aiPackage))
+            throw new FileNotFoundException("The restored MEAI abstractions package is required to pack the external fixture.", aiPackage);
+        File.Copy(aiPackage, Path.Combine(feed, Path.GetFileName(aiPackage)), overwrite: true);
+
+        var revisionOutput = Path.Combine(outputDirectory, "build-" + revision);
+        Directory.CreateDirectory(revisionOutput);
+        var intermediatePath = Path.Combine(fixtureRoot, "obj", "native-model-" + revision) + Path.DirectorySeparatorChar;
+        var binaryPath = Path.Combine(fixtureRoot, "bin", "native-model-" + revision) + Path.DirectorySeparatorChar;
+        await RunDotnetAsync(repositoryRoot, ["restore", fixtureProject, "--source", feed, "--nologo",
+            "-p:NuGetAudit=false", "-p:RestoreIgnoreFailedSources=true",
+            $"-p:BaseIntermediateOutputPath={intermediatePath}"],
+            revisionOutput);
+        await RunDotnetAsync(repositoryRoot, ["pack", fixtureProject, "--configuration", BuildConfiguration(),
+            "--no-restore", "--output", outputDirectory, "--nologo", "--disable-build-servers",
+            "-p:NuGetAudit=false", $"-p:NativeModelFixtureRevision={revision}",
+            $"-p:NativeModelFixtureVersion={version}",
+            $"-p:BaseIntermediateOutputPath={intermediatePath}",
+            $"-p:BaseOutputPath={binaryPath}"], revisionOutput);
+        var packagePath = Path.Combine(outputDirectory, $"PiSharp.TestExtensions.NativeModelFixture.{version}.nupkg");
+        if (!File.Exists(packagePath))
+            throw new FileNotFoundException("dotnet pack did not create the external native model fixture package.", packagePath);
+        return packagePath;
+    }
+
+    private static async Task RunDotnetAsync(string workingDirectory, IReadOnlyList<string> arguments,
+        string temporaryDirectory)
+    {
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        foreach (var argument in arguments) start.ArgumentList.Add(argument);
+        start.Environment["NUGET_PACKAGES"] = Path.Combine(temporaryDirectory, "nuget-packages");
+        start.Environment["NUGET_HTTP_CACHE_PATH"] = Path.Combine(temporaryDirectory, "nuget-http-cache");
+        using var process = Process.Start(start) ?? throw new IOException("Could not start dotnet fixture packaging.");
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(120)); }
+        catch
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { }
+            catch (System.ComponentModel.Win32Exception) { }
+            await process.WaitForExitAsync();
+            throw;
+        }
+        var stdout = await output;
+        var stderr = await error;
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException($"dotnet fixture packaging failed with exit code {process.ExitCode}:\n{stderr}\n{stdout}");
+    }
+
     private static async Task<string> PackApiV1NativeFixtureAsync(string outputDirectory)
     {
         Directory.CreateDirectory(outputDirectory);

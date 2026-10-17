@@ -43,10 +43,13 @@ internal sealed class ProjectSessionRuntimeFactory(
             configuredSessionDirectory, sourceSessionDirectory, cancellationToken,
             modelRuntime.GetApiKeyForProviderAsync, deferExtensionResourceDiscovery: true);
         var previousVirtualModels = modelRuntime.VirtualModels;
+        var previousExtensionProviders = modelRuntime.CaptureExtensionProviderSnapshot();
         var createdImportedSession = false;
         string? destinationPath = null;
         try
         {
+            modelRuntime.SetExtensionProviders(project.Extensions.Registration.ExtensionProviders,
+                deactivateReplaced: false);
             modelRuntime.SetVirtualModelRegistry(project.Extensions.Registration.VirtualModels);
             var isPiJsonl = path.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase);
             var conversation = !targetExists
@@ -105,10 +108,11 @@ internal sealed class ProjectSessionRuntimeFactory(
                 activeToolNamesOverride: DefaultToolReloadPolicy.ResolveResumeTools(arguments,
                     conversation.ActiveToolLoadout(), agent.ToolDeclarations.Select(tool => tool.Name)));
             return new ProjectSessionRuntime(project, conversation, run, destinationPath, selection, chat, agent,
-                thinking, compaction, pricing, modelRuntime, previousVirtualModels);
+                thinking, compaction, pricing, modelRuntime, previousVirtualModels, previousExtensionProviders);
         }
         catch
         {
+            modelRuntime.RestoreExtensionProviderSnapshot(previousExtensionProviders);
             modelRuntime.RestoreVirtualModelRegistry(previousVirtualModels);
             if (createdImportedSession && destinationPath is not null)
             {
@@ -135,7 +139,8 @@ internal sealed class ProjectSessionRuntimeFactory(
 internal sealed class ProjectSessionRuntime(ProjectRuntimeContext project, ConversationSession conversation,
     ConversationRun run, string? path, ModelSelection selection, IChatClient chat, PiAgent agent, string thinking,
     AutoCompactionPolicy? contextPolicy, ModelPricing? pricing, ProviderModelRuntime modelRuntime,
-    VirtualModelRegistry? previousVirtualModels) : IDisposable
+    VirtualModelRegistry? previousVirtualModels,
+    IReadOnlyDictionary<string, ProviderProfile> previousExtensionProviders) : IDisposable
 {
     private int _adopted;
     private int _disposed;
@@ -151,12 +156,20 @@ internal sealed class ProjectSessionRuntime(ProjectRuntimeContext project, Conve
     public AutoCompactionPolicy? ContextPolicy { get; } = contextPolicy;
     public ModelPricing? Pricing { get; } = pricing;
 
-    internal void CommitAdoption() => Interlocked.Exchange(ref _adopted, 1);
+    internal void CommitAdoption()
+    {
+        modelRuntime.CompleteExtensionProviderReplacement(previousExtensionProviders);
+        Interlocked.Exchange(ref _adopted, 1);
+    }
 
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
-        if (Volatile.Read(ref _adopted) == 0) modelRuntime.RestoreVirtualModelRegistry(previousVirtualModels);
+        if (Volatile.Read(ref _adopted) == 0)
+        {
+            modelRuntime.RestoreExtensionProviderSnapshot(previousExtensionProviders);
+            modelRuntime.RestoreVirtualModelRegistry(previousVirtualModels);
+        }
         Project.Dispose();
     }
 }

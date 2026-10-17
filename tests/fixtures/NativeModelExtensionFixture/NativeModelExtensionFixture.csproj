@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>PiSharp.TestExtensions.NativeModelFixture</PackageId>
+    <Version Condition="'$(NativeModelFixtureVersion)' == ''">1.0.0</Version>
+    <Version Condition="'$(NativeModelFixtureVersion)' != ''">$(NativeModelFixtureVersion)</Version>
+    <NativeModelFixtureRevision Condition="'$(NativeModelFixtureRevision)' == ''">v1</NativeModelFixtureRevision>
+    <AssemblyName>NativeModelExtensionFixture</AssemblyName>
+    <Description>External package fixture for provider, MCP and virtual-model registration.</Description>
+    <DefineConstants>$(DefineConstants);NATIVE_MODEL_FIXTURE_$(NativeModelFixtureRevision)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="PiSharp.Extensions.Abstractions" Version="1.0.0" />
+    <None Include="native_mcp_fixture.py" Pack="true" PackagePath="lib/$(TargetFramework)/native_mcp_fixture.py" />
+    <None Include="$(TargetDir)$(AssemblyName).deps.json" Pack="true" PackagePath="lib/$(TargetFramework)/" Visible="false" />
+    <None Include="$(IntermediateOutputPath)pisharp-extension.json" Pack="true" PackagePath="/" Visible="false" />
+  </ItemGroup>
+  <Target Name="GeneratePiSharpExtensionManifest" BeforeTargets="_GetPackageFiles">
+    <WriteLinesToFile File="$(IntermediateOutputPath)pisharp-extension.json"
+                      Lines="{&quot;id&quot;:&quot;$(PackageId)&quot;,&quot;version&quot;:&quot;$(Version)&quot;,&quot;apiVersion&quot;:1,&quot;extensions&quot;:[{&quot;assembly&quot;:&quot;lib/$(TargetFramework)/$(AssemblyName).dll&quot;,&quot;type&quot;:&quot;PiSharp.TestExtensions.NativeModelFixture.RegistrationExtension&quot;}]}"
+                      Overwrite="true" />
+  </Target>
+</Project>

@@ -13,7 +13,8 @@ public static class VirtualModelContract
 public sealed record VirtualModelRouteRequest(ModelDescriptor Model, string ThinkingLevel, string Reason,
     IReadOnlyList<ChatMessage> Messages, ModelDescriptor? PreviousModel = null,
     string? PreviousThinkingLevel = null, ModelDescriptor? FailedModel = null,
-    string? FailedThinkingLevel = null, ChatMessage? FailedMessage = null, JsonElement? State = null);
+    string? FailedThinkingLevel = null, ChatMessage? FailedMessage = null, JsonElement? State = null,
+    string? FailedError = null);
 
 public sealed record VirtualModelRoute(string Provider, string Model, string ThinkingLevel, JsonElement? State = null);
 
@@ -80,7 +81,8 @@ public sealed class VirtualModelRegistry
         lock (_gate)
         {
             if (_models.TryGetValue(key, out var existing) && existing.ExtensionPath != extensionPath)
-                throw new InvalidOperationException($"Virtual model {definition.Provider}/{definition.Id} is already registered by {existing.ExtensionPath}.");
+                throw new InvalidOperationException($"Virtual model {definition.Provider}/{definition.Id} is already registered by " +
+                    $"{existing.ExtensionPath}; conflicting extension {extensionPath}.");
             _models[key] = new(definition, descriptor, extensionPath);
         }
     }

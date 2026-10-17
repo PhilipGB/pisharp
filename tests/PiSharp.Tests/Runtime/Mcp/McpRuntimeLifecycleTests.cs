@@ -545,6 +545,7 @@ public sealed class McpRuntimeLifecycleTests
             Assert.Equal(extensionPath, registration.ExtensionPath);
             Assert.Contains(catalog.Registration.ToolDefinitions, tool =>
                 tool.Function.Name == "mcp__extension__echo");
+            Assert.Equal(extensionPath, catalog.Registration.ToolSourceInfo["mcp__extension__echo"].Path);
             Assert.Equal("Disabled MCP server extension.", await catalog.Registration.Commands["mcp"]("disable extension",
                 CancellationToken.None));
             Assert.False(File.Exists(Path.Combine(root, "mcp.json")));

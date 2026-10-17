@@ -26,6 +26,15 @@ public partial interface IPiSharpExtensionBuilder
     /// <summary>Registers an AI function tool available to the agent.</summary>
     void AddTool(AIFunction tool);
 
+    /// <summary>Registers a provider and its chat models for normal model selection.</summary>
+    void AddProvider(PiSharpExtensionProviderDefinition provider);
+
+    /// <summary>Registers an MCP server that joins the normal startup MCP connection flow.</summary>
+    void AddMcpServer(string name, PiSharpExtensionMcpServerConfiguration configuration);
+
+    /// <summary>Registers a selectable logical model routed through a physical provider model.</summary>
+    void AddVirtualModel(PiSharpExtensionVirtualModelDefinition model);
+
     /// <summary>Registers a callback that can update the system prompt before an agent turn.</summary>
     void AddBeforeAgentStartHandler(PiSharpBeforeAgentStartHandler handler);
 
