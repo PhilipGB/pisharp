@@ -26,11 +26,13 @@ public sealed class NativeExtensionHookBridgeTests
                 cancellationToken.ThrowIfCancellationRequested();
                 observedEvent = turn;
                 observedContext = context;
+                turn.SystemPromptOptions.Sections["public_extension_rules"] = "mutated through public API";
                 return ValueTask.FromResult<NativeExtensions.PiSharpBeforeAgentStartResult?>(null);
             });
             adapter.Close();
 
-            var agent = new PiAgent(new HookBridgeClient(), new CodingTools(cwd), noBuiltinTools: true,
+            var provider = new HookBridgeClient();
+            var agent = new PiAgent(provider, new CodingTools(cwd), noBuiltinTools: true,
                 beforeAgentStartHandlers: registration.BeforeAgentStartHandlers,
                 extensionContextConfiguration: new PiSharpExtensionContextConfiguration(
                     cwd, "print", false, true, extensionUi));
@@ -52,6 +54,8 @@ public sealed class NativeExtensionHookBridgeTests
             Assert.False(observedContext.IsIdle);
             Assert.True(observedContext.IsProjectTrusted);
             Assert.False(observedContext.HasPendingMessages);
+            Assert.Contains("<public_extension_rules>\nmutated through public API\n</public_extension_rules>",
+                Assert.Single(provider.Instructions), StringComparison.Ordinal);
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }
@@ -471,6 +475,7 @@ public sealed class NativeExtensionHookBridgeTests
         private int _requests;
 
         public List<IReadOnlyList<ChatMessage>> Requests { get; } = [];
+        public List<string> Instructions { get; } = [];
         public string? ToolResult { get; private set; }
 
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
@@ -483,6 +488,7 @@ public sealed class NativeExtensionHookBridgeTests
             cancellationToken.ThrowIfCancellationRequested();
             var request = messages.Select(message => message.Clone()).ToArray();
             Requests.Add(request);
+            Instructions.Add(options?.Instructions ?? "");
             if (Interlocked.Increment(ref _requests) == 1 && toolName is not null)
             {
                 yield return new ChatResponseUpdate(ChatRole.Assistant,

@@ -1,4 +1,5 @@
 using PiSharp.Runtime.Extensions;
+using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Runtime.Resources;
 
@@ -45,40 +46,93 @@ internal static class PiSystemPromptBuilder
     internal static Projection BuildProjection(string workingDirectory, IReadOnlyList<PiSharpToolDeclaration> tools,
         string? customPrompt, string? appendSystemPrompt, string? projectInstructions, string? skillInstructions)
     {
-        var sections = new List<string>
-        {
-            string.IsNullOrEmpty(customPrompt) ? DefaultPreamble : customPrompt
-        };
+        return BuildProjection(CreateOptions(workingDirectory, tools, customPrompt, appendSystemPrompt,
+            projectInstructions, skillInstructions));
+    }
+
+    internal static PiSharpSystemPromptOptions CreateOptions(string workingDirectory,
+        IReadOnlyList<PiSharpToolDeclaration> tools, string? customPrompt, string? appendSystemPrompt,
+        string? projectInstructions, string? skillInstructions)
+    {
+        var options = new PiSharpSystemPromptOptions();
+        options.Sections.Add("preamble", string.IsNullOrEmpty(customPrompt) ? DefaultPreamble : customPrompt);
 
         if (string.IsNullOrEmpty(customPrompt))
         {
             var snippets = tools.Where(tool => !string.IsNullOrWhiteSpace(tool.Registration.PromptSnippet))
                 .Select(tool => $"- {tool.Registration.Function.Name}: {tool.Registration.PromptSnippet}").ToArray();
             var toolText = snippets.Length == 0 ? "(none)" : string.Join('\n', snippets);
-            sections.Add($"<tools>\n{toolText}\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>");
-            sections.Add($"<rules>\n{BuildRules(tools)}\n</rules>");
-            sections.Add($"<docs>\n{BuildDocumentationSection()}\n</docs>");
+            options.Sections.Add("tools",
+                $"{toolText}\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.");
+            options.Sections.Add("rules", BuildRules(tools));
+            options.Sections.Add("docs", BuildDocumentationSection());
         }
 
         if (!string.IsNullOrEmpty(appendSystemPrompt))
-            sections.Add($"<addendum>\n{appendSystemPrompt}\n</addendum>");
+            options.Sections.Add("addendum", appendSystemPrompt);
 
         if (!string.IsNullOrWhiteSpace(projectInstructions))
-            sections.Add($"<project_context>\nProject-specific instructions and guidelines:\n\n{projectInstructions.TrimEnd()}\n</project_context>");
+            options.Sections.Add("project_context",
+                $"Project-specific instructions and guidelines:\n\n{projectInstructions.TrimEnd()}");
 
         if (!string.IsNullOrWhiteSpace(skillInstructions))
         {
             var skills = skillInstructions.Trim();
-            sections.Add(skills.StartsWith("<skills>", StringComparison.Ordinal) &&
-                         skills.EndsWith("</skills>", StringComparison.Ordinal)
-                ? skills
-                : $"<skills>\n{skills}\n</skills>");
+            if (skills.StartsWith("<skills>", StringComparison.Ordinal) &&
+                skills.EndsWith("</skills>", StringComparison.Ordinal))
+                skills = skills["<skills>".Length..^"</skills>".Length].Trim('\r', '\n');
+            options.Sections.Add("skills", skills);
         }
 
-        sections.Add($"<cwd>\n{workingDirectory.Replace('\\', '/')}\n</cwd>");
+        options.Sections.Add("cwd", workingDirectory.Replace('\\', '/'));
+        return options;
+    }
+
+    internal static Projection BuildProjection(PiSharpSystemPromptOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        var sections = new List<string>();
+        foreach (var (name, content) in options.Sections)
+        {
+            if (!IsValidSectionName(name))
+                throw new InvalidOperationException($"Invalid system prompt section name: {name}");
+            if (string.IsNullOrEmpty(content)) continue;
+            sections.Add(name == "preamble" ? content : $"<{name}>\n{content}\n</{name}>");
+        }
+
         var text = string.Join("\n\n", sections);
         return new(text, sections.Sum(section => section.Length));
     }
+
+    internal static PiSharpSystemPromptOptions CloneOptions(PiSharpSystemPromptOptions source)
+    {
+        var clone = new PiSharpSystemPromptOptions();
+        foreach (var section in source.Sections) clone.Sections.Add(section.Key, section.Value);
+        return clone;
+    }
+
+    internal static PiSharpSystemPromptOptions ApplyChanges(PiSharpSystemPromptOptions original,
+        PiSharpSystemPromptOptions edited, PiSharpSystemPromptOptions currentBase)
+    {
+        var merged = CloneOptions(currentBase);
+        foreach (var (name, value) in original.Sections)
+        {
+            if (!edited.Sections.ContainsKey(name)) merged.Sections.Remove(name);
+            else if (!string.Equals(value, edited.Sections[name], StringComparison.Ordinal))
+                merged.Sections[name] = edited.Sections[name];
+        }
+
+        foreach (var (name, value) in edited.Sections)
+            if (!original.Sections.ContainsKey(name)) merged.Sections[name] = value;
+        return merged;
+    }
+
+    internal static bool SectionsEqual(PiSharpSystemPromptOptions left, PiSharpSystemPromptOptions right) =>
+        left.Sections.Count == right.Sections.Count && left.Sections.SequenceEqual(right.Sections);
+
+    private static bool IsValidSectionName(string name) =>
+        name.Length > 0 && name[0] is >= 'a' and <= 'z' &&
+        name.All(character => character is >= 'a' and <= 'z' or >= '0' and <= '9' or '_' or '-');
 
     private static string BuildRules(IReadOnlyList<PiSharpToolDeclaration> tools)
     {

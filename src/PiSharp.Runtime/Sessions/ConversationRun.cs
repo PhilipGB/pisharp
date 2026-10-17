@@ -526,7 +526,8 @@ public sealed class ConversationRun
                     {
                         var injectedMessages = turn.SkipBeforeAgentStart ? [] :
                             await _agent.PrepareBeforeAgentStartAsync(currentMessage,
-                                customStart is null ? turn.Texts[0] : "", Publish, linked.Token, customStart);
+                                customStart is null ? turn.Texts[0] : "", Publish, linked.Token, _execution,
+                                customStart);
                         var acceptedMessages = turn.Messages.Concat(injectedMessages.Select(
                             PiSharpCustomMessageProjection.ToChatMessage)).ToArray();
                         outcome = await _retryController.RunTurnAsync(

@@ -51,6 +51,9 @@ public partial interface IPiSharpExtensionBuilder
 /// <summary>Prompt information supplied immediately before the agent begins a user turn.</summary>
 public sealed record PiSharpBeforeAgentStartEvent(string Prompt, string SystemPrompt)
 {
+    /// <summary>Gets mutable structured prompt sections for the current run.</summary>
+    public PiSharpSystemPromptOptions SystemPromptOptions { get; init; } = new();
+
     /// <summary>Identifies whether this run starts from user input or an extension custom message.</summary>
     public PiSharpTurnMessageType MessageType { get; init; } = PiSharpTurnMessageType.User;
 

@@ -78,6 +78,200 @@ public sealed class ExtensionBeforeAgentStartTests
     }
 
     [Fact]
+    public async Task StructuredPromptOptionsComposeInOrderAndFullReplacementWins()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-before-agent-prompt-options-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            string? replacement = null;
+            registration.AddBeforeAgentStartHandler((eventData, _, _) =>
+            {
+                Assert.Contains("preamble", eventData.SystemPromptOptions.Sections.Keys);
+                eventData.SystemPromptOptions.Sections["extension_rules"] = "first handler guidance";
+                eventData.SystemPromptOptions.Sections.Remove("docs");
+                return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
+            });
+            registration.AddBeforeAgentStartHandler((eventData, _, _) =>
+            {
+                Assert.Contains("first handler guidance", eventData.SystemPrompt, StringComparison.Ordinal);
+                eventData.SystemPromptOptions.Sections["tools"] = "changed by second handler";
+                replacement = eventData.SystemPrompt + "\nwhole prompt replacement";
+                return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(new(replacement));
+            });
+            registration.AddBeforeAgentStartHandler((eventData, _, _) =>
+            {
+                Assert.Equal(replacement, eventData.SystemPrompt);
+                eventData.SystemPromptOptions.Sections["late_rules"] = "not rendered after replacement";
+                return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
+            });
+
+            var provider = new BeforeAgentStartClient();
+            var agent = new PiAgent(provider, new CodingTools(workingDirectory), systemPrompt: "base prompt",
+                beforeAgentStartHandlers: registration.BeforeAgentStartHandlers);
+            var run = await ConversationRun.OpenAsync(agent, new ConversationSession(workingDirectory, "test-model", null));
+            await foreach (var _ in run.RunEventsAsync("hello")) { }
+
+            var instructions = Assert.Single(provider.Instructions);
+            Assert.Contains("<extension_rules>\nfirst handler guidance\n</extension_rules>", instructions,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain("<docs>", instructions, StringComparison.Ordinal);
+            Assert.EndsWith("whole prompt replacement", instructions, StringComparison.Ordinal);
+            Assert.DoesNotContain("changed by second handler", instructions, StringComparison.Ordinal);
+            Assert.DoesNotContain("late_rules", instructions, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task StructuredPromptOptionsAreRequestLocalAndDoNotMultiplyAcrossRetry()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-before-agent-prompt-retry-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var conversation = new ConversationSession(workingDirectory, "test-model", null);
+            var registration = new ExtensionRegistration();
+            var handlerCalls = 0;
+            registration.AddBeforeAgentStartHandler((eventData, _, _) =>
+            {
+                handlerCalls++;
+                if (eventData.Prompt == "first")
+                {
+                    eventData.SystemPromptOptions.Sections["rules"] = "answer with care";
+                    eventData.SystemPromptOptions.Sections["extension_rules"] = "one prompt addition";
+                }
+                else
+                {
+                    Assert.DoesNotContain("one prompt addition", eventData.SystemPrompt, StringComparison.Ordinal);
+                }
+                return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
+            });
+
+            var provider = new RetryThenCompleteClient();
+            var agent = new PiAgent(provider, new CodingTools(workingDirectory), retryPolicy: ProviderRetryPolicy.None,
+                beforeAgentStartHandlers: registration.BeforeAgentStartHandlers);
+            var run = await ConversationRun.OpenAsync(agent, conversation,
+                retryPolicy: new AgentRunRetryPolicy(maxRetries: 1, baseDelay: TimeSpan.Zero, maxDelay: TimeSpan.Zero),
+                retryDelay: static (_, cancellationToken) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return Task.CompletedTask;
+                });
+
+            await foreach (var _ in run.RunEventsAsync("first")) { }
+            Assert.Equal(2, provider.Instructions.Count);
+            Assert.All(provider.Instructions, instructions =>
+            {
+                Assert.Contains("<rules>\nanswer with care\n</rules>", instructions, StringComparison.Ordinal);
+                Assert.Contains("one prompt addition", instructions, StringComparison.Ordinal);
+                Assert.Equal(1, instructions.Split("one prompt addition", StringSplitOptions.None).Length - 1);
+            });
+            Assert.Equal(1, handlerCalls);
+
+            await foreach (var _ in run.RunEventsAsync("second")) { }
+            Assert.Equal(3, provider.Instructions.Count);
+            Assert.DoesNotContain("one prompt addition", provider.Instructions[2], StringComparison.Ordinal);
+            Assert.Equal(2, handlerCalls);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task StructuredPromptOptionsApplyToIdleCustomTriggeredTurn()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-prompt-options-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            registration.AddBeforeAgentStartHandler((eventData, _, _) =>
+            {
+                Assert.Equal(PiSharpTurnMessageType.Custom, eventData.MessageType);
+                eventData.SystemPromptOptions.Sections["trigger_context"] = "background work finished";
+                return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
+            });
+            var provider = new BeforeAgentStartClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(workingDirectory),
+                    beforeAgentStartHandlers: registration.BeforeAgentStartHandlers),
+                new ConversationSession(workingDirectory, "test-model", null));
+
+            await foreach (var _ in run.RunCustomMessageEventsAsync(
+                               new PiSharp.Extensions.Abstractions.PiSharpCustomMessage(
+                                   "job-finished", "background work finished"), sourcePath: null)) { }
+
+            var instructions = Assert.Single(provider.Instructions);
+            Assert.Contains("<trigger_context>\nbackground work finished\n</trigger_context>", instructions,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task StructuredPromptOptionsStayConsistentWhenActiveToolsChangeMidRun()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-prompt-options-loadout-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var switchTool = AIFunctionFactory.Create((AIFunctionArguments arguments) =>
+            {
+                PiSharpToolExecutionContext.Get(arguments)!.SetActiveTools(["deferred"]);
+                return "activated";
+            }, name: "switch_tools");
+            var deferredTool = AIFunctionFactory.Create(() => "deferred", name: "deferred");
+            var registration = new ExtensionRegistration();
+            var setupPrompts = new List<string>();
+            registration.AddBeforeAgentStartHandler((eventData, _, _) =>
+            {
+                setupPrompts.Add(eventData.SystemPrompt);
+                eventData.SystemPromptOptions.Sections["extension_rules"] = "keep this guidance";
+                return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
+            });
+            var provider = new ToolLoadoutPromptClient();
+            var agent = new PiAgent(provider, new CodingTools(workingDirectory), noBuiltinTools: true,
+                extensionToolRegistrations:
+                [
+                    new(switchTool, ToolExposure.ModelOnly, PromptSnippet: "Switch active tools."),
+                    new(deferredTool, ToolExposure.Deferred, PromptSnippet: "Run a deferred operation.")
+                ],
+                beforeAgentStartHandlers: registration.BeforeAgentStartHandlers);
+            var run = await ConversationRun.OpenAsync(agent,
+                new ConversationSession(workingDirectory, "test-model", null));
+
+            await foreach (var _ in run.RunEventsAsync("switch tools")) { }
+
+            Assert.Equal(["switch_tools"], provider.ToolNames[0]);
+            Assert.Equal(["deferred"], provider.ToolNames[1]);
+            Assert.Contains("- switch_tools: Switch active tools.", provider.Instructions[0], StringComparison.Ordinal);
+            Assert.Contains("- deferred: Run a deferred operation.", provider.Instructions[1], StringComparison.Ordinal);
+            Assert.DoesNotContain("- switch_tools:", provider.Instructions[1], StringComparison.Ordinal);
+            Assert.Equal(1, provider.Instructions[1].Split("keep this guidance", StringSplitOptions.None).Length - 1);
+
+            await foreach (var _ in run.RunEventsAsync("follow up")) { }
+
+            Assert.Contains("- deferred: Run a deferred operation.", setupPrompts[1], StringComparison.Ordinal);
+            Assert.DoesNotContain("- switch_tools:", setupPrompts[1], StringComparison.Ordinal);
+            Assert.Contains("- deferred: Run a deferred operation.", provider.Instructions[2], StringComparison.Ordinal);
+            Assert.DoesNotContain("- switch_tools:", provider.Instructions[2], StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task IdleCustomMessageStartsOneCustomTurnAndPersistsReturnedMessageOnce()
     {
         var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-turn-" + Guid.NewGuid().ToString("N"));
@@ -751,6 +945,7 @@ public sealed class ExtensionBeforeAgentStartTests
     private sealed class RetryThenCompleteClient : IChatClient
     {
         public List<ChatMessage[]> Requests { get; } = [];
+        public List<string> Instructions { get; } = [];
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
@@ -760,6 +955,7 @@ public sealed class ExtensionBeforeAgentStartTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             Requests.Add(messages.ToArray());
+            Instructions.Add(options?.Instructions ?? "");
             if (Requests.Count == 1)
             {
                 yield return new ChatResponseUpdate(ChatRole.Assistant, []);
@@ -768,6 +964,33 @@ public sealed class ExtensionBeforeAgentStartTests
                     System.Net.HttpStatusCode.ServiceUnavailable);
             }
             yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ToolLoadoutPromptClient : IChatClient
+    {
+        public List<string[]> ToolNames { get; } = [];
+        public List<string> Instructions { get; } = [];
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ToolNames.Add(options?.Tools?.Select(tool => tool.Name).ToArray() ?? []);
+            Instructions.Add(options?.Instructions ?? string.Empty);
+            if (ToolNames.Count == 1)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("switch-call", "switch_tools", new Dictionary<string, object?>())]);
+            else
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            await Task.CompletedTask;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
