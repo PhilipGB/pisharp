@@ -42,21 +42,30 @@ public sealed class ExampleExtension : IPiSharpExtension
         builder.AddTool(AIFunctionFactory.Create((string value) =>
                 $"{FixtureRevision} tool / private dependency {NativeDependencyInfo.Version}: {value}",
             name: "native_fixture_tool", description: "Returns a fixture response for the supplied value."));
-        builder.AddBeforeAgentStartHandler(static (eventData, context, _) =>
+        builder.AddBeforeAgentStartHandler(async (eventData, context, cancellationToken) =>
         {
+            const string holdPrefix = "__native_fixture_hold_callback:";
+            if (eventData.Prompt.StartsWith(holdPrefix, StringComparison.Ordinal))
+            {
+                var gatePath = eventData.Prompt[holdPrefix.Length..];
+                await File.WriteAllTextAsync(gatePath + ".started", "started", cancellationToken);
+                while (!File.Exists(gatePath + ".release"))
+                    await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
+            }
+
             var systemPrompt = eventData.SystemPrompt + $"\n{FixtureRevision} extension / private dependency " +
                 NativeDependencyInfo.Version + " / working directory: " + context.WorkingDirectory;
             var messageMarker = eventData.MessageType == PiSharpTurnMessageType.Custom
                 ? $"native-fixture-{FixtureRevision}-before-custom:{eventData.StartingCustomMessage?.CustomType}"
                 : $"native-fixture-{FixtureRevision}-before-user";
             systemPrompt += "\n" + messageMarker;
-            return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(new(systemPrompt)
+            return new PiSharpBeforeAgentStartResult(systemPrompt)
             {
                 InjectedMessage = eventData.MessageType == PiSharpTurnMessageType.User
                     ? new($"native-fixture-{FixtureRevision}-injected",
                         $"native-fixture-{FixtureRevision}-injected", Display: false)
                     : null
-            });
+            };
         });
         builder.AddContextTransform((messages, cancellationToken) =>
         {

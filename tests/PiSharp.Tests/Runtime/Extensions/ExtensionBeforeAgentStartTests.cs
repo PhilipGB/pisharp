@@ -274,6 +274,157 @@ public sealed class ExtensionBeforeAgentStartTests
     }
 
     [Fact]
+    public async Task TriggeredCustomMessageResumesFromDiskWithoutReplayingItsTurn()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-resume-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var store = new ConversationStore(workingDirectory, Path.Combine(workingDirectory, "sessions"));
+            var conversation = new ConversationSession(workingDirectory, "test-model", null);
+            conversation.Append(new ChatMessage(ChatRole.User, "seed before trigger"));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "seed response"));
+            var sessionPath = store.NewPath(conversation);
+            await store.SaveAsync(conversation, sessionPath);
+            var handlerCalls = 0;
+            var registration = new ExtensionRegistration();
+            registration.AddBeforeAgentStartHandler((eventData, _, _) =>
+            {
+                handlerCalls++;
+                return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
+            });
+
+            var firstProvider = new BeforeAgentStartClient();
+            var firstRun = await ConversationRun.OpenAsync(
+                new PiAgent(firstProvider, new CodingTools(workingDirectory),
+                    beforeAgentStartHandlers: registration.BeforeAgentStartHandlers),
+                conversation, save: token => store.SaveAsync(conversation, sessionPath, token));
+            await foreach (var _ in firstRun.RunCustomMessageEventsAsync(
+                               new PiSharp.Extensions.Abstractions.PiSharpCustomMessage(
+                                   "resume-notice", "background work completed", Display: false),
+                               "/extensions/background.cs")) { }
+            Assert.Equal(1, handlerCalls);
+            Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+
+            var resumedConversation = await store.LoadAsync(sessionPath);
+            Assert.Single(resumedConversation.Tree.ActivePath(), node => node.Type == "custom_message");
+            Assert.Contains(resumedConversation.ContextMessages(), message =>
+                message.Text == "background work completed");
+            var forkableUser = Assert.Single(resumedConversation.ForkableUserMessages());
+            var (forkedConversation, forkPrompt) = resumedConversation.ForkAtUser(forkableUser.Id);
+            Assert.Equal("seed before trigger", forkPrompt);
+            Assert.DoesNotContain(forkedConversation.Tree.ActivePath(), node => node.Type == "custom_message");
+            var resumedProvider = new BeforeAgentStartClient();
+            var resumedRun = await ConversationRun.OpenAsync(
+                new PiAgent(resumedProvider, new CodingTools(workingDirectory),
+                    beforeAgentStartHandlers: registration.BeforeAgentStartHandlers), resumedConversation);
+
+            Assert.Equal(1, handlerCalls);
+            Assert.Empty(resumedProvider.Requests);
+            await foreach (var _ in resumedRun.RunEventsAsync("ordinary follow-up")) { }
+
+            Assert.Equal(2, handlerCalls);
+            var request = Assert.Single(resumedProvider.Requests);
+            Assert.Equal(1, request.Count(message => message.Role == ChatRole.User &&
+                message.Text == "background work completed"));
+            Assert.Contains(request, message => message.Role == ChatRole.User && message.Text == "ordinary follow-up");
+            Assert.Single(resumedConversation.Tree.ActivePath(), node => node.Type == "custom_message");
+            Assert.False(resumedRun.IsActive);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task TriggeredCustomProviderFailureSettlesAndAllowsAnOrdinaryPrompt()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-provider-failure-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var provider = new FailOnceThenCompleteClient();
+            var beforeStartCount = 0;
+            var registration = new ExtensionRegistration();
+            registration.AddBeforeAgentStartHandler((_, _, _) =>
+            {
+                beforeStartCount++;
+                return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
+            });
+            var conversation = new ConversationSession(workingDirectory, "test-model", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(workingDirectory),
+                retryPolicy: ProviderRetryPolicy.None,
+                beforeAgentStartHandlers: registration.BeforeAgentStartHandlers), conversation);
+            var failedEvents = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunCustomMessageEventsAsync(
+                               new PiSharp.Extensions.Abstractions.PiSharpCustomMessage(
+                                   "provider-failure", "recover after failure"), sourcePath: null))
+                failedEvents.Add(item);
+
+            Assert.Contains(failedEvents, item => item.Type == "turn_failed");
+            Assert.False(run.IsActive);
+            Assert.Equal(1, beforeStartCount);
+            Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+
+            var recoveredEvents = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("ordinary recovery")) recoveredEvents.Add(item);
+
+            Assert.Contains(recoveredEvents, item => item.Type == "turn_completed");
+            Assert.Equal(2, provider.Requests.Count);
+            Assert.Equal(2, beforeStartCount);
+            Assert.Contains(provider.Requests[1], message => message.Role == ChatRole.User &&
+                message.Text == "recover after failure");
+            Assert.Contains(provider.Requests[1], message => message.Role == ChatRole.User &&
+                message.Text == "ordinary recovery");
+            Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+            Assert.False(run.IsActive);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CancellingProviderExecutionForCustomTurnSettlesAndAllowsTheNextPrompt()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-provider-cancel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var provider = new HeldFirstRequestClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(workingDirectory),
+                retryPolicy: ProviderRetryPolicy.None), new ConversationSession(workingDirectory, "test-model", null));
+            using var cancellation = new CancellationTokenSource();
+            var events = new List<AgentLifecycleEvent>();
+            var execution = Task.Run(async () =>
+            {
+                await foreach (var item in run.RunCustomMessageEventsAsync(
+                                   new PiSharp.Extensions.Abstractions.PiSharpCustomMessage(
+                                       "cancelled-provider", "cancel and recover"), sourcePath: null,
+                                   cancellationToken: cancellation.Token))
+                    events.Add(item);
+            });
+            await provider.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(run.IsActive);
+            cancellation.Cancel();
+            await execution.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.False(run.IsActive);
+            Assert.Contains(events, item => item.Type is "turn_interrupted" or "prompt_rejected");
+            Assert.Single(run.Conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+            await foreach (var _ in run.RunEventsAsync("next ordinary prompt")) { }
+            Assert.Equal(2, provider.Requests.Count);
+            Assert.False(run.IsActive);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task CustomMessageQueuedWhileBusyJoinsTheActiveRunWithoutAnotherStartEvent()
     {
         var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-queue-" + Guid.NewGuid().ToString("N"));
@@ -449,6 +600,27 @@ public sealed class ExtensionBeforeAgentStartTests
                 await ReleaseFirstRequest.Task.WaitAsync(cancellationToken);
             }
             yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class FailOnceThenCompleteClient : IChatClient
+    {
+        public List<ChatMessage[]> Requests { get; } = [];
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            Requests.Add(messages.ToArray());
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield();
+            if (Requests.Count == 1) throw new IOException("deterministic provider failure");
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "recovered");
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

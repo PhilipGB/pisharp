@@ -4,6 +4,7 @@ using System.Threading.Channels;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Cli.Protocols;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
@@ -16,6 +17,157 @@ namespace PiSharp.Tests;
 
 public sealed class RpcModeTests
 {
+    [Fact]
+    public async Task NativeCommandContextStartsNormalUserAndCustomTurnsThroughRpc()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-native-command-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            var observedTypes = new List<PiSharp.Extensions.Abstractions.PiSharpTurnMessageType>();
+            PiSharpExtensionCommandContext? commandContext = null;
+            adapter.AddBeforeAgentStartHandler((eventData, context, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                observedTypes.Add(eventData.MessageType);
+                return ValueTask.FromResult<PiSharp.Extensions.Abstractions.PiSharpBeforeAgentStartResult?>(null);
+            });
+            adapter.AddCommand("send-user", async (_, context, cancellationToken) =>
+            {
+                commandContext = context;
+                await context.SendUserMessageAsync("from native extension", cancellationToken);
+                return "user sent";
+            });
+            adapter.AddCommand("send-custom", async (_, context, cancellationToken) =>
+            {
+                await context.SendCustomMessageAsync(new("rpc-native", "custom from native extension", Display: false), cancellationToken);
+                return "custom sent";
+            });
+            adapter.Close();
+
+            var session = new ConversationSession(cwd, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd),
+                beforeAgentStartHandlers: registration.BeforeAgentStartHandlers), session);
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
+                extensions: registration, getProjectTrusted: () => true).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"native-user\",\"type\":\"prompt\",\"message\":\"/send-user\"}");
+            await WaitForAsync(output, "\"id\":\"native-user\",\"type\":\"response\",\"command\":\"prompt\"");
+            channel.Writer.TryWrite("{\"id\":\"native-custom\",\"type\":\"prompt\",\"message\":\"/send-custom\"}");
+            await WaitForAsync(output, "\"id\":\"native-custom\",\"type\":\"response\",\"command\":\"prompt\"");
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.NotNull(commandContext);
+            Assert.Equal(cwd, commandContext.WorkingDirectory);
+            Assert.True(commandContext.IsIdle);
+            Assert.True(commandContext.IsProjectTrusted);
+            Assert.False(commandContext.HasPendingMessages);
+            Assert.Equal([PiSharp.Extensions.Abstractions.PiSharpTurnMessageType.User,
+                PiSharp.Extensions.Abstractions.PiSharpTurnMessageType.Custom], observedTypes);
+            Assert.Contains(run.Conversation.ContextMessages(), message => message.Role == ChatRole.User &&
+                message.Text == "from native extension");
+            var customEntry = Assert.Single(session.Tree.ActivePath(), node => node.Type == "custom_message");
+            Assert.Equal("rpc-native", customEntry.Payload.GetProperty("customType").GetString());
+            Assert.Contains(run.Conversation.ContextMessages(), message => message.Role == ChatRole.User &&
+                message.Text == "custom from native extension");
+            var records = output.Lines().Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var customMessage = Assert.Single(records, record =>
+                    record.RootElement.GetProperty("type").GetString() == "message_start" &&
+                    record.RootElement.GetProperty("message").GetProperty("role").GetString() == "custom");
+                Assert.Equal("rpc-native", customMessage.RootElement.GetProperty("message")
+                    .GetProperty("customType").GetString());
+                Assert.False(customMessage.RootElement.GetProperty("message").GetProperty("display").GetBoolean());
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task NativeCustomTriggerSentDuringBeforeAgentStartJoinsTheActiveRunOnce()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-native-setup-queue-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var setupStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSetup = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        adapter.AddBeforeAgentStartHandler(async (_, _, cancellationToken) =>
+        {
+            setupStarted.TrySetResult();
+            await releaseSetup.Task.WaitAsync(cancellationToken);
+            return null;
+        });
+        adapter.AddCommand("send-during-setup", async (_, context, cancellationToken) =>
+        {
+            await context.SendCustomMessageAsync(new("rpc-setup", "queued during setup"), triggerTurn: true,
+                PiSharpMessageDeliveryMode.Steer, cancellationToken);
+            return "custom queued";
+        });
+        adapter.Close();
+
+        var provider = new RecordingNativeMessageClient();
+        var session = new ConversationSession(cwd, "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(cwd),
+            beforeAgentStartHandlers: registration.BeforeAgentStartHandlers), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
+            extensions: registration, getProjectTrusted: () => true).ServeAsync();
+        try
+        {
+            channel.Writer.TryWrite("{\"id\":\"setup-run\",\"type\":\"prompt\",\"message\":\"first prompt\"}");
+            await setupStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(run.IsActive);
+            Assert.Empty(provider.Requests);
+
+            channel.Writer.TryWrite("{\"id\":\"send-during-setup\",\"type\":\"prompt\",\"message\":\"/send-during-setup\"}");
+            await WaitForAsync(output, "\"id\":\"send-during-setup\"");
+            Assert.True(run.IsActive);
+            Assert.Empty(provider.Requests);
+
+            releaseSetup.TrySetResult();
+            await WaitForAsync(output, "\"type\":\"agent_settled\"");
+            Assert.False(run.IsActive);
+            var request = Assert.Single(provider.Requests);
+            Assert.Contains(request, message => message.Role == ChatRole.User && message.Text == "first prompt");
+            Assert.Single(request, message => PiSharpCustomMessageProjection.TryRead(message, out var custom) &&
+                custom.CustomType == "rpc-setup" && custom.Content == "queued during setup");
+            Assert.Single(session.Tree.ActivePath(), node => node.Type == "custom_message" &&
+                node.Payload.GetProperty("customType").GetString() == "rpc-setup");
+
+            channel.Writer.TryWrite("{\"id\":\"setup-recovery\",\"type\":\"prompt\",\"message\":\"ordinary recovery\"}");
+            await WaitForAsync(output, "\"id\":\"setup-recovery\"");
+            await provider.SecondRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var settlementDeadline = DateTimeOffset.UtcNow.AddSeconds(5);
+            while (run.IsActive && DateTimeOffset.UtcNow < settlementDeadline)
+                await Task.Delay(TimeSpan.FromMilliseconds(10));
+            Assert.Equal(2, provider.Requests.Count);
+            Assert.False(run.IsActive);
+            Assert.Single(session.Tree.ActivePath(), node => node.Type == "custom_message" &&
+                node.Payload.GetProperty("customType").GetString() == "rpc-setup");
+
+            channel.Writer.TryComplete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally
+        {
+            releaseSetup.TrySetResult();
+            channel.Writer.TryComplete();
+            if (!serving.IsCompleted)
+                try { await serving.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (TimeoutException) { }
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task SessionNameSaveFailureRollsBackTheEntryAndNameWithoutEmittingSuccess()
     {
@@ -1759,6 +1911,30 @@ public sealed class RpcModeTests
                 snapshot.Any(message => message.Role == ChatRole.User && message.Text == "two");
             yield return new ChatResponseUpdate(ChatRole.Assistant, "second reply");
         }
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class RecordingNativeMessageClient : IChatClient
+    {
+        public List<ChatMessage[]> Requests { get; } = [];
+        public TaskCompletionSource SecondRequestStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+            IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Requests.Add(messages.Select(message => message.Clone()).ToArray());
+            if (Requests.Count == 2) SecondRequestStarted.TrySetResult();
+            yield return new ChatResponseUpdate(ChatRole.Assistant, $"reply {Requests.Count}");
+            await Task.CompletedTask;
+        }
+
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
     }

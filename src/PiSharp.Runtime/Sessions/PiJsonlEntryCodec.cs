@@ -13,6 +13,21 @@ internal static class PiJsonlEntryCodec
     internal static JsonObject ProjectRuntimeMessage(ConversationSession session, ChatMessage message,
         string? api = null, string? toolName = null, DateTimeOffset? timestamp = null)
     {
+        if (PiSharpCustomMessageProjection.TryRead(message, out var customMessage))
+        {
+            return new JsonObject
+            {
+                ["role"] = "custom",
+                ["customType"] = customMessage.CustomType,
+                ["content"] = new JsonArray
+                {
+                    new JsonObject { ["type"] = "text", ["text"] = customMessage.Content }
+                },
+                ["display"] = customMessage.Display,
+                ["timestamp"] = (timestamp ?? DateTimeOffset.UtcNow).ToUnixTimeMilliseconds()
+            };
+        }
+
         var node = new ConversationNode("rpc", null, "chat", default, timestamp ?? DateTimeOffset.UtcNow);
         var projected = ExportMessage(session, node, message)["message"]!.DeepClone().AsObject();
         if (message.Role == ChatRole.Assistant && MessageProperty(message, "pisharp.api") is null &&

@@ -361,9 +361,9 @@ public sealed class ConversationRun
 
     private static PiSharpCustomMessage ToRuntimeCustomMessage(NativeExtensions.PiSharpCustomMessage message,
         string? sourcePath) => new(message.CustomType, message.Content, message.Display)
-    {
-        Source = string.IsNullOrWhiteSpace(sourcePath) ? null : sourcePath
-    };
+        {
+            Source = string.IsNullOrWhiteSpace(sourcePath) ? null : sourcePath
+        };
 
     private async IAsyncEnumerable<AgentLifecycleEvent> RunEventsCoreAsync(ChatMessage promptMessage, string promptText,
         PiSharpCustomMessage? startingCustomMessage,

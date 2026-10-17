@@ -103,6 +103,30 @@ public sealed class InteractiveTranscriptTests
     }
 
     [Fact]
+    public void HiddenCustomMessagesStayInContextButAreNotRenderedLiveOrFromHistory()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 20);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var historical = new PiSharpCustomMessage("background", "historical secret", Display: false);
+        var live = new PiSharpCustomMessage("background", "live secret", Display: false);
+        session.Append(PiSharpCustomMessageProjection.ToChatMessage(historical));
+
+        transcript.LoadHistory(session);
+        transcript.Render(new AgentLifecycleEvent("prompt_accepted", live.Content)
+        {
+            PromptMessage = PiSharpCustomMessageProjection.ToChatMessage(live)
+        });
+
+        var visible = StripSgr(output.ToString());
+        Assert.DoesNotContain("historical secret", visible, StringComparison.Ordinal);
+        Assert.DoesNotContain("live secret", visible, StringComparison.Ordinal);
+        Assert.Contains(session.ContextMessages(), message => message.Text == "historical secret");
+    }
+
+    [Fact]
     public void LoadHistoryKeepsPiSpacerBeforeOutputAfterLastAssistantMessage()
     {
         using var output = new StringWriter();

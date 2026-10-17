@@ -105,6 +105,33 @@ public sealed class NativeExtensionCatalogTests
     }
 
     [Fact]
+    public async Task ReloadDuringAnActiveNativeCallbackDefersCollectionUntilTheCallbackSettles()
+    {
+        using var temporary = new TemporaryDirectory();
+        var workingDirectory = Path.Combine(temporary.Path, "project");
+        var agentDirectory = Path.Combine(temporary.Path, "agent");
+        var packages = Path.Combine(temporary.Path, "packages");
+        Directory.CreateDirectory(workingDirectory);
+        Directory.CreateDirectory(agentDirectory);
+        Directory.CreateDirectory(packages);
+
+        var fixtureRoot = Path.Combine(FindRepositoryRoot(), "tests", "fixtures");
+        var store = new NativeExtensionPackageStore(agentDirectory);
+        var installedV1 = await store.InstallAsync(workingDirectory,
+            CreatePackage("1.0.0", "NativeExtensionFixture", "PiSharp.TestExtensions.NativeFixture",
+                Path.Combine(fixtureRoot, "NativeExtensionFixture", "bin", BuildConfiguration(), "net10.0"), packages),
+            "user");
+        var installedV2 = await store.InstallAsync(workingDirectory,
+            CreatePackage("2.0.0", "NativeExtensionFixtureV2", "PiSharp.TestExtensions.NativeFixture",
+                Path.Combine(fixtureRoot, "NativeExtensionFixtureV2", "bin", BuildConfiguration(), "net10.0"), packages),
+            "user");
+        var v1Roots = await store.ResolveAsync(workingDirectory, trusted: true, userSources: [installedV1]);
+        var v2Roots = await store.ResolveAsync(workingDirectory, trusted: true, userSources: [installedV2]);
+
+        await ReloadDuringActiveNativeCallbackAsync(agentDirectory, workingDirectory, v1Roots, v2Roots);
+    }
+
+    [Fact]
     public async Task PublicResourceDiscoveryLoadsOnStartupAndReplacesResourcesOnReloadAndRemoval()
     {
         using var temporary = new TemporaryDirectory();
@@ -174,6 +201,13 @@ public sealed class NativeExtensionCatalogTests
             var removedResources = await LoadExtensionResourcesAsync(workingDirectory, agentDirectory, afterRemoval);
             Assert.Empty(removedResources.Skills);
             Assert.Empty(removedResources.Prompts);
+            Assert.DoesNotContain("native-fixture", catalog.Registration.Commands.Keys);
+            Assert.Empty(catalog.Registration.ContextCommands);
+            Assert.Empty(catalog.Registration.ToolDefinitions);
+            Assert.Empty(catalog.Registration.BeforeAgentStartHandlers);
+            Assert.Empty(catalog.Registration.ContextTransforms);
+            Assert.Empty(catalog.Registration.ToolCallHooks);
+            Assert.Empty(catalog.Registration.ToolResultHooks);
         }
         finally
         {
@@ -513,6 +547,65 @@ public sealed class NativeExtensionCatalogTests
         Assert.DoesNotContain(v1Roots[0].Path, reloaded.LoadedExtensions.Select(extension => extension.Path));
         Assert.Single(reloaded.NativePackageLoadContextReferences);
         return (reloaded, previousLoadContext);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task ReloadDuringActiveNativeCallbackAsync(string agentDirectory,
+        string workingDirectory, IReadOnlyList<NativeExtensionPackageRoot> v1Roots,
+        IReadOnlyList<NativeExtensionPackageRoot> v2Roots)
+    {
+        var catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
+            nativeExtensionPackageRoots: v1Roots);
+        var previousContext = Assert.Single(catalog.NativePackageLoadContextReferences);
+        var gatePath = Path.Combine(workingDirectory, "callback-gate");
+        var run = await ConversationRun.OpenAsync(CreateFixtureAgent(new NativeFixtureHookChatClient(), workingDirectory,
+                catalog.Registration), new ConversationSession(workingDirectory, "fixture", null));
+        using var cancellation = new CancellationTokenSource();
+        var execution = Task.Run(async () =>
+        {
+            await foreach (var _ in run.RunEventsAsync("__native_fixture_hold_callback:" + gatePath,
+                               cancellation.Token)) { }
+        });
+        try
+        {
+            await WaitForFileAsync(gatePath + ".started");
+            catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
+                preloaded: catalog, nativeExtensionPackageRoots: v2Roots);
+            Assert.True(run.IsActive);
+            Assert.True(previousContext.IsAlive,
+                "The extension load context must remain alive while its callback is executing.");
+
+            await File.WriteAllTextAsync(gatePath + ".release", "release");
+            await execution.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(run.IsActive);
+            run = null!;
+            execution = Task.CompletedTask;
+            catalog.Dispose();
+            catalog = null!;
+        }
+        finally
+        {
+            if (File.Exists(gatePath + ".started") && !File.Exists(gatePath + ".release"))
+                await File.WriteAllTextAsync(gatePath + ".release", "release");
+            if (!execution.IsCompleted)
+            {
+                cancellation.Cancel();
+                try { await execution.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (TimeoutException) { }
+            }
+            catalog?.Dispose();
+        }
+    }
+
+    private static async Task WaitForFileAsync(string path)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (!File.Exists(path))
+        {
+            if (DateTimeOffset.UtcNow >= deadline)
+                throw new TimeoutException($"The extension callback did not create {path}.");
+            await Task.Delay(TimeSpan.FromMilliseconds(10));
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

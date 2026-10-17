@@ -35,8 +35,13 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
             await output.EmitAsync(record, CancellationToken.None);
     }
 
-    public async Task<bool> RunAsync(ConversationRun run, string prompt, CancellationToken cancellationToken = default,
-        Func<AgentLifecycleEvent, Task>? observeEvent = null, string? api = null)
+    public Task<bool> RunAsync(ConversationRun run, string prompt, CancellationToken cancellationToken = default,
+        Func<AgentLifecycleEvent, Task>? observeEvent = null, string? api = null) =>
+        RunEventsAsync(run, run.RunEventsAsync(prompt, cancellationToken), cancellationToken, observeEvent, api);
+
+    public async Task<bool> RunEventsAsync(ConversationRun run, IAsyncEnumerable<AgentLifecycleEvent> events,
+        CancellationToken cancellationToken = default, Func<AgentLifecycleEvent, Task>? observeEvent = null,
+        string? api = null)
     {
         var projector = new RpcEventProjector();
         lock (_projectorGate)
@@ -51,7 +56,7 @@ internal sealed class RpcEventWriter(JsonLineWriter output)
         string? turnStartHead = null;
         try
         {
-            await foreach (var item in run.RunEventsAsync(prompt, cancellationToken))
+            await foreach (var item in events)
             {
                 if (observeEvent is not null) await observeEvent(item);
                 if (item.Type == "prompt_accepted")

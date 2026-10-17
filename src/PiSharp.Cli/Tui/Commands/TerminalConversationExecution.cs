@@ -1,5 +1,6 @@
 using Microsoft.Extensions.AI;
 using PiSharp.Cli.Composition;
+using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Cli.Tui;
 
@@ -34,10 +35,23 @@ internal sealed class TerminalConversationExecution
     private CancellationTokenSource? _activeRun;
 
 
-    public async Task RunAsync(string input, IReadOnlyList<DataContent>? images = null,
-        Func<string, Task>? handleApplicationAction = null)
+    public Task RunAsync(string input, IReadOnlyList<DataContent>? images = null,
+        Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default) =>
+        RunCoreAsync((promptExecution, transcript, cancellation) =>
+            promptExecution.ExecuteAsync(input, images, _modelBinding.Selection, _projectBinding.Settings,
+                transcript, cancellation), handleApplicationAction, cancellationToken);
+
+    public Task RunCustomMessageAsync(PiSharpCustomMessage message, string sourcePath,
+        Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default) =>
+        RunCoreAsync((promptExecution, transcript, cancellation) =>
+            promptExecution.ExecuteCustomMessageAsync(message, sourcePath, transcript, cancellation), handleApplicationAction,
+            cancellationToken);
+
+    private async Task RunCoreAsync(
+        Func<InteractivePromptExecution, InteractiveTranscript, CancellationTokenSource, Task> run,
+        Func<string, Task>? handleApplicationAction, CancellationToken cancellationToken)
     {
-        using var runCancel = new CancellationTokenSource();
+        using var runCancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _activeRun = runCancel;
         using var execution = new InteractivePromptExecution(_presentation.Editor, _presentation.Screen, () => Console.Error,
             () => _projectBinding.Resources, () => _conversationBinding.Run, () => _presentation.IdleFooter(), ExecuteInteractiveBashAsync, handleApplicationAction ?? (_ => Task.CompletedTask));
@@ -47,7 +61,7 @@ internal sealed class TerminalConversationExecution
         ActiveTranscript = transcript;
         try
         {
-            await execution.ExecuteAsync(input, images, _modelBinding.Selection, _projectBinding.Settings, transcript, runCancel);
+            await run(execution, transcript, runCancel);
         }
         catch (OperationCanceledException) { Console.Error.WriteLine("Interrupted."); }
         catch (Exception ex) { Console.Error.WriteLine($"Agent error: {ex.Message}"); Environment.ExitCode = 1; }

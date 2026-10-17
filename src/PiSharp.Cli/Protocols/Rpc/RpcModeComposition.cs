@@ -99,6 +99,7 @@ internal static class RpcModeComposition
             validateSwitchSession: ValidateRpcSessionSwitchAsync,
             prepareCloneSession: PrepareRpcCloneAsync,
             discoverCycleModels: GetRpcCycleModelsAsync,
-            getSystemMessage: () => RpcSystemMessageProjector.Project(modelBinding.Agent)).ServeAsync();
+            getSystemMessage: () => RpcSystemMessageProjector.Project(modelBinding.Agent),
+            getProjectTrusted: () => projectBinding.Trusted).ServeAsync();
     }
 }

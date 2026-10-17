@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
@@ -25,6 +26,17 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             error => ReportResourceErrorAsync(error, render: false));
         var contents = new List<AIContent> { new TextContent(expanded) };
         if (images is not null) contents.AddRange(images);
+        await ExecuteEventsAsync(token => getRun().RunUserMessageEventsAsync(new ChatMessage(ChatRole.User, contents),
+            expanded, token), transcript, cancellation);
+    }
+
+    public Task ExecuteCustomMessageAsync(PiSharpCustomMessage message, string sourcePath,
+        InteractiveTranscript transcript, CancellationTokenSource cancellation) =>
+        ExecuteEventsAsync(token => getRun().RunCustomMessageEventsAsync(message, sourcePath, token), transcript, cancellation);
+
+    private async Task ExecuteEventsAsync(Func<CancellationToken, IAsyncEnumerable<AgentLifecycleEvent>> getEvents,
+        InteractiveTranscript transcript, CancellationTokenSource cancellation)
+    {
         void ProcessRunUpdate(AgentLifecycleEvent update)
         {
             if (update.Type is "prompt_accepted" or "agent_attempt_started" or "compaction_start")
@@ -70,8 +82,7 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             transcript.Render(update);
             Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);
         }
-        await foreach (var update in getRun().RunEventsAsync(
-            new ChatMessage(ChatRole.User, contents), expanded, cancellation.Token))
+        await foreach (var update in getEvents(cancellation.Token))
             ProcessRunUpdate(update);
         transcript.FinishTurn();
         Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);

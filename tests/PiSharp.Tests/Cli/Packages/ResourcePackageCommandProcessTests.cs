@@ -2,11 +2,13 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Cli.Sessions;
 using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Sessions;
 using PiSharp.Tests.TestInfrastructure;
 
 namespace PiSharp.Tests;
@@ -124,6 +126,50 @@ public sealed class ResourcePackageCommandProcessTests
             explicitThemeBaseDirectory: fixture.ProjectDirectory);
         Assert.Contains("native-fixture-v1", themes.GetAvailableNames());
         Assert.Equal("\u001b[38;2;18;52;86m", themes.Load("native-fixture-v1").Fg("mdHeading"));
+    }
+
+    [Fact]
+    public async Task ExternalPackageCompiledAgainstPr7ApiV1LoadsAndRunsWithTheAdditiveHost()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var packagePath = await PackApiV1NativeFixtureAsync(Path.Combine(fixture.Root, "api-v1-fixture"));
+
+        using (var package = ZipFile.OpenRead(packagePath))
+        {
+            var entries = package.Entries.Select(entry => entry.FullName).ToHashSet(StringComparer.Ordinal);
+            Assert.Contains("pisharp-extension.json", entries);
+            Assert.Contains("lib/net10.0/NativeExtensionApiV1Fixture.dll", entries);
+            Assert.DoesNotContain("lib/net10.0/PiSharp.Extensions.Abstractions.dll", entries);
+            using var manifest = JsonDocument.Parse(package.GetEntry("pisharp-extension.json")!.Open());
+            Assert.Equal(1, manifest.RootElement.GetProperty("apiVersion").GetInt32());
+        }
+
+        var installed = await RunAsync(fixture, "install", packagePath);
+        Assert.Equal(0, installed.ExitCode);
+        using var configuration = await ProjectRuntimeConfiguration.LoadAsync(fixture.ProjectDirectory,
+            fixture.AgentDirectory, CliArguments.Parse([]), new ProjectTrust(fixture.AgentDirectory),
+            interactiveTrust: false, TextReader.Null, TextWriter.Null, trustedOverride: false);
+        using var runtime = await ProjectRuntimeContext.LoadAsync(configuration, fixture.AgentDirectory,
+            CliArguments.Parse([]), configuredSessionDirectory: null);
+
+        Assert.Equal("api-v1 command: still compatible",
+            await runtime.Extensions.Registration.Commands["api-v1-legacy"]("still compatible", CancellationToken.None));
+        var tool = Assert.Single(runtime.Extensions.Registration.ToolDefinitions,
+            definition => definition.Function.Name == "api_v1_legacy_tool");
+        var toolResult = await tool.Function.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?>
+        {
+            ["value"] = "works"
+        }));
+        Assert.Equal("api-v1 tool: works", toolResult?.ToString());
+
+        var handler = Assert.Single(runtime.Extensions.Registration.BeforeAgentStartHandlers);
+        var context = new PiSharpExtensionContext(new PiSharpExtensionContextConfiguration(
+                fixture.ProjectDirectory, "test", HasUserInterface: false, IsProjectTrusted: true,
+                new EmptyExtensionUi()), static () => null, static () => Array.Empty<string>(), static () => true);
+        var result = await handler.Handler(new PiSharpBeforeAgentStartEvent("old prompt", [], "base prompt"),
+            context, CancellationToken.None);
+        Assert.Equal("base prompt\napi-v1 before-agent-start: old prompt", result?.SystemPrompt);
     }
 
     [Fact]
@@ -642,6 +688,45 @@ public sealed class ResourcePackageCommandProcessTests
         return packagePath;
     }
 
+    private static async Task<string> PackApiV1NativeFixtureAsync(string outputDirectory)
+    {
+        Directory.CreateDirectory(outputDirectory);
+        var repositoryRoot = FindRepositoryRoot();
+        var projectPath = Path.Combine(repositoryRoot, "tests", "fixtures", "NativeExtensionApiV1",
+            "Extension", "NativeExtensionApiV1.csproj");
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = repositoryRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        foreach (var argument in new[]
+        {
+            "pack", projectPath, "--configuration", BuildConfiguration(), "--output", outputDirectory,
+            "--nologo", "--disable-build-servers", "-p:NuGetAudit=false", "-p:RestoreIgnoreFailedSources=true"
+        }) start.ArgumentList.Add(argument);
+        using var process = Process.Start(start) ?? throw new IOException("Could not start API-v1 dotnet pack.");
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(90)); }
+        catch
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { }
+            catch (System.ComponentModel.Win32Exception) { }
+            await process.WaitForExitAsync();
+            throw;
+        }
+        var stdout = await output;
+        var stderr = await error;
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException($"API-v1 dotnet pack failed with exit code {process.ExitCode}:\n{stderr}\n{stdout}");
+
+        var packagePath = Path.Combine(outputDirectory, "PiSharp.TestExtensions.NativeApiV1Fixture.1.0.0.nupkg");
+        if (!File.Exists(packagePath)) throw new FileNotFoundException("dotnet pack did not create the API-v1 fixture package.", packagePath);
+        return packagePath;
+    }
+
     private static string BuildConfiguration() => new DirectoryInfo(AppContext.BaseDirectory).Parent?.Name ?? "Debug";
 
     private static string FindRepositoryRoot()
@@ -832,5 +917,19 @@ public sealed class ResourcePackageCommandProcessTests
             catch (HttpListenerException) { }
             _shutdown.Dispose();
         }
+    }
+
+    private sealed class EmptyExtensionUi : IPiSharpExtensionUi
+    {
+        public Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
+            CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+
+        public Task<bool> ConfirmAsync(string title, string message,
+            CancellationToken cancellationToken = default) => Task.FromResult(false);
+
+        public Task<string?> InputAsync(string title, string? placeholder = null,
+            CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+
+        public void Notify(string message, string type = "info") { }
     }
 }
