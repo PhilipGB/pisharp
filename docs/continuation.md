@@ -1,5 +1,29 @@
 # Continuation — PiSharp capability parity
 
+## Native extension state and interactive controls — 2026-10-17
+
+This bounded milestone is implemented on
+`milestone/native-extension-state-interactive-controls`, based on the verified
+PR #8 merge commit `d9156e53c4822e7b98226df6170b29c61bc87eb1`. The configured Pi
+reference remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Compiled
+extensions now append durable JSON entries to the canonical session tree and
+read the active branch, receive session start/shutdown callbacks, use the
+existing safe select/confirm/input/notify UI bridge, and register TUI shortcuts.
+Product source is `2c24b4fdb9b79bb7b73c935cc4074ce6da8aa919`.
+The external package process fixture covers saved state, a provider request
+that excludes state markers, fresh-process resume, lifecycle transitions, and
+package v1-to-v2 replacement. PTY coverage exercises the shortcut, package
+reload/removal, and editor recovery. Local verification passes 2,237 .NET tests
+with zero skips, architecture 7/7, Node 24/24, Python 50/50, documentation
+paths (138 documents / 532 references), and MCP conformance with no new
+regressions. See the [milestone receipt](parity/fixtures/native-extension-state-interactive-controls-2026-10-17.md)
+for exact-head CI.
+
+This closes only the bounded implementation increment. Keep the broad
+extension API and orchestration ledger rows `in_progress`; provider/model and
+settings registration, flags, advanced UI, and global parity remain open. Stop
+here rather than starting deferred work automatically.
+
 ## Native extension public runtime bridge — 2026-10-17
 
 The bounded native extension runtime bridge is implemented on branch
