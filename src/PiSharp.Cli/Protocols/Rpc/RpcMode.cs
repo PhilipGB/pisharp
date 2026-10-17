@@ -7,6 +7,7 @@ using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
+using PublicExtensionUi = PiSharp.Extensions.Abstractions.IPiSharpExtensionUi;
 
 namespace PiSharp.Cli.Protocols;
 
@@ -37,7 +38,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<ConversationSession, CancellationToken, Task<string?>>? prepareCloneSession = null,
     Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverCycleModels = null,
     Func<JsonObject?>? getSystemMessage = null,
-    Func<bool>? getProjectTrusted = null)
+    Func<bool>? getProjectTrusted = null,
+    string extensionMode = "rpc",
+    bool extensionHasUserInterface = false,
+    PublicExtensionUi? extensionUi = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -461,7 +465,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                     commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
                 await StartExtensionRunAsync(token => currentRun.RunCustomMessageEventsAsync(message,
                     commandInfo.SourceInfo.Path, token), cancellationToken);
-            });
+            }, extensionMode, extensionHasUserInterface, extensionUi);
     }
 
     private async Task StartExtensionRunAsync(

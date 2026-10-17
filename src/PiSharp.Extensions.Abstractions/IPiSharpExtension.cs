@@ -59,7 +59,7 @@ public sealed record PiSharpBeforeAgentStartResult(string? SystemPrompt = null)
 }
 
 /// <summary>The small amount of live host context available to a lifecycle callback.</summary>
-public sealed record PiSharpExtensionContext(string WorkingDirectory)
+public sealed partial record PiSharpExtensionContext(string WorkingDirectory)
 {
     /// <summary>Whether the host is idle when this callback starts.</summary>
     public bool IsIdle { get; init; }

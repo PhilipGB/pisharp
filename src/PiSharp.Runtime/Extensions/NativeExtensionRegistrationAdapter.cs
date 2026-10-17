@@ -46,12 +46,7 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
                 Images = Array.AsReadOnly(eventData.Images.Select(image =>
                     new NativeExtensions.PiSharpImageAttachment(image.MediaType, image.Data.Length)).ToArray())
             };
-            var publicContext = new NativeExtensions.PiSharpExtensionContext(context.WorkingDirectory)
-            {
-                IsIdle = context.IsIdle,
-                IsProjectTrusted = context.IsProjectTrusted,
-                HasPendingMessages = context.HasPendingMessages
-            };
+            var publicContext = NativeExtensionPublicContextMapper.Create(context);
             var result = await handler(publicEvent, publicContext, cancellationToken);
             return result is null
                 ? null

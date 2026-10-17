@@ -29,6 +29,7 @@ public sealed class RpcModeTests
             var registration = new ExtensionRegistration();
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             var observedTypes = new List<PiSharp.Extensions.Abstractions.PiSharpTurnMessageType>();
+            var extensionUi = new RecordingHeadlessExtensionUi();
             PiSharpExtensionCommandContext? commandContext = null;
             adapter.AddBeforeAgentStartHandler((eventData, context, cancellationToken) =>
             {
@@ -39,6 +40,10 @@ public sealed class RpcModeTests
             adapter.AddCommand("send-user", async (_, context, cancellationToken) =>
             {
                 commandContext = context;
+                Assert.Null(await context.Ui.SelectAsync("Choose", ["one"], cancellationToken));
+                Assert.False(await context.Ui.ConfirmAsync("Confirm", "Continue?", cancellationToken));
+                Assert.Null(await context.Ui.InputAsync("Value", cancellationToken: cancellationToken));
+                context.Ui.Notify("rpc notification", "warning");
                 await context.SendUserMessageAsync("from native extension", cancellationToken);
                 return "user sent";
             });
@@ -53,7 +58,8 @@ public sealed class RpcModeTests
             var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd),
                 beforeAgentStartHandlers: registration.BeforeAgentStartHandlers), session);
             var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
-                extensions: registration, getProjectTrusted: () => true).ServeAsync();
+                extensions: registration, getProjectTrusted: () => true,
+                extensionUi: extensionUi).ServeAsync();
 
             channel.Writer.TryWrite("{\"id\":\"native-user\",\"type\":\"prompt\",\"message\":\"/send-user\"}");
             await WaitForAsync(output, "\"id\":\"native-user\",\"type\":\"response\",\"command\":\"prompt\"");
@@ -67,6 +73,11 @@ public sealed class RpcModeTests
             Assert.True(commandContext.IsIdle);
             Assert.True(commandContext.IsProjectTrusted);
             Assert.False(commandContext.HasPendingMessages);
+            Assert.Equal("rpc", commandContext.Mode);
+            Assert.False(commandContext.HasUserInterface);
+            Assert.Same(extensionUi, commandContext.Ui);
+            Assert.Equal(["select:Choose", "confirm:Confirm", "input:Value", "notify:warning:rpc notification"],
+                extensionUi.Calls);
             Assert.Equal([PiSharp.Extensions.Abstractions.PiSharpTurnMessageType.User,
                 PiSharp.Extensions.Abstractions.PiSharpTurnMessageType.Custom], observedTypes);
             Assert.Contains(run.Conversation.ContextMessages(), message => message.Role == ChatRole.User &&
@@ -2322,5 +2333,36 @@ public sealed class RpcModeTests
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
+    }
+
+    private sealed class RecordingHeadlessExtensionUi : PiSharp.Extensions.Abstractions.IPiSharpExtensionUi
+    {
+        public List<string> Calls { get; } = [];
+
+        public Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Calls.Add($"select:{title}");
+            return Task.FromResult<string?>(null);
+        }
+
+        public Task<bool> ConfirmAsync(string title, string message,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Calls.Add($"confirm:{title}");
+            return Task.FromResult(false);
+        }
+
+        public Task<string?> InputAsync(string title, string? placeholder = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Calls.Add($"input:{title}");
+            return Task.FromResult<string?>(null);
+        }
+
+        public void Notify(string message, string type = "info") => Calls.Add($"notify:{type}:{message}");
     }
 }

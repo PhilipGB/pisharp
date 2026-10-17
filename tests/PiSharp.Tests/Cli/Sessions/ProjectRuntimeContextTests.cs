@@ -235,6 +235,17 @@ public sealed class ProjectRuntimeContextTests
         interactiveUi.SetInteractiveNotificationHandler((message, type) => notification = (message, type));
         interactiveUi.Notify("interactive warning", "warning");
         Assert.Equal(("interactive warning", "warning"), notification);
+
+        var activeUi = new ProjectTrustStartupUi(hasUserInterface: true, mode: "interactive",
+            output: output, error: interactiveError);
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            activeUi.SelectAsync("Choose", ["one"], cancellation.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            activeUi.ConfirmAsync("Confirm", "Continue?", cancellation.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            activeUi.InputAsync("Value", cancellationToken: cancellation.Token));
     }
 
     [Fact]

@@ -95,7 +95,8 @@ internal static class InteractiveMode
                         commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
                     await execution.RunCustomMessageAsync(message, commandInfo.SourceInfo.Path,
                         applicationActions.HandleAsync, cancellationToken);
-                });
+                }, projectBinding.Configuration.ExtensionMode, projectBinding.Configuration.HasUserInterface,
+                projectBinding.Configuration.ExtensionUi);
         }
 
         if (!string.IsNullOrWhiteSpace(prompt) || (projectBinding.Arguments.FileArguments?.Count ?? 0) > 0)
