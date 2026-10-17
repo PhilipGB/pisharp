@@ -45,8 +45,11 @@ public sealed partial class ExtensionRegistration
                 Reconcile(_contextTransforms, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                 Reconcile(_lifecycleHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                 Reconcile(_beforeAgentStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                Reconcile(_sessionStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                Reconcile(_sessionShutdownHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                 Reconcile(_resourceDiscoveryHandlers, entry => entry.ExtensionSource, (entry, source) => entry with { ExtensionSource = source });
                 Reconcile(_projectTrustHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                Reconcile(_shortcuts, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
             }
 
         void Reconcile<T>(List<T> entries, Func<T, ResourceSourceInfo> getSource, Func<T, ResourceSourceInfo, T> update)

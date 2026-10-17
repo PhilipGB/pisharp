@@ -27,7 +27,7 @@ internal static class RpcModeComposition
             },
             () => conversationBinding.Run);
 
-        void AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.Adopt(replacement,
+        Task AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.AdoptAsync(replacement,
             presentation.ConfigureMcpAuthorizationUrlPresenter, () =>
             {
                 presentation.RefreshTerminalTheme();
@@ -100,6 +100,9 @@ internal static class RpcModeComposition
             prepareCloneSession: PrepareRpcCloneAsync,
             discoverCycleModels: GetRpcCycleModelsAsync,
             getSystemMessage: () => RpcSystemMessageProjector.Project(modelBinding.Agent),
-            getProjectTrusted: () => projectBinding.Trusted).ServeAsync();
+            getProjectTrusted: () => projectBinding.Trusted,
+            extensionMode: projectBinding.Configuration.ExtensionMode,
+            extensionHasUserInterface: projectBinding.Configuration.HasUserInterface,
+            extensionUi: projectBinding.Configuration.ExtensionUi).ServeAsync();
     }
 }

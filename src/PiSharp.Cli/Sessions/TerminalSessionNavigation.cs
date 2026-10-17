@@ -6,7 +6,7 @@ namespace PiSharp.Cli.Sessions;
 
 internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBinding,
     ActiveConversationRuntime conversationBinding, ProjectConversationTransitions projectTransitions, TerminalPresentation presentation,
-    Action<ProjectSessionRuntime> adoptProjectSession)
+    Func<ProjectSessionRuntime, Task> adoptProjectSession)
 {
     private TerminalSessionPicker? _picker = presentation.Editor is null ? null : new TerminalSessionPicker(projectBinding.Store, presentation.Editor);
     private readonly TerminalTreePicker? _treePicker = presentation.Editor is null ? null : new TerminalTreePicker(presentation.Editor);

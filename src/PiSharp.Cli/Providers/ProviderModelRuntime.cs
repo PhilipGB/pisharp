@@ -91,12 +91,20 @@ public sealed class ProviderModelRuntime
     public void SetVirtualModelRegistry(VirtualModelRegistry registry)
     {
         ArgumentNullException.ThrowIfNull(registry);
+        ValidateVirtualModelRegistry(registry);
         _virtualModels = registry;
+    }
+
+    internal void ValidateVirtualModelRegistry(VirtualModelRegistry registry)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
         foreach (var item in registry.Models)
             if (item.Model.Provider is { } providerId && _providers.TryGetValue(providerId, out var provider) &&
                 provider.Models.Any(model => string.Equals(model.Id, item.Model.Id, StringComparison.Ordinal)))
                 throw new InvalidOperationException($"Virtual model {item.Model.Provider}/{item.Model.Id} conflicts with a configured physical model.");
     }
+
+    internal void RestoreVirtualModelRegistry(VirtualModelRegistry? registry) => _virtualModels = registry;
 
     public static async Task<ProviderModelRuntime> CreateAsync(string agentDirectory, bool includeLocal,
         Func<string, string?> environment, HttpClient http, string? runtimeApiKey = null,

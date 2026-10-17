@@ -16,6 +16,8 @@ public sealed partial class ExtensionRegistration
                 Capture(_userBashHandlers), Capture(_toolCallHooks), Capture(_toolResultHooks),
                 Capture(_contextTransforms), Capture(_lifecycleHandlers), Capture(_beforeAgentStartHandlers),
                 Capture(_resourceDiscoveryHandlers), Capture(_projectTrustHandlers),
+                Capture(_shortcuts),
+                Capture(_sessionStartHandlers), Capture(_sessionShutdownHandlers),
                 _virtualModels.CreateConfigurationCheckpoint()];
                 return () =>
                 {

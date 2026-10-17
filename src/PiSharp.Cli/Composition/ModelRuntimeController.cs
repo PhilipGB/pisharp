@@ -36,10 +36,11 @@ internal sealed class ModelRuntimeController(
             CreateVirtualModelRouter(selection), settings.AutoResizeImages != false);
     }
 
-    public VirtualModelRequestRouter? CreateVirtualModelRouter(ModelSelection logicalSelection)
+    public VirtualModelRequestRouter? CreateVirtualModelRouter(ModelSelection logicalSelection,
+        VirtualModelRegistry? registryOverride = null)
     {
         if (logicalSelection.Model.Api != VirtualModelContract.Api) return null;
-        var registry = providers.VirtualModels ?? throw new InvalidOperationException(
+        var registry = registryOverride ?? providers.VirtualModels ?? throw new InvalidOperationException(
             $"Virtual model {logicalSelection.Provider.Id}/{logicalSelection.Model.Id} is not registered.");
         var registered = registry.Get(logicalSelection.Provider.Id, logicalSelection.Model.Id) ??
             throw new InvalidOperationException($"Virtual model {logicalSelection.Provider.Id}/{logicalSelection.Model.Id} is not registered.");

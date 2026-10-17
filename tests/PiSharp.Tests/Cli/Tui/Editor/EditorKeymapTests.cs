@@ -1,4 +1,7 @@
 using PiSharp.Cli.Tui;
+using PiSharp.Extensions.Abstractions;
+using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Tests;
 
@@ -16,6 +19,131 @@ public sealed class EditorKeymapTests
         Assert.Equal("app.clipboard.pasteImage", keymap.MatchIdleApplicationAction(paste));
         Assert.Contains("Copy selection or last assistant message (app.message.copy)", keymap.FormatHotkeys());
         Assert.Contains("Paste clipboard image or text (app.clipboard.pasteImage)", keymap.FormatHotkeys());
+    }
+
+    [Fact]
+    public void ExtensionShortcutKeyUsesTheExistingKeymapSyntax()
+    {
+        var shortcut = PiSharpShortcutKey.Parse("CTRL+SHIFT+G");
+
+        Assert.Equal(ConsoleKey.G, shortcut.Key);
+        Assert.Equal(ConsoleModifiers.Control | ConsoleModifiers.Shift, shortcut.Modifiers);
+        Assert.Equal("ctrl+shift+g", shortcut.ToString());
+        Assert.False(default(PiSharpShortcutKey).IsValid);
+        Assert.Throws<ArgumentException>(() => PiSharpShortcutKey.Parse("ctrl+not-a-key"));
+    }
+
+    [Fact]
+    public void ExtensionShortcutConflictsFollowPinnedPiRulesAndKeepSourceProvenance()
+    {
+        var keymap = new EditorKeymap();
+        var sharedKey = PiSharpShortcutKey.Parse("ctrl+shift+x");
+        keymap.SetExtensionShortcuts([
+            Shortcut("/reserved.dll", PiSharpShortcutKey.Parse("ctrl+p")),
+            Shortcut("/ordinary.dll", PiSharpShortcutKey.Parse("ctrl+v")),
+            Shortcut("/first.dll", sharedKey),
+            Shortcut("/second.dll", sharedKey)
+        ]);
+
+        Assert.Null(keymap.MatchExtensionShortcut(Key(ConsoleKey.P, ConsoleModifiers.Control)));
+        Assert.Equal("/ordinary.dll", keymap.MatchExtensionShortcut(Key(ConsoleKey.V, ConsoleModifiers.Control))?.SourceInfo.Path);
+        Assert.Equal("/second.dll", keymap.MatchExtensionShortcut(Key(ConsoleKey.X,
+            ConsoleModifiers.Control | ConsoleModifiers.Shift))?.SourceInfo.Path);
+        Assert.Contains(keymap.ShortcutDiagnostics, diagnostic => diagnostic.SourcePath == "/reserved.dll" &&
+            diagnostic.Message.Contains("conflicts with built-in shortcut", StringComparison.Ordinal));
+        Assert.Contains(keymap.ShortcutDiagnostics, diagnostic => diagnostic.SourcePath == "/ordinary.dll" &&
+            diagnostic.Message.Contains("app.clipboard.pasteImage", StringComparison.Ordinal));
+        Assert.Contains(keymap.ShortcutDiagnostics, diagnostic => diagnostic.SourcePath == "/second.dll" &&
+            diagnostic.Message.Contains("/first.dll", StringComparison.Ordinal) &&
+            diagnostic.Message.Contains("/second.dll", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ExtensionCanUseAReservedDefaultKeyAfterTheBuiltInIsRebound()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-shortcut-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "keybindings.json"), "{ \"app.model.cycleForward\": \"ctrl+n\" }");
+            var keymap = new EditorKeymap(directory);
+            keymap.SetExtensionShortcuts([Shortcut("/extension.dll", PiSharpShortcutKey.Parse("ctrl+p"))]);
+
+            Assert.Equal("/extension.dll", keymap.MatchExtensionShortcut(Key(ConsoleKey.P, ConsoleModifiers.Control))?.SourceInfo.Path);
+            Assert.Empty(keymap.ShortcutDiagnostics);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public async Task TerminalEditorDispatchesOnlyTheCurrentExtensionShortcutRegistration()
+    {
+        var key = Key(ConsoleKey.X, ConsoleModifiers.Control | ConsoleModifiers.Shift);
+        IReadOnlyList<ExtensionShortcutInfo> shortcuts = [Shortcut("/v1.dll",
+            PiSharpShortcutKey.Parse("ctrl+shift+x"))];
+        var editor = new TerminalEditor(getExtensionShortcuts: () => shortcuts);
+        editor.Prefill("keep this draft");
+        var dispatched = new List<string>();
+
+        Assert.True(await editor.HandleApplicationShortcutAsync(key, action =>
+        {
+            dispatched.Add("built-in:" + action);
+            return Task.CompletedTask;
+        }, dispatchExtensionShortcut: (shortcut, _) =>
+        {
+            dispatched.Add(shortcut.SourceInfo.Path);
+            return Task.CompletedTask;
+        }));
+
+        shortcuts = [Shortcut("/v2.dll", PiSharpShortcutKey.Parse("ctrl+shift+x"))];
+        editor.ReloadKeybindings();
+        Assert.True(await editor.HandleApplicationShortcutAsync(key, _ =>
+        {
+            dispatched.Add("built-in");
+            return Task.CompletedTask;
+        }, dispatchExtensionShortcut: (shortcut, _) =>
+        {
+            dispatched.Add(shortcut.SourceInfo.Path);
+            return Task.CompletedTask;
+        }));
+
+        shortcuts = [];
+        editor.ReloadKeybindings();
+        Assert.False(await editor.HandleApplicationShortcutAsync(key, _ => Task.CompletedTask,
+            dispatchExtensionShortcut: (shortcut, _) =>
+            {
+                dispatched.Add(shortcut.SourceInfo.Path);
+                return Task.CompletedTask;
+            }));
+        Assert.Equal(["/v1.dll", "/v2.dll"], dispatched);
+        Assert.Equal("keep this draft", editor.Draft);
+    }
+
+    [Fact]
+    public async Task ExtensionShortcutDoesNotRunTheEditorClearingAction()
+    {
+        var editor = new TerminalEditor(getExtensionShortcuts: () =>
+            [Shortcut("/extension.dll", PiSharpShortcutKey.Parse("ctrl+shift+x"))]);
+        editor.Prefill("unfinished work");
+        var clearEditor = false;
+        string? dispatched = null;
+
+        Assert.True(await editor.HandleApplicationShortcutAsync(
+            Key(ConsoleKey.X, ConsoleModifiers.Control | ConsoleModifiers.Shift), _ => Task.CompletedTask,
+            beforeDispatch: () =>
+            {
+                clearEditor = true;
+                editor.Prefill("");
+            },
+            dispatchExtensionShortcut: (shortcut, _) =>
+            {
+                dispatched = shortcut.SourceInfo.Path;
+                return Task.CompletedTask;
+            }));
+
+        Assert.Equal("/extension.dll", dispatched);
+        Assert.False(clearEditor);
+        Assert.Equal("unfinished work", editor.Draft);
     }
 
     [Fact]
@@ -403,4 +531,8 @@ public sealed class EditorKeymapTests
     private static ConsoleKeyInfo Key(ConsoleKey key, ConsoleModifiers modifiers = 0) => new('\0', key,
         modifiers.HasFlag(ConsoleModifiers.Shift), modifiers.HasFlag(ConsoleModifiers.Alt),
         modifiers.HasFlag(ConsoleModifiers.Control));
+
+    private static ExtensionShortcutInfo Shortcut(string sourcePath, PiSharpShortcutKey key) => new(key,
+        "Fixture shortcut", static (_, _) => Task.CompletedTask,
+        new ResourceSourceInfo(sourcePath, "native-package", "user", "package", null));
 }

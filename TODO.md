@@ -1,5 +1,25 @@
 # PiSharp capability parity
 
+## Active milestone — Native Extension State & Interactive Controls — 2026-10-17
+
+Work is on `milestone/native-extension-state-interactive-controls`, based on
+the verified PR #8 merge commit `d9156e53c4822e7b98226df6170b29c61bc87eb1`.
+The configured Pi reference remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+The implementation adds canonical session-tree state entries, branch-aware
+read access, start/shutdown callbacks, the four safe UI operations, and
+extension-owned TUI shortcuts. External-package process and PTY acceptance
+covers persistence, provider-context exclusion, resume, package replacement,
+removal, and editor recovery. Product source commit is `2c24b4fd`; the local
+suite passes 2,237 .NET tests with zero skips, architecture 7/7, Node 24/24,
+Python 50/50, docs 138/532, and MCP conformance has no new regressions. This
+milestone does not promote broad extension parity; provider/model/settings
+registration and advanced UI remain deferred. Draft PR #9 is open; exact-head
+push CI run 39039746664 and PR merge-result run 39039758081 both pass.
+
+See [the milestone receipt](docs/parity/fixtures/native-extension-state-interactive-controls-2026-10-17.md)
+for source, acceptance, verification, and CI results. Stop after this milestone
+and do not begin settings, flags, provider, or prompt-option work automatically.
+
 ## Active resumed milestone — Resources / Packages / Extensions — 2026-10-16
 
 Work resumed on `milestone/resources-packages-extensions`, based on merged

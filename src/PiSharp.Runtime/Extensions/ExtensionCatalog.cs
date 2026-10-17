@@ -123,12 +123,15 @@ public sealed partial class ExtensionRegistration
             ToolDefinitionsChanged = null;
         }
         _commands.Clear();
+        _shortcuts.Clear();
         _userBashHandlers.Clear();
         _toolCallHooks.Clear();
         _toolResultHooks.Clear();
         _contextTransforms.Clear();
         _lifecycleHandlers.Clear();
         _beforeAgentStartHandlers.Clear();
+        _sessionStartHandlers.Clear();
+        _sessionShutdownHandlers.Clear();
         _resourceDiscoveryHandlers.Clear();
         _projectTrustHandlers.Clear();
         lock (_mcpGate) _mcpServers.Clear();

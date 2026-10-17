@@ -1,24 +1,12 @@
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Runtime.Extensions;
 
 /// <summary>UI operations available to an extension in interactive and headless modes.</summary>
-public interface IPiSharpExtensionUi
+public interface IPiSharpExtensionUi : NativeExtensions.IPiSharpExtensionUi
 {
-    /// <summary>Show a selector and return the selected option; returns null when unavailable or cancelled.</summary>
-    Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>Show a confirmation dialog; returns false when unavailable or cancelled.</summary>
-    Task<bool> ConfirmAsync(string title, string message, CancellationToken cancellationToken = default);
-
-    /// <summary>Show a text input dialog; returns null when unavailable or cancelled.</summary>
-    Task<string?> InputAsync(string title, string? placeholder = null,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>Show a non-interactive notification for info, warning, or error messages.</summary>
-    void Notify(string message, string type = "info");
 }
 
 /// <summary>Project-scoped configuration used to build the live context exposed during tool execution.</summary>
@@ -32,6 +20,7 @@ public sealed class PiSharpExtensionContext
     private readonly Func<IReadOnlyList<string>> _getActiveToolNames;
     private readonly Func<bool> _isIdle;
     private Func<bool> _hasPendingMessages = static () => false;
+    private Func<string?, NativeExtensions.PiSharpExtensionSessionContext?> _getSessionContext = static _ => null;
 
     internal PiSharpExtensionContext(PiSharpExtensionContextConfiguration configuration,
         Func<ConversationSession?> getConversation, Func<IReadOnlyList<string>> getActiveToolNames,
@@ -58,6 +47,16 @@ public sealed class PiSharpExtensionContext
     public string? ConversationHeadId => _getConversation()?.Tree.HeadId;
     public IReadOnlyList<string> ActiveToolNames => _getActiveToolNames();
     public bool HasPendingMessages => Volatile.Read(ref _hasPendingMessages)();
+
+    internal NativeExtensions.PiSharpExtensionSessionContext? CreatePublicSessionContext(string? sourcePath) =>
+        Volatile.Read(ref _getSessionContext)(sourcePath);
+
+    internal void SetSessionContextFactory(
+        Func<string?, NativeExtensions.PiSharpExtensionSessionContext?> getSessionContext)
+    {
+        ArgumentNullException.ThrowIfNull(getSessionContext);
+        Volatile.Write(ref _getSessionContext, getSessionContext);
+    }
 
     internal void SetPendingMessageState(Func<bool> getPendingMessages)
     {

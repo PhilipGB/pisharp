@@ -27,7 +27,7 @@ public enum PiSharpMessageDeliveryMode
 }
 
 /// <summary>Live command capability for submitting conversation messages through the host run.</summary>
-public sealed class PiSharpExtensionCommandContext
+public sealed partial class PiSharpExtensionCommandContext
 {
     private readonly Func<string, CancellationToken, Task> _sendUserMessageAsync;
     private readonly Func<PiSharpCustomMessage, bool, PiSharpMessageDeliveryMode, CancellationToken, Task>

@@ -6,7 +6,7 @@ Built-in `tool-search` and `codemode` use the same extension catalog. They have 
 
 ## Public compiled PiSharp extension API
 
-Third-party compiled extensions reference only the lightweight `PiSharp.Extensions.Abstractions` NuGet package plus their normal dependencies. Its API v1 contract includes slash commands and `Microsoft.Extensions.AI.AIFunction` tools. The additive runtime bridge also exposes user/custom turn-start data, extension message sending, resource discovery, provider-context transforms, and tool-call/result hooks. Existing API-v1 packages keep their type identities and constructor signatures. Packages do not reference PiSharp Runtime or CLI assemblies.
+Third-party compiled extensions reference only the lightweight `PiSharp.Extensions.Abstractions` NuGet package plus their normal dependencies. Its API v1 contract includes slash commands and `Microsoft.Extensions.AI.AIFunction` tools. The additive runtime bridge also exposes user/custom turn-start data, extension message sending, resource discovery, provider-context transforms, tool-call/result hooks, durable session state, session lifecycle callbacks, basic UI operations, and TUI shortcuts. Existing API-v1 packages keep their type identities and constructor signatures. Packages do not reference PiSharp Runtime or CLI assemblies.
 
 The compatibility fixture under `tests/fixtures/NativeExtensionApiV1` is compiled against the PR #7 API-v1 contract snapshot, packed as a normal NuGet package, then loaded by the current host in a fresh runtime. It verifies the original command, tool and before-agent-start callbacks. The host continues to share the existing MEAI assembly contract for `AIFunction`; long-term binary compatibility across future MEAI versions remains open.
 
@@ -85,6 +85,67 @@ public sealed class GreetingExtension : IPiSharpExtension
 `PiSharpBeforeAgentStartEvent.MessageType` distinguishes submitted user turns from custom-message turns. User turns expose the expanded `Prompt` and image metadata (`MediaType` and optional byte length); custom turns expose `StartingCustomMessage` and leave `Prompt` empty. Returning `InjectedMessage` adds one durable custom message after the starting message for that turn. `SystemPrompt` replacement applies only to that turn.
 
 The context-taking `AddCommand` overload provides a small snapshot of working directory, idle/trust state and queued-message state, plus `SendUserMessageAsync` and `SendCustomMessageAsync`. User messages use the normal user-turn path. Custom messages retain their extension source and are persisted as custom messages. The default custom send starts a turn when idle. `triggerTurn: false` appends to idle conversation context without starting a model run; when sent during a run, it waits until the active turn's tool results are recorded, then enters context before any naturally required tool-loop continuation. It does not create an additional model request.
+
+The public command and lifecycle contexts also expose `Mode`, `HasUserInterface`, `Ui`, and the active `Session` projection. The mode is a stable host-mode string such as `tui`, `rpc`, `json`, or `print`. The session projection contains the session ID, optional name, active head ID, and extension state entries on the current branch in tree order. Each entry includes its canonical ID, custom type, cloned `JsonElement` data, timestamp, and source path. This projection does not expose `ConversationSession` or any other Runtime type.
+
+Extensions can persist state on the canonical session tree and reconstruct it later:
+
+```csharp
+using System.Text.Json;
+
+builder.AddCommand("counter-add", async (_, context, cancellationToken) =>
+{
+    var session = context.Session ?? throw new InvalidOperationException("No active session.");
+    var count = session.Entries
+        .Where(entry => entry.CustomType == "example.counter")
+        .Select(entry => entry.Data.GetProperty("value").GetInt32())
+        .DefaultIfEmpty(0)
+        .Last() + 1;
+    await session.AppendEntryAsync("example.counter",
+        JsonSerializer.SerializeToElement(new { value = count }), cancellationToken);
+    return $"Counter: {count}";
+});
+```
+
+`AppendEntryAsync` saves through the owning session store before it returns. A failed save rolls back the tree append and propagates the error. Repeated identical entries remain distinct. Entries follow normal branch, fork, resume, and compaction behavior. They are durable session data, not model-context messages: state values do not enter provider requests or compaction summaries. Disabling, updating, or removing the package leaves its historical entries in the session tree; the extension may no longer be available to interpret them. Callback-scoped session bridges are revoked when the callback ends, so retained contexts cannot mutate a later session.
+
+Use the specific session lifecycle callbacks to observe host transitions and rebuild extension-local in-memory state:
+
+```csharp
+builder.AddSessionStartHandler((eventData, context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var values = context.Session?.Entries
+        .Where(entry => entry.CustomType == "example.counter")
+        .Select(entry => entry.Data.GetProperty("value").GetInt32()) ?? [];
+    context.Ui.Notify($"Loaded {values.Count()} counter entries ({eventData.Reason}).");
+    return ValueTask.CompletedTask;
+});
+
+builder.AddSessionShutdownHandler((eventData, context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    context.Ui.Notify($"Closing {context.Session?.SessionId} ({eventData.Reason}).");
+    return ValueTask.CompletedTask;
+});
+```
+
+Start reasons are `Startup`, `Reload`, `New`, `Resume`, and `Fork`; shutdown reasons are `Quit`, `Reload`, `New`, `Resume`, and `Fork`. A new session has its own state branch, while a resumed or forked session projects only entries on its active branch. Lifecycle callbacks run in extension registration order. One handler failure is reported through extension diagnostics and does not prevent later handlers from running. The host owns callback cancellation and shutdown; lifecycle handlers are not background tasks.
+
+The public `context.Ui` adapts the existing safe host UI and supports only `SelectAsync`, `ConfirmAsync`, `InputAsync`, and `Notify`. Select/input return `null` and confirm returns `false` when dialogs are unavailable or dismissed. Cancellation propagates. TUI notifications appear in the terminal; headless host notifications use the host's diagnostic output. RPC and print modes do not start terminal dialogs.
+
+Compiled extensions can register an independent TUI shortcut:
+
+```csharp
+builder.AddShortcut(PiSharpShortcutKey.Parse("ctrl+shift+g"), (context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    context.Ui.Notify($"Shortcut in {context.Mode}; session {context.Session?.SessionId}.");
+    return Task.CompletedTask;
+}, description: "Show the active session ID.");
+```
+
+Shortcut handlers receive the same safe command context, including message sending, UI, and branch-aware session state. They do not start a competing provider run. Reserved editor and application shortcuts keep their built-in behavior and produce a source-aware diagnostic; conflicts with ordinary built-in keys are reported and the extension binding is used. If extensions register the same key, the later handler in resolved extension order wins with a source-aware diagnostic. Reload and package removal remove the old handler and restore the remaining keymap behavior.
 
 `PiSharpMessageDeliveryMode` and `triggerTurn` control separate behaviors. During an active run, `Steer` and `FollowUp` select the active-run queue when `triggerTurn` is true. `NextTurn` is held aside whether the agent is idle or busy; it does not start a run, and the next actual user or custom run includes its starting message first, followed by the held custom message. An active run keeps ownership of provider execution, so a custom message cannot start a competing provider run. An idle custom message with `triggerTurn: true` starts one normal run whose before-agent-start event identifies the custom starting message, except when the delivery mode is `NextTurn`.
 

@@ -25,7 +25,8 @@ internal static class InteractiveResourceCommands
             if (createCommandContext is null || !extensions.CommandInfo.TryGetValue(command[1..], out var info))
                 throw new InvalidOperationException($"Extension command {command} requires a host command context.");
             using var cancellation = new CancellationTokenSource();
-            var result = await contextHandler(argument, createCommandContext(info), cancellation.Token);
+            using var context = createCommandContext(info);
+            var result = await contextHandler(argument, context, cancellation.Token);
             if (!string.IsNullOrEmpty(result)) Console.WriteLine(result);
         }
         else if (getExtensions().Commands.TryGetValue(command[1..], out var handler))

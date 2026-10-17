@@ -1,11 +1,12 @@
 using PiSharp.Runtime.Sessions;
+using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Cli.Sessions;
 
 internal sealed class InteractiveSessionController(
     ConversationStore store,
     bool noSession,
-    Func<ConversationSession, string?, Task<ConversationRun>> openRun)
+    Func<ConversationSession, string?, PiSharpExtensionSessionStartReason, Task<ConversationRun>> openRun)
 {
     public async Task<SessionResumeResult?> ResumeAsync(ConversationSession current, string? currentPath,
         SessionListing listing, string currentModel, string? currentEndpoint, string currentProvider)
@@ -16,7 +17,7 @@ internal sealed class InteractiveSessionController(
         if (resumed.Model != currentModel || resumed.Endpoint != currentEndpoint ||
             resumed.Provider is not null && !resumed.Provider.Equals(currentProvider, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Session uses another provider, model, or endpoint; open it directly with --session.");
-        var run = await openRun(resumed, listing.Path);
+        var run = await openRun(resumed, listing.Path, PiSharpExtensionSessionStartReason.Resume);
         return new(resumed, run, listing.Path);
     }
 
@@ -59,7 +60,7 @@ internal sealed class InteractiveSessionController(
 
     public async Task<SessionBranchResult> ActivatePreparedCloneAsync(ConversationSession branchSnapshot, string? path)
     {
-        var run = await openRun(branchSnapshot, path);
+        var run = await openRun(branchSnapshot, path, PiSharpExtensionSessionStartReason.Fork);
         return new(branchSnapshot, run, path, null, null);
     }
 
@@ -70,7 +71,7 @@ internal sealed class InteractiveSessionController(
         var conversation = new ConversationSession(source.WorkingDirectory, source.Model, source.Endpoint,
             source.Provider, parentSessionPath);
         var path = noSession ? null : store.NewPath(conversation);
-        var run = await openRun(conversation, path);
+        var run = await openRun(conversation, path, PiSharpExtensionSessionStartReason.New);
         if (path is not null) await store.SaveAsync(conversation, path);
         return new(conversation, run, path, null, null);
     }
@@ -80,7 +81,7 @@ internal sealed class InteractiveSessionController(
     {
         if (sourcePath is not null) await store.SaveAsync(source, sourcePath);
         var branchPath = noSession ? null : store.NewPath(branch);
-        var run = await openRun(branch, branchPath);
+        var run = await openRun(branch, branchPath, PiSharpExtensionSessionStartReason.Fork);
         if (branchPath is not null) await store.SaveAsync(branch, branchPath);
         return new(branch, run, branchPath, sourceEntryId, prompt);
     }

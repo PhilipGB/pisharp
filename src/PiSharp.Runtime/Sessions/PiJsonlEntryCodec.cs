@@ -205,6 +205,21 @@ internal static class PiJsonlEntryCodec
                 state,
                 piOriginalEntry = entry
             }), timestamp);
+        if (type == "custom" && StringProperty(entry, "customType") is { Length: > 0 } customType)
+        {
+            var original = JsonNode.Parse(entry.GetRawText())!.AsObject();
+            var data = TryProperty(entry, "data", out var customData)
+                ? JsonNode.Parse(customData.GetRawText())
+                : null;
+            if (!original.ContainsKey("data")) original["data"] = null;
+            var payload = new JsonObject
+            {
+                ["customType"] = customType,
+                ["data"] = data,
+                ["piOriginalEntry"] = original
+            };
+            return new(id, parentId, "extension_state", JsonSerializer.SerializeToElement(payload), timestamp);
+        }
         if (type is "thinking_level_change" or "branch_summary" or "custom_message" or "context_edit" or "session_info" or "label")
             return new(id, parentId, type, AddOriginal(entry), timestamp);
         return new(id, parentId, "pi_entry", JsonSerializer.SerializeToElement(new
@@ -367,6 +382,14 @@ internal static class PiJsonlEntryCodec
                 ["type"] = "session_info",
                 ["name"] = StringProperty(node.Payload, "name") ??
                     throw new InvalidDataException($"Missing session name at {node.Id}.")
+            };
+        if (node.Type == "extension_state")
+            return new JsonObject
+            {
+                ["type"] = "custom",
+                ["customType"] = StringProperty(node.Payload, "customType") ??
+                    throw new InvalidDataException($"Missing custom type at {node.Id}."),
+                ["data"] = JsonNode.Parse(node.Payload.GetProperty("data").GetRawText())
             };
         if (node.Type == "virtual_model_state")
             return new JsonObject

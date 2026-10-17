@@ -8,7 +8,8 @@ namespace PiSharp.Cli.Tui;
 
 internal sealed class InteractivePromptExecution(TerminalEditor? editor, TerminalScreen? screen,
     Func<TextWriter> getError, Func<ResourceCatalog> getResources, Func<ConversationRun> getRun, Func<string> getFooter,
-    Func<string, bool, CancellationToken, Task> executeBash, Func<string, Task> handleAction) : IDisposable
+    Func<string, bool, CancellationToken, Task> executeBash, Func<string, Task> handleAction,
+    Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut) : IDisposable
 {
     private readonly CancellationTokenSource _monitorStop = new();
     private Task _monitor = Task.CompletedTask;
@@ -72,7 +73,7 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
                         return false;
                     }
                 }, () => getRun().ClearPendingPrompts().InDeliveryOrder, cancellation.Cancel, _monitorStop.Token,
-                    handleAction);
+                    handleAction, handleExtensionShortcut);
                 return;
             }
             if (update.Type == "assistant_turn_started")

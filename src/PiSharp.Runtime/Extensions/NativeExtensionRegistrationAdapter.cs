@@ -23,6 +23,14 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
         registration.AddContextCommand(name, handler, description);
     }
 
+    public void AddShortcut(NativeExtensions.PiSharpShortcutKey shortcut,
+        NativeExtensions.PiSharpExtensionShortcutHandler handler, string? description = null)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        EnsureConfiguring();
+        registration.AddShortcut(shortcut, handler, description);
+    }
+
     public void AddTool(Microsoft.Extensions.AI.AIFunction tool)
     {
         EnsureConfiguring();
@@ -36,31 +44,31 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
         var source = registration.CurrentSourceInfo?.Path;
         registration.AddBeforeAgentStartHandler(async (eventData, context, cancellationToken) =>
         {
-            var publicEvent = new NativeExtensions.PiSharpBeforeAgentStartEvent(
-                eventData.Prompt, eventData.SystemPrompt)
+            var session = context.CreatePublicSessionContext(source);
+            try
             {
-                MessageType = eventData.MessageType == PiSharpTurnMessageType.Custom
-                    ? NativeExtensions.PiSharpTurnMessageType.Custom
-                    : NativeExtensions.PiSharpTurnMessageType.User,
-                StartingCustomMessage = ToPublicMessage(eventData.StartingCustomMessage),
-                Images = Array.AsReadOnly(eventData.Images.Select(image =>
-                    new NativeExtensions.PiSharpImageAttachment(image.MediaType, image.Data.Length)).ToArray())
-            };
-            var publicContext = new NativeExtensions.PiSharpExtensionContext(context.WorkingDirectory)
-            {
-                IsIdle = context.IsIdle,
-                IsProjectTrusted = context.IsProjectTrusted,
-                HasPendingMessages = context.HasPendingMessages
-            };
-            var result = await handler(publicEvent, publicContext, cancellationToken);
-            return result is null
-                ? null
-                : new PiSharpBeforeAgentStartResult(result.SystemPrompt)
+                var publicEvent = new NativeExtensions.PiSharpBeforeAgentStartEvent(
+                    eventData.Prompt, eventData.SystemPrompt)
                 {
-                    InjectedMessage = result.InjectedMessage is { } message
-                        ? ToRuntimeMessage(message, source)
-                        : null
+                    MessageType = eventData.MessageType == PiSharpTurnMessageType.Custom
+                        ? NativeExtensions.PiSharpTurnMessageType.Custom
+                        : NativeExtensions.PiSharpTurnMessageType.User,
+                    StartingCustomMessage = ToPublicMessage(eventData.StartingCustomMessage),
+                    Images = Array.AsReadOnly(eventData.Images.Select(image =>
+                        new NativeExtensions.PiSharpImageAttachment(image.MediaType, image.Data.Length)).ToArray())
                 };
+                var publicContext = NativeExtensionPublicContextMapper.Create(context) with { Session = session };
+                var result = await handler(publicEvent, publicContext, cancellationToken);
+                return result is null
+                    ? null
+                    : new PiSharpBeforeAgentStartResult(result.SystemPrompt)
+                    {
+                        InjectedMessage = result.InjectedMessage is { } message
+                            ? ToRuntimeMessage(message, source)
+                            : null
+                    };
+            }
+            finally { session?.Dispose(); }
         });
     }
 

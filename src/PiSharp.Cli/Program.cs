@@ -69,7 +69,8 @@ ProjectRuntimeContext projectRuntime;
 try
 {
     projectRuntime = await ProjectRuntimeContext.LoadAsync(projectConfiguration, agentDirectory, cli,
-        configuredSessionDirectory, providerTokenResolver: modelRuntime.GetApiKeyForProviderAsync);
+        configuredSessionDirectory, providerTokenResolver: modelRuntime.GetApiKeyForProviderAsync,
+        deferExtensionResourceDiscovery: !cli.ListModels);
 }
 catch (Exception e) when (e is not OperationCanceledException)
 {
@@ -139,7 +140,7 @@ var runComposition = new ConversationRunComposition(projectBinding, modelRuntime
 
 var opened = await ConversationStartup.OpenAsync(
     projectBinding, initialModel, modelRuntime, modelRuntimeController,
-    codemodeModels, runComposition, currentDirectory, explicitThinking);
+    codemodeModels, runComposition, agentDirectory, currentDirectory, explicitThinking);
 
 if (opened is null)
 {
@@ -148,6 +149,7 @@ if (opened is null)
 
 var modelBinding = opened.Model;
 var conversationBinding = opened.Conversation;
+await using var extensionSessionLifetime = new ActiveExtensionSessionLifetime(() => conversationBinding.Run);
 
 var modelTransitions = new ConversationModelTransitions(projectBinding, modelBinding, conversationBinding,
     modelRuntimeController, codemodeModels, runComposition);
@@ -162,6 +164,8 @@ var modeInput = await ModeInputPreparation.PrepareAsync(
 
 if (modeInput is null)
 {
+    await ExtensionSessionLifecycleHost.NotifyShutdownAsync(conversationBinding.Run,
+        PiSharp.Extensions.Abstractions.PiSharpExtensionSessionShutdownReason.Quit);
     return;
 }
 
@@ -179,6 +183,8 @@ if (projectBinding.Arguments.Mode == "rpc")
 {
     await RpcModeComposition.ServeAsync(agentDirectory, projectBinding, modelBinding, conversationBinding,
         modelRuntime, modelTransitions, projectTransitions, extensionLease, presentation);
+    await ExtensionSessionLifecycleHost.NotifyShutdownAsync(conversationBinding.Run,
+        PiSharp.Extensions.Abstractions.PiSharpExtensionSessionShutdownReason.Quit);
 
     return;
 }
@@ -190,6 +196,8 @@ if (projectBinding.Arguments.Mode == "json")
         projectBinding.Store, conversationBinding.Path,
         projectBinding.Resources, prompt, stdinContent, projectBinding.Arguments,
         projectBinding.WorkingDirectory, Console.Out, Console.Error);
+    await ExtensionSessionLifecycleHost.NotifyShutdownAsync(conversationBinding.Run,
+        PiSharp.Extensions.Abstractions.PiSharpExtensionSessionShutdownReason.Quit);
 
     return;
 }
@@ -206,3 +214,6 @@ else
         modelRuntime, modelRuntimeController, modelTransitions, projectTransitions,
         extensionLease, catalogHttp, presentation, execution);
 }
+
+await ExtensionSessionLifecycleHost.NotifyShutdownAsync(conversationBinding.Run,
+    PiSharp.Extensions.Abstractions.PiSharpExtensionSessionShutdownReason.Quit);

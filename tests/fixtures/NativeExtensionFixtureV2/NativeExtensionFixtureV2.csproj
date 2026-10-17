@@ -4,17 +4,33 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>NativeExtensionFixtureV2</AssemblyName>
+    <PackageId>PiSharp.TestExtensions.NativeFixture</PackageId>
     <Version>2.0.0</Version>
-    <IsPackable>false</IsPackable>
+    <Description>Version two of the external-style native extension fixture.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <DefineConstants>$(DefineConstants);NATIVE_FIXTURE_v2</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../../src/PiSharp.Extensions.Abstractions/PiSharp.Extensions.Abstractions.csproj" />
-    <ProjectReference Include="../NativeExtensionPrivateDependencyV2/NativeExtensionPrivateDependencyV2.csproj" />
+    <ProjectReference Include="../NativeExtensionPrivateDependencyV2/NativeExtensionPrivateDependencyV2.csproj"
+                      PrivateAssets="all" />
     <Compile Include="../NativeExtensionFixture/ExampleExtension.cs" Link="ExampleExtension.cs" />
+    <None Include="$(TargetDir)$(AssemblyName).deps.json" Pack="true"
+          PackagePath="lib/$(TargetFramework)/" Visible="false" />
+    <None Include="$(TargetDir)NativeExtensionPrivateDependency.dll" Pack="true"
+          PackagePath="lib/$(TargetFramework)/" Visible="false" />
+    <None Include="$(IntermediateOutputPath)pisharp-extension.json" Pack="true"
+          PackagePath="/" Visible="false" />
     <None Include="../NativeExtensionFixture/Resources/**/*" Link="Resources/%(RecursiveDir)%(Filename)%(Extension)"
           Pack="true" CopyToOutputDirectory="PreserveNewest"
           PackagePath="lib/$(TargetFramework)/Resources/%(RecursiveDir)%(Filename)%(Extension)" />
+    <None Include="../NativeExtensionFixture/README.md" Pack="true" PackagePath="/README.md" />
   </ItemGroup>
+
+  <Target Name="GeneratePiSharpExtensionManifest" BeforeTargets="_GetPackageFiles">
+    <WriteLinesToFile File="$(IntermediateOutputPath)pisharp-extension.json"
+                      Lines="{&quot;id&quot;:&quot;$(PackageId)&quot;,&quot;version&quot;:&quot;$(Version)&quot;,&quot;apiVersion&quot;:1,&quot;extensions&quot;:[{&quot;assembly&quot;:&quot;lib/$(TargetFramework)/$(AssemblyName).dll&quot;,&quot;type&quot;:&quot;PiSharp.TestExtensions.NativeFixture.ExampleExtension&quot;}]}"
+                      Overwrite="true" />
+  </Target>
 </Project>

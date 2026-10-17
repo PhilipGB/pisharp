@@ -20,6 +20,7 @@ public sealed class NativeExtensionHookBridgeTests
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             NativeExtensions.PiSharpExtensionContext? observedContext = null;
             NativeExtensions.PiSharpBeforeAgentStartEvent? observedEvent = null;
+            var extensionUi = new TestExtensionUi();
             adapter.AddBeforeAgentStartHandler((turn, context, cancellationToken) =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -32,7 +33,7 @@ public sealed class NativeExtensionHookBridgeTests
             var agent = new PiAgent(new HookBridgeClient(), new CodingTools(cwd), noBuiltinTools: true,
                 beforeAgentStartHandlers: registration.BeforeAgentStartHandlers,
                 extensionContextConfiguration: new PiSharpExtensionContextConfiguration(
-                    cwd, "print", false, true, new TestExtensionUi()));
+                    cwd, "print", false, true, extensionUi));
             var run = await ConversationRun.OpenAsync(agent, new ConversationSession(cwd, "test-model", null));
 
             var image = new DataContent(new byte[] { 1, 2, 3 }, "image/png");
@@ -45,6 +46,9 @@ public sealed class NativeExtensionHookBridgeTests
             Assert.Equal(3, observedEvent.Images[0].ByteLength);
             Assert.NotNull(observedContext);
             Assert.Equal(cwd, observedContext.WorkingDirectory);
+            Assert.Equal("print", observedContext.Mode);
+            Assert.False(observedContext.HasUserInterface);
+            Assert.Same(extensionUi, observedContext.Ui);
             Assert.False(observedContext.IsIdle);
             Assert.True(observedContext.IsProjectTrusted);
             Assert.False(observedContext.HasPendingMessages);

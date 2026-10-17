@@ -10,7 +10,7 @@ public interface IPiSharpExtension
 }
 
 /// <summary>Registers the capabilities supported by the current PiSharp extension API version.</summary>
-public interface IPiSharpExtensionBuilder
+public partial interface IPiSharpExtensionBuilder
 {
     /// <summary>Registers a command. The argument is the text following the command name.</summary>
     void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler,
@@ -18,6 +18,10 @@ public interface IPiSharpExtensionBuilder
 
     /// <summary>Registers a command that can submit user or custom messages through its live host context.</summary>
     void AddCommand(string name, PiSharpExtensionCommandHandler handler, string? description = null);
+
+    /// <summary>Registers a keyboard shortcut for the interactive terminal.</summary>
+    void AddShortcut(PiSharpShortcutKey shortcut, PiSharpExtensionShortcutHandler handler,
+        string? description = null);
 
     /// <summary>Registers an AI function tool available to the agent.</summary>
     void AddTool(AIFunction tool);
@@ -36,6 +40,12 @@ public interface IPiSharpExtensionBuilder
 
     /// <summary>Registers resource paths discovered at startup and after reload.</summary>
     void AddResourceDiscoveryHandler(PiSharpResourceDiscoveryHandler handler);
+
+    /// <summary>Registers an asynchronous callback after a session is opened and restored.</summary>
+    void AddSessionStartHandler(PiSharpExtensionSessionStartHandler handler);
+
+    /// <summary>Registers an asynchronous callback before a session is replaced or the host shuts down.</summary>
+    void AddSessionShutdownHandler(PiSharpExtensionSessionShutdownHandler handler);
 }
 
 /// <summary>Prompt information supplied immediately before the agent begins a user turn.</summary>
@@ -59,7 +69,7 @@ public sealed record PiSharpBeforeAgentStartResult(string? SystemPrompt = null)
 }
 
 /// <summary>The small amount of live host context available to a lifecycle callback.</summary>
-public sealed record PiSharpExtensionContext(string WorkingDirectory)
+public sealed partial record PiSharpExtensionContext(string WorkingDirectory)
 {
     /// <summary>Whether the host is idle when this callback starts.</summary>
     public bool IsIdle { get; init; }

@@ -100,6 +100,13 @@ public sealed class NativeExtensionCatalogTests
         try
         {
             AssertContextUnloaded(v1LoadContext);
+            var (removedCatalog, v2LoadContext) = LoadAndRemoveNativePackageCatalog(agentDirectory,
+                workingDirectory, catalog);
+            catalog = removedCatalog;
+            Assert.Empty(catalog.Registration.ExtensionShortcuts);
+            Assert.Empty(catalog.Registration.SessionStartHandlers);
+            Assert.Empty(catalog.Registration.SessionShutdownHandlers);
+            AssertContextUnloaded(v2LoadContext);
         }
         finally { catalog.Dispose(); }
     }
@@ -305,7 +312,10 @@ public sealed class NativeExtensionCatalogTests
             var v2Roots = await store.ResolveAsync(workingDirectory, trusted: true, userSources: [installedV2]);
             catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
                 preloaded: catalog, nativeExtensionPackageRoots: v2Roots);
-            Assert.Equal(["native-fixture-send"], catalog.Registration.ContextCommands.Keys);
+            Assert.Equal(
+                ["native-fixture-send", "native-fixture-state-set", "native-fixture-state-show",
+                    "native-fixture-mode", "native-fixture-ui"],
+                catalog.Registration.ContextCommands.Keys);
             Assert.DoesNotContain(v1Roots[0].Path,
                 catalog.Registration.CommandInfo.Values.Select(info => info.SourceInfo.Path));
             Assert.DoesNotContain(v1Roots[0].Path,
@@ -547,6 +557,19 @@ public sealed class NativeExtensionCatalogTests
         Assert.DoesNotContain(v1Roots[0].Path, reloaded.LoadedExtensions.Select(extension => extension.Path));
         Assert.Single(reloaded.NativePackageLoadContextReferences);
         return (reloaded, previousLoadContext);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (ExtensionCatalog Catalog, WeakReference PreviousLoadContext) LoadAndRemoveNativePackageCatalog(
+        string agentDirectory, string workingDirectory, ExtensionCatalog activeCatalog)
+    {
+        var previousLoadContext = Assert.Single(activeCatalog.NativePackageLoadContextReferences);
+        var removed = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
+            preloaded: activeCatalog, nativeExtensionPackageRoots: []);
+        Assert.Empty(removed.Registration.ExtensionShortcuts);
+        Assert.Empty(removed.Registration.SessionStartHandlers);
+        Assert.Empty(removed.Registration.SessionShutdownHandlers);
+        return (removed, previousLoadContext);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
