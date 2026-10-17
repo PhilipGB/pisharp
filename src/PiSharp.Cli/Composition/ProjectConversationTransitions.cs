@@ -40,9 +40,10 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
     }
 
     public async Task ReloadAsync(bool usesDefaultToolsSetting, Action<ProjectRuntimeContext> configureMcp,
-        Action refreshProjectUi, Action loadSessionTranscript)
+        Action refreshProjectUi, Action loadSessionTranscript, Action? afterReplacementPrepared = null)
     {
         ProjectRuntimeContext? nextProject = null;
+        var committed = false;
         var previousContextPolicy = modelBinding.ContextPolicy;
         try
         {
@@ -53,57 +54,79 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
             var reloadPlan = reload.ToolPlan;
             nextProject = reload.Project;
             configureMcp(nextProject);
-            modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
+            modelRuntime.ValidateVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
             var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,
                 Environment.GetEnvironmentVariable);
             var reloadAgentArguments = usesDefaultToolsSetting
                 ? reloadPlan.Arguments with { Tools = null }
                 : reloadPlan.Arguments;
             var nextAgent = nextProject.CreateAgent(modelBinding.Chat, modelBinding.Selection, modelBinding.Thinking, reloadAgentArguments, nextConfiguration.Settings,
-                nextController.CreateVirtualModelRouter(modelBinding.Selection), codemodeModels);
+                nextController.CreateVirtualModelRouter(modelBinding.Selection,
+                    nextProject.Extensions.Registration.VirtualModels), codemodeModels);
             var nextContextPolicy = nextConfiguration.Settings.ResolveCompactionPolicy(modelBinding.Selection.Model.ContextLength, Environment.GetEnvironmentVariable,
                 $"{modelBinding.Selection.Provider.Id}/{modelBinding.Selection.Model.Id}");
             var nextModelPricing = ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? modelBinding.Selection.Model.Pricing;
             var nextRun = await runComposition.OpenAsync(modelBinding, nextAgent, conversationBinding.Conversation, conversationBinding.Path, targetProject: nextProject,
                 activeToolNamesOverride: reloadPlan.ActiveToolNames);
-            await ExtensionSessionLifecycleHost.NotifyShutdownAsync(conversationBinding.Run,
-                PiSharpExtensionSessionShutdownReason.Reload);
-            await ExtensionSessionLifecycleHost.NotifyStartAsync(nextRun, PiSharpExtensionSessionStartReason.Reload);
             await nextProject.DiscoverExtensionResourcesAsync(agentDirectory, reloadPlan.Arguments,
                 ExtensionResourceDiscoveryReason.Reload);
-            extensionLease.Replace(nextProject.TransferExtensions());
+            afterReplacementPrepared?.Invoke();
+
+            var shutdownError = await NotifyShutdownForCommitAsync(conversationBinding.Run,
+                PiSharpExtensionSessionShutdownReason.Reload);
+            committed = true;
+            modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
+            var nextExtensions = nextProject.TransferExtensions();
             projectBinding.Adopt(nextConfiguration, nextProject, reloadPlan.Arguments);
             modelBinding.SetContext(nextContextPolicy, nextModelPricing);
             RebindSessionControllers();
-            refreshProjectUi();
             modelBinding.ReplaceAgent(nextAgent);
             conversationBinding.ReplaceRun(nextRun);
+
+            Exception? leaseReplacementError = null;
+            try { extensionLease.Replace(nextExtensions); }
+            catch (Exception error) { leaseReplacementError = error; }
+            await ExtensionSessionLifecycleHost.NotifyStartAsync(nextRun, PiSharpExtensionSessionStartReason.Reload);
+            refreshProjectUi();
             loadSessionTranscript();
+            ThrowTransitionErrors(shutdownError, leaseReplacementError);
         }
         catch
         {
-            modelBinding.RestoreContextPolicy(previousContextPolicy);
-            nextProject?.Dispose();
+            if (!committed)
+            {
+                modelBinding.RestoreContextPolicy(previousContextPolicy);
+                nextProject?.Dispose();
+            }
             throw;
         }
     }
     public async Task AdoptAsync(ProjectSessionRuntime replacement, Action<ProjectRuntimeContext> configureMcp,
         Action refreshProjectUi, Action finishSessionUi,
-        PiSharpExtensionSessionStartReason reason = PiSharpExtensionSessionStartReason.Resume)
+        PiSharpExtensionSessionStartReason reason = PiSharpExtensionSessionStartReason.Resume,
+        Action? afterReplacementPrepared = null)
     {
         var nextProject = replacement.Project;
-        await ExtensionSessionLifecycleHost.NotifyShutdownAsync(conversationBinding.Run, ToShutdownReason(reason));
-        await ExtensionSessionLifecycleHost.NotifyStartAsync(replacement.Run, reason);
         await nextProject.DiscoverExtensionResourcesAsync(agentDirectory, projectBinding.Arguments,
             ExtensionResourceDiscoveryReason.Startup);
         configureMcp(nextProject);
-        extensionLease.Replace(nextProject.TransferExtensions());
+        modelRuntime.ValidateVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
+        afterReplacementPrepared?.Invoke();
+
+        var shutdownError = await NotifyShutdownForCommitAsync(conversationBinding.Run, ToShutdownReason(reason));
+        var nextExtensions = nextProject.TransferExtensions();
+        replacement.CommitAdoption();
         projectBinding.Adopt(nextProject.Configuration, nextProject);
         conversationBinding.Adopt(replacement.Conversation, replacement.Run, replacement.Path);
         modelBinding.AdoptProject(replacement);
         RebindSessionControllers(rebuildFactory: false);
+        Exception? leaseReplacementError = null;
+        try { extensionLease.Replace(nextExtensions); }
+        catch (Exception error) { leaseReplacementError = error; }
+        await ExtensionSessionLifecycleHost.NotifyStartAsync(replacement.Run, reason);
         refreshProjectUi();
         finishSessionUi();
+        ThrowTransitionErrors(shutdownError, leaseReplacementError);
     }
 
     public async Task<bool> SwitchAsync(string sessionReference, Func<ProjectSessionRuntime, Task> adopt,
@@ -126,6 +149,32 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
             PiSharpExtensionSessionStartReason.Fork => PiSharpExtensionSessionShutdownReason.Fork,
             _ => PiSharpExtensionSessionShutdownReason.Resume
         };
+
+    private static async Task<Exception?> NotifyShutdownForCommitAsync(ConversationRun run,
+        PiSharpExtensionSessionShutdownReason reason)
+    {
+        try
+        {
+            await ExtensionSessionLifecycleHost.NotifyShutdownAsync(run, reason);
+            return null;
+        }
+        catch (Exception error)
+        {
+            // The run records the notification before dispatch, so even a host-side dispatch failure
+            // must not leave it active after the replacement transition.
+            return error;
+        }
+    }
+
+    private static void ThrowTransitionErrors(Exception? shutdownError, Exception? leaseReplacementError)
+    {
+        if (shutdownError is null && leaseReplacementError is null) return;
+        if (shutdownError is not null && leaseReplacementError is not null)
+            throw new AggregateException("Session replacement committed with lifecycle errors.",
+                shutdownError, leaseReplacementError);
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(shutdownError ?? leaseReplacementError!)
+            .Throw();
+    }
 
     public Task ValidateSwitchAsync(string sessionReference, CancellationToken cancellationToken)
     {

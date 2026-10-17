@@ -47,6 +47,7 @@ public sealed class ConversationRun
     private ModelPricing? _providerRequestPricing;
     private string? _persistedThinkingLevel;
     public ConversationSession Conversation { get; }
+    internal bool SessionShutdownInvoked => Volatile.Read(ref _sessionShutdownInvoked) != 0;
     public IReadOnlyList<string> ActiveToolNames =>
         _agent.GetToolLoadout(_execution).Snapshot.ActiveToolNames;
     public string? SessionFile => _sessionFile;

@@ -120,6 +120,33 @@ public sealed class EditorKeymapTests
     }
 
     [Fact]
+    public async Task ExtensionShortcutDoesNotRunTheEditorClearingAction()
+    {
+        var editor = new TerminalEditor(getExtensionShortcuts: () =>
+            [Shortcut("/extension.dll", PiSharpShortcutKey.Parse("ctrl+shift+x"))]);
+        editor.Prefill("unfinished work");
+        var clearEditor = false;
+        string? dispatched = null;
+
+        Assert.True(await editor.HandleApplicationShortcutAsync(
+            Key(ConsoleKey.X, ConsoleModifiers.Control | ConsoleModifiers.Shift), _ => Task.CompletedTask,
+            beforeDispatch: () =>
+            {
+                clearEditor = true;
+                editor.Prefill("");
+            },
+            dispatchExtensionShortcut: (shortcut, _) =>
+            {
+                dispatched = shortcut.SourceInfo.Path;
+                return Task.CompletedTask;
+            }));
+
+        Assert.Equal("/extension.dll", dispatched);
+        Assert.False(clearEditor);
+        Assert.Equal("unfinished work", editor.Draft);
+    }
+
+    [Fact]
     public async Task ThinkingVisibilityShortcutUsesPiCtrlTAndPreservesTheEditorDraft()
     {
         var editor = new TerminalEditor();

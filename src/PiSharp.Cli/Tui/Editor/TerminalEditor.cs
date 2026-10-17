@@ -544,7 +544,6 @@ public sealed class TerminalEditor
         ArgumentNullException.ThrowIfNull(dispatch);
         if (dispatchExtensionShortcut is not null && _keymap.MatchExtensionShortcut(key) is { } extensionShortcut)
         {
-            beforeDispatch?.Invoke();
             await dispatchExtensionShortcut(extensionShortcut, cancellationToken);
             return true;
         }

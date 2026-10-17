@@ -101,13 +101,17 @@ public sealed class NativeExtensionShortcutPtyTests
             var stderr = process.StandardError.ReadToEndAsync();
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             await output.InputReady.WaitAsync(timeout.Token);
+            var draftStart = output.CapturedOutput.Length;
+            await process.StandardInput.WriteAsync("unfinished work");
+            await process.StandardInput.FlushAsync();
+            await output.WaitForTextAsync("unfinished work", draftStart, timeout.Token);
             await process.StandardInput.WriteAsync("\u001b[103;6u"); // Kitty key code 103 (g), Ctrl+Shift modifiers.
             await process.StandardInput.FlushAsync();
-            await output.WaitForTextAsync("native-fixture-shortcut-v1", 0, timeout.Token);
+            await output.WaitForTextAsync("native-fixture-shortcut-v1", draftStart, timeout.Token);
             var v1EditorStart = output.CapturedOutput.Length;
-            await process.StandardInput.WriteAsync("editor-v1");
+            await process.StandardInput.WriteAsync(" continued");
             await process.StandardInput.FlushAsync();
-            await output.WaitForTextAsync("editor-v1", v1EditorStart, timeout.Token);
+            await output.WaitForTextAsync("unfinished work continued", v1EditorStart, timeout.Token);
             await process.StandardInput.WriteAsync("\u0015"); // Ctrl+U clears the draft without starting a provider turn.
             await process.StandardInput.FlushAsync();
 

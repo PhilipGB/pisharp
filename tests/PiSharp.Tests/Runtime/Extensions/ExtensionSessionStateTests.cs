@@ -44,12 +44,63 @@ public sealed class ExtensionSessionStateTests
             Assert.DoesNotContain(Assert.Single(provider.Requests), message =>
                 message.Text.Contains("extension-only", StringComparison.Ordinal));
 
+            var customEntries = PiJsonlSessionInterchange.ProjectEntries(conversation).Where(entry =>
+                entry.GetProperty("type").GetString() == "custom" &&
+                entry.GetProperty("customType").GetString() == "counter").ToArray();
+            Assert.Equal(2, customEntries.Length);
+            var customEntry = customEntries[0];
+            Assert.Equal("counter", customEntry.GetProperty("customType").GetString());
+            Assert.Equal("extension-only", customEntry.GetProperty("data").GetProperty("secret").GetString());
+            Assert.False(customEntry.TryGetProperty("source", out _));
+
+            var imported = PiJsonlSessionInterchange.Import(PiJsonlSessionInterchange.Export(conversation));
+            var importedProvider = new CompleteClient();
+            var importedRun = await ConversationRun.OpenAsync(CreateAgent(importedProvider), imported);
+            using (var importedState = importedRun.CreateExtensionSessionContext())
+            {
+                var importedCounters = importedState.Entries.Where(entry => entry.CustomType == "counter").ToArray();
+                Assert.Equal(2, importedCounters.Length);
+                Assert.Equal(["extension-only", "extension-only"], importedCounters.Select(entry =>
+                    entry.Data.GetProperty("secret").GetString()));
+            }
+            Assert.DoesNotContain(imported.ContextMessages(), message =>
+                message.Text.Contains("extension-only", StringComparison.Ordinal));
+            await foreach (var _ in importedRun.RunEventsAsync("continue after import")) { }
+            Assert.DoesNotContain(Assert.Single(importedProvider.Requests), message =>
+                message.Text.Contains("extension-only", StringComparison.Ordinal));
+
             var resumed = await store.LoadAsync(path);
             var resumedRun = await ConversationRun.OpenAsync(CreateAgent(new CompleteClient()), resumed);
             using var resumedContext = resumedRun.CreateExtensionSessionContext();
             Assert.Equal(["counter", "counter"], resumedContext.Entries.Select(entry => entry.CustomType));
             Assert.Equal(["extension-only", "extension-only"], resumedContext.Entries.Select(entry =>
                 entry.Data.GetProperty("secret").GetString()));
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task HandcraftedPiCustomEntryIsAvailableThroughTheNativeExtensionSessionSdk()
+    {
+        var workingDirectory = CreateWorkingDirectory();
+        try
+        {
+            var jsonl = $$"""
+                {"type":"session","version":3,"id":"pinned-pi-session","timestamp":"2026-10-17T12:00:00.000Z","cwd":"{{workingDirectory}}"}
+                {"type":"custom","customType":"counter","id":"counter-entry","parentId":null,"timestamp":"2026-10-17T12:00:01.000Z","data":{"value":1} }
+                """;
+            var conversation = PiJsonlSessionInterchange.Import(jsonl);
+            var run = await ConversationRun.OpenAsync(CreateAgent(new CompleteClient()), conversation);
+
+            using var session = run.CreateExtensionSessionContext();
+            var entry = Assert.Single(session.Entries);
+            Assert.Equal("counter-entry", entry.Id);
+            Assert.Equal("counter", entry.CustomType);
+            Assert.Equal(1, entry.Data.GetProperty("value").GetInt32());
+            Assert.Empty(conversation.ContextMessages());
         }
         finally
         {

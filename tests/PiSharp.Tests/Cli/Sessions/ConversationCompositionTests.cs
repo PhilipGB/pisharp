@@ -111,8 +111,8 @@ public sealed class ConversationCompositionTests
             {
                 events.Add("refresh");
                 Assert.NotSame(oldProject, project.Runtime);
-                Assert.Same(oldAgent, model.Agent);
-                Assert.Same(oldRun, conversation.Run);
+                Assert.NotSame(oldAgent, model.Agent);
+                Assert.NotSame(oldRun, conversation.Run);
             }, () =>
             {
                 events.Add("history");
@@ -144,6 +144,89 @@ public sealed class ConversationCompositionTests
             Assert.Same(oldPolicy, model.ContextPolicy);
             var retry = await runs.OpenAsync(model, model.Agent, conversation.Conversation, null);
             Assert.Contains("read", retry.ActiveToolNames);
+        });
+    }
+
+    [Fact]
+    public async Task FailureAfterReloadPreparationButBeforeShutdownKeepsTheOldRunAuthoritative()
+    {
+        await WithRuntimeAsync(async (root, project, model, conversation, _, transitions) =>
+        {
+            var oldProject = project.Runtime;
+            var oldAgent = model.Agent;
+            var oldRun = conversation.Run;
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => transitions.ReloadAsync(false,
+                _ => { },
+                () => Assert.Fail("UI must not adopt a replacement that failed before shutdown"),
+                () => Assert.Fail("History must not adopt a replacement that failed before shutdown"),
+                afterReplacementPrepared: () => throw new InvalidOperationException("prepared reload failure")));
+
+            Assert.Same(oldProject, project.Runtime);
+            Assert.Same(oldAgent, model.Agent);
+            Assert.Same(oldRun, conversation.Run);
+            Assert.False(oldRun.SessionShutdownInvoked);
+        });
+    }
+
+    [Fact]
+    public async Task FailureAfterReloadCommitLeavesTheReplacementAuthoritative()
+    {
+        await WithRuntimeAsync(async (root, project, model, conversation, _, transitions) =>
+        {
+            var oldProject = project.Runtime;
+            var oldAgent = model.Agent;
+            var oldRun = conversation.Run;
+            ProjectRuntimeContext? adoptedProject = null;
+            ConversationRun? adoptedRun = null;
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => transitions.ReloadAsync(false,
+                _ => { },
+                () =>
+                {
+                    adoptedProject = project.Runtime;
+                    adoptedRun = conversation.Run;
+                    throw new InvalidOperationException("simulated UI refresh failure");
+                },
+                () => Assert.Fail("History must not reload after a failed UI refresh")));
+
+            Assert.NotNull(adoptedProject);
+            Assert.NotNull(adoptedRun);
+            Assert.NotSame(oldProject, project.Runtime);
+            Assert.NotSame(oldAgent, model.Agent);
+            Assert.NotSame(oldRun, conversation.Run);
+            Assert.Same(adoptedProject, project.Runtime);
+            Assert.Same(adoptedRun, conversation.Run);
+            Assert.True(oldRun.SessionShutdownInvoked);
+            Assert.False(conversation.Run.SessionShutdownInvoked);
+            Assert.Same(conversation.Conversation, conversation.Run.Conversation);
+            await conversation.Run.NotifySessionShutdownAsync(
+                PiSharp.Extensions.Abstractions.PiSharpExtensionSessionShutdownReason.Quit);
+            Assert.True(conversation.Run.SessionShutdownInvoked);
+        });
+    }
+
+    [Fact]
+    public async Task FailureAfterSessionReplacementPreparationLeavesTheOldRunAuthoritative()
+    {
+        await WithRuntimeAsync(async (root, project, model, conversation, _, transitions) =>
+        {
+            var oldProject = project.Runtime;
+            var oldAgent = model.Agent;
+            var oldRun = conversation.Run;
+            using var replacement = await transitions.SessionFactory.OpenAsync(
+                Path.Combine(root, "replacement.session.json"), root, model.Selection, model.Thinking);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => transitions.AdoptAsync(replacement,
+                _ => { },
+                () => Assert.Fail("UI must not adopt a replacement that failed before shutdown"),
+                () => Assert.Fail("Session UI must not finish after preparation failure"),
+                afterReplacementPrepared: () => throw new InvalidOperationException("prepared adoption failure")));
+
+            Assert.Same(oldProject, project.Runtime);
+            Assert.Same(oldAgent, model.Agent);
+            Assert.Same(oldRun, conversation.Run);
+            Assert.False(oldRun.SessionShutdownInvoked);
         });
     }
 
