@@ -313,6 +313,52 @@ public sealed class NativeExtensionAgentToolEventTests
         }
     }
 
+    [Fact]
+    public async Task ToolFailureAfterExecutionStartsEmitsErrorEndWithDuration()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-native-tool-failure-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            var starts = new List<PiSharpExtensionToolExecutionStartEvent>();
+            var ends = new List<PiSharpExtensionToolExecutionEndEvent>();
+            adapter.AddToolExecutionStartHandler((eventData, _, _) =>
+            {
+                starts.Add(eventData);
+                return ValueTask.CompletedTask;
+            });
+            adapter.AddToolExecutionEndHandler((eventData, _, _) =>
+            {
+                ends.Add(eventData);
+                return ValueTask.CompletedTask;
+            });
+            Func<string> failingTool = () => throw new InvalidOperationException("execution failed");
+            registration.AddTool(new PiSharpToolRegistration(
+                AIFunctionFactory.Create(failingTool, name: "failure"), ToolExposure.ModelOnly));
+            adapter.Close();
+            var agent = new PiAgent(new EventClient("failure"), new CodingTools(workingDirectory), noBuiltinTools: true,
+                extensionToolRegistrations: registration.ToolDefinitions,
+                liveExtensionRegistration: registration);
+            var run = await ConversationRun.OpenAsync(agent,
+                new ConversationSession(workingDirectory, "fixture", null), save: _ => Task.CompletedTask);
+
+            await foreach (var _ in run.RunEventsAsync("failing tool")) { }
+
+            var start = Assert.Single(starts);
+            var end = Assert.Single(ends);
+            Assert.Equal(start.ToolCallId, end.ToolCallId);
+            Assert.True(end.IsError);
+            Assert.NotNull(end.DurationMs);
+            Assert.Contains("execution failed", end.Result.GetProperty("error").GetString());
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
     private sealed class EventClient : IChatClient
     {
         private readonly string _toolName;
