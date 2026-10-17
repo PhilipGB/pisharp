@@ -2,6 +2,8 @@
 
 This independent authoring project references only `PiSharp.Extensions.Abstractions` plus one local private dependency project. Normal `dotnet pack` produces the compiled extension DLL, package-root `pisharp-extension.json`, the extension `.deps.json`, and the private dependency DLL.
 
+The package also includes skill, prompt-template, and theme resources beside the extension assembly. Its public resource-discovery callback returns startup or reload paths relative to the loaded assembly, so the fixture exercises resource ownership and version replacement through the same package layout used by external extensions.
+
 Pack the v1 fixture:
 
 ```sh

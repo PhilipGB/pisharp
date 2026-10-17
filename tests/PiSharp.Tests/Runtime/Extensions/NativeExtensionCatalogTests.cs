@@ -51,6 +51,11 @@ public sealed class NativeExtensionCatalogTests
             Assert.DoesNotContain("native-fixture", untrusted.Extensions.Registration.Commands.Keys);
             Assert.Contains(untrusted.Extensions.Warnings, warning => warning.Warning.Contains(
                 "not loaded because this project is not trusted", StringComparison.Ordinal));
+            var discovery = await untrusted.Extensions.DiscoverResourcesAsync(workingDirectory,
+                ExtensionResourceDiscoveryReason.Startup);
+            Assert.Empty(discovery.SkillPaths);
+            Assert.Empty(discovery.PromptPaths);
+            Assert.Empty(discovery.ThemePaths);
         }
 
         await File.WriteAllTextAsync(Path.Combine(projectSettingsDirectory, "settings.json"),
@@ -97,6 +102,208 @@ public sealed class NativeExtensionCatalogTests
             AssertContextUnloaded(v1LoadContext);
         }
         finally { catalog.Dispose(); }
+    }
+
+    [Fact]
+    public async Task PublicResourceDiscoveryLoadsOnStartupAndReplacesResourcesOnReloadAndRemoval()
+    {
+        using var temporary = new TemporaryDirectory();
+        var workingDirectory = Path.Combine(temporary.Path, "project");
+        var agentDirectory = Path.Combine(temporary.Path, "agent");
+        var packages = Path.Combine(temporary.Path, "packages");
+        Directory.CreateDirectory(workingDirectory);
+        Directory.CreateDirectory(agentDirectory);
+        Directory.CreateDirectory(packages);
+
+        var fixtureRoot = Path.Combine(FindRepositoryRoot(), "tests", "fixtures");
+        var store = new NativeExtensionPackageStore(agentDirectory);
+        var installedV1 = await store.InstallAsync(workingDirectory,
+            CreatePackage("1.0.0", "NativeExtensionFixture", "PiSharp.TestExtensions.NativeFixture",
+                Path.Combine(fixtureRoot, "NativeExtensionFixture", "bin", BuildConfiguration(), "net10.0"), packages),
+            "user");
+        var installedV2 = await store.InstallAsync(workingDirectory,
+            CreatePackage("2.0.0", "NativeExtensionFixtureV2", "PiSharp.TestExtensions.NativeFixture",
+                Path.Combine(fixtureRoot, "NativeExtensionFixtureV2", "bin", BuildConfiguration(), "net10.0"), packages),
+            "user");
+
+        var v1Roots = await store.ResolveAsync(workingDirectory, trusted: true, userSources: [installedV1]);
+        var catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
+            nativeExtensionPackageRoots: v1Roots);
+        try
+        {
+            var startup = await catalog.DiscoverResourcesAsync(workingDirectory, ExtensionResourceDiscoveryReason.Startup);
+            var startupResources = await LoadExtensionResourcesAsync(workingDirectory, agentDirectory, startup);
+            Assert.Equal("native-fixture-v1-startup", Assert.Single(startupResources.Skills).Name);
+            Assert.Equal("native-fixture-v1-startup", Assert.Single(startupResources.Prompts).Name);
+            var startupSkill = Assert.Single(startup.SkillPaths);
+            var v1Source = Assert.Single(catalog.LoadedExtensions);
+            Assert.Equal("extension:" + Path.GetFileNameWithoutExtension(v1Source.Path), startupSkill.SourceInfo.Source);
+            Assert.Equal("temporary", startupSkill.SourceInfo.Scope);
+            Assert.Equal("top-level", startupSkill.SourceInfo.Origin);
+            Assert.Equal(Path.GetDirectoryName(v1Source.Path), startupSkill.SourceInfo.BaseDir);
+            Assert.Single(startup.ThemePaths);
+
+            var v1Reload = await catalog.DiscoverResourcesAsync(workingDirectory, ExtensionResourceDiscoveryReason.Reload);
+            var reloadedResources = await LoadExtensionResourcesAsync(workingDirectory, agentDirectory, v1Reload);
+            Assert.Equal("native-fixture-v1-reload", Assert.Single(reloadedResources.Skills).Name);
+            Assert.Equal("native-fixture-v1-reload", Assert.Single(reloadedResources.Prompts).Name);
+            Assert.DoesNotContain(reloadedResources.Skills, skill => skill.Name == "native-fixture-v1-startup");
+            Assert.DoesNotContain(reloadedResources.Prompts, prompt => prompt.Name == "native-fixture-v1-startup");
+
+            var v2Roots = await store.ResolveAsync(workingDirectory, trusted: true, userSources: [installedV2]);
+            catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
+                preloaded: catalog, nativeExtensionPackageRoots: v2Roots);
+            var v2Reload = await catalog.DiscoverResourcesAsync(workingDirectory, ExtensionResourceDiscoveryReason.Reload);
+            var v2Resources = await LoadExtensionResourcesAsync(workingDirectory, agentDirectory, v2Reload);
+            Assert.Equal("native-fixture-v2-reload", Assert.Single(v2Resources.Skills).Name);
+            Assert.Equal("native-fixture-v2-reload", Assert.Single(v2Resources.Prompts).Name);
+            Assert.DoesNotContain(v2Resources.Skills,
+                skill => skill.Name.StartsWith("native-fixture-v1-", StringComparison.Ordinal));
+            Assert.DoesNotContain(v2Resources.Prompts,
+                prompt => prompt.Name.StartsWith("native-fixture-v1-", StringComparison.Ordinal));
+            var v2Source = Assert.Single(catalog.LoadedExtensions);
+            Assert.Equal("extension:" + Path.GetFileNameWithoutExtension(v2Source.Path),
+                Assert.Single(v2Reload.SkillPaths).SourceInfo.Source);
+
+            catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
+                preloaded: catalog, nativeExtensionPackageRoots: []);
+            var afterRemoval = await catalog.DiscoverResourcesAsync(workingDirectory, ExtensionResourceDiscoveryReason.Reload);
+            Assert.Empty(afterRemoval.SkillPaths);
+            Assert.Empty(afterRemoval.PromptPaths);
+            Assert.Empty(afterRemoval.ThemePaths);
+            var removedResources = await LoadExtensionResourcesAsync(workingDirectory, agentDirectory, afterRemoval);
+            Assert.Empty(removedResources.Skills);
+            Assert.Empty(removedResources.Prompts);
+        }
+        finally
+        {
+            catalog.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task PublicNativeFixtureCallbacksRunThroughLoadedPackagesAndV1CallbacksDisappearOnReload()
+    {
+        using var temporary = new TemporaryDirectory();
+        var workingDirectory = Path.Combine(temporary.Path, "project");
+        var agentDirectory = Path.Combine(temporary.Path, "agent");
+        var packages = Path.Combine(temporary.Path, "packages");
+        Directory.CreateDirectory(workingDirectory);
+        Directory.CreateDirectory(agentDirectory);
+        Directory.CreateDirectory(packages);
+
+        var fixtureRoot = Path.Combine(FindRepositoryRoot(), "tests", "fixtures");
+        var store = new NativeExtensionPackageStore(agentDirectory);
+        var installedV1 = await store.InstallAsync(workingDirectory,
+            CreatePackage("1.0.0", "NativeExtensionFixture", "PiSharp.TestExtensions.NativeFixture",
+                Path.Combine(fixtureRoot, "NativeExtensionFixture", "bin", BuildConfiguration(), "net10.0"), packages),
+            "user");
+        var installedV2 = await store.InstallAsync(workingDirectory,
+            CreatePackage("2.0.0", "NativeExtensionFixtureV2", "PiSharp.TestExtensions.NativeFixture",
+                Path.Combine(fixtureRoot, "NativeExtensionFixtureV2", "bin", BuildConfiguration(), "net10.0"), packages),
+            "user");
+
+        var v1Roots = await store.ResolveAsync(workingDirectory, trusted: true, userSources: [installedV1]);
+        var catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
+            nativeExtensionPackageRoots: v1Roots);
+        try
+        {
+            var sentMessages = new List<string>();
+            var commandContext = new PiSharp.Extensions.Abstractions.PiSharpExtensionCommandContext(
+                workingDirectory, isIdle: true, isProjectTrusted: true, hasPendingMessages: false,
+                (text, _) =>
+                {
+                    sentMessages.Add("user:" + text);
+                    return Task.CompletedTask;
+                },
+                (message, triggerTurn, deliveryMode, _) =>
+                {
+                    sentMessages.Add($"custom:{message.CustomType}:{message.Content}:{triggerTurn}:{deliveryMode}");
+                    return Task.CompletedTask;
+                });
+            var sendCommand = catalog.Registration.ContextCommands["native-fixture-send"];
+            Assert.Equal("v1 command sent user", await sendCommand("user hello", commandContext,
+                CancellationToken.None));
+            Assert.Equal("v1 command sent custom", await sendCommand("custom background work", commandContext,
+                CancellationToken.None));
+            Assert.Equal(
+                ["user:hello", "custom:native-fixture-v1-command:background work:True:Steer"], sentMessages);
+
+            var v1Client = new NativeFixtureHookChatClient();
+            var v1Conversation = new ConversationSession(workingDirectory, "fixture", null);
+            var v1Agent = CreateFixtureAgent(v1Client, workingDirectory, catalog.Registration);
+            var v1Run = await ConversationRun.OpenAsync(v1Agent, v1Conversation);
+            await foreach (var _ in v1Run.RunEventsAsync("initial user turn")) { }
+
+            Assert.Equal(2, v1Client.Requests.Count);
+            Assert.Equal(
+                ["native-fixture-v1-result:v1 tool / private dependency 1.0.0.0: native-fixture-v1-agent-loop"],
+                v1Client.NativeToolResults);
+            Assert.All(v1Client.Instructions.Take(2), instructions => Assert.Contains(
+                "native-fixture-v1-before-user", instructions, StringComparison.Ordinal));
+            Assert.Single(v1Run.Conversation.Tree.ActivePath(), node => node.Type == "custom_message" &&
+                node.Payload.GetProperty("piOriginalEntry").GetProperty("customType").GetString() ==
+                "native-fixture-v1-injected");
+
+            await foreach (var _ in v1Run.RunCustomMessageEventsAsync(
+                               new PiSharp.Extensions.Abstractions.PiSharpCustomMessage(
+                                   "native-fixture-v1-external", "custom start turn"), sourcePath: null)) { }
+
+            Assert.Equal(4, v1Client.Requests.Count);
+            Assert.All(v1Client.Instructions.Skip(2), instructions => Assert.Contains(
+                "native-fixture-v1-before-custom:native-fixture-v1-external", instructions,
+                StringComparison.Ordinal));
+            Assert.Single(v1Run.Conversation.Tree.ActivePath(), node => node.Type == "custom_message" &&
+                node.Payload.GetProperty("piOriginalEntry").GetProperty("customType").GetString() ==
+                "native-fixture-v1-injected");
+            Assert.Equal(
+                [
+                    "native-fixture-v1-result:v1 tool / private dependency 1.0.0.0: native-fixture-v1-agent-loop",
+                    "native-fixture-v1-result:v1 tool / private dependency 1.0.0.0: native-fixture-v1-custom-loop"
+                ], v1Client.NativeToolResults);
+            Assert.All(v1Client.Requests, request =>
+            {
+                var lastUserMessage = request.Last(message => message.Role == ChatRole.User);
+                Assert.Contains("[native-fixture-v1-transform]", lastUserMessage.Text, StringComparison.Ordinal);
+                Assert.Equal(1, lastUserMessage.Text.Split("[native-fixture-v1-transform]", StringSplitOptions.None).Length - 1);
+            });
+
+            var v2Roots = await store.ResolveAsync(workingDirectory, trusted: true, userSources: [installedV2]);
+            catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
+                preloaded: catalog, nativeExtensionPackageRoots: v2Roots);
+            Assert.Equal(["native-fixture-send"], catalog.Registration.ContextCommands.Keys);
+            Assert.DoesNotContain(v1Roots[0].Path,
+                catalog.Registration.CommandInfo.Values.Select(info => info.SourceInfo.Path));
+            Assert.DoesNotContain(v1Roots[0].Path,
+                catalog.Registration.BeforeAgentStartHandlers.Select(handler => handler.SourceInfo.Path));
+            var reloadedSendCommand = catalog.Registration.ContextCommands["native-fixture-send"];
+            Assert.Equal("v2 command sent custom", await reloadedSendCommand("custom after reload", commandContext,
+                CancellationToken.None));
+            Assert.Equal("custom:native-fixture-v2-command:after reload:True:Steer", sentMessages[^1]);
+
+            var v2Client = new NativeFixtureHookChatClient();
+            var v2Run = await ConversationRun.OpenAsync(CreateFixtureAgent(v2Client, workingDirectory,
+                    catalog.Registration), new ConversationSession(workingDirectory, "fixture", null));
+            await foreach (var _ in v2Run.RunEventsAsync("reloaded user turn")) { }
+
+            Assert.Equal(2, v2Client.Requests.Count);
+            Assert.Equal(
+                ["native-fixture-v2-result:v2 tool / private dependency 2.0.0.0: native-fixture-v2-agent-loop"],
+                v2Client.NativeToolResults);
+            Assert.All(v2Client.Instructions, instructions =>
+            {
+                Assert.Contains("native-fixture-v2-before-user", instructions, StringComparison.Ordinal);
+                Assert.DoesNotContain("native-fixture-v1-before-user", instructions, StringComparison.Ordinal);
+            });
+            Assert.All(v2Client.NativeToolResults, result => Assert.StartsWith(
+                "native-fixture-v2-result:v2 tool / private dependency 2.0.0.0: native-fixture-v2-", result));
+            Assert.All(v2Client.Requests, request => Assert.Contains("[native-fixture-v2-transform]",
+                request.Last(message => message.Role == ChatRole.User).Text, StringComparison.Ordinal));
+        }
+        finally
+        {
+            catalog.Dispose();
+        }
     }
 
     [Fact]
@@ -202,6 +409,20 @@ public sealed class NativeExtensionCatalogTests
         Assert.Contains("ordinary prompt", Assert.Single(ordinaryClient.Instructions), StringComparison.Ordinal);
     }
 
+    private static PiAgent CreateFixtureAgent(NativeFixtureHookChatClient client, string workingDirectory,
+        ExtensionRegistration registration)
+    {
+        var tool = Assert.Single(registration.ToolDefinitions,
+            definition => definition.Function.Name == "native_fixture_tool");
+        return new PiAgent(client, new CodingTools(workingDirectory), selectedTools: ["native_fixture_tool"],
+            noTools: true, noBuiltinTools: true, extensionToolRegistrations: [tool],
+            systemPrompt: "native fixture test prompt",
+            beforeAgentStartHandlers: registration.BeforeAgentStartHandlers,
+            extensionContextTransforms: registration.ContextTransforms,
+            extensionToolCallHooks: registration.ToolCallHooks,
+            extensionToolResultHooks: registration.ToolResultHooks);
+    }
+
     private static string CreatePackage(string version, string assemblyName, string packageId,
         string fixtureOutput, string outputDirectory)
     {
@@ -229,8 +450,23 @@ public sealed class NativeExtensionCatalogTests
             Path.Combine(fixtureOutput, assemblyName + ".deps.json"));
         AddArchiveFile(archive, "lib/net10.0/NativeExtensionPrivateDependency.dll",
             Path.Combine(fixtureOutput, "NativeExtensionPrivateDependency.dll"));
+        AddArchiveDirectoryFiles(archive, "lib/net10.0/Resources", Path.Combine(fixtureOutput, "Resources"));
         return package;
     }
+
+    private static void AddArchiveDirectoryFiles(ZipArchive archive, string archiveDirectory, string sourceDirectory)
+    {
+        Assert.True(Directory.Exists(sourceDirectory), $"Native extension fixture resources are missing: {sourceDirectory}");
+        foreach (var path in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(sourceDirectory, path).Replace(Path.DirectorySeparatorChar, '/');
+            AddArchiveFile(archive, archiveDirectory + "/" + relative, path);
+        }
+    }
+
+    private static Task<ResourceCatalog> LoadExtensionResourcesAsync(string workingDirectory, string agentDirectory,
+        ExtensionResourceDiscovery discovery) => ResourceCatalog.LoadAsync(workingDirectory, agentDirectory, trusted: false,
+        discoverSkills: false, discoverPrompts: false, extensionResources: discovery);
 
     private static void WriteArchiveText(ZipArchive archive, string name, string content)
     {
@@ -261,6 +497,9 @@ public sealed class NativeExtensionCatalogTests
     {
         var catalog = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
             nativeExtensionPackageRoots: v1Roots);
+        var discovery = catalog.DiscoverResourcesAsync(workingDirectory, ExtensionResourceDiscoveryReason.Startup)
+            .GetAwaiter().GetResult();
+        Assert.Single(discovery.SkillPaths);
         var previousLoadContext = Assert.Single(catalog.NativePackageLoadContextReferences);
 
         var reloaded = ExtensionCatalog.Load(agentDirectory, workingDirectory, projectTrusted: true,
@@ -375,6 +614,47 @@ public sealed class NativeExtensionCatalogTests
                 FinalResponse = "assistant received native extension result";
                 yield return new ChatResponseUpdate(ChatRole.Assistant, FinalResponse);
             }
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class NativeFixtureHookChatClient : IChatClient
+    {
+        public List<ChatMessage[]> Requests { get; } = [];
+        public List<string> Instructions { get; } = [];
+        public List<string> NativeToolResults { get; } = [];
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var request = Requests.Count;
+            Requests.Add(messages.Select(message => message.Clone()).ToArray());
+            Instructions.Add(options?.Instructions ?? "");
+            var turn = request / 2 + 1;
+            var callId = "native-fixture-tool-call-" + turn;
+            if (request % 2 == 0)
+            {
+                var value = turn == 1 ? "agent-loop" : "custom-loop";
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent(callId, "native_fixture_tool",
+                        new Dictionary<string, object?> { ["value"] = value })]);
+            }
+            else
+            {
+                var result = messages.SelectMany(message => message.Contents)
+                    .OfType<FunctionResultContent>().Single(content => content.CallId == callId).Result?.ToString() ?? "";
+                NativeToolResults.Add(result);
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "assistant received " + result);
+            }
+
             await Task.CompletedTask;
         }
 

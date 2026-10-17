@@ -13,5 +13,8 @@
     <ProjectReference Include="../../../src/PiSharp.Extensions.Abstractions/PiSharp.Extensions.Abstractions.csproj" />
     <ProjectReference Include="../NativeExtensionPrivateDependencyV2/NativeExtensionPrivateDependencyV2.csproj" />
     <Compile Include="../NativeExtensionFixture/ExampleExtension.cs" Link="ExampleExtension.cs" />
+    <None Include="../NativeExtensionFixture/Resources/**/*" Link="Resources/%(RecursiveDir)%(Filename)%(Extension)"
+          Pack="true" CopyToOutputDirectory="PreserveNewest"
+          PackagePath="lib/$(TargetFramework)/Resources/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

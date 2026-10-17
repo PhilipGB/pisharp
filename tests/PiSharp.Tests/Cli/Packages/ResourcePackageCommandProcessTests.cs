@@ -4,6 +4,7 @@ using System.Net;
 using System.Text.Json;
 using PiSharp.Cli;
 using PiSharp.Cli.Sessions;
+using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 using PiSharp.Tests.TestInfrastructure;
@@ -89,6 +90,11 @@ public sealed class ResourcePackageCommandProcessTests
             Assert.Contains("pisharp-extension.json", entries);
             Assert.Contains("lib/net10.0/NativeExtensionFixture.deps.json", entries);
             Assert.Contains("lib/net10.0/NativeExtensionPrivateDependency.dll", entries);
+            Assert.Contains("lib/net10.0/Resources/v1/startup/skills/SKILL.md", entries);
+            Assert.Contains("lib/net10.0/Resources/v1/startup/prompts/native-fixture-v1-startup.md", entries);
+            Assert.Contains("lib/net10.0/Resources/v1/themes/native-fixture-v1.json", entries);
+            using var manifest = JsonDocument.Parse(package.GetEntry("pisharp-extension.json")!.Open());
+            Assert.Equal(1, manifest.RootElement.GetProperty("apiVersion").GetInt32());
         }
 
         var installed = await RunAsync(fixture, "install", packagePath);
@@ -105,6 +111,19 @@ public sealed class ResourcePackageCommandProcessTests
         var command = runtime.Extensions.Registration.Commands["native-fixture"];
         var result = await command("from packed package", CancellationToken.None);
         Assert.Equal("v1 command / private dependency 1.0.0.0: from packed package", result);
+        var resourceSource = "extension:" + Path.GetFileNameWithoutExtension(
+            Assert.Single(runtime.Extensions.LoadedExtensions).Path);
+        Assert.Contains(runtime.Resources.Skills, skill => skill.Name == "native-fixture-v1-startup" &&
+            skill.SourceInfo.Source == resourceSource);
+        Assert.Contains(runtime.Resources.Prompts, prompt => prompt.Name == "native-fixture-v1-startup" &&
+            prompt.SourceInfo.Source == resourceSource);
+        var themePath = Assert.Single(runtime.ExtensionResources.ThemePaths);
+        Assert.Equal(resourceSource, themePath.SourceInfo.Source);
+        var themes = new TerminalThemeCatalog(fixture.AgentDirectory, environment: _ => null, trueColorOverride: true,
+            discoverThemes: false, explicitThemePaths: [themePath.Path],
+            explicitThemeBaseDirectory: fixture.ProjectDirectory);
+        Assert.Contains("native-fixture-v1", themes.GetAvailableNames());
+        Assert.Equal("\u001b[38;2;18;52;86m", themes.Load("native-fixture-v1").Fg("mdHeading"));
     }
 
     [Fact]
