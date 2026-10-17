@@ -226,6 +226,88 @@ public sealed class NativeExtensionAgentToolEventTests
     }
 
     [Fact]
+    public async Task AgentEndReportsErrorAfterProviderFailure()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-native-agent-error-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            PiSharpExtensionAgentEndEvent? agentEnd = null;
+            adapter.AddAgentEndHandler((eventData, _, _) =>
+            {
+                agentEnd = eventData;
+                return ValueTask.CompletedTask;
+            });
+            adapter.Close();
+            var agent = new PiAgent(new FailingClient(), new CodingTools(workingDirectory), noBuiltinTools: true,
+                liveExtensionRegistration: registration);
+            var run = await ConversationRun.OpenAsync(agent,
+                new ConversationSession(workingDirectory, "fixture", null), save: _ => Task.CompletedTask,
+                retryPolicy: AgentRunRetryPolicy.None);
+            var events = new List<AgentLifecycleEvent>();
+
+            await foreach (var item in run.RunEventsAsync("provider failure")) events.Add(item);
+
+            Assert.NotNull(agentEnd);
+            Assert.Equal(PiSharpExtensionAgentOutcome.Error, agentEnd.Outcome);
+            Assert.Contains("provider failure", agentEnd.ErrorMessage);
+            Assert.Contains(events, item => item.Type == "turn_failed");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task HostCancellationDuringProviderStreamSettlesAndSuppressesAgentEndObservers()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-native-agent-abort-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        var providerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            PiSharpExtensionAgentEndEvent? agentEnd = null;
+            adapter.AddAgentEndHandler((eventData, _, _) =>
+            {
+                agentEnd = eventData;
+                return ValueTask.CompletedTask;
+            });
+            adapter.Close();
+            var agent = new PiAgent(new WaitingClient(providerStarted), new CodingTools(workingDirectory),
+                noBuiltinTools: true, liveExtensionRegistration: registration);
+            var run = await ConversationRun.OpenAsync(agent,
+                new ConversationSession(workingDirectory, "fixture", null), save: _ => Task.CompletedTask,
+                retryPolicy: AgentRunRetryPolicy.None);
+            using var cancellation = new CancellationTokenSource();
+            var events = new List<AgentLifecycleEvent>();
+            var runTask = Task.Run(async () =>
+            {
+                await foreach (var item in run.RunEventsAsync("abort provider request", cancellation.Token))
+                    events.Add(item);
+            });
+
+            await providerStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            cancellation.Cancel();
+            await runTask.WaitAsync(TimeSpan.FromSeconds(5));
+
+            // Pi emits agent_end for an aborted stream, but PiSharp host cancellation owns the
+            // callback token and can suppress terminal observers to keep cancellation prompt.
+            Assert.Null(agentEnd);
+            Assert.Contains(events, item => item.Type == "turn_interrupted");
+            Assert.Contains(events, item => item.Type == "agent_settled");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task HostCancellationReleasesRunWaitingOnAgentEndObserver()
     {
         var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-native-agent-cancel-" + Guid.NewGuid().ToString("N"));
@@ -380,6 +462,44 @@ public sealed class NativeExtensionAgentToolEventTests
             else
                 yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
             await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class FailingClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "partial");
+            await Task.Yield();
+            throw new InvalidOperationException("provider failure");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class WaitingClient(TaskCompletionSource started) : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            started.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            yield break;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
