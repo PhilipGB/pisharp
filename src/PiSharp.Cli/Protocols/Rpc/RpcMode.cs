@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.AI;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Extensions;
@@ -34,7 +36,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<string, CancellationToken, Task>? validateSwitchSession = null,
     Func<ConversationSession, CancellationToken, Task<string?>>? prepareCloneSession = null,
     Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverCycleModels = null,
-    Func<JsonObject?>? getSystemMessage = null)
+    Func<JsonObject?>? getSystemMessage = null,
+    Func<bool>? getProjectTrusted = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -72,7 +75,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             switchSession is null ? null : StartSwitchSessionAsync,
             getSystemMessage, getApi);
         var commandDiscoveryCommands = new RpcCommandDiscoveryHandler(_writer, () => CurrentResources, () => CurrentExtensions);
-        var promptCommandHandler = new RpcPromptCommandHandler(_writer, () => CurrentExtensions);
+        var promptCommandHandler = new RpcPromptCommandHandler(_writer, () => CurrentExtensions,
+            CreateExtensionCommandContext);
         try
         {
             while (await input.ReadLineAsync(cancellationToken) is { } line)
@@ -423,6 +427,77 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                 await RespondPromptAsync(id, false, error: error.Message);
             }
             else await _writer.EmitAsync(new { type = "error", error = error.Message }, CancellationToken.None);
+        }
+    }
+
+    private PiSharpExtensionCommandContext CreateExtensionCommandContext(string commandName,
+        ExtensionCommandInfo commandInfo)
+    {
+        var run = CurrentRun;
+        return new PiSharpExtensionCommandContext(run.Conversation.WorkingDirectory, !IsActive,
+            getProjectTrusted?.Invoke() ?? false,
+            run.PendingPromptCount > 0,
+            async (prompt, cancellationToken) =>
+            {
+                var currentRun = CurrentRun;
+                var expanded = CurrentResources is { } activeResources
+                    ? await activeResources.ResolveInputAsync(prompt, cancellationToken, ReportResourceErrorAsync)
+                    : prompt;
+                if (currentRun.IsActive)
+                {
+                    if (!currentRun.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
+                        throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
+                    return;
+                }
+                var preflightError = promptPreflight?.Invoke();
+                if (!string.IsNullOrWhiteSpace(preflightError)) throw new InvalidOperationException(preflightError);
+                await StartExtensionRunAsync(token => currentRun.RunUserMessageEventsAsync(
+                    new ChatMessage(ChatRole.User, expanded), expanded, token), cancellationToken);
+            },
+            async (message, triggerTurn, deliveryMode, cancellationToken) =>
+            {
+                var currentRun = CurrentRun;
+                if (!await currentRun.DeliverExtensionCustomMessageAsync(message,
+                    commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
+                await StartExtensionRunAsync(token => currentRun.RunCustomMessageEventsAsync(message,
+                    commandInfo.SourceInfo.Path, token), cancellationToken);
+            });
+    }
+
+    private async Task StartExtensionRunAsync(
+        Func<CancellationToken, IAsyncEnumerable<AgentLifecycleEvent>> getEvents,
+        CancellationToken cancellationToken)
+    {
+        if (_active is { IsCompleted: false } finishing) await finishing.WaitAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        _abort?.Dispose();
+        _abort = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        Volatile.Write(ref _activeSettled, 0);
+        _active = RunExtensionEventsAsync(getEvents, _abort.Token);
+        await _active;
+    }
+
+    private async Task RunExtensionEventsAsync(
+        Func<CancellationToken, IAsyncEnumerable<AgentLifecycleEvent>> getEvents, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Events.RunEventsAsync(CurrentRun, getEvents(cancellationToken), cancellationToken, async item =>
+            {
+                if (item.Type != "agent_settled") return;
+                if (save is not null)
+                {
+                    try { await save(CancellationToken.None); }
+                    catch (Exception error)
+                    { await _writer.EmitAsync(new { type = "error", error = error.Message }, CancellationToken.None); }
+                }
+                Volatile.Write(ref _activeSettled, 1);
+            }, getApi?.Invoke());
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception error)
+        {
+            await _writer.EmitAsync(new { type = "error", error = error.Message }, CancellationToken.None);
         }
     }
 

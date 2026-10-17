@@ -1,11 +1,13 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Protocols;
 
-internal sealed class RpcPromptCommandHandler(JsonLineWriter output, Func<ExtensionRegistration?> extensions)
+internal sealed class RpcPromptCommandHandler(JsonLineWriter output, Func<ExtensionRegistration?> extensions,
+    Func<string, ExtensionCommandInfo, PiSharpExtensionCommandContext>? createCommandContext = null)
 {
     private readonly ConcurrentDictionary<Guid, Operation> _operations = new();
 
@@ -16,7 +18,21 @@ internal sealed class RpcPromptCommandHandler(JsonLineWriter output, Func<Extens
         var name = separator < 0 ? prompt[1..] : prompt[1..separator];
         if (name.Length == 0) return false;
         var activeExtensions = extensions();
-        if (activeExtensions is null || !activeExtensions.Commands.TryGetValue(name, out var handler)) return false;
+        if (activeExtensions is null) return false;
+        Func<CancellationToken, Task<string>> execute;
+        if (activeExtensions.ContextCommands.TryGetValue(name, out var contextHandler))
+        {
+            if (createCommandContext is null || !activeExtensions.CommandInfo.TryGetValue(name, out var info)) return false;
+            var context = createCommandContext(name, info);
+            var contextArguments = separator < 0 ? "" : prompt[(separator + 1)..];
+            execute = token => contextHandler(contextArguments, context, token);
+        }
+        else if (activeExtensions.Commands.TryGetValue(name, out var handler))
+        {
+            var arguments = separator < 0 ? "" : prompt[(separator + 1)..];
+            execute = token => handler(arguments, token);
+        }
+        else return false;
 
         var operation = new Operation(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
         var key = Guid.NewGuid();
@@ -26,8 +42,7 @@ internal sealed class RpcPromptCommandHandler(JsonLineWriter output, Func<Extens
             throw new InvalidOperationException("Could not register the extension command operation.");
         }
 
-        var arguments = separator < 0 ? "" : prompt[(separator + 1)..];
-        _ = ExecuteAsync(key, operation, id, name, arguments, handler);
+        _ = ExecuteAsync(key, operation, id, name, execute);
         return true;
     }
 
@@ -43,12 +58,12 @@ internal sealed class RpcPromptCommandHandler(JsonLineWriter output, Func<Extens
             await Task.WhenAll(operations.Select(operation => operation.Completed.Task));
     }
 
-    private async Task ExecuteAsync(Guid key, Operation operation, JsonElement? id, string name, string arguments,
-        Func<string, CancellationToken, Task<string>> handler)
+    private async Task ExecuteAsync(Guid key, Operation operation, JsonElement? id, string name,
+        Func<CancellationToken, Task<string>> execute)
     {
         try
         {
-            var result = await handler(arguments, operation.Cancellation.Token);
+            var result = await execute(operation.Cancellation.Token);
             if (operation.Cancellation.IsCancellationRequested) return;
             if (!string.IsNullOrEmpty(result))
                 await output.EmitAsync(new

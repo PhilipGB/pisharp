@@ -13,6 +13,21 @@ internal static class PiJsonlEntryCodec
     internal static JsonObject ProjectRuntimeMessage(ConversationSession session, ChatMessage message,
         string? api = null, string? toolName = null, DateTimeOffset? timestamp = null)
     {
+        if (PiSharpCustomMessageProjection.TryRead(message, out var customMessage))
+        {
+            return new JsonObject
+            {
+                ["role"] = "custom",
+                ["customType"] = customMessage.CustomType,
+                ["content"] = new JsonArray
+                {
+                    new JsonObject { ["type"] = "text", ["text"] = customMessage.Content }
+                },
+                ["display"] = customMessage.Display,
+                ["timestamp"] = (timestamp ?? DateTimeOffset.UtcNow).ToUnixTimeMilliseconds()
+            };
+        }
+
         var node = new ConversationNode("rpc", null, "chat", default, timestamp ?? DateTimeOffset.UtcNow);
         var projected = ExportMessage(session, node, message)["message"]!.DeepClone().AsObject();
         if (message.Role == ChatRole.Assistant && MessageProperty(message, "pisharp.api") is null &&
@@ -108,7 +123,15 @@ internal static class PiJsonlEntryCodec
                 $"The following is a summary of a branch that this conversation came back from:\n\n<summary>\n{summary}\n</summary>");
         if (node.Type != "custom_message" || OriginalEntry(node) is not { } custom ||
             !TryProperty(custom, "content", out var content)) return null;
-        return new ChatMessage(ChatRole.User, ReadContent(content));
+        var contentParts = ReadContent(content);
+        var contentText = string.Concat(contentParts.OfType<TextContent>().Select(part => part.Text));
+        var display = !TryProperty(custom, "display", out var displayValue) || displayValue.ValueKind == JsonValueKind.True;
+        return StringProperty(custom, "customType") is { Length: > 0 } customType
+            ? PiSharpCustomMessageProjection.ToChatMessage(new PiSharpCustomMessage(customType, contentText, display)
+            {
+                Source = StringProperty(node.Payload, "source")
+            }, node.Id)
+            : new ChatMessage(ChatRole.User, contentParts);
     }
 
     internal static bool TryGetContextEdit(ConversationNode node, out string targetId, out JsonElement replacement)
@@ -136,6 +159,11 @@ internal static class PiJsonlEntryCodec
         if (node.Type is not ("chat" or "custom_message") || !TryProperty(replacement, "content", out var content)) return message;
         if (node.Type == "chat" && OriginalEntry(node) is { } original && TryProperty(original, "message", out var piMessage))
             return ToChatMessage(piMessage, content);
+        if (node.Type == "custom_message" && PiSharpCustomMessageProjection.TryRead(message, out var customMessage))
+            return PiSharpCustomMessageProjection.ToChatMessage(customMessage with
+            {
+                Content = string.Concat(ReadContent(content).OfType<TextContent>().Select(part => part.Text))
+            }, message.MessageId);
         return new ChatMessage(message.Role, ReadContent(content));
     }
 

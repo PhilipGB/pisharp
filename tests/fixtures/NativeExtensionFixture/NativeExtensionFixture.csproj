@@ -22,6 +22,8 @@
           PackagePath="lib/$(TargetFramework)/" Visible="false" />
     <None Include="$(IntermediateOutputPath)pisharp-extension.json" Pack="true"
           PackagePath="/" Visible="false" />
+    <None Update="Resources/**/*" Pack="true" CopyToOutputDirectory="PreserveNewest"
+          PackagePath="lib/$(TargetFramework)/%(RecursiveDir)%(Filename)%(Extension)" />
     <None Include="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 

@@ -4,9 +4,11 @@ PiSharp loads user extensions from `<agent-dir>/extensions` and loads project ex
 
 Built-in `tool-search` and `codemode` use the same extension catalog. They have `builtin:` source identities and support normal enable/disable rules and explicit `--extension builtin:<name>` selection. `codemode` is registered inactive by default; select it with `--tools` or activate it through the session loadout. It requires Node.js 22.19 or newer; it runs model JavaScript inside bundled QuickJS/WASM in a separate process and exposes only session-callable tools through the shared nested execution path.
 
-## Compiled extension packages
+## Public compiled PiSharp extension API
 
-Third-party compiled extensions reference the lightweight `PiSharp.Extensions.Abstractions` NuGet project. It exposes `IPiSharpExtension.Configure(IPiSharpExtensionBuilder)` for slash commands, `Microsoft.Extensions.AI.AIFunction` tools, and before-agent-start callbacks. The package does not reference PiSharp Runtime or CLI assemblies. The existing in-repository `PiSharp.Runtime.Extensions.IPiSharpExtension` API remains an internal extension surface and is not the external authoring contract.
+Third-party compiled extensions reference only the lightweight `PiSharp.Extensions.Abstractions` NuGet package plus their normal dependencies. Its API v1 contract includes slash commands and `Microsoft.Extensions.AI.AIFunction` tools. The additive runtime bridge also exposes user/custom turn-start data, extension message sending, resource discovery, provider-context transforms, and tool-call/result hooks. Existing API-v1 packages keep their type identities and constructor signatures. Packages do not reference PiSharp Runtime or CLI assemblies.
+
+The compatibility fixture under `tests/fixtures/NativeExtensionApiV1` is compiled against the PR #7 API-v1 contract snapshot, packed as a normal NuGet package, then loaded by the current host in a fresh runtime. It verifies the original command, tool and before-agent-start callbacks. The host continues to share the existing MEAI assembly contract for `AIFunction`; long-term binary compatibility across future MEAI versions remains open.
 
 ```csharp
 using Microsoft.Extensions.AI;
@@ -18,12 +20,79 @@ public sealed class GreetingExtension : IPiSharpExtension
     {
         builder.AddCommand("hello", (name, _) => Task.FromResult("Hello " + name));
         builder.AddTool(AIFunctionFactory.Create((string name) => "Hello " + name, name: "greet"));
-        builder.AddBeforeAgentStartHandler((turn, context, _) =>
-            ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(new(
-                turn.SystemPrompt + "\nWorking directory: " + context.WorkingDirectory)));
+        builder.AddBeforeAgentStartHandler((turn, context, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var startingText = turn.MessageType == PiSharpTurnMessageType.User
+                ? turn.Prompt
+                : turn.StartingCustomMessage?.Content;
+            var imageCount = turn.Images.Count;
+            var systemPrompt = turn.SystemPrompt + $"\nWorking directory: {context.WorkingDirectory}; " +
+                $"starting text length: {startingText?.Length ?? 0}; images: {imageCount}.";
+            return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(new(systemPrompt)
+            {
+                InjectedMessage = new("greeting-context", "The greeting extension is active.", Display: false)
+            });
+        });
+        builder.AddCommand("greet-user", async (_, command, cancellationToken) =>
+        {
+            await command.SendUserMessageAsync("Please greet me.", cancellationToken);
+            return "Submitted a user turn.";
+        });
+        builder.AddCommand("greet-custom", async (_, command, cancellationToken) =>
+        {
+            await command.SendCustomMessageAsync(new("greeting-request", "Please greet the user."),
+                triggerTurn: true, PiSharpMessageDeliveryMode.Steer, cancellationToken);
+            return "Submitted a custom turn.";
+        });
+        builder.AddResourceDiscoveryHandler((context, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var root = Path.Combine(context.WorkingDirectory, ".pi", "greeting-resources");
+            return Task.FromResult<PiSharpResourceDiscoveryResult?>(new(
+                SkillPaths: [Path.Combine(root, "skills")],
+                PromptPaths: [Path.Combine(root, "prompts")],
+                ThemePaths: [Path.Combine(root, "themes")]));
+        });
+        builder.AddContextTransform((messages, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var projected = messages.Select(message => message.Clone()).ToArray();
+            var lastUser = projected.LastOrDefault(message => message.Role == ChatRole.User);
+            if (lastUser is not null)
+            {
+                lastUser.Contents = lastUser.Contents.ToList();
+                lastUser.Contents.Add(new TextContent("Use the greeting extension's guidance."));
+            }
+            return ValueTask.FromResult<IReadOnlyList<ChatMessage>>(projected);
+        });
+        builder.AddToolCallHook((call, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (call.ToolName == "greet") call.Arguments["name"] = "PiSharp user";
+            return ValueTask.FromResult(PiSharpToolCallDecision.Allow);
+        });
+        builder.AddToolResultHook((result, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!result.IsError && result.ToolName == "greet") result.Result = "Greeting completed.";
+            return ValueTask.CompletedTask;
+        });
     }
 }
 ```
+
+`PiSharpBeforeAgentStartEvent.MessageType` distinguishes submitted user turns from custom-message turns. User turns expose the expanded `Prompt` and image metadata (`MediaType` and optional byte length); custom turns expose `StartingCustomMessage` and leave `Prompt` empty. Returning `InjectedMessage` adds one durable custom message after the starting message for that turn. `SystemPrompt` replacement applies only to that turn.
+
+The context-taking `AddCommand` overload provides a small snapshot of working directory, idle/trust state and queued-message state, plus `SendUserMessageAsync` and `SendCustomMessageAsync`. User messages use the normal user-turn path. Custom messages retain their extension source and are persisted as custom messages. The default custom send starts a turn when idle. `triggerTurn: false` appends to idle conversation context without starting a model run; when sent during a run, it waits until the active turn's tool results are recorded, then enters context before any naturally required tool-loop continuation. It does not create an additional model request.
+
+`PiSharpMessageDeliveryMode` and `triggerTurn` control separate behaviors. During an active run, `Steer` and `FollowUp` select the active-run queue when `triggerTurn` is true. `NextTurn` is held aside whether the agent is idle or busy; it does not start a run, and the next actual user or custom run includes its starting message first, followed by the held custom message. An active run keeps ownership of provider execution, so a custom message cannot start a competing provider run. An idle custom message with `triggerTurn: true` starts one normal run whose before-agent-start event identifies the custom starting message, except when the delivery mode is `NextTurn`.
+
+`HasPendingMessages` reports only queued steering/follow-up input, matching Pi. Held `NextTurn` messages and busy context-only messages do not contribute to this flag or the ordinary prompt count and queue display.
+
+Repeated sends with identical type, content, display flag and source remain separate custom-message entries. For context-only messages delivered during tool execution, the session save completes after tool results are recorded and before the continuation provider request sees the messages. A failed save prevents that provider request from being sent.
+
+Resource callbacks return paths to the existing skill, prompt-template and theme catalogs. Context transforms receive the provider-bound MEAI conversation and their output is request-local. Tool-call hooks run before normal binding/execution and can mutate arguments or block a call; result hooks can replace the value and explicit error state. All asynchronous callbacks receive the cancellation token for the run or tool operation that owns them.
 
 Pack the extension as a normal `.nupkg` and include a `pisharp-extension.json` file at the package root. The manifest declares the package identity, extension API version, and every entry assembly and public type explicitly:
 
@@ -60,6 +129,10 @@ Install a local package with `pisharp install ./Example.Greeting.1.0.0.nupkg`. A
 The source path lets `pisharp update --extension Example.Greeting` read a new local package for deterministic offline updates. `pisharp list` shows configured native packages, and `pisharp remove Example.Greeting` removes the selected package. `/reload` re-reads settings and replaces package registrations; a failed package load or configuration produces a warning and leaves the rest of the agent available. A failed update validation retains the prior active package version.
 
 PiSharp does not run Pi TypeScript or JavaScript extension source and does not compile package source at install or startup. Native extension assemblies execute as trusted in-process .NET code with the application's operating-system permissions; a collectible load context supports dependency isolation and reload, not a security sandbox.
+
+## Internal PiSharp extension runtime
+
+The examples below use `PiSharp.Runtime.Extensions.ExtensionRegistration`, which is an internal host surface for built-ins and first-party integrations. External compiled packages use `IPiSharpExtensionBuilder` from `PiSharp.Extensions.Abstractions`; they cannot call `ExtensionRegistration`, Runtime session types, CLI types or services.
 
 ## MCP namespaces in Codemode
 
@@ -211,7 +284,7 @@ registration.AddContextTransform((messages, cancellationToken) =>
 
 Transforms run in registration order after PiSharp projects the conversation and before provider-only repair and image preparation. They also run for follow-up requests in a tool loop and after context-overflow compaction. The host copies messages and text, tool-call, and tool-result content between transforms; other content payloads should be treated as read-only. Transformed messages are used for that provider request and do not enter saved conversation history. Cancellation is passed through, and a transform failure fails the provider request. Transforms are captured when an agent is created, so registering one later does not change existing agents.
 
-## Before an agent turn
+### Internal before-agent-start handler
 
 Use `AddBeforeAgentStartHandler` to inspect the expanded user prompt and replace the
 rendered system prompt for that turn:
@@ -234,9 +307,7 @@ exceptions emit `extension_error` and allow later handlers to run; cancellation
 stops setup. The event also contains image attachments and the live extension
 context.
 
-The current hook covers submitted user prompts. Pi's idle custom-message
-`triggerTurn` flow, handler-injected custom messages, and mutation of individual
-system-prompt options remain unsupported.
+The internal runtime hook distinguishes submitted user prompts from custom-message runs, receives custom-message metadata and user image attachments, and can return a durable injected custom message. The public compiled equivalent is `IPiSharpExtensionBuilder.AddBeforeAgentStartHandler`, documented above. Structured mutation of individual system-prompt options remains deferred.
 
 ## Current boundaries
 

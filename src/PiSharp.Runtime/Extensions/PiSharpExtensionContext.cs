@@ -31,6 +31,7 @@ public sealed class PiSharpExtensionContext
     private readonly Func<ConversationSession?> _getConversation;
     private readonly Func<IReadOnlyList<string>> _getActiveToolNames;
     private readonly Func<bool> _isIdle;
+    private Func<bool> _hasPendingMessages = static () => false;
 
     internal PiSharpExtensionContext(PiSharpExtensionContextConfiguration configuration,
         Func<ConversationSession?> getConversation, Func<IReadOnlyList<string>> getActiveToolNames,
@@ -56,6 +57,13 @@ public sealed class PiSharpExtensionContext
     public string? SessionName => _getConversation()?.Name;
     public string? ConversationHeadId => _getConversation()?.Tree.HeadId;
     public IReadOnlyList<string> ActiveToolNames => _getActiveToolNames();
+    public bool HasPendingMessages => Volatile.Read(ref _hasPendingMessages)();
+
+    internal void SetPendingMessageState(Func<bool> getPendingMessages)
+    {
+        ArgumentNullException.ThrowIfNull(getPendingMessages);
+        Volatile.Write(ref _hasPendingMessages, getPendingMessages);
+    }
 }
 
 /// <summary>Receives a lifecycle event and live extension context at the point the event is emitted.</summary>

@@ -1,11 +1,15 @@
+using Microsoft.Extensions.AI;
+
 namespace PiSharp.Runtime.Sessions;
 
-internal sealed record QueuedPromptBatch(bool IsSteering, IReadOnlyList<string> Messages);
+internal sealed record QueuedPrompt(string Text, ChatMessage Message, bool SkipBeforeAgentStart = false);
+
+internal sealed record QueuedPromptBatch(bool IsSteering, IReadOnlyList<QueuedPrompt> Messages);
 
 internal sealed class PromptDeliveryQueue
 {
-    private readonly Queue<string> _steering = new();
-    private readonly Queue<string> _followUp = new();
+    private readonly Queue<QueuedPrompt> _steering = new();
+    private readonly Queue<QueuedPrompt> _followUp = new();
 
     public PromptDeliveryMode SteeringMode { get; private set; } = PromptDeliveryMode.OneAtATime;
     public PromptDeliveryMode FollowUpMode { get; private set; } = PromptDeliveryMode.OneAtATime;
@@ -15,12 +19,16 @@ internal sealed class PromptDeliveryQueue
 
     public void SetFollowUpMode(PromptDeliveryMode mode) => FollowUpMode = Validate(mode);
 
-    public void Enqueue(string prompt, bool steering)
+    public void Enqueue(string prompt, bool steering) =>
+        Enqueue(new QueuedPrompt(prompt, new ChatMessage(ChatRole.User, prompt)), steering);
+
+    public void Enqueue(QueuedPrompt prompt, bool steering)
     {
         (steering ? _steering : _followUp).Enqueue(prompt);
     }
 
-    public PendingPrompts Snapshot() => new(_steering.ToArray(), _followUp.ToArray());
+    public PendingPrompts Snapshot() => new(_steering.Select(item => item.Text).ToArray(),
+        _followUp.Select(item => item.Text).ToArray());
 
     public PendingPrompts Clear()
     {
@@ -30,7 +38,7 @@ internal sealed class PromptDeliveryQueue
         return pending;
     }
 
-    public IReadOnlyList<string> TakeSteeringForProvider() => Take(_steering, SteeringMode);
+    public IReadOnlyList<QueuedPrompt> TakeSteeringForProvider() => Take(_steering, SteeringMode);
 
     public QueuedPromptBatch? TakeNextBatch()
     {
@@ -39,11 +47,11 @@ internal sealed class PromptDeliveryQueue
         return null;
     }
 
-    private static IReadOnlyList<string> Take(Queue<string> queue, PromptDeliveryMode mode)
+    private static IReadOnlyList<QueuedPrompt> Take(Queue<QueuedPrompt> queue, PromptDeliveryMode mode)
     {
         if (queue.Count == 0) return [];
         var count = mode == PromptDeliveryMode.All ? queue.Count : 1;
-        var messages = new string[count];
+        var messages = new QueuedPrompt[count];
         for (var index = 0; index < count; index++) messages[index] = queue.Dequeue();
         return messages;
     }

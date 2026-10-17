@@ -2,10 +2,13 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Cli.Sessions;
+using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Sessions;
 using PiSharp.Tests.TestInfrastructure;
 
 namespace PiSharp.Tests;
@@ -13,6 +16,37 @@ namespace PiSharp.Tests;
 [Collection("Managed npm subprocesses")]
 public sealed class ResourcePackageCommandProcessTests
 {
+    [Fact]
+    public async Task ExtensionGeneratedCustomTurnResumesInAFreshProcessWithoutReplayingTrigger()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var helperPath = Path.Combine(repositoryRoot, "tests", "fixtures", "SessionResumeProcess", "bin",
+            BuildConfiguration(), "net10.0", "SessionResumeProcess.dll");
+        Assert.True(File.Exists(helperPath), $"Session resume process fixture was not built: {helperPath}");
+        var temporaryRoot = Path.Combine(Path.GetTempPath(), "pisharp-session-process-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temporaryRoot);
+        try
+        {
+            var workingDirectory = Path.Combine(temporaryRoot, "project");
+            Directory.CreateDirectory(workingDirectory);
+            var sessionPath = Path.Combine(temporaryRoot, "sessions", "resume.session.json");
+
+            var created = await RunSessionResumeProcessAsync(helperPath, "create", workingDirectory, sessionPath);
+            Assert.True(created.ExitCode == 0,
+                $"Session creation process failed ({created.ExitCode}):\n{created.Error}\n{created.Output}");
+            Assert.Contains("custom-turn-saved-and-compacted", created.Output);
+
+            var resumed = await RunSessionResumeProcessAsync(helperPath, "resume", workingDirectory, sessionPath);
+            Assert.True(resumed.ExitCode == 0,
+                $"Session resume process failed ({resumed.ExitCode}):\n{resumed.Error}\n{resumed.Output}");
+            Assert.Contains("resumed-without-trigger-replay", resumed.Output);
+        }
+        finally
+        {
+            if (Directory.Exists(temporaryRoot)) Directory.Delete(temporaryRoot, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task NativeNupkgInstallUpdateAndRemovePersistVersionedRootsOffline()
     {
@@ -89,6 +123,11 @@ public sealed class ResourcePackageCommandProcessTests
             Assert.Contains("pisharp-extension.json", entries);
             Assert.Contains("lib/net10.0/NativeExtensionFixture.deps.json", entries);
             Assert.Contains("lib/net10.0/NativeExtensionPrivateDependency.dll", entries);
+            Assert.Contains("lib/net10.0/Resources/v1/startup/skills/SKILL.md", entries);
+            Assert.Contains("lib/net10.0/Resources/v1/startup/prompts/native-fixture-v1-startup.md", entries);
+            Assert.Contains("lib/net10.0/Resources/v1/themes/native-fixture-v1.json", entries);
+            using var manifest = JsonDocument.Parse(package.GetEntry("pisharp-extension.json")!.Open());
+            Assert.Equal(1, manifest.RootElement.GetProperty("apiVersion").GetInt32());
         }
 
         var installed = await RunAsync(fixture, "install", packagePath);
@@ -105,6 +144,63 @@ public sealed class ResourcePackageCommandProcessTests
         var command = runtime.Extensions.Registration.Commands["native-fixture"];
         var result = await command("from packed package", CancellationToken.None);
         Assert.Equal("v1 command / private dependency 1.0.0.0: from packed package", result);
+        var resourceSource = "extension:" + Path.GetFileNameWithoutExtension(
+            Assert.Single(runtime.Extensions.LoadedExtensions).Path);
+        Assert.Contains(runtime.Resources.Skills, skill => skill.Name == "native-fixture-v1-startup" &&
+            skill.SourceInfo.Source == resourceSource);
+        Assert.Contains(runtime.Resources.Prompts, prompt => prompt.Name == "native-fixture-v1-startup" &&
+            prompt.SourceInfo.Source == resourceSource);
+        var themePath = Assert.Single(runtime.ExtensionResources.ThemePaths);
+        Assert.Equal(resourceSource, themePath.SourceInfo.Source);
+        var themes = new TerminalThemeCatalog(fixture.AgentDirectory, environment: _ => null, trueColorOverride: true,
+            discoverThemes: false, explicitThemePaths: [themePath.Path],
+            explicitThemeBaseDirectory: fixture.ProjectDirectory);
+        Assert.Contains("native-fixture-v1", themes.GetAvailableNames());
+        Assert.Equal("\u001b[38;2;18;52;86m", themes.Load("native-fixture-v1").Fg("mdHeading"));
+    }
+
+    [Fact]
+    public async Task ExternalPackageCompiledAgainstPr7ApiV1LoadsAndRunsWithTheAdditiveHost()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var packagePath = await PackApiV1NativeFixtureAsync(Path.Combine(fixture.Root, "api-v1-fixture"));
+
+        using (var package = ZipFile.OpenRead(packagePath))
+        {
+            var entries = package.Entries.Select(entry => entry.FullName).ToHashSet(StringComparer.Ordinal);
+            Assert.Contains("pisharp-extension.json", entries);
+            Assert.Contains("lib/net10.0/NativeExtensionApiV1Fixture.dll", entries);
+            Assert.DoesNotContain("lib/net10.0/PiSharp.Extensions.Abstractions.dll", entries);
+            using var manifest = JsonDocument.Parse(package.GetEntry("pisharp-extension.json")!.Open());
+            Assert.Equal(1, manifest.RootElement.GetProperty("apiVersion").GetInt32());
+        }
+
+        var installed = await RunAsync(fixture, "install", packagePath);
+        Assert.Equal(0, installed.ExitCode);
+        using var configuration = await ProjectRuntimeConfiguration.LoadAsync(fixture.ProjectDirectory,
+            fixture.AgentDirectory, CliArguments.Parse([]), new ProjectTrust(fixture.AgentDirectory),
+            interactiveTrust: false, TextReader.Null, TextWriter.Null, trustedOverride: false);
+        using var runtime = await ProjectRuntimeContext.LoadAsync(configuration, fixture.AgentDirectory,
+            CliArguments.Parse([]), configuredSessionDirectory: null);
+
+        Assert.Equal("api-v1 command: still compatible",
+            await runtime.Extensions.Registration.Commands["api-v1-legacy"]("still compatible", CancellationToken.None));
+        var tool = Assert.Single(runtime.Extensions.Registration.ToolDefinitions,
+            definition => definition.Function.Name == "api_v1_legacy_tool");
+        var toolResult = await tool.Function.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?>
+        {
+            ["value"] = "works"
+        }));
+        Assert.Equal("api-v1 tool: works", toolResult?.ToString());
+
+        var handler = Assert.Single(runtime.Extensions.Registration.BeforeAgentStartHandlers);
+        var context = new PiSharpExtensionContext(new PiSharpExtensionContextConfiguration(
+                fixture.ProjectDirectory, "test", HasUserInterface: false, IsProjectTrusted: true,
+                new EmptyExtensionUi()), static () => null, static () => Array.Empty<string>(), static () => true);
+        var result = await handler.Handler(new PiSharpBeforeAgentStartEvent("old prompt", [], "base prompt"),
+            context, CancellationToken.None);
+        Assert.Equal("base prompt\napi-v1 before-agent-start: old prompt", result?.SystemPrompt);
     }
 
     [Fact]
@@ -583,6 +679,34 @@ public sealed class ResourcePackageCommandProcessTests
         return (process.ExitCode, await output, await error);
     }
 
+    private static async Task<(int ExitCode, string Output, string Error)> RunSessionResumeProcessAsync(
+        string helperPath, string mode, string workingDirectory, string sessionPath)
+    {
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add(helperPath);
+        start.ArgumentList.Add(mode);
+        start.ArgumentList.Add(workingDirectory);
+        start.ArgumentList.Add(sessionPath);
+        using var process = Process.Start(start) ?? throw new IOException("Could not start session resume fixture.");
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30)); }
+        catch
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { }
+            catch (System.ComponentModel.Win32Exception) { }
+            await process.WaitForExitAsync();
+            throw;
+        }
+        return (process.ExitCode, await output, await error);
+    }
+
     private static async Task<string> PackExternalNativeFixtureAsync(string outputDirectory)
     {
         Directory.CreateDirectory(outputDirectory);
@@ -620,6 +744,45 @@ public sealed class ResourcePackageCommandProcessTests
 
         var packagePath = Path.Combine(outputDirectory, "PiSharp.TestExtensions.NativeFixture.1.0.0.nupkg");
         if (!File.Exists(packagePath)) throw new FileNotFoundException("dotnet pack did not create the native fixture package.", packagePath);
+        return packagePath;
+    }
+
+    private static async Task<string> PackApiV1NativeFixtureAsync(string outputDirectory)
+    {
+        Directory.CreateDirectory(outputDirectory);
+        var repositoryRoot = FindRepositoryRoot();
+        var projectPath = Path.Combine(repositoryRoot, "tests", "fixtures", "NativeExtensionApiV1",
+            "Extension", "NativeExtensionApiV1.csproj");
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = repositoryRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        foreach (var argument in new[]
+        {
+            "pack", projectPath, "--configuration", BuildConfiguration(), "--output", outputDirectory,
+            "--nologo", "--disable-build-servers", "-p:NuGetAudit=false", "-p:RestoreIgnoreFailedSources=true"
+        }) start.ArgumentList.Add(argument);
+        using var process = Process.Start(start) ?? throw new IOException("Could not start API-v1 dotnet pack.");
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(90)); }
+        catch
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { }
+            catch (System.ComponentModel.Win32Exception) { }
+            await process.WaitForExitAsync();
+            throw;
+        }
+        var stdout = await output;
+        var stderr = await error;
+        if (process.ExitCode != 0)
+            throw new InvalidOperationException($"API-v1 dotnet pack failed with exit code {process.ExitCode}:\n{stderr}\n{stdout}");
+
+        var packagePath = Path.Combine(outputDirectory, "PiSharp.TestExtensions.NativeApiV1Fixture.1.0.0.nupkg");
+        if (!File.Exists(packagePath)) throw new FileNotFoundException("dotnet pack did not create the API-v1 fixture package.", packagePath);
         return packagePath;
     }
 
@@ -813,5 +976,19 @@ public sealed class ResourcePackageCommandProcessTests
             catch (HttpListenerException) { }
             _shutdown.Dispose();
         }
+    }
+
+    private sealed class EmptyExtensionUi : IPiSharpExtensionUi
+    {
+        public Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
+            CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+
+        public Task<bool> ConfirmAsync(string title, string message,
+            CancellationToken cancellationToken = default) => Task.FromResult(false);
+
+        public Task<string?> InputAsync(string title, string? placeholder = null,
+            CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+
+        public void Notify(string message, string type = "info") { }
     }
 }

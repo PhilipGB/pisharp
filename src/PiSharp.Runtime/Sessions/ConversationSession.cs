@@ -158,8 +158,43 @@ public sealed class ConversationSession
     public void Append(ChatMessage message)
         => Append(message, null);
 
-    internal void Append(ChatMessage message, PiSharpNestedToolCalls? nestedToolCalls) =>
+    internal void Append(ChatMessage message, PiSharpNestedToolCalls? nestedToolCalls)
+    {
+        if (PiSharpCustomMessageProjection.TryRead(message, out var customMessage))
+        {
+            message.MessageId = AppendCustomMessage(customMessage).Id;
+            return;
+        }
         Tree.Append("chat", ConversationMessageCodec.EncodeMessage(message, nestedToolCalls));
+    }
+
+    internal ConversationNode AppendCustomMessage(PiSharpCustomMessage message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentException.ThrowIfNullOrWhiteSpace(message.CustomType);
+        ArgumentNullException.ThrowIfNull(message.Content);
+
+        var timestamp = DateTimeOffset.UtcNow;
+        var timestampUnixMilliseconds = timestamp.ToUnixTimeMilliseconds();
+        var content = new[] { new { type = "text", text = message.Content } };
+        var piEntry = JsonSerializer.SerializeToElement(new
+        {
+            type = "custom_message",
+            customType = message.CustomType,
+            content,
+            display = message.Display,
+            timestamp = timestampUnixMilliseconds
+        });
+        var payload = JsonSerializer.SerializeToElement(new
+        {
+            customType = message.CustomType,
+            content,
+            display = message.Display,
+            source = message.Source,
+            piOriginalEntry = piEntry
+        });
+        return Tree.Append("custom_message", payload, timestamp);
+    }
 
     /// <summary>Returns the active branch's last persisted declaration set, if one exists.</summary>
     internal IReadOnlyList<string>? ActiveToolLoadout()

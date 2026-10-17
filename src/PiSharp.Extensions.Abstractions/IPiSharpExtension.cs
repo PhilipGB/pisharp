@@ -16,21 +16,60 @@ public interface IPiSharpExtensionBuilder
     void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler,
         string? description = null);
 
+    /// <summary>Registers a command that can submit user or custom messages through its live host context.</summary>
+    void AddCommand(string name, PiSharpExtensionCommandHandler handler, string? description = null);
+
     /// <summary>Registers an AI function tool available to the agent.</summary>
     void AddTool(AIFunction tool);
 
     /// <summary>Registers a callback that can update the system prompt before an agent turn.</summary>
     void AddBeforeAgentStartHandler(PiSharpBeforeAgentStartHandler handler);
+
+    /// <summary>Registers a transform applied to each provider-bound conversation request.</summary>
+    void AddContextTransform(PiSharpContextTransform transform);
+
+    /// <summary>Registers an ordered hook before model-issued and nested tool calls.</summary>
+    void AddToolCallHook(PiSharpToolCallHook hook);
+
+    /// <summary>Registers an ordered hook after model-issued and nested tool calls.</summary>
+    void AddToolResultHook(PiSharpToolResultHook hook);
+
+    /// <summary>Registers resource paths discovered at startup and after reload.</summary>
+    void AddResourceDiscoveryHandler(PiSharpResourceDiscoveryHandler handler);
 }
 
 /// <summary>Prompt information supplied immediately before the agent begins a user turn.</summary>
-public sealed record PiSharpBeforeAgentStartEvent(string Prompt, string SystemPrompt);
+public sealed record PiSharpBeforeAgentStartEvent(string Prompt, string SystemPrompt)
+{
+    /// <summary>Identifies whether this run starts from user input or an extension custom message.</summary>
+    public PiSharpTurnMessageType MessageType { get; init; } = PiSharpTurnMessageType.User;
+
+    /// <summary>The original custom message when <see cref="MessageType"/> is <see cref="PiSharpTurnMessageType.Custom"/>.</summary>
+    public PiSharpCustomMessage? StartingCustomMessage { get; init; }
+
+    /// <summary>Read-only image metadata attached to a user turn.</summary>
+    public IReadOnlyList<PiSharpImageAttachment> Images { get; init; } = Array.Empty<PiSharpImageAttachment>();
+}
 
 /// <summary>A change returned by a before-agent-start callback.</summary>
-public sealed record PiSharpBeforeAgentStartResult(string? SystemPrompt = null);
+public sealed record PiSharpBeforeAgentStartResult(string? SystemPrompt = null)
+{
+    /// <summary>Injects one custom message after the message that starts the run.</summary>
+    public PiSharpCustomMessage? InjectedMessage { get; init; }
+}
 
 /// <summary>The small amount of live host context available to a lifecycle callback.</summary>
-public sealed record PiSharpExtensionContext(string WorkingDirectory);
+public sealed record PiSharpExtensionContext(string WorkingDirectory)
+{
+    /// <summary>Whether the host is idle when this callback starts.</summary>
+    public bool IsIdle { get; init; }
+
+    /// <summary>Whether project-local native extensions are trusted in this working directory.</summary>
+    public bool IsProjectTrusted { get; init; }
+
+    /// <summary>Whether ordinary steering or follow-up messages are queued; excludes held NextTurn and context-only messages.</summary>
+    public bool HasPendingMessages { get; init; }
+}
 
 /// <summary>Updates prompt context before a user turn is sent to the agent.</summary>
 public delegate ValueTask<PiSharpBeforeAgentStartResult?> PiSharpBeforeAgentStartHandler(

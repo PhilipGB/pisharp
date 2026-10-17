@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Cli.Composition;
 using PiSharp.Cli.Sessions;
 using PiSharp.Cli.Startup;
@@ -68,6 +69,34 @@ internal static class InteractiveMode
             });
         Task RunAsync(string input, IReadOnlyList<DataContent>? images = null) =>
             execution.RunAsync(input, images, applicationActions.HandleAsync);
+
+        PiSharpExtensionCommandContext CreateExtensionCommandContext(ExtensionCommandInfo commandInfo)
+        {
+            var run = conversationBinding.Run;
+            return new PiSharpExtensionCommandContext(projectBinding.WorkingDirectory, !run.IsActive,
+                projectBinding.Trusted, run.PendingPromptCount > 0,
+                async (text, cancellationToken) =>
+                {
+                    if (run.IsActive)
+                    {
+                        var expanded = await projectBinding.Resources.ResolveInputAsync(text, cancellationToken,
+                            error => Console.Error.WriteLineAsync($"Extension error ({error.ExtensionPath}): {error.Error}"));
+                        if (!run.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
+                            throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
+                        return;
+                    }
+                    await execution.RunAsync(text, handleApplicationAction: applicationActions.HandleAsync,
+                        cancellationToken: cancellationToken);
+                },
+                async (message, triggerTurn, deliveryMode, cancellationToken) =>
+                {
+                    var currentRun = conversationBinding.Run;
+                    if (!await currentRun.DeliverExtensionCustomMessageAsync(message,
+                        commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
+                    await execution.RunCustomMessageAsync(message, commandInfo.SourceInfo.Path,
+                        applicationActions.HandleAsync, cancellationToken);
+                });
+        }
 
         if (!string.IsNullOrWhiteSpace(prompt) || (projectBinding.Arguments.FileArguments?.Count ?? 0) > 0)
         {
@@ -197,7 +226,8 @@ internal static class InteractiveMode
                                     () => extensionLease.Current.Registration, text => RunAsync(text), editor, terminalScreen,
                                     HandleEditorApplicationAction, ReloadResources,
                                     projectBinding.Runtime.GetMcpManagementSnapshot,
-                                    () => projectBinding.Settings.SkillCommandsEnabled);
+                                    () => projectBinding.Settings.SkillCommandsEnabled,
+                                    CreateExtensionCommandContext);
                                 break;
                         }
                     }

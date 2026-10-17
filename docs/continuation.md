@@ -1,5 +1,86 @@
 # Continuation — PiSharp capability parity
 
+## Native extension public runtime bridge — 2026-10-17
+
+The bounded native extension runtime bridge is implemented on branch
+`milestone/native-extension-runtime-bridge`, based on `main`
+`5de6aac534ea1548f28f63999c81addcc8189f48`. Product source is
+`6019c32cdcc65a2c17d59a8842d09f67c5f9526d`; configured Pi remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Draft PR #8 is open. Both exact-head
+push and PR merge-result Linux CI pass, including the `test` and
+`mcp-conformance` jobs ([push run 38991202559](https://github.com/PhilipGB/pisharp/actions/runs/38991202559),
+[PR run 38991226901](https://github.com/PhilipGB/pisharp/actions/runs/38991226901)). See the
+[milestone receipt](parity/fixtures/native-extension-runtime-bridge-2026-10-17.md).
+
+The public compiled API now bridges turn-start discrimination and image
+metadata, extension user/custom message delivery, injected custom messages,
+resource discovery, provider context transforms, and tool-call/result hooks
+onto the existing runtime. The PR #7 API-v1 contract fixture is packed and
+loaded by the additive host. A deterministic external-package workflow checks
+the hook/tool loop, resource changes, replacement, removal, persistence and
+resume behavior. Acceptance hardening at `103222187a2973dbd324b899bea3ca53586c41f2`
+adds automatic-retry and pending-context regressions, plus a separate-process
+save/compact/resume/follow-up check that verifies a custom trigger is not
+replayed. Active custom trigger messages join the owned queue during setup or
+provider execution; cancellation and failure settle for a later ordinary
+prompt. Full local verification passes **2,200/2,200** .NET tests with zero
+skips, architecture **7/7**, Node **24/24**, Python **50/50**, and docs
+validation (**137 documents, 530 references**). MCP conformance has no new
+regressions; its eight classified baseline failures remain.
+
+The acceptance source passes exact-head push CI and PR merge-result CI
+([push run 38993113554](https://github.com/PhilipGB/pisharp/actions/runs/38993113554),
+[PR run 38993115988](https://github.com/PhilipGB/pisharp/actions/runs/38993115988)).
+
+Review follow-up: pinned Pi keeps `NextTurn` separate from both active-run
+steering/follow-up and `triggerTurn: false` context insertion. The correction
+now stages next-turn messages after the next run's starting message and defers
+busy context-only messages until tool results are recorded. They are inserted
+before the next provider request in a natural tool-loop continuation, without
+creating a request of their own. Three regressions cover busy/idle behavior and
+the tool-loop continuation; the idle `triggerTurn: false` test now uses the
+same public delivery path as TUI and RPC. Focused extension tests pass 15/15,
+format and warnings-as-errors build pass, the full suite passes 2,204/2,204
+with zero skips, Node passes 24/24, Python passes 50/50, and docs paths verify
+137 documents / 531 references. MCP conformance reports no regressions from
+the classified baseline. Exact-head push and PR merge-result CI pass on
+`5f71e6b0`
+([push run 39023995009](https://github.com/PhilipGB/pisharp/actions/runs/39023995009),
+[PR run 39023997847](https://github.com/PhilipGB/pisharp/actions/runs/39023997847));
+both confirm 2,204/2,204 .NET tests and MCP conformance. See the updated [native
+extension bridge receipt](parity/fixtures/native-extension-runtime-bridge-2026-10-17.md).
+
+The occurrence/persistence review correction assigns custom messages their
+canonical entry IDs, preserves those IDs through request snapshots and session
+restoration, and awaits the context-only message save before provider dispatch.
+Identical sends stay distinct while a cloned snapshot of the same occurrence
+is reconciled once. Eight additional regressions cover repeated messages in a
+real tool loop, a blocked save followed by disk recovery before run completion,
+streaming/non-streaming snapshots and failed-save dispatch prevention. The
+combined focused delivery/turn-start suite passes 23/23. The recovery fixture
+loads the saved file into an independent runtime while the original provider
+continuation is held; it does not kill the process.
+Final local verification passes the complete .NET suite (2,212/2,212, zero
+skipped), format verification, a zero-warning build, and documentation paths
+(137 documents / 531 references).
+
+The pending-state expansion at `a2ad5783` is superseded by a pinned-source
+audit. Pi's extension `hasPendingMessages` uses `pendingMessageCount`, which
+counts only steering/follow-up messages. Public callbacks and TUI/RPC commands
+therefore use the ordinary prompt count again. Held `NextTurn` and busy
+context-only messages retain their separate queues and do not set the public
+flag. Six held-message cases now assert false, and the positive setup test
+covers both steering and follow-up queues. The focused suite passes 40/40;
+format, a zero-warning build and docs validation pass. Full-suite validation
+uses final exact-head CI. See the milestone receipt for source references and
+scope.
+
+This completes only the bounded native runtime bridge milestone. The broad
+extension API and orchestration capability remain `in_progress`; there is no
+global parity promotion. Per-session state, settings, UI/keybindings, provider
+registration, structured prompt-option mutation and long-term MEAI binary
+compatibility remain open.
+
 ## Resources / Packages / Extensions resume — 2026-10-16
 
 The user resumed this milestone after PR #5 merged. Work is on

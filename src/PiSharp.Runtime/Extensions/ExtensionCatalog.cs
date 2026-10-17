@@ -28,7 +28,9 @@ public sealed record ExtensionConflictDiagnostic(string Path, string Error);
 public sealed record ExtensionLoadWarning(string Path, string Warning);
 
 internal sealed record RegisteredExtensionCommand(string Name,
-    Func<string, CancellationToken, Task<string>> Handler, ExtensionCommandInfo Info);
+    Func<string, CancellationToken, Task<string>>? Handler,
+    PiSharp.Extensions.Abstractions.PiSharpExtensionCommandHandler? ContextHandler,
+    ExtensionCommandInfo Info);
 
 internal sealed record RegisteredExtensionTool(PiSharpToolRegistration Definition,
     ResourceSourceInfo SourceInfo, PiSharpToolRenderer? Renderer);
@@ -81,7 +83,11 @@ public sealed partial class ExtensionRegistration
         get { lock (_toolGate) return new Dictionary<string, PiSharpToolRenderer>(_toolRenderers, StringComparer.Ordinal); }
     }
     public IReadOnlyDictionary<string, Func<string, CancellationToken, Task<string>>> Commands => ResolveCommands()
-        .ToDictionary(entry => entry.Name, entry => entry.Command.Handler, StringComparer.Ordinal);
+        .Where(entry => entry.Command.Handler is not null)
+        .ToDictionary(entry => entry.Name, entry => entry.Command.Handler!, StringComparer.Ordinal);
+    public IReadOnlyDictionary<string, PiSharp.Extensions.Abstractions.PiSharpExtensionCommandHandler> ContextCommands =>
+        ResolveCommands().Where(entry => entry.Command.ContextHandler is not null)
+            .ToDictionary(entry => entry.Name, entry => entry.Command.ContextHandler!, StringComparer.Ordinal);
     public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => ResolveCommands()
         .ToDictionary(entry => entry.Name, entry => entry.Command.Info, StringComparer.Ordinal);
     public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers.Select(entry => entry.Handler).ToArray();
@@ -388,7 +394,23 @@ public sealed partial class ExtensionRegistration
         var sourceInfo = _currentSourceInfo ?? SourceInfoFromHandler(handler);
         if (s_reserved.Contains(name))
             throw new ArgumentException($"Reserved extension command: {name}");
-        var replacement = new RegisteredExtensionCommand(name, handler, new(description, sourceInfo));
+        var replacement = new RegisteredExtensionCommand(name, handler, null, new(description, sourceInfo));
+        var ownedCommand = _commands.FindIndex(command => command.Name == name &&
+            command.Info.SourceInfo.Path == sourceInfo.Path);
+        if (ownedCommand >= 0) _commands[ownedCommand] = replacement;
+        else _commands.Add(replacement);
+    }
+
+    internal void AddContextCommand(string name,
+        PiSharp.Extensions.Abstractions.PiSharpExtensionCommandHandler handler, string? description)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        if (string.IsNullOrWhiteSpace(name) || !name.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_'))
+            throw new ArgumentException("Extension command names must be alphanumeric, '_' or '-'.", nameof(name));
+        var sourceInfo = _currentSourceInfo ?? SourceInfoFromHandler(handler);
+        if (s_reserved.Contains(name))
+            throw new ArgumentException($"Reserved extension command: {name}");
+        var replacement = new RegisteredExtensionCommand(name, null, handler, new(description, sourceInfo));
         var ownedCommand = _commands.FindIndex(command => command.Name == name &&
             command.Info.SourceInfo.Path == sourceInfo.Path);
         if (ownedCommand >= 0) _commands[ownedCommand] = replacement;
@@ -396,6 +418,8 @@ public sealed partial class ExtensionRegistration
     }
 
     internal void SetCurrentSourceInfo(ResourceSourceInfo? sourceInfo) => _currentSourceInfo = sourceInfo;
+
+    internal ResourceSourceInfo? CurrentSourceInfo => _currentSourceInfo;
 
     public void SetToolDefaultActive(string name, bool active)
     {

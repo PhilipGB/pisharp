@@ -1,6 +1,7 @@
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
+using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Cli.Tui;
 
@@ -9,7 +10,8 @@ internal static class InteractiveResourceCommands
     public static async Task ExecuteAsync(string command, string argument, string line, Func<ResourceCatalog> getResources,
         Func<ExtensionRegistration> getExtensions, Func<string, Task> run, TerminalEditor? editor, TerminalScreen? screen,
         Func<string, Task> applicationAction, Func<Task> reload,
-        Func<IReadOnlyList<McpServerManagementInfo>> getMcpServers, Func<bool>? skillCommandsEnabled = null)
+        Func<IReadOnlyList<McpServerManagementInfo>> getMcpServers, Func<bool>? skillCommandsEnabled = null,
+        Func<ExtensionCommandInfo, PiSharpExtensionCommandContext>? createCommandContext = null)
     {
         if (command.StartsWith("/skill:", StringComparison.Ordinal))
         {
@@ -17,6 +19,15 @@ internal static class InteractiveResourceCommands
             else Console.Error.WriteLine("Skill commands are disabled. Enable them in /settings.");
         }
         else if (getResources().Prompts.Any(item => "/" + item.Name == command)) await run(line);
+        else if (getExtensions().ContextCommands.TryGetValue(command[1..], out var contextHandler))
+        {
+            var extensions = getExtensions();
+            if (createCommandContext is null || !extensions.CommandInfo.TryGetValue(command[1..], out var info))
+                throw new InvalidOperationException($"Extension command {command} requires a host command context.");
+            using var cancellation = new CancellationTokenSource();
+            var result = await contextHandler(argument, createCommandContext(info), cancellation.Token);
+            if (!string.IsNullOrEmpty(result)) Console.WriteLine(result);
+        }
         else if (getExtensions().Commands.TryGetValue(command[1..], out var handler))
         {
             var arguments = argument.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

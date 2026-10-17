@@ -18,14 +18,15 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? transformContext = null,
     Func<IReadOnlyList<ChatMessage>, ChatOptions, System.Text.Json.JsonElement?>? projectToolTranscript = null,
     Func<string?>? getSystemInstructions = null,
-    Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null)
+    Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null,
+    Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         publish(new("model_request_started"));
-        var original = WithSteering(messages).ToArray();
+        var original = WithSteering(await WithContextMessagesAsync(messages, cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
@@ -72,7 +73,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         publish(new("model_request_started"));
-        var original = WithSteering(messages).ToArray();
+        var original = WithSteering(await WithContextMessagesAsync(messages, cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
@@ -460,6 +461,25 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             return messages;
         }
         return messages.Concat(steering);
+    }
+
+    private async Task<IEnumerable<ChatMessage>> WithContextMessagesAsync(IEnumerable<ChatMessage> messages,
+        CancellationToken cancellationToken)
+    {
+        var contextMessages = takeContextMessagesForRequestAsync is null ? [] :
+            await takeContextMessagesForRequestAsync(cancellationToken);
+        if (contextMessages.Count == 0) return messages;
+
+        var combined = messages.ToList();
+        foreach (var contextMessage in contextMessages)
+        {
+            // Canonical entry IDs survive MAF message cloning. Equal content can describe
+            // different occurrences, so only the same entry is already represented here.
+            if (!combined.Any(existing => ReferenceEquals(existing, contextMessage) ||
+                    contextMessage.MessageId is { Length: > 0 } entryId && existing.MessageId == entryId))
+                combined.Add(contextMessage);
+        }
+        return combined;
     }
 
     private ChatOptions? ApplyCurrentToolLoadout(ChatOptions? options)

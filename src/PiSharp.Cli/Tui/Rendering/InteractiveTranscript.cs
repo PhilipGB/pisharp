@@ -40,6 +40,8 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
             {
                 if (message.Role == ChatRole.User)
                 {
+                    if (PiSharpCustomMessageProjection.TryRead(message, out var customMessage) &&
+                        !customMessage.Display) continue;
                     if (assistantTextNeedsTurnSeparator) target.Output.WriteLine();
                     assistantTextNeedsTurnSeparator = false;
                     target.AppendUserMessage(MessageText(message), message.Contents.OfType<DataContent>().ToArray());
@@ -135,6 +137,9 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 _lastFinishReason = update.ProviderFinishReason;
                 break;
             case "prompt_accepted" when interactive && screen is not null:
+                if (update.PromptMessage is { } promptMessage &&
+                    PiSharpCustomMessageProjection.TryRead(promptMessage, out var customMessage) &&
+                    !customMessage.Display) break;
                 screen.AppendUserMessage(Safe(update.Text ?? ""), update.Images);
                 break;
             case "model_text_delta" when !string.IsNullOrEmpty(update.Text):
