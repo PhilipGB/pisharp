@@ -20,6 +20,7 @@ internal static class ConversationStartup
         var userSettings = projectBinding.Settings;
         var store = projectBinding.Store;
         var selection = initialModel.Selection;
+        var initialSelection = selection;
         var thinking = initialModel.Thinking;
         var chat = initialModel.Chat;
         var agent = initialModel.Agent;
@@ -53,6 +54,9 @@ internal static class ConversationStartup
             if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
             var initialPath = sessionPath;
             conversationRun = await runComposition.OpenAsync(modelBinding, agent, conversation, initialPath);
+            if (startupModel.RebuildRuntime)
+                await PiSharpExtensionSelectionEvents.PublishRestoreAsync(agent, initialSelection, selection,
+                    CancellationToken.None).ConfigureAwait(false);
             await ExtensionSessionLifecycleHost.NotifyStartAsync(conversationRun, startupConversation.StartReason);
             await projectRuntime.DiscoverExtensionResourcesAsync(agentDirectory, cli,
                 ExtensionResourceDiscoveryReason.Startup);

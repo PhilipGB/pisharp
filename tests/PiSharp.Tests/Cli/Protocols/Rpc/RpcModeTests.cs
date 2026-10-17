@@ -530,6 +530,43 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task CycleModelUsesTheCycleSelectionTransition()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-one", "http://fixture.test/v1", "fixture");
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(Path.GetTempPath())), session);
+        var setCalled = false;
+        var cycleCalled = false;
+        var nextModel = new ModelDescriptor("fixture-two", "fixture", 8192, "configured", Provider: "fixture");
+        var service = new RpcMode(new CommandReader(channel.Reader), output, run,
+            discoverCycleModels: (_, _) => Task.FromResult<IReadOnlyList<ModelDescriptor>>(
+                [new ModelDescriptor("fixture-one", "fixture", 8192, "configured", Provider: "fixture"), nextModel]),
+            setModel: (model, _) =>
+            {
+                setCalled = true;
+                return Task.FromResult(model);
+            },
+            cycleModel: (model, _) =>
+            {
+                cycleCalled = true;
+                return Task.FromResult(model);
+            });
+        var serving = service.ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"cycle-source\",\"type\":\"cycle_model\"}");
+        await WaitForAsync(output, "\"id\":\"cycle-source\"");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(cycleCalled);
+        Assert.False(setCalled);
+        using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+            line.Contains("\"id\":\"cycle-source\"", StringComparison.Ordinal)));
+        Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("fixture-two", response.RootElement.GetProperty("data").GetProperty("model").GetProperty("id").GetString());
+    }
+
+    [Fact]
     public async Task SetThinkingLevelIsAcceptedDuringAnActiveRunAndEmitsBeforeItsResponse()
     {
         var channel = Channel.CreateUnbounded<string>();

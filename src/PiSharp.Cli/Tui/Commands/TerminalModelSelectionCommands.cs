@@ -1,4 +1,5 @@
 using PiSharp.Cli.Composition;
+using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Cli.Tui;
 
@@ -24,7 +25,8 @@ internal sealed class TerminalModelSelectionCommands(ProviderModelRuntime modelR
         var picked = await _picker.ShowAsync(modelBinding.Selection);
         if (picked is null) return;
         var nextThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(picked.Selection, modelBinding.Thinking);
-        await modelTransitions.ApplySelectionAsync(picked.Selection, nextThinking);
+        await modelTransitions.ApplySelectionAsync(picked.Selection, nextThinking,
+            PiSharpExtensionModelSelectionSource.Set);
         if (picked.PersistAsDefault)
         {
             await settingsCommands.SaveSettingAsync(projectScope: false, "defaultProvider", modelBinding.Selection.Provider.Id);
@@ -39,7 +41,7 @@ internal sealed class TerminalModelSelectionCommands(ProviderModelRuntime modelR
     {
         var nextThinking = _navigation.NextThinkingLevel(modelBinding.Selection, modelBinding.Thinking);
         if (nextThinking is null) return;
-        await modelTransitions.ReplaceAsync(modelBinding.Selection, nextThinking, recordModelChange: false);
+        await modelTransitions.SelectThinkingLevelAsync(nextThinking);
         Console.WriteLine($"Thinking level: {modelBinding.Thinking}");
     }
 
@@ -48,7 +50,8 @@ internal sealed class TerminalModelSelectionCommands(ProviderModelRuntime modelR
         var nextSelection = await _navigation.NextModelAsync(() => modelBinding.Selection, projectBinding.Arguments.Provider, direction);
         if (nextSelection is null) return;
         var compatibleThinking = modelRuntimeController.ResolveThinkingLevelForModelSwitch(nextSelection, modelBinding.Thinking);
-        await modelTransitions.ApplySelectionAsync(nextSelection, compatibleThinking);
+        await modelTransitions.ApplySelectionAsync(nextSelection, compatibleThinking,
+            PiSharpExtensionModelSelectionSource.Cycle);
         ShowModelChangeStatus();
     }
 }

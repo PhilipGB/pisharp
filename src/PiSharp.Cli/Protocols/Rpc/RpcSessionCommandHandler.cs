@@ -10,7 +10,6 @@ internal sealed class RpcSessionCommandHandler(
     Func<ConversationRun> currentRun,
     Func<bool> isBusy,
     Func<RpcEventWriter> events,
-    Func<CancellationToken, Task>? save,
     Func<string?, CancellationToken, Task<bool>>? newSession,
     Func<string, CancellationToken, Task<string?>>? forkSession,
     Func<CancellationToken, Task<bool>>? cloneSession,
@@ -245,16 +244,13 @@ internal sealed class RpcSessionCommandHandler(
                         await respond(id, command, false, "Session name cannot be empty");
                         return true;
                     }
-                    using var nameChange = conversation.BeginSessionNameChange(updatedName);
-                    try { if (save is not null) await save(cancellationToken); }
+                    try { await run.SetSessionNameAsync(updatedName, cancellationToken); }
                     catch (Exception error)
                     {
-                        nameChange.Dispose();
                         await respond(id, command, false, error.Message);
                         return true;
                     }
-                    nameChange.Commit();
-                    await events().EmitSessionInfoChangedAsync(updatedName, cancellationToken);
+                    await events().EmitSessionInfoChangedAsync(conversation.Name, cancellationToken);
                     await respond(id, command, true, null);
                     return true;
                 }

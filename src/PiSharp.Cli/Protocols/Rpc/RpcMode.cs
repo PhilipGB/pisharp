@@ -43,7 +43,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     bool extensionHasUserInterface = false,
     PublicExtensionUi? extensionUi = null,
     Func<Action, Func<CancellationToken, Task>, Action, PiSharpExtensionCommandControlOperations>? createCommandControlOperations = null,
-    Func<string, PiSharpExtensionSettingsFlagContext>? createSettingsFlagContext = null)
+    Func<string, PiSharpExtensionSettingsFlagContext>? createSettingsFlagContext = null,
+    Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? cycleModel = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -65,7 +66,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         using var serveCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _serveCancellation = serveCancellation;
         var modelCommands = new RpcModelCommandHandler(_writer, RespondAsync, () => Events,
-            discoverModels, discoverCycleModels ?? discoverModels, setModel,
+            discoverModels, discoverCycleModels ?? discoverModels, setModel, cycleModel,
             projectModel ?? RpcModelProjector.Project, () => CurrentRun, getThinkingLevel, isModelScoped,
             setThinkingLevel, setThinkingLevelDuringRun, getAvailableThinkingLevels, supportsThinking);
         var retryCommands = new RpcRetryCommandHandler(RespondAsync, () => CurrentRun, persistRetryEnabled);
@@ -78,7 +79,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             () => getModelSnapshot?.Invoke(),
             () => Events.ProjectMessagesSnapshot(CurrentRun.Conversation, getSystemMessage?.Invoke()).Count);
         var sessionCommands = new RpcSessionCommandHandler(_writer, RespondAsync, () => CurrentRun,
-            () => IsActive, () => Events, save,
+            () => IsActive, () => Events,
             newSession is null ? null : StartNewSessionAsync,
             forkSession is null ? null : StartForkSessionAsync,
             cloneSession is null ? null : StartCloneSessionAsync,
