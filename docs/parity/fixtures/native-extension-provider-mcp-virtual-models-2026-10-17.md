@@ -56,4 +56,11 @@ flows or a second provider protocol layer.
 The full local .NET invocation did not return a completion summary in this
 runner. It emitted timing failures in the existing direct-MCP-startup and
 llama.cpp manager TUI tests; the direct-MCP case passed when rerun alone. Final
-exact-head Linux CI results will be recorded here when available.
+exact-head Linux CI passed for product commit
+`2c60bca5ae8d26f9b6ebeb67858f13beb78eef40`: push run
+[39061548916](https://github.com/PhilipGB/pisharp/actions/runs/39061548916)
+and PR run
+[39061560311](https://github.com/PhilipGB/pisharp/actions/runs/39061560311).
+Both runs pass 2,282/2,282 .NET tests with zero skips; their MCP conformance
+jobs report no regression against the eight classified baseline failures.
+Final-head CI for this receipt update is tracked on draft PR #11.
