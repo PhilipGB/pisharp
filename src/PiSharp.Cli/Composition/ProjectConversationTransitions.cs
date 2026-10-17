@@ -54,7 +54,9 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
             var reloadPlan = reload.ToolPlan;
             nextProject = reload.Project;
             configureMcp(nextProject);
-            modelRuntime.ValidateVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
+            modelRuntime.ValidateExtensionModelRegistrations(
+                nextProject.Extensions.Registration.ExtensionProviders,
+                nextProject.Extensions.Registration.VirtualModels);
             var nextController = new ModelRuntimeController(modelRuntime, () => nextConfiguration.Settings,
                 Environment.GetEnvironmentVariable);
             var reloadAgentArguments = usesDefaultToolsSetting
@@ -75,6 +77,7 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
             var shutdownError = await NotifyShutdownForCommitAsync(conversationBinding.Run,
                 PiSharpExtensionSessionShutdownReason.Reload);
             committed = true;
+            modelRuntime.SetExtensionProviders(nextProject.Extensions.Registration.ExtensionProviders);
             modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
             var nextExtensions = nextProject.TransferExtensions();
             projectBinding.Adopt(nextConfiguration, nextProject, reloadPlan.Arguments);
@@ -110,10 +113,14 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
         await nextProject.DiscoverExtensionResourcesAsync(agentDirectory, projectBinding.Arguments,
             ExtensionResourceDiscoveryReason.Startup);
         configureMcp(nextProject);
-        modelRuntime.ValidateVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
+        modelRuntime.ValidateExtensionModelRegistrations(
+            nextProject.Extensions.Registration.ExtensionProviders,
+            nextProject.Extensions.Registration.VirtualModels);
         afterReplacementPrepared?.Invoke();
 
         var shutdownError = await NotifyShutdownForCommitAsync(conversationBinding.Run, ToShutdownReason(reason));
+        modelRuntime.SetExtensionProviders(nextProject.Extensions.Registration.ExtensionProviders);
+        modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
         var nextExtensions = nextProject.TransferExtensions();
         replacement.CommitAdoption();
         projectBinding.Adopt(nextProject.Configuration, nextProject);

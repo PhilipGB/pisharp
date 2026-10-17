@@ -99,7 +99,17 @@ catch (ArgumentException error)
     return;
 }
 
-modelRuntime.SetVirtualModelRegistry(projectRuntime.Extensions.Registration.VirtualModels);
+try
+{
+    modelRuntime.SetExtensionProviders(projectRuntime.Extensions.Registration.ExtensionProviders);
+    modelRuntime.SetVirtualModelRegistry(projectRuntime.Extensions.Registration.VirtualModels);
+}
+catch (InvalidOperationException error)
+{
+    Console.Error.WriteLine(error.Message);
+    Environment.ExitCode = 1;
+    return;
+}
 
 var projectBinding = new ActiveProjectRuntime(projectConfiguration, projectRuntime, cli);
 

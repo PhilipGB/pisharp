@@ -1,20 +1,20 @@
 # PiSharp capability parity
 
-## Active milestone — Native Extension Controls & Configuration — 2026-10-17
+## Active milestone — Native Extension Provider, MCP & Virtual Model Registration — 2026-10-17
 
-Work is on `milestone/native-extension-controls-configuration`, based on
-`15b7acceb9c41a5b278b005ac5df6dadad7cda48`. Keep the configured Pi reference at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This bounded increment exposes
-effective settings snapshots, extension flags, session names and labels,
-command/tool/model/thinking controls, abort/compaction/shutdown, and structured
-`before_agent_start` prompt sections to compiled extensions. External package
-acceptance exercises flag parsing, provider-visible tool/model/thinking changes,
-metadata persistence, package replacement/removal, and graceful shutdown.
+Work is on `milestone/native-extension-provider-mcp-virtual-models`, based on
+`632bd08b87afb10ac6669b4072d08a8e3b452687`, the PR #10 merge. Keep the
+configured Pi reference at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This
+bounded increment lets ordinary compiled extensions register MEAI providers and
+models, MCP server configurations, and virtual models through PiSharp's normal
+provider, MCP, selection, and routing owners. External `.nupkg` process coverage
+exercises normal model discovery/selection, provider tool execution, persisted
+virtual routing, package replacement/removal, and failed-Configure rollback.
 
 See [the continuation](docs/continuation.md), [extension API guide](docs/extensions.md),
-and [milestone receipt](docs/parity/fixtures/native-extension-controls-configuration-2026-10-17.md).
-The broad extension capability remains `in_progress`; provider/MCP/rendering
-integration and the global parity audit remain deferred.
+and [milestone receipt](docs/parity/fixtures/native-extension-provider-mcp-virtual-models-2026-10-17.md).
+The broad extension capability remains `in_progress`; provider OAuth, the full
+event surface, advanced renderers, and the global parity audit remain deferred.
 
 ## Previous milestone — Native Extension State & Interactive Controls — 2026-10-17
 

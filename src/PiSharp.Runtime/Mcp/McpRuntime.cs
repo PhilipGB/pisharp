@@ -210,7 +210,7 @@ public static class McpRuntime
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             publish(server, connection);
-            return "MCP server " + server.Name + " timed out.";
+            return "MCP server " + server.Name + SourceDescription(server) + " timed out.";
         }
         catch (McpSignInRequiredException error)
         {
@@ -223,9 +223,14 @@ public static class McpRuntime
         {
             // Connection errors may contain server credentials or authorization headers.
             publish(server, connection);
-            return "MCP server " + server.Name + " could not connect (" + error.GetType().Name + ").";
+            return "MCP server " + server.Name + SourceDescription(server) + " could not connect (" +
+                error.GetType().Name + ").";
         }
     }
+
+    private static string SourceDescription(McpServerConfiguration server) => server.Scope == "extension"
+        ? " from extension " + server.SourcePath
+        : "";
 
     private static HashSet<McpToolExposure> ConfiguredExposures(McpServerConfiguration server) =>
         [server.Exposure, .. server.ToolExposure.Values];

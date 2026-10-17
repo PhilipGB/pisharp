@@ -3,6 +3,8 @@ using PiSharp.Runtime.Classifiers;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.VirtualModels;
+using PiSharp.Runtime.Extensions;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Cli;
 
@@ -10,7 +12,11 @@ public sealed record ProviderProfile(string Id, string Name, Uri Endpoint, bool 
     bool OAuthSupported, string? ApiKeyEnvironment, string? ConfiguredApiKey,
     IReadOnlyList<ModelDescriptor> Models, string? Api = null, JsonElement? Compatibility = null,
     AzureOpenAiProviderOptions? AzureOpenAi = null, bool ApiKeySupported = true,
-    GoogleVertexProviderOptions? GoogleVertex = null, BedrockProviderOptions? Bedrock = null, IReadOnlyList<ClassifierModel>? Classifiers = null, IReadOnlyList<ImageModelDescriptor>? Images = null);
+    GoogleVertexProviderOptions? GoogleVertex = null, BedrockProviderOptions? Bedrock = null, IReadOnlyList<ClassifierModel>? Classifiers = null, IReadOnlyList<ImageModelDescriptor>? Images = null)
+{
+    internal ExtensionProviderHandle? ExtensionProviderHandle { get; init; }
+    internal string? ExtensionPath { get; init; }
+}
 
 public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Model, string ApiKey,
     bool Authenticated, string AuthSource,
@@ -25,9 +31,11 @@ public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Mo
         get
         {
             var endpoint = Model.BaseUrl is { } baseUrl && !baseUrl.Contains("{location}", StringComparison.Ordinal)
-                ? new Uri(baseUrl) : Provider.Endpoint;
+                ? new Uri(baseUrl)
+                : Provider.ExtensionProviderHandle is { } extensionHandle
+                    ? extensionHandle.Definition?.Endpoint : Provider.Endpoint;
             return new ConnectionSettings(Model.Id,
-                ProviderModelRuntime.IsOfficialOpenAiEndpoint(endpoint) ? null : endpoint, ApiKey);
+                endpoint is null || ProviderModelRuntime.IsOfficialOpenAiEndpoint(endpoint) ? null : endpoint, ApiKey);
         }
     }
 }
@@ -49,6 +57,9 @@ public sealed class ProviderModelRuntime
     private readonly AvailableModelSnapshot _available;
     private IReadOnlyList<string> _scope;
     private VirtualModelRegistry? _virtualModels;
+    private readonly object _extensionProviderGate = new();
+    private IReadOnlyDictionary<string, ProviderProfile> _extensionProviders =
+        new Dictionary<string, ProviderProfile>(StringComparer.Ordinal);
 
     private ProviderModelRuntime(Dictionary<string, ProviderProfile> providers, AuthStorage auth,
         ProviderOAuthCoordinator oauth,
@@ -78,6 +89,8 @@ public sealed class ProviderModelRuntime
         get
         {
             var providers = new Dictionary<string, ProviderProfile>(_providers, StringComparer.Ordinal);
+            foreach (var (id, provider) in Volatile.Read(ref _extensionProviders))
+                providers[id] = provider;
             if (_llamaDiscovery.Profile is { } llamaRouter)
                 providers[llamaRouter.Id] = llamaRouter;
             foreach (var providerId in _virtualModels?.Models.Select(item => item.Model.Provider)
@@ -98,13 +111,114 @@ public sealed class ProviderModelRuntime
     internal void ValidateVirtualModelRegistry(VirtualModelRegistry registry)
     {
         ArgumentNullException.ThrowIfNull(registry);
+        ValidateVirtualModelRegistry(registry, Volatile.Read(ref _extensionProviders));
+    }
+
+    internal void ValidateExtensionModelRegistrations(IEnumerable<RegisteredExtensionProvider> providers,
+        VirtualModelRegistry virtualModels)
+    {
+        ArgumentNullException.ThrowIfNull(virtualModels);
+        var snapshot = CreateExtensionProviderSnapshot(providers);
+        ValidateVirtualModelRegistry(virtualModels, snapshot);
+    }
+
+    private void ValidateVirtualModelRegistry(VirtualModelRegistry registry,
+        IReadOnlyDictionary<string, ProviderProfile> extensionProviders)
+    {
         foreach (var item in registry.Models)
-            if (item.Model.Provider is { } providerId && _providers.TryGetValue(providerId, out var provider) &&
+            if (item.Model.Provider is { } providerId &&
+                (_providers.GetValueOrDefault(providerId) ?? extensionProviders.GetValueOrDefault(providerId)) is { } provider &&
                 provider.Models.Any(model => string.Equals(model.Id, item.Model.Id, StringComparison.Ordinal)))
-                throw new InvalidOperationException($"Virtual model {item.Model.Provider}/{item.Model.Id} conflicts with a configured physical model.");
+                throw new InvalidOperationException($"Virtual model {item.Model.Provider}/{item.Model.Id} registered by " +
+                    $"{item.ExtensionPath} conflicts with a physical model owned by {provider.ExtensionPath ?? provider.Id}.");
     }
 
     internal void RestoreVirtualModelRegistry(VirtualModelRegistry? registry) => _virtualModels = registry;
+
+    internal void ValidateExtensionProviders(IEnumerable<RegisteredExtensionProvider> registrations) =>
+        _ = CreateExtensionProviderSnapshot(registrations);
+
+    internal void SetExtensionProviders(IEnumerable<RegisteredExtensionProvider> registrations,
+        bool deactivateReplaced = true)
+    {
+        IReadOnlyDictionary<string, ProviderProfile> previous;
+        IReadOnlyDictionary<string, ProviderProfile> snapshot;
+        lock (_extensionProviderGate)
+        {
+            previous = Volatile.Read(ref _extensionProviders);
+            snapshot = CreateExtensionProviderSnapshot(registrations, previous);
+            Volatile.Write(ref _extensionProviders, snapshot);
+        }
+        if (deactivateReplaced) DeactivateProvidersNotIn(previous, snapshot);
+    }
+
+    internal IReadOnlyDictionary<string, ProviderProfile> CaptureExtensionProviderSnapshot() =>
+        Volatile.Read(ref _extensionProviders);
+
+    internal void RestoreExtensionProviderSnapshot(IReadOnlyDictionary<string, ProviderProfile> snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        IReadOnlyDictionary<string, ProviderProfile> current;
+        lock (_extensionProviderGate)
+        {
+            current = Volatile.Read(ref _extensionProviders);
+            Volatile.Write(ref _extensionProviders, snapshot);
+        }
+        DeactivateProvidersNotIn(current, snapshot);
+    }
+
+    internal void CompleteExtensionProviderReplacement(IReadOnlyDictionary<string, ProviderProfile> previous) =>
+        DeactivateProvidersNotIn(previous, Volatile.Read(ref _extensionProviders));
+
+    private static void DeactivateProvidersNotIn(IReadOnlyDictionary<string, ProviderProfile> previous,
+        IReadOnlyDictionary<string, ProviderProfile> current)
+    {
+        var currentHandles = current.Values.Select(provider => provider.ExtensionProviderHandle)
+            .Where(handle => handle is not null).ToHashSet(ReferenceEqualityComparer.Instance);
+        foreach (var provider in previous.Values)
+            if (provider.ExtensionProviderHandle is { } handle && !currentHandles.Contains(handle))
+                handle.Deactivate();
+    }
+
+    private IReadOnlyDictionary<string, ProviderProfile> CreateExtensionProviderSnapshot(
+        IEnumerable<RegisteredExtensionProvider> registrations,
+        IReadOnlyDictionary<string, ProviderProfile>? reuseFrom = null)
+    {
+        ArgumentNullException.ThrowIfNull(registrations);
+        var snapshot = new Dictionary<string, ProviderProfile>(StringComparer.Ordinal);
+        foreach (var registration in registrations)
+        {
+            var definition = registration.Definition;
+            if (_providers.TryGetValue(definition.Id, out var configured))
+                throw new InvalidOperationException($"Provider '{definition.Id}' registered by extension " +
+                    $"'{registration.ExtensionPath}' conflicts with configured provider '{configured.Id}'.");
+            var models = definition.Models.Select(model => new ModelDescriptor(model.Id, definition.Name,
+                model.ContextLength, "extension provider", model.Reasoning,
+                Provider: definition.Id, Name: model.Name ?? model.Id,
+                MaxOutputTokens: model.MaxOutputTokens, Input: model.Input?.ToArray() ?? ["text"],
+                Api: NativeExtensions.PiSharpExtensionProviderContract.ChatApi,
+                ThinkingLevelMap: model.ThinkingLevelMap?.Clone())).ToArray();
+            var handle = reuseFrom?.GetValueOrDefault(definition.Id)?.ExtensionProviderHandle;
+            if (handle?.Definition is not { } existingDefinition ||
+                !ReferenceEquals(existingDefinition, definition) || handle.ExtensionPath != registration.ExtensionPath)
+                handle = new ExtensionProviderHandle(definition, registration.ExtensionPath);
+            var profile = new ProviderProfile(definition.Id, definition.Name,
+                definition.Endpoint ?? new Uri("https://extension.invalid"), definition.AuthRequired, false,
+                definition.ApiKeyEnvironment, null, models,
+                NativeExtensions.PiSharpExtensionProviderContract.ChatApi)
+            {
+                ExtensionProviderHandle = handle,
+                ExtensionPath = registration.ExtensionPath
+            };
+            if (!snapshot.TryAdd(definition.Id, profile))
+                throw new InvalidOperationException($"Provider '{definition.Id}' is registered more than once, including " +
+                    $"extension '{registration.ExtensionPath}'.");
+        }
+        return snapshot;
+    }
+
+    private ProviderProfile? GetConfiguredProvider(string id) =>
+        _providers.GetValueOrDefault(id) ?? Volatile.Read(ref _extensionProviders).GetValueOrDefault(id);
 
     public static async Task<ProviderModelRuntime> CreateAsync(string agentDirectory, bool includeLocal,
         Func<string, string?> environment, HttpClient http, string? runtimeApiKey = null,
@@ -144,7 +258,7 @@ public sealed class ProviderModelRuntime
     }
 
     public ProviderProfile GetProvider(string id) => id == "llama.cpp" && _llamaDiscovery.Profile is { } llamaRouter
-        ? llamaRouter : _providers.TryGetValue(id, out var provider) ? provider :
+        ? llamaRouter : GetConfiguredProvider(id) is { } provider ? provider :
         _virtualModels?.Models.Any(item => item.Model.Provider == id) == true ? VirtualProvider(id) :
         throw new ArgumentException($"Unknown provider '{id}'. Available providers: {string.Join(", ", Providers.Select(item => item.Id).Order())}.");
 
@@ -232,6 +346,12 @@ public sealed class ProviderModelRuntime
                 result.AddRange(VirtualModelsFor(provider.Id));
                 continue;
             }
+            if (provider.ExtensionProviderHandle is not null)
+            {
+                result.AddRange(providerModels.Select(model => model with { Provider = provider.Id }));
+                result.AddRange(VirtualModelsFor(provider.Id));
+                continue;
+            }
             // These built-ins use pinned, provider-owned catalogues rather than generic /models discovery.
             if (_offline || provider.Id is "xai" or "anthropic" or "mistral" or "huggingface" or "azure" or "azure-openai-responses" or "openai-codex" or "google" or "google-vertex" or "amazon-bedrock" or "radius")
             {
@@ -305,7 +425,8 @@ public sealed class ProviderModelRuntime
         if (explicitProvider is null && slash > 0)
         {
             var prefix = inferredReference![..slash];
-            if (_providers.ContainsKey(prefix) || _virtualModels?.Models.Any(item => item.Model.Provider == prefix) == true)
+            if (GetConfiguredProvider(prefix) is not null ||
+                _virtualModels?.Models.Any(item => item.Model.Provider == prefix) == true)
             {
                 explicitProvider = GetProvider(prefix);
                 inferredReference = inferredReference[(slash + 1)..];

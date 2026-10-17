@@ -30,7 +30,7 @@ internal sealed class PiSharpContextTransformPipeline(IReadOnlyList<PiSharpConte
     private static ChatMessage[] CloneMessages(IEnumerable<ChatMessage> messages) =>
         messages.Select(CloneMessage).ToArray();
 
-    private static ChatMessage CloneMessage(ChatMessage message)
+    internal static ChatMessage CloneMessage(ChatMessage message)
     {
         var clone = message.Clone();
         clone.Contents = message.Contents.Select(CloneContent).ToList();
@@ -43,6 +43,12 @@ internal sealed class PiSharpContextTransformPipeline(IReadOnlyList<PiSharpConte
         AIContent clone = content switch
         {
             TextContent text => new TextContent(text.Text),
+            TextReasoningContent reasoning => new TextReasoningContent(reasoning.Text)
+            {
+                ProtectedData = reasoning.ProtectedData
+            },
+            DataContent data => CloneDataContent(data),
+            UriContent uri => new UriContent(uri.Uri, uri.MediaType),
             FunctionCallContent call => new FunctionCallContent(call.CallId, call.Name,
                 call.Arguments is null ? new Dictionary<string, object?>() : new Dictionary<string, object?>(call.Arguments))
             {
@@ -62,6 +68,15 @@ internal sealed class PiSharpContextTransformPipeline(IReadOnlyList<PiSharpConte
             clone.AdditionalProperties = content.AdditionalProperties?.Clone();
             clone.RawRepresentation = content.RawRepresentation;
         }
+        return clone;
+    }
+
+    private static DataContent CloneDataContent(DataContent content)
+    {
+        var clone = content.Data is { } data
+            ? new DataContent(data.ToArray(), content.MediaType)
+            : new DataContent(content.Uri, content.MediaType);
+        clone.Name = content.Name;
         return clone;
     }
 }

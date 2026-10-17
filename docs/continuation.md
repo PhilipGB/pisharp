@@ -1,5 +1,22 @@
 # Continuation — PiSharp capability parity
 
+## Active milestone — Native Extension Provider, MCP & Virtual Model Registration — 2026-10-17
+
+Work is on `milestone/native-extension-provider-mcp-virtual-models`, based on
+the PR #10 merge `632bd08b87afb10ac6669b4072d08a8e3b452687`; configured Pi stays
+pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This bounded increment
+adds configuration-time public registrations for normal MEAI providers/models,
+MCP servers, and routed virtual models. The host binds those source-owned
+registrations to `ProviderModelRuntime`, normal MCP startup, and
+`VirtualModelRegistry`; package rollback, replacement, removal and old-client
+lifetime behavior are covered. A packed external package process drives the
+normal provider/tool loop and resumes virtual route state across processes.
+
+The broad extension rows remain `in_progress`. Provider-specific extension
+OAuth, late registration and the full event surface remain open. See the
+[API guide](extensions.md) and
+[milestone receipt](parity/fixtures/native-extension-provider-mcp-virtual-models-2026-10-17.md).
+
 ## Active milestone — Native Extension Controls & Configuration — 2026-10-17
 
 Work is on `milestone/native-extension-controls-configuration`, based on

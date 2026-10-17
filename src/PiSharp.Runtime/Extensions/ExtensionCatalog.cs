@@ -136,6 +136,7 @@ public sealed partial class ExtensionRegistration
         _resourceDiscoveryHandlers.Clear();
         _projectTrustHandlers.Clear();
         lock (_mcpGate) _mcpServers.Clear();
+        ClearExtensionProviders();
         _virtualModels.Clear();
         _currentSourceInfo = null;
     }
@@ -154,9 +155,11 @@ public sealed partial class ExtensionRegistration
                 McpToolIdentifiers.Namespace(existing.Configuration.Name) == McpToolIdentifiers.Namespace(name));
             if (namespaceConflict is not null)
                 throw new InvalidOperationException($"MCP server {name} conflicts with registered server " +
-                    $"{namespaceConflict.Configuration.Name} because both names use the same normalized namespace.");
+                    $"{namespaceConflict.Configuration.Name} because both names use the same normalized namespace " +
+                    $"(owned by {namespaceConflict.ExtensionPath}; conflicting extension {owner}).");
             if (_mcpServers.TryGetValue(name, out var existing) && existing.ExtensionPath != owner)
-                throw new InvalidOperationException($"MCP server {name} is already registered by extension {existing.ExtensionPath}.");
+                throw new InvalidOperationException($"MCP server {name} is already registered by extension " +
+                    $"{existing.ExtensionPath}; conflicting extension {owner}.");
             _mcpServers[name] = new(parsed, owner);
         }
     }

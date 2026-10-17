@@ -36,7 +36,9 @@ internal static class McpToolPublication
                     PiSharpToolCallDisplay.Format(label, arguments, context.IsExpanded),
                 renderResult: RenderResult));
         }
-        var source = new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null);
+        var source = server.Scope == "extension"
+            ? new ResourceSourceInfo(server.SourcePath, "extension", "extension", "top-level", null)
+            : new ResourceSourceInfo("builtin:mcp", "builtin", "builtin", "top-level", null);
         registration.ReplaceOwnedTools(owner, definitions, source, renderers);
     }
 

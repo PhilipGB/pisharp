@@ -5,6 +5,7 @@ using Anthropic.Core;
 using Anthropic.Credentials;
 using Microsoft.Extensions.AI;
 using OpenAI;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.VirtualModels;
 
@@ -14,6 +15,7 @@ namespace PiSharp.Cli;
 public static class ProviderChatClientFactory
 {
     public static string GetProtocolId(ProviderProfile provider, PiSharp.Runtime.Providers.ModelDescriptor model) =>
+        provider.ExtensionProviderHandle is not null ? PiSharpExtensionProviderContract.ChatApi :
         model.Api ?? provider.Api ?? (provider.Id switch
         {
             "openai" or "xai" => "openai-responses",
@@ -25,6 +27,8 @@ public static class ProviderChatClientFactory
     public static string ResolveProtocol(ModelSelection selection)
     {
         if (selection.Model.Api == VirtualModelContract.Api) return VirtualModelContract.Api;
+        if (selection.Provider.ExtensionProviderHandle is not null)
+            return PiSharpExtensionProviderContract.ChatApi;
         var protocol = GetProtocolId(selection.Provider, selection.Model);
         if (protocol == "google-generative-ai" && selection.Provider.Id != "google")
             throw new NotSupportedException($"Model '{selection.Provider.Id}/{selection.Model.Id}' requires unsupported API '{protocol}'.");
@@ -64,7 +68,28 @@ public static class ProviderChatClientFactory
         var samplingContext = new SamplingParametersRequestContext();
         IChatClient providerClient;
         ProviderToolCallDeltaCapture? argumentCapture = null;
-        if (protocol == "bedrock-converse-stream")
+        if (protocol == PiSharpExtensionProviderContract.ChatApi)
+        {
+            var handle = selection.Provider.ExtensionProviderHandle ?? throw new InvalidOperationException(
+                $"Extension provider '{selection.Provider.Id}' from '{selection.Provider.ExtensionPath}' is no longer registered.");
+            var extension = handle.Definition ?? throw new InvalidOperationException(
+                $"Extension provider '{selection.Provider.Id}' from '{selection.Provider.ExtensionPath}' is no longer registered.");
+            try
+            {
+                providerClient = extension.CreateChatClient(new(selection.Provider.Id, selection.Model.Id,
+                    extension.Endpoint, selection.Authenticated && selection.AuthSource != "not required" &&
+                    selection.ApiKey is not ("not-needed" or "not-configured") ? selection.ApiKey : null)) ??
+                    throw new InvalidOperationException("Provider factory returned no chat client.");
+            }
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+                var safe = SecretRedactor.Redact(error.Message, selection.ApiKey);
+                throw new InvalidOperationException($"Extension provider '{selection.Provider.Id}' for model " +
+                    $"'{selection.Model.Id}' from '{selection.Provider.ExtensionPath}' failed to create a chat client: {safe}");
+            }
+            providerClient = handle.TrackClient(new ProviderSecretRedactingChatClient(providerClient, selection.ApiKey));
+        }
+        else if (protocol == "bedrock-converse-stream")
         {
             providerClient = BedrockConverseChatClientFactory.Create(selection);
         }
