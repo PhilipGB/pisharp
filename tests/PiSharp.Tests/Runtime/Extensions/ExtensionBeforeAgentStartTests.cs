@@ -529,7 +529,7 @@ public sealed class ExtensionBeforeAgentStartTests
     }
 
     [Fact]
-    public async Task BusyCustomMessageWithoutTriggerIsAppendedAfterToolResultsAndSeenByNextPrompt()
+    public async Task BusyCustomMessageWithoutTriggerIsAppendedAfterToolResultsAndSeenByNaturalContinuation()
     {
         var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-context-only-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(workingDirectory);
@@ -564,7 +564,15 @@ public sealed class ExtensionBeforeAgentStartTests
             await execution.WaitAsync(TimeSpan.FromSeconds(10));
 
             Assert.Equal(2, provider.Requests.Count);
-            Assert.DoesNotContain(provider.Requests[1], message => message.Text == "work completed");
+            var continuation = provider.Requests[1];
+            var continuationToolResultIndex = Array.FindIndex(continuation, message => message.Role == ChatRole.Tool);
+            var continuationCustomMessageIndexes = continuation.Select((message, index) => (message, index))
+                .Where(entry => PiSharpCustomMessageProjection.TryRead(entry.message, out var custom) &&
+                    custom.Content == "work completed")
+                .Select(entry => entry.index).ToArray();
+            Assert.True(continuationToolResultIndex >= 0);
+            Assert.Single(continuationCustomMessageIndexes);
+            Assert.True(continuationCustomMessageIndexes[0] > continuationToolResultIndex);
             var context = conversation.ContextMessages();
             var toolResultIndex = Array.FindIndex(context.ToArray(), message => message.Role == ChatRole.Tool);
             var customMessageIndex = Array.FindIndex(context.ToArray(), message =>

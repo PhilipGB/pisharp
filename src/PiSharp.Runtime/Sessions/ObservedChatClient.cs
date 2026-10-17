@@ -1,6 +1,7 @@
 using System.ClientModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Tools;
 
@@ -18,14 +19,15 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? transformContext = null,
     Func<IReadOnlyList<ChatMessage>, ChatOptions, System.Text.Json.JsonElement?>? projectToolTranscript = null,
     Func<string?>? getSystemInstructions = null,
-    Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null)
+    Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null,
+    Func<IReadOnlyList<ChatMessage>>? takeContextMessagesForRequest = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         publish(new("model_request_started"));
-        var original = WithSteering(messages).ToArray();
+        var original = WithSteering(WithContextMessages(messages)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
@@ -72,7 +74,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         publish(new("model_request_started"));
-        var original = WithSteering(messages).ToArray();
+        var original = WithSteering(WithContextMessages(messages)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
@@ -461,6 +463,26 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         }
         return messages.Concat(steering);
     }
+
+    private IEnumerable<ChatMessage> WithContextMessages(IEnumerable<ChatMessage> messages)
+    {
+        var contextMessages = takeContextMessagesForRequest?.Invoke() ?? [];
+        if (contextMessages.Count == 0) return messages;
+
+        var combined = messages.ToList();
+        foreach (var contextMessage in contextMessages)
+        {
+            if (!combined.Any(existing => IsSameCustomMessage(existing, contextMessage)))
+                combined.Add(contextMessage);
+        }
+        return combined;
+    }
+
+    private static bool IsSameCustomMessage(ChatMessage left, ChatMessage right) =>
+        PiSharpCustomMessageProjection.TryRead(left, out var leftCustom) &&
+        PiSharpCustomMessageProjection.TryRead(right, out var rightCustom) &&
+        leftCustom.CustomType == rightCustom.CustomType && leftCustom.Content == rightCustom.Content &&
+        leftCustom.Display == rightCustom.Display && leftCustom.Source == rightCustom.Source;
 
     private ChatOptions? ApplyCurrentToolLoadout(ChatOptions? options)
     {

@@ -44,6 +44,7 @@ public sealed class PiAgent
     private int _activeConversationRuns;
     private Action<AgentLifecycleEvent>? _events;
     private Func<bool, IReadOnlyList<ChatMessage>>? _takeSteering;
+    private Func<IReadOnlyList<ChatMessage>>? _takeContextMessagesForRequest;
     private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
     private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
     private int _providerRequestIndex;
@@ -156,7 +157,7 @@ public sealed class PiAgent
             _routedChatClient, GetToolsForRequest, _routedChatClient, GetAdditionalSystemInstructionsForCurrentTurn,
             _contextTransforms.ApplyAsync, (messages, options) =>
                 _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout,
-            () => thinkingBudgets), new ChatClientAgentOptions
+            () => thinkingBudgets, TakeContextMessagesForRequest), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -180,6 +181,9 @@ public sealed class PiAgent
         _injectedSteering.AddRange(steering.Select(message => (message, afterCallId)));
         return steering;
     }
+
+    private IReadOnlyList<ChatMessage> TakeContextMessagesForRequest() =>
+        _takeContextMessagesForRequest?.Invoke() ?? [];
 
     private IReadOnlyList<AITool> GetToolsForRequest()
     {
@@ -426,32 +430,36 @@ public sealed class PiAgent
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null) =>
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
+        Func<IReadOnlyList<ChatMessage>>? takeContextMessagesForRequest = null) =>
         RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent,
-            takeSteering, projectContext, bashSessionEnvironment, conversationSessionId);
+            takeSteering, projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequest);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent = null, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null) =>
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
+        Func<IReadOnlyList<ChatMessage>>? takeContextMessagesForRequest = null) =>
         RunStreamingDurableCoreAsync(prompt, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment, conversationSessionId);
+            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequest);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationDurableAsync(AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null) =>
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
+        Func<IReadOnlyList<ChatMessage>>? takeContextMessagesForRequest = null) =>
         RunStreamingDurableCoreAsync(null, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment, conversationSessionId);
+            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequest);
 
     private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableCoreAsync(ChatMessage? prompt,
         AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
         Action<AgentLifecycleEvent>? onEvent, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext,
-        IReadOnlyDictionary<string, string?>? bashSessionEnvironment, string? conversationSessionId)
+        IReadOnlyDictionary<string, string?>? bashSessionEnvironment, string? conversationSessionId,
+        Func<IReadOnlyList<ChatMessage>>? takeContextMessagesForRequest)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
@@ -465,6 +473,7 @@ public sealed class PiAgent
             _events = onEvent;
             Volatile.Write(ref _isRunning, 1);
             _takeSteering = takeSteering;
+            _takeContextMessagesForRequest = takeContextMessagesForRequest;
             _projectContext = projectContext;
             _providerRequestIndex = 0;
             _injectedSteering.Clear();
@@ -506,6 +515,7 @@ public sealed class PiAgent
         {
             _projectContext = null;
             _takeSteering = null;
+            _takeContextMessagesForRequest = null;
             Volatile.Write(ref _isRunning, 0);
             _events = null;
             _active = null;

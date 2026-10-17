@@ -35,16 +35,13 @@ The acceptance source passes exact-head push CI and PR merge-result CI
 Review follow-up: pinned Pi keeps `NextTurn` separate from both active-run
 steering/follow-up and `triggerTurn: false` context insertion. The correction
 now stages next-turn messages after the next run's starting message and defers
-busy context-only messages until tool results are complete. Three new
-regressions cover those busy/idle cases; the idle `triggerTurn: false` test now
-uses the same public delivery path as TUI and RPC. Focused tests pass 15/15,
-format and warnings-as-errors build pass, the full suite passes 2,204/2,204
-with zero skips, and docs paths validate 137 documents / 531 references.
-Exact-head push and PR merge-result CI pass on `d0ee1611`
-([push run 39021311731](https://github.com/PhilipGB/pisharp/actions/runs/39021311731),
-[PR run 39021313792](https://github.com/PhilipGB/pisharp/actions/runs/39021313792)),
-including test and MCP conformance. See the updated [native extension bridge
-receipt](parity/fixtures/native-extension-runtime-bridge-2026-10-17.md).
+busy context-only messages until tool results are recorded. They are inserted
+before the next provider request in a natural tool-loop continuation, without
+creating a request of their own. Three regressions cover busy/idle behavior and
+the tool-loop continuation; the idle `triggerTurn: false` test now uses the
+same public delivery path as TUI and RPC. See the updated [native extension
+bridge receipt](parity/fixtures/native-extension-runtime-bridge-2026-10-17.md)
+for focused and exact-head validation.
 
 This completes only the bounded native runtime bridge milestone. The broad
 extension API and orchestration capability remain `in_progress`; there is no

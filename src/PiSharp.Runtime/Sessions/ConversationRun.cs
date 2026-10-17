@@ -32,6 +32,7 @@ public sealed class ConversationRun
     private readonly PromptDeliveryController _promptDelivery;
     private readonly Queue<PendingRuntimeChange> _pendingRuntimeChanges = new();
     private readonly Queue<PiSharpCustomMessage> _pendingContextCustomMessages = new();
+    private readonly Queue<ChatMessage> _pendingProviderContextMessages = new();
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
     private readonly ConversationCompactionCoordinator _compactionCoordinator;
     private readonly ConversationToolState _toolState;
@@ -607,7 +608,7 @@ public sealed class ConversationRun
         }
     }
 
-    private bool FlushPendingContextCustomMessagesUnsafe()
+    private bool FlushPendingContextCustomMessagesUnsafe(bool includeInNextProviderRequest = false)
     {
         var appended = false;
         while (_pendingContextCustomMessages.TryDequeue(out var customMessage))
@@ -616,9 +617,21 @@ public sealed class ConversationRun
             Conversation.Append(chatMessage);
             _agent.AppendToHistory(_execution, chatMessage);
             _historyCount++;
+            if (includeInNextProviderRequest) _pendingProviderContextMessages.Enqueue(chatMessage);
             appended = true;
         }
         return appended;
+    }
+
+    private IReadOnlyList<ChatMessage> TakePendingProviderContextMessages()
+    {
+        lock (_runtimeStateGate)
+        {
+            FlushPendingContextCustomMessagesUnsafe(includeInNextProviderRequest: true);
+            var messages = _pendingProviderContextMessages.ToArray();
+            _pendingProviderContextMessages.Clear();
+            return messages;
+        }
     }
 
     private void EndPromptLoop(object owner) => _promptDelivery.End(owner, () =>
@@ -860,6 +873,10 @@ public sealed class ConversationRun
                 lock (_runtimeStateGate)
                 {
                     CompleteProviderTurnUnsafe();
+                    // The provider request following tool execution is the natural continuation
+                    // of that turn. Commit context-only extension messages after the completed
+                    // tool results so the continuation sees them without starting another turn.
+                    FlushPendingContextCustomMessagesUnsafe(includeInNextProviderRequest: true);
                     attribution.Begin(_currentModel, _currentProvider, _providerApi, _pricing);
                     _providerRequestModel = attribution.Model;
                     _providerRequestPricing = attribution.Pricing;
@@ -1005,10 +1022,10 @@ public sealed class ConversationRun
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
-                    CreateBashSessionEnvironment(), codexSessionId)
+                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessages)
                 : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
                     Observe, TakeSteeringForProvider, inFlightBudget is null ? null : inFlightBudget.ProjectAsync,
-                    CreateBashSessionEnvironment(), codexSessionId);
+                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessages);
             await foreach (var update in attemptStream.PumpAsync(updates, durable,
                 usage => Conversation.AppendUsage(attribution.Usage(usage)), cancellationToken))
                 yield return update;
