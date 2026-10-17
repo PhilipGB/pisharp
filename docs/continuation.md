@@ -32,6 +32,17 @@ The acceptance source passes exact-head push CI and PR merge-result CI
 ([push run 38993113554](https://github.com/PhilipGB/pisharp/actions/runs/38993113554),
 [PR run 38993115988](https://github.com/PhilipGB/pisharp/actions/runs/38993115988)).
 
+Review follow-up: pinned Pi keeps `NextTurn` separate from both active-run
+steering/follow-up and `triggerTurn: false` context insertion. The correction
+now stages next-turn messages after the next run's starting message and defers
+busy context-only messages until tool results are complete. Three new
+regressions cover those busy/idle cases; the idle `triggerTurn: false` test now
+uses the same public delivery path as TUI and RPC. Focused tests pass 15/15,
+format and warnings-as-errors build pass, the full suite passes 2,204/2,204
+with zero skips, and docs paths validate 137 documents / 531 references.
+Exact-head CI for this follow-up is pending. See the updated
+[native extension bridge receipt](parity/fixtures/native-extension-runtime-bridge-2026-10-17.md).
+
 This completes only the bounded native runtime bridge milestone. The broad
 extension API and orchestration capability remain `in_progress`; there is no
 global parity promotion. Per-session state, settings, UI/keybindings, provider

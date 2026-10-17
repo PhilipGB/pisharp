@@ -158,9 +158,10 @@ public sealed class ExtensionBeforeAgentStartTests
                     return Task.CompletedTask;
                 });
 
-            Assert.True(await run.QueueExtensionMessageForNextTurnAsync(
+            Assert.False(await run.DeliverExtensionCustomMessageAsync(
                 new PiSharp.Extensions.Abstractions.PiSharpCustomMessage("background-note", "ready for later"),
-                "/extensions/example.cs"));
+                "/extensions/example.cs", triggerTurn: false,
+                deliveryMode: PiSharp.Extensions.Abstractions.PiSharpMessageDeliveryMode.Steer));
             Assert.Equal(1, saved);
             var customEntry = Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
             Assert.Equal("/extensions/example.cs", customEntry.Payload.GetProperty("source").GetString());
@@ -528,6 +529,139 @@ public sealed class ExtensionBeforeAgentStartTests
     }
 
     [Fact]
+    public async Task BusyCustomMessageWithoutTriggerIsAppendedAfterToolResultsAndSeenByNextPrompt()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-context-only-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var toolStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseTool = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var hold = AIFunctionFactory.Create(async (CancellationToken cancellationToken) =>
+            {
+                toolStarted.TrySetResult();
+                await releaseTool.Task.WaitAsync(cancellationToken);
+                return "tool result";
+            }, name: "hold");
+            var registration = new ExtensionRegistration();
+            registration.AddTool(new PiSharpToolRegistration(hold, ToolExposure.ModelOnly));
+            var provider = new ToolThenCompleteClient();
+            var conversation = new ConversationSession(workingDirectory, "test-model", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(workingDirectory),
+                noBuiltinTools: true, extensionToolRegistrations: registration.ToolDefinitions), conversation);
+            var execution = Task.Run(async () =>
+            {
+                await foreach (var _ in run.RunEventsAsync("start tool work")) { }
+            });
+            await toolStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.False(await run.DeliverExtensionCustomMessageAsync(
+                new PiSharp.Extensions.Abstractions.PiSharpCustomMessage("background-note", "work completed"),
+                "/extensions/background.cs", triggerTurn: false,
+                deliveryMode: PiSharp.Extensions.Abstractions.PiSharpMessageDeliveryMode.FollowUp));
+            Assert.DoesNotContain(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+            releaseTool.TrySetResult();
+            await execution.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.Equal(2, provider.Requests.Count);
+            Assert.DoesNotContain(provider.Requests[1], message => message.Text == "work completed");
+            var context = conversation.ContextMessages();
+            var toolResultIndex = Array.FindIndex(context.ToArray(), message => message.Role == ChatRole.Tool);
+            var customMessageIndex = Array.FindIndex(context.ToArray(), message =>
+                PiSharpCustomMessageProjection.TryRead(message, out var custom) && custom.Content == "work completed");
+            Assert.True(toolResultIndex >= 0);
+            Assert.True(customMessageIndex > toolResultIndex);
+            var customEntry = Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+            Assert.Equal("/extensions/background.cs", customEntry.Payload.GetProperty("source").GetString());
+
+            await foreach (var _ in run.RunEventsAsync("what finished?")) { }
+            Assert.Equal(3, provider.Requests.Count);
+            Assert.Contains(provider.Requests[2], message =>
+                PiSharpCustomMessageProjection.TryRead(message, out var custom) && custom.Content == "work completed");
+            Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task BusyNextTurnCustomMessageWaitsForTheNextRunAfterItsStartingPrompt(bool triggerTurn)
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-aside-busy-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var conversation = new ConversationSession(workingDirectory, "test-model", null);
+            var provider = new HeldFirstRequestClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(workingDirectory)), conversation);
+            var execution = Task.Run(async () =>
+            {
+                await foreach (var _ in run.RunEventsAsync("active prompt")) { }
+            });
+            await provider.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.False(await run.DeliverExtensionCustomMessageAsync(
+                new PiSharp.Extensions.Abstractions.PiSharpCustomMessage("next-note", "hold for next run"),
+                "/extensions/next.cs", triggerTurn,
+                deliveryMode: PiSharp.Extensions.Abstractions.PiSharpMessageDeliveryMode.NextTurn));
+            provider.ReleaseFirstRequest.TrySetResult();
+            await execution.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.Single(provider.Requests);
+            Assert.DoesNotContain(provider.Requests[0], message => message.Text == "hold for next run");
+            Assert.DoesNotContain(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+
+            await foreach (var _ in run.RunEventsAsync("ordinary next prompt")) { }
+
+            var nextRunRequest = provider.Requests[1].Where(message => message.Role == ChatRole.User).ToArray();
+            Assert.Equal(["active prompt", "ordinary next prompt", "hold for next run"],
+                nextRunRequest.Select(message => message.Text));
+            var customEntry = Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+            Assert.Equal("/extensions/next.cs", customEntry.Payload.GetProperty("source").GetString());
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task IdleNextTurnCustomMessageWaitsAfterTheNextStartingPromptWithoutStartingARun()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-aside-idle-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var conversation = new ConversationSession(workingDirectory, "test-model", null);
+            var provider = new BeforeAgentStartClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(workingDirectory)), conversation);
+
+            Assert.False(await run.DeliverExtensionCustomMessageAsync(
+                new PiSharp.Extensions.Abstractions.PiSharpCustomMessage("next-note", "idle aside"),
+                "/extensions/idle.cs", triggerTurn: true,
+                deliveryMode: PiSharp.Extensions.Abstractions.PiSharpMessageDeliveryMode.NextTurn));
+            Assert.Empty(provider.Requests);
+            Assert.DoesNotContain(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+
+            await foreach (var _ in run.RunEventsAsync("first ordinary prompt")) { }
+
+            var request = Assert.Single(provider.Requests);
+            Assert.Equal(["first ordinary prompt", "idle aside"], request
+                .Where(message => message.Role == ChatRole.User).Select(message => message.Text));
+            var customEntry = Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+            Assert.Equal("/extensions/idle.cs", customEntry.Payload.GetProperty("source").GetString());
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task CancellationDuringCustomTurnSetupSettlesAndAllowsNextPrompt()
     {
         var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-cancel-" + Guid.NewGuid().ToString("N"));
@@ -653,6 +787,32 @@ public sealed class ExtensionBeforeAgentStartTests
                 await ReleaseFirstRequest.Task.WaitAsync(cancellationToken);
             }
             yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ToolThenCompleteClient : IChatClient
+    {
+        public List<ChatMessage[]> Requests { get; } = [];
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var request = Requests.Count;
+            Requests.Add(messages.ToArray());
+            if (request == 0)
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("hold-call", "hold", new Dictionary<string, object?>())]);
+            else
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            await Task.CompletedTask;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

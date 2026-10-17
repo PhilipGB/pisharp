@@ -15,14 +15,14 @@ public sealed record PiSharpImageAttachment(string MediaType, long? ByteLength);
 /// <summary>A durable extension message that can participate in an agent request.</summary>
 public sealed record PiSharpCustomMessage(string CustomType, string Content, bool Display = true);
 
-/// <summary>How a custom message is delivered when an agent run is already active.</summary>
+/// <summary>How a custom message is delivered relative to an active or upcoming agent run.</summary>
 public enum PiSharpMessageDeliveryMode
 {
     /// <summary>Deliver to the active run as steering input.</summary>
     Steer,
     /// <summary>Run after the active run's steering input has drained.</summary>
     FollowUp,
-    /// <summary>Queue the message for the next turn after the active run.</summary>
+    /// <summary>Hold the message aside until a later run, after that run's starting message.</summary>
     NextTurn
 }
 
@@ -69,11 +69,15 @@ public sealed class PiSharpExtensionCommandContext
         return _sendUserMessageAsync(prompt, cancellationToken);
     }
 
-    /// <summary>Sends a custom message and starts a turn when idle.</summary>
+    /// <summary>Sends a custom message with the default trigger and steering behavior.</summary>
     public Task SendCustomMessageAsync(PiSharpCustomMessage message, CancellationToken cancellationToken) =>
         SendCustomMessageAsync(message, triggerTurn: true, PiSharpMessageDeliveryMode.Steer, cancellationToken);
 
-    /// <summary>Sends a custom message with explicit idle-trigger and active-run delivery behavior.</summary>
+    /// <summary>
+    /// Sends a custom message with independent idle-trigger and delivery behavior. While busy,
+    /// triggerTurn false appends the message after the current turn's tool results without a new
+    /// model request. NextTurn holds it for a later run after that run's starting message.
+    /// </summary>
     public Task SendCustomMessageAsync(PiSharpCustomMessage message, bool triggerTurn,
         PiSharpMessageDeliveryMode deliveryMode, CancellationToken cancellationToken)
     {

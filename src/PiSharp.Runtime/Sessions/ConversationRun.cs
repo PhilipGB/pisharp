@@ -31,6 +31,7 @@ public sealed class ConversationRun
     private readonly object _runtimeStateGate = new();
     private readonly PromptDeliveryController _promptDelivery;
     private readonly Queue<PendingRuntimeChange> _pendingRuntimeChanges = new();
+    private readonly Queue<PiSharpCustomMessage> _pendingContextCustomMessages = new();
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
     private readonly ConversationCompactionCoordinator _compactionCoordinator;
     private readonly ConversationToolState _toolState;
@@ -192,6 +193,20 @@ public sealed class ConversationRun
             followUp ? "extension_custom_follow_up" : "extension_custom_steering", skipBeforeAgentStart: true);
     }
 
+    private bool TryQueueActiveExtensionMessage(PiSharpCustomMessage message,
+        NativeExtensions.PiSharpMessageDeliveryMode deliveryMode)
+    {
+        var projected = PiSharpCustomMessageProjection.ToChatMessage(message);
+        var kind = deliveryMode switch
+        {
+            NativeExtensions.PiSharpMessageDeliveryMode.Steer => "extension_custom_steering",
+            NativeExtensions.PiSharpMessageDeliveryMode.FollowUp => "extension_custom_follow_up",
+            _ => throw new ArgumentOutOfRangeException(nameof(deliveryMode))
+        };
+        return _promptDelivery.TryDeliverExtensionMessage(projected, message.Content, deliveryMode, kind,
+            skipBeforeAgentStart: true);
+    }
+
     public void QueueRpcInput(string prompt, bool steering, Action<AgentLifecycleEvent> publishQueueUpdate)
         => _promptDelivery.QueueRpcInput(prompt, steering, publishQueueUpdate);
 
@@ -319,6 +334,55 @@ public sealed class ConversationRun
     }
 
     /// <summary>
+    /// Applies the extension custom-message delivery rules. Returns true only when the caller
+    /// should start a new custom-message run; all other deliveries have already been queued or
+    /// appended to the conversation.
+    /// </summary>
+    public async Task<bool> DeliverExtensionCustomMessageAsync(NativeExtensions.PiSharpCustomMessage message,
+        string? sourcePath, bool triggerTurn, NativeExtensions.PiSharpMessageDeliveryMode deliveryMode,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        if (!Enum.IsDefined(deliveryMode)) throw new ArgumentOutOfRangeException(nameof(deliveryMode));
+        var customMessage = ToRuntimeCustomMessage(message, sourcePath);
+        var projected = PiSharpCustomMessageProjection.ToChatMessage(customMessage);
+
+        if (deliveryMode == NativeExtensions.PiSharpMessageDeliveryMode.NextTurn)
+        {
+            _promptDelivery.TryDeliverExtensionMessage(projected, customMessage.Content, deliveryMode,
+                "extension_custom_next_turn");
+            return false;
+        }
+
+        if (triggerTurn)
+        {
+            return !TryQueueActiveExtensionMessage(customMessage, deliveryMode);
+        }
+
+        lock (_runtimeStateGate)
+        {
+            if (_promptDelivery.IsActive)
+            {
+                _pendingContextCustomMessages.Enqueue(customMessage);
+                return false;
+            }
+        }
+
+        if (await QueueExtensionMessageForNextTurnAsync(message, sourcePath, cancellationToken)) return false;
+
+        // A run may have claimed ownership between the initial idle check and the idle append.
+        lock (_runtimeStateGate)
+        {
+            if (_promptDelivery.IsActive)
+            {
+                _pendingContextCustomMessages.Enqueue(customMessage);
+                return false;
+            }
+        }
+        throw new InvalidOperationException("The conversation changed while the custom message was being delivered.");
+    }
+
+    /// <summary>
     /// Persist a custom message into an idle conversation for the next ordinary turn.
     /// Returns false when a run already owns the prompt loop.
     /// </summary>
@@ -386,10 +450,17 @@ public sealed class ConversationRun
             var conversationRunActivityStarted = false;
             try
             {
-                owner = BeginPromptLoop(Publish);
+                owner = BeginPromptLoop(Publish, out var nextTurnMessages);
                 _agent.BeginConversationRunActivity();
                 conversationRunActivityStarted = true;
-                PromptBatch? current = new([promptMessage], [promptText], startingCustomMessage);
+                var initialMessages = new List<ChatMessage> { promptMessage };
+                var initialTexts = new List<string> { promptText };
+                foreach (var nextTurnMessage in nextTurnMessages)
+                {
+                    initialMessages.Add(nextTurnMessage.Message);
+                    initialTexts.Add(nextTurnMessage.Text);
+                }
+                PromptBatch? current = new(initialMessages, initialTexts, startingCustomMessage);
                 var stopRun = false;
                 while (current is not null)
                 {
@@ -455,7 +526,7 @@ public sealed class ConversationRun
                         stopRun = true;
                         break;
                     }
-                    current = TakeQueuedPromptOrClose(owner);
+                    current = await TakeQueuedPromptOrCloseAsync(owner);
                 }
                 if (!stopRun) Publish(new("agent_run_completed"));
             }
@@ -483,7 +554,7 @@ public sealed class ConversationRun
             {
                 try
                 {
-                    if (owner is not null) EndPromptLoop(owner);
+                    if (owner is not null) await EndPromptLoopAsync(owner);
                 }
                 finally
                 {
@@ -506,21 +577,48 @@ public sealed class ConversationRun
         }
     }
 
-    private object BeginPromptLoop(Action<AgentLifecycleEvent> publish)
-        => _promptDelivery.Begin(publish);
+    private object BeginPromptLoop(Action<AgentLifecycleEvent> publish,
+        out IReadOnlyList<QueuedPrompt> nextTurnMessages) => _promptDelivery.Begin(publish, out nextTurnMessages);
 
     private IReadOnlyList<ChatMessage> TakeSteeringForProvider(bool firstProviderRequest) =>
         _promptDelivery.TakeSteeringForProvider(firstProviderRequest);
 
-    private PromptBatch? TakeQueuedPromptOrClose(object owner)
+    private async Task<PromptBatch?> TakeQueuedPromptOrCloseAsync(object owner)
     {
-        var batch = _promptDelivery.TakeNextBatchOrClose(owner, PersistPendingRuntimeChangesUnsafe);
-        if (batch is null) return null;
-        var messages = batch.Messages.Select(prompt => prompt.Message).ToArray();
-        var texts = batch.Messages.Select(prompt => prompt.Text).ToArray();
-        var startingCustomMessage = messages.Length > 0 && PiSharpCustomMessageProjection.TryRead(messages[0],
-            out var customMessage) ? customMessage : null;
-        return new PromptBatch(messages, texts, startingCustomMessage, batch.Messages[0].SkipBeforeAgentStart);
+        while (true)
+        {
+            var transition = _promptDelivery.TakeNextBatchOrClose(owner, () =>
+            {
+                PersistPendingRuntimeChangesUnsafe();
+                return FlushPendingContextCustomMessagesUnsafe();
+            });
+            if (transition.PendingContextMessagesAppended && _save is not null)
+                await _save(CancellationToken.None);
+
+            if (transition.Batch is { } batch)
+            {
+                var messages = batch.Messages.Select(prompt => prompt.Message).ToArray();
+                var texts = batch.Messages.Select(prompt => prompt.Text).ToArray();
+                var startingCustomMessage = messages.Length > 0 && PiSharpCustomMessageProjection.TryRead(messages[0],
+                    out var customMessage) ? customMessage : null;
+                return new PromptBatch(messages, texts, startingCustomMessage, batch.Messages[0].SkipBeforeAgentStart);
+            }
+            if (transition.Closed) return null;
+        }
+    }
+
+    private bool FlushPendingContextCustomMessagesUnsafe()
+    {
+        var appended = false;
+        while (_pendingContextCustomMessages.TryDequeue(out var customMessage))
+        {
+            var chatMessage = PiSharpCustomMessageProjection.ToChatMessage(customMessage);
+            Conversation.Append(chatMessage);
+            _agent.AppendToHistory(_execution, chatMessage);
+            _historyCount++;
+            appended = true;
+        }
+        return appended;
     }
 
     private void EndPromptLoop(object owner) => _promptDelivery.End(owner, () =>
@@ -528,6 +626,24 @@ public sealed class ConversationRun
         PersistPendingRuntimeChangesUnsafe();
         FlushPendingBashExecutionsUnsafe();
     });
+
+    private async Task EndPromptLoopAsync(object owner)
+    {
+        while (true)
+        {
+            bool appended;
+            lock (_runtimeStateGate)
+            {
+                appended = FlushPendingContextCustomMessagesUnsafe();
+                if (!appended)
+                {
+                    EndPromptLoop(owner);
+                    return;
+                }
+            }
+            if (_save is not null) await _save(CancellationToken.None);
+        }
+    }
 
     private void PersistPendingRuntimeChangesUnsafe()
     {

@@ -457,20 +457,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             async (message, triggerTurn, deliveryMode, cancellationToken) =>
             {
                 var currentRun = CurrentRun;
-                var followUp = deliveryMode is PiSharpMessageDeliveryMode.FollowUp or PiSharpMessageDeliveryMode.NextTurn;
-                if (currentRun.IsActive)
-                {
-                    if (!currentRun.TryQueueExtensionMessage(message, commandInfo.SourceInfo.Path, followUp))
-                        throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
-                    return;
-                }
-                if (!triggerTurn)
-                {
-                    if (!await currentRun.QueueExtensionMessageForNextTurnAsync(message,
-                        commandInfo.SourceInfo.Path, cancellationToken))
-                        throw new InvalidOperationException("The conversation run started before the message could be queued.");
-                    return;
-                }
+                if (!await currentRun.DeliverExtensionCustomMessageAsync(message,
+                    commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
                 await StartExtensionRunAsync(token => currentRun.RunCustomMessageEventsAsync(message,
                     commandInfo.SourceInfo.Path, token), cancellationToken);
             });

@@ -19,7 +19,7 @@ claim full Pi extension parity or change broad extension capability statuses.
 | API-v1 compatibility | `ResourcePackageCommandProcessTests.ExternalPackageCompiledAgainstPr7ApiV1LoadsAndRunsWithTheAdditiveHost` copies the PR #7 contract snapshot, builds and packs a package without shipping a second abstractions assembly, installs it, then executes its original command, tool and before-agent-start callback in the current runtime. |
 | Turn start and images | `NativeExtensionHookBridgeTests.PublicBeforeAgentStartContextCapturesCurrentTrustIdleAndPendingState` verifies user-turn type, working directory, idle/trust/pending values and public image media type/byte length. The loaded-package fixture distinguishes user/custom starts and verifies the injected custom message is durable once. |
 | Injected messages and retry | `ExtensionBeforeAgentStartTests.ReturnedCustomMessageDoesNotDuplicateAcrossRetryOrNextUserTurn` covers returned-message retry and a later prompt. `TriggeredCustomMessageExecutesOnceAcrossAutomaticProviderRetry` covers one custom-trigger turn across provider retry. |
-| User/custom sending and trigger behavior | `RpcModeTests.NativeCommandContextStartsNormalUserAndCustomTurnsThroughRpc` sends both message types through the normal RPC run path. `NativeCustomTriggerSentDuringBeforeAgentStartJoinsTheActiveRunOnce` verifies an active setup run owns provider execution and handles the queued custom message once. `ExtensionBeforeAgentStartTests.CustomMessageQueuedWhileBusyJoinsTheActiveRunWithoutAnotherStartEvent` covers an already-running provider request. |
+| User/custom sending and trigger behavior | `RpcModeTests.NativeCommandContextStartsNormalUserAndCustomTurnsThroughRpc` sends both message types through the normal RPC run path. `NativeCustomTriggerSentDuringBeforeAgentStartJoinsTheActiveRunOnce` verifies an active setup run owns provider execution and handles the queued custom message once. `ExtensionBeforeAgentStartTests.BusyCustomMessageWithoutTriggerIsAppendedAfterToolResultsAndSeenByNextPrompt` checks context-only delivery after tool results without a follow-up request; `BusyNextTurnCustomMessageWaitsForTheNextRunAfterItsStartingPrompt` and `IdleNextTurnCustomMessageWaitsAfterTheNextStartingPromptWithoutStartingARun` check aside staging and order for busy and idle runs. |
 | Cancellation and recovery | `ExtensionBeforeAgentStartTests` covers cancellation during queue persistence, custom-turn setup and provider execution, plus provider failure followed by an ordinary prompt. The public transform and hook bridge tests cover callback errors followed by a successful prompt. |
 | Public live context | The compiled callback bridge exposes working directory, idle, project trust and pending-message snapshots; `NativeExtensionHookBridgeTests.PublicBeforeAgentStartContextCapturesPendingMessagesAddedDuringSetup` verifies a later callback sees newly queued work. |
 | Resource discovery | The external fixture publicly registers skills, prompts and themes. `NativeExtensionCatalogTests.PublicResourceDiscoveryLoadsOnStartupAndReplacesResourcesOnReloadAndRemoval` checks startup/reload/removal. `ProjectNativePackageIsInspectedButNotLoadedBeforeTrust` verifies untrusted project packages contribute no commands or resources. |
@@ -51,6 +51,22 @@ extension-specific session file was added.
 
 - Push exact-head Linux CI for acceptance source `10322218`: [run 38993113554](https://github.com/PhilipGB/pisharp/actions/runs/38993113554) — passed (`test` and `mcp-conformance`)
 - Pull-request merge-result Linux CI for acceptance source `10322218`: [run 38993115988](https://github.com/PhilipGB/pisharp/actions/runs/38993115988) — passed (`test` and `mcp-conformance`)
+
+## Custom-message delivery review correction
+
+The review follow-up preserves the pinned Pi state model at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`: `triggerTurn: false` during an
+active run queues context-only insertion until the active turn's tool results
+are recorded; `NextTurn` remains an aside until a later run and follows that
+run's starting message. Idle `triggerTurn: false` appends to existing context,
+while idle `NextTurn` starts no run and is appended after the next starting
+message.
+
+Focused `ExtensionBeforeAgentStartTests` pass **15/15**. Format verification
+passes; the warnings-as-errors solution build passes with zero warnings; the
+full .NET suite passes **2,204/2,204**, zero skipped, using `TMPDIR=/tmp` for
+the sandbox's temp-path-sensitive fixtures. Exact-head CI for the correction
+is pending.
 
 ## Remaining boundaries
 

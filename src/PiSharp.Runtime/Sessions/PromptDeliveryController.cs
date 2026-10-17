@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -6,6 +7,7 @@ internal sealed class PromptDeliveryController
 {
     private readonly object _stateGate;
     private readonly PromptDeliveryQueue _queue = new();
+    private readonly Queue<QueuedPrompt> _pendingNextTurn = new();
     private object? _owner;
     private object? _idleReservation;
     private Action<AgentLifecycleEvent>? _events;
@@ -60,6 +62,33 @@ internal sealed class PromptDeliveryController
         ArgumentNullException.ThrowIfNull(message);
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
         return TryQueueActive(new QueuedPrompt(prompt, message, skipBeforeAgentStart), steering, kind);
+    }
+
+    public bool TryDeliverExtensionMessage(ChatMessage message, string prompt,
+        NativeExtensions.PiSharpMessageDeliveryMode deliveryMode, string kind,
+        bool skipBeforeAgentStart = false)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+        var queuedPrompt = new QueuedPrompt(prompt, message, skipBeforeAgentStart);
+        lock (_stateGate)
+        {
+            switch (deliveryMode)
+            {
+                case NativeExtensions.PiSharpMessageDeliveryMode.NextTurn:
+                    _pendingNextTurn.Enqueue(queuedPrompt);
+                    return true;
+                case NativeExtensions.PiSharpMessageDeliveryMode.Steer:
+                case NativeExtensions.PiSharpMessageDeliveryMode.FollowUp:
+                    if (_owner is null) return false;
+                    _queue.Enqueue(queuedPrompt, deliveryMode == NativeExtensions.PiSharpMessageDeliveryMode.Steer);
+                    _events?.Invoke(new("prompt_queued", Text: queuedPrompt.Text, Tool: kind));
+                    _events?.Invoke(QueueEvent(_queue.Snapshot()));
+                    return true;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(deliveryMode));
+            }
+        }
     }
 
     public bool TryReserveIdle(out IDisposable? reservation)
@@ -120,7 +149,7 @@ internal sealed class PromptDeliveryController
         }
     }
 
-    public object Begin(Action<AgentLifecycleEvent> publish)
+    public object Begin(Action<AgentLifecycleEvent> publish, out IReadOnlyList<QueuedPrompt> nextTurnMessages)
     {
         lock (_stateGate)
         {
@@ -129,6 +158,8 @@ internal sealed class PromptDeliveryController
             _owner = new object();
             _events = publish;
             _firstProviderRequestPending = true;
+            nextTurnMessages = _pendingNextTurn.ToArray();
+            _pendingNextTurn.Clear();
             return _owner;
         }
     }
@@ -160,21 +191,23 @@ internal sealed class PromptDeliveryController
         }
     }
 
-    public QueuedPromptBatch? TakeNextBatchOrClose(object owner, Action beforeTake)
+    public PromptDeliveryTransition TakeNextBatchOrClose(object owner, Func<bool> beforeTake)
     {
         lock (_stateGate)
         {
-            if (!ReferenceEquals(_owner, owner)) return null;
-            beforeTake();
+            if (!ReferenceEquals(_owner, owner)) return new(null, Closed: true, PendingContextMessagesAppended: false);
+            var pendingContextMessagesAppended = beforeTake();
             if (_queue.TakeNextBatch() is { } batch)
             {
                 _events?.Invoke(QueueEvent(_queue.Snapshot()));
-                return batch;
+                return new(batch, Closed: false, pendingContextMessagesAppended);
             }
+            if (pendingContextMessagesAppended)
+                return new(null, Closed: false, PendingContextMessagesAppended: true);
             _owner = null;
             _events = null;
             _firstProviderRequestPending = false;
-            return null;
+            return new(null, Closed: true, PendingContextMessagesAppended: false);
         }
     }
 
@@ -210,3 +243,6 @@ internal sealed class PromptDeliveryController
         public void Dispose() => Interlocked.Exchange(ref _controller, null)?.ReleaseIdle(token);
     }
 }
+
+internal sealed record PromptDeliveryTransition(QueuedPromptBatch? Batch, bool Closed,
+    bool PendingContextMessagesAppended);

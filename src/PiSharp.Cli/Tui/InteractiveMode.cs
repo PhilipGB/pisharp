@@ -91,20 +91,8 @@ internal static class InteractiveMode
                 async (message, triggerTurn, deliveryMode, cancellationToken) =>
                 {
                     var currentRun = conversationBinding.Run;
-                    var followUp = deliveryMode is PiSharpMessageDeliveryMode.FollowUp or PiSharpMessageDeliveryMode.NextTurn;
-                    if (currentRun.IsActive)
-                    {
-                        if (!currentRun.TryQueueExtensionMessage(message, commandInfo.SourceInfo.Path, followUp))
-                            throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
-                        return;
-                    }
-                    if (!triggerTurn)
-                    {
-                        if (!await currentRun.QueueExtensionMessageForNextTurnAsync(message,
-                            commandInfo.SourceInfo.Path, cancellationToken))
-                            throw new InvalidOperationException("The conversation run started before the message could be queued.");
-                        return;
-                    }
+                    if (!await currentRun.DeliverExtensionCustomMessageAsync(message,
+                        commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
                     await execution.RunCustomMessageAsync(message, commandInfo.SourceInfo.Path,
                         applicationActions.HandleAsync, cancellationToken);
                 });
