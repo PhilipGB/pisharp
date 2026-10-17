@@ -71,13 +71,17 @@ sees the single durable custom-message entry.
 Focused `ExtensionBeforeAgentStartTests` pass **15/15**. Format verification
 passes; the warnings-as-errors solution build passes with zero warnings; the
 full .NET suite passes **2,204/2,204**, zero skipped, using `TMPDIR=/tmp` for
-the sandbox's temp-path-sensitive fixtures. Documentation paths verify **137
-documents / 531 references**. Exact-head CI for the correction passes on source
-`d0ee1611ce1aa4008beaf79269cd12ee611e39ed`: [push run
-39021311731](https://github.com/PhilipGB/pisharp/actions/runs/39021311731)
+the sandbox's temp-path-sensitive fixtures. Node passes **24/24**, Python
+passes **50/50**, documentation paths verify **137 documents / 531
+references**, and MCP conformance reports no regressions from its classified
+baseline.
+
+Exact-head CI for source `5f71e6b011c405622add6f746bfac7c316d72d5c` passes:
+[push run 39023995009](https://github.com/PhilipGB/pisharp/actions/runs/39023995009)
 and [PR merge-result run
-39021313792](https://github.com/PhilipGB/pisharp/actions/runs/39021313792)
-both pass `test` (2,204/2,204, zero skipped) and `mcp-conformance`.
+39023997847](https://github.com/PhilipGB/pisharp/actions/runs/39023997847) both
+pass `test` and `mcp-conformance`; both test jobs report 2,204/2,204, zero
+skipped.
 
 ## Remaining boundaries
 
