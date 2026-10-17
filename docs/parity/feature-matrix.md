@@ -8,11 +8,13 @@ compatibility and adds public native bridges for turn/message behavior,
 resources, context transforms, tool hooks and reload reconciliation. External
 package acceptance uses normal `dotnet pack`, installation and a fresh
 runtime, with a deterministic composed agent fixture. Full local verification
-passes 2,197 .NET tests with zero skips, architecture 7/7, Node 24/24, Python
+passes 2,200 .NET tests with zero skips, architecture 7/7, Node 24/24, Python
 50/50, docs validation, and MCP conformance without new regressions.
-Exact-head push CI and PR merge-result CI pass on product source `6019c32c`
-([push run 38991202559](https://github.com/PhilipGB/pisharp/actions/runs/38991202559),
-[PR run 38991226901](https://github.com/PhilipGB/pisharp/actions/runs/38991226901)).
+Acceptance hardening at `103222187a2973dbd324b899bea3ca53586c41f2` adds
+custom-trigger retry, live pending-state, compaction, and fresh-process
+resume checks. Exact-head push CI and PR merge-result CI pass
+([push run 38993113554](https://github.com/PhilipGB/pisharp/actions/runs/38993113554),
+[PR run 38993115988](https://github.com/PhilipGB/pisharp/actions/runs/38993115988)).
 
 This bounded milestone does not claim global extension parity. The broad
 `feature-extensions-net-api` and `extension-orchestration-api` ledger rows stay

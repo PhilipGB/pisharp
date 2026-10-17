@@ -18,12 +18,19 @@ resource discovery, provider context transforms, and tool-call/result hooks
 onto the existing runtime. The PR #7 API-v1 contract fixture is packed and
 loaded by the additive host. A deterministic external-package workflow checks
 the hook/tool loop, resource changes, replacement, removal, persistence and
-resume behavior. Active custom trigger messages join the owned queue during
-setup or provider execution; cancellation and failure settle for a later
-ordinary prompt. Full local verification passes **2,197/2,197** .NET tests with
-zero skips, architecture **7/7**, Node **24/24**, Python **50/50**, and docs
+resume behavior. Acceptance hardening at `103222187a2973dbd324b899bea3ca53586c41f2`
+adds automatic-retry and pending-context regressions, plus a separate-process
+save/compact/resume/follow-up check that verifies a custom trigger is not
+replayed. Active custom trigger messages join the owned queue during setup or
+provider execution; cancellation and failure settle for a later ordinary
+prompt. Full local verification passes **2,200/2,200** .NET tests with zero
+skips, architecture **7/7**, Node **24/24**, Python **50/50**, and docs
 validation (**137 documents, 530 references**). MCP conformance has no new
 regressions; its eight classified baseline failures remain.
+
+The acceptance source passes exact-head push CI and PR merge-result CI
+([push run 38993113554](https://github.com/PhilipGB/pisharp/actions/runs/38993113554),
+[PR run 38993115988](https://github.com/PhilipGB/pisharp/actions/runs/38993115988)).
 
 This completes only the bounded native runtime bridge milestone. The broad
 extension API and orchestration capability remain `in_progress`; there is no
