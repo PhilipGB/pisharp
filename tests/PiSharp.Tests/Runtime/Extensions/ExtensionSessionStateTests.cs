@@ -109,6 +109,68 @@ public sealed class ExtensionSessionStateTests
     }
 
     [Fact]
+    public async Task PiCustomEntryWithoutDataIsExposedAsNullAndReExportedCanonically()
+    {
+        var workingDirectory = CreateWorkingDirectory();
+        try
+        {
+            var jsonl = $$"""
+                {"type":"session","version":3,"id":"pinned-pi-session","timestamp":"2026-10-17T12:00:00.000Z","cwd":"{{workingDirectory}}"}
+                {"type":"custom","customType":"marker","id":"marker-entry","parentId":null,"timestamp":"2026-10-17T12:00:01.000Z"}
+                """;
+            var conversation = PiJsonlSessionInterchange.Import(jsonl);
+            var run = await ConversationRun.OpenAsync(CreateAgent(new CompleteClient()), conversation);
+
+            using var session = run.CreateExtensionSessionContext();
+            var entry = Assert.Single(session.Entries);
+            Assert.Equal("marker-entry", entry.Id);
+            Assert.Equal("marker", entry.CustomType);
+            Assert.Equal(JsonValueKind.Null, entry.Data.ValueKind);
+            Assert.Empty(conversation.ContextMessages());
+
+            var exported = Assert.Single(PiJsonlSessionInterchange.ProjectEntries(conversation), projected =>
+                projected.GetProperty("type").GetString() == "custom" &&
+                projected.GetProperty("customType").GetString() == "marker");
+            Assert.True(exported.TryGetProperty("data", out var exportedData));
+            Assert.Equal(JsonValueKind.Null, exportedData.ValueKind);
+
+            var roundTripped = PiJsonlSessionInterchange.Import(PiJsonlSessionInterchange.Export(conversation));
+            var roundTrippedRun = await ConversationRun.OpenAsync(CreateAgent(new CompleteClient()), roundTripped);
+            using var roundTrippedSession = roundTrippedRun.CreateExtensionSessionContext();
+            Assert.Equal(JsonValueKind.Null, Assert.Single(roundTrippedSession.Entries).Data.ValueKind);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ExtensionCanAppendAndExportAnEntryWithoutData()
+    {
+        var workingDirectory = CreateWorkingDirectory();
+        try
+        {
+            var conversation = new ConversationSession(workingDirectory, "fixture-model", null);
+            var run = await ConversationRun.OpenAsync(CreateAgent(new CompleteClient()), conversation);
+            using var session = run.CreateExtensionSessionContext();
+
+            var entry = await session.AppendEntryAsync("marker");
+
+            Assert.Equal(JsonValueKind.Null, entry.Data.ValueKind);
+            var exported = Assert.Single(PiJsonlSessionInterchange.ProjectEntries(conversation), projected =>
+                projected.GetProperty("type").GetString() == "custom" &&
+                projected.GetProperty("customType").GetString() == "marker");
+            Assert.True(exported.TryGetProperty("data", out var exportedData));
+            Assert.Equal(JsonValueKind.Null, exportedData.ValueKind);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task SaveFailureRollsBackTheAppendAndAllowsRetry()
     {
         var workingDirectory = CreateWorkingDirectory();

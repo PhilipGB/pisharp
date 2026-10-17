@@ -205,14 +205,18 @@ internal static class PiJsonlEntryCodec
                 state,
                 piOriginalEntry = entry
             }), timestamp);
-        if (type == "custom" && StringProperty(entry, "customType") is { Length: > 0 } customType &&
-            TryProperty(entry, "data", out var customData))
+        if (type == "custom" && StringProperty(entry, "customType") is { Length: > 0 } customType)
         {
+            var original = JsonNode.Parse(entry.GetRawText())!.AsObject();
+            var data = TryProperty(entry, "data", out var customData)
+                ? JsonNode.Parse(customData.GetRawText())
+                : null;
+            if (!original.ContainsKey("data")) original["data"] = null;
             var payload = new JsonObject
             {
                 ["customType"] = customType,
-                ["data"] = JsonNode.Parse(customData.GetRawText()),
-                ["piOriginalEntry"] = JsonNode.Parse(entry.GetRawText())
+                ["data"] = data,
+                ["piOriginalEntry"] = original
             };
             return new(id, parentId, "extension_state", JsonSerializer.SerializeToElement(payload), timestamp);
         }

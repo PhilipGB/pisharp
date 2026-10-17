@@ -104,6 +104,12 @@ public sealed class PiSharpExtensionSessionContext : IDisposable
     /// <summary>Extension-owned entries on the active branch, in append order.</summary>
     public IReadOnlyList<PiSharpExtensionSessionEntry> Entries => Snapshot.Entries;
 
+    /// <summary>Appends an entry with JSON null data to the session tree and saves it before returning.</summary>
+    /// <param name="customType">The extension-defined entry type.</param>
+    /// <returns>The persisted extension-owned entry.</returns>
+    public Task<PiSharpExtensionSessionEntry> AppendEntryAsync(string customType) =>
+        AppendEntryAsync(customType, JsonSerializer.SerializeToElement<object?>(null));
+
     /// <summary>Appends one JSON value to the session tree and saves it before returning.</summary>
     public async Task<PiSharpExtensionSessionEntry> AppendEntryAsync(string customType, JsonElement data,
         CancellationToken cancellationToken = default)
