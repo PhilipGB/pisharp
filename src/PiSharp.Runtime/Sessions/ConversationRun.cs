@@ -53,6 +53,37 @@ public sealed class ConversationRun
     public string? SessionFile => _sessionFile;
     public JsonElement SharePresentation => _agent.GetSharePresentation(_execution);
     public string ExportForShare() => SessionShareExport.ExportBranch(Conversation, SharePresentation);
+    /// <summary>Returns stable public metadata for the configured tools in this session.</summary>
+    public IReadOnlyList<NativeExtensions.PiSharpExtensionToolInfo> GetConfiguredTools()
+    {
+        var snapshot = _agent.GetToolLoadout(_execution).Snapshot;
+        var active = snapshot.ActiveToolNames.ToHashSet(StringComparer.Ordinal);
+        return Array.AsReadOnly(snapshot.Registered.Select(tool => new NativeExtensions.PiSharpExtensionToolInfo(
+            tool.Function.Name,
+            tool.Function.Description ?? string.Empty,
+            active.Contains(tool.Function.Name),
+            tool.Exposure switch
+            {
+                ToolExposure.Direct => NativeExtensions.PiSharpExtensionToolExposure.Direct,
+                ToolExposure.ModelOnly => NativeExtensions.PiSharpExtensionToolExposure.ModelOnly,
+                ToolExposure.CodeMode => NativeExtensions.PiSharpExtensionToolExposure.CodeMode,
+                ToolExposure.Deferred => NativeExtensions.PiSharpExtensionToolExposure.Deferred,
+                ToolExposure.Hidden => NativeExtensions.PiSharpExtensionToolExposure.Hidden,
+                _ => throw new ArgumentOutOfRangeException(nameof(tool.Exposure))
+            },
+            tool.Namespace is null ? "builtin" : "mcp",
+            Namespace: tool.Namespace?.Name)).ToArray());
+    }
+
+    /// <summary>Replaces the tools declared by the current session on its next provider request.</summary>
+    public void SetActiveTools(IEnumerable<string> toolNames)
+    {
+        ArgumentNullException.ThrowIfNull(toolNames);
+        var loadout = _agent.GetToolLoadout(_execution);
+        loadout.SetActiveTools(toolNames);
+        Conversation.AppendToolLoadout(loadout.Snapshot.ActiveToolNames);
+    }
+
     public Task PersistAsync(CancellationToken cancellationToken = default) =>
         _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
 

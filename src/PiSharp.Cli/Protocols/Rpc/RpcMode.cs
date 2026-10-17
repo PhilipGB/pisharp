@@ -41,15 +41,18 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     Func<bool>? getProjectTrusted = null,
     string extensionMode = "rpc",
     bool extensionHasUserInterface = false,
-    PublicExtensionUi? extensionUi = null)
+    PublicExtensionUi? extensionUi = null,
+    Func<Action, Func<CancellationToken, Task>, Action, PiSharpExtensionCommandControlOperations>? createCommandControlOperations = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
     private readonly ConcurrentDictionary<Guid, BashOperation> _bashOperations = new();
     private readonly ConcurrentDictionary<Guid, RpcCompactionOperation> _compactionOperations = new();
     private CancellationTokenSource? _abort;
+    private CancellationTokenSource? _serveCancellation;
     private Task? _active;
     private int _activeSettled;
+    private int _shutdownRequested;
     private bool IsActive => _active is { IsCompleted: false } && Volatile.Read(ref _activeSettled) == 0;
     private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
     private PiSharp.Runtime.Resources.ResourceCatalog? CurrentResources => getCurrentResources?.Invoke() ?? resources;
@@ -58,6 +61,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     public async Task ServeAsync(CancellationToken cancellationToken = default)
     {
+        using var serveCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _serveCancellation = serveCancellation;
         var modelCommands = new RpcModelCommandHandler(_writer, RespondAsync, () => Events,
             discoverModels, discoverCycleModels ?? discoverModels, setModel,
             projectModel ?? RpcModelProjector.Project, () => CurrentRun, getThinkingLevel, isModelScoped,
@@ -83,7 +88,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             CreateExtensionCommandContext);
         try
         {
-            while (await input.ReadLineAsync(cancellationToken) is { } line)
+            while (await input.ReadLineAsync(serveCancellation.Token) is { } line)
             {
                 if (line.Length > 1024 * 1024)
                 {
@@ -264,6 +269,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                 }
             }
         }
+        catch (OperationCanceledException) when (Volatile.Read(ref _shutdownRequested) != 0 &&
+            !cancellationToken.IsCancellationRequested)
+        {
+        }
         finally
         {
             await promptCommandHandler.CancelAndWaitAsync();
@@ -284,6 +293,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             if (compactions.Length > 0)
                 await Task.WhenAll(compactions.Select(operation => operation.Completed.Task));
             _abort?.Dispose();
+            _serveCancellation = null;
         }
     }
 
@@ -438,37 +448,67 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         ExtensionCommandInfo commandInfo)
     {
         var run = CurrentRun;
-        return new PiSharpExtensionCommandContext(run.Conversation.WorkingDirectory, !IsActive,
-            getProjectTrusted?.Invoke() ?? false,
-            run.PendingPromptCount > 0,
-            async (prompt, cancellationToken) =>
+        PiSharpExtensionCommandControlOperations? controls = null;
+        if (createCommandControlOperations is not null)
+            controls = createCommandControlOperations(() =>
             {
-                var currentRun = CurrentRun;
-                var expanded = CurrentResources is { } activeResources
-                    ? await activeResources.ResolveInputAsync(prompt, cancellationToken, ReportResourceErrorAsync)
-                    : prompt;
-                if (currentRun.IsActive)
-                {
-                    if (!currentRun.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
-                        throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
-                    return;
-                }
-                var preflightError = promptPreflight?.Invoke();
-                if (!string.IsNullOrWhiteSpace(preflightError)) throw new InvalidOperationException(preflightError);
-                await StartExtensionRunAsync(token => currentRun.RunUserMessageEventsAsync(
-                    new ChatMessage(ChatRole.User, expanded), expanded, token), cancellationToken);
-            },
-            async (message, triggerTurn, deliveryMode, cancellationToken) =>
+                try { _abort?.Cancel(); }
+                catch (ObjectDisposedException) { }
+            }, token => token.IsCancellationRequested ? Task.FromCanceled(token) : CancelActivePromptAsync(),
+                RequestShutdown);
+        async Task SendUserMessageAsync(string prompt, CancellationToken cancellationToken)
+        {
+            var currentRun = CurrentRun;
+            var expanded = CurrentResources is { } activeResources
+                ? await activeResources.ResolveInputAsync(prompt, cancellationToken, ReportResourceErrorAsync)
+                : prompt;
+            if (currentRun.IsActive)
             {
-                var currentRun = CurrentRun;
-                if (!await currentRun.DeliverExtensionCustomMessageAsync(message,
-                    commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
-                await StartExtensionRunAsync(token => currentRun.RunCustomMessageEventsAsync(message,
-                    commandInfo.SourceInfo.Path, token), cancellationToken);
-            }, extensionMode, extensionHasUserInterface, extensionUi)
+                if (!currentRun.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
+                    throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
+                return;
+            }
+            var preflightError = promptPreflight?.Invoke();
+            if (!string.IsNullOrWhiteSpace(preflightError)) throw new InvalidOperationException(preflightError);
+            await StartExtensionRunAsync(token => currentRun.RunUserMessageEventsAsync(
+                new ChatMessage(ChatRole.User, expanded), expanded, token), cancellationToken);
+        }
+        async Task SendCustomMessageAsync(PiSharp.Extensions.Abstractions.PiSharpCustomMessage message,
+            bool triggerTurn, PiSharp.Extensions.Abstractions.PiSharpMessageDeliveryMode deliveryMode,
+            CancellationToken cancellationToken)
+        {
+            var currentRun = CurrentRun;
+            if (!await currentRun.DeliverExtensionCustomMessageAsync(message,
+                commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
+            await StartExtensionRunAsync(token => currentRun.RunCustomMessageEventsAsync(message,
+                commandInfo.SourceInfo.Path, token), cancellationToken);
+        }
+
+        var workingDirectory = run.Conversation.WorkingDirectory;
+        var isProjectTrusted = getProjectTrusted?.Invoke() ?? false;
+        if (controls is null)
+        {
+            return new PiSharpExtensionCommandContext(workingDirectory, !IsActive, isProjectTrusted,
+                run.PendingPromptCount > 0, SendUserMessageAsync, SendCustomMessageAsync,
+                extensionMode, extensionHasUserInterface, extensionUi)
+            {
+                Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path)
+            };
+        }
+
+        return new PiSharpExtensionCommandContext(workingDirectory, !IsActive, isProjectTrusted,
+            run.PendingPromptCount > 0, SendUserMessageAsync, SendCustomMessageAsync,
+            extensionMode, extensionHasUserInterface, extensionUi, controls)
         {
             Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path)
         };
+    }
+
+    private void RequestShutdown()
+    {
+        if (Interlocked.Exchange(ref _shutdownRequested, 1) != 0) return;
+        try { _serveCancellation?.Cancel(); }
+        catch (ObjectDisposedException) { }
     }
 
     private async Task StartExtensionRunAsync(

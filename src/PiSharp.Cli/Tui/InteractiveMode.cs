@@ -24,6 +24,7 @@ internal static class InteractiveMode
         var trustStore = startup.Trust;
         var usesDefaultToolsSetting = startup.UsesDefaultToolsSetting;
         var prompt = projectBinding.Arguments.Prompt;
+        var shutdownRequested = 0;
         TerminalSessionNavigation? sessionNavigationReference = null;
         var terminalThinkingSelector = editor is null ? null : new TerminalThinkingSelector(editor);
         var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding,
@@ -67,6 +68,22 @@ internal static class InteractiveMode
                 terminalScreen?.SetFooter(presentation.IdleFooter());
                 presentation.LoadSessionTranscript();
             });
+        IReadOnlyList<PiSharpExtensionCommandInfo> GetExtensionCommands()
+        {
+            var commands = InteractiveCommandCatalog.BuiltIns.Select(command =>
+                new PiSharpExtensionCommandInfo(command.Command, command.Description, "builtin")).ToList();
+            if (projectBinding.Resources is { } resources)
+            {
+                commands.AddRange(resources.Prompts.Select(item =>
+                    new PiSharpExtensionCommandInfo(item.Name, item.Description, "prompt", item.SourceInfo.Path)));
+                commands.AddRange(resources.Skills.Select(item =>
+                    new PiSharpExtensionCommandInfo("skill:" + item.Name, item.Description, "skill", item.SourceInfo.Path)));
+            }
+            commands.AddRange(extensionLease.Current.Registration.CommandInfo.Select(pair =>
+                new PiSharpExtensionCommandInfo(pair.Key, pair.Value.Description, "extension", pair.Value.SourceInfo.Path)));
+            return Array.AsReadOnly(commands.GroupBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First()).ToArray());
+        }
         Task RunAsync(string input, IReadOnlyList<DataContent>? images = null) =>
             execution.RunAsync(input, images, applicationActions.HandleAsync,
                 handleExtensionShortcut: HandleExtensionShortcutAsync);
@@ -74,6 +91,24 @@ internal static class InteractiveMode
         PiSharpExtensionCommandContext CreateExtensionCommandContext(ExtensionCommandInfo commandInfo)
         {
             var run = conversationBinding.Run;
+            var controls = PiSharpExtensionCommandControlFactory.Create(
+                () => conversationBinding.Run,
+                GetExtensionCommands,
+                () => extensionLease.Current.Registration,
+                modelRuntime,
+                modelBinding,
+                modelTransitions,
+                execution.AbortCurrentRun,
+                _ =>
+                {
+                    execution.AbortCurrentRun();
+                    return Task.CompletedTask;
+                },
+                () =>
+                {
+                    Interlocked.Exchange(ref shutdownRequested, 1);
+                    execution.AbortCurrentRun();
+                });
             return new PiSharpExtensionCommandContext(projectBinding.WorkingDirectory, !run.IsActive,
                 projectBinding.Trusted, run.PendingPromptCount > 0,
                 async (text, cancellationToken) =>
@@ -97,7 +132,7 @@ internal static class InteractiveMode
                     await execution.RunCustomMessageAsync(message, commandInfo.SourceInfo.Path,
                         applicationActions.HandleAsync, cancellationToken, HandleExtensionShortcutAsync);
                 }, projectBinding.Configuration.ExtensionMode, projectBinding.Configuration.HasUserInterface,
-                projectBinding.Configuration.ExtensionUi)
+                projectBinding.Configuration.ExtensionUi, controls)
             {
                 Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path)
             };
@@ -129,7 +164,7 @@ internal static class InteractiveMode
             if (!string.IsNullOrWhiteSpace(promptFiles.Text) || promptFiles.Images.Count > 0)
                 await RunAsync(promptFiles.Text, promptFiles.Images);
         }
-        while (true)
+        while (Volatile.Read(ref shutdownRequested) == 0)
         {
             var line = await editor!.ReadLineAsync(HandleEditorApplicationAction,
                 dispatchExtensionShortcut: HandleExtensionShortcutAsync);

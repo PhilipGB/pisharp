@@ -12,5 +12,9 @@ public sealed partial class PiSharpExtensionCommandContext : IDisposable
     public PiSharpExtensionSessionContext? Session { get; init; }
 
     /// <summary>Ends the command callback scope and revokes later session mutations.</summary>
-    public void Dispose() => Session?.Dispose();
+    public void Dispose()
+    {
+        DisposeControlContext();
+        Session?.Dispose();
+    }
 }

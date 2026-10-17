@@ -3,6 +3,7 @@ using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
 using Microsoft.Extensions.AI;
+using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Tests;
 
@@ -163,6 +164,37 @@ public sealed class ToolSelectionTests
         Assert.DoesNotContain("- switch_tools:", provider.RequestInstructions[1]);
         Assert.Equal(["deferred"], firstLoadout.Snapshot.ActiveToolNames);
         Assert.Equal(["switch_tools"], secondLoadout.Snapshot.ActiveToolNames);
+    }
+
+    [Fact]
+    public async Task ConversationRunControlListsConfiguredToolsAndFiltersUnknownOrHiddenActivation()
+    {
+        var direct = AIFunctionFactory.Create(() => "direct", name: "direct");
+        var deferred = AIFunctionFactory.Create(() => "deferred", name: "deferred");
+        var hidden = AIFunctionFactory.Create(() => "hidden", name: "hidden");
+        var agent = new PiAgent(new ToolCaptureClient(), new CodingTools(Path.GetTempPath()), noBuiltinTools: true,
+            extensionToolRegistrations:
+            [
+                new(direct, ToolExposure.Direct),
+                new(deferred, ToolExposure.Deferred),
+                new(hidden, ToolExposure.Hidden)
+            ]);
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(agent, conversation);
+
+        Assert.Equal(["direct"], run.ActiveToolNames);
+        var configured = run.GetConfiguredTools().ToDictionary(tool => tool.Name, StringComparer.Ordinal);
+        Assert.Equal(PiSharpExtensionToolExposure.Direct, configured["direct"].Exposure);
+        Assert.True(configured["direct"].IsActive);
+        Assert.Equal(PiSharpExtensionToolExposure.Deferred, configured["deferred"].Exposure);
+        Assert.False(configured["deferred"].IsActive);
+        Assert.Equal(PiSharpExtensionToolExposure.Hidden, configured["hidden"].Exposure);
+
+        run.SetActiveTools(["deferred", "hidden", "missing"]);
+
+        Assert.Equal(["deferred"], run.ActiveToolNames);
+        Assert.Equal(["deferred"], conversation.ActiveToolLoadout());
+        Assert.Equal(["deferred"], run.GetConfiguredTools().Where(tool => tool.IsActive).Select(tool => tool.Name));
     }
 
     [Fact]

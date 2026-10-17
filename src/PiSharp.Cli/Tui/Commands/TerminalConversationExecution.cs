@@ -34,6 +34,12 @@ internal sealed class TerminalConversationExecution
     public InteractiveTranscript? ActiveTranscript { get; private set; }
     private CancellationTokenSource? _activeRun;
 
+    public void AbortCurrentRun()
+    {
+        try { Volatile.Read(ref _activeRun)?.Cancel(); }
+        catch (ObjectDisposedException) { }
+    }
+
 
     public Task RunAsync(string input, IReadOnlyList<DataContent>? images = null,
         Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default,
