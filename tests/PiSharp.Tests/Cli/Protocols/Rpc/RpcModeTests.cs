@@ -93,7 +93,7 @@ public sealed class RpcModeTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task NativeCommandContextReportsIdleNextTurnMessagesUntilDelivered(bool triggerTurn)
+    public async Task NativeCommandContextExcludesIdleNextTurnMessagesFromThePendingQueueFlag(bool triggerTurn)
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-native-pending-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(cwd);
@@ -129,8 +129,7 @@ public sealed class RpcModeTests
 
             var pendingContext = Assert.Single(contexts);
             Assert.True(pendingContext.IsIdle);
-            Assert.True(pendingContext.HasPendingMessages);
-            Assert.True(run.HasPendingExtensionMessages);
+            Assert.False(pendingContext.HasPendingMessages);
             Assert.Equal(0, run.PendingPromptCount);
             Assert.Empty(run.Conversation.ContextMessages());
 
@@ -142,7 +141,6 @@ public sealed class RpcModeTests
             Assert.Equal(2, contexts.Count);
             Assert.True(contexts[1].IsIdle);
             Assert.False(contexts[1].HasPendingMessages);
-            Assert.False(run.HasPendingExtensionMessages);
             Assert.Single(run.Conversation.Tree.ActivePath(), node => node.Type == "custom_message");
         }
         finally

@@ -67,7 +67,7 @@ public sealed record PiSharpExtensionContext(string WorkingDirectory)
     /// <summary>Whether project-local native extensions are trusted in this working directory.</summary>
     public bool IsProjectTrusted { get; init; }
 
-    /// <summary>Whether message work is waiting to be delivered.</summary>
+    /// <summary>Whether ordinary steering or follow-up messages are queued; excludes held NextTurn and context-only messages.</summary>
     public bool HasPendingMessages { get; init; }
 }
 

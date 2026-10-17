@@ -88,7 +88,7 @@ The context-taking `AddCommand` overload provides a small snapshot of working di
 
 `PiSharpMessageDeliveryMode` and `triggerTurn` control separate behaviors. During an active run, `Steer` and `FollowUp` select the active-run queue when `triggerTurn` is true. `NextTurn` is held aside whether the agent is idle or busy; it does not start a run, and the next actual user or custom run includes its starting message first, followed by the held custom message. An active run keeps ownership of provider execution, so a custom message cannot start a competing provider run. An idle custom message with `triggerTurn: true` starts one normal run whose before-agent-start event identifies the custom starting message, except when the delivery mode is `NextTurn`.
 
-`HasPendingMessages` includes queued steering/follow-up input, held `NextTurn` messages and busy context-only messages awaiting insertion. It becomes false once that work has entered context. Held messages do not contribute to the ordinary steering/follow-up prompt count or queue display.
+`HasPendingMessages` reports only queued steering/follow-up input, matching Pi. Held `NextTurn` messages and busy context-only messages do not contribute to this flag or the ordinary prompt count and queue display.
 
 Repeated sends with identical type, content, display flag and source remain separate custom-message entries. For context-only messages delivered during tool execution, the session save completes after tool results are recorded and before the continuation provider request sees the messages. A failed save prevents that provider request from being sent.
 

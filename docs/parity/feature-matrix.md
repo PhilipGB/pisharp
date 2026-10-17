@@ -26,13 +26,13 @@ The combined focused suite passes 23/23 and the full local .NET suite passes
 2,212/2,212 with zero skips, with format, zero-warning build and documentation
 validation passing.
 
-The pending-state review correction also includes held `NextTurn` and busy
-context-only messages in public `HasPendingMessages` snapshots for callbacks
-and TUI/RPC commands. Ordinary prompt counts and steering/follow-up queue
-snapshots remain separate. Six new cases reproduce the old false flag; the
-expanded focused suite passes 39/39. Full local validation passes 2,218/2,218
-.NET tests, zero skipped, format, a zero-warning build and documentation paths.
-This adds no broader capability claim.
+The pinned-source pending-state audit supersedes the expansion at `a2ad5783`:
+public `HasPendingMessages` counts only ordinary steering/follow-up work for
+callbacks and TUI/RPC commands. Held `NextTurn` and busy context-only messages
+remain separate and do not set that flag. Six held-message cases assert false;
+positive controls cover both ordinary queues; the focused suite passes 40/40.
+This adds no broader capability
+claim. Validation and source references are in the milestone receipt.
 
 This bounded milestone does not claim global extension parity. The broad
 `feature-extensions-net-api` and `extension-orchestration-api` ledger rows stay

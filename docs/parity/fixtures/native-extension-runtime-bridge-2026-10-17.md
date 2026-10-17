@@ -121,36 +121,50 @@ solution build (zero warnings/errors), the full .NET suite **2,212/2,212**
 references**). One additional local runner invocation exited before discovery
 with internal CLR error `0x80131506`; the retry passed the complete suite.
 
-## Pending-message visibility correction
+## Pending-message parity correction
 
-Review of `a2043ff8e0691b03c78af56207dbd3521efad6e5` found that public
-`HasPendingMessages` snapshots only counted ordinary steering/follow-up work.
-The runtime now uses a separate predicate covering that queue, held
-`NextTurn` messages and busy context-only messages awaiting insertion. It is
-wired into live extension callbacks and TUI/RPC command contexts. The ordinary
-prompt count, queue snapshots and display retain their existing meaning.
+The expansion at `a2ad5783c5b2bf562f837f9a29cb60501b862638` followed an
+incorrect review recommendation and is superseded. The verified clean Pi
+checkout at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` establishes the public
+contract:
 
-Six new regression cases reproduced the false flag before the wiring fix:
+- `packages/coding-agent/src/core/agent-session.ts`: extension context
+  `hasPendingMessages` uses `pendingMessageCount > 0`; that getter sums only
+  steering and follow-up messages.
+- `packages/coding-agent/src/core/extensions/types.ts`:
+  `ExtensionCommandContext` extends `ExtensionContext`, sharing this contract.
+- `_pendingNextTurnMessages` and `_pendingCustomMessages` remain separate
+  from the count.
 
-- `NativeExtensionHookBridgeTests.PublicContextReportsHeldMessagesWithoutChangingTheOrdinaryPromptQueue`
+PiSharp public callbacks and TUI/RPC command snapshots now use the ordinary
+steering/follow-up count again. The unused combined predicate is removed;
+held-message queues and all delivery, occurrence identity and persistence
+behavior remain intact.
+
+The six reversed regression cases fail against `a2ad5783`:
+
+- `NativeExtensionHookBridgeTests.PublicContextExcludesHeldMessagesFromThePendingQueueFlag`
   covers busy `NextTurn` with either trigger value and busy context-only
-  `Steer`/`FollowUp`. A later public callback observes the held message. After
-  insertion, the flag clears, the message is present once and no extra model
-  request is created. Ordinary prompt counts and queue snapshots stay empty.
-- `RpcModeTests.NativeCommandContextReportsIdleNextTurnMessagesUntilDelivered`
-  covers idle `NextTurn` with either trigger value. A subsequent native command
-  sees pending work before an ordinary turn consumes it; a command after
-  settlement sees the cleared flag.
+  `Steer`/`FollowUp`. Later callbacks see false while ordinary queues are empty.
+  Both later delivery and exactly-once context insertion remain verified.
+- `RpcModeTests.NativeCommandContextExcludesIdleNextTurnMessagesFromThePendingQueueFlag`
+  covers idle `NextTurn` with either trigger value. Subsequent commands see
+  false before and after the next ordinary turn delivers the held message.
+- `PublicBeforeAgentStartContextCapturesPendingMessagesAddedDuringSetup`
+  has positive controls for both ordinary steering and follow-up queues;
+  a later callback sees true while either queue contains work.
 
-The combined focused extension/callback/request/RPC-native suite passes
-**39/39**, including all six new cases. These are deterministic runtime and
-in-process RPC checks; no additional TUI process comparison is claimed.
+These are deterministic runtime and in-process RPC checks. TUI wiring uses
+the same count; no new TUI process comparison or broader capability promotion
+is claimed.
 
-Final local validation passes the full .NET suite **2,218/2,218**, zero skipped
-(`TMPDIR=/tmp`), format verification, the warnings-as-errors solution build
-(zero warnings/errors), and documentation paths (**137 documents / 531
-references**). Two additional local .NET invocations exited before running
-with internal CLR error `0x80131506`; their retries passed.
+The combined focused native-callback, turn-start/delivery, occurrence and
+persistence, provider-context and RPC-native suite passes **40/40**, zero
+skipped, including the six reversed cases and both ordinary-queue controls.
+Local format verification, the warnings-as-errors solution build (zero
+warnings/errors), and documentation paths (137 documents / 531 references)
+also pass. Full-suite verification is delegated to the final exact-head push
+and PR merge-result CI gates.
 
 ## Remaining boundaries
 

@@ -30,11 +30,6 @@ internal sealed class PromptDeliveryController
         get { lock (_stateGate) return _queue.Count; }
     }
 
-    public bool HasPendingMessages
-    {
-        get { lock (_stateGate) return _queue.Count > 0 || _pendingNextTurn.Count > 0; }
-    }
-
     public PromptDeliveryMode SteeringMode
     {
         get { lock (_stateGate) return _queue.SteeringMode; }

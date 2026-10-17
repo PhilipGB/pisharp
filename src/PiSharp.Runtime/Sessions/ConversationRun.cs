@@ -109,7 +109,7 @@ public sealed class ConversationRun
             () => _autoCompaction, () => _keepRecentTokens, () => _pricing, _save,
             RestoreExecutionAsync,
             (execution, count) => { _toolState.Restore(execution); _execution = execution; _historyCount = count; });
-        _agent.SetPendingMessageState(() => HasPendingExtensionMessages);
+        _agent.SetPendingMessageState(() => _promptDelivery.Count > 0);
     }
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
@@ -221,16 +221,6 @@ public sealed class ConversationRun
         _promptDelivery.Clear(publishQueueUpdate);
 
     public int PendingPromptCount => _promptDelivery.Count;
-
-    /// <summary>Whether queued input or held extension messages are waiting to enter context.</summary>
-    public bool HasPendingExtensionMessages
-    {
-        get
-        {
-            lock (_runtimeStateGate)
-                return _promptDelivery.HasPendingMessages || _pendingContextCustomMessages.Count > 0;
-        }
-    }
 
     public PromptDeliveryMode SteeringMode => _promptDelivery.SteeringMode;
 

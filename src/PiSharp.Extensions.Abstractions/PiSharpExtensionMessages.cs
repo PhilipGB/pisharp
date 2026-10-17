@@ -59,7 +59,7 @@ public sealed class PiSharpExtensionCommandContext
     /// <summary>Whether project-local native extensions are trusted.</summary>
     public bool IsProjectTrusted { get; }
 
-    /// <summary>Whether message work was waiting when this command started.</summary>
+    /// <summary>Whether ordinary steering or follow-up messages were queued when this command started; excludes held NextTurn and context-only messages.</summary>
     public bool HasPendingMessages { get; }
 
     /// <summary>Submits text through the normal user-turn path.</summary>

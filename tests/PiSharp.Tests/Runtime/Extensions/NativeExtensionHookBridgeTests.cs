@@ -52,8 +52,10 @@ public sealed class NativeExtensionHookBridgeTests
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
-    [Fact]
-    public async Task PublicBeforeAgentStartContextCapturesPendingMessagesAddedDuringSetup()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PublicBeforeAgentStartContextCapturesPendingMessagesAddedDuringSetup(bool followUp)
     {
         var cwd = NewWorkingDirectory();
         try
@@ -68,7 +70,7 @@ public sealed class NativeExtensionHookBridgeTests
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 firstContext = context;
-                queued = run!.TryQueueExtensionMessage(new PiSharpCustomMessage("setup-update", "queued during setup"));
+                queued = run!.TryQueueExtensionMessage(new PiSharpCustomMessage("setup-update", "queued during setup"), followUp);
                 return ValueTask.FromResult<NativeExtensions.PiSharpBeforeAgentStartResult?>(null);
             });
             adapter.AddBeforeAgentStartHandler((_, context, cancellationToken) =>
@@ -95,7 +97,8 @@ public sealed class NativeExtensionHookBridgeTests
             Assert.NotNull(secondContext);
             Assert.True(secondContext.HasPendingMessages);
             Assert.False(secondContext.IsIdle);
-            var request = Assert.Single(provider.Requests);
+            Assert.Equal(followUp ? 2 : 1, provider.Requests.Count);
+            var request = provider.Requests[^1];
             Assert.Contains(request, message => message.Text == "setup prompt");
             Assert.Contains(request, message => message.Text == "queued during setup");
             Assert.Equal(0, run.PendingPromptCount);
@@ -109,7 +112,7 @@ public sealed class NativeExtensionHookBridgeTests
     [InlineData(NativeExtensions.PiSharpMessageDeliveryMode.NextTurn, false)]
     [InlineData(NativeExtensions.PiSharpMessageDeliveryMode.Steer, false)]
     [InlineData(NativeExtensions.PiSharpMessageDeliveryMode.FollowUp, false)]
-    public async Task PublicContextReportsHeldMessagesWithoutChangingTheOrdinaryPromptQueue(
+    public async Task PublicContextExcludesHeldMessagesFromThePendingQueueFlag(
         NativeExtensions.PiSharpMessageDeliveryMode deliveryMode, bool triggerTurn)
     {
         var cwd = NewWorkingDirectory();
@@ -147,17 +150,15 @@ public sealed class NativeExtensionHookBridgeTests
 
             await foreach (var _ in run.RunEventsAsync("first prompt")) { }
 
-            Assert.Equal([true], pendingSnapshots);
+            Assert.Equal([false], pendingSnapshots);
             var nextTurn = deliveryMode == NativeExtensions.PiSharpMessageDeliveryMode.NextTurn;
-            Assert.Equal(nextTurn, run.HasPendingExtensionMessages);
             Assert.Equal(0, run.PendingPromptCount);
             var firstRequest = Assert.Single(provider.Requests);
             Assert.Equal(!nextTurn, firstRequest.Any(message => message.Text == "held message"));
 
             await foreach (var _ in run.RunEventsAsync("next prompt")) { }
 
-            Assert.Equal([true, false], pendingSnapshots);
-            Assert.False(run.HasPendingExtensionMessages);
+            Assert.Equal([false, false], pendingSnapshots);
             Assert.Equal(2, provider.Requests.Count);
             Assert.Single(provider.Requests[1], message => message.Text == "held message");
             Assert.Single(run.Conversation.Tree.ActivePath(), node => node.Type == "custom_message");

@@ -436,7 +436,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         var run = CurrentRun;
         return new PiSharpExtensionCommandContext(run.Conversation.WorkingDirectory, !IsActive,
             getProjectTrusted?.Invoke() ?? false,
-            run.HasPendingExtensionMessages,
+            run.PendingPromptCount > 0,
             async (prompt, cancellationToken) =>
             {
                 var currentRun = CurrentRun;
