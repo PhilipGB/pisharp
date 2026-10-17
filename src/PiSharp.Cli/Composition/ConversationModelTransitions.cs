@@ -36,13 +36,17 @@ internal sealed class ConversationModelTransitions(ActiveProjectRuntime projectB
         cancellationToken.ThrowIfCancellationRequested();
         var previousSelection = modelBinding.Selection;
         var previousThinking = modelBinding.Thinking;
-        await modelRuntimeController.ApplySelectionAsync(nextSelection, nextThinking, modelBinding.Agent, conversationBinding.Run,
+        var activeTransition = await modelRuntimeController.ApplySelectionAsync(nextSelection, nextThinking,
+            modelBinding.Agent, conversationBinding.Run,
             prepared =>
             {
                 modelBinding.AdoptPrepared(prepared);
-            }, prepared => AdoptPreparedAsync(prepared, recordModelChange: true));
-        await PiSharpExtensionSelectionEvents.PublishChangesAsync(modelBinding.Agent, previousSelection,
-            previousThinking, modelBinding.Selection, modelBinding.Thinking, source, cancellationToken).ConfigureAwait(false);
+            }, prepared => AdoptPreparedAsync(prepared, recordModelChange: true),
+            (prepared, token) => PiSharpExtensionSelectionEvents.PublishChangesAsync(modelBinding.Agent,
+                previousSelection, previousThinking, prepared.Selection, prepared.Thinking, source, token).AsTask());
+        if (!activeTransition)
+            await PiSharpExtensionSelectionEvents.PublishChangesAsync(modelBinding.Agent, previousSelection,
+                previousThinking, modelBinding.Selection, modelBinding.Thinking, source, cancellationToken).ConfigureAwait(false);
     }
 
     public Task<ModelDescriptor> SelectRpcModelAsync(ModelDescriptor model, CancellationToken token) =>
@@ -79,15 +83,15 @@ internal sealed class ConversationModelTransitions(ActiveProjectRuntime projectB
         var nextThinking = ThinkingLevels.ValidateForModel(normalized, modelBinding.Selection.Model.Reasoning,
             modelBinding.Selection.Model.ThinkingLevelMap);
         if (nextThinking.Equals(modelBinding.Thinking, StringComparison.Ordinal)) return modelBinding.Thinking;
-        if (!conversationBinding.Run.SetThinkingLevelDuringRun(nextThinking,
-            ThinkingLevels.ToOptions(nextThinking, modelBinding.Selection.Model.ThinkingLevelMap)))
-            throw new InvalidOperationException("The active run is already settling.");
         var previousThinking = modelBinding.Thinking;
-        modelBinding.SetThinking(nextThinking);
-        await PiSharpExtensionSelectionEvents.PublishChangesAsync(modelBinding.Agent, modelBinding.Selection,
-            previousThinking, modelBinding.Selection, modelBinding.Thinking,
-            PiSharpExtensionModelSelectionSource.Set, token).ConfigureAwait(false);
-        return modelBinding.Thinking;
+        var selection = modelBinding.Selection;
+        if (!conversationBinding.Run.SetThinkingLevelDuringRun(nextThinking,
+            ThinkingLevels.ToOptions(nextThinking, selection.Model.ThinkingLevelMap),
+            token => PiSharpExtensionSelectionEvents.PublishChangesAsync(modelBinding.Agent, selection,
+                previousThinking, selection, nextThinking, PiSharpExtensionModelSelectionSource.Set, token).AsTask(),
+            () => modelBinding.SetThinking(nextThinking)))
+            throw new InvalidOperationException("The active run is already settling.");
+        return nextThinking;
     }
 
     public async Task<string> SelectThinkingLevelAsync(string level, CancellationToken cancellationToken = default)

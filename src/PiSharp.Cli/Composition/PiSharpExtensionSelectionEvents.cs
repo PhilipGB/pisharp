@@ -25,15 +25,24 @@ internal static class PiSharpExtensionSelectionEvents
 
     public static Task PublishRestoreAsync(PiAgent agent, ModelSelection previousSelection,
         ModelSelection currentSelection, CancellationToken cancellationToken)
+        => PublishRestoreAsync(agent, previousSelection, "off", currentSelection, "off", cancellationToken);
+
+    public static async Task PublishRestoreAsync(PiAgent agent, ModelSelection previousSelection,
+        string previousThinking, ModelSelection currentSelection, string currentThinking,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(agent);
         ArgumentNullException.ThrowIfNull(previousSelection);
         ArgumentNullException.ThrowIfNull(currentSelection);
-        return HasSameIdentity(previousSelection, currentSelection)
-            ? Task.CompletedTask
-            : agent.ExtensionEvents.DispatchModelSelectAsync(new(
+
+        if (!string.Equals(previousThinking, currentThinking, StringComparison.Ordinal))
+            await agent.ExtensionEvents.DispatchThinkingLevelSelectAsync(new(
+                ToThinkingLevel(currentThinking), ToThinkingLevel(previousThinking)), cancellationToken).ConfigureAwait(false);
+
+        if (!HasSameIdentity(previousSelection, currentSelection))
+            await agent.ExtensionEvents.DispatchModelSelectAsync(new(
                 ToModelInfo(currentSelection), ToModelInfo(previousSelection), PiSharpExtensionModelSelectionSource.Restore),
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
     }
 
     private static bool HasSameIdentity(ModelSelection left, ModelSelection right) =>

@@ -29,9 +29,11 @@ public sealed class ConversationRun
     private readonly AgentRunRetryController _retryController;
     private string? _reasoningLevel;
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private int _manualCompactionActive;
     private readonly object _runtimeStateGate = new();
     private readonly PromptDeliveryController _promptDelivery;
     private readonly Queue<PendingRuntimeChange> _pendingRuntimeChanges = new();
+    private readonly Queue<Func<CancellationToken, Task>> _pendingRuntimeTransitionNotifications = new();
     private readonly Queue<PiSharpCustomMessage> _pendingContextCustomMessages = new();
     private readonly Queue<ChatMessage> _pendingProviderContextMessages = new();
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
@@ -127,17 +129,26 @@ public sealed class ConversationRun
         ArgumentNullException.ThrowIfNull(name);
         var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
         if (!ownsGate) await _gate.WaitAsync(cancellationToken);
+        var changed = false;
         try
         {
+            var previousName = Conversation.Name;
             using var change = Conversation.BeginSessionNameChange(name);
             if (_save is not null) await _save(cancellationToken).ConfigureAwait(false);
             change.Commit();
+            changed = !string.Equals(previousName, Conversation.Name, StringComparison.Ordinal);
         }
         finally
         {
             if (!ownsGate) _gate.Release();
         }
+        if (changed) await NotifySessionInfoChangedAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Publishes the already committed current session name to native extension observers.</summary>
+    internal Task NotifySessionInfoChangedAsync(CancellationToken cancellationToken) =>
+        _agent.ExtensionEvents.DispatchSessionInfoChangedAsync(
+            new NativeExtensions.PiSharpExtensionSessionInfoChangedEvent(Conversation.Name), cancellationToken);
 
     /// <summary>Changes an existing entry label and commits only after its normal save succeeds.</summary>
     public async Task SetEntryLabelAsync(string entryId, string? label,
@@ -298,6 +309,10 @@ public sealed class ConversationRun
     /// <summary>Whether this run currently owns the active prompt loop.</summary>
     public bool IsActive => _promptDelivery.IsActive;
 
+    /// <summary>Whether an extension callback can compact without reentering a run or compaction.</summary>
+    internal bool CanCompactFromExtensionCallback => !_promptDelivery.IsActive &&
+        !_compactionCoordinator.IsCompacting && Volatile.Read(ref _manualCompactionActive) == 0 && _gate.CurrentCount != 0;
+
     /// <summary>Queue user input through the active run's ordinary steering/follow-up path.</summary>
     public bool TryQueueExtensionUserMessage(ChatMessage message, string promptText, bool followUp = false)
     {
@@ -355,7 +370,8 @@ public sealed class ConversationRun
 
     public void SetFollowUpMode(PromptDeliveryMode mode) => _promptDelivery.SetFollowUpMode(mode);
 
-    public bool SetThinkingLevelDuringRun(string level, ReasoningOptions? reasoning)
+    public bool SetThinkingLevelDuringRun(string level, ReasoningOptions? reasoning,
+        Func<CancellationToken, Task>? notifyAfterActivation = null, Action? updateSelectionOwner = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(level);
         lock (_runtimeStateGate)
@@ -369,13 +385,17 @@ public sealed class ConversationRun
                 Conversation.AppendThinkingLevelChange(level);
                 _persistedThinkingLevel = level;
             }
+            updateSelectionOwner?.Invoke();
+            if (notifyAfterActivation is not null)
+                _pendingRuntimeTransitionNotifications.Enqueue(notifyAfterActivation);
             return true;
         }
     }
 
     public bool TrySetModelDuringRun(string model, string? endpoint, string? provider,
         ModelPricing? pricing, AutoCompactionPolicy? autoCompaction, int keepRecentTokens, string thinkingLevel,
-        ReasoningOptions? reasoning, Action activateRuntime, string? providerApi = null)
+        ReasoningOptions? reasoning, Action activateRuntime, string? providerApi = null,
+        Func<CancellationToken, Task>? notifyAfterActivation = null, Action? updateSelectionOwner = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(model);
         ArgumentException.ThrowIfNullOrWhiteSpace(thinkingLevel);
@@ -394,8 +414,9 @@ public sealed class ConversationRun
             _agent.SetReasoningOptions(reasoning);
             Volatile.Write(ref _reasoningLevel, thinkingLevel);
             _agent.SetVirtualModelThinkingLevel(thinkingLevel);
+            updateSelectionOwner?.Invoke();
             _pendingRuntimeChanges.Enqueue(new PendingModelChange(provider, pricing, autoCompaction,
-                keepRecentTokens, activateRuntime, providerApi));
+                keepRecentTokens, activateRuntime, providerApi, notifyAfterActivation));
             return true;
         }
     }
@@ -567,10 +588,14 @@ public sealed class ConversationRun
         });
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var consumerClosed = new CancellationTokenSource();
+        var initialEntryIds = Conversation.Tree.ActivePath().Select(entry => entry.Id).ToHashSet(StringComparer.Ordinal);
         void Publish(AgentLifecycleEvent value) => channel.Writer.WriteAsync(value, linked.Token).AsTask().GetAwaiter().GetResult();
         var pump = Task.Run(async () =>
         {
             var accepted = false;
+            var nativeAgentStarted = false;
+            var nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Completed;
+            string? nativeAgentError = null;
             var activeTurnOutcomeSent = false;
             object? owner = null;
             var conversationRunActivityStarted = false;
@@ -616,6 +641,29 @@ public sealed class ConversationRun
                             item =>
                             {
                                 if (item.Type == "prompt_accepted") accepted = true;
+                                if (item.Type is "prompt_accepted" or "agent_attempt_started")
+                                {
+                                    nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Completed;
+                                    nativeAgentError = null;
+                                    if (item.Type == "prompt_accepted" && !nativeAgentStarted)
+                                    {
+                                        nativeAgentStarted = true;
+                                        _agent.BeginExtensionAgentRun();
+                                        _agent.ExtensionEvents.DispatchAgentStartAsync(
+                                            new NativeExtensions.PiSharpExtensionAgentStartEvent(), linked.Token, Publish)
+                                            .GetAwaiter().GetResult();
+                                    }
+                                }
+                                else if (item.Type == "turn_failed")
+                                {
+                                    nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Error;
+                                    nativeAgentError = item.Error;
+                                }
+                                else if (item.Type == "turn_interrupted")
+                                {
+                                    nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Aborted;
+                                    nativeAgentError = item.Error;
+                                }
                                 if (item.Type is "prompt_accepted" or "agent_attempt_started") activeTurnOutcomeSent = false;
                                 Publish(item);
                                 if (item.Type is "turn_completed" or "turn_failed" or "turn_interrupted" or "prompt_rejected")
@@ -650,6 +698,7 @@ public sealed class ConversationRun
                     activeTurnOutcomeSent = true;
                     if (outcome != AgentTurnOutcome.Completed)
                     {
+                        nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Error;
                         stopRun = true;
                         break;
                     }
@@ -659,6 +708,9 @@ public sealed class ConversationRun
             }
             catch (OperationCanceledException)
             {
+                if (nativeAgentStarted)
+                    nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Aborted;
+                nativeAgentError ??= "Request was aborted";
                 if (!consumerClosed.IsCancellationRequested && !activeTurnOutcomeSent)
                     try
                     {
@@ -669,6 +721,9 @@ public sealed class ConversationRun
             }
             catch (Exception error)
             {
+                if (nativeAgentStarted)
+                    nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Error;
+                nativeAgentError = error.Message;
                 if (!consumerClosed.IsCancellationRequested && !activeTurnOutcomeSent)
                     try
                     {
@@ -681,6 +736,21 @@ public sealed class ConversationRun
             {
                 try
                 {
+                    if (nativeAgentStarted)
+                    {
+                        var messages = Conversation.Tree.ActivePath()
+                            .Where(entry => !initialEntryIds.Contains(entry.Id) && entry.Type == "chat")
+                            .Select(ConversationMessageCodec.RestoreEntry).ToArray();
+                        try
+                        {
+                            await _agent.ExtensionEvents.DispatchAgentEndAsync(new(messages, nativeAgentOutcome,
+                                nativeAgentError), linked.Token, Publish).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+                        {
+                            // A host abort releases a pending extension observer and settles this run.
+                        }
+                    }
                     if (owner is not null) await EndPromptLoopAsync(owner);
                 }
                 finally
@@ -719,6 +789,7 @@ public sealed class ConversationRun
                 PersistPendingRuntimeChangesUnsafe();
                 return FlushPendingContextCustomMessagesUnsafe();
             });
+            await DispatchPendingRuntimeTransitionNotificationsAsync().ConfigureAwait(false);
             if (transition.PendingContextMessagesAppended && _save is not null)
                 await _save(CancellationToken.None);
 
@@ -778,16 +849,34 @@ public sealed class ConversationRun
         while (true)
         {
             bool appended;
+            bool ended = false;
             lock (_runtimeStateGate)
             {
                 appended = FlushPendingContextCustomMessagesUnsafe();
                 if (!appended)
                 {
                     EndPromptLoop(owner);
-                    return;
+                    ended = true;
                 }
             }
+            if (ended)
+            {
+                await DispatchPendingRuntimeTransitionNotificationsAsync().ConfigureAwait(false);
+                return;
+            }
             if (_save is not null) await _save(CancellationToken.None);
+        }
+    }
+
+    private async Task DispatchPendingRuntimeTransitionNotificationsAsync()
+    {
+        while (true)
+        {
+            Func<CancellationToken, Task>? notification;
+            lock (_runtimeStateGate)
+                notification = _pendingRuntimeTransitionNotifications.TryDequeue(out var pending) ? pending : null;
+            if (notification is null) return;
+            await notification(CancellationToken.None).ConfigureAwait(false);
         }
     }
 
@@ -805,6 +894,8 @@ public sealed class ConversationRun
                     _autoCompaction = model.AutoCompaction;
                     _logicalContextPolicy = model.AutoCompaction;
                     _keepRecentTokens = model.KeepRecentTokens;
+                    if (model.NotifyAfterActivation is not null)
+                        _pendingRuntimeTransitionNotifications.Enqueue(model.NotifyAfterActivation);
                     break;
             }
         }
@@ -812,7 +903,8 @@ public sealed class ConversationRun
 
     private abstract record PendingRuntimeChange;
     private sealed record PendingModelChange(string? Provider, ModelPricing? Pricing,
-        AutoCompactionPolicy? AutoCompaction, int KeepRecentTokens, Action ActivateRuntime, string? ProviderApi) : PendingRuntimeChange;
+        AutoCompactionPolicy? AutoCompaction, int KeepRecentTokens, Action ActivateRuntime, string? ProviderApi,
+        Func<CancellationToken, Task>? NotifyAfterActivation) : PendingRuntimeChange;
 
     public bool RecordBashResult(string command, BashExecutionResult result, bool excludeFromContext = false)
     {
@@ -858,51 +950,140 @@ public sealed class ConversationRun
     public async Task<ConversationCompactionResult?> CompactWithResultAsync(string? focus = null,
         CancellationToken cancellationToken = default, Func<AgentLifecycleEvent, Task>? publishEvent = null)
     {
-        await _gate.WaitAsync(cancellationToken);
+        var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
+        if (ownsGate && _promptDelivery.IsActive)
+            throw new InvalidOperationException("Manual compaction cannot reenter an active agent run.");
+        if (!ownsGate) await _gate.WaitAsync(cancellationToken);
+        if (Interlocked.CompareExchange(ref _manualCompactionActive, 1, 0) != 0)
+        {
+            if (!ownsGate) _gate.Release();
+            throw new InvalidOperationException("Manual compaction is already in progress.");
+        }
+        var previousGateOwner = s_currentGateOwner.Value;
+        s_currentGateOwner.Value = this;
         try
         {
             if (publishEvent is not null)
                 await publishEvent(new AgentLifecycleEvent("compaction_start") { CompactionReason = "manual" });
+            ConversationCompactionResult? completedResult = null;
+            string? terminalErrorMessage = null;
+            var failureDispatchStarted = false;
+            var completionPublished = false;
             try
             {
                 await RestorePhysicalContextPolicyAsync(cancellationToken);
                 var result = await CompactCoreAsync(focus, cancellationToken);
-                var error = result is null ? CompactionUnavailableError() : null;
+                if (result is null)
+                {
+                    var errorMessage = terminalErrorMessage = "Compaction failed: " + CompactionUnavailableError();
+                    if (publishEvent is not null)
+                    {
+                        completionPublished = true;
+                        await publishEvent(new AgentLifecycleEvent("compaction_end", Error: errorMessage)
+                        {
+                            CompactionReason = "manual",
+                            CompactionAborted = false,
+                            CompactionWillRetry = false
+                        });
+                    }
+                    failureDispatchStarted = true;
+                    await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
+                        NativeExtensions.PiSharpExtensionCompactionReason.Manual, willRetry: false,
+                        aborted: false, errorMessage: errorMessage, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    return null;
+                }
+
+                completedResult = result;
+                await NativeExtensionCompactionEventPublisher.PublishCompletedAsync(_agent, Conversation, result,
+                    NativeExtensions.PiSharpExtensionCompactionReason.Manual, willRetry: false,
+                    cancellationToken).ConfigureAwait(false);
                 if (publishEvent is not null)
-                    await publishEvent(new AgentLifecycleEvent("compaction_end", Error: error is null ? null :
-                        "Compaction failed: " + error)
+                {
+                    completionPublished = true;
+                    await publishEvent(new AgentLifecycleEvent("compaction_end")
                     {
                         CompactionReason = "manual",
                         CompactionResult = result,
                         CompactionAborted = false,
                         CompactionWillRetry = false
                     });
+                }
                 return result;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                if (publishEvent is not null)
-                    await publishEvent(new AgentLifecycleEvent("compaction_end")
-                    {
-                        CompactionReason = "manual",
-                        CompactionAborted = true,
-                        CompactionWillRetry = false
-                    });
+                if (publishEvent is not null && !completionPublished)
+                {
+                    completionPublished = true;
+                    await publishEvent(completedResult is null
+                        ? new AgentLifecycleEvent("compaction_end")
+                        {
+                            CompactionReason = "manual",
+                            CompactionAborted = true,
+                            CompactionWillRetry = false
+                        }
+                        : new AgentLifecycleEvent("compaction_end")
+                        {
+                            CompactionReason = "manual",
+                            CompactionResult = completedResult,
+                            CompactionAborted = false,
+                            CompactionWillRetry = false
+                        });
+                }
+                if (terminalErrorMessage is not null && !failureDispatchStarted)
+                {
+                    failureDispatchStarted = true;
+                    await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
+                        NativeExtensions.PiSharpExtensionCompactionReason.Manual, willRetry: false,
+                        aborted: false, errorMessage: terminalErrorMessage, cancellationToken: CancellationToken.None)
+                        .ConfigureAwait(false);
+                }
+                else if (completedResult is null && terminalErrorMessage is null)
+                {
+                    failureDispatchStarted = true;
+                    await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
+                        NativeExtensions.PiSharpExtensionCompactionReason.Manual, willRetry: false,
+                        aborted: true, errorMessage: null, CancellationToken.None).ConfigureAwait(false);
+                }
                 throw;
             }
             catch (Exception error)
             {
-                if (publishEvent is not null)
-                    await publishEvent(new AgentLifecycleEvent("compaction_end", Error: "Compaction failed: " + error.Message)
-                    {
-                        CompactionReason = "manual",
-                        CompactionAborted = false,
-                        CompactionWillRetry = false
-                    });
+                terminalErrorMessage ??= "Compaction failed: " + error.Message;
+                if (publishEvent is not null && !completionPublished)
+                {
+                    completionPublished = true;
+                    await publishEvent(completedResult is null
+                        ? new AgentLifecycleEvent("compaction_end", Error: "Compaction failed: " + error.Message)
+                        {
+                            CompactionReason = "manual",
+                            CompactionAborted = false,
+                            CompactionWillRetry = false
+                        }
+                        : new AgentLifecycleEvent("compaction_end")
+                        {
+                            CompactionReason = "manual",
+                            CompactionResult = completedResult,
+                            CompactionAborted = false,
+                            CompactionWillRetry = false
+                        });
+                }
+                if (completedResult is null && !failureDispatchStarted)
+                {
+                    failureDispatchStarted = true;
+                    await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
+                        NativeExtensions.PiSharpExtensionCompactionReason.Manual, willRetry: false,
+                        aborted: false, errorMessage: terminalErrorMessage, cancellationToken: cancellationToken).ConfigureAwait(false);
+                }
                 throw;
             }
         }
-        finally { _gate.Release(); }
+        finally
+        {
+            s_currentGateOwner.Value = previousGateOwner;
+            Interlocked.Exchange(ref _manualCompactionActive, 0);
+            if (!ownsGate) _gate.Release();
+        }
     }
 
     private string CompactionUnavailableError() => Conversation.Tree.ActivePath()
@@ -982,11 +1163,26 @@ public sealed class ConversationRun
         IReadOnlyList<JsonElement>? expectedProviderPrefix = null;
         var providerTurns = new ProviderTurnJournal(Conversation, () => _agent.GetHistory(_execution),
             () => virtualContext?.HasCompacted == true, () => _historyCount, onEvent);
+        var nativeTurnOpen = false;
 
-        void CompleteProviderTurnUnsafe()
+        ProviderTurnSnapshot CompleteProviderTurnUnsafe()
         {
-            providerTurns.CompleteTurn();
+            var completedTurn = providerTurns.CompleteTurn();
             PersistPendingRuntimeChangesUnsafe();
+            return completedTurn;
+        }
+
+        void CompleteNativeTurn(ProviderTurnSnapshot turn, bool aborted, string? errorMessage)
+        {
+            if (!nativeTurnOpen) return;
+            var turnIndex = _agent.ExtensionTurnIndex;
+            nativeTurnOpen = false;
+            _agent.CompleteExtensionTurn();
+            var entryIds = FindTurnEntryIds(turn);
+            _agent.ExtensionEvents.DispatchTurnEndAsync(new NativeExtensions.PiSharpExtensionTurnEndEvent(
+                turnIndex, turn.Message, turn.ToolResults, entryIds.MessageEntryId,
+                entryIds.ToolResultEntryIds, aborted, errorMessage), cancellationToken,
+                item => onEvent?.Invoke(item)).GetAwaiter().GetResult();
         }
 
         void Observe(AgentLifecycleEvent item)
@@ -1005,9 +1201,10 @@ public sealed class ConversationRun
             }
             if (item.Type == "model_request_started")
             {
+                ProviderTurnSnapshot previousTurn;
                 lock (_runtimeStateGate)
                 {
-                    CompleteProviderTurnUnsafe();
+                    previousTurn = CompleteProviderTurnUnsafe();
                     // The provider request following tool execution is the natural continuation
                     // of that turn. Commit context-only extension messages after the completed
                     // tool results so the continuation sees them without starting another turn.
@@ -1016,7 +1213,12 @@ public sealed class ConversationRun
                     _providerRequestModel = attribution.Model;
                     _providerRequestPricing = attribution.Pricing;
                 }
+                CompleteNativeTurn(previousTurn, aborted: false, errorMessage: null);
                 providerTurns.PartialAssistantText.Clear();
+                nativeTurnOpen = true;
+                _agent.ExtensionEvents.DispatchTurnStartAsync(new NativeExtensions.PiSharpExtensionTurnStartEvent(
+                    _agent.ExtensionTurnIndex, DateTimeOffset.UtcNow), cancellationToken,
+                    item => onEvent?.Invoke(item)).GetAwaiter().GetResult();
                 onEvent?.Invoke(new("assistant_turn_started"));
             }
             else if (item.Type == "model_request_routed")
@@ -1073,8 +1275,121 @@ public sealed class ConversationRun
             if (!_agent.HasVirtualModelRouter && AutoCompactionEnabled && contextTriggerTokens is > 0 &&
                 EstimateNextContext(estimatedPrompt) > contextTriggerTokens.Value)
             {
-                if (await CompactCoreAsync(null, cancellationToken) is not null)
-                    onEvent?.Invoke(new("context_compacted", Text: "Automatic context summary saved; raw history retained."));
+                var plan = ConversationCompactionCoordinator.PreparePlan(Conversation,
+                    _autoCompaction?.KeepRecentTokens ?? _keepRecentTokens);
+                if (plan is not null)
+                {
+                    onEvent?.Invoke(new("compaction_start") { CompactionReason = "threshold" });
+                    ConversationCompactionResult? completedResult = null;
+                    string? terminalErrorMessage = null;
+                    var failureDispatchStarted = false;
+                    var completionPublished = false;
+                    try
+                    {
+                        var result = await CompactCoreAsync(null, cancellationToken);
+                        if (result is null)
+                        {
+                            terminalErrorMessage = "Auto-compaction failed: " + CompactionUnavailableError();
+                            onEvent?.Invoke(new("compaction_end", Error: terminalErrorMessage)
+                            {
+                                CompactionReason = "threshold",
+                                CompactionAborted = false,
+                                CompactionWillRetry = false
+                            });
+                            completionPublished = true;
+                            failureDispatchStarted = true;
+                            await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
+                                NativeExtensions.PiSharpExtensionCompactionReason.Threshold, willRetry: false,
+                                aborted: false, errorMessage: terminalErrorMessage, cancellationToken: cancellationToken)
+                                .ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            completedResult = result;
+                            await NativeExtensionCompactionEventPublisher.PublishCompletedAsync(_agent, Conversation,
+                                result, NativeExtensions.PiSharpExtensionCompactionReason.Threshold, willRetry: false,
+                                cancellationToken).ConfigureAwait(false);
+                            onEvent?.Invoke(new("compaction_end")
+                            {
+                                CompactionReason = "threshold",
+                                CompactionResult = result,
+                                CompactionAborted = false,
+                                CompactionWillRetry = false
+                            });
+                            completionPublished = true;
+                            onEvent?.Invoke(new("context_compacted", Text: "Automatic context summary saved; raw history retained."));
+                        }
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        if (!completionPublished)
+                        {
+                            completionPublished = true;
+                            onEvent?.Invoke(completedResult is null
+                                ? new("compaction_end")
+                                {
+                                    CompactionReason = "threshold",
+                                    CompactionAborted = true,
+                                    CompactionWillRetry = false
+                                }
+                                : new("compaction_end")
+                                {
+                                    CompactionReason = "threshold",
+                                    CompactionResult = completedResult,
+                                    CompactionAborted = false,
+                                    CompactionWillRetry = false
+                                });
+                        }
+                        if (terminalErrorMessage is not null && !failureDispatchStarted)
+                        {
+                            failureDispatchStarted = true;
+                            await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
+                                NativeExtensions.PiSharpExtensionCompactionReason.Threshold, willRetry: false,
+                                aborted: false, errorMessage: terminalErrorMessage, cancellationToken: CancellationToken.None)
+                                .ConfigureAwait(false);
+                        }
+                        else if (completedResult is null && terminalErrorMessage is null)
+                        {
+                            failureDispatchStarted = true;
+                            await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
+                                NativeExtensions.PiSharpExtensionCompactionReason.Threshold, willRetry: false,
+                                aborted: true, errorMessage: null, cancellationToken: CancellationToken.None)
+                                .ConfigureAwait(false);
+                        }
+                        throw;
+                    }
+                    catch (Exception error)
+                    {
+                        terminalErrorMessage ??= "Auto-compaction failed: " + error.Message;
+                        if (!completionPublished)
+                        {
+                            completionPublished = true;
+                            onEvent?.Invoke(completedResult is null
+                                ? new("compaction_end", Error: terminalErrorMessage)
+                                {
+                                    CompactionReason = "threshold",
+                                    CompactionAborted = false,
+                                    CompactionWillRetry = false
+                                }
+                                : new("compaction_end")
+                                {
+                                    CompactionReason = "threshold",
+                                    CompactionResult = completedResult,
+                                    CompactionAborted = false,
+                                    CompactionWillRetry = false
+                                });
+                        }
+                        if (completedResult is null && !failureDispatchStarted)
+                        {
+                            failureDispatchStarted = true;
+                            await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
+                                NativeExtensions.PiSharpExtensionCompactionReason.Threshold, willRetry: false,
+                                aborted: false, errorMessage: terminalErrorMessage, cancellationToken: cancellationToken)
+                                .ConfigureAwait(false);
+                        }
+                        throw;
+                    }
+                }
                 if (EstimateNextContext(estimatedPrompt) > contextTriggerTokens.Value)
                     throw new InvalidOperationException("Estimated context still exceeds the configured budget; shorten the prompt or increase the model context window.");
             }
@@ -1132,7 +1447,7 @@ public sealed class ConversationRun
                     });
                 }
             }
-            virtualContext = new VirtualModelContextCoordinator(Conversation,
+            virtualContext = new VirtualModelContextCoordinator(Conversation, _agent,
                 token => _compactionCoordinator.CompactAsync(null, token, adoptExecutionHistory: false),
                 () => AutoCompactionEnabled, Observe, () =>
                 {
@@ -1164,7 +1479,9 @@ public sealed class ConversationRun
             await foreach (var update in attemptStream.PumpAsync(updates, durable,
                 usage => Conversation.AppendUsage(attribution.Usage(usage)), cancellationToken))
                 yield return update;
-            lock (_runtimeStateGate) CompleteProviderTurnUnsafe();
+            ProviderTurnSnapshot lastTurn;
+            lock (_runtimeStateGate) lastTurn = CompleteProviderTurnUnsafe();
+            CompleteNativeTurn(lastTurn, aborted: false, errorMessage: null);
             completed = true;
         }
         finally
@@ -1224,6 +1541,12 @@ public sealed class ConversationRun
                     _historyCount = interruptedHistory.Count;
                 }
                 if (started) await durable!.FinishAsync(completed);
+                if (nativeTurnOpen)
+                {
+                    var turn = providerTurns.SnapshotTurn();
+                    var aborted = !completed && attemptStream.InterruptionType == "turn_interrupted";
+                    CompleteNativeTurn(turn, aborted, !completed ? attemptStream.InterruptionError : null);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -1251,6 +1574,41 @@ public sealed class ConversationRun
         if (measured is null) return AutoCompactionPolicy.Estimate(Conversation.ContextMessages(), prompt);
         var pending = (prompt.Length + 1L) / 2 + 64;
         return (int)Math.Min(int.MaxValue, measured.Value + pending);
+    }
+
+    private (string? MessageEntryId, IReadOnlyList<string> ToolResultEntryIds) FindTurnEntryIds(
+        ProviderTurnSnapshot turn)
+    {
+        var path = Conversation.Tree.ActivePath();
+        var startIndex = 0;
+        string? messageEntryId = null;
+        if (turn.Message is { } message)
+        {
+            for (var index = path.Count - 1; index >= 0; index--)
+            {
+                if (path[index].Type != "chat") continue;
+                if (!ProviderTurnHistoryReconciler.AreEquivalent(message,
+                    ConversationMessageCodec.RestoreEntry(path[index]))) continue;
+                messageEntryId = path[index].Id;
+                startIndex = index + 1;
+                break;
+            }
+        }
+
+        var toolResultEntryIds = new List<string>();
+        foreach (var result in turn.ToolResults)
+        {
+            for (var index = startIndex; index < path.Count; index++)
+            {
+                if (path[index].Type != "chat") continue;
+                if (!ProviderTurnHistoryReconciler.AreEquivalent(result,
+                    ConversationMessageCodec.RestoreEntry(path[index]))) continue;
+                toolResultEntryIds.Add(path[index].Id);
+                startIndex = index + 1;
+                break;
+            }
+        }
+        return (messageEntryId, Array.AsReadOnly(toolResultEntryIds.ToArray()));
     }
 
     private async Task OmitFailedRetryContextAsync(string? attemptStartHead, int attemptStartPathLength,
