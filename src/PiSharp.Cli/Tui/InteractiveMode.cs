@@ -74,7 +74,7 @@ internal static class InteractiveMode
         {
             var run = conversationBinding.Run;
             return new PiSharpExtensionCommandContext(projectBinding.WorkingDirectory, !run.IsActive,
-                projectBinding.Trusted, run.PendingPromptCount > 0,
+                projectBinding.Trusted, run.HasPendingExtensionMessages,
                 async (text, cancellationToken) =>
                 {
                     if (run.IsActive)

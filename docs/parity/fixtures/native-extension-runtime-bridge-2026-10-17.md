@@ -121,6 +121,37 @@ solution build (zero warnings/errors), the full .NET suite **2,212/2,212**
 references**). One additional local runner invocation exited before discovery
 with internal CLR error `0x80131506`; the retry passed the complete suite.
 
+## Pending-message visibility correction
+
+Review of `a2043ff8e0691b03c78af56207dbd3521efad6e5` found that public
+`HasPendingMessages` snapshots only counted ordinary steering/follow-up work.
+The runtime now uses a separate predicate covering that queue, held
+`NextTurn` messages and busy context-only messages awaiting insertion. It is
+wired into live extension callbacks and TUI/RPC command contexts. The ordinary
+prompt count, queue snapshots and display retain their existing meaning.
+
+Six new regression cases reproduced the false flag before the wiring fix:
+
+- `NativeExtensionHookBridgeTests.PublicContextReportsHeldMessagesWithoutChangingTheOrdinaryPromptQueue`
+  covers busy `NextTurn` with either trigger value and busy context-only
+  `Steer`/`FollowUp`. A later public callback observes the held message. After
+  insertion, the flag clears, the message is present once and no extra model
+  request is created. Ordinary prompt counts and queue snapshots stay empty.
+- `RpcModeTests.NativeCommandContextReportsIdleNextTurnMessagesUntilDelivered`
+  covers idle `NextTurn` with either trigger value. A subsequent native command
+  sees pending work before an ordinary turn consumes it; a command after
+  settlement sees the cleared flag.
+
+The combined focused extension/callback/request/RPC-native suite passes
+**39/39**, including all six new cases. These are deterministic runtime and
+in-process RPC checks; no additional TUI process comparison is claimed.
+
+Final local validation passes the full .NET suite **2,218/2,218**, zero skipped
+(`TMPDIR=/tmp`), format verification, the warnings-as-errors solution build
+(zero warnings/errors), and documentation paths (**137 documents / 531
+references**). Two additional local .NET invocations exited before running
+with internal CLR error `0x80131506`; their retries passed.
+
 ## Remaining boundaries
 
 The global `feature-extensions-net-api` and `extension-orchestration-api`

@@ -104,6 +104,67 @@ public sealed class NativeExtensionHookBridgeTests
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
+    [Theory]
+    [InlineData(NativeExtensions.PiSharpMessageDeliveryMode.NextTurn, true)]
+    [InlineData(NativeExtensions.PiSharpMessageDeliveryMode.NextTurn, false)]
+    [InlineData(NativeExtensions.PiSharpMessageDeliveryMode.Steer, false)]
+    [InlineData(NativeExtensions.PiSharpMessageDeliveryMode.FollowUp, false)]
+    public async Task PublicContextReportsHeldMessagesWithoutChangingTheOrdinaryPromptQueue(
+        NativeExtensions.PiSharpMessageDeliveryMode deliveryMode, bool triggerTurn)
+    {
+        var cwd = NewWorkingDirectory();
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            ConversationRun? run = null;
+            var send = true;
+            var pendingSnapshots = new List<bool>();
+            adapter.AddBeforeAgentStartHandler(async (_, _, cancellationToken) =>
+            {
+                if (send)
+                {
+                    send = false;
+                    Assert.False(await run!.DeliverExtensionCustomMessageAsync(
+                        new("held", "held message"), null, triggerTurn, deliveryMode, cancellationToken));
+                }
+                return null;
+            });
+            adapter.AddBeforeAgentStartHandler((_, context, _) =>
+            {
+                pendingSnapshots.Add(context.HasPendingMessages);
+                Assert.Equal(0, run!.PendingPromptCount);
+                Assert.Empty(run.GetPendingPrompts().Steering);
+                Assert.Empty(run.GetPendingPrompts().FollowUp);
+                return ValueTask.FromResult<NativeExtensions.PiSharpBeforeAgentStartResult?>(null);
+            });
+            adapter.Close();
+
+            var provider = new HookBridgeClient();
+            run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(cwd), noBuiltinTools: true,
+                beforeAgentStartHandlers: registration.BeforeAgentStartHandlers),
+                new ConversationSession(cwd, "test-model", null));
+
+            await foreach (var _ in run.RunEventsAsync("first prompt")) { }
+
+            Assert.Equal([true], pendingSnapshots);
+            var nextTurn = deliveryMode == NativeExtensions.PiSharpMessageDeliveryMode.NextTurn;
+            Assert.Equal(nextTurn, run.HasPendingExtensionMessages);
+            Assert.Equal(0, run.PendingPromptCount);
+            var firstRequest = Assert.Single(provider.Requests);
+            Assert.Equal(!nextTurn, firstRequest.Any(message => message.Text == "held message"));
+
+            await foreach (var _ in run.RunEventsAsync("next prompt")) { }
+
+            Assert.Equal([true, false], pendingSnapshots);
+            Assert.False(run.HasPendingExtensionMessages);
+            Assert.Equal(2, provider.Requests.Count);
+            Assert.Single(provider.Requests[1], message => message.Text == "held message");
+            Assert.Single(run.Conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
     [Fact]
     public async Task PublicContextTransformFailureSettlesAndAHealthyFollowupSucceeds()
     {

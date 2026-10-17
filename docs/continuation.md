@@ -64,6 +64,17 @@ Final local verification passes the complete .NET suite (2,212/2,212, zero
 skipped), format verification, a zero-warning build, and documentation paths
 (137 documents / 531 references).
 
+Pending-state review of `a2043ff8` adds a separate runtime predicate for
+ordinary queued input, held `NextTurn` messages and busy context-only messages.
+Live callbacks and TUI/RPC commands now use it for `HasPendingMessages`, while
+ordinary prompt counts and queue snapshots keep their existing meaning. Six
+new regression cases cover idle/busy `NextTurn` with both trigger values and
+busy context-only `Steer`/`FollowUp`, including flag clearing after delivery.
+All six fail before the wiring correction; the combined focused suite passes
+39/39 afterward. Full local validation passes 2,218/2,218 .NET tests, zero
+skipped, format verification, a zero-warning build and documentation paths
+(137 documents / 531 references). See the milestone receipt for scope.
+
 This completes only the bounded native runtime bridge milestone. The broad
 extension API and orchestration capability remain `in_progress`; there is no
 global parity promotion. Per-session state, settings, UI/keybindings, provider

@@ -90,6 +90,69 @@ public sealed class RpcModeTests
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task NativeCommandContextReportsIdleNextTurnMessagesUntilDelivered(bool triggerTurn)
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-native-pending-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        Task? serving = null;
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            var contexts = new List<PiSharpExtensionCommandContext>();
+            adapter.AddCommand("hold", async (_, context, cancellationToken) =>
+            {
+                await context.SendCustomMessageAsync(new("held", "idle next-turn message"),
+                    triggerTurn, PiSharpMessageDeliveryMode.NextTurn, cancellationToken);
+                return "held";
+            });
+            adapter.AddCommand("pending", (_, context, _) =>
+            {
+                contexts.Add(context);
+                return Task.FromResult("inspected");
+            });
+            adapter.Close();
+            var provider = new StubClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(cwd)),
+                new ConversationSession(cwd, "fixture", null));
+            serving = new RpcMode(new CommandReader(channel.Reader), output, run, extensions: registration).ServeAsync();
+
+            channel.Writer.TryWrite("{\"id\":\"hold\",\"type\":\"prompt\",\"message\":\"/hold\"}");
+            await WaitForAsync(output, "\"id\":\"hold\"");
+            channel.Writer.TryWrite("{\"id\":\"pending-before\",\"type\":\"prompt\",\"message\":\"/pending\"}");
+            await WaitForAsync(output, "\"id\":\"pending-before\"");
+
+            var pendingContext = Assert.Single(contexts);
+            Assert.True(pendingContext.IsIdle);
+            Assert.True(pendingContext.HasPendingMessages);
+            Assert.True(run.HasPendingExtensionMessages);
+            Assert.Equal(0, run.PendingPromptCount);
+            Assert.Empty(run.Conversation.ContextMessages());
+
+            channel.Writer.TryWrite("{\"id\":\"ordinary\",\"type\":\"prompt\",\"message\":\"next prompt\"}");
+            await WaitForAsync(output, "\"type\":\"agent_settled\"");
+            channel.Writer.TryWrite("{\"id\":\"pending-after\",\"type\":\"prompt\",\"message\":\"/pending\"}");
+            await WaitForAsync(output, "\"id\":\"pending-after\"");
+
+            Assert.Equal(2, contexts.Count);
+            Assert.True(contexts[1].IsIdle);
+            Assert.False(contexts[1].HasPendingMessages);
+            Assert.False(run.HasPendingExtensionMessages);
+            Assert.Single(run.Conversation.Tree.ActivePath(), node => node.Type == "custom_message");
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            if (serving is not null) await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task NativeCustomTriggerSentDuringBeforeAgentStartJoinsTheActiveRunOnce()
     {

@@ -226,6 +226,14 @@
       "recovery_scope": "Loads the session from disk into an independent runtime while the original continuation is held and before run_finished; verifies the custom message and tool result without tool replay. No separate-process kill is used.",
       "local_verification": "Format passed; warnings-as-errors solution build passed with zero warnings/errors; full .NET suite 2212/2212, zero skipped, TMPDIR=/tmp; docs paths 137 documents / 531 references. One runner invocation failed before discovery with CLR 0x80131506; the complete rerun passed."
     },
+    "pending_message_visibility_review": {
+      "reviewed_source": "a2043ff8e0691b03c78af56207dbd3521efad6e5",
+      "behavior": "Public HasPendingMessages includes ordinary queued input, held NextTurn and busy context-only messages awaiting insertion. Live callbacks and TUI/RPC command contexts use a dedicated runtime predicate; PendingPromptCount, ordinary queue snapshots and display retain their existing meaning.",
+      "regressions": "Six fail-before/pass-after cases: busy NextTurn with both trigger values, busy context-only Steer/FollowUp, and idle NextTurn with both trigger values through RPC command contexts; flags clear after insertion and messages enter context once without extra requests.",
+      "focused_tests": "39/39 passed across native callbacks, turn-start/delivery, occurrence/persistence, provider-context and RPC-native tests.",
+      "local_verification": "Full .NET suite 2218/2218, zero skipped, TMPDIR=/tmp; format passed; warnings-as-errors solution build passed with zero warnings/errors; docs paths 137 documents / 531 references. Two additional local .NET invocations exited before running with CLR 0x80131506; retries passed.",
+      "scope": "Deterministic runtime and in-process RPC checks. TUI uses the same predicate; no new TUI process comparison or broader extension-platform completion is claimed."
+    },
     "local_verification": {
       "restore": "passed",
       "format": "passed",
