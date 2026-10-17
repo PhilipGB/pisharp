@@ -130,6 +130,8 @@ public sealed partial class ExtensionRegistration
         _contextTransforms.Clear();
         _lifecycleHandlers.Clear();
         _beforeAgentStartHandlers.Clear();
+        _sessionStartHandlers.Clear();
+        _sessionShutdownHandlers.Clear();
         _resourceDiscoveryHandlers.Clear();
         _projectTrustHandlers.Clear();
         lock (_mcpGate) _mcpServers.Clear();

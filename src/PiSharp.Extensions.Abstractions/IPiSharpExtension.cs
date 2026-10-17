@@ -10,7 +10,7 @@ public interface IPiSharpExtension
 }
 
 /// <summary>Registers the capabilities supported by the current PiSharp extension API version.</summary>
-public interface IPiSharpExtensionBuilder
+public partial interface IPiSharpExtensionBuilder
 {
     /// <summary>Registers a command. The argument is the text following the command name.</summary>
     void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler,
@@ -40,6 +40,12 @@ public interface IPiSharpExtensionBuilder
 
     /// <summary>Registers resource paths discovered at startup and after reload.</summary>
     void AddResourceDiscoveryHandler(PiSharpResourceDiscoveryHandler handler);
+
+    /// <summary>Registers an asynchronous callback after a session is opened and restored.</summary>
+    void AddSessionStartHandler(PiSharpExtensionSessionStartHandler handler);
+
+    /// <summary>Registers an asynchronous callback before a session is replaced or the host shuts down.</summary>
+    void AddSessionShutdownHandler(PiSharpExtensionSessionShutdownHandler handler);
 }
 
 /// <summary>Prompt information supplied immediately before the agent begins a user turn.</summary>

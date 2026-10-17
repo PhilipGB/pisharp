@@ -44,26 +44,31 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
         var source = registration.CurrentSourceInfo?.Path;
         registration.AddBeforeAgentStartHandler(async (eventData, context, cancellationToken) =>
         {
-            var publicEvent = new NativeExtensions.PiSharpBeforeAgentStartEvent(
-                eventData.Prompt, eventData.SystemPrompt)
+            var session = context.CreatePublicSessionContext(source);
+            try
             {
-                MessageType = eventData.MessageType == PiSharpTurnMessageType.Custom
-                    ? NativeExtensions.PiSharpTurnMessageType.Custom
-                    : NativeExtensions.PiSharpTurnMessageType.User,
-                StartingCustomMessage = ToPublicMessage(eventData.StartingCustomMessage),
-                Images = Array.AsReadOnly(eventData.Images.Select(image =>
-                    new NativeExtensions.PiSharpImageAttachment(image.MediaType, image.Data.Length)).ToArray())
-            };
-            var publicContext = NativeExtensionPublicContextMapper.Create(context);
-            var result = await handler(publicEvent, publicContext, cancellationToken);
-            return result is null
-                ? null
-                : new PiSharpBeforeAgentStartResult(result.SystemPrompt)
+                var publicEvent = new NativeExtensions.PiSharpBeforeAgentStartEvent(
+                    eventData.Prompt, eventData.SystemPrompt)
                 {
-                    InjectedMessage = result.InjectedMessage is { } message
-                        ? ToRuntimeMessage(message, source)
-                        : null
+                    MessageType = eventData.MessageType == PiSharpTurnMessageType.Custom
+                        ? NativeExtensions.PiSharpTurnMessageType.Custom
+                        : NativeExtensions.PiSharpTurnMessageType.User,
+                    StartingCustomMessage = ToPublicMessage(eventData.StartingCustomMessage),
+                    Images = Array.AsReadOnly(eventData.Images.Select(image =>
+                        new NativeExtensions.PiSharpImageAttachment(image.MediaType, image.Data.Length)).ToArray())
                 };
+                var publicContext = NativeExtensionPublicContextMapper.Create(context) with { Session = session };
+                var result = await handler(publicEvent, publicContext, cancellationToken);
+                return result is null
+                    ? null
+                    : new PiSharpBeforeAgentStartResult(result.SystemPrompt)
+                    {
+                        InjectedMessage = result.InjectedMessage is { } message
+                            ? ToRuntimeMessage(message, source)
+                            : null
+                    };
+            }
+            finally { session?.Dispose(); }
         });
     }
 

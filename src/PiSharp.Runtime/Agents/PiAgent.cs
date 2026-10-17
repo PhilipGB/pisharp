@@ -23,6 +23,7 @@ public sealed class PiAgent
     private readonly RoutedChatClient _routedChatClient;
     private readonly PiSharpToolHookPipeline _toolHooks;
     private readonly AgentToolCatalog _toolCatalog;
+    private readonly ExtensionRegistration? _liveExtensionRegistration;
     private readonly ConcurrentDictionary<string, AIFunction> _runtimeToolFunctions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PiSharpToolRegistration> _runtimeToolRegistrations = new(StringComparer.Ordinal);
     private readonly object _runtimeToolGate = new();
@@ -111,6 +112,7 @@ public sealed class PiAgent
         _contextTransforms = new(extensionContextTransforms);
         _extensionLifecycleHandlers = extensionLifecycleHandlers?.ToArray() ?? [];
         _beforeAgentStartHandlers = beforeAgentStartHandlers?.ToArray() ?? [];
+        _liveExtensionRegistration = liveExtensionRegistration;
         _getAdditionalSystemInstructions = getAdditionalSystemInstructions;
         _extensionContext = new(extensionContextConfiguration ?? new PiSharpExtensionContextConfiguration(
                 tools.WorkingDirectory, "print", false, false, UnavailableProjectTrustExtensionUi.Instance),
@@ -323,6 +325,50 @@ public sealed class PiAgent
 
     internal void SetExtensionConversation(ConversationSession conversation) =>
         Volatile.Write(ref _extensionConversation, conversation);
+
+    internal void SetExtensionSessionContextFactory(
+        Func<string?, PiSharp.Extensions.Abstractions.PiSharpExtensionSessionContext?> factory) =>
+        _extensionContext.SetSessionContextFactory(factory);
+
+    internal async Task<IReadOnlyList<AgentLifecycleEvent>> NotifySessionStartAsync(
+        PiSharp.Extensions.Abstractions.PiSharpExtensionSessionStartReason reason,
+        CancellationToken cancellationToken)
+    {
+        var errors = new List<AgentLifecycleEvent>();
+        foreach (var registration in _liveExtensionRegistration?.SessionStartHandlers ?? [])
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try { await registration.Handler(reason, _extensionContext, cancellationToken).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception error)
+            {
+                errors.Add(ExtensionSessionLifecycleError(error, registration.SourceInfo.Path, "session_start"));
+            }
+        }
+        return Array.AsReadOnly(errors.ToArray());
+    }
+
+    internal async Task<IReadOnlyList<AgentLifecycleEvent>> NotifySessionShutdownAsync(
+        PiSharp.Extensions.Abstractions.PiSharpExtensionSessionShutdownReason reason,
+        CancellationToken cancellationToken)
+    {
+        var errors = new List<AgentLifecycleEvent>();
+        foreach (var registration in _liveExtensionRegistration?.SessionShutdownHandlers ?? [])
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try { await registration.Handler(reason, _extensionContext, cancellationToken).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception error)
+            {
+                errors.Add(ExtensionSessionLifecycleError(error, registration.SourceInfo.Path, "session_shutdown"));
+            }
+        }
+        return Array.AsReadOnly(errors.ToArray());
+    }
+
+    private static AgentLifecycleEvent ExtensionSessionLifecycleError(Exception error, string sourcePath,
+        string eventType) => new("extension_error", Error: error.Message,
+        Details: new { extensionPath = sourcePath, eventType });
 
     internal void SetPendingMessageState(Func<bool> getPendingMessages) =>
         _extensionContext.SetPendingMessageState(getPendingMessages);

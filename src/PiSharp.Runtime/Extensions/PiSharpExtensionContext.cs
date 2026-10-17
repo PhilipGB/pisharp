@@ -20,6 +20,7 @@ public sealed class PiSharpExtensionContext
     private readonly Func<IReadOnlyList<string>> _getActiveToolNames;
     private readonly Func<bool> _isIdle;
     private Func<bool> _hasPendingMessages = static () => false;
+    private Func<string?, NativeExtensions.PiSharpExtensionSessionContext?> _getSessionContext = static _ => null;
 
     internal PiSharpExtensionContext(PiSharpExtensionContextConfiguration configuration,
         Func<ConversationSession?> getConversation, Func<IReadOnlyList<string>> getActiveToolNames,
@@ -46,6 +47,16 @@ public sealed class PiSharpExtensionContext
     public string? ConversationHeadId => _getConversation()?.Tree.HeadId;
     public IReadOnlyList<string> ActiveToolNames => _getActiveToolNames();
     public bool HasPendingMessages => Volatile.Read(ref _hasPendingMessages)();
+
+    internal NativeExtensions.PiSharpExtensionSessionContext? CreatePublicSessionContext(string? sourcePath) =>
+        Volatile.Read(ref _getSessionContext)(sourcePath);
+
+    internal void SetSessionContextFactory(
+        Func<string?, NativeExtensions.PiSharpExtensionSessionContext?> getSessionContext)
+    {
+        ArgumentNullException.ThrowIfNull(getSessionContext);
+        Volatile.Write(ref _getSessionContext, getSessionContext);
+    }
 
     internal void SetPendingMessageState(Func<bool> getPendingMessages)
     {

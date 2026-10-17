@@ -5,6 +5,7 @@ using Microsoft.Extensions.AI;
 using PiSharp.Core;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
 
 using static PiSharp.Runtime.Sessions.ConversationMessageCodec;
 using static PiSharp.Runtime.Sessions.ConversationContextProjection;
@@ -104,6 +105,76 @@ public sealed class ConversationSession
             var session = _session;
             _session = null;
             session?.RollbackSessionNameChange(_entry, _previousName, _previousHeadId);
+        }
+    }
+
+    internal SessionExtensionStateChange BeginExtensionStateAppend(string customType, JsonElement data,
+        string? source)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(customType);
+        if (customType.Length > 256)
+            throw new ArgumentException("Session entry type cannot exceed 256 characters.", nameof(customType));
+        if (data.ValueKind == JsonValueKind.Undefined)
+            throw new ArgumentException("Session entry data must be a JSON value.", nameof(data));
+        if (System.Text.Encoding.UTF8.GetByteCount(data.GetRawText()) > 1024 * 1024)
+            throw new ArgumentException("Session entry data cannot exceed 1 MiB.", nameof(data));
+
+        var previousHeadId = Tree.HeadId;
+        var entry = Tree.Append("extension_state", JsonSerializer.SerializeToElement(new
+        {
+            customType,
+            data = data.Clone(),
+            source
+        }));
+        return new SessionExtensionStateChange(this, entry, previousHeadId,
+            ProjectExtensionStateEntry(entry));
+    }
+
+    private void RollbackExtensionStateAppend(ConversationNode entry, string? previousHeadId) =>
+        Tree.RollbackAppend(entry, previousHeadId);
+
+    internal IReadOnlyList<NativeExtensions.PiSharpExtensionSessionEntry> ExtensionStateEntries() =>
+        Array.AsReadOnly(Tree.ActivePath().Where(node => node.Type == "extension_state")
+            .Select(ProjectExtensionStateEntry).ToArray());
+
+    private static NativeExtensions.PiSharpExtensionSessionEntry ProjectExtensionStateEntry(ConversationNode node)
+    {
+        var payload = node.Payload;
+        if (payload.ValueKind != JsonValueKind.Object ||
+            !payload.TryGetProperty("customType", out var type) || type.ValueKind != JsonValueKind.String ||
+            string.IsNullOrWhiteSpace(type.GetString()) ||
+            !payload.TryGetProperty("data", out var data) || data.ValueKind == JsonValueKind.Undefined)
+            throw new InvalidDataException($"Invalid extension state entry at {node.Id}.");
+        var source = payload.TryGetProperty("source", out var sourceValue) &&
+            sourceValue.ValueKind == JsonValueKind.String ? sourceValue.GetString() : null;
+        return new NativeExtensions.PiSharpExtensionSessionEntry(node.Id, type.GetString()!, data,
+            node.Timestamp, source);
+    }
+
+    internal sealed class SessionExtensionStateChange : IDisposable
+    {
+        private ConversationSession? _session;
+        private readonly ConversationNode _entry;
+        private readonly string? _previousHeadId;
+
+        internal SessionExtensionStateChange(ConversationSession session, ConversationNode entry,
+            string? previousHeadId, NativeExtensions.PiSharpExtensionSessionEntry projectedEntry)
+        {
+            _session = session;
+            _entry = entry;
+            _previousHeadId = previousHeadId;
+            Entry = projectedEntry;
+        }
+
+        internal NativeExtensions.PiSharpExtensionSessionEntry Entry { get; }
+
+        internal void Commit() => _session = null;
+
+        public void Dispose()
+        {
+            var session = _session;
+            _session = null;
+            session?.RollbackExtensionStateAppend(_entry, _previousHeadId);
         }
     }
 

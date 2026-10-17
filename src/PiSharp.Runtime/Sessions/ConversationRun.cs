@@ -13,6 +13,7 @@ namespace PiSharp.Runtime.Sessions;
 /// <summary>One MAF execution session projecting the canonical selected conversation branch.</summary>
 public sealed class ConversationRun
 {
+    private static readonly AsyncLocal<ConversationRun?> s_currentGateOwner = new();
     private readonly PiAgent _agent;
     private readonly Func<CancellationToken, Task>? _save;
     private AutoCompactionPolicy? _autoCompaction;
@@ -36,6 +37,8 @@ public sealed class ConversationRun
     private readonly Queue<BashExecutionRecord> _pendingBashExecutions = new();
     private readonly ConversationCompactionCoordinator _compactionCoordinator;
     private readonly ConversationToolState _toolState;
+    private int _sessionStartInvoked;
+    private int _sessionShutdownInvoked;
     private AgentSession _execution;
     private int _historyCount;
     private string _currentModel;
@@ -51,6 +54,49 @@ public sealed class ConversationRun
     public string ExportForShare() => SessionShareExport.ExportBranch(Conversation, SharePresentation);
     public Task PersistAsync(CancellationToken cancellationToken = default) =>
         _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
+
+    /// <summary>Notifies configured extensions after this session has been restored and bound to the runtime.</summary>
+    public async Task<IReadOnlyList<AgentLifecycleEvent>> NotifySessionStartAsync(
+        NativeExtensions.PiSharpExtensionSessionStartReason reason,
+        CancellationToken cancellationToken = default)
+    {
+        if (Interlocked.Exchange(ref _sessionStartInvoked, 1) != 0) return [];
+        return await _agent.NotifySessionStartAsync(reason, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Notifies configured extensions before this session is replaced or the host shuts down.</summary>
+    public async Task<IReadOnlyList<AgentLifecycleEvent>> NotifySessionShutdownAsync(
+        NativeExtensions.PiSharpExtensionSessionShutdownReason reason,
+        CancellationToken cancellationToken = default)
+    {
+        if (Interlocked.Exchange(ref _sessionShutdownInvoked, 1) != 0) return [];
+        return await _agent.NotifySessionShutdownAsync(reason, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Creates a public, branch-aware extension session bridge for this conversation.</summary>
+    public NativeExtensions.PiSharpExtensionSessionContext CreateExtensionSessionContext(string? source = null) =>
+        new(() => new NativeExtensions.PiSharpExtensionSessionSnapshot(Conversation.Id, Conversation.Name,
+                Conversation.Tree.HeadId, Conversation.ExtensionStateEntries()),
+            (customType, data, cancellationToken) => AppendExtensionStateAsync(customType, data, source,
+                cancellationToken));
+
+    private async Task<NativeExtensions.PiSharpExtensionSessionEntry> AppendExtensionStateAsync(string customType,
+        JsonElement data, string? source, CancellationToken cancellationToken)
+    {
+        var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
+        if (!ownsGate) await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            using var change = Conversation.BeginExtensionStateAppend(customType, data, source);
+            if (_save is not null) await _save(cancellationToken);
+            change.Commit();
+            return change.Entry;
+        }
+        finally
+        {
+            if (!ownsGate) _gate.Release();
+        }
+    }
     public bool AutoCompactionEnabled => Volatile.Read(ref _autoCompactionEnabled) != 0;
     public bool IsCompacting => _compactionCoordinator.IsCompacting;
     public int? ContextWindowTokens { get { lock (_runtimeStateGate) return _agent.HasVirtualModelRouter ? _successfulPhysicalContextWindow : _autoCompaction?.ContextWindowTokens; } }
@@ -96,6 +142,7 @@ public sealed class ConversationRun
         _promptDelivery = new PromptDeliveryController(_runtimeStateGate, steeringMode, followUpMode);
         Conversation = conversation;
         _agent.SetExtensionConversation(Conversation);
+        _agent.SetExtensionSessionContextFactory(source => CreateExtensionSessionContext(source));
         _toolState = new ConversationToolState(agent, conversation);
         _execution = execution;
         _historyCount = conversation.ContextMessages().Count;
@@ -841,6 +888,8 @@ public sealed class ConversationRun
         IReadOnlyList<ChatMessage>? acceptedPromptMessages = null)
     {
         await _gate.WaitAsync(cancellationToken);
+        var previousGateOwner = s_currentGateOwner.Value;
+        s_currentGateOwner.Value = this;
         var completed = false;
         var attemptStream = new ConversationAttemptStream();
         DurableExecution? durable = _save is null ? null : new DurableExecution(Conversation, _save);
@@ -1109,7 +1158,11 @@ public sealed class ConversationRun
                 attemptStream.InterruptionError = error.Message;
                 throw;
             }
-            finally { _gate.Release(); }
+            finally
+            {
+                s_currentGateOwner.Value = previousGateOwner;
+                _gate.Release();
+            }
         }
     }
 
