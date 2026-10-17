@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
 using PiSharp.Core;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
@@ -106,6 +107,7 @@ public sealed class ConversationRun
             () => _autoCompaction, () => _keepRecentTokens, () => _pricing, _save,
             RestoreExecutionAsync,
             (execution, count) => { _toolState.Restore(execution); _execution = execution; _historyCount = count; });
+        _agent.SetPendingMessageState(() => _promptDelivery.Count > 0);
     }
 
     public static async Task<ConversationRun> OpenAsync(PiAgent agent, ConversationSession conversation,
@@ -165,6 +167,30 @@ public sealed class ConversationRun
 
     /// <summary>Compatibility alias: an additional RPC prompt is follow-up work.</summary>
     public bool TryQueuePrompt(string prompt) => TryFollowUp(prompt);
+
+    /// <summary>Whether this run currently owns the active prompt loop.</summary>
+    public bool IsActive => _promptDelivery.IsActive;
+
+    /// <summary>Queue user input through the active run's ordinary steering/follow-up path.</summary>
+    public bool TryQueueExtensionUserMessage(ChatMessage message, string promptText, bool followUp = false)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentException.ThrowIfNullOrWhiteSpace(promptText);
+        return _promptDelivery.TryQueueActive(message, promptText, steering: !followUp,
+            followUp ? "extension_follow_up" : "extension_steering", skipBeforeAgentStart: true);
+    }
+
+    /// <summary>
+    /// Queue a custom extension message through the active run's steering/follow-up path.
+    /// A request made while idle should be started with <see cref="RunCustomMessageEventsAsync"/>.
+    /// </summary>
+    public bool TryQueueExtensionMessage(PiSharpCustomMessage message, bool followUp = false)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        var projected = PiSharpCustomMessageProjection.ToChatMessage(message);
+        return _promptDelivery.TryQueueActive(projected, message.Content, steering: !followUp,
+            followUp ? "extension_custom_follow_up" : "extension_custom_steering", skipBeforeAgentStart: true);
+    }
 
     public void QueueRpcInput(string prompt, bool steering, Action<AgentLifecycleEvent> publishQueueUpdate)
         => _promptDelivery.QueueRpcInput(prompt, steering, publishQueueUpdate);
@@ -246,7 +272,8 @@ public sealed class ConversationRun
 
     public void SetAutoCompactionEnabled(bool enabled) => Volatile.Write(ref _autoCompactionEnabled, enabled ? 1 : 0);
 
-    private sealed record PromptBatch(IReadOnlyList<ChatMessage> Messages, IReadOnlyList<string> Texts)
+    private sealed record PromptBatch(IReadOnlyList<ChatMessage> Messages, IReadOnlyList<string> Texts,
+        PiSharpCustomMessage? StartingCustomMessage = null, bool SkipBeforeAgentStart = false)
     {
         public string Text => string.Join("\n", Texts);
     }
@@ -257,7 +284,89 @@ public sealed class ConversationRun
     public IAsyncEnumerable<AgentLifecycleEvent> RunEventsAsync(string prompt,
         CancellationToken cancellationToken = default) => RunEventsAsync(new ChatMessage(ChatRole.User, prompt), prompt, cancellationToken);
 
-    public async IAsyncEnumerable<AgentLifecycleEvent> RunEventsAsync(ChatMessage promptMessage, string promptText,
+    public IAsyncEnumerable<AgentLifecycleEvent> RunEventsAsync(ChatMessage promptMessage, string promptText,
+        CancellationToken cancellationToken = default) =>
+        RunEventsCoreAsync(promptMessage, promptText, null, cancellationToken);
+
+    /// <summary>Submit user input through the same normal turn path used by interactive prompts.</summary>
+    public IAsyncEnumerable<AgentLifecycleEvent> RunUserMessageEventsAsync(ChatMessage promptMessage, string promptText,
+        CancellationToken cancellationToken = default) => RunEventsAsync(promptMessage, promptText, cancellationToken);
+
+    /// <summary>Start one normal agent run from an extension custom message while this run is idle.</summary>
+    public IAsyncEnumerable<AgentLifecycleEvent> RunCustomMessageEventsAsync(PiSharpCustomMessage message,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        return RunEventsCoreAsync(PiSharpCustomMessageProjection.ToChatMessage(message), message.Content,
+            message, cancellationToken);
+    }
+
+    /// <summary>Start a custom-message run with its extension source recorded by the host.</summary>
+    public IAsyncEnumerable<AgentLifecycleEvent> RunCustomMessageEventsAsync(
+        NativeExtensions.PiSharpCustomMessage message, string? sourcePath,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        return RunCustomMessageEventsAsync(ToRuntimeCustomMessage(message, sourcePath), cancellationToken);
+    }
+
+    /// <summary>Queue an extension custom message into the active run.</summary>
+    public bool TryQueueExtensionMessage(NativeExtensions.PiSharpCustomMessage message, string? sourcePath,
+        bool followUp = false)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        return TryQueueExtensionMessage(ToRuntimeCustomMessage(message, sourcePath), followUp);
+    }
+
+    /// <summary>
+    /// Persist a custom message into an idle conversation for the next ordinary turn.
+    /// Returns false when a run already owns the prompt loop.
+    /// </summary>
+    public async Task<bool> QueueExtensionMessageForNextTurnAsync(NativeExtensions.PiSharpCustomMessage message,
+        string? sourcePath, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        if (_promptDelivery.IsActive) return false;
+
+        var customMessage = ToRuntimeCustomMessage(message, sourcePath);
+        var chatMessage = PiSharpCustomMessageProjection.ToChatMessage(customMessage);
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!_promptDelivery.TryReserveIdle(out var reservation)) return false;
+            using (reservation)
+            {
+                var previousHead = Conversation.Tree.HeadId;
+                var previousHistoryCount = _historyCount;
+                try
+                {
+                    Conversation.Append(chatMessage);
+                    _agent.AppendToHistory(_execution, chatMessage);
+                    _historyCount++;
+                    if (_save is not null) await _save(cancellationToken);
+                    return true;
+                }
+                catch
+                {
+                    Conversation.Tree.Select(previousHead);
+                    var history = Conversation.ContextMessages();
+                    _execution = await RestoreExecutionAsync(history, CancellationToken.None);
+                    _historyCount = previousHistoryCount;
+                    throw;
+                }
+            }
+        }
+        finally { _gate.Release(); }
+    }
+
+    private static PiSharpCustomMessage ToRuntimeCustomMessage(NativeExtensions.PiSharpCustomMessage message,
+        string? sourcePath) => new(message.CustomType, message.Content, message.Display)
+    {
+        Source = string.IsNullOrWhiteSpace(sourcePath) ? null : sourcePath
+    };
+
+    private async IAsyncEnumerable<AgentLifecycleEvent> RunEventsCoreAsync(ChatMessage promptMessage, string promptText,
+        PiSharpCustomMessage? startingCustomMessage,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var channel = Channel.CreateBounded<AgentLifecycleEvent>(new BoundedChannelOptions(256)
@@ -280,23 +389,31 @@ public sealed class ConversationRun
                 owner = BeginPromptLoop(Publish);
                 _agent.BeginConversationRunActivity();
                 conversationRunActivityStarted = true;
-                PromptBatch? current = new([promptMessage], [promptText]);
+                PromptBatch? current = new([promptMessage], [promptText], startingCustomMessage);
                 var stopRun = false;
                 while (current is not null)
                 {
                     var turn = current;
                     activeTurnOutcomeSent = false;
                     var currentMessage = turn.Messages[0];
+                    var customStart = turn.StartingCustomMessage;
+                    if (!turn.SkipBeforeAgentStart && customStart is null &&
+                        PiSharpCustomMessageProjection.TryRead(currentMessage, out var queuedCustom))
+                        customStart = queuedCustom;
                     AgentTurnOutcome outcome;
                     _agent.ClearRunSystemPromptOverride();
                     try
                     {
-                        await _agent.PrepareBeforeAgentStartAsync(currentMessage, turn.Texts[0], Publish, linked.Token);
+                        var injectedMessages = turn.SkipBeforeAgentStart ? [] :
+                            await _agent.PrepareBeforeAgentStartAsync(currentMessage,
+                                customStart is null ? turn.Texts[0] : "", Publish, linked.Token, customStart);
+                        var acceptedMessages = turn.Messages.Concat(injectedMessages.Select(
+                            PiSharpCustomMessageProjection.ToChatMessage)).ToArray();
                         outcome = await _retryController.RunTurnAsync(
                             (continuation, observeAttempt) => continuation
                                 ? RunStreamingContinuationAsync(turn.Text, linked.Token, observeAttempt)
-                                : turn.Messages.Count > 1
-                                    ? RunStreamingBatchAsync(turn.Messages, turn.Text, linked.Token, observeAttempt)
+                                : turn.SkipBeforeAgentStart || customStart is not null || injectedMessages.Count > 0 || acceptedMessages.Length > 1
+                                    ? RunStreamingAcceptedMessagesAsync(acceptedMessages, turn.Text, linked.Token, observeAttempt)
                                     : RunStreamingAsync(currentMessage, turn.Texts[0], linked.Token, observeAttempt),
                             item =>
                             {
@@ -398,8 +515,12 @@ public sealed class ConversationRun
     private PromptBatch? TakeQueuedPromptOrClose(object owner)
     {
         var batch = _promptDelivery.TakeNextBatchOrClose(owner, PersistPendingRuntimeChangesUnsafe);
-        return batch is null ? null : new PromptBatch(
-            batch.Messages.Select(prompt => new ChatMessage(ChatRole.User, prompt)).ToArray(), batch.Messages);
+        if (batch is null) return null;
+        var messages = batch.Messages.Select(prompt => prompt.Message).ToArray();
+        var texts = batch.Messages.Select(prompt => prompt.Text).ToArray();
+        var startingCustomMessage = messages.Length > 0 && PiSharpCustomMessageProjection.TryRead(messages[0],
+            out var customMessage) ? customMessage : null;
+        return new PromptBatch(messages, texts, startingCustomMessage, batch.Messages[0].SkipBeforeAgentStart);
     }
 
     private void EndPromptLoop(object owner) => _promptDelivery.End(owner, () =>
@@ -565,10 +686,11 @@ public sealed class ConversationRun
         CancellationToken cancellationToken = default, Action<AgentLifecycleEvent>? onEvent = null) =>
         RunStreamingAttemptAsync(promptMessage, prompt, false, cancellationToken, onEvent);
 
-    private IAsyncEnumerable<AgentResponseUpdate> RunStreamingBatchAsync(IReadOnlyList<ChatMessage> promptMessages,
-        string prompt, CancellationToken cancellationToken, Action<AgentLifecycleEvent>? onEvent)
+    private IAsyncEnumerable<AgentResponseUpdate> RunStreamingAcceptedMessagesAsync(
+        IReadOnlyList<ChatMessage> promptMessages, string prompt, CancellationToken cancellationToken,
+        Action<AgentLifecycleEvent>? onEvent)
     {
-        if (promptMessages.Count < 2) throw new ArgumentException("A prompt batch requires multiple messages.", nameof(promptMessages));
+        if (promptMessages.Count == 0) throw new ArgumentException("An accepted turn requires at least one message.", nameof(promptMessages));
         return RunStreamingAttemptAsync(null, prompt, false, cancellationToken, onEvent, promptMessages);
     }
 

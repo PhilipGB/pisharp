@@ -7,6 +7,7 @@ internal sealed class PromptDeliveryController
     private readonly object _stateGate;
     private readonly PromptDeliveryQueue _queue = new();
     private object? _owner;
+    private object? _idleReservation;
     private Action<AgentLifecycleEvent>? _events;
     private bool _firstProviderRequestPending;
 
@@ -50,11 +51,41 @@ internal sealed class PromptDeliveryController
     public bool TryQueueActive(string prompt, bool steering, string kind)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+        return TryQueueActive(new QueuedPrompt(prompt, new ChatMessage(ChatRole.User, prompt)), steering, kind);
+    }
+
+    public bool TryQueueActive(ChatMessage message, string prompt, bool steering, string kind,
+        bool skipBeforeAgentStart = false)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+        return TryQueueActive(new QueuedPrompt(prompt, message, skipBeforeAgentStart), steering, kind);
+    }
+
+    public bool TryReserveIdle(out IDisposable? reservation)
+    {
+        lock (_stateGate)
+        {
+            if (_owner is not null || _idleReservation is not null)
+            {
+                reservation = null;
+                return false;
+            }
+
+            var token = new object();
+            _idleReservation = token;
+            reservation = new IdleReservation(this, token);
+            return true;
+        }
+    }
+
+    private bool TryQueueActive(QueuedPrompt prompt, bool steering, string kind)
+    {
         lock (_stateGate)
         {
             if (_owner is null) return false;
             _queue.Enqueue(prompt, steering);
-            _events?.Invoke(new("prompt_queued", Text: prompt, Tool: kind));
+            _events?.Invoke(new("prompt_queued", Text: prompt.Text, Tool: kind));
             _events?.Invoke(QueueEvent(_queue.Snapshot()));
             return true;
         }
@@ -93,6 +124,7 @@ internal sealed class PromptDeliveryController
     {
         lock (_stateGate)
         {
+            while (_idleReservation is not null) Monitor.Wait(_stateGate);
             if (_owner is not null) throw new InvalidOperationException("An agent run is already active.");
             _owner = new object();
             _events = publish;
@@ -116,11 +148,11 @@ internal sealed class PromptDeliveryController
             var messages = new ChatMessage[prompts.Count];
             for (var index = 0; index < prompts.Count; index++)
             {
-                var message = new ChatMessage(ChatRole.User, prompts[index]);
-                messages[index] = message;
-                _events?.Invoke(new AgentLifecycleEvent("steering_message_accepted", Text: prompts[index])
+                var prompt = prompts[index];
+                messages[index] = prompt.Message;
+                _events?.Invoke(new AgentLifecycleEvent("steering_message_accepted", Text: prompt.Text)
                 {
-                    PromptMessage = message,
+                    PromptMessage = prompt.Message,
                     MessageTimestamp = DateTimeOffset.UtcNow
                 });
             }
@@ -160,4 +192,21 @@ internal sealed class PromptDeliveryController
 
     private static AgentLifecycleEvent QueueEvent(PendingPrompts pending) => new("queue_update",
         Text: System.Text.Json.JsonSerializer.Serialize(new { steering = pending.Steering, followUp = pending.FollowUp }));
+
+    private void ReleaseIdle(object token)
+    {
+        lock (_stateGate)
+        {
+            if (!ReferenceEquals(_idleReservation, token)) return;
+            _idleReservation = null;
+            Monitor.PulseAll(_stateGate);
+        }
+    }
+
+    private sealed class IdleReservation(PromptDeliveryController controller, object token) : IDisposable
+    {
+        private PromptDeliveryController? _controller = controller;
+
+        public void Dispose() => Interlocked.Exchange(ref _controller, null)?.ReleaseIdle(token);
+    }
 }

@@ -214,11 +214,12 @@ public sealed class PiAgent
             ? _getAdditionalSystemInstructions?.Invoke()
             : null;
 
-    internal async Task PrepareBeforeAgentStartAsync(ChatMessage promptMessage, string promptText,
-        Action<AgentLifecycleEvent> publish, CancellationToken cancellationToken)
+    internal async Task<IReadOnlyList<PiSharpCustomMessage>> PrepareBeforeAgentStartAsync(ChatMessage promptMessage,
+        string promptText, Action<AgentLifecycleEvent> publish, CancellationToken cancellationToken,
+        PiSharpCustomMessage? startingCustomMessage = null)
     {
         ClearRunSystemPromptOverride();
-        if (_beforeAgentStartHandlers.Count == 0) return;
+        if (_beforeAgentStartHandlers.Count == 0) return [];
 
         var currentSystemPrompt = GetSystemPromptForCurrentLoadout().Text;
         var additionalInstructions = _getAdditionalSystemInstructions?.Invoke();
@@ -230,18 +231,27 @@ public sealed class PiAgent
             .ToArray();
         var imageView = Array.AsReadOnly(images);
         var hasOverride = false;
+        var injectedMessages = new List<PiSharpCustomMessage>();
         foreach (var registration in _beforeAgentStartHandlers)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 var result = await registration.Handler(
-                    new(promptText, imageView, currentSystemPrompt), _extensionContext, cancellationToken);
+                    new(promptText, imageView, currentSystemPrompt,
+                        startingCustomMessage is null ? PiSharpTurnMessageType.User : PiSharpTurnMessageType.Custom,
+                        startingCustomMessage), _extensionContext, cancellationToken);
                 if (result?.SystemPrompt is { } systemPrompt)
                 {
                     currentSystemPrompt = systemPrompt;
                     hasOverride = true;
                 }
+                if (result?.InjectedMessage is { } injectedMessage)
+                    injectedMessages.Add(injectedMessage with
+                    {
+                        Source = injectedMessage.Source ?? (registration.SourceInfo.Path.Length > 0
+                            ? registration.SourceInfo.Path : null)
+                    });
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -255,6 +265,7 @@ public sealed class PiAgent
         }
 
         if (hasOverride) Volatile.Write(ref _runSystemPromptOverride, new(currentSystemPrompt));
+        return injectedMessages;
     }
 
     internal void ClearRunSystemPromptOverride() => Volatile.Write(ref _runSystemPromptOverride, null);
@@ -308,6 +319,9 @@ public sealed class PiAgent
 
     internal void SetExtensionConversation(ConversationSession conversation) =>
         Volatile.Write(ref _extensionConversation, conversation);
+
+    internal void SetPendingMessageState(Func<bool> getPendingMessages) =>
+        _extensionContext.SetPendingMessageState(getPendingMessages);
 
     private void PublishEvent(AgentLifecycleEvent item)
     {
