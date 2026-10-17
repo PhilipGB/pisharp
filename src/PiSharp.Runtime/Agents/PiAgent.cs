@@ -57,7 +57,10 @@ public sealed class PiAgent
     private readonly ConditionalWeakTable<AgentSession, ToolDeclarationTranscript> _toolTranscripts = new();
     private ToolDeclarationTranscript? _currentToolTranscript;
 
-    private sealed record RunSystemPromptOverride(string Text);
+    private sealed record RunSystemPromptOverride(string? Text,
+        PiSharp.Extensions.Abstractions.PiSharpSystemPromptOptions? BaseOptions = null,
+        PiSharp.Extensions.Abstractions.PiSharpSystemPromptOptions? EditedOptions = null,
+        string? AdditionalInstructions = null);
 
     internal ToolDeclarationTranscript GetToolTranscript(AgentSession session) =>
         _toolTranscripts.GetValue(session, _ => new());
@@ -213,8 +216,16 @@ public sealed class PiAgent
                 : new DeclaredAIFunction(function, declaration.Description, declaration.Registration.ConstrainedSampling);
         }).ToArray());
 
-    private string GetSystemInstructionsForCurrentLoadout() =>
-        Volatile.Read(ref _runSystemPromptOverride)?.Text ?? GetSystemPromptForCurrentLoadout().Text;
+    private string GetSystemInstructionsForCurrentLoadout()
+    {
+        var runOverride = Volatile.Read(ref _runSystemPromptOverride);
+        if (runOverride is null) return GetSystemPromptForCurrentLoadout().Text;
+        if (runOverride.Text is { } text) return text;
+
+        var currentBase = GetSystemPromptOptionsForCurrentLoadout();
+        var options = PiSystemPromptBuilder.ApplyChanges(runOverride.BaseOptions!, runOverride.EditedOptions!, currentBase);
+        return RenderSystemPrompt(options, runOverride.AdditionalInstructions);
+    }
 
     private string? GetAdditionalSystemInstructionsForCurrentTurn() =>
         Volatile.Read(ref _runSystemPromptOverride) is null
@@ -223,21 +234,22 @@ public sealed class PiAgent
 
     internal async Task<IReadOnlyList<PiSharpCustomMessage>> PrepareBeforeAgentStartAsync(ChatMessage promptMessage,
         string promptText, Action<AgentLifecycleEvent> publish, CancellationToken cancellationToken,
+        AgentSession session,
         PiSharpCustomMessage? startingCustomMessage = null)
     {
         ClearRunSystemPromptOverride();
         if (_beforeAgentStartHandlers.Count == 0) return [];
 
-        var currentSystemPrompt = GetSystemPromptForCurrentLoadout().Text;
+        var loadout = GetToolLoadout(session);
+        var originalOptions = GetSystemPromptOptions(loadout.Snapshot);
+        var systemPromptOptions = PiSystemPromptBuilder.CloneOptions(originalOptions);
         var additionalInstructions = _getAdditionalSystemInstructions?.Invoke();
-        if (!string.IsNullOrWhiteSpace(additionalInstructions))
-            currentSystemPrompt += "\n\n" + additionalInstructions;
+        string? replacedSystemPrompt = null;
 
         var images = promptMessage.Contents.OfType<DataContent>()
             .Where(content => content.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true)
             .ToArray();
         var imageView = Array.AsReadOnly(images);
-        var hasOverride = false;
         var injectedMessages = new List<PiSharpCustomMessage>();
         foreach (var registration in _beforeAgentStartHandlers)
         {
@@ -245,14 +257,15 @@ public sealed class PiAgent
             try
             {
                 var result = await registration.Handler(
-                    new(promptText, imageView, currentSystemPrompt,
+                    new(promptText, imageView,
+                        replacedSystemPrompt ?? RenderSystemPrompt(systemPromptOptions, additionalInstructions),
                         startingCustomMessage is null ? PiSharpTurnMessageType.User : PiSharpTurnMessageType.Custom,
-                        startingCustomMessage), _extensionContext, cancellationToken);
+                        startingCustomMessage)
+                    {
+                        SystemPromptOptions = systemPromptOptions
+                    }, _extensionContext, cancellationToken);
                 if (result?.SystemPrompt is { } systemPrompt)
-                {
-                    currentSystemPrompt = systemPrompt;
-                    hasOverride = true;
-                }
+                    replacedSystemPrompt = systemPrompt;
                 if (result?.InjectedMessage is { } injectedMessage)
                     injectedMessages.Add(injectedMessage with
                     {
@@ -271,7 +284,19 @@ public sealed class PiAgent
             }
         }
 
-        if (hasOverride) Volatile.Write(ref _runSystemPromptOverride, new(currentSystemPrompt));
+        if (replacedSystemPrompt is not null)
+        {
+            Volatile.Write(ref _runSystemPromptOverride, new(replacedSystemPrompt));
+        }
+        else
+        {
+            var currentBase = GetSystemPromptOptions(loadout.Snapshot);
+            var finalOptions = PiSystemPromptBuilder.ApplyChanges(originalOptions, systemPromptOptions, currentBase);
+            if (!PiSystemPromptBuilder.SectionsEqual(originalOptions, finalOptions))
+                Volatile.Write(ref _runSystemPromptOverride, new(null,
+                    PiSystemPromptBuilder.CloneOptions(currentBase), PiSystemPromptBuilder.CloneOptions(finalOptions),
+                    additionalInstructions));
+        }
         return injectedMessages;
     }
 
@@ -288,11 +313,34 @@ public sealed class PiAgent
         return BuildSystemPrompt(loadout.Declared, loadout.ActiveToolNames);
     }
 
+    private PiSharp.Extensions.Abstractions.PiSharpSystemPromptOptions GetSystemPromptOptionsForCurrentLoadout()
+    {
+        var loadout = Volatile.Read(ref _currentToolLoadout)?.Snapshot ??
+            _toolCatalog.CreateLoadout().Snapshot;
+        return GetSystemPromptOptions(loadout);
+    }
+
+    private PiSharp.Extensions.Abstractions.PiSharpSystemPromptOptions GetSystemPromptOptions(
+        ToolLoadoutSnapshot loadout) => PiSystemPromptBuilder.CreateOptions(_codingTools.WorkingDirectory, loadout.Declared,
+            _customSystemPrompt, _appendSystemPrompt, _projectInstructions,
+            _getSkillInstructions?.Invoke(loadout.ActiveToolNames,
+                loadout.Declared.Select(declaration => declaration.Registration.Function.Name).ToArray()));
+
+    private static string RenderSystemPrompt(PiSharp.Extensions.Abstractions.PiSharpSystemPromptOptions options,
+        string? additionalInstructions)
+    {
+        var prompt = PiSystemPromptBuilder.BuildProjection(options).Text;
+        return string.IsNullOrWhiteSpace(additionalInstructions)
+            ? prompt
+            : prompt + "\n\n" + additionalInstructions;
+    }
+
     private PiSystemPromptBuilder.Projection BuildSystemPrompt(IReadOnlyList<PiSharpToolDeclaration> declarations,
-        IReadOnlyList<string> activeToolNames) => PiSystemPromptBuilder.BuildProjection(_codingTools.WorkingDirectory,
-        declarations, _customSystemPrompt, _appendSystemPrompt, _projectInstructions,
-        _getSkillInstructions?.Invoke(activeToolNames,
-            declarations.Select(declaration => declaration.Registration.Function.Name).ToArray()));
+        IReadOnlyList<string> activeToolNames) => PiSystemPromptBuilder.BuildProjection(
+        PiSystemPromptBuilder.CreateOptions(_codingTools.WorkingDirectory, declarations, _customSystemPrompt,
+            _appendSystemPrompt, _projectInstructions,
+            _getSkillInstructions?.Invoke(activeToolNames,
+                declarations.Select(declaration => declaration.Registration.Function.Name).ToArray())));
 
     private void RefreshExtensionTools(IReadOnlyCollection<PiSharpToolRegistration> definitions)
     {

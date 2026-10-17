@@ -383,6 +383,14 @@ internal static class PiJsonlEntryCodec
                 ["name"] = StringProperty(node.Payload, "name") ??
                     throw new InvalidDataException($"Missing session name at {node.Id}.")
             };
+        if (node.Type == "label")
+            return new JsonObject
+            {
+                ["type"] = "label",
+                ["targetId"] = StringProperty(node.Payload, "targetId") ??
+                    throw new InvalidDataException($"Missing label target at {node.Id}."),
+                ["label"] = StringProperty(node.Payload, "label")
+            };
         if (node.Type == "extension_state")
             return new JsonObject
             {

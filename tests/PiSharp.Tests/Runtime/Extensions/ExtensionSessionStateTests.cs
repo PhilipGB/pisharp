@@ -204,6 +204,70 @@ public sealed class ExtensionSessionStateTests
     }
 
     [Fact]
+    public async Task SessionMetadataMutationsPersistLabelsAndRollBackWhenSaveFails()
+    {
+        var workingDirectory = CreateWorkingDirectory();
+        try
+        {
+            var store = new ConversationStore(workingDirectory, Path.Combine(workingDirectory, "sessions"));
+            var conversation = new ConversationSession(workingDirectory, "fixture-model", null);
+            conversation.Append(new ChatMessage(ChatRole.User, "label this entry"));
+            var targetId = conversation.Tree.HeadId!;
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+
+            var failNextSave = false;
+            async Task SaveAsync(CancellationToken cancellationToken)
+            {
+                if (failNextSave)
+                {
+                    failNextSave = false;
+                    throw new IOException("simulated write failure");
+                }
+                await store.SaveAsync(conversation, path, cancellationToken);
+            }
+
+            var run = await ConversationRun.OpenAsync(CreateAgent(new CompleteClient()), conversation, save: SaveAsync);
+            using var session = run.CreateExtensionSessionContext("/extensions/metadata.dll");
+
+            await session.SetSessionNameAsync("review session");
+            Assert.Equal("review session", session.SessionName);
+            var committedHead = conversation.Tree.HeadId;
+
+            failNextSave = true;
+            await Assert.ThrowsAsync<IOException>(() => session.SetSessionNameAsync("uncommitted rename"));
+            Assert.Equal("review session", session.SessionName);
+            Assert.Equal(committedHead, conversation.Tree.HeadId);
+            Assert.Equal("review session", (await store.LoadAsync(path)).Name);
+
+            failNextSave = true;
+            await Assert.ThrowsAsync<IOException>(() => session.SetLabelAsync(targetId, "uncommitted label"));
+            Assert.Null(conversation.GetEntryLabel(targetId));
+            Assert.Equal(committedHead, conversation.Tree.HeadId);
+            Assert.Null((await store.LoadAsync(path)).GetEntryLabel(targetId));
+
+            await session.SetLabelAsync(targetId, "reviewed");
+            Assert.Equal("reviewed", conversation.GetEntryLabel(targetId));
+            var labelRecord = Assert.Single(PiJsonlSessionInterchange.ProjectEntries(conversation), entry =>
+                entry.GetProperty("type").GetString() == "label");
+            Assert.Equal(targetId, labelRecord.GetProperty("targetId").GetString());
+            Assert.Equal("reviewed", labelRecord.GetProperty("label").GetString());
+
+            var imported = PiJsonlSessionInterchange.Import(PiJsonlSessionInterchange.Export(conversation));
+            Assert.Equal("reviewed", imported.GetEntryLabel(targetId));
+            Assert.Equal("reviewed", (await store.LoadAsync(path)).GetEntryLabel(targetId));
+
+            await session.SetLabelAsync(targetId, "");
+            Assert.Null(conversation.GetEntryLabel(targetId));
+            Assert.Null((await store.LoadAsync(path)).GetEntryLabel(targetId));
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task NewConversationDoesNotInheritExtensionEntriesThroughItsParentReference()
     {
         var workingDirectory = CreateWorkingDirectory();

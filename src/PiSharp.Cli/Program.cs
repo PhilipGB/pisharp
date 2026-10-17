@@ -81,6 +81,24 @@ catch (Exception e) when (e is not OperationCanceledException)
 
 using var projectRuntimeOwner = projectRuntime;
 
+try
+{
+    var parsedWithExtensionFlags = CliArguments.ParseWithExtensionFlags(args,
+        projectRuntime.Extensions.Registration.ExtensionFlags);
+    cli = cli with
+    {
+        Prompt = parsedWithExtensionFlags.Prompt,
+        FileArguments = parsedWithExtensionFlags.FileArguments,
+        ExtensionFlagValues = parsedWithExtensionFlags.ExtensionFlagValues
+    };
+}
+catch (ArgumentException error)
+{
+    Console.Error.WriteLine(error.Message);
+    Environment.ExitCode = 2;
+    return;
+}
+
 modelRuntime.SetVirtualModelRegistry(projectRuntime.Extensions.Registration.VirtualModels);
 
 var projectBinding = new ActiveProjectRuntime(projectConfiguration, projectRuntime, cli);

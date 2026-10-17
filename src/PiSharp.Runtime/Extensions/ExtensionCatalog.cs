@@ -123,6 +123,7 @@ public sealed partial class ExtensionRegistration
             ToolDefinitionsChanged = null;
         }
         _commands.Clear();
+        _extensionFlags.Clear();
         _shortcuts.Clear();
         _userBashHandlers.Clear();
         _toolCallHooks.Clear();

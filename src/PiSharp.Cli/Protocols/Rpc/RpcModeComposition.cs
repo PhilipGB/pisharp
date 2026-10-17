@@ -1,6 +1,7 @@
 using PiSharp.Cli.Composition;
 using PiSharp.Cli.Sessions;
 using PiSharp.Cli.Tui;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
@@ -18,6 +19,23 @@ internal static class RpcModeComposition
 
         async Task<IReadOnlyList<ModelDescriptor>> GetRpcCycleModelsAsync(string? providerId, CancellationToken token) =>
             (await modelRuntime.ListModelsAsync(providerId, token)).Where(model => model.Available).ToArray();
+
+        IReadOnlyList<PiSharpExtensionCommandInfo> GetExtensionCommands()
+        {
+            var commands = InteractiveCommandCatalog.BuiltIns.Select(command =>
+                new PiSharpExtensionCommandInfo(command.Command, command.Description, "builtin")).ToList();
+            commands.AddRange(extensionLease.Current.Registration.CommandInfo.Select(pair =>
+                new PiSharpExtensionCommandInfo(pair.Key, pair.Value.Description, "extension", pair.Value.SourceInfo.Path)));
+            if (projectBinding.Resources is { } resources)
+            {
+                commands.AddRange(resources.Prompts.Select(item =>
+                    new PiSharpExtensionCommandInfo(item.Name, item.Description, "prompt", item.SourceInfo.Path)));
+                commands.AddRange(resources.Skills.Select(item =>
+                    new PiSharpExtensionCommandInfo("skill:" + item.Name, item.Description, "skill", item.SourceInfo.Path)));
+            }
+            return Array.AsReadOnly(commands.GroupBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First()).ToArray());
+        }
 
         var rpcUserSettings = new RpcUserSettingsController(agentDirectory, Environment.GetEnvironmentVariable,
             () => projectBinding.ProjectSettings,
@@ -103,6 +121,18 @@ internal static class RpcModeComposition
             getProjectTrusted: () => projectBinding.Trusted,
             extensionMode: projectBinding.Configuration.ExtensionMode,
             extensionHasUserInterface: projectBinding.Configuration.HasUserInterface,
-            extensionUi: projectBinding.Configuration.ExtensionUi).ServeAsync();
+            extensionUi: projectBinding.Configuration.ExtensionUi,
+            createCommandControlOperations: (abort, cancel, shutdown) => PiSharpExtensionCommandControlFactory.Create(
+                () => conversationBinding.Run,
+                GetExtensionCommands,
+                () => extensionLease.Current.Registration,
+                modelRuntime,
+                modelBinding,
+                modelTransitions,
+                abort,
+                cancel,
+                shutdown),
+            createSettingsFlagContext: sourcePath =>
+                PiSharpExtensionSettingsFlagContextFactory.Create(projectBinding, sourcePath)).ServeAsync();
     }
 }

@@ -53,6 +53,37 @@ public sealed class ConversationRun
     public string? SessionFile => _sessionFile;
     public JsonElement SharePresentation => _agent.GetSharePresentation(_execution);
     public string ExportForShare() => SessionShareExport.ExportBranch(Conversation, SharePresentation);
+    /// <summary>Returns stable public metadata for the configured tools in this session.</summary>
+    public IReadOnlyList<NativeExtensions.PiSharpExtensionToolInfo> GetConfiguredTools()
+    {
+        var snapshot = _agent.GetToolLoadout(_execution).Snapshot;
+        var active = snapshot.ActiveToolNames.ToHashSet(StringComparer.Ordinal);
+        return Array.AsReadOnly(snapshot.Registered.Select(tool => new NativeExtensions.PiSharpExtensionToolInfo(
+            tool.Function.Name,
+            tool.Function.Description ?? string.Empty,
+            active.Contains(tool.Function.Name),
+            tool.Exposure switch
+            {
+                ToolExposure.Direct => NativeExtensions.PiSharpExtensionToolExposure.Direct,
+                ToolExposure.ModelOnly => NativeExtensions.PiSharpExtensionToolExposure.ModelOnly,
+                ToolExposure.CodeMode => NativeExtensions.PiSharpExtensionToolExposure.CodeMode,
+                ToolExposure.Deferred => NativeExtensions.PiSharpExtensionToolExposure.Deferred,
+                ToolExposure.Hidden => NativeExtensions.PiSharpExtensionToolExposure.Hidden,
+                _ => throw new ArgumentOutOfRangeException(nameof(tool.Exposure))
+            },
+            tool.Namespace is null ? "builtin" : "mcp",
+            Namespace: tool.Namespace?.Name)).ToArray());
+    }
+
+    /// <summary>Replaces the tools declared by the current session on its next provider request.</summary>
+    public void SetActiveTools(IEnumerable<string> toolNames)
+    {
+        ArgumentNullException.ThrowIfNull(toolNames);
+        var loadout = _agent.GetToolLoadout(_execution);
+        loadout.SetActiveTools(toolNames);
+        Conversation.AppendToolLoadout(loadout.Snapshot.ActiveToolNames);
+    }
+
     public Task PersistAsync(CancellationToken cancellationToken = default) =>
         _save?.Invoke(cancellationToken) ?? Task.CompletedTask;
 
@@ -79,7 +110,44 @@ public sealed class ConversationRun
         new(() => new NativeExtensions.PiSharpExtensionSessionSnapshot(Conversation.Id, Conversation.Name,
                 Conversation.Tree.HeadId, Conversation.ExtensionStateEntries()),
             (customType, data, cancellationToken) => AppendExtensionStateAsync(customType, data, source,
-                cancellationToken));
+                cancellationToken), SetSessionNameAsync, SetEntryLabelAsync);
+
+    /// <summary>Changes the active session name and commits only after its normal save succeeds.</summary>
+    public async Task SetSessionNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
+        if (!ownsGate) await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            using var change = Conversation.BeginSessionNameChange(name);
+            if (_save is not null) await _save(cancellationToken).ConfigureAwait(false);
+            change.Commit();
+        }
+        finally
+        {
+            if (!ownsGate) _gate.Release();
+        }
+    }
+
+    /// <summary>Changes an existing entry label and commits only after its normal save succeeds.</summary>
+    public async Task SetEntryLabelAsync(string entryId, string? label,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entryId);
+        var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
+        if (!ownsGate) await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            using var change = Conversation.BeginSessionLabelChange(entryId, label);
+            if (_save is not null) await _save(cancellationToken).ConfigureAwait(false);
+            change.Commit();
+        }
+        finally
+        {
+            if (!ownsGate) _gate.Release();
+        }
+    }
 
     private async Task<NativeExtensions.PiSharpExtensionSessionEntry> AppendExtensionStateAsync(string customType,
         JsonElement data, string? source, CancellationToken cancellationToken)
@@ -526,7 +594,8 @@ public sealed class ConversationRun
                     {
                         var injectedMessages = turn.SkipBeforeAgentStart ? [] :
                             await _agent.PrepareBeforeAgentStartAsync(currentMessage,
-                                customStart is null ? turn.Texts[0] : "", Publish, linked.Token, customStart);
+                                customStart is null ? turn.Texts[0] : "", Publish, linked.Token, _execution,
+                                customStart);
                         var acceptedMessages = turn.Messages.Concat(injectedMessages.Select(
                             PiSharpCustomMessageProjection.ToChatMessage)).ToArray();
                         outcome = await _retryController.RunTurnAsync(

@@ -1,6 +1,34 @@
 # Continuation — PiSharp capability parity
 
-## Native extension state and interactive controls — 2026-10-17
+## Active milestone — Native Extension Controls & Configuration — 2026-10-17
+
+Work is on `milestone/native-extension-controls-configuration`, based on
+`15b7acceb9c41a5b278b005ac5df6dadad7cda48`; the configured Pi reference stays
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Product source is
+`c9d3f078fa0dba6a487bc178708667c7e562b64d`; draft PR [#10](https://github.com/PhilipGB/pisharp/pull/10)
+has passing exact-head push CI
+[39051662051](https://github.com/PhilipGB/pisharp/actions/runs/39051662051)
+and PR merge-result CI
+[39051669964](https://github.com/PhilipGB/pisharp/actions/runs/39051669964).
+Local verification passes 2,268 .NET tests with zero skips, architecture 7/7,
+Node 24/24, Python 50/50, and docs paths 139/536; MCP conformance reports no
+regressions against its eight classified baseline failures. This bounded SDK increment adds
+fresh read-only effective settings snapshots, typed extension CLI flags,
+session names and entry labels, command/tool inspection and active-tool changes,
+model/thinking controls, abort/compaction/graceful shutdown, and ordered,
+request-local structured `before_agent_start` prompt sections. The compiled
+external package acceptance covers process-level flag parsing, settings and
+metadata, provider-visible control changes, reload/removal ownership, and
+normal shutdown. Project extension execution stays behind the existing trust
+boundary. Provider, MCP, advanced renderer, dynamic registration, and global
+parity work remain out of scope; the broad extension ledger rows stay
+`in_progress`.
+
+See the [extension API guide](extensions.md) and
+[milestone receipt](parity/fixtures/native-extension-controls-configuration-2026-10-17.md)
+for the public contracts, pinned-source scope, acceptance, and final checks.
+
+## Previous milestone — Native extension state and interactive controls — 2026-10-17
 
 This bounded milestone is implemented on
 `milestone/native-extension-state-interactive-controls`, based on the verified
@@ -22,10 +50,10 @@ and PR merge-result CI
 [39039758081](https://github.com/PhilipGB/pisharp/actions/runs/39039758081)
 both pass. See the [milestone receipt](parity/fixtures/native-extension-state-interactive-controls-2026-10-17.md).
 
-This closes only the bounded implementation increment. Keep the broad
+This closed only the bounded implementation increment. Keep the broad
 extension API and orchestration ledger rows `in_progress`; provider/model and
-settings registration, flags, advanced UI, and global parity remain open. Stop
-here rather than starting deferred work automatically.
+advanced UI remain open. Its stop point is superseded by the active milestone
+above.
 
 ## Native extension public runtime bridge — 2026-10-17
 

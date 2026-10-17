@@ -33,6 +33,21 @@ internal sealed class TerminalConversationExecution
 
     public InteractiveTranscript? ActiveTranscript { get; private set; }
     private CancellationTokenSource? _activeRun;
+    private TaskCompletionSource? _activeRunCompletion;
+
+    public void AbortCurrentRun()
+    {
+        try { Volatile.Read(ref _activeRun)?.Cancel(); }
+        catch (ObjectDisposedException) { }
+    }
+
+    public async Task CancelActiveRunAsync(CancellationToken cancellationToken)
+    {
+        var completion = Volatile.Read(ref _activeRunCompletion);
+        if (completion is null) return;
+        AbortCurrentRun();
+        await completion.Task.WaitAsync(cancellationToken);
+    }
 
 
     public Task RunAsync(string input, IReadOnlyList<DataContent>? images = null,
@@ -55,7 +70,7 @@ internal sealed class TerminalConversationExecution
         Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut)
     {
         using var runCancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _activeRun = runCancel;
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var execution = new InteractivePromptExecution(_presentation.Editor, _presentation.Screen, () => Console.Error,
             () => _projectBinding.Resources, () => _conversationBinding.Run, () => _presentation.IdleFooter(), ExecuteInteractiveBashAsync,
             handleApplicationAction ?? (_ => Task.CompletedTask), handleExtensionShortcut);
@@ -63,6 +78,8 @@ internal sealed class TerminalConversationExecution
         _presentation.Editor?.AttachScreen(_presentation.Screen);
         var transcript = _presentation.CreateInteractiveTranscript(interactive: !_print);
         ActiveTranscript = transcript;
+        Volatile.Write(ref _activeRunCompletion, completion);
+        _activeRun = runCancel;
         try
         {
             await run(execution, transcript, runCancel);
@@ -81,6 +98,8 @@ internal sealed class TerminalConversationExecution
             if (ReferenceEquals(ActiveTranscript, transcript)) ActiveTranscript = null;
             _presentation.Screen?.SetFooter(_presentation.IdleFooter(), render: false);
             _presentation.Screen?.SetWorkingStatus(null);
+            completion.TrySetResult();
+            Interlocked.CompareExchange(ref _activeRunCompletion, null, completion);
         }
     }
 

@@ -76,6 +76,41 @@ public sealed class ConversationSession
         return new SessionNameChange(this, entry, previousName, previousHeadId);
     }
 
+    /// <summary>Appends an entry that sets or clears a label on an existing conversation-tree entry.</summary>
+    public SessionLabelChange BeginSessionLabelChange(string entryId, string? label)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entryId);
+        if (!Tree.Entries.Any(entry => entry.Id == entryId))
+            throw new KeyNotFoundException($"Entry {entryId} not found");
+
+        var previousHeadId = Tree.HeadId;
+        var value = string.IsNullOrEmpty(label) ? null : label;
+        var entry = Tree.Append("label", JsonSerializer.SerializeToElement(new { targetId = entryId, label = value }));
+        return new SessionLabelChange(this, entry, previousHeadId);
+    }
+
+    /// <summary>Returns the current branch's label for an entry, if one is set.</summary>
+    public string? GetEntryLabel(string entryId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entryId);
+        if (!Tree.Entries.Any(entry => entry.Id == entryId))
+            throw new KeyNotFoundException($"Entry {entryId} not found");
+
+        string? label = null;
+        foreach (var entry in Tree.ActivePath())
+        {
+            if (entry.Type != "label" || entry.Payload.ValueKind != JsonValueKind.Object ||
+                !entry.Payload.TryGetProperty("targetId", out var target) || target.ValueKind != JsonValueKind.String ||
+                target.GetString() != entryId)
+                continue;
+
+            label = entry.Payload.TryGetProperty("label", out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString() : null;
+            if (string.IsNullOrEmpty(label)) label = null;
+        }
+        return label;
+    }
+
     private void RollbackSessionNameChange(ConversationNode entry, string? previousName, string? previousHeadId)
     {
         Tree.RollbackAppend(entry, previousHeadId);
@@ -105,6 +140,33 @@ public sealed class ConversationSession
             var session = _session;
             _session = null;
             session?.RollbackSessionNameChange(_entry, _previousName, _previousHeadId);
+        }
+    }
+
+    private void RollbackSessionLabelChange(ConversationNode entry, string? previousHeadId) =>
+        Tree.RollbackAppend(entry, previousHeadId);
+
+    /// <summary>A reversible label append committed after the session file has been saved.</summary>
+    public sealed class SessionLabelChange : IDisposable
+    {
+        private ConversationSession? _session;
+        private readonly ConversationNode _entry;
+        private readonly string? _previousHeadId;
+
+        internal SessionLabelChange(ConversationSession session, ConversationNode entry, string? previousHeadId)
+        {
+            _session = session;
+            _entry = entry;
+            _previousHeadId = previousHeadId;
+        }
+
+        public void Commit() => _session = null;
+
+        public void Dispose()
+        {
+            var session = _session;
+            _session = null;
+            session?.RollbackSessionLabelChange(_entry, _previousHeadId);
         }
     }
 

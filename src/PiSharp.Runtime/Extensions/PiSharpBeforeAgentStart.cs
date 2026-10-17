@@ -21,6 +21,9 @@ public sealed record PiSharpCustomMessage(string CustomType, string Content, boo
 public sealed record PiSharpBeforeAgentStartEvent(string Prompt, IReadOnlyList<DataContent> Images,
     string SystemPrompt)
 {
+    /// <summary>Gets mutable structured prompt sections for the current run.</summary>
+    public PiSharp.Extensions.Abstractions.PiSharpSystemPromptOptions SystemPromptOptions { get; init; } = new();
+
     /// <summary>Creates event data for a turn that starts from user input or a custom message.</summary>
     public PiSharpBeforeAgentStartEvent(string prompt, IReadOnlyList<DataContent> images, string systemPrompt,
         PiSharpTurnMessageType messageType, PiSharpCustomMessage? startingCustomMessage)

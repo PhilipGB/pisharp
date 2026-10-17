@@ -27,7 +27,7 @@ internal static class ProjectStartupPreparation
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or
             System.Text.Json.JsonException or ArgumentException or NotSupportedException)
         {
-            Console.Error.WriteLine($"Could not inspect session startup target: {error.Message}");
+            Console.Error.WriteLine(cli.PendingUnknownOption ?? $"Could not inspect session startup target: {error.Message}");
             Environment.ExitCode = 2;
             return null;
         }
@@ -45,7 +45,7 @@ internal static class ProjectStartupPreparation
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
         {
-            Console.Error.WriteLine(error.Message);
+            Console.Error.WriteLine(cli.PendingUnknownOption ?? error.Message);
             Environment.ExitCode = 2;
             return null;
         }

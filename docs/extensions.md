@@ -88,6 +88,45 @@ The context-taking `AddCommand` overload provides a small snapshot of working di
 
 The public command and lifecycle contexts also expose `Mode`, `HasUserInterface`, `Ui`, and the active `Session` projection. The mode is a stable host-mode string such as `tui`, `rpc`, `json`, or `print`. The session projection contains the session ID, optional name, active head ID, and extension state entries on the current branch in tree order. Each entry includes its canonical ID, custom type, cloned `JsonElement` data, timestamp, and source path. This projection does not expose `ConversationSession` or any other Runtime type.
 
+### Settings, flags, session metadata and host controls
+
+The command context exposes `GetSettings()` as a fresh, detached, lower-camel-case JSON snapshot of the current effective settings. It is read-only; extensions cannot update host settings through this API. `RegisterFlag` adds an extension-owned Boolean or string CLI option. The flag name omits `--`; Boolean flags accept a bare `--name` or explicit `--name=false`, while string flags accept `--name value` or `--name=value`. Registered defaults are returned by `GetFlag` when the user omits the option. A command context can read only flags owned by its extension. Startup rejects conflicts with built-in options and unknown options still fail normally. Project extensions are loaded for flag discovery only after project trust permits their code to run.
+
+The session projection also supports `Session.SetSessionNameAsync(name, cancellationToken)` and `Session.SetLabelAsync(entryId, label, cancellationToken)`. Passing `null` or an empty label clears it. Each mutation saves through the current session store before returning; invalid entry IDs fail, and failed saves preserve the prior value. Names and labels remain session metadata when the package is updated or removed. Labels also keep their normal Pi JSONL interchange representation.
+
+Command contexts can inspect the current command catalogue (`GetCommands()`), model-declared active tools (`GetActiveTools()`), and configured tools with source, exposure and active state (`GetConfiguredTools()`). `SetActiveTools(names)` uses the session loadout: unknown and hidden tools are ignored, and the next provider request sees the new declarations and matching tool guidance. The public tool projection does not expose MEAI functions or Runtime descriptors.
+
+`GetModel()` returns a stable provider/model identity and available display/capability metadata. `SetModelAsync(providerId, modelId, cancellationToken)` returns `Selected`, `UnknownModel` or `AuthenticationUnavailable`; selection affects the current session and leaves configured defaults alone. `GetThinkingLevel()` and `SetThinkingLevelAsync(level, cancellationToken)` use `PiSharpThinkingLevel`; the host applies its normal model-capability clamping. These controls share the same safe transition path as built-in commands and never replace the provider client during an in-flight request.
+
+The bounded run controls are `AbortCurrentRun()`, `CompactCurrentSessionAsync(cancellationToken)` and `RequestShutdown()`. Abort is harmless while idle and uses the host's cancellation owner. Compaction returns `Compacted`, `NotNeeded`, `Cancelled` or `Failed` through `PiSharpCompactionResult`, and uses the current session compaction/save path. Shutdown is idempotent and follows the normal TUI/RPC exit path so lifecycle callbacks and session saving still run.
+
+```csharp
+builder.RegisterFlag("plan", PiSharpExtensionFlagType.Boolean,
+    "Create a plan before making changes.", PiSharpExtensionFlagValue.FromBoolean(false));
+builder.RegisterFlag("target", PiSharpExtensionFlagType.String,
+    "Deployment target.", PiSharpExtensionFlagValue.FromString("staging"));
+
+builder.AddCommand("extension-status", (_, context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var settings = context.GetSettings();
+    var plan = context.GetFlag("plan")?.BooleanValue ?? false;
+    var target = context.GetFlag("target")?.StringValue ?? "staging";
+    return Task.FromResult($"shell prefix: {settings.GetProperty("shellCommandPrefix")}; plan: {plan}; target: {target}");
+});
+```
+
+The `before_agent_start` event exposes request-local `SystemPromptOptions.Sections`, an ordered map of the named prompt sections PiSharp already builds (`preamble`, `tools`, `rules`, `docs`, `addendum`, `project_context`, `skills`, and `cwd`). Assign text to add or replace a section; remove its key or assign `null`/empty text to omit it. Added keys follow insertion order, and later handlers observe earlier mutations. The existing full `PiSharpBeforeAgentStartResult.SystemPrompt` replacement remains supported and takes precedence over structured section output for that turn. Structured edits apply to user and custom-triggered turns, reset on the next request, and are not duplicated by automatic retry.
+
+```csharp
+builder.AddBeforeAgentStartHandler((turn, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    turn.SystemPromptOptions.Sections["addendum"] = "Keep the response concise.";
+    return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
+});
+```
+
 Extensions can persist state on the canonical session tree and reconstruct it later:
 
 ```csharp

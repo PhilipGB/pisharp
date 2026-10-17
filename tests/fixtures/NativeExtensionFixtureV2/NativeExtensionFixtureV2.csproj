@@ -16,6 +16,7 @@
     <ProjectReference Include="../NativeExtensionPrivateDependencyV2/NativeExtensionPrivateDependencyV2.csproj"
                       PrivateAssets="all" />
     <Compile Include="../NativeExtensionFixture/ExampleExtension.cs" Link="ExampleExtension.cs" />
+    <Compile Include="../NativeExtensionFixture/NativeExtensionControlCommands.cs" Link="NativeExtensionControlCommands.cs" />
     <None Include="$(TargetDir)$(AssemblyName).deps.json" Pack="true"
           PackagePath="lib/$(TargetFramework)/" Visible="false" />
     <None Include="$(TargetDir)NativeExtensionPrivateDependency.dll" Pack="true"

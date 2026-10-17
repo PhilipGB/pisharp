@@ -53,6 +53,110 @@ public sealed class PiSharpExtensionUiTests
         Assert.Equal(["select:Environment", "confirm:Confirm", "input:Label", "notify:info:saved"], ui.Calls);
     }
 
+    [Fact]
+    public async Task CommandContextExposesLiveControlsAndRevokesThemAfterDispose()
+    {
+        var activeTools = new List<string> { "read" };
+        var configuredTools = new List<PiSharpExtensionToolInfo>
+        {
+            new("read", "Read files", true, PiSharpExtensionToolExposure.Direct, "builtin")
+        };
+        var shutdownRequests = 0;
+        IReadOnlyList<string>? selectedTools = null;
+        PiSharpThinkingLevel selectedThinking = PiSharpThinkingLevel.Medium;
+        CancellationToken modelToken = default;
+        CancellationToken compactionToken = default;
+        var operations = new PiSharpExtensionCommandControlOperations(
+            () => [new("/sample", "Sample command", "extension", "/sample.cs")],
+            () => activeTools,
+            () => configuredTools,
+            () => new("fixture", "model-1", "Fixture model", 32_000, true),
+            names => selectedTools = names,
+            (_, _, token) =>
+            {
+                modelToken = token;
+                return Task.FromResult(new PiSharpModelSelectionResult(PiSharpModelSelectionStatus.Selected));
+            },
+            () => selectedThinking,
+            (level, _) => Task.FromResult(selectedThinking = level),
+            static () => { },
+            token =>
+            {
+                compactionToken = token;
+                return Task.FromResult(new PiSharpCompactionResult(PiSharpCompactionStatus.Compacted));
+            },
+            () => shutdownRequests++);
+        var context = new PiSharpExtensionCommandContext("/tmp/project", true, false, false,
+            static (_, _) => Task.CompletedTask,
+            static (_, _, _, _) => Task.CompletedTask,
+            operations);
+
+        Assert.Equal("/sample", Assert.Single(context.GetCommands()).Name);
+        var initialActiveTools = context.GetActiveTools();
+        var initialConfiguredTools = context.GetConfiguredTools();
+        Assert.Equal(["read"], initialActiveTools);
+        Assert.Equal("read", Assert.Single(initialConfiguredTools).Name);
+        Assert.Equal("model-1", context.GetModel()!.ModelId);
+        activeTools.Add("write");
+        configuredTools.Clear();
+        Assert.Equal(["read", "write"], context.GetActiveTools());
+        Assert.Empty(context.GetConfiguredTools());
+        Assert.Equal(["read"], initialActiveTools);
+        Assert.Single(initialConfiguredTools);
+
+        using var cancellation = new CancellationTokenSource();
+        var selected = new List<string> { "write", "unknown" };
+        context.SetActiveTools(selected);
+        selected.Clear();
+        Assert.Equal(["write", "unknown"], selectedTools);
+        Assert.Equal(PiSharpModelSelectionStatus.Selected,
+            (await context.SetModelAsync("fixture", "model-1", cancellation.Token)).Status);
+        Assert.Equal(cancellation.Token, modelToken);
+        Assert.Equal(PiSharpThinkingLevel.High,
+            await context.SetThinkingLevelAsync(PiSharpThinkingLevel.High));
+        Assert.Equal(PiSharpThinkingLevel.High, context.GetThinkingLevel());
+        context.AbortCurrentRun();
+        Assert.Equal(PiSharpCompactionStatus.Compacted,
+            (await context.CompactCurrentSessionAsync(cancellation.Token)).Status);
+        Assert.Equal(cancellation.Token, compactionToken);
+        context.RequestShutdown();
+        context.RequestShutdown();
+        Assert.Equal(1, shutdownRequests);
+
+        context.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => context.GetCommands());
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => context.SetModelAsync("fixture", "model-1"));
+    }
+
+    [Fact]
+    public async Task CommandContextPreservesModelAndCompactionFailureResults()
+    {
+        var operations = new PiSharpExtensionCommandControlOperations(
+            static () => [], static () => [], static () => [], static () => null,
+            static _ => { },
+            (provider, model, _) => Task.FromResult(new PiSharpModelSelectionResult(
+                provider == "known" && model == "locked"
+                    ? PiSharpModelSelectionStatus.AuthenticationUnavailable
+                    : PiSharpModelSelectionStatus.UnknownModel)),
+            static () => PiSharpThinkingLevel.Off,
+            static (level, _) => Task.FromResult(level),
+            static () => { },
+            static _ => Task.FromResult(new PiSharpCompactionResult(PiSharpCompactionStatus.Failed, "fixture failure")),
+            static () => { });
+        using var context = new PiSharpExtensionCommandContext("/tmp/project", true, false, false,
+            static (_, _) => Task.CompletedTask,
+            static (_, _, _, _) => Task.CompletedTask,
+            operations);
+
+        Assert.Equal(PiSharpModelSelectionStatus.AuthenticationUnavailable,
+            (await context.SetModelAsync("known", "locked")).Status);
+        Assert.Equal(PiSharpModelSelectionStatus.UnknownModel,
+            (await context.SetModelAsync("unknown", "model")).Status);
+        var compaction = await context.CompactCurrentSessionAsync();
+        Assert.Equal(PiSharpCompactionStatus.Failed, compaction.Status);
+        Assert.Equal("fixture failure", compaction.Error);
+    }
+
     private sealed class RecordingUi : IPiSharpExtensionUi
     {
         public List<string> Calls { get; } = [];

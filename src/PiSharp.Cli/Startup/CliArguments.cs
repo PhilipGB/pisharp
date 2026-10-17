@@ -5,8 +5,21 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
     string? Provider = null, IReadOnlyList<string>? ScopedModels = null, string? Thinking = null, string? ApiKey = null, IReadOnlyList<string>? FileArguments = null, string? SystemPrompt = null, IReadOnlyList<string>? AppendSystemPrompts = null, bool NoContextFiles = false, bool NoBuiltinTools = false, bool NoExtensions = false, bool NoSkills = false, bool NoPromptTemplates = false, bool Version = false, bool Offline = false, IReadOnlyList<string>? SkillPaths = null, IReadOnlyList<string>? PromptTemplatePaths = null, IReadOnlyList<string>? ExtensionPaths = null, string? ListModelsFilter = null, bool Verbose = false,
     IReadOnlyList<string>? ThemePaths = null, string? UseTheme = null, bool NoThemes = false)
 {
+    internal string? PendingUnknownOption { get; init; }
     internal bool? UsesDefaultToolSelection { get; init; }
     internal IReadOnlyList<string>? DefaultToolModifiers { get; init; }
+    internal IReadOnlyDictionary<string, PiSharp.Extensions.Abstractions.PiSharpExtensionFlagValue> ExtensionFlagValues { get; init; } =
+        new Dictionary<string, PiSharp.Extensions.Abstractions.PiSharpExtensionFlagValue>(StringComparer.Ordinal);
+
+    private static readonly HashSet<string> s_reservedLongOptions = new(StringComparer.Ordinal)
+    {
+        "approve", "api-key", "append-system-prompt", "continue", "exclude-tools", "export", "extension",
+        "fork", "help", "list-models", "local", "mode", "model", "models", "name", "no-approve",
+        "no-builtin-tools", "no-context-files", "no-extensions", "no-prompt-templates", "no-session",
+        "no-skills", "no-themes", "no-tools", "offline", "print", "prompt-template", "provider",
+        "session", "session-dir", "skill", "system-prompt", "theme", "thinking", "tools", "use-theme", "verbose",
+        "version"
+    };
 
     private static IReadOnlyList<string> ParseToolNames(string[] arguments, ref int index, string flag)
     {
@@ -16,8 +29,30 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         return arguments[index].Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToArray();
     }
 
-    public static CliArguments Parse(string[] arguments)
+    public static CliArguments Parse(string[] arguments) => ParseCore(arguments, null, allowUnknownLongOptions: false);
+
+    internal static CliArguments ParseForExtensionDiscovery(string[] arguments) =>
+        ParseCore(arguments, null, allowUnknownLongOptions: true);
+
+    internal static CliArguments ParseWithExtensionFlags(string[] arguments,
+        IReadOnlyList<PiSharp.Runtime.Extensions.RegisteredExtensionFlag> extensionFlags) =>
+        ParseCore(arguments, extensionFlags, allowUnknownLongOptions: false);
+
+    private static CliArguments ParseCore(string[] arguments,
+        IReadOnlyList<PiSharp.Runtime.Extensions.RegisteredExtensionFlag>? extensionFlags,
+        bool allowUnknownLongOptions)
     {
+        ArgumentNullException.ThrowIfNull(arguments);
+        var flagsByName = extensionFlags?.ToDictionary(flag => flag.Name, StringComparer.Ordinal);
+        var extensionFlagValues = new Dictionary<string, PiSharp.Extensions.Abstractions.PiSharpExtensionFlagValue>(StringComparer.Ordinal);
+        if (extensionFlags is not null)
+        {
+            foreach (var flag in extensionFlags)
+            {
+                if (s_reservedLongOptions.Contains(flag.Name))
+                    throw new ArgumentException($"Extension flag --{flag.Name} from {flag.SourceInfo.Path} conflicts with a built-in CLI option.");
+            }
+        }
         bool help = false, local = false, print = false, resume = false, noSession = false, noTools = false, afterSeparator = false, listModels = false, noContextFiles = false, noBuiltinTools = false, noExtensions = false, noSkills = false, noPromptTemplates = false, version = false, offline = false, verbose = false, noThemes = false;
         bool? trust = null;
         string? sessionPath = null, sessionDirectory = null, modelOverride = null, sessionName = null, forkSource = null;
@@ -155,6 +190,46 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
                     sessionPath = arguments[i];
                     break;
                 default:
+                    if (arg.StartsWith("--", StringComparison.Ordinal))
+                    {
+                        var equalsIndex = arg.IndexOf('=');
+                        var name = arg[2..(equalsIndex < 0 ? arg.Length : equalsIndex)];
+                        if (flagsByName is not null && flagsByName.TryGetValue(name, out var flag))
+                        {
+                            var value = equalsIndex >= 0 ? arg[(equalsIndex + 1)..] : null;
+                            if (flag.Type == PiSharp.Extensions.Abstractions.PiSharpExtensionFlagType.String &&
+                                equalsIndex < 0 && i + 1 < arguments.Length &&
+                                !arguments[i + 1].StartsWith('-') && !arguments[i + 1].StartsWith('@'))
+                            {
+                                value = arguments[++i];
+                            }
+
+                            if (flag.Type == PiSharp.Extensions.Abstractions.PiSharpExtensionFlagType.Boolean)
+                            {
+                                var enabled = value is null
+                                    ? true
+                                    : bool.TryParse(value, out var parsedBoolean)
+                                        ? parsedBoolean
+                                        : throw new ArgumentException($"--{name} requires true or false.");
+                                extensionFlagValues[name] = PiSharp.Extensions.Abstractions.PiSharpExtensionFlagValue.FromBoolean(enabled);
+                            }
+                            else if (value is not null)
+                            {
+                                extensionFlagValues[name] = PiSharp.Extensions.Abstractions.PiSharpExtensionFlagValue.FromString(value);
+                            }
+                            else
+                            {
+                                throw new ArgumentException($"Extension flag --{name} requires a value.");
+                            }
+                            continue;
+                        }
+
+                        if (!allowUnknownLongOptions) throw new ArgumentException($"Unknown option: {arg}");
+                        if (equalsIndex < 0 && i + 1 < arguments.Length &&
+                            !arguments[i + 1].StartsWith('-') && !arguments[i + 1].StartsWith('@'))
+                            i++;
+                        continue;
+                    }
                     if (arg.StartsWith('-')) throw new ArgumentException($"Unknown option: {arg}");
                     if (arg.StartsWith('@') && arg.Length > 1) fileArguments.Add(arg[1..]);
                     else prompt.Add(arg);
@@ -166,13 +241,16 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
         if (forkSource is not null && (resume || noSession || sessionPath is not null))
             throw new ArgumentException("--fork cannot be combined with --continue, --session or --no-session.");
         if (print && mode is not "interactive" and not "print") throw new ArgumentException("--print cannot be combined with --mode json or rpc.");
-        if (mode == "rpc" && (prompt.Count > 0 || fileArguments.Count > 0)) throw new ArgumentException("RPC mode reads commands from stdin, not positional prompts.");
-        if (listModels && (prompt.Count > 0 || fileArguments.Count > 0 || mode != "interactive" || print || resume || sessionPath is not null || noSession || sessionName is not null || forkSource is not null))
+        if (!allowUnknownLongOptions && mode == "rpc" && (prompt.Count > 0 || fileArguments.Count > 0)) throw new ArgumentException("RPC mode reads commands from stdin, not positional prompts.");
+        if (!allowUnknownLongOptions && listModels && (prompt.Count > 0 || fileArguments.Count > 0 || mode != "interactive" || print || resume || sessionPath is not null || noSession || sessionName is not null || forkSource is not null))
             throw new ArgumentException("--list-models cannot be combined with a prompt, mode or session operation.");
         if (local && provider is not null && !provider.Equals("local", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("--local cannot be combined with a provider other than local.");
         return new CliArguments(help, local, print, resume, noSession, sessionPath, string.Join(" ", prompt), tools, excludeTools, noTools, mode, trust, sessionDirectory, listModels, modelOverride, sessionName, forkSource,
             provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts.Count == 0 ? null : appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths, extensionPaths, listModelsFilter, verbose,
-            themePaths, useTheme, noThemes);
+            themePaths, useTheme, noThemes)
+        {
+            ExtensionFlagValues = extensionFlagValues
+        };
     }
 }

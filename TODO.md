@@ -1,6 +1,22 @@
 # PiSharp capability parity
 
-## Active milestone — Native Extension State & Interactive Controls — 2026-10-17
+## Active milestone — Native Extension Controls & Configuration — 2026-10-17
+
+Work is on `milestone/native-extension-controls-configuration`, based on
+`15b7acceb9c41a5b278b005ac5df6dadad7cda48`. Keep the configured Pi reference at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This bounded increment exposes
+effective settings snapshots, extension flags, session names and labels,
+command/tool/model/thinking controls, abort/compaction/shutdown, and structured
+`before_agent_start` prompt sections to compiled extensions. External package
+acceptance exercises flag parsing, provider-visible tool/model/thinking changes,
+metadata persistence, package replacement/removal, and graceful shutdown.
+
+See [the continuation](docs/continuation.md), [extension API guide](docs/extensions.md),
+and [milestone receipt](docs/parity/fixtures/native-extension-controls-configuration-2026-10-17.md).
+The broad extension capability remains `in_progress`; provider/MCP/rendering
+integration and the global parity audit remain deferred.
+
+## Previous milestone — Native Extension State & Interactive Controls — 2026-10-17
 
 Work is on `milestone/native-extension-state-interactive-controls`, based on
 the verified PR #8 merge commit `d9156e53c4822e7b98226df6170b29c61bc87eb1`.
@@ -16,9 +32,9 @@ milestone does not promote broad extension parity; provider/model/settings
 registration and advanced UI remain deferred. Draft PR #9 is open; exact-head
 push CI run 39039746664 and PR merge-result run 39039758081 both pass.
 
-See [the milestone receipt](docs/parity/fixtures/native-extension-state-interactive-controls-2026-10-17.md)
-for source, acceptance, verification, and CI results. Stop after this milestone
-and do not begin settings, flags, provider, or prompt-option work automatically.
+See [the previous milestone receipt](docs/parity/fixtures/native-extension-state-interactive-controls-2026-10-17.md)
+for its source, acceptance, verification, and CI results. Its stopping point is
+superseded by the active increment above; broad parity scope remains unchanged.
 
 ## Active resumed milestone — Resources / Packages / Extensions — 2026-10-16
 

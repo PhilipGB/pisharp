@@ -50,6 +50,7 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
                 var publicEvent = new NativeExtensions.PiSharpBeforeAgentStartEvent(
                     eventData.Prompt, eventData.SystemPrompt)
                 {
+                    SystemPromptOptions = eventData.SystemPromptOptions,
                     MessageType = eventData.MessageType == PiSharpTurnMessageType.Custom
                         ? NativeExtensions.PiSharpTurnMessageType.Custom
                         : NativeExtensions.PiSharpTurnMessageType.User,

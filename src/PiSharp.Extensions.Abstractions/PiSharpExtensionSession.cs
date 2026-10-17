@@ -78,6 +78,8 @@ public sealed class PiSharpExtensionSessionContext : IDisposable
     private const int MaximumEntryBytes = 1024 * 1024;
     private readonly Func<PiSharpExtensionSessionSnapshot> _getSnapshot;
     private readonly Func<string, JsonElement, CancellationToken, Task<PiSharpExtensionSessionEntry>> _appendEntryAsync;
+    private readonly Func<string, CancellationToken, Task>? _setSessionNameAsync;
+    private readonly Func<string, string?, CancellationToken, Task>? _setLabelAsync;
     private readonly CancellationTokenSource _lifetime = new();
     private int _isActive = 1;
 
@@ -92,6 +94,20 @@ public sealed class PiSharpExtensionSessionContext : IDisposable
         _appendEntryAsync = appendEntryAsync;
     }
 
+    /// <summary>Creates the bridge used by the host to adapt its authoritative session and metadata mutations.</summary>
+    public PiSharpExtensionSessionContext(
+        Func<PiSharpExtensionSessionSnapshot> getSnapshot,
+        Func<string, JsonElement, CancellationToken, Task<PiSharpExtensionSessionEntry>> appendEntryAsync,
+        Func<string, CancellationToken, Task> setSessionNameAsync,
+        Func<string, string?, CancellationToken, Task> setLabelAsync)
+        : this(getSnapshot, appendEntryAsync)
+    {
+        ArgumentNullException.ThrowIfNull(setSessionNameAsync);
+        ArgumentNullException.ThrowIfNull(setLabelAsync);
+        _setSessionNameAsync = setSessionNameAsync;
+        _setLabelAsync = setLabelAsync;
+    }
+
     /// <summary>Gets a fresh read-only projection of the active branch.</summary>
     public PiSharpExtensionSessionSnapshot Snapshot => _getSnapshot();
 
@@ -103,6 +119,33 @@ public sealed class PiSharpExtensionSessionContext : IDisposable
     public string? HeadEntryId => Snapshot.HeadEntryId;
     /// <summary>Extension-owned entries on the active branch, in append order.</summary>
     public IReadOnlyList<PiSharpExtensionSessionEntry> Entries => Snapshot.Entries;
+
+    /// <summary>Sets the active session's display name and saves it through the host session store.</summary>
+    public async Task SetSessionNameAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _isActive) == 0, this);
+        ArgumentNullException.ThrowIfNull(name);
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
+            _lifetime.Token);
+        await (_setSessionNameAsync ?? throw new InvalidOperationException(
+            "The host did not provide session metadata mutation for this callback."))(
+                name, linkedCancellation.Token).ConfigureAwait(false);
+    }
+
+    /// <summary>Sets or clears a label on an existing session entry, then saves through the host session store.</summary>
+    /// <param name="entryId">The ID of an existing session entry.</param>
+    /// <param name="label">The label to set, or null or empty to clear it.</param>
+    /// <param name="cancellationToken">A token used to cancel the save operation.</param>
+    public async Task SetLabelAsync(string entryId, string? label, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _isActive) == 0, this);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entryId);
+        using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
+            _lifetime.Token);
+        await (_setLabelAsync ?? throw new InvalidOperationException(
+            "The host did not provide session metadata mutation for this callback."))(
+                entryId, string.IsNullOrEmpty(label) ? null : label, linkedCancellation.Token).ConfigureAwait(false);
+    }
 
     /// <summary>Appends an entry with JSON null data to the session tree and saves it before returning.</summary>
     /// <param name="customType">The extension-defined entry type.</param>
