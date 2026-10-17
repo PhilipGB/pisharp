@@ -4,7 +4,15 @@
 
 Work is on `milestone/native-extension-controls-configuration`, based on
 `15b7acceb9c41a5b278b005ac5df6dadad7cda48`; the configured Pi reference stays
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This bounded SDK increment adds
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Product source is
+`c9d3f078fa0dba6a487bc178708667c7e562b64d`; draft PR [#10](https://github.com/PhilipGB/pisharp/pull/10)
+has passing exact-head push CI
+[39051662051](https://github.com/PhilipGB/pisharp/actions/runs/39051662051)
+and PR merge-result CI
+[39051669964](https://github.com/PhilipGB/pisharp/actions/runs/39051669964).
+Local verification passes 2,268 .NET tests with zero skips, architecture 7/7,
+Node 24/24, Python 50/50, and docs paths 139/536; MCP conformance reports no
+regressions against its eight classified baseline failures. This bounded SDK increment adds
 fresh read-only effective settings snapshots, typed extension CLI flags,
 session names and entry labels, command/tool inspection and active-tool changes,
 model/thinking controls, abort/compaction/graceful shutdown, and ordered,

@@ -5,9 +5,15 @@
 This bounded implementation increment starts from main
 `15b7acceb9c41a5b278b005ac5df6dadad7cda48` on
 `milestone/native-extension-controls-configuration`. The configured Pi source
-remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This receipt records
-implementation evidence only; it does not promote the broad extension API or
-orchestration rows and is not a global parity audit.
+remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Product source is
+`c9d3f078fa0dba6a487bc178708667c7e562b64d`. Draft PR [#10](https://github.com/PhilipGB/pisharp/pull/10)
+is open. Exact-head push CI
+[39051662051](https://github.com/PhilipGB/pisharp/actions/runs/39051662051)
+and PR merge-result CI
+[39051669964](https://github.com/PhilipGB/pisharp/actions/runs/39051669964)
+both pass, including the full .NET suite and MCP conformance. This receipt
+records implementation evidence only; it does not promote the broad extension
+API or orchestration rows and is not a global parity audit.
 
 The public compiled-extension contracts now cover fresh read-only effective
 settings JSON snapshots; Boolean/string CLI flags with typed defaults and
@@ -87,6 +93,6 @@ isolation and the complete rerun passed. Local restore uses
 read-only; the ordinary restore also exits successfully but reports NU1900 for
 that cache write.
 
-Exact-head push and PR merge-result CI evidence will be added after the final
-source and documentation commits are pushed. Broad extension status remains
-`in_progress`.
+The source checks above pass on the exact product head. A later documentation-
+only commit records this evidence; its own push and PR checks are tracked by the
+same draft PR. Broad extension status remains `in_progress`.
