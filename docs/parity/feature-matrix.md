@@ -1,3 +1,24 @@
+## Native extension public runtime bridge — 2026-10-17
+
+The bounded SDK milestone is implemented at product source
+`6019c32cdcc65a2c17d59a8842d09f67c5f9526d`, based on main
+`5de6aac534ea1548f28f63999c81addcc8189f48`, with Pi still pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. It preserves API-v1 binary
+compatibility and adds public native bridges for turn/message behavior,
+resources, context transforms, tool hooks and reload reconciliation. External
+package acceptance uses normal `dotnet pack`, installation and a fresh
+runtime, with a deterministic composed agent fixture. Full local verification
+passes 2,197 .NET tests with zero skips, architecture 7/7, Node 24/24, Python
+50/50, docs validation, and MCP conformance without new regressions.
+Exact-head push CI and PR merge-result CI pass on product source `6019c32c`
+([push run 38991202559](https://github.com/PhilipGB/pisharp/actions/runs/38991202559),
+[PR run 38991226901](https://github.com/PhilipGB/pisharp/actions/runs/38991226901)).
+
+This bounded milestone does not claim global extension parity. The broad
+`feature-extensions-net-api` and `extension-orchestration-api` ledger rows stay
+`in_progress`; no capability status changed. See the
+[milestone receipt](fixtures/native-extension-runtime-bridge-2026-10-17.md).
+
 ## Resources / Packages / Extensions resume — 2026-10-16
 
 Package install/remove/update/list behavior is already verified by the package

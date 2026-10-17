@@ -199,6 +199,54 @@
     },
     "remaining": "MCP and Codemode remain in progress as broad global capabilities. Resource/output semantics, broader Codemode sandbox semantics, cross-provider behavior and the eight classified MCP conformance failures remain open. Do not expand this milestone into global parity."
   },
+  "native_extension_runtime_bridge_milestone": {
+    "updated": "2026-10-17",
+    "status": "complete",
+    "branch": "milestone/native-extension-runtime-bridge",
+    "main_base": "5de6aac534ea1548f28f63999c81addcc8189f48",
+    "product_source_commit": "6019c32cdcc65a2c17d59a8842d09f67c5f9526d",
+    "configured_pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "pull_request": "https://github.com/PhilipGB/pisharp/pull/8",
+    "receipt": "docs/parity/fixtures/native-extension-runtime-bridge-2026-10-17.md",
+    "acceptance_evidence": {
+      "api_v1_compatibility": "ResourcePackageCommandProcessTests.ExternalPackageCompiledAgainstPr7ApiV1LoadsAndRunsWithTheAdditiveHost builds the exact PR #7 contract snapshot, packs and installs it, and executes its command, tool and before-agent-start callback.",
+      "turn_and_message_behavior": "Public turn type and image metadata; returned custom message persists once across retry and resume; user and custom extension commands use normal run paths; idle triggerTurn starts one run; setup/provider-busy messages join the active queue; cancellation/provider failure settle and recover.",
+      "resource_bridge": "PublicNativeFixtureCallbacksRunThroughLoadedPackagesAndV1CallbacksDisappearOnReload and PublicResourceDiscoveryLoadsOnStartupAndReplacesResourcesOnReloadAndRemoval exercise public resource callbacks; ProjectNativePackageIsInspectedButNotLoadedBeforeTrust guards project trust.",
+      "context_transforms": "Initial, tool-follow-up and post-compaction provider requests transform in order without modifying durable conversation history; failure settles and a subsequent prompt succeeds.",
+      "tool_hooks": "Packaged deterministic agent execution verifies argument mutation and result transformation; focused public hook tests verify ordering, blocking and failure recovery.",
+      "reload_and_removal": "Source-owned v1 registrations and resources disappear on replacement/removal; v1 load context collects after replacement and remains alive during an active old callback.",
+      "external_package": "Normal dotnet pack and child-process installation are followed by a fresh runtime; composed deterministic agent acceptance executes a loaded package tool loop and v2 replacement."
+    },
+    "local_verification": {
+      "restore": "passed",
+      "format": "passed",
+      "build": "passed, zero warnings and errors",
+      "dotnet_tests": "2197 passed, zero skipped",
+      "architecture": "7/7 passed",
+      "node_terminal": "24/24 passed",
+      "python_terminal": "50/50 passed",
+      "documentation_paths": "137 documents, 530 references; passed",
+      "mcp_conformance": "261 checks; eight classified baseline failures unchanged; no new regressions"
+    },
+    "ci": {
+      "push_exact_head": {
+        "run_id": 38991202559,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38991202559",
+        "status": "passed"
+      },
+      "pull_request_merge_result": {
+        "run_id": 38991226901,
+        "url": "https://github.com/PhilipGB/pisharp/actions/runs/38991226901",
+        "status": "passed"
+      }
+    },
+    "global_status_policy": "No global parity claim or capability status promotion; feature-extensions-net-api and extension-orchestration-api remain in_progress.",
+    "deferred": [
+      "per-session extension state, settings, extension UI and keybindings",
+      "provider/model registration and structured system-prompt option mutation",
+      "long-term MEAI binary compatibility and broader extension parity"
+    ]
+  },
   "baseline": "earendil-works/pi@b3487650f6378f1b0d1643dd254445ceb4a98035",
   "required_ids": [
     "feature-agent-multi-turn-and-streaming",

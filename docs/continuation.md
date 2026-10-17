@@ -1,5 +1,36 @@
 # Continuation — PiSharp capability parity
 
+## Native extension public runtime bridge — 2026-10-17
+
+The bounded native extension runtime bridge is implemented on branch
+`milestone/native-extension-runtime-bridge`, based on `main`
+`5de6aac534ea1548f28f63999c81addcc8189f48`. Product source is
+`6019c32cdcc65a2c17d59a8842d09f67c5f9526d`; configured Pi remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Draft PR #8 is open. Both exact-head
+push and PR merge-result Linux CI pass, including the `test` and
+`mcp-conformance` jobs ([push run 38991202559](https://github.com/PhilipGB/pisharp/actions/runs/38991202559),
+[PR run 38991226901](https://github.com/PhilipGB/pisharp/actions/runs/38991226901)). See the
+[milestone receipt](parity/fixtures/native-extension-runtime-bridge-2026-10-17.md).
+
+The public compiled API now bridges turn-start discrimination and image
+metadata, extension user/custom message delivery, injected custom messages,
+resource discovery, provider context transforms, and tool-call/result hooks
+onto the existing runtime. The PR #7 API-v1 contract fixture is packed and
+loaded by the additive host. A deterministic external-package workflow checks
+the hook/tool loop, resource changes, replacement, removal, persistence and
+resume behavior. Active custom trigger messages join the owned queue during
+setup or provider execution; cancellation and failure settle for a later
+ordinary prompt. Full local verification passes **2,197/2,197** .NET tests with
+zero skips, architecture **7/7**, Node **24/24**, Python **50/50**, and docs
+validation (**137 documents, 530 references**). MCP conformance has no new
+regressions; its eight classified baseline failures remain.
+
+This completes only the bounded native runtime bridge milestone. The broad
+extension API and orchestration capability remain `in_progress`; there is no
+global parity promotion. Per-session state, settings, UI/keybindings, provider
+registration, structured prompt-option mutation and long-term MEAI binary
+compatibility remain open.
+
 ## Resources / Packages / Extensions resume — 2026-10-16
 
 The user resumed this milestone after PR #5 merged. Work is on
