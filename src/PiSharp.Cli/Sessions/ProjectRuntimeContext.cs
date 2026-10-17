@@ -20,12 +20,14 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
     public UserSettings? ProjectSettings { get; }
     public UserSettings Settings { get; }
     public IReadOnlyList<ManagedResourcePackageRoot> ManagedPackageRoots { get; }
+    public IReadOnlyList<NativeExtensionPackageRoot> NativeExtensionPackageRoots { get; }
     public string ExtensionMode { get; }
     public bool HasUserInterface { get; }
     public IProjectTrustExtensionUi ExtensionUi { get; }
 
     private ProjectRuntimeConfiguration(string workingDirectory, bool trusted, UserSettings baseUserSettings,
         UserSettings? projectSettings, UserSettings settings, IReadOnlyList<ManagedResourcePackageRoot> managedPackageRoots,
+        IReadOnlyList<NativeExtensionPackageRoot> nativeExtensionPackageRoots,
         ExtensionCatalog? bootstrapExtensions, string extensionMode, bool hasUserInterface,
         IProjectTrustExtensionUi extensionUi)
     {
@@ -35,6 +37,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         ProjectSettings = projectSettings;
         Settings = settings;
         ManagedPackageRoots = managedPackageRoots;
+        NativeExtensionPackageRoots = nativeExtensionPackageRoots;
         _bootstrapExtensions = bootstrapExtensions;
         ExtensionMode = extensionMode;
         HasUserInterface = hasUserInterface;
@@ -47,7 +50,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
 
     public ProjectRuntimeConfiguration WithSettings(UserSettings baseUserSettings, UserSettings? projectSettings,
         UserSettings settings) => new(WorkingDirectory, Trusted, baseUserSettings, projectSettings, settings,
-        ManagedPackageRoots, bootstrapExtensions: null, ExtensionMode, HasUserInterface, ExtensionUi);
+        ManagedPackageRoots, NativeExtensionPackageRoots, bootstrapExtensions: null, ExtensionMode, HasUserInterface, ExtensionUi);
 
     public static async Task<ProjectRuntimeConfiguration> LoadAsync(string workingDirectory, string agentDirectory,
         CliArguments arguments, ProjectTrust trustStore, bool interactiveTrust, TextReader input, TextWriter output,
@@ -60,6 +63,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         var offline = arguments.Offline || IsOfflineEnvironment();
         var packageStore = new ManagedResourcePackageStore(agentDirectory);
         packageStore.ConfigureNpmCommand(baseSettings.NpmCommand);
+        var nativePackageStore = new NativeExtensionPackageStore(agentDirectory);
         var managedPackageRoots = (await packageStore.ResolveAsync(cwd, trusted: false,
             userPackages: baseSettings.Packages, offline: offline, cancellationToken: cancellationToken)).ToList();
         ExtensionCatalog? bootstrapExtensions = null;
@@ -86,6 +90,11 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                 mode: arguments.Print ? "print" : arguments.Mode,
                 extensionUi: extensionUi);
             var projectSettings = trusted ? await UserSettings.LoadProjectAsync(cwd, cancellationToken) : null;
+            var projectNativeExtensions = projectSettings?.NativeExtensions ??
+                await UserSettings.ReadProjectNativeExtensionsForInspectionAsync(cwd, cancellationToken);
+            var nativePackageRoots = await nativePackageStore.ResolveAsync(cwd, trusted,
+                userSources: baseSettings.NativeExtensions, projectSources: projectNativeExtensions,
+                cancellationToken: cancellationToken);
             if (projectSettings?.Packages is { Count: > 0 })
             {
                 packageStore.ConfigureNpmCommand(baseSettings.Overlay(projectSettings).NpmCommand);
@@ -94,7 +103,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                     offline: offline, cancellationToken: cancellationToken)).ToList();
             }
             return new(cwd, trusted, baseSettings, projectSettings,
-                baseSettings.Overlay(projectSettings ?? new UserSettings()), managedPackageRoots, bootstrapExtensions,
+                baseSettings.Overlay(projectSettings ?? new UserSettings()), managedPackageRoots, nativePackageRoots,
+                bootstrapExtensions,
                 ResolveExtensionMode(arguments), hasUserInterface ?? interactiveTrust,
                 extensionUi ?? UnavailableProjectTrustExtensionUi.Instance);
         }
@@ -217,7 +227,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 preloaded: configuration.TakeBootstrapExtensions(),
                 userPackages: configuration.BaseUserSettings.Packages,
                 projectPackages: configuration.ProjectSettings?.Packages,
-                managedPackageRoots: configuration.ManagedPackageRoots);
+                managedPackageRoots: configuration.ManagedPackageRoots,
+                nativeExtensionPackageRoots: configuration.NativeExtensionPackageRoots);
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
             var effectiveMcpServers = McpRuntime.SelectEffectiveServers(mcp.Servers,
                 extensions.Registration.McpServers);

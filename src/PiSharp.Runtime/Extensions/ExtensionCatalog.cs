@@ -104,6 +104,32 @@ public sealed partial class ExtensionRegistration
     public VirtualModelRegistry VirtualModels => _virtualModels;
     internal event Action<IReadOnlyCollection<PiSharpToolRegistration>>? ToolDefinitionsChanged;
 
+    internal void ReleaseExtensionReferences()
+    {
+        lock (_toolGate)
+        {
+            _tools.Clear();
+            _toolDefinitions.Clear();
+            _toolSourceInfo.Clear();
+            _toolRenderers.Clear();
+            _ownedToolNames.Clear();
+            _toolCandidates.Clear();
+            ToolDefinitionsChanged = null;
+        }
+        _commands.Clear();
+        _userBashHandlers.Clear();
+        _toolCallHooks.Clear();
+        _toolResultHooks.Clear();
+        _contextTransforms.Clear();
+        _lifecycleHandlers.Clear();
+        _beforeAgentStartHandlers.Clear();
+        _resourceDiscoveryHandlers.Clear();
+        _projectTrustHandlers.Clear();
+        lock (_mcpGate) _mcpServers.Clear();
+        _virtualModels.Clear();
+        _currentSourceInfo = null;
+    }
+
     /// <summary>Registers an MCP server for this session using the same shape as an mcp.json entry.</summary>
     public void RegisterMcpServer(string name, JsonElement configuration)
     {
@@ -515,15 +541,19 @@ public sealed record ExtensionLoadError(string Path, string Error);
 public sealed partial class ExtensionCatalog : IDisposable
 {
     private readonly List<AssemblyLoadContext> _contexts = [];
+    private readonly List<NativeExtensionPackageHandle?> _nativePackageHandles = [];
     private readonly List<IAsyncDisposable> _ownedConnections = [];
     private readonly List<ResourceSourceInfo> _loadedExtensions = [];
     private readonly List<ExtensionLoadError> _loadErrors = [];
     private readonly List<ExtensionConflictDiagnostic> _conflicts = [];
     private readonly List<ExtensionLoadWarning> _warnings = [];
     private readonly HashSet<string> _loadedBuiltins = new(StringComparer.Ordinal);
+    private int _disposed;
     public ExtensionRegistration Registration { get; } = new();
     public IReadOnlySet<string> LoadedBuiltins => _loadedBuiltins;
     public IReadOnlyList<ResourceSourceInfo> LoadedExtensions => _loadedExtensions.ToArray();
+    internal IReadOnlyList<WeakReference> NativePackageLoadContextReferences => _nativePackageHandles
+        .Where(handle => handle is not null).Select(handle => handle!.LoadContextReference).ToArray();
     public IReadOnlyList<ExtensionLoadError> LoadErrors => _loadErrors.ToArray();
     public IReadOnlyList<ExtensionConflictDiagnostic> ConflictDiagnostics => _conflicts.ToArray();
     public IReadOnlyList<ExtensionLoadWarning> Warnings => _warnings.ToArray();
@@ -598,17 +628,20 @@ public sealed partial class ExtensionCatalog : IDisposable
         IReadOnlyList<string>? projectPaths = null, IReadOnlyList<BuiltinExtensionDefinition>? builtins = null,
         ExtensionCatalog? preloaded = null,
         IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null,
-        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null)
+        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null,
+        IReadOnlyList<NativeExtensionPackageRoot>? nativeExtensionPackageRoots = null)
     {
         var catalog = preloaded ?? new ExtensionCatalog();
         try
         {
+            var pathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
             var selectedPaths = new List<(string Path, ResourceSourceInfo SourceInfo)>();
+            var selectedNativePackages = new Dictionary<string, NativeExtensionPackageRoot>(pathComparer);
             var selectedBuiltins = new List<BuiltinExtensionDefinition>();
             var builtinByName = (builtins ?? []).ToDictionary(builtin => builtin.Name, StringComparer.Ordinal);
             var seenBuiltins = new HashSet<string>(StringComparer.Ordinal);
             var seenPaths = new HashSet<string>(catalog._loadErrors.Select(error => error.Path).Select(ResourcePathIdentity.Canonicalize),
-                OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+                pathComparer);
             var packageFiles = discover ? ResourcePackageFiles.Load(cwd, agentDirectory, projectTrusted,
                 userPackages, projectPackages, CancellationToken.None, managedPackageRoots).Extensions : [];
             var packagePaths = packageFiles.Select(file => file.Path).ToHashSet(seenPaths.Comparer);
@@ -657,6 +690,38 @@ public sealed partial class ExtensionCatalog : IDisposable
                         if (!packagePaths.Contains(path)) AddPath(path, new(Path.GetFullPath(path), "auto", "user", "top-level", Path.GetFullPath(agentDirectory)));
                 foreach (var file in packageFiles)
                     if (file.Enabled) AddPath(file.Path, file.Source);
+                foreach (var packageRoot in nativeExtensionPackageRoots ?? [])
+                {
+                    if (packageRoot.Scope == "project" && !projectTrusted)
+                    {
+                        try
+                        {
+                            var manifest = NativeExtensionPackageManifestReader.Read(packageRoot.Path);
+                            catalog._warnings.Add(new(packageRoot.Path,
+                                $"Project native extension {manifest.Id} {manifest.Version} is not loaded because this project is not trusted."));
+                        }
+                        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or
+                                                       ArgumentException or NotSupportedException)
+                        {
+                            catalog._warnings.Add(new(packageRoot.Path,
+                                $"Project native extension metadata could not be read while this project is untrusted: {error.Message}"));
+                        }
+                        continue;
+                    }
+
+                    if (packageRoot.Scope is not ("user" or "project"))
+                    {
+                        catalog._warnings.Add(new(packageRoot.Path,
+                            $"Native extension package has unsupported scope '{packageRoot.Scope}'."));
+                        continue;
+                    }
+
+                    var packagePath = Path.GetFullPath(packageRoot.Path);
+                    var sourceInfo = new ResourceSourceInfo(packagePath, "native-package", packageRoot.Scope,
+                        "package", packagePath);
+                    if (AddPath(packagePath, sourceInfo))
+                        selectedNativePackages[ResourcePathIdentity.Canonicalize(packagePath)] = packageRoot;
+                }
             }
             catalog.SelectPreloadedExtensions(selectedPaths);
             var retainedPaths = catalog._loadedExtensions.Select(extension => ResourcePathIdentity.Canonicalize(extension.Path))
@@ -664,12 +729,49 @@ public sealed partial class ExtensionCatalog : IDisposable
             foreach (var (path, sourceInfo) in selectedPaths)
             {
                 if (retainedPaths.Contains(ResourcePathIdentity.Canonicalize(path))) continue;
+                if (selectedNativePackages.ContainsKey(ResourcePathIdentity.Canonicalize(path)))
+                {
+                    var loadedNative = NativeExtensionPackageLoader.Load(path, sourceInfo);
+                    if (loadedNative.Error is { } nativeError)
+                    {
+                        catalog._warnings.Add(new(path, nativeError));
+                        continue;
+                    }
+
+                    var handle = loadedNative.Handle!;
+                    var restore = catalog.Registration.CreateConfigurationCheckpoint();
+                    catalog.Registration.SetCurrentSourceInfo(sourceInfo);
+                    try
+                    {
+                        foreach (var extension in handle.Extensions)
+                        {
+                            var builder = new NativeExtensionRegistrationAdapter(catalog.Registration);
+                            try { extension.Configure(builder); }
+                            finally { builder.Close(); }
+                        }
+                        handle.ReleaseExtensions();
+                        catalog._loadedExtensions.Add(sourceInfo with { Path = path });
+                        catalog._contexts.Add(handle.LoadContext!);
+                        catalog._nativePackageHandles.Add(handle);
+                    }
+                    catch (Exception configureError)
+                    {
+                        restore();
+                        handle.Unload();
+                        catalog._warnings.Add(new(path,
+                            $"Native extension package {handle.Manifest.Id} failed during Configure: {configureError.Message}"));
+                    }
+                    finally { catalog.Registration.SetCurrentSourceInfo(null); }
+                    continue;
+                }
+
                 var loaded = ExtensionAssemblyLoader.Load(path, sourceInfo, catalog.Registration);
                 if (loaded.Error is { } error) catalog._loadErrors.Add(new(path, error));
                 else
                 {
                     catalog._loadedExtensions.Add(sourceInfo with { Path = path });
                     catalog._contexts.Add(loaded.Context!);
+                    catalog._nativePackageHandles.Add(null);
                 }
             }
             catalog.OrderSelectedExtensions(selectedPaths);
@@ -694,11 +796,13 @@ public sealed partial class ExtensionCatalog : IDisposable
                 if (seenBuiltins.Add(name)) selectedBuiltins.Add(builtin);
             }
 
-            void AddPath(string path, ResourceSourceInfo sourceInfo)
+            bool AddPath(string path, ResourceSourceInfo sourceInfo)
             {
                 var fullPath = Path.GetFullPath(path);
                 sourceInfo = packageMetadata.GetValueOrDefault(fullPath, sourceInfo);
-                if (seenPaths.Add(ResourcePathIdentity.Canonicalize(fullPath))) selectedPaths.Add((fullPath, sourceInfo with { Path = fullPath }));
+                if (!seenPaths.Add(ResourcePathIdentity.Canonicalize(fullPath))) return false;
+                selectedPaths.Add((fullPath, sourceInfo with { Path = fullPath }));
+                return true;
             }
 
             void AddConfiguredPaths(IReadOnlyList<string>? entries, string baseDirectory, string scope)
@@ -774,11 +878,30 @@ public sealed partial class ExtensionCatalog : IDisposable
 
     public void Dispose()
     {
-        foreach (var connection in _ownedConnections)
-            connection.DisposeAsync().AsTask().GetAwaiter().GetResult();
-        _ownedConnections.Clear();
-        foreach (var context in _contexts) context.Unload();
-        _contexts.Clear();
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        List<Exception>? errors = null;
+        try
+        {
+            foreach (var connection in _ownedConnections)
+            {
+                try { connection.DisposeAsync().AsTask().GetAwaiter().GetResult(); }
+                catch (Exception error) { (errors ??= []).Add(error); }
+            }
+        }
+        finally
+        {
+            _ownedConnections.Clear();
+            Registration.ReleaseExtensionReferences();
+            for (var index = 0; index < _contexts.Count; index++)
+            {
+                if (_nativePackageHandles[index] is { } package) package.Unload();
+                else _contexts[index].Unload();
+            }
+            _nativePackageHandles.Clear();
+            _contexts.Clear();
+        }
+        if (errors is { Count: 1 }) throw errors[0];
+        if (errors is { Count: > 1 }) throw new AggregateException(errors);
     }
 
 }

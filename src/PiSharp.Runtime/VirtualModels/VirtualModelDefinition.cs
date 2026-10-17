@@ -38,6 +38,11 @@ public sealed class VirtualModelRegistry
         get { lock (_gate) return _models.Values.ToArray(); }
     }
 
+    internal void Clear()
+    {
+        lock (_gate) _models.Clear();
+    }
+
     internal Action CreateConfigurationCheckpoint()
     {
         lock (_gate)

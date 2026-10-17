@@ -329,6 +329,31 @@
       },
       "description": "npm or git package sources, as strings or objects with resource filtering."
     },
+    "nativeExtensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "version",
+          "source"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "Local .nupkg path used to install or update this PiSharp-native compiled extension."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Installed PiSharp-native compiled extension packages. These are executable code and project-local entries follow project trust."
+    },
     "extensions": {
       "type": "array",
       "items": {

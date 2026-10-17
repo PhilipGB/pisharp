@@ -221,15 +221,19 @@ internal static class ResourcePackageCommand
             var effectiveSettings = userSettings.Overlay(projectSettings ?? new UserSettings());
             var store = new ManagedResourcePackageStore(agent);
             store.ConfigureNpmCommand(effectiveSettings.NpmCommand);
+            var nativeStore = new NativeExtensionPackageStore(agent);
             var userPackages = userSettings.Packages ?? [];
             var projectPackages = trusted ? projectSettings?.Packages ?? [] : [];
+            var userNativeExtensions = userSettings.NativeExtensions ?? [];
+            var projectNativeExtensions = trusted ? projectSettings?.NativeExtensions ?? [] : [];
             var userSettingsPath = UserSettings.GetSettingsPath(agent, environment);
             var projectSettingsPath = Path.Combine(cwd, ".pi", "settings.json");
 
             switch (parsed.Action)
             {
                 case ActionKind.List:
-                    await PrintListAsync(store, cwd, userPackages, projectPackages, output, cancellationToken);
+                    await PrintListAsync(store, nativeStore, cwd, userPackages, projectPackages,
+                        userNativeExtensions, projectNativeExtensions, output, cancellationToken);
                     return 0;
                 case ActionKind.Install:
                     {
@@ -238,6 +242,16 @@ internal static class ResourcePackageCommand
                         var scope = parsed.Local ? "project" : "user";
                         var scopeBase = parsed.Local ? Path.Combine(cwd, ".pi") : agent;
                         var settingsPath = parsed.Local ? projectSettingsPath : userSettingsPath;
+                        if (IsNativePackageSource(source))
+                        {
+                            if (parsed.Local) _ = projectSettings ?? await UserSettings.LoadProjectAsync(cwd, cancellationToken);
+                            var package = await nativeStore.InstallAsync(cwd, source, scope, cancellationToken);
+                            var nativeStoredSource = NormalizeNativeSourceForSettings(package.Source, scopeBase);
+                            await UserSettingsWriter.UpdateNativeExtensionAsync(settingsPath, package with { Source = nativeStoredSource },
+                                remove: false, userScope: !parsed.Local, cancellationToken);
+                            await output.WriteLineAsync($"Installed PiSharp-native extension {package.Id} {package.Version}");
+                            return 0;
+                        }
                         var storedSource = NormalizeSourceForSettings(source, cwd, scopeBase);
                         if (ManagedResourcePackageStore.GetManagedPackageIdentity(source) is null)
                         {
@@ -263,6 +277,17 @@ internal static class ResourcePackageCommand
                         var scopeBase = parsed.Local ? Path.Combine(cwd, ".pi") : agent;
                         var settingsPath = parsed.Local ? projectSettingsPath : userSettingsPath;
                         if (parsed.Local) _ = projectSettings ?? await UserSettings.LoadProjectAsync(cwd, cancellationToken);
+                        var selectedNativePackages = parsed.Local ? projectNativeExtensions : userNativeExtensions;
+                        var nativePackage = FindNativePackage(selectedNativePackages, source, cwd, scopeBase);
+                        if (nativePackage is not null)
+                        {
+                            var removedNative = await UserSettingsWriter.UpdateNativeExtensionAsync(settingsPath, nativePackage,
+                                remove: true, userScope: !parsed.Local, cancellationToken);
+                            if (!removedNative) return await FailAsync(error, $"No matching PiSharp-native extension found for {source}");
+                            await nativeStore.RemoveAsync(cwd, nativePackage.Id, scope, cancellationToken);
+                            await output.WriteLineAsync($"Removed PiSharp-native extension {nativePackage.Id}");
+                            return 0;
+                        }
                         await store.RemoveAsync(cwd, source, scope, cancellationToken,
                             standardOutput: output, standardError: error);
                         var removed = await UserSettingsWriter.UpdatePackageSourceAsync(settingsPath, source, source, cwd,
@@ -274,6 +299,39 @@ internal static class ResourcePackageCommand
                 case ActionKind.Update:
                     {
                         var source = parsed.Source;
+                        if (source is not null && (IsNativePackageSource(source) ||
+                            FindNativePackage(userNativeExtensions, source, cwd, agent) is not null ||
+                            FindNativePackage(projectNativeExtensions, source, cwd, Path.Combine(cwd, ".pi")) is not null))
+                        {
+                            var incoming = IsNativePackageSource(source)
+                                ? await nativeStore.InspectAsync(cwd, source, cancellationToken)
+                                : null;
+                            var currentUserNative = incoming is null
+                                ? FindNativePackage(userNativeExtensions, source, cwd, agent)
+                                : userNativeExtensions.FirstOrDefault(item => string.Equals(item.Id, incoming.Id, StringComparison.OrdinalIgnoreCase));
+                            var currentProjectNative = !trusted ? null : incoming is null
+                                ? FindNativePackage(projectNativeExtensions, source, cwd, Path.Combine(cwd, ".pi"))
+                                : projectNativeExtensions.FirstOrDefault(item => string.Equals(item.Id, incoming.Id, StringComparison.OrdinalIgnoreCase));
+                            var isUser = currentUserNative is not null;
+                            var current = currentUserNative ?? currentProjectNative;
+                            if (current is null)
+                                return await FailAsync(error, $"No configured PiSharp-native extension matches '{source}'.");
+                            var scope = isUser ? "user" : "project";
+                            var scopeBase = isUser ? agent : Path.Combine(cwd, ".pi");
+                            var settingsPath = isUser ? userSettingsPath : projectSettingsPath;
+                            var packageSource = incoming?.Source ?? ResourceLocalPath.Resolve(current.Source, scopeBase);
+                            var updated = await nativeStore.InstallAsync(cwd, packageSource, scope, cancellationToken);
+                            var storedSource = NormalizeNativeSourceForSettings(updated.Source, scopeBase);
+                            await UserSettingsWriter.UpdateNativeExtensionAsync(settingsPath, updated with { Source = storedSource },
+                                remove: false, userScope: isUser, cancellationToken);
+                            await output.WriteLineAsync($"Updated PiSharp-native extension {updated.Id} {updated.Version}");
+                            return 0;
+                        }
+                        if (source is null && parsed.UpdatePackages)
+                        {
+                            await UpdateConfiguredNativeExtensionsAsync(nativeStore, cwd, agent, userSettingsPath,
+                                projectSettingsPath, userNativeExtensions, projectNativeExtensions, output, cancellationToken);
+                        }
                         var configuredForUser = source is not null && ContainsPackage(userPackages, source, cwd, agent);
                         var configuredForProject = source is not null && ContainsPackage(projectPackages, source, cwd,
                             Path.Combine(cwd, ".pi"));
@@ -311,16 +369,20 @@ internal static class ResourcePackageCommand
         }
     }
 
-    private static async Task PrintListAsync(ManagedResourcePackageStore store, string cwd,
+    private static async Task PrintListAsync(ManagedResourcePackageStore store, NativeExtensionPackageStore nativeStore, string cwd,
         IReadOnlyList<ResourcePackageSource> userPackages, IReadOnlyList<ResourcePackageSource> projectPackages,
-        TextWriter output, CancellationToken cancellationToken)
+        IReadOnlyList<NativeExtensionPackageSource> userNativeExtensions,
+        IReadOnlyList<NativeExtensionPackageSource> projectNativeExtensions, TextWriter output,
+        CancellationToken cancellationToken)
     {
         var configured = new List<(ResourcePackageSource Package, string Scope, string? Path)>();
         foreach (var package in userPackages)
             configured.Add((package, "user", await store.GetInstalledPathAsync(cwd, package.Source, "user", cancellationToken)));
         foreach (var package in projectPackages)
             configured.Add((package, "project", await store.GetInstalledPathAsync(cwd, package.Source, "project", cancellationToken)));
-        if (configured.Count == 0)
+        var nativeRoots = await nativeStore.ResolveAsync(cwd, trusted: true, userNativeExtensions, projectNativeExtensions,
+            cancellationToken);
+        if (configured.Count == 0 && nativeRoots.Count == 0)
         {
             await output.WriteLineAsync("No packages installed.");
             return;
@@ -339,10 +401,64 @@ internal static class ResourcePackageCommand
             foreach (var entry in projects) await PrintEntryAsync(entry);
         }
 
+        var userNative = nativeRoots.Where(item => item.Scope == "user").ToArray();
+        var projectNative = nativeRoots.Where(item => item.Scope == "project").ToArray();
+        if (userNative.Length > 0)
+        {
+            if (configured.Count > 0) await output.WriteLineAsync();
+            await output.WriteLineAsync("User PiSharp-native compiled extensions:");
+            foreach (var entry in userNative) await PrintNativeEntryAsync(entry);
+        }
+        if (projectNative.Length > 0)
+        {
+            if (configured.Count > 0 || userNative.Length > 0) await output.WriteLineAsync();
+            await output.WriteLineAsync("Project PiSharp-native compiled extensions:");
+            foreach (var entry in projectNative) await PrintNativeEntryAsync(entry);
+        }
+
         async Task PrintEntryAsync((ResourcePackageSource Package, string Scope, string? Path) entry)
         {
             await output.WriteLineAsync("  " + entry.Package.Source + (entry.Package.HasFilter ? " (filtered)" : ""));
             if (entry.Path is not null) await output.WriteLineAsync("    " + entry.Path);
+        }
+
+        async Task PrintNativeEntryAsync(NativeExtensionPackageRoot entry)
+        {
+            var package = (entry.Scope == "project" ? projectNativeExtensions : userNativeExtensions)
+                .FirstOrDefault(item => item.Source == entry.Source);
+            var label = package is null ? entry.Source : $"{package.Id} {package.Version}";
+            await output.WriteLineAsync("  " + label);
+            await output.WriteLineAsync("    " + entry.Path);
+        }
+    }
+
+    private static async Task UpdateConfiguredNativeExtensionsAsync(NativeExtensionPackageStore store, string cwd,
+        string agentDirectory, string userSettingsPath, string projectSettingsPath,
+        IReadOnlyList<NativeExtensionPackageSource> userPackages,
+        IReadOnlyList<NativeExtensionPackageSource> projectPackages, TextWriter output,
+        CancellationToken cancellationToken)
+    {
+        await UpdateScopeAsync(userPackages, "user", agentDirectory, userSettingsPath, userScope: true);
+        await UpdateScopeAsync(projectPackages, "project", Path.Combine(cwd, ".pi"), projectSettingsPath, userScope: false);
+
+        async Task UpdateScopeAsync(IReadOnlyList<NativeExtensionPackageSource> packages, string scope,
+            string scopeBase, string settingsPath, bool userScope)
+        {
+            foreach (var package in packages)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var source = ResourceLocalPath.Resolve(package.Source, scopeBase);
+                if (!File.Exists(source))
+                {
+                    await output.WriteLineAsync($"Skipped PiSharp-native extension {package.Id}: local package source is unavailable.");
+                    continue;
+                }
+                var updated = await store.InstallAsync(cwd, source, scope, cancellationToken);
+                var storedSource = NormalizeNativeSourceForSettings(updated.Source, scopeBase);
+                await UserSettingsWriter.UpdateNativeExtensionAsync(settingsPath, updated with { Source = storedSource },
+                    remove: false, userScope, cancellationToken);
+                await output.WriteLineAsync($"Updated PiSharp-native extension {updated.Id} {updated.Version}");
+            }
         }
     }
 
@@ -366,9 +482,30 @@ internal static class ResourcePackageCommand
 
     private static string ResolveLocalPath(string source, string baseDirectory) => ResourceLocalPath.Resolve(source, baseDirectory);
 
+    private static bool IsNativePackageSource(string source) =>
+        Path.GetExtension(source).Equals(".nupkg", StringComparison.OrdinalIgnoreCase);
+
+    private static NativeExtensionPackageSource? FindNativePackage(IReadOnlyList<NativeExtensionPackageSource> packages,
+        string source, string inputBaseDirectory, string settingsBaseDirectory)
+    {
+        var byId = packages.FirstOrDefault(package => string.Equals(package.Id, source, StringComparison.OrdinalIgnoreCase));
+        if (byId is not null) return byId;
+        var inputPath = Path.GetFullPath(ResourceLocalPath.Resolve(source, inputBaseDirectory));
+        return packages.FirstOrDefault(package => Path.GetFullPath(ResourceLocalPath.Resolve(package.Source, settingsBaseDirectory))
+            .Equals(inputPath, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
+    }
+
+    private static string NormalizeNativeSourceForSettings(string source, string settingsBaseDirectory)
+    {
+        var resolved = Path.GetFullPath(source);
+        var relative = Path.GetRelativePath(Path.GetFullPath(settingsBaseDirectory), resolved);
+        return relative.Length == 0 ? "." : relative;
+    }
+
     private static bool HasTrustExtensionSources(string agentDirectory, UserSettings settings)
     {
         if (settings.Packages is { Count: > 0 }) return true;
+        if (settings.NativeExtensions is { Count: > 0 }) return true;
         if (settings.Extensions?.Any(path => !path.TrimStart('!', '+', '-').StartsWith("builtin:", StringComparison.Ordinal)) == true)
             return true;
         var directory = Path.Combine(agentDirectory, "extensions");
@@ -381,17 +518,17 @@ internal static class ResourcePackageCommand
 
     private static string Usage(string command) => command switch
     {
-        "install" => "pisharp install <source> [-l] [--approve|--no-approve]",
-        "remove" or "uninstall" => "pisharp remove <source> [-l] [--approve|--no-approve]",
+        "install" => "pisharp install <source|local.nupkg> [-l] [--approve|--no-approve]",
+        "remove" or "uninstall" => "pisharp remove <source|native-extension-id> [-l] [--approve|--no-approve]",
         "list" => "pisharp list [--approve|--no-approve]",
         _ => "pisharp update [source|self|pi] [--self|--extensions|--models|--all] [--extension <source>] [--approve|--no-approve] [--force]"
     };
 
     private static string Help(string command) => command switch
     {
-        "install" => $"Usage:\n  {Usage(command)}\n\nInstall a package and add it to settings.\n\nOptions:\n  -l, --local       Install project-locally (.pi/settings.json)\n  -a, --approve     Trust project-local files for this command\n  -na, --no-approve Ignore project-local files for this command\n\nExamples:\n  pisharp install npm:@foo/bar\n  pisharp install git:github.com/user/repo\n  pisharp install git:git@github.com:user/repo\n  pisharp install https://github.com/user/repo\n  pisharp install ssh://git@github.com/user/repo\n  pisharp install ./local/path",
-        "remove" or "uninstall" => $"Usage:\n  {Usage(command)}\n\nRemove a package and its source from settings.\nAlias: pisharp uninstall <source> [-l]\n\nOptions:\n  -l, --local       Remove from project settings (.pi/settings.json)\n  -a, --approve     Trust project-local files for this command\n  -na, --no-approve Ignore project-local files for this command\n\nExamples:\n  pisharp remove npm:@foo/bar\n  pisharp uninstall npm:@foo/bar",
-        "update" => $"Usage:\n  {Usage(command)}\n\nUpdate configured package resources.\n\nOptions:\n  --self                  Select the PiSharp self-update target\n  --extensions            Update configured packages only\n  --models                Select the model catalog target\n  --all                   Select all update targets\n  --extension <source>    Update one configured package only\n  -a, --approve           Trust project-local files for this command\n  -na, --no-approve       Ignore project-local files for this command\n  --force                 Force the self-update target\n\nSelf-update, model catalog refresh, and all-target update are unavailable for this installation.",
+        "install" => $"Usage:\n  {Usage(command)}\n\nInstall a Pi-compatible resource package or a PiSharp-native compiled extension package. Pi TypeScript/JavaScript extensions are not executable by PiSharp.\n\nOptions:\n  -l, --local       Install project-locally (.pi/settings.json)\n  -a, --approve     Trust project-local files for this command\n  -na, --no-approve Ignore project-local files for this command\n\nExamples:\n  pisharp install npm:@foo/bar\n  pisharp install git:github.com/user/repo\n  pisharp install ./local/package.nupkg",
+        "remove" or "uninstall" => $"Usage:\n  {Usage(command)}\n\nRemove a Pi-compatible resource package or PiSharp-native compiled extension.\nAlias: pisharp uninstall <source> [-l]\n\nOptions:\n  -l, --local       Remove from project settings (.pi/settings.json)\n  -a, --approve     Trust project-local files for this command\n  -na, --no-approve Ignore project-local files for this command\n\nExamples:\n  pisharp remove npm:@foo/bar\n  pisharp remove example.extension",
+        "update" => $"Usage:\n  {Usage(command)}\n\nUpdate configured package resources and local PiSharp-native compiled extensions.\n\nOptions:\n  --self                  Select the PiSharp self-update target\n  --extensions            Update configured packages only\n  --models                Select the model catalog target\n  --all                   Select all update targets\n  --extension <source>    Update one configured package or native extension only\n  -a, --approve           Trust project-local files for this command\n  -na, --no-approve       Ignore project-local files for this command\n  --force                 Force the self-update target\n\nSelf-update, model catalog refresh, and all-target update are unavailable for this installation.",
         _ => $"Usage:\n  {Usage(command)}\n\nList installed packages from user and project settings.\n\nOptions:\n  -a, --approve      Trust project-local files for this command\n  -na, --no-approve  Ignore project-local files for this command"
     };
 

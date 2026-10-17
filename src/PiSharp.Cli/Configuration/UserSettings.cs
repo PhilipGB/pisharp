@@ -93,7 +93,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     IReadOnlyList<ResourcePackageSource>? Packages = null, IReadOnlyList<string>? NpmCommand = null,
     IReadOnlyDictionary<string, int>? ThinkingBudgets = null, bool? AutoResizeImages = null,
     bool? ShowHardwareCursor = null, int? EditorPaddingX = null, int? OutputPad = null,
-    int? AutocompleteMaxVisible = null, bool? ClearOnShrink = null, bool? ShowTerminalProgress = null)
+    int? AutocompleteMaxVisible = null, bool? ClearOnShrink = null, bool? ShowTerminalProgress = null,
+    IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -125,6 +126,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         IReadOnlyList<string>? tools = null, enabledModels = null;
         IReadOnlyList<string>? extensions = null, skills = null, prompts = null, themes = null;
         IReadOnlyList<ResourcePackageSource>? packages = null;
+        IReadOnlyList<NativeExtensionPackageSource>? nativeExtensions = null;
         IReadOnlyList<string>? npmCommand = null;
         IReadOnlyDictionary<string, string>? modelThinkingLevels = null;
         IReadOnlyDictionary<string, int>? thinkingBudgets = null;
@@ -288,6 +290,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                 packages = PackageSettingsReader.Read(property.Value);
                 continue;
             }
+            if (property.Name == "nativeExtensions")
+            {
+                nativeExtensions = PackageSettingsReader.ReadNativeExtensions(property.Value);
+                continue;
+            }
             if (property.Name == "npmCommand")
             {
                 npmCommand = PackageSettingsReader.ReadNpmCommand(property.Value);
@@ -391,7 +398,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
             enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
             npmCommand, thinkingBudgets, autoResizeImages, showHardwareCursor, editorPaddingX, outputPad,
-            autocompleteMaxVisible, clearOnShrink, showTerminalProgress);
+            autocompleteMaxVisible, clearOnShrink, showTerminalProgress, nativeExtensions);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -440,7 +447,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.OutputPad ?? OutputPad,
         project.AutocompleteMaxVisible ?? AutocompleteMaxVisible,
         project.ClearOnShrink ?? ClearOnShrink,
-        project.ShowTerminalProgress ?? ShowTerminalProgress);
+        project.ShowTerminalProgress ?? ShowTerminalProgress,
+        project.NativeExtensions ?? NativeExtensions);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");
@@ -559,6 +567,36 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             throw new InvalidDataException("httpProxy is only allowed in user settings.json.");
         return settings;
     }
+
+    /// <summary>Reads only native package references for trust-gated metadata inspection; it never loads package code.</summary>
+    public static async Task<IReadOnlyList<NativeExtensionPackageSource>> ReadProjectNativeExtensionsForInspectionAsync(
+        string workingDirectory, CancellationToken cancellationToken = default)
+    {
+        var path = Path.Combine(workingDirectory, ".pi", "settings.json");
+        if (!File.Exists(path)) return [];
+        try
+        {
+            var info = new FileInfo(path);
+            if (info.Length > 64 * 1024) return [];
+            using var document = JsonDocument.Parse(await File.ReadAllBytesAsync(path, cancellationToken),
+                new JsonDocumentOptions { MaxDepth = 16 });
+            if (document.RootElement.ValueKind != JsonValueKind.Object) return [];
+            JsonElement? nativeExtensions = null;
+            foreach (var property in document.RootElement.EnumerateObject())
+            {
+                if (property.Name != "nativeExtensions") continue;
+                if (nativeExtensions is not null) return [];
+                nativeExtensions = property.Value;
+            }
+            return nativeExtensions is { } value ? PackageSettingsReader.ReadNativeExtensions(value) : [];
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidDataException)
+        {
+            // Trust-gated settings are fully validated only after trust. Metadata inspection is best effort.
+            return [];
+        }
+    }
+
     public AutoCompactionPolicy? ResolveCompaction(int? contextWindow, Func<string, string?> environment, string? modelKey = null) =>
         (Compaction ?? new CompactionSettings()).Resolve(contextWindow, environment, modelKey);
     public AutoCompactionPolicy? ResolveCompactionPolicy(int? contextWindow, Func<string, string?> environment,

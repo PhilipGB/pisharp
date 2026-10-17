@@ -25,7 +25,7 @@ public sealed class ArchitectureTests
 
     [Theory]
     [InlineData("PiSharp.Core", "")]
-    [InlineData("PiSharp.Runtime", "PiSharp.Core")]
+    [InlineData("PiSharp.Runtime", "PiSharp.Core,PiSharp.Extensions.Abstractions")]
     [InlineData("PiSharp.Cli", "PiSharp.Core,PiSharp.Runtime")]
     public void ProductionProjectReferencesFollowDependencyDirection(string project, string allowedReferences)
     {
@@ -34,6 +34,25 @@ public sealed class ArchitectureTests
         var references = document.Descendants("ProjectReference")
             .Select(reference => Path.GetFileNameWithoutExtension(reference.Attribute("Include")!.Value.Replace('\\', '/')));
         Assert.All(references, reference => Assert.Contains(reference, allowed));
+    }
+
+    [Fact]
+    public void PublicExtensionAbstractionsStayIndependentOfRuntimeAndTheFixtureUsesOnlyThatBoundary()
+    {
+        var abstractions = ReadProject("PiSharp.Extensions.Abstractions");
+        Assert.Empty(abstractions.Descendants("ProjectReference"));
+        Assert.Equal(["Microsoft.Extensions.AI.Abstractions"], abstractions.Descendants("PackageReference")
+            .Select(reference => reference.Attribute("Include")!.Value).ToArray());
+
+        var fixture = ReadRepositoryXml(Path.Combine("tests", "fixtures", "NativeExtensionFixture",
+            "NativeExtensionFixture.csproj"));
+        var fixtureReferences = fixture.Descendants("ProjectReference")
+            .Select(reference => Path.GetFileNameWithoutExtension(reference.Attribute("Include")!.Value.Replace('\\', '/')))
+            .ToArray();
+        Assert.Contains("PiSharp.Extensions.Abstractions", fixtureReferences);
+        Assert.DoesNotContain(fixtureReferences, name => name is "PiSharp.Runtime" or "PiSharp.Cli" or "PiSharp.Core");
+        Assert.DoesNotContain(fixture.Descendants("PackageReference"), reference =>
+            Path.GetFileNameWithoutExtension(reference.Attribute("Include")!.Value) is "PiSharp.Runtime" or "PiSharp.Cli");
     }
 
     [Fact]
@@ -60,7 +79,7 @@ public sealed class ArchitectureTests
     [Fact]
     public void BoundaryScannerRecognizesFilesystemCallsInTheRepositoryReader()
     {
-        var reader = typeof(ArchitectureTests).GetMethod(nameof(ReadProject), BindingFlags.NonPublic | BindingFlags.Static)!;
+        var reader = typeof(ArchitectureTests).GetMethod(nameof(ReadRepositoryXml), BindingFlags.NonPublic | BindingFlags.Static)!;
         Assert.Contains(ReferencedMembers(reader), member => member.DeclaringType?.FullName == "System.IO.File");
         Assert.Contains(ReferencedMembers(reader), member => member.DeclaringType?.FullName == "System.IO.DirectoryInfo");
     }
@@ -114,10 +133,15 @@ public sealed class ArchitectureTests
 
     private static XDocument ReadProject(string project)
     {
+        return ReadRepositoryXml(Path.Combine("src", project, project + ".csproj"));
+    }
+
+    private static XDocument ReadRepositoryXml(string relativePath)
+    {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx")))
             directory = directory.Parent;
         Assert.NotNull(directory);
-        return XDocument.Load(Path.Combine(directory.FullName, "src", project, project + ".csproj"));
+        return XDocument.Load(Path.Combine(directory.FullName, relativePath));
     }
 }
