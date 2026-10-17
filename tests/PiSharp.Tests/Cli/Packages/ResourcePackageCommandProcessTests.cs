@@ -17,6 +17,37 @@ namespace PiSharp.Tests;
 public sealed class ResourcePackageCommandProcessTests
 {
     [Fact]
+    public async Task ExtensionGeneratedCustomTurnResumesInAFreshProcessWithoutReplayingTrigger()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var helperPath = Path.Combine(repositoryRoot, "tests", "fixtures", "SessionResumeProcess", "bin",
+            BuildConfiguration(), "net10.0", "SessionResumeProcess.dll");
+        Assert.True(File.Exists(helperPath), $"Session resume process fixture was not built: {helperPath}");
+        var temporaryRoot = Path.Combine(Path.GetTempPath(), "pisharp-session-process-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temporaryRoot);
+        try
+        {
+            var workingDirectory = Path.Combine(temporaryRoot, "project");
+            Directory.CreateDirectory(workingDirectory);
+            var sessionPath = Path.Combine(temporaryRoot, "sessions", "resume.session.json");
+
+            var created = await RunSessionResumeProcessAsync(helperPath, "create", workingDirectory, sessionPath);
+            Assert.True(created.ExitCode == 0,
+                $"Session creation process failed ({created.ExitCode}):\n{created.Error}\n{created.Output}");
+            Assert.Contains("custom-turn-saved-and-compacted", created.Output);
+
+            var resumed = await RunSessionResumeProcessAsync(helperPath, "resume", workingDirectory, sessionPath);
+            Assert.True(resumed.ExitCode == 0,
+                $"Session resume process failed ({resumed.ExitCode}):\n{resumed.Error}\n{resumed.Output}");
+            Assert.Contains("resumed-without-trigger-replay", resumed.Output);
+        }
+        finally
+        {
+            if (Directory.Exists(temporaryRoot)) Directory.Delete(temporaryRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task NativeNupkgInstallUpdateAndRemovePersistVersionedRootsOffline()
     {
         await using var fixture = new ManagedNpmFixture();
@@ -634,6 +665,34 @@ public sealed class ResourcePackageCommandProcessTests
         foreach (var (key, value) in extraEnvironment ?? new Dictionary<string, string?>())
             start.Environment[key] = value;
         using var process = Process.Start(start)!;
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30)); }
+        catch
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { }
+            catch (System.ComponentModel.Win32Exception) { }
+            await process.WaitForExitAsync();
+            throw;
+        }
+        return (process.ExitCode, await output, await error);
+    }
+
+    private static async Task<(int ExitCode, string Output, string Error)> RunSessionResumeProcessAsync(
+        string helperPath, string mode, string workingDirectory, string sessionPath)
+    {
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add(helperPath);
+        start.ArgumentList.Add(mode);
+        start.ArgumentList.Add(workingDirectory);
+        start.ArgumentList.Add(sessionPath);
+        using var process = Process.Start(start) ?? throw new IOException("Could not start session resume fixture.");
         var output = process.StandardOutput.ReadToEndAsync();
         var error = process.StandardError.ReadToEndAsync();
         try { await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30)); }

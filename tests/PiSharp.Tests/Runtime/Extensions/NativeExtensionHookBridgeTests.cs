@@ -53,6 +53,58 @@ public sealed class NativeExtensionHookBridgeTests
     }
 
     [Fact]
+    public async Task PublicBeforeAgentStartContextCapturesPendingMessagesAddedDuringSetup()
+    {
+        var cwd = NewWorkingDirectory();
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            NativeExtensions.PiSharpExtensionContext? firstContext = null;
+            NativeExtensions.PiSharpExtensionContext? secondContext = null;
+            ConversationRun? run = null;
+            var queued = false;
+            adapter.AddBeforeAgentStartHandler((_, context, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                firstContext = context;
+                queued = run!.TryQueueExtensionMessage(new PiSharpCustomMessage("setup-update", "queued during setup"));
+                return ValueTask.FromResult<NativeExtensions.PiSharpBeforeAgentStartResult?>(null);
+            });
+            adapter.AddBeforeAgentStartHandler((_, context, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                secondContext = context;
+                return ValueTask.FromResult<NativeExtensions.PiSharpBeforeAgentStartResult?>(null);
+            });
+            adapter.Close();
+
+            var provider = new HookBridgeClient();
+            run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(cwd), noBuiltinTools: true,
+                    beforeAgentStartHandlers: registration.BeforeAgentStartHandlers,
+                    extensionContextConfiguration: new PiSharpExtensionContextConfiguration(
+                        cwd, "print", false, true, new TestExtensionUi())),
+                new ConversationSession(cwd, "test-model", null));
+
+            await foreach (var _ in run.RunEventsAsync("setup prompt")) { }
+
+            Assert.True(queued);
+            Assert.NotNull(firstContext);
+            Assert.False(firstContext.HasPendingMessages);
+            Assert.False(firstContext.IsIdle);
+            Assert.NotNull(secondContext);
+            Assert.True(secondContext.HasPendingMessages);
+            Assert.False(secondContext.IsIdle);
+            var request = Assert.Single(provider.Requests);
+            Assert.Contains(request, message => message.Text == "setup prompt");
+            Assert.Contains(request, message => message.Text == "queued during setup");
+            Assert.Equal(0, run.PendingPromptCount);
+            Assert.False(run.IsActive);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task PublicContextTransformFailureSettlesAndAHealthyFollowupSucceeds()
     {
         var cwd = NewWorkingDirectory();

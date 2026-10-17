@@ -274,6 +274,54 @@ public sealed class ExtensionBeforeAgentStartTests
     }
 
     [Fact]
+    public async Task TriggeredCustomMessageExecutesOnceAcrossAutomaticProviderRetry()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-trigger-retry-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var conversation = new ConversationSession(workingDirectory, "test-model", null);
+            var registration = new ExtensionRegistration();
+            var beforeStartCount = 0;
+            registration.AddBeforeAgentStartHandler((eventData, _, _) =>
+            {
+                beforeStartCount++;
+                Assert.Equal(PiSharpTurnMessageType.Custom, eventData.MessageType);
+                Assert.Equal("one logical trigger", eventData.StartingCustomMessage?.Content);
+                return ValueTask.FromResult<PiSharpBeforeAgentStartResult?>(null);
+            });
+            var provider = new RetryThenCompleteClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(workingDirectory),
+                    retryPolicy: ProviderRetryPolicy.None,
+                    beforeAgentStartHandlers: registration.BeforeAgentStartHandlers), conversation,
+                retryPolicy: new AgentRunRetryPolicy(maxRetries: 1, baseDelay: TimeSpan.Zero,
+                    maxDelay: TimeSpan.Zero),
+                retryDelay: static (_, cancellationToken) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return Task.CompletedTask;
+                });
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunCustomMessageEventsAsync(
+                               new PiSharp.Extensions.Abstractions.PiSharpCustomMessage(
+                                   "retry-trigger", "one logical trigger"), sourcePath: null))
+                events.Add(item);
+
+            Assert.Contains(events, item => item.Type == "turn_completed");
+            Assert.Equal(2, provider.Requests.Count);
+            Assert.All(provider.Requests, request => Assert.Equal(1, request.Count(message =>
+                message.Role == ChatRole.User && message.Text == "one logical trigger")));
+            Assert.Equal(1, conversation.Tree.ActivePath().Count(node => node.Type == "custom_message"));
+            Assert.Equal(1, beforeStartCount);
+            Assert.False(run.IsActive);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task TriggeredCustomMessageResumesFromDiskWithoutReplayingItsTurn()
     {
         var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-resume-" + Guid.NewGuid().ToString("N"));
@@ -306,10 +354,15 @@ public sealed class ExtensionBeforeAgentStartTests
             Assert.Equal(1, handlerCalls);
             Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "custom_message");
 
+            var compaction = Assert.IsType<ConversationSession.CompactionPlan>(
+                conversation.PrepareCompaction(keepRecentTokens: 1));
+            conversation.AppendCompaction(compaction, "The seed exchange was completed.", keepRecentTokens: 1);
+            await store.SaveAsync(conversation, sessionPath);
+
             var resumedConversation = await store.LoadAsync(sessionPath);
             Assert.Single(resumedConversation.Tree.ActivePath(), node => node.Type == "custom_message");
             Assert.Contains(resumedConversation.ContextMessages(), message =>
-                message.Text == "background work completed");
+                message.Text.Contains("seed exchange was completed", StringComparison.Ordinal));
             var forkableUser = Assert.Single(resumedConversation.ForkableUserMessages());
             var (forkedConversation, forkPrompt) = resumedConversation.ForkAtUser(forkableUser.Id);
             Assert.Equal("seed before trigger", forkPrompt);
@@ -325,8 +378,8 @@ public sealed class ExtensionBeforeAgentStartTests
 
             Assert.Equal(2, handlerCalls);
             var request = Assert.Single(resumedProvider.Requests);
-            Assert.Equal(1, request.Count(message => message.Role == ChatRole.User &&
-                message.Text == "background work completed"));
+            Assert.Contains(request, message =>
+                message.Text.Contains("seed exchange was completed", StringComparison.Ordinal));
             Assert.Contains(request, message => message.Role == ChatRole.User && message.Text == "ordinary follow-up");
             Assert.Single(resumedConversation.Tree.ActivePath(), node => node.Type == "custom_message");
             Assert.False(resumedRun.IsActive);
