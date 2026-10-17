@@ -117,6 +117,10 @@ public sealed class NativeExtensionModelRegistrationTests
         Assert.Throws<ArgumentException>(() => adapter.AddProvider(Provider("fixture",
             new PiSharpExtensionProviderModel("model",
             ThinkingLevelMap: JsonSerializer.SerializeToElement(new[] { "invalid" })))));
+        Assert.Throws<ArgumentException>(() => adapter.AddVirtualModel(
+            new("fixture-router", "invalid", "Invalid thinking levels", (_, _) =>
+                Task.FromResult(new PiSharpExtensionVirtualModelRoute("fixture", "model", "off")))
+            { ThinkingLevels = ["ultra"] }));
 
         adapter.AddProvider(Provider("fixture"));
         adapter.AddMcpServer("fixture-mcp", new() { Command = "python3", Arguments = ["server.py"] });

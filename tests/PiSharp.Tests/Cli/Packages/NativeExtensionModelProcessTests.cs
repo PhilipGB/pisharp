@@ -28,13 +28,18 @@ public sealed class NativeExtensionModelProcessTests
             Path.Combine(fixture.Root, "native-model-v1"));
         var v2 = await ResourcePackageCommandProcessTests.PackExternalNativeModelFixtureAsync(
             Path.Combine(fixture.Root, "native-model-v2"), revision: "v2", version: "2.0.0");
+        var unrelatedPackage = await ResourcePackageCommandProcessTests.PackExternalNativeFixtureAsync(
+            Path.Combine(fixture.Root, "unrelated-native-package"));
         var installed = await NativeExtensionStateProcessTests.RunCliAsync(fixture, "install", v1);
         Assert.Equal(0, installed.ExitCode);
+        var unrelatedInstalled = await NativeExtensionStateProcessTests.RunCliAsync(fixture, "install", unrelatedPackage);
+        Assert.Equal(0, unrelatedInstalled.ExitCode);
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         Process? first = null;
         Process? resumed = null;
         Process? replacement = null;
+        Process? afterRemoval = null;
         ConcurrentQueue<string>? firstErrorLines = null;
         Task? firstErrors = null;
         try
@@ -54,6 +59,9 @@ public sealed class NativeExtensionModelProcessTests
                 model.GetProperty("id").GetString() == "physical-main");
             Assert.Contains(models, model => model.GetProperty("provider").GetString() == "native_fixture_virtual" &&
                 model.GetProperty("id").GetString() == "auto");
+            Assert.StartsWith("v1 command / private dependency ",
+                await NativeExtensionStateProcessTests.RunExtensionCommandAsync(first, "unrelated-v1",
+                    "/native-fixture", timeout.Token), StringComparison.Ordinal);
             using (var mcpProjection = JsonDocument.Parse(await NativeExtensionStateProcessTests.RunExtensionCommandAsync(
                        first, "mcp-projection-v1", "/native-model-fixture-tools", timeout.Token)))
             {
@@ -93,6 +101,11 @@ public sealed class NativeExtensionModelProcessTests
             var savedContent = await File.ReadAllTextAsync(saved);
             Assert.Contains("native_fixture_virtual", savedContent, StringComparison.Ordinal);
             Assert.Contains("routeCount", savedContent, StringComparison.Ordinal);
+            using (var savedDocument = JsonDocument.Parse(savedContent))
+            {
+                Assert.Equal("auto", savedDocument.RootElement.GetProperty("Model").GetString());
+                Assert.Equal("native_fixture_virtual", savedDocument.RootElement.GetProperty("Provider").GetString());
+            }
 
             resumed = StartProcess(fixture, sessionDirectory, tracePath, continueSession: true);
             var resumedErrorLines = new ConcurrentQueue<string>();
@@ -133,6 +146,9 @@ public sealed class NativeExtensionModelProcessTests
                 model.GetProperty("id").GetString() == "auto-v2");
             Assert.DoesNotContain(replacementModels, model => model.GetProperty("provider").GetString() == "native_fixture_virtual" &&
                 model.GetProperty("id").GetString() == "auto");
+            Assert.StartsWith("v1 command / private dependency ",
+                await NativeExtensionStateProcessTests.RunExtensionCommandAsync(replacement, "unrelated-v2",
+                    "/native-fixture", timeout.Token), StringComparison.Ordinal);
             using (var mcpProjection = JsonDocument.Parse(await NativeExtensionStateProcessTests.RunExtensionCommandAsync(
                        replacement, "mcp-projection-v2", "/native-model-fixture-tools", timeout.Token)))
             {
@@ -182,10 +198,43 @@ public sealed class NativeExtensionModelProcessTests
             Assert.Equal(0, catalog.ExitCode);
             Assert.DoesNotContain("native_fixture", catalog.Output, StringComparison.Ordinal);
             Assert.DoesNotContain("native_fixture_virtual", catalog.Output, StringComparison.Ordinal);
+
+            afterRemoval = StartProcess(fixture, replacementSessionDirectory, tracePath, continueSession: false);
+            var afterRemovalErrors = new ConcurrentQueue<string>();
+            var afterRemovalErrorReader = CaptureStandardErrorAsync(afterRemoval, afterRemovalErrors);
+            Assert.StartsWith("v1 command / private dependency ",
+                await NativeExtensionStateProcessTests.RunExtensionCommandAsync(afterRemoval,
+                    "unrelated-after-remove", "/native-fixture", timeout.Token), StringComparison.Ordinal);
+            using (var controls = JsonDocument.Parse(await NativeExtensionStateProcessTests.RunExtensionCommandAsync(
+                       afterRemoval, "mcp-after-remove", "/native-fixture-controls", timeout.Token)))
+            {
+                var toolNames = controls.RootElement.GetProperty("configuredTools").EnumerateArray()
+                    .Select(tool => tool.GetProperty("Name").GetString()).ToArray();
+                Assert.Contains("mcp__unrelated__echo", toolNames);
+                Assert.DoesNotContain("mcp__native_fixture_mcp__echo", toolNames);
+                Assert.DoesNotContain("mcp__native_fixture_mcp_v2__echo_v2", toolNames);
+            }
+            var removedModelSelection = await SendRpcRequestAsync(afterRemoval,
+                new
+                {
+                    id = "select-removed-model",
+                    type = "set_model",
+                    provider = "native_fixture",
+                    modelId = "physical-main"
+                }, "select-removed-model", timeout.Token);
+            Assert.False(removedModelSelection.GetProperty("success").GetBoolean());
+            Assert.Contains("Unknown provider 'native_fixture'",
+                removedModelSelection.GetProperty("error").GetString(), StringComparison.Ordinal);
+            await StopProcessAsync(afterRemoval, timeout.Token);
+            await afterRemovalErrorReader.WaitAsync(timeout.Token);
+            Assert.DoesNotContain("Unhandled exception", string.Join("\n", afterRemovalErrors),
+                StringComparison.Ordinal);
+            afterRemoval.Dispose();
+            afterRemoval = null;
         }
         finally
         {
-            foreach (var process in new[] { first, resumed, replacement })
+            foreach (var process in new[] { first, resumed, replacement, afterRemoval })
             {
                 if (process is { HasExited: false })
                 {

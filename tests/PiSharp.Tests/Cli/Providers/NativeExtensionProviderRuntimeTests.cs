@@ -118,6 +118,41 @@ public sealed class NativeExtensionProviderRuntimeTests
     }
 
     [Fact]
+    public async Task VirtualRouteRejectsUnknownPhysicalModelsAndInvalidThinkingLevels()
+    {
+        using var http = new HttpClient();
+        var runtime = await ProviderModelRuntime.CreateAsync(Path.GetTempPath(), false, _ => null, http,
+            offline: true);
+        runtime.SetExtensionProviders([Provider("fixture", [new("small", Reasoning: true)],
+            _ => new RecordingClient("physical response"), "/extensions/physical.dll")]);
+        var virtualModels = new VirtualModelRegistry();
+        virtualModels.Register(new("missing-model-router", "auto", "Missing model router", (_, _) =>
+            Task.FromResult(new VirtualModelRoute("fixture", "missing", "low")), ["off", "low"]),
+            "/extensions/missing-model-router.dll");
+        virtualModels.Register(new("invalid-thinking-router", "auto", "Invalid thinking router", (_, _) =>
+            Task.FromResult(new VirtualModelRoute("fixture", "small", "ultra")), ["off", "low"]),
+            "/extensions/invalid-thinking-router.dll");
+        runtime.SetVirtualModelRegistry(virtualModels);
+        var controller = new ModelRuntimeController(runtime, () => new UserSettings(), _ => null);
+        var conversation = new ConversationSession(Path.GetTempPath(), "auto", null, "missing-model-router");
+        var messages = new[] { new ChatMessage(ChatRole.User, "hello") };
+
+        var missingSelection = await runtime.ResolveAsync("missing-model-router", "auto");
+        var missingRoute = controller.CreateVirtualModelRouter(missingSelection)!;
+        var missing = await Assert.ThrowsAsync<InvalidOperationException>(() => missingRoute(new(
+            conversation, messages, "user", "low", null, CancellationToken.None)));
+        Assert.Contains("fixture/missing", missing.Message, StringComparison.Ordinal);
+        Assert.Contains("not an available physical model", missing.Message, StringComparison.Ordinal);
+
+        var thinkingSelection = await runtime.ResolveAsync("invalid-thinking-router", "auto");
+        var thinkingRoute = controller.CreateVirtualModelRouter(thinkingSelection)!;
+        var invalidThinking = await Assert.ThrowsAsync<ArgumentException>(() => thinkingRoute(new(
+            conversation, messages, "user", "low", null, CancellationToken.None)));
+        Assert.Contains("Thinking level must be off, minimal, low, medium, high, xhigh, or max",
+            invalidThinking.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ProviderFactoryAndRequestFailuresDoNotLeakResolvedCredentials()
     {
         const string secret = "extension-provider-secret";
