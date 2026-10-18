@@ -23,6 +23,7 @@ public sealed class NativeExtensionCompactionEventTests
             var registration = new ExtensionRegistration();
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             var observed = new List<string>();
+            var lifecycle = new List<string>();
             PiSharpExtensionSessionCompactEvent? compacted = null;
             string? changedSessionName = null;
             var canCompactDuringCallback = true;
@@ -48,14 +49,15 @@ public sealed class NativeExtensionCompactionEventTests
             var result = await run.CompactWithResultAsync(cancellationToken: CancellationToken.None,
                 publishEvent: item =>
                 {
-                    if (item.Type == "compaction_end") observed.Add("compaction_end");
+                    if (item.Type == "compaction_end") lifecycle.Add("compaction_end");
                     return Task.CompletedTask;
                 });
 
             Assert.NotNull(result);
             var entry = Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "compaction");
             Assert.NotNull(compacted);
-            Assert.Equal(["session_compact", "compaction_end"], observed);
+            Assert.Equal(["session_compact"], observed);
+            Assert.Equal(["compaction_end"], lifecycle);
             Assert.Equal(entry.Id, compacted.EntryId);
             Assert.Equal("after compaction", conversation.Name);
             Assert.Equal("after compaction", changedSessionName);
@@ -84,6 +86,7 @@ public sealed class NativeExtensionCompactionEventTests
             var registration = new ExtensionRegistration();
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             var observed = new List<string>();
+            var lifecycle = new List<string>();
             PiSharpExtensionSessionCompactFailedEvent? failed = null;
             adapter.AddSessionCompactFailedHandler((eventData, _, _) =>
             {
@@ -103,11 +106,12 @@ public sealed class NativeExtensionCompactionEventTests
                 cancellationToken: CancellationToken.None,
                 publishEvent: item =>
                 {
-                    if (item.Type == "compaction_end") observed.Add("compaction_end");
+                    if (item.Type == "compaction_end") lifecycle.Add("compaction_end");
                     return Task.CompletedTask;
                 }));
 
-            Assert.Equal(["compaction_end", "session_compact_failed"], observed);
+            Assert.Equal(["session_compact_failed"], observed);
+            Assert.Equal(["compaction_end"], lifecycle);
             Assert.Equal(head, conversation.Tree.HeadId);
             Assert.NotNull(failed);
             Assert.Equal(PiSharpExtensionCompactionReason.Manual, failed.Reason);
@@ -129,6 +133,7 @@ public sealed class NativeExtensionCompactionEventTests
             var registration = new ExtensionRegistration();
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             var observed = new List<string>();
+            var lifecycle = new List<string>();
             PiSharpExtensionSessionCompactFailedEvent? failed = null;
             adapter.AddSessionCompactFailedHandler((eventData, _, _) =>
             {
@@ -147,12 +152,13 @@ public sealed class NativeExtensionCompactionEventTests
             var result = await run.CompactWithResultAsync(cancellationToken: CancellationToken.None,
                 publishEvent: item =>
                 {
-                    if (item.Type == "compaction_end") observed.Add("compaction_end");
+                    if (item.Type == "compaction_end") lifecycle.Add("compaction_end");
                     return Task.CompletedTask;
                 });
 
             Assert.Null(result);
-            Assert.Equal(["compaction_end", "session_compact_failed"], observed);
+            Assert.Equal(["session_compact_failed"], observed);
+            Assert.Equal(["compaction_end"], lifecycle);
             Assert.NotNull(failed);
             Assert.Equal(PiSharpExtensionCompactionReason.Manual, failed.Reason);
             Assert.False(failed.Aborted);
@@ -171,6 +177,7 @@ public sealed class NativeExtensionCompactionEventTests
             var registration = new ExtensionRegistration();
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             var observed = new List<string>();
+            var lifecycle = new List<string>();
             PiSharpExtensionSessionCompactFailedEvent? failed = null;
             adapter.AddSessionCompactFailedHandler((eventData, _, _) =>
             {
@@ -190,11 +197,12 @@ public sealed class NativeExtensionCompactionEventTests
                 cancellationToken: cancellation.Token,
                 publishEvent: item =>
                 {
-                    if (item.Type == "compaction_end") observed.Add("compaction_end");
+                    if (item.Type == "compaction_end") lifecycle.Add("compaction_end");
                     return Task.CompletedTask;
                 }));
 
-            Assert.Equal(["compaction_end", "session_compact_failed"], observed);
+            Assert.Equal(["session_compact_failed"], observed);
+            Assert.Equal(["compaction_end"], lifecycle);
             Assert.NotNull(failed);
             Assert.Equal(PiSharpExtensionCompactionReason.Manual, failed.Reason);
             Assert.True(failed.Aborted);
@@ -213,6 +221,7 @@ public sealed class NativeExtensionCompactionEventTests
             var registration = new ExtensionRegistration();
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             var observed = new List<string>();
+            var lifecycle = new List<string>();
             PiSharpExtensionSessionCompactEvent? compacted = null;
             adapter.AddSessionCompactHandler((eventData, _, _) =>
             {
@@ -239,11 +248,12 @@ public sealed class NativeExtensionCompactionEventTests
 
             await foreach (var item in run.RunEventsAsync("next"))
             {
-                if (item.Type is "compaction_start" or "compaction_end") observed.Add(item.Type);
+                if (item.Type is "compaction_start" or "compaction_end") lifecycle.Add(item.Type);
             }
 
             var entry = Assert.Single(conversation.Tree.ActivePath(), node => node.Type == "compaction");
-            Assert.Equal(["compaction_start", "session_compact", "compaction_end"], observed);
+            Assert.Equal(["session_compact"], observed);
+            Assert.Equal(["compaction_start", "compaction_end"], lifecycle);
             Assert.NotNull(compacted);
             Assert.Equal(entry.Id, compacted.EntryId);
             Assert.Equal(PiSharpExtensionCompactionReason.Threshold, compacted.Reason);
@@ -263,6 +273,7 @@ public sealed class NativeExtensionCompactionEventTests
             var registration = new ExtensionRegistration();
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             var observed = new List<string>();
+            var lifecycle = new List<string>();
             PiSharpExtensionSessionCompactEvent? compacted = null;
             adapter.AddSessionCompactHandler((eventData, _, _) =>
             {
@@ -296,15 +307,16 @@ public sealed class NativeExtensionCompactionEventTests
 
             await foreach (var item in run.RunEventsAsync("next"))
             {
-                if (item.Type == "compaction_start") observed.Add(item.Type);
+                if (item.Type == "compaction_start") lifecycle.Add(item.Type);
                 else if (item.Type == "compaction_end")
                 {
-                    observed.Add(item.Type);
+                    lifecycle.Add(item.Type);
                     Assert.True(item.CompactionWillRetry);
                 }
             }
 
-            Assert.Equal(["compaction_start", "session_compact", "compaction_end"], observed);
+            Assert.Equal(["session_compact"], observed);
+            Assert.Equal(["compaction_start", "compaction_end"], lifecycle);
             Assert.NotNull(compacted);
             Assert.Equal(PiSharpExtensionCompactionReason.Overflow, compacted.Reason);
             Assert.False(compacted.FromExtension);
