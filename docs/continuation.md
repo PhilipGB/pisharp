@@ -19,7 +19,8 @@ regressions for tree rollback, observer revocation, automatic custom compaction,
 and restored custom summaries. Local integrated verification passes 2,335 .NET
 tests with zero skips, architecture 7/7, Node 24/24, Python 50/50, and docs
 paths 142 documents / 547 references; the eight classified MCP conformance
-failures remain unchanged. Exact-head CI is pending on the pushed final head.
+failures remain unchanged. The final PR head SHA and exact-head CI run links are
+recorded in the PR description after its checks complete.
 Keep broad extension parity `in_progress`; generic `pi.on(...)`, branch-summary
 injection, provider wire hooks, and other deferred fields remain open. See the [API guide](extensions.md)
 and [milestone receipt](parity/fixtures/native-extension-session-hooks-2026-10-18.md).

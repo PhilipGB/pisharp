@@ -41,6 +41,6 @@ Custom compaction supports summary, first retained entry ID, pre-compaction toke
 - Full .NET suite: 2,335 passed, 0 skipped, with `TMPDIR=/tmp`.
 - Focused session-hook/runtime/process tests: 32 passed. The cancelled observer/context-revocation regression also passed 10 consecutive runs. Architecture: 7/7. Node: 24/24. Python: 50/50. Documentation paths: 142 documents and 547 references verified. `dotnet format` and the solution warnings-as-errors build passed.
 - MCP conformance: no regressions; the eight classified baseline failures remain unchanged.
-- Exact-head push CI and PR merge-result CI: pending on the final pushed head; run links will be recorded in the PR description.
+- Final PR head SHA and exact-head push/PR CI run links: recorded in the PR description after both checks complete.
 
 Broad extension parity remains `In progress`; this receipt records only the bounded hooks above.
