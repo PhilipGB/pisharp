@@ -344,9 +344,9 @@ there is no continuation. The next ordinary prompt can use that session.
 provider request, without adding a user message or replaying
 `before_agent_start`/`agent_start`. The original prompt remains checkpoint
 metadata. A tool turn already requires its natural continuation; requesting
-continuation there does not add a duplicate request. Steering is delivered at
-the normal provider handoff; follow-up input remains behind an explicit boundary
-continuation. Provider retries do not commit the same successful logical turn
+continuation there does not add a duplicate request. Steering joins the next provider request. A boundary continuation with runnable
+context runs before waiting follow-up input. When only a queued follow-up makes
+continuation runnable, the existing prompt queue delivers it on that next request. Provider retries do not commit the same successful logical turn
 boundary twice. Automatic compaction continues through the existing coordinator
 and its typed hooks, including context enlarged by a boundary.
 

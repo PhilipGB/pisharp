@@ -135,6 +135,8 @@ identical unbounded JavaScript callback behavior.
 - Steering is canonical before the provider response. MAF history inserts injected steering at the same position, recognizes canonical custom-message IDs, and reconciliation does not append the same occurrence twice. Existing idle RPC queue and before-start custom-trigger regressions remain intact.
 - A successful logical retry clears the failed-attempt boundary snapshot. A later abort during pre-settlement cannot replay that failed attempt or duplicate its durable extension state (`BoundaryRetryFailureTests.AbortAfterSuccessfulRetryDoesNotReplayTheFailedAttemptBoundary`).
 - Native boundary/settled registrations run the existing threshold-compaction check after `agent_end`, including when ordinary final assistant output crosses the budget without any draft mutation. Both pre-settlement and settled-only regressions require compaction completion before their observers and one provider request.
+- Work queued by completed-compaction callbacks is checked again through the existing prompt controller before pre-settlement. The regression requires exactly two provider requests, one delivery of the queued message, one pre-settlement callback after both requests, and one settled callback.
+- Continuation served by queued follow-up input consumes that input on the next request, without an extra context-only request. Steering is delivered on the first MAF continuation request; its history insertion uses the saved request-start position, including when the prior final role is assistant. Tests cover follow-up-only turn/pre-settlement continuation and steering plus follow-up with and without a draft, asserting no host errors and one canonical occurrence of each queued message.
 - Legacy host-cancellation suppression for `agent_end` remains covered by the unchanged PR #12 regression. The additive settled observer independently reports the true abort flag at the authoritative terminal transition.
 
 ## Source and test index
@@ -165,7 +167,7 @@ native loader/catalog fixtures.
 
 ### Verified source and local gates
 
-- Final product source: `bdf5e03fcaf31bb3ced3a918e240fd19f2ed7004`.
+- Final product source: `ccad28dbfc98b1e94166a86e024b221a262f1077`.
 - Branch: `milestone/native-extension-agent-settlement`.
 - Local environment: .NET SDK `10.0.112`, MAF `1.21.0`, Node `24.21.0`, Python `3.14.4`.
 - Reviewed compact evidence is this receipt; raw command logs and pinned-source checksums are under `artifacts/parity/native-extension-agent-settlement-2026-10-18/` (ignored).
@@ -175,20 +177,26 @@ native loader/catalog fixtures.
 | Restore | Passed, `dotnet restore PiSharp.slnx -p:NuGetAudit=false`. |
 | Format | Passed, `dotnet format PiSharp.slnx --verify-no-changes --no-restore`. |
 | Build | Passed, `dotnet build PiSharp.slnx --no-restore --warnaserror`; zero warnings/errors. |
-| Focused boundaries and compatibility | 69 passed, zero skipped. |
-| Final repetition wave | 10 consecutive runs of all 69 focused cases: 690 passed, zero failures/skips. Includes external process acceptance on every repetition. |
-| Full .NET | 2,395 passed, zero skipped; `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`. |
+| Focused boundaries and compatibility | 74 passed, zero skipped. |
+| Final repetition wave | 10 consecutive runs of all 74 focused cases: 740 passed, zero failures/skips. Includes external process acceptance on every repetition. |
+| Full .NET | 2,400 passed, zero skipped; `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`. |
 | Architecture | 7/7 passed separately and in the full suite. |
 | Node terminal | 24/24 passed, `npm test --prefix tools/parity/terminal`. |
 | Python terminal | 50/50 passed, `python3 -m unittest discover -s tools/parity/terminal -p 'test_*.py'`. |
 | Documentation | 143 documents / 553 references, `python3 tools/validate_doc_paths.py`. |
 | MCP conformance | 261 assertions passed; the same eight classified baseline failures; no new regressions. Conformance project built with warnings as errors, then `node tools/parity/mcp-conformance/run.mjs`. |
 
-Local .NET build/test commands also used `--disable-build-servers -m:1` to isolate SDK workers. The full run used a 180-second VSTest hang detector without dumps; it exited normally. The final repetition wave supersedes earlier diagnostic failures and the earlier 67-case wave. Existing tests were retained; no skips were added. `test.pdf` was not modified or staged and is absent in this checkout. Broad extension parity remains `in_progress`.
+Local .NET build/test commands also used `--disable-build-servers -m:1` to isolate SDK workers. The full run used a 180-second VSTest hang detector without dumps; it exited normally. The final repetition wave supersedes earlier diagnostic failures and the earlier 67-, 69-, and 70-case waves. Existing tests were retained; no skips were added. `test.pdf` was not modified or staged and is absent in this checkout. Broad extension parity remains `in_progress`.
 
 ### Publication
 
-Draft PR and exact-head push/PR CI evidence are recorded after publication. This milestone PR must remain draft and must not be merged as part of this work.
+- Draft PR: [#14](https://github.com/PhilipGB/pisharp/pull/14), base `main`.
+- Verified publication checkpoint: `aef82770c66ead1a7a8c5f59a897a79997acbd77`.
+- Checkpoint push CI: [39140767181](https://github.com/PhilipGB/pisharp/actions/runs/39140767181), successful on that exact head.
+- Checkpoint PR CI: [39140783492](https://github.com/PhilipGB/pisharp/actions/runs/39140783492), successful on that exact head.
+- The queue-order correction and this receipt produce a subsequent head. The final branch SHA and its exact-head push/PR run IDs are recorded in the [PR description](https://github.com/PhilipGB/pisharp/pull/14), which can be updated without changing the verified commit. The coordinator requires both final-head runs to succeed before declaring completion.
+
+The PR stays draft and is not merged. These checkpoint runs establish the published pre-correction source; the final-head publication annex in the PR description is part of this receipt and establishes the final source and receipt together. Keeping that annex external avoids a commit-SHA/CI-run self-reference when recording a run for the commit that contains this file.
 
 ## Deferred scope
 
