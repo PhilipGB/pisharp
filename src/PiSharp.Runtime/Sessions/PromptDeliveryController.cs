@@ -169,13 +169,13 @@ internal sealed class PromptDeliveryController
         }
     }
 
-    public IReadOnlyList<ChatMessage> TakeSteeringForProvider(bool firstProviderRequest)
+    public IReadOnlyList<ChatMessage> TakeSteeringForProvider(bool firstProviderRequest, bool contextContinuation = false)
     {
         lock (_stateGate)
         {
             if (firstProviderRequest)
             {
-                if (!_firstProviderRequestPending) return [];
+                if (!_firstProviderRequestPending && !contextContinuation) return [];
                 _firstProviderRequestPending = false;
             }
             var prompts = _queue.TakeSteeringForProvider();

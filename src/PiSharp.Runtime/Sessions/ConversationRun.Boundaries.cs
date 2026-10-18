@@ -43,7 +43,8 @@ public sealed partial class ConversationRun
             await CommitBoundaryDecisionAsync(coordinator, decision.Entries, cancellationToken).ConfigureAwait(false);
             if (cancellationToken.IsCancellationRequested) return false;
             if (!decision.Continue) return false;
-            if (coordinator.Preview([], false, cancellationToken).CanContinue) return true;
+            var committedContext = coordinator.Preview([], false, cancellationToken);
+            if (committedContext.CanContinue) return CanStartBoundaryContinuation(committedContext);
             ReportBoundaryError("turn_end", "Requested continuation without runnable model context.", publish);
             return false;
         }
@@ -77,7 +78,8 @@ public sealed partial class ConversationRun
             await CommitBoundaryDecisionAsync(coordinator, decision.Entries, cancellationToken).ConfigureAwait(false);
             if (cancellationToken.IsCancellationRequested) return false;
             if (!decision.Continue) return false;
-            if (coordinator.Preview([], true, cancellationToken).CanContinue) return true;
+            var committedContext = coordinator.Preview([], true, cancellationToken);
+            if (committedContext.CanContinue) return CanStartBoundaryContinuation(committedContext);
             ReportBoundaryError("agent_before_settle", "Requested continuation without runnable model context.", publish);
             return false;
         }
@@ -97,6 +99,16 @@ public sealed partial class ConversationRun
     private static void ReportBoundaryError(string eventType, string message, Action<AgentLifecycleEvent> publish) =>
         publish(new("extension_error", Error: message,
             Details: new { extensionPath = "<boundary>", eventType }));
+
+    private bool CanStartBoundaryContinuation(NativeExtensions.PiSharpBoundaryContextPreview preview)
+    {
+        var messages = preview.ContextMessages;
+        if (messages.Any(message => message.Role != ChatRole.System) && messages[^1].Role != ChatRole.Assistant)
+            return true;
+        // The prompt pump delivers follow-up input as its normal accepted batch.
+        lock (_runtimeStateGate)
+            return _pendingContextCustomMessages.Count > 0 || _promptDelivery.Snapshot().Steering.Count > 0;
+    }
 
     private static async Task CommitBoundaryDecisionAsync(ExtensionBoundaryCoordinator coordinator,
         IReadOnlyList<NativeExtensions.PiSharpSessionBoundaryDraft> entries, CancellationToken cancellationToken)

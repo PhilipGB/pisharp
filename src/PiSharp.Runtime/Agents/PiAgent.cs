@@ -49,8 +49,9 @@ public sealed class PiAgent
     private Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _takeContextMessagesForRequestAsync;
     private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
     private Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _prepareTurn;
-    private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
+    private readonly List<(ChatMessage Message, string? AfterCallId, int? FirstRequestIndex)> _injectedSteering = [];
     private int _providerRequestIndex;
+    private int _firstRequestSteeringIndex;
     private int _supportsImages;
     private ModelImageResizeOptions? _selectedImageResizeOptions;
     private long _systemMessageTimestamp;
@@ -198,9 +199,10 @@ public sealed class PiAgent
         var firstProviderRequest = _providerRequestIndex++ == 0;
         var steering = _takeSteering?.Invoke(firstProviderRequest) ?? [];
         if (steering.Count == 0) return steering;
-        var afterCallId = messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
+        var afterCallId = firstProviderRequest ? null : messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
             .LastOrDefault()?.CallId;
-        _injectedSteering.AddRange(steering.Select(message => (message, afterCallId)));
+        _injectedSteering.AddRange(steering.Select(message =>
+            (message, afterCallId, firstProviderRequest ? (int?)_firstRequestSteeringIndex : null)));
         return steering;
     }
 
@@ -643,6 +645,7 @@ public sealed class PiAgent
             _takeContextMessagesForRequestAsync = takeContextMessagesForRequestAsync;
             _projectContext = projectContext;
             _providerRequestIndex = 0;
+            _firstRequestSteeringIndex = _history.GetMessages(session).Count + (prompt is null ? 0 : 1);
             _injectedSteering.Clear();
             var chatOptions = new ChatOptions
             {
@@ -697,15 +700,17 @@ public sealed class PiAgent
     {
         if (_injectedSteering.Count == 0) return;
         var history = _history.GetMessages(session).ToList();
-        foreach (var (message, afterCallId) in _injectedSteering)
+        foreach (var (message, afterCallId, firstRequestIndex) in _injectedSteering)
         {
             if (history.Any(item => ReferenceEquals(item, message) ||
                     message.MessageId is { Length: > 0 } entryId && item.MessageId == entryId)) continue;
-            var index = afterCallId is null ? history.FindLastIndex(item => item.Role == ChatRole.User) : history.FindLastIndex(item =>
-                item.Contents.OfType<FunctionResultContent>().Any(result => result.CallId == afterCallId));
-            var insertionIndex = Math.Clamp(index + 1, 0, history.Count);
+            var insertionIndex = firstRequestIndex ?? (afterCallId is null ? history.Count :
+                history.FindLastIndex(item => item.Contents.OfType<FunctionResultContent>()
+                    .Any(result => result.CallId == afterCallId)) + 1);
+            insertionIndex = Math.Clamp(insertionIndex, 0, history.Count);
             while (insertionIndex < history.Count && _injectedSteering.Any(steering =>
-                steering.AfterCallId == afterCallId && ReferenceEquals(steering.Message, history[insertionIndex])))
+                steering.AfterCallId == afterCallId && steering.FirstRequestIndex == firstRequestIndex &&
+                ReferenceEquals(steering.Message, history[insertionIndex])))
                 insertionIndex++;
             history.Insert(insertionIndex, message);
         }

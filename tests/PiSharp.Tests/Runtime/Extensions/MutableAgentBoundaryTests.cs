@@ -193,6 +193,154 @@ public sealed class MutableAgentBoundaryTests
     }
 
     [Fact]
+    public async Task TurnEndContinuationWithoutDraftConsumesQueuedFollowUpInOneProviderRequest()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var client = new ScriptedClient((_, _) => [Reply("first response")], (_, _) => [Reply("follow-up response")]);
+        ConversationRun? run = null;
+        var queued = false;
+        var starts = 0;
+        var boundaryCalls = 0;
+        var settled = new List<bool>();
+        adapter.AddAgentStartHandler((_, _, _) =>
+        {
+            starts++;
+            queued = run!.TryFollowUp("queued follow-up");
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddAgentSettledHandler((eventData, _, _) =>
+        {
+            settled.Add(eventData.Aborted);
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddTurnEndBoundaryHandler((_, _, _) =>
+        {
+            var call = Interlocked.Increment(ref boundaryCalls);
+            return ValueTask.FromResult<PiSharpBoundaryResult?>(new PiSharpBoundaryResult(@continue: call == 1));
+        });
+        adapter.Close();
+        run = await OpenRunAsync(client, registration);
+
+        var events = await ConsumeAsync(run.RunEventsAsync("initial prompt"));
+        Assert.DoesNotContain(events, item => item.Type is "turn_failed" or "extension_error");
+
+        Assert.True(queued);
+        Assert.Equal(2, client.Requests.Count);
+        Assert.Single(client.Requests[1], message => message.Text == "queued follow-up");
+        Assert.Equal(2, boundaryCalls);
+        Assert.Equal(1, starts);
+        Assert.Equal([false], settled);
+        Assert.Single(run.Conversation.Tree.ActivePath(), entry => entry.Type == "chat" &&
+            ConversationMessageCodec.RestoreEntry(entry).Text == "queued follow-up");
+    }
+
+    [Fact]
+    public async Task BeforeSettleContinuationWithoutDraftConsumesQueuedFollowUpInOneProviderRequest()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var client = new ScriptedClient((_, _) => [Reply("first response")], (_, _) => [Reply("follow-up response")]);
+        ConversationRun? run = null;
+        var queued = false;
+        var starts = 0;
+        var beforeSettleCalls = 0;
+        var settled = new List<bool>();
+        adapter.AddAgentStartHandler((_, _, _) =>
+        {
+            starts++;
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddAgentSettledHandler((eventData, _, _) =>
+        {
+            settled.Add(eventData.Aborted);
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddAgentBeforeSettleHandler((_, _, _) =>
+        {
+            var call = Interlocked.Increment(ref beforeSettleCalls);
+            if (call == 1) queued = run!.TryFollowUp("queued before settle");
+            return ValueTask.FromResult<PiSharpBoundaryResult?>(new PiSharpBoundaryResult(@continue: call == 1));
+        });
+        adapter.Close();
+        run = await OpenRunAsync(client, registration);
+
+        var events = await ConsumeAsync(run.RunEventsAsync("initial prompt"));
+        Assert.DoesNotContain(events, item => item.Type is "turn_failed" or "extension_error");
+
+        Assert.True(queued);
+        Assert.Equal(2, client.Requests.Count);
+        Assert.Single(client.Requests[1], message => message.Text == "queued before settle");
+        Assert.Equal(2, beforeSettleCalls);
+        Assert.Equal(1, starts);
+        Assert.Equal([false], settled);
+        Assert.Single(run.Conversation.Tree.ActivePath(), entry => entry.Type == "chat" &&
+            ConversationMessageCodec.RestoreEntry(entry).Text == "queued before settle");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TurnEndContinuationDeliversSteeringBeforeFollowUpWhenBothAreQueued(bool addDraft)
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var client = new ScriptedClient((_, _) => [Reply("first response")],
+            (_, _) => [Reply("steering response")],
+            (_, _) => [Reply("follow-up response")]);
+        ConversationRun? run = null;
+        var steeringQueued = false;
+        var followUpQueued = false;
+        var starts = 0;
+        var boundaryCalls = 0;
+        var settled = new List<bool>();
+        adapter.AddAgentStartHandler((_, _, _) =>
+        {
+            starts++;
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddAgentSettledHandler((eventData, _, _) =>
+        {
+            settled.Add(eventData.Aborted);
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddTurnEndBoundaryHandler((_, _, _) =>
+        {
+            var call = Interlocked.Increment(ref boundaryCalls);
+            if (call == 1)
+            {
+                steeringQueued = run!.TrySteer("boundary steering");
+                followUpQueued = run.TryFollowUp("boundary follow-up");
+                return ValueTask.FromResult<PiSharpBoundaryResult?>(new PiSharpBoundaryResult(addDraft ? [
+                    new PiSharpCustomMessageEntryDraft("boundary-context", "boundary context", display: false)
+                ] : [], @continue: true));
+            }
+            return ValueTask.FromResult<PiSharpBoundaryResult?>(new PiSharpBoundaryResult());
+        });
+        adapter.Close();
+        run = await OpenRunAsync(client, registration);
+
+        var events = await ConsumeAsync(run.RunEventsAsync("initial prompt"));
+        Assert.DoesNotContain(events, item => item.Type is "turn_failed" or "extension_error");
+
+        Assert.True(steeringQueued);
+        Assert.True(followUpQueued);
+        Assert.Equal(3, client.Requests.Count);
+        Assert.Equal(addDraft, client.Requests[1].Any(message => message.Text == "boundary context"));
+        Assert.Single(client.Requests[1], message => message.Text == "boundary steering");
+        Assert.DoesNotContain(client.Requests[1], message => message.Text == "boundary follow-up");
+        Assert.Single(client.Requests[2], message => message.Text == "boundary follow-up");
+        Assert.Equal(3, boundaryCalls);
+        Assert.Equal(1, starts);
+        Assert.Equal([false], settled);
+        Assert.Single(run.Conversation.Tree.ActivePath(), entry => entry.Type == "chat" &&
+            ConversationMessageCodec.RestoreEntry(entry).Text == "boundary steering");
+        Assert.Single(run.Conversation.Tree.ActivePath(), entry => entry.Type == "chat" &&
+            ConversationMessageCodec.RestoreEntry(entry).Text == "boundary follow-up");
+        Assert.Equal(addDraft ? 1 : 0, run.Conversation.Tree.Entries.Count(entry => entry.Type == "custom_message"));
+    }
+
+    [Fact]
     public async Task BeforeSettleCustomPendingMessageAppearsInLaterPreviewAndContinuation()
     {
         var registration = new ExtensionRegistration();

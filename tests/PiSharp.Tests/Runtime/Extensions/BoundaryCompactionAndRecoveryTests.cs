@@ -159,6 +159,65 @@ public sealed class BoundaryCompactionAndRecoveryTests
     }
 
     [Fact]
+    public async Task FollowUpQueuedByCompletedCompactionRunsBeforePreSettlement()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var conversation = new ConversationSession(Path.GetTempPath(), "compaction-queued-follow-up", null);
+        var client = new ScriptedClient([Reply(new string('r', 10_000))], [Reply("follow-up response")]);
+        ConversationRun? run = null;
+        var compactionCalls = 0;
+        var queued = false;
+        var beforeSettleCalls = 0;
+        var providerRequestsAtBeforeSettle = 0;
+        var settledCalls = 0;
+        adapter.AddSessionBeforeCompactHandler((eventData, _, _) =>
+            ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(new(Compaction:
+                new PiSharpExtensionCustomCompaction("Queued-work checkpoint",
+                    eventData.Preparation.FirstKeptEntryId, eventData.Preparation.TokensBefore))));
+        adapter.AddSessionCompactHandler((_, _, _) =>
+        {
+            compactionCalls++;
+            if (compactionCalls == 1) queued = run!.TryFollowUp("queued by compaction callback");
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddAgentBeforeSettleHandler((_, _, _) =>
+        {
+            beforeSettleCalls++;
+            providerRequestsAtBeforeSettle = client.Requests.Count;
+            return ValueTask.FromResult<PiSharpBoundaryResult?>(new PiSharpBoundaryResult());
+        });
+        adapter.AddAgentSettledHandler((_, _, _) =>
+        {
+            settledCalls++;
+            return ValueTask.CompletedTask;
+        });
+        adapter.Close();
+
+        conversation.Append(new ChatMessage(ChatRole.User, new string('o', 32_000)));
+        conversation.Append(new ChatMessage(ChatRole.Assistant, "older assistant context"));
+        Assert.InRange(AutoCompactionPolicy.Estimate(conversation.ContextMessages(), "short final turn"), 0, 19_999);
+        var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()), noBuiltinTools: true,
+            liveExtensionRegistration: registration);
+        run = await ConversationRun.OpenAsync(agent, conversation,
+            autoCompaction: new AutoCompactionPolicy(20_000, ReserveTokens: 0, KeepRecentTokens: 1));
+
+        var events = await ConsumeAsync(run.RunEventsAsync("short final turn"));
+
+        Assert.DoesNotContain(events, item => item.Type == "extension_error");
+        Assert.True(queued);
+        Assert.Equal(1, compactionCalls);
+        Assert.Equal(2, client.Requests.Count);
+        Assert.Single(client.Requests[1], message => message.Text == "queued by compaction callback");
+        Assert.Equal(1, beforeSettleCalls);
+        Assert.Equal(2, providerRequestsAtBeforeSettle);
+        Assert.Equal(1, settledCalls);
+        Assert.Single(conversation.Tree.ActivePath(), entry => entry.Type == "compaction");
+        Assert.Single(conversation.Tree.ActivePath(), entry => entry.Type == "chat" &&
+            ConversationMessageCodec.RestoreEntry(entry).Text == "queued by compaction callback");
+    }
+
+    [Fact]
     public async Task SelfRetainingBoundaryCompactionSurvivesNativeAndPiJsonlResume()
     {
         var registration = new ExtensionRegistration();

@@ -752,6 +752,7 @@ public sealed partial class ConversationRun
                     current = await TakeQueuedPromptOrCloseAsync(owner, closeWhenEmpty: false);
                     if (_boundaryContextVersion != initialRunBoundaryVersion || _agent.ExtensionEvents.HasBoundaryHandlers)
                         await CompactAfterBoundaryAsync(linked.Token, Publish).ConfigureAwait(false);
+                    current ??= await TakeQueuedPromptOrCloseAsync(owner, closeWhenEmpty: false);
                     if (current is null && await DispatchBeforeSettleBoundaryAsync(nativeAgentOutcome, linked.Token, Publish)
                             .ConfigureAwait(false))
                         current = new([], [promptText], SkipBeforeAgentStart: true, Continuation: true);
@@ -861,11 +862,11 @@ public sealed partial class ConversationRun
     private object BeginPromptLoop(Action<AgentLifecycleEvent> publish,
         out IReadOnlyList<QueuedPrompt> nextTurnMessages) => _promptDelivery.Begin(publish, out nextTurnMessages);
 
-    private IReadOnlyList<ChatMessage> TakeSteeringForProvider(bool firstProviderRequest)
+    private IReadOnlyList<ChatMessage> TakeSteeringForProvider(bool firstProviderRequest, bool contextContinuation)
     {
         lock (_runtimeStateGate)
         {
-            var messages = _promptDelivery.TakeSteeringForProvider(firstProviderRequest);
+            var messages = _promptDelivery.TakeSteeringForProvider(firstProviderRequest, contextContinuation);
             foreach (var message in messages) Conversation.Append(message);
             return messages;
         }
@@ -1806,10 +1807,10 @@ public sealed partial class ConversationRun
             var codexSessionId = _providerApi == "openai-codex-responses" ? Conversation.Id : null;
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
-                    Observe, TakeSteeringForProvider, projectRequestContext,
+                    Observe, first => TakeSteeringForProvider(first, retryContinuation), projectRequestContext,
                     CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync)
                 : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
-                    Observe, TakeSteeringForProvider, projectRequestContext,
+                    Observe, first => TakeSteeringForProvider(first, retryContinuation), projectRequestContext,
                     CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync);
             await foreach (var update in attemptStream.PumpAsync(updates, durable,
                 usage => Conversation.AppendUsage(attribution.Usage(usage)), cancellationToken))
