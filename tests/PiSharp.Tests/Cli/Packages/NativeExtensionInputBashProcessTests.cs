@@ -169,6 +169,22 @@ public sealed class NativeExtensionInputBashProcessTests
                 customResult.GetProperty("output").GetString());
             Assert.Equal(23, customResult.GetProperty("exitCode").GetInt32());
 
+            var cancelledMarker = Path.Combine(fixture.Root, "cancelled-bash-shell-ran");
+            await WriteAsync(process, new
+            {
+                id = "cancelled-bash",
+                type = "bash",
+                command = "cancel-result " + ProcessTestHelpers.ShellQuote(cancelledMarker)
+            }, timeout.Token);
+            using var cancelledResponse = await ReadResponseAsync(process, "cancelled-bash", timeout.Token);
+            Assert.True(cancelledResponse.RootElement.GetProperty("success").GetBoolean());
+            var cancelledResult = cancelledResponse.RootElement.GetProperty("data");
+            Assert.Equal("external-package-cancelled-result", cancelledResult.GetProperty("output").GetString());
+            Assert.True(cancelledResult.GetProperty("cancelled").GetBoolean());
+            Assert.False(cancelledResult.GetProperty("truncated").GetBoolean());
+            Assert.Equal("external-full-output.log", cancelledResult.GetProperty("fullOutputPath").GetString());
+            Assert.False(cancelledResult.TryGetProperty("exitCode", out _));
+
             var errorMarker = Path.Combine(fixture.Root, "bash-error-shell-ran");
             await WriteAsync(process, new
             {
@@ -208,7 +224,7 @@ public sealed class NativeExtensionInputBashProcessTests
 
             var bashes = records.Where(record =>
                 record.RootElement.GetProperty("type").GetString() == "user_bash").ToArray();
-            Assert.Equal(3, bashes.Length);
+            Assert.Equal(4, bashes.Length);
             using var bash = bashes[0];
             Assert.Equal(command, bash.RootElement.GetProperty("command").GetString());
             Assert.Equal(fixture.ProjectDirectory, bash.RootElement.GetProperty("cwd").GetString());
@@ -217,7 +233,11 @@ public sealed class NativeExtensionInputBashProcessTests
             Assert.Equal("remote status", customBash.RootElement.GetProperty("command").GetString());
             Assert.Equal(fixture.ProjectDirectory, customBash.RootElement.GetProperty("cwd").GetString());
             Assert.False(customBash.RootElement.GetProperty("excludeFromContext").GetBoolean());
-            using var failedBash = bashes[2];
+            using var cancelledBash = bashes[2];
+            Assert.StartsWith("cancel-result ", cancelledBash.RootElement.GetProperty("command").GetString(),
+                StringComparison.Ordinal);
+            Assert.Equal(fixture.ProjectDirectory, cancelledBash.RootElement.GetProperty("cwd").GetString());
+            using var failedBash = bashes[3];
             Assert.StartsWith("throw ", failedBash.RootElement.GetProperty("command").GetString(),
                 StringComparison.Ordinal);
         }
@@ -230,13 +250,198 @@ public sealed class NativeExtensionInputBashProcessTests
         var store = new ConversationStore(fixture.ProjectDirectory, sessions);
         var session = await store.LoadAsync(sessionPath, timeout.Token);
         var entries = session.Tree.ActivePath().Where(item => item.Type == "bash_execution").ToArray();
-        Assert.Equal(2, entries.Length);
+        Assert.Equal(3, entries.Length);
         Assert.Equal("external-package-bash-result", entries[0].Payload.GetProperty("output").GetString());
         Assert.True(entries[0].Payload.GetProperty("excludeFromContext").GetBoolean());
         Assert.Equal($"custom-start\n{fixture.ProjectDirectory}:remote status\n",
             entries[1].Payload.GetProperty("output").GetString());
         Assert.False(entries[1].Payload.GetProperty("excludeFromContext").GetBoolean());
+        Assert.Equal("external-package-cancelled-result", entries[2].Payload.GetProperty("output").GetString());
+        Assert.True(entries[2].Payload.GetProperty("cancelled").GetBoolean());
+        Assert.False(entries[2].Payload.GetProperty("truncated").GetBoolean());
+        Assert.Equal("external-full-output.log", entries[2].Payload.GetProperty("fullOutputPath").GetString());
+        Assert.False(File.Exists(Path.Combine(fixture.Root, "cancelled-bash-shell-ran")));
         Assert.False(File.Exists(Path.Combine(fixture.Root, "bash-error-shell-ran")));
+    }
+
+    [Fact]
+    public async Task ExternalPackageExtensionMessagesAreInterceptedWhenIdleAndDuringAnActiveRun()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var package = await PackAsync(Path.Combine(fixture.Root, "package"));
+        var install = await NativeExtensionStateProcessTests.RunCliAsync(fixture, "install", package);
+        Assert.True(install.ExitCode == 0, install.Error + "\n" + install.Output);
+
+        Directory.CreateDirectory(fixture.AgentDirectory);
+        using var portReservation = new TcpListener(IPAddress.Loopback, 0);
+        portReservation.Start();
+        var port = ((IPEndPoint)portReservation.LocalEndpoint).Port;
+        portReservation.Stop();
+        using var listener = new HttpListener();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        var models = """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:PORT/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model","api":"openai-responses"}]}}}
+            """.Replace("PORT", port.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        await File.WriteAllTextAsync(Path.Combine(fixture.AgentDirectory, "models.json"), models);
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        var idleRequest = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var activeRequest = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var extensionRequest = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBlocker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task<(HttpListenerContext Context, string Body)> ReadProviderRequestAsync()
+        {
+            var context = await listener.GetContextAsync().WaitAsync(timeout.Token);
+            Assert.Equal("/v1/responses", context.Request.Url?.AbsolutePath);
+            using var reader = new StreamReader(context.Request.InputStream);
+            return (context, await reader.ReadToEndAsync(timeout.Token));
+        }
+
+        async Task RespondAsync(HttpListenerContext context, string responseId)
+        {
+            context.Response.ContentType = "text/event-stream";
+            context.Response.KeepAlive = false;
+            await using var writer = new StreamWriter(context.Response.OutputStream);
+            await writer.WriteAsync($"data: {{\"type\":\"response.created\",\"response\":{{\"id\":\"{responseId}\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}}}\n\n");
+            await writer.WriteAsync($"data: {{\"type\":\"response.output_text.delta\",\"item_id\":\"msg_{responseId}\",\"output_index\":0,\"content_index\":0,\"delta\":\"{responseId}_OK\"}}\n\n");
+            await writer.WriteAsync($"data: {{\"type\":\"response.completed\",\"response\":{{\"id\":\"{responseId}\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}}}\n\n");
+            await writer.WriteAsync("data: [DONE]\n\n");
+            await writer.FlushAsync();
+            context.Response.Close();
+        }
+
+        var provider = Task.Run(async () =>
+        {
+            var (idleContext, idleBody) = await ReadProviderRequestAsync();
+            idleRequest.TrySetResult(idleBody);
+            await RespondAsync(idleContext, "native_idle");
+
+            var (activeContext, blockerBody) = await ReadProviderRequestAsync();
+            activeRequest.TrySetResult(blockerBody);
+            await releaseBlocker.Task.WaitAsync(timeout.Token);
+            await RespondAsync(activeContext, "native_blocker");
+
+            var (extensionContext, extensionBody) = await ReadProviderRequestAsync();
+            extensionRequest.TrySetResult(extensionBody);
+            await RespondAsync(extensionContext, "native_extension_active");
+        }, timeout.Token);
+
+        var sessions = Path.Combine(fixture.Root, "sessions");
+        Directory.CreateDirectory(sessions);
+        var logPath = Path.Combine(fixture.Root, "extension-sources.log");
+        using var process = Start(fixture, sessions, logPath, providerConfigured: true);
+        var errors = process.StandardError.ReadToEndAsync(timeout.Token);
+        try
+        {
+            await WriteAsync(process, new { id = "extension-idle", type = "prompt", message = "/native-send idle" },
+                timeout.Token);
+            using (var idleResponse = await ReadResponseAsync(process, "extension-idle", timeout.Token))
+                Assert.True(idleResponse.RootElement.GetProperty("success").GetBoolean());
+            var idleBody = await idleRequest.Task.WaitAsync(timeout.Token);
+            Assert.Contains("native-package-extension-idle-final", idleBody, StringComparison.Ordinal);
+            Assert.DoesNotContain("native-package-extension-idle-stage-one", idleBody, StringComparison.Ordinal);
+
+            await WriteAsync(process, new { id = "blocker", type = "prompt", message = "native-package-blocker" },
+                timeout.Token);
+            using (var blockerResponse = await ReadResponseAsync(process, "blocker", timeout.Token))
+                Assert.True(blockerResponse.RootElement.GetProperty("success").GetBoolean());
+            var blockerBody = await activeRequest.Task.WaitAsync(timeout.Token);
+            Assert.Contains("native-package-blocker", blockerBody, StringComparison.Ordinal);
+
+            await WriteAsync(process, new { id = "extension-active", type = "prompt", message = "/native-send active" },
+                timeout.Token);
+            using (var extensionCommandResponse = await ReadResponseAsync(process, "extension-active", timeout.Token))
+                Assert.True(extensionCommandResponse.RootElement.GetProperty("success").GetBoolean());
+            releaseBlocker.TrySetResult();
+
+            var activeBody = await extensionRequest.Task.WaitAsync(timeout.Token);
+            Assert.Contains("native-package-extension-active-final", activeBody, StringComparison.Ordinal);
+            Assert.DoesNotContain("native-package-extension-active-stage-one", activeBody, StringComparison.Ordinal);
+            await provider.WaitAsync(timeout.Token);
+
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(string.Empty, await errors.WaitAsync(timeout.Token));
+        }
+        finally
+        {
+            releaseBlocker.TrySetResult();
+            await StopAsync(process);
+        }
+
+        var records = (await File.ReadAllLinesAsync(logPath, timeout.Token))
+            .Select(line => JsonDocument.Parse(line)).ToArray();
+        try
+        {
+            var inputs = records.Where(record => record.RootElement.GetProperty("type").GetString() == "input")
+                .ToArray();
+            Assert.Equal(["first", "second", "first", "second", "first", "second"], inputs.Select(record =>
+                record.RootElement.GetProperty("handler").GetString()));
+            Assert.Equal(["native-package-extension-idle", "native-package-extension-idle-stage-one",
+                "native-package-blocker", "native-package-blocker", "native-package-extension-active",
+                "native-package-extension-active-stage-one"],
+                inputs.Select(record => record.RootElement.GetProperty("text").GetString()));
+            Assert.Equal(["Extension", "Extension", "Rpc", "Rpc", "Extension", "Extension"], inputs.Select(record =>
+                record.RootElement.GetProperty("source").GetString()));
+            Assert.Equal([null, null, null, null, "Steer", "Steer"], inputs.Select(record =>
+                record.RootElement.GetProperty("behavior").GetString()));
+        }
+        finally
+        {
+            foreach (var record in records) record.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task ExternalPackageConfigureFailureRollsBackInputAndUserBashHandlers()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var package = await PackAsync(Path.Combine(fixture.Root, "package"));
+        var install = await NativeExtensionStateProcessTests.RunCliAsync(fixture, "install", package);
+        Assert.True(install.ExitCode == 0, install.Error + "\n" + install.Output);
+
+        var sessions = Path.Combine(fixture.Root, "sessions");
+        Directory.CreateDirectory(sessions);
+        var logPath = Path.Combine(fixture.Root, "configure-rollback.log");
+        var shellMarker = Path.Combine(fixture.Root, "rollback-shell-ran");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var process = Start(fixture, sessions, logPath, failConfigure: true);
+        var errors = process.StandardError.ReadToEndAsync(timeout.Token);
+        try
+        {
+            await WriteAsync(process, new { id = "after-rollback-input", type = "prompt", message = "ordinary input" },
+                timeout.Token);
+            using (var inputResponse = await ReadResponseAsync(process, "after-rollback-input", timeout.Token))
+            {
+                Assert.False(inputResponse.RootElement.GetProperty("success").GetBoolean());
+                Assert.DoesNotContain("handled", inputResponse.RootElement.GetRawText(), StringComparison.Ordinal);
+            }
+
+            await WriteAsync(process, new
+            {
+                id = "after-rollback-bash",
+                type = "bash",
+                command = "touch " + ProcessTestHelpers.ShellQuote(shellMarker)
+            }, timeout.Token);
+            using (var bashResponse = await ReadResponseAsync(process, "after-rollback-bash", timeout.Token))
+                Assert.True(bashResponse.RootElement.GetProperty("success").GetBoolean());
+
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Contains("native input-bash fixture Configure failure", await errors.WaitAsync(timeout.Token),
+                StringComparison.Ordinal);
+        }
+        finally { await StopAsync(process); }
+
+        Assert.True(File.Exists(shellMarker));
+        using var configureRecord = JsonDocument.Parse(Assert.Single(await File.ReadAllLinesAsync(logPath,
+            timeout.Token)));
+        Assert.Equal("configure_failure", configureRecord.RootElement.GetProperty("type").GetString());
     }
 
     [Fact]
@@ -448,7 +653,8 @@ public sealed class NativeExtensionInputBashProcessTests
         }
     }
 
-    private static Process Start(ManagedNpmFixture fixture, string sessions, string logPath)
+    private static Process Start(ManagedNpmFixture fixture, string sessions, string logPath,
+        bool providerConfigured = false, bool failConfigure = false)
     {
         var start = new ProcessStartInfo("dotnet")
         {
@@ -464,8 +670,18 @@ public sealed class NativeExtensionInputBashProcessTests
         start.Environment["PISHARP_SESSION_DIR"] = sessions;
         start.Environment["PISHARP_NATIVE_INPUT_BASH_LOG"] = logPath;
         foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
-                     "PISHARP_SETTINGS_PATH", "PISHARP_MODELS_PATH", "PISHARP_AUTH_PATH" })
+                     "PISHARP_SETTINGS_PATH", "PISHARP_MODELS_PATH", "PISHARP_AUTH_PATH", "PISHARP_FIXTURE_KEY" })
             start.Environment.Remove(name);
+        if (providerConfigured)
+        {
+            start.ArgumentList.Add("--provider");
+            start.ArgumentList.Add("fixture");
+            start.ArgumentList.Add("--model");
+            start.ArgumentList.Add("fixture-model");
+            start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-key";
+        }
+        if (failConfigure) start.Environment["PISHARP_NATIVE_INPUT_BASH_FAIL_CONFIGURE"] = "true";
+        else start.Environment.Remove("PISHARP_NATIVE_INPUT_BASH_FAIL_CONFIGURE");
         return Process.Start(start) ?? throw new IOException("Could not start the RPC acceptance process.");
     }
 

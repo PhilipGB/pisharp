@@ -136,6 +136,46 @@ public sealed class NativeInputAndUserBashDispatchTests
     }
 
     [Fact]
+    public async Task CancellationInLaterInputHandlerKeepsPriorTransformAndStopsTheChain()
+    {
+        var cwd = NewWorkingDirectory();
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = CreateAdapter(registration, cwd, "later-cancel.dll");
+            var secondHandlerEntered = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var laterHandlerCalls = 0;
+            adapter.AddInputHandler((input, _, _) => ValueTask.FromResult<NativeExtensions.PiSharpInputResult?>(
+                input.Text == "raw" ? NativeExtensions.PiSharpInputResult.Transform("transformed") : null));
+            adapter.AddInputHandler(async (input, _, cancellationToken) =>
+            {
+                secondHandlerEntered.TrySetResult(input.Text);
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return NativeExtensions.PiSharpInputResult.Continue;
+            });
+            adapter.AddInputHandler((_, _, _) =>
+            {
+                Interlocked.Increment(ref laterHandlerCalls);
+                return ValueTask.FromResult<NativeExtensions.PiSharpInputResult?>(null);
+            });
+            adapter.Close();
+            var run = await OpenRunAsync(cwd, registration);
+            using var cancellation = new CancellationTokenSource();
+            var pending = run.InterceptInputAsync("raw", null, NativeExtensions.PiSharpInputSource.Rpc,
+                NativeExtensions.PiSharpInputStreamingBehavior.Steer, cancellation.Token);
+            Assert.Equal("transformed", await secondHandlerEntered.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
+            Assert.Equal(0, laterHandlerCalls);
+            Assert.Equal(0, run.PendingPromptCount);
+            Assert.Empty(run.GetPendingPrompts().Steering);
+            Assert.Empty(run.GetPendingPrompts().FollowUp);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task UserBashUsesFirstNonNullHandlerAcrossNativeAndLegacyRegistrations()
     {
         var cwd = NewWorkingDirectory();

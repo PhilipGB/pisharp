@@ -7,6 +7,18 @@ public sealed class InputBashExtension : IPiSharpExtension
 {
     public void Configure(IPiSharpExtensionBuilder builder)
     {
+        builder.AddCommand("native-send", async (arguments, context, cancellationToken) =>
+        {
+            var message = arguments.Trim() switch
+            {
+                "idle" => "native-package-extension-idle",
+                "active" => "native-package-extension-active",
+                _ => throw new ArgumentException("Expected 'idle' or 'active'.", nameof(arguments))
+            };
+            await context.SendUserMessageAsync(message, cancellationToken);
+            return "sent";
+        }, description: "Send a user message through the native input dispatcher.");
+
         builder.AddInputHandler((eventData, _, _) =>
         {
             WriteRecord(new
@@ -19,9 +31,20 @@ public sealed class InputBashExtension : IPiSharpExtension
             });
             if (eventData.Text == "native-package-input-error")
                 throw new InvalidOperationException("native-package-input-error");
-            return ValueTask.FromResult<PiSharpInputResult?>(eventData.Text == "native-package-transform"
-                ? PiSharpInputResult.Transform("native-package-stage-one")
-                : PiSharpInputResult.Continue);
+            if (Environment.GetEnvironmentVariable("PISHARP_NATIVE_INPUT_BASH_FAIL_CONFIGURE") == "true")
+            {
+                WriteRecord(new { type = "rollback_input", text = eventData.Text });
+                return ValueTask.FromResult<PiSharpInputResult?>(PiSharpInputResult.Handled);
+            }
+            return ValueTask.FromResult<PiSharpInputResult?>(eventData.Text switch
+            {
+                "native-package-transform" => PiSharpInputResult.Transform("native-package-stage-one"),
+                "native-package-extension-idle" => PiSharpInputResult.Transform("native-package-extension-idle-stage-one"),
+                "native-package-extension-active" => PiSharpInputResult.Transform("native-package-extension-active-stage-one"),
+                "native-package-extension-idle-stage-one" => PiSharpInputResult.Transform("native-package-extension-idle-final"),
+                "native-package-extension-active-stage-one" => PiSharpInputResult.Transform("native-package-extension-active-final"),
+                _ => PiSharpInputResult.Continue
+            });
         });
 
         builder.AddInputHandler((eventData, context, _) =>
@@ -39,9 +62,13 @@ public sealed class InputBashExtension : IPiSharpExtension
                 if (context.Mode == "tui") context.Ui.Notify("native-package-handled-notification");
                 return ValueTask.FromResult<PiSharpInputResult?>(PiSharpInputResult.Handled);
             }
-            return ValueTask.FromResult<PiSharpInputResult?>(eventData.Text == "native-package-stage-one"
-                ? PiSharpInputResult.Transform("native-package-final")
-                : PiSharpInputResult.Continue);
+            return ValueTask.FromResult<PiSharpInputResult?>(eventData.Text switch
+            {
+                "native-package-stage-one" => PiSharpInputResult.Transform("native-package-final"),
+                "native-package-extension-idle-stage-one" => PiSharpInputResult.Transform("native-package-extension-idle-final"),
+                "native-package-extension-active-stage-one" => PiSharpInputResult.Transform("native-package-extension-active-final"),
+                _ => PiSharpInputResult.Continue
+            });
         });
 
         builder.AddUserBashHandler((eventData, _, _) =>
@@ -55,6 +82,14 @@ public sealed class InputBashExtension : IPiSharpExtension
             });
             if (eventData.Command.StartsWith("throw ", StringComparison.Ordinal))
                 throw new InvalidOperationException("native-package-bash-error");
+            if (Environment.GetEnvironmentVariable("PISHARP_NATIVE_INPUT_BASH_FAIL_CONFIGURE") == "true")
+            {
+                WriteRecord(new { type = "rollback_bash", command = eventData.Command });
+                return ValueTask.FromResult<PiSharpUserBashResult?>(PiSharpUserBashResult.Full("rollback-result"));
+            }
+            if (eventData.Command.StartsWith("cancel-result ", StringComparison.Ordinal))
+                return ValueTask.FromResult<PiSharpUserBashResult?>(PiSharpUserBashResult.Full(
+                    "external-package-cancelled-result", cancelled: true, fullOutputPath: "external-full-output.log"));
             if (eventData.Command.StartsWith("remote ", StringComparison.Ordinal))
             {
                 return ValueTask.FromResult<PiSharpUserBashResult?>(PiSharpUserBashResult.Custom(
@@ -71,6 +106,12 @@ public sealed class InputBashExtension : IPiSharpExtension
                 ? PiSharpUserBashResult.Full("external-package-bash-result", 17, truncated: true)
                 : null);
         });
+
+        if (Environment.GetEnvironmentVariable("PISHARP_NATIVE_INPUT_BASH_FAIL_CONFIGURE") == "true")
+        {
+            WriteRecord(new { type = "configure_failure" });
+            throw new InvalidOperationException("native input-bash fixture Configure failure");
+        }
     }
 
     private static void WriteRecord<T>(T record)

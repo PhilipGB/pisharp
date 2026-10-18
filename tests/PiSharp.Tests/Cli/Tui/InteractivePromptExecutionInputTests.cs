@@ -22,17 +22,24 @@ public sealed class InteractivePromptExecutionInputTests
             var registration = new ExtensionRegistration();
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             var seen = new List<PiSharpInputEvent>();
-            adapter.AddInputHandler((input, _, _) =>
+            var cancellationEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            adapter.AddInputHandler(async (input, _, cancellationToken) =>
             {
                 seen.Add(input);
                 if (input.Text == "consume")
-                    return ValueTask.FromResult<PiSharpInputResult?>(PiSharpInputResult.Handled);
-                return ValueTask.FromResult<PiSharpInputResult?>(PiSharpInputResult.Transform(input.Text switch
+                    return PiSharpInputResult.Handled;
+                if (input.Text == "cancel")
+                {
+                    cancellationEntered.TrySetResult();
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }
+                return PiSharpInputResult.Transform(input.Text switch
                 {
                     "steer" => "steered",
                     "follow" => "followed",
+                    "after-cancel" => "after-cancelled",
                     _ => input.Text
-                }));
+                });
             });
             adapter.Close();
             var resources = await ResourceCatalog.LoadAsync(root, root, trusted: false, discoverSkills: false);
@@ -57,14 +64,25 @@ public sealed class InteractivePromptExecutionInputTests
             Assert.True(await execution.QueueActiveInputAsync("follow", followUp: true, CancellationToken.None));
             Assert.True(await execution.QueueActiveInputAsync("consume", followUp: false, CancellationToken.None));
 
+            using var inputCancellation = new CancellationTokenSource();
+            var cancelledInput = execution.QueueActiveInputAsync("cancel", followUp: false, inputCancellation.Token);
+            await cancellationEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            inputCancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelledInput);
+
             var pending = run.GetPendingPrompts();
             Assert.Equal(["steered"], pending.Steering);
             Assert.Equal(["followed"], pending.FollowUp);
-            Assert.Equal(["steer", "follow", "consume"], seen.Select(input => input.Text));
+            Assert.True(await execution.QueueActiveInputAsync("after-cancel", followUp: false, CancellationToken.None));
+            pending = run.GetPendingPrompts();
+            Assert.Equal(["steered", "after-cancelled"], pending.Steering);
+            Assert.Equal(["followed"], pending.FollowUp);
+            Assert.Equal(["steer", "follow", "consume", "cancel", "after-cancel"], seen.Select(input => input.Text));
             Assert.All(seen, input => Assert.Equal(PiSharpInputSource.Interactive, input.Source));
             Assert.Equal([PiSharpInputStreamingBehavior.Steer, PiSharpInputStreamingBehavior.FollowUp,
+                PiSharpInputStreamingBehavior.Steer, PiSharpInputStreamingBehavior.Steer,
                 PiSharpInputStreamingBehavior.Steer], seen.Select(input => input.StreamingBehavior));
-            Assert.Equal(["Queued steering message.", "Queued follow-up."], error.ToString()
+            Assert.Equal(["Queued steering message.", "Queued follow-up.", "Queued steering message."], error.ToString()
                 .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
 
             runCancellation.Cancel();
