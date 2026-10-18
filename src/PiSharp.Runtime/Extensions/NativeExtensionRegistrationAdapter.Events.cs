@@ -12,8 +12,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddSessionInfoChangedHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -25,8 +25,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddSessionCompactHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -38,8 +38,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddSessionCompactFailedHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -51,8 +51,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddAgentStartHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -64,8 +64,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddAgentEndHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -77,8 +77,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddTurnStartHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -90,8 +90,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddTurnEndHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -103,8 +103,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddToolExecutionStartHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -116,8 +116,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddToolExecutionUpdateHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -129,8 +129,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddToolExecutionEndHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -142,8 +142,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddModelSelectHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -155,8 +155,25 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddThinkingLevelSelectHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try { await handler(eventData, publicContext, cancellationToken).ConfigureAwait(false); }
-            finally { publicContext.Dispose(); }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
+    }
+
+    private static async Task InvokeWithRevocableContextAsync(
+        NativeExtensions.PiSharpExtensionContext publicContext,
+        CancellationToken cancellationToken,
+        Func<ValueTask> invoke)
+    {
+        using var cancellationRegistration = cancellationToken.Register(static state =>
+        {
+            try { ((NativeExtensions.PiSharpExtensionContext)state!).Dispose(); }
+            catch (Exception)
+            {
+                // Cancellation callbacks must not be able to break host cancellation cleanup.
+            }
+        }, publicContext);
+        try { await invoke().ConfigureAwait(false); }
+        finally { publicContext.Dispose(); }
     }
 }

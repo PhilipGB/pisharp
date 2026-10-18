@@ -223,10 +223,12 @@ public sealed class NativeExtensionCompactionEventTests
             var registration = new ExtensionRegistration();
             var adapter = new NativeExtensionRegistrationAdapter(registration);
             PiSharpExtensionSessionCompactFailedEvent? failed = null;
+            PiSharp.Extensions.Abstractions.PiSharpExtensionContext? retainedContext = null;
             var observerToken = CancellationToken.None;
-            adapter.AddSessionCompactFailedHandler((eventData, _, cancellationToken) =>
+            adapter.AddSessionCompactFailedHandler((eventData, context, cancellationToken) =>
             {
                 failed = eventData;
+                retainedContext = context;
                 observerToken = cancellationToken;
                 observerStarted.TrySetResult();
                 return new ValueTask(completeObserver.Task);
@@ -243,6 +245,19 @@ public sealed class NativeExtensionCompactionEventTests
             var agent = new PiAgent(summaryClient, new CodingTools(workingDirectory),
                 liveExtensionRegistration: registration);
             var run = await ConversationRun.OpenAsync(agent, conversation);
+            var activeToolMutations = 0;
+            var controlOperations = new PiSharpExtensionCommandControlOperations(
+                static () => [], static () => [], static () => [], static () => null,
+                _ => activeToolMutations++,
+                static (_, _, _) => Task.FromResult(
+                    new PiSharpModelSelectionResult(PiSharpModelSelectionStatus.Selected)),
+                static () => PiSharpThinkingLevel.Off,
+                static (level, _) => Task.FromResult(level),
+                static () => { },
+                static _ => Task.FromResult(new PiSharpCompactionResult(PiSharpCompactionStatus.NotNeeded)),
+                static () => { });
+            run.SetExtensionCapabilitiesFactory((_, session) =>
+                new PiSharpExtensionCapabilities(controlOperations, session, null));
 
             var cancelledCompaction = run.CompactWithResultAsync(cancellationToken: cancellation.Token);
             await observerStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -252,6 +267,12 @@ public sealed class NativeExtensionCompactionEventTests
             Assert.NotNull(failed);
             Assert.True(failed.Aborted);
             Assert.True(observerToken.IsCancellationRequested);
+            Assert.False(completeObserver.Task.IsCompleted);
+            Assert.NotNull(retainedContext);
+            Assert.Throws<ObjectDisposedException>(() => retainedContext.Capabilities!.SetActiveTools(["late-tool"]));
+            await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
+                await retainedContext.Session!.SetSessionNameAsync("late mutation"));
+            Assert.Equal(0, activeToolMutations);
 
             var nextCompaction = await run.CompactWithResultAsync(cancellationToken: CancellationToken.None)
                 .WaitAsync(TimeSpan.FromSeconds(5));
