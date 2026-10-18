@@ -541,16 +541,16 @@ public sealed class RpcModeTests
     }
 
     [Fact]
-    public async Task CloneDoesNotDispatchTheForkInterceptionHook()
+    public async Task CloneDispatchesForkInterceptionAtPositionAndVetoesBeforePreparation()
     {
         var channel = Channel.CreateUnbounded<string>();
         using var output = new LockedWriter();
         var registration = new ExtensionRegistration();
         var adapter = new NativeExtensionRegistrationAdapter(registration);
-        var beforeForkCalls = 0;
-        adapter.AddSessionBeforeForkHandler((_, _, _) =>
+        PiSharpExtensionSessionBeforeForkEvent? observed = null;
+        adapter.AddSessionBeforeForkHandler((eventData, _, _) =>
         {
-            beforeForkCalls++;
+            observed = eventData;
             return ValueTask.FromResult<PiSharpExtensionSessionBeforeForkResult?>(new(Cancel: true));
         });
         adapter.Close();
@@ -558,18 +558,35 @@ public sealed class RpcModeTests
         session.Append(new ChatMessage(ChatRole.User, "clone this session"));
         var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(),
             new CodingTools(Path.GetTempPath()), liveExtensionRegistration: registration), session);
+        var prepareCalls = 0;
+        var cloneCalls = 0;
         var service = new RpcMode(new CommandReader(channel.Reader), output, run,
-            prepareCloneSession: (_, _) => Task.FromResult<string?>(null),
-            cloneSession: (_, _, _) => Task.FromResult(false));
+            prepareCloneSession: (_, _) =>
+            {
+                prepareCalls++;
+                return Task.FromResult<string?>(null);
+            },
+            cloneSession: (_, _, _) =>
+            {
+                cloneCalls++;
+                return Task.FromResult(false);
+            });
         var serving = service.ServeAsync();
         channel.Writer.TryWrite("{\"id\":\"clone\",\"type\":\"clone\"}");
         await WaitForAsync(output, "\"id\":\"clone\"");
         channel.Writer.TryComplete();
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
 
-        Assert.Equal(0, beforeForkCalls);
+        Assert.NotNull(observed);
+        Assert.Equal(session.Id, observed.CurrentSessionId);
+        Assert.Equal(session.Tree.HeadId, observed.EntryId);
+        Assert.Equal(PiSharpExtensionForkPosition.At, observed.Position);
+        Assert.Equal(0, prepareCalls);
+        Assert.Equal(0, cloneCalls);
         using var response = JsonDocument.Parse(Assert.Single(output.Lines()));
-        Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+        Assert.False(response.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("Session fork was cancelled by an extension.",
+            response.RootElement.GetProperty("error").GetString());
     }
 
     [Fact]

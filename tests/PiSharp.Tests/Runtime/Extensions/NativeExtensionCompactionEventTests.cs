@@ -142,6 +142,15 @@ public sealed class NativeExtensionCompactionEventTests
             Assert.Equal(100, usage.InputTokens);
             Assert.Equal(25, usage.OutputTokens);
             Assert.Equal(3, usage.CachedWriteTokens);
+
+            var resumedRequests = new List<IReadOnlyList<ChatMessage>>();
+            var resumedAgent = new PiAgent(new SummaryClient(response: "continued after resume",
+                    onMessages: messages => resumedRequests.Add(messages)),
+                new CodingTools(workingDirectory), noBuiltinTools: true);
+            var resumedRun = await ConversationRun.OpenAsync(resumedAgent, persistedConversation);
+            await foreach (var _ in resumedRun.RunEventsAsync("continue after custom compaction")) { }
+            Assert.Contains(Assert.Single(resumedRequests), message =>
+                message.Text?.Contains("Extension checkpoint", StringComparison.Ordinal) == true);
         }
         finally { Directory.Delete(workingDirectory, recursive: true); }
     }
@@ -729,6 +738,95 @@ public sealed class NativeExtensionCompactionEventTests
         finally { Directory.Delete(workingDirectory, recursive: true); }
     }
 
+    [Theory]
+    [InlineData(false, PiSharpExtensionCompactionReason.Threshold)]
+    [InlineData(true, PiSharpExtensionCompactionReason.Overflow)]
+    public async Task AutomaticVirtualCompactionUsesValidatedCustomSummary(bool overflow,
+        PiSharpExtensionCompactionReason expectedReason)
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-automatic-compact-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            PiSharpExtensionSessionBeforeCompactEvent? beforeCompact = null;
+            PiSharpExtensionSessionCompactEvent? compacted = null;
+            adapter.AddSessionBeforeCompactHandler((eventData, _, _) =>
+            {
+                beforeCompact = eventData;
+                var custom = new PiSharpExtensionCustomCompaction("Extension automatic checkpoint",
+                    eventData.Preparation.FirstKeptEntryId, 456,
+                    JsonSerializer.SerializeToElement(new { source = "automatic", overflow }));
+                return ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(new(Compaction: custom));
+            });
+            adapter.AddSessionCompactHandler((eventData, _, _) =>
+            {
+                compacted = eventData;
+                return ValueTask.CompletedTask;
+            });
+            adapter.Close();
+
+            var contextLength = overflow ? 50000 : 5000;
+            var conversation = new ConversationSession(workingDirectory, "auto", null, "router");
+            conversation.SelectModel("auto", null, "router");
+            conversation.Append(new ChatMessage(ChatRole.User,
+                "old " + new string('x', overflow ? 12000 : 18000)));
+            conversation.Append(new ChatMessage(ChatRole.Assistant, "old answer"));
+
+            var initialRequests = 0;
+            var retryRequests = 0;
+            var summaryRequests = 0;
+            var initial = new SummaryClient(onRequest: () => initialRequests++, response: "physical answer",
+                error: overflow
+                    ? new HttpRequestException("context_length_exceeded", null, HttpStatusCode.BadRequest)
+                    : null);
+            var retry = new SummaryClient(onRequest: () => retryRequests++, response: "retry answer");
+            var summarizer = new SummaryClient(onRequest: () => summaryRequests++, response: "default summary");
+            var agent = new PiAgent(initial, new CodingTools(workingDirectory), noTools: true,
+                liveExtensionRegistration: registration,
+                virtualModelRequestRouter: request => Task.FromResult(new VirtualModelRequestRoute(
+                    request.Reason switch
+                    {
+                        "direct" => summarizer,
+                        "retry" => retry,
+                        _ => initial
+                    },
+                    new ModelDescriptor(request.Reason == "direct" ? "summary-model" : "physical", null,
+                        contextLength, null, Provider: "physical", Api: "test-api"),
+                    "physical", "off", null, null,
+                    new AutoCompactionPolicy(contextLength, ReserveTokens: 0, KeepRecentTokens: 1))));
+
+            string? persisted = null;
+            var run = await ConversationRun.OpenAsync(agent, conversation, save: _ =>
+            {
+                persisted = conversation.ToJson();
+                return Task.CompletedTask;
+            });
+            await foreach (var _ in run.RunEventsAsync("next")) { }
+
+            Assert.NotNull(beforeCompact);
+            Assert.Equal(expectedReason, beforeCompact.Reason);
+            Assert.Equal(overflow, beforeCompact.WillRetry);
+            Assert.NotNull(compacted);
+            Assert.Equal(expectedReason, compacted.Reason);
+            Assert.True(compacted.FromExtension);
+            Assert.Equal("Extension automatic checkpoint", compacted.Result.Summary);
+            Assert.Equal(456, compacted.Result.TokensBefore);
+            Assert.Equal(0, summaryRequests);
+            Assert.True(initialRequests > 0);
+            Assert.Equal(overflow ? 1 : 0, retryRequests);
+
+            var saved = ConversationSession.Parse(Assert.IsType<string>(persisted));
+            var entry = Assert.Single(saved.Tree.ActivePath(), node => node.Type == "compaction");
+            Assert.True(entry.Payload.GetProperty("fromHook").GetBoolean());
+            Assert.Equal("Extension automatic checkpoint", entry.Payload.GetProperty("summary").GetString());
+            Assert.Equal(overflow.ToString().ToLowerInvariant(),
+                entry.Payload.GetProperty("details").GetProperty("overflow").GetRawText());
+        }
+        finally { Directory.Delete(workingDirectory, recursive: true); }
+    }
+
     [Fact]
     public async Task PhysicalThresholdCompactionDispatchesBeforeCompactHook()
     {
@@ -862,6 +960,56 @@ public sealed class NativeExtensionCompactionEventTests
         finally { Directory.Delete(workingDirectory, recursive: true); }
     }
 
+    [Fact]
+    public async Task PhysicalProviderOverflowUsesCustomSummaryWithoutCallingDefaultSummarizer()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-custom-physical-overflow-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            PiSharpExtensionSessionBeforeCompactEvent? before = null;
+            PiSharpExtensionSessionCompactEvent? compacted = null;
+            adapter.AddSessionBeforeCompactHandler((eventData, _, _) =>
+            {
+                before = eventData;
+                var custom = new PiSharpExtensionCustomCompaction("Physical overflow checkpoint",
+                    eventData.Preparation.FirstKeptEntryId, 321);
+                return ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(new(Compaction: custom));
+            });
+            adapter.AddSessionCompactHandler((eventData, _, _) =>
+            {
+                compacted = eventData;
+                return ValueTask.CompletedTask;
+            });
+            adapter.Close();
+
+            var conversation = Seed(workingDirectory);
+            var client = new OverflowThenSuccessClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(workingDirectory),
+                    noBuiltinTools: true, liveExtensionRegistration: registration), conversation,
+                autoCompaction: new AutoCompactionPolicy(50000, ReserveTokens: 0, KeepRecentTokens: 1));
+
+            await foreach (var _ in run.RunEventsAsync("overflow request")) { }
+
+            Assert.NotNull(before);
+            Assert.Equal(PiSharpExtensionCompactionReason.Overflow, before.Reason);
+            Assert.True(before.WillRetry);
+            Assert.NotNull(compacted);
+            Assert.Equal(PiSharpExtensionCompactionReason.Overflow, compacted.Reason);
+            Assert.True(compacted.WillRetry);
+            Assert.True(compacted.FromExtension);
+            Assert.Equal("Physical overflow checkpoint", compacted.Result.Summary);
+            Assert.Equal(2, client.RequestCount);
+            Assert.Contains(conversation.Tree.ActivePath(), entry => entry.Type == "compaction" &&
+                entry.Payload.GetProperty("fromHook").GetBoolean() &&
+                entry.Payload.GetProperty("summary").GetString() == "Physical overflow checkpoint");
+            Assert.Contains(conversation.ActiveMessages(), message => message.Text == "retried answer");
+        }
+        finally { Directory.Delete(workingDirectory, recursive: true); }
+    }
+
     private static ConversationSession Seed(string workingDirectory)
     {
         var conversation = new ConversationSession(workingDirectory, "fixture", null);
@@ -873,12 +1021,14 @@ public sealed class NativeExtensionCompactionEventTests
     }
 
     private sealed class SummaryClient(bool fail = false, Action? onRequest = null,
-        string response = "Earlier context summary", Exception? error = null) : IChatClient
+        string response = "Earlier context summary", Exception? error = null,
+        Action<IReadOnlyList<ChatMessage>>? onMessages = null) : IChatClient
     {
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             onRequest?.Invoke();
+            onMessages?.Invoke(messages.ToArray());
             cancellationToken.ThrowIfCancellationRequested();
             return error is not null
                 ? Task.FromException<ChatResponse>(error)
@@ -892,11 +1042,48 @@ public sealed class NativeExtensionCompactionEventTests
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             onRequest?.Invoke();
+            onMessages?.Invoke(messages.ToArray());
             cancellationToken.ThrowIfCancellationRequested();
             if (error is not null) throw error;
             if (fail) throw new IOException("summary failed");
             await Task.CompletedTask;
             yield return new ChatResponseUpdate(ChatRole.Assistant, [new TextContent(response)])
+            {
+                FinishReason = ChatFinishReason.Stop
+            };
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class OverflowThenSuccessClient : IChatClient
+    {
+        private int _requestCount;
+
+        public int RequestCount => Volatile.Read(ref _requestCount);
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default)
+        {
+            var request = Interlocked.Increment(ref _requestCount);
+            cancellationToken.ThrowIfCancellationRequested();
+            return request == 1
+                ? Task.FromException<ChatResponse>(new HttpRequestException("context_length_exceeded", null,
+                    HttpStatusCode.BadRequest))
+                : Task.FromResult(new ChatResponse([new ChatMessage(ChatRole.Assistant, "retried answer")]));
+        }
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var request = Interlocked.Increment(ref _requestCount);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (request == 1)
+                throw new HttpRequestException("context_length_exceeded", null, HttpStatusCode.BadRequest);
+            await Task.CompletedTask;
+            yield return new ChatResponseUpdate(ChatRole.Assistant, [new TextContent("retried answer")])
             {
                 FinishReason = ChatFinishReason.Stop
             };

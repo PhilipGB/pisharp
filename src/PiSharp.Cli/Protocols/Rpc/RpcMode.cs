@@ -360,6 +360,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private async Task<bool> StartCloneSessionAsync(CancellationToken cancellationToken)
     {
         var current = CurrentRun;
+        var entryId = current.Conversation.Tree.HeadId;
+        if (entryId is not null)
+        {
+            var beforeFork = await current.DispatchSessionBeforeForkAsync(entryId,
+                PiSharpExtensionForkPosition.At, current.SessionFile, cancellationToken);
+            if (beforeFork?.Cancel == true)
+                throw new InvalidOperationException("Session fork was cancelled by an extension.");
+        }
         var branchSnapshot = current.Conversation.ForkForSessionReplacement(current.SessionFile);
         var branchPath = prepareCloneSession is null ? null :
             await prepareCloneSession(branchSnapshot, cancellationToken);

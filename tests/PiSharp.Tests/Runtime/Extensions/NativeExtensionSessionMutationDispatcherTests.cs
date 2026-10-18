@@ -85,6 +85,50 @@ public sealed class NativeExtensionSessionMutationDispatcherTests
     }
 
     [Fact]
+    public async Task LastNonNullNonCancelledMutationResultWins()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var invoked = new List<string>();
+        var first = Source("/extensions/first.dll");
+        var second = Source("/extensions/second.dll");
+        var third = Source("/extensions/third.dll");
+
+        registration.SetCurrentSourceInfo(first);
+        adapter.AddSessionBeforeCompactHandler((_, _, _) =>
+        {
+            invoked.Add("first");
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(new(
+                Compaction: new("first summary", "entry-1", 1)));
+        });
+        registration.SetCurrentSourceInfo(second);
+        adapter.AddSessionBeforeCompactHandler((_, _, _) =>
+        {
+            invoked.Add("second");
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(null);
+        });
+        registration.SetCurrentSourceInfo(third);
+        adapter.AddSessionBeforeCompactHandler((_, _, _) =>
+        {
+            invoked.Add("third");
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(new(
+                Compaction: new("last summary", "entry-2", 2)));
+        });
+        adapter.Close();
+        registration.OrderExtensions([first, second, third]);
+
+        var dispatcher = new NativeExtensionEventDispatcher(registration, CreateContext(), static _ => { });
+        var (result, source) = await dispatcher.DispatchSessionBeforeCompactAsync(
+            new(PiSharpExtensionCompactionReason.Manual, false,
+                new("entry-2", [], [], false, 2, null, new([], [])),
+                [new("entry-1", null, "message", DateTimeOffset.UnixEpoch)], null), CancellationToken.None);
+
+        Assert.Equal(["first", "second", "third"], invoked);
+        Assert.Equal("last summary", result?.Compaction?.Summary);
+        Assert.Equal(third.Path, source?.Path);
+    }
+
+    [Fact]
     public void CompactionAndTreeEventsExposeDetachedReadOnlySnapshots()
     {
         var original = new ChatMessage(ChatRole.User, [new TextContent("captured")]);

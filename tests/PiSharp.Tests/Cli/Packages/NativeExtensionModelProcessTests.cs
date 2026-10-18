@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using PiSharp.Cli;
+using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Resources;
 using PiSharp.Tests.TestInfrastructure;
 
 namespace PiSharp.Tests;
@@ -239,6 +241,20 @@ public sealed class NativeExtensionModelProcessTests
             Assert.Contains("native fixture Configure rollback probe", failedConfiguration.Error, StringComparison.Ordinal);
             Assert.DoesNotContain("native_fixture", failedConfiguration.Output, StringComparison.Ordinal);
             Assert.DoesNotContain("native_fixture_virtual", failedConfiguration.Output, StringComparison.Ordinal);
+
+            var nativePackages = new NativeExtensionPackageStore(fixture.AgentDirectory);
+            var failedSource = await nativePackages.InspectAsync(fixture.ProjectDirectory, v3, timeout.Token);
+            var failedRoots = await nativePackages.ResolveAsync(fixture.ProjectDirectory, trusted: true,
+                userSources: [failedSource]);
+            using var rollbackCatalog = ExtensionCatalog.Load(fixture.AgentDirectory, fixture.ProjectDirectory,
+                projectTrusted: true, nativeExtensionPackageRoots: failedRoots);
+            Assert.Contains(rollbackCatalog.Warnings,
+                warning => warning.Warning.Contains("Configure rollback probe", StringComparison.Ordinal));
+            Assert.Empty(rollbackCatalog.Registration.SessionBeforeSwitchHandlers);
+            Assert.Empty(rollbackCatalog.Registration.SessionBeforeForkHandlers);
+            Assert.Empty(rollbackCatalog.Registration.SessionBeforeTreeHandlers);
+            Assert.Empty(rollbackCatalog.Registration.SessionTreeHandlers);
+            Assert.Empty(rollbackCatalog.Registration.SessionBeforeCompactHandlers);
 
             var removed = await NativeExtensionStateProcessTests.RunCliAsync(fixture, "remove",
                 "PiSharp.TestExtensions.NativeModelFixture");

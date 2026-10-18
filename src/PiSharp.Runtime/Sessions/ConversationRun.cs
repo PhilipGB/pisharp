@@ -315,7 +315,9 @@ public sealed partial class ConversationRun
 
     private async Task<AgentSession> RestoreExecutionAsync(IEnumerable<ChatMessage> messages, CancellationToken token)
     {
+        token.ThrowIfCancellationRequested();
         var execution = await _agent.RestoreHistoryAsync(messages, token);
+        token.ThrowIfCancellationRequested();
         _toolState.Restore(execution);
         return execution;
     }
@@ -1204,8 +1206,19 @@ public sealed partial class ConversationRun
                 throw;
             }
 
-            await DispatchSessionTreeAsync(new NativeExtensions.PiSharpExtensionSessionTreeEvent(
-                oldLeafEntryId, Conversation.Tree.HeadId), cancellationToken).ConfigureAwait(false);
+            // Navigation is committed now. A caller cancellation after persistence must not
+            // suppress its completion event, and an observer must not hold the session gate
+            // indefinitely after the host has committed the new head.
+            using var observerCancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
+            try
+            {
+                await DispatchSessionTreeAsync(new NativeExtensions.PiSharpExtensionSessionTreeEvent(
+                    oldLeafEntryId, Conversation.Tree.HeadId), observerCancellation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (observerCancellation.IsCancellationRequested)
+            {
+                // The navigation is already durable. Expire only the best-effort observer.
+            }
         }
         finally
         {

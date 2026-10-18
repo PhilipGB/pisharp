@@ -142,6 +142,12 @@ public sealed class NativeExtensionSessionHooksProcessTests
             Assert.Equal("compact", response.RootElement.GetProperty("command").GetString());
             response.Dispose();
 
+            var cloneEntryId = (await store.LoadAsync(sessionPath, timeout.Token)).Tree.HeadId!;
+            using var allowedClone = await SendRpcRequestAsync(process,
+                new { id = "allowed-clone", type = "clone" }, "allowed-clone", timeout.Token);
+            Assert.True(allowedClone.RootElement.GetProperty("success").GetBoolean());
+            Assert.False(allowedClone.RootElement.GetProperty("data").GetProperty("cancelled").GetBoolean());
+
             using var newVeto = await SendRpcRequestAsync(process,
                 new { id = "veto-switch", type = "switch_session", sessionPath = destinationPath },
                 "veto-switch", timeout.Token);
@@ -182,12 +188,15 @@ public sealed class NativeExtensionSessionHooksProcessTests
             Assert.Contains(events, line => line.StartsWith("compact:True:Manual:", StringComparison.Ordinal) &&
                 line.EndsWith(":known summary from external package", StringComparison.Ordinal));
             Assert.DoesNotContain(events, line => line.StartsWith("compact-failed:", StringComparison.Ordinal));
-            Assert.Contains(events, line => line.StartsWith($"before-switch:Resume:{originalSessionId}:{destinationPath}", StringComparison.Ordinal));
+            Assert.Contains(events, line => line.StartsWith("before-switch:Resume:", StringComparison.Ordinal) &&
+                line.EndsWith($":{destinationPath}", StringComparison.Ordinal));
             Assert.Contains(events, line => line == $"before-fork:{forkEntryId}:Before");
+            Assert.Contains(events, line => line == $"before-fork:{cloneEntryId}:At");
             Assert.Contains(events, line => line == $"before-fork:{allowedForkEntryId}:Before");
             Assert.Contains(events, line => line.StartsWith($"before-switch:Resume:", StringComparison.Ordinal) &&
                 line.EndsWith($":{allowedDestinationPath}", StringComparison.Ordinal));
             Assert.Contains(events, line => line.StartsWith("before-switch:New:", StringComparison.Ordinal));
+            AssertSwitchCallbackContextsWereRevoked(events);
             Assert.Contains(events, line => line.StartsWith("session-shutdown:New:", StringComparison.Ordinal));
             Assert.Contains(events, line => line.StartsWith("session-start:New:", StringComparison.Ordinal));
             Assert.Single(events, line => line.StartsWith("session-shutdown:Resume:", StringComparison.Ordinal));
@@ -195,8 +204,8 @@ public sealed class NativeExtensionSessionHooksProcessTests
             // replacement must not produce another start or shut down that outgoing session.
             Assert.Single(events, line => line == $"session-start:Resume:{originalSessionId}");
             Assert.Single(events, line => line == $"session-start:Resume:{allowedDestination.Id}");
-            Assert.Single(events, line => line.StartsWith("session-shutdown:Fork:", StringComparison.Ordinal));
-            Assert.Single(events, line => line.StartsWith("session-start:Fork:", StringComparison.Ordinal));
+            Assert.Equal(2, events.Count(line => line.StartsWith("session-shutdown:Fork:", StringComparison.Ordinal)));
+            Assert.Equal(2, events.Count(line => line.StartsWith("session-start:Fork:", StringComparison.Ordinal)));
 
             var reloaded = await store.LoadAsync(sessionPath, timeout.Token);
             var compaction = Assert.Single(reloaded.Tree.ActivePath(), entry => entry.Type == "compaction");
@@ -260,9 +269,15 @@ public sealed class NativeExtensionSessionHooksProcessTests
         conversation.Tree.Select(originalLeaf);
         var sessionPath = store.NewPath(conversation);
         await store.SaveAsync(conversation, sessionPath);
+        var destination = new ConversationSession(fixture.ProjectDirectory,
+            "native-session-hooks-tree-fixture", "http://127.0.0.1:1/v1", "fixtureProvider");
+        destination.Append(new ChatMessage(ChatRole.User, "allowed TUI resume destination"));
+        var destinationPath = store.NewPath(destination);
+        await store.SaveAsync(destination, destinationPath);
 
         var logPath = Path.Combine(fixture.Root, "tree-session-hooks.log");
-        var process = StartTuiSessionHooksProcess(fixture, store.DirectoryPath, sessionPath, logPath, blockedLeaf);
+        var process = StartTuiSessionHooksProcess(fixture, store.DirectoryPath, sessionPath, logPath,
+            blockedLeaf, cancelFork: "At", cancelSwitch: "New");
         var stdout = new StreamCapture(process.StandardOutput);
         var stderr = new StreamCapture(process.StandardError);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
@@ -274,6 +289,18 @@ public sealed class NativeExtensionSessionHooksProcessTests
             await process.StandardInput.FlushAsync(timeout.Token);
             await stdout.WaitForAsync("Session tree navigation was cancelled by an extension.", timeout.Token);
             await stdout.WaitForAsync($"Selected {allowedLeaf[..12]}", timeout.Token);
+            await process.StandardInput.WriteAsync("/clone\r".AsMemory(), timeout.Token);
+            await process.StandardInput.FlushAsync(timeout.Token);
+            await stdout.WaitForAsync("Session fork was cancelled by an extension.", timeout.Token);
+            await process.StandardInput.WriteAsync("/new\r".AsMemory(), timeout.Token);
+            await process.StandardInput.FlushAsync(timeout.Token);
+            await stdout.WaitForAsync("Session transition was cancelled by an extension.", timeout.Token);
+            await process.StandardInput.WriteAsync("/new\r".AsMemory(), timeout.Token);
+            await process.StandardInput.FlushAsync(timeout.Token);
+            await stdout.WaitForAsync("new:", timeout.Token);
+            await process.StandardInput.WriteAsync($"/resume {destination.Id[..12]}\r".AsMemory(), timeout.Token);
+            await process.StandardInput.FlushAsync(timeout.Token);
+            await stdout.WaitForAsync($"Resumed {destination.Id[..12]}", timeout.Token);
             await process.StandardInput.WriteAsync("/quit\r".AsMemory(), timeout.Token);
             await process.StandardInput.FlushAsync(timeout.Token);
             process.StandardInput.Close();
@@ -291,6 +318,19 @@ public sealed class NativeExtensionSessionHooksProcessTests
             Assert.DoesNotContain(events, line => line.EndsWith($":{blockedLeaf}", StringComparison.Ordinal) &&
                 line.StartsWith("tree:", StringComparison.Ordinal));
             Assert.Contains(events, line => line == $"tree:{beforeTree[0][1]}:{allowedLeaf}");
+            Assert.Contains(events, line => line == $"before-fork:{allowedLeaf}:At");
+            Assert.Equal(2, events.Count(line => line == $"before-switch:New:{conversation.Id}:"));
+            Assert.Contains(events, line => line.StartsWith("before-switch:Resume:", StringComparison.Ordinal) &&
+                line.EndsWith($":{destinationPath}", StringComparison.Ordinal));
+            AssertSwitchCallbackContextsWereRevoked(events);
+            Assert.Single(events, line => line.StartsWith("session-shutdown:New:", StringComparison.Ordinal));
+            var newSessionStart = Assert.Single(events, line => line.StartsWith("session-start:New:", StringComparison.Ordinal));
+            var newSessionId = newSessionStart.Split(':')[2];
+            Assert.Single(events, line => line == $"session-start:Resume:{conversation.Id}");
+            Assert.Single(events, line => line == $"session-start:Resume:{destination.Id}");
+            Assert.Single(events, line => line == $"session-shutdown:Resume:{newSessionId}");
+            Assert.DoesNotContain(events, line => line.StartsWith("session-start:Fork:", StringComparison.Ordinal));
+            Assert.DoesNotContain(events, line => line.StartsWith("session-shutdown:Fork:", StringComparison.Ordinal));
             var reloaded = await store.LoadAsync(sessionPath, timeout.Token);
             Assert.Equal(allowedLeaf, reloaded.Tree.HeadId);
             Assert.Contains(reloaded.Tree.Entries, entry => entry.Id == blockedLeaf);
@@ -336,7 +376,7 @@ public sealed class NativeExtensionSessionHooksProcessTests
     }
 
     private static Process StartTuiSessionHooksProcess(ManagedNpmFixture fixture, string sessionDirectory,
-        string sessionPath, string logPath, string cancelTree)
+        string sessionPath, string logPath, string cancelTree, string? cancelFork = null, string? cancelSwitch = null)
     {
         var start = new ProcessStartInfo("/usr/bin/script")
         {
@@ -357,6 +397,8 @@ public sealed class NativeExtensionSessionHooksProcessTests
         start.Environment["PISHARP_SESSION_DIR"] = sessionDirectory;
         start.Environment["PISHARP_FIXTURE_KEY"] = "fixture-only-key";
         start.Environment["NATIVE_SESSION_HOOKS_CANCEL_TREE"] = cancelTree;
+        if (cancelFork is not null) start.Environment["NATIVE_SESSION_HOOKS_CANCEL_FORK"] = cancelFork;
+        if (cancelSwitch is not null) start.Environment["NATIVE_SESSION_HOOKS_CANCEL_SWITCH"] = cancelSwitch;
         start.Environment["NATIVE_SESSION_HOOKS_LOG_PATH"] = logPath;
         return Process.Start(start) ?? throw new IOException("Could not start external session-hooks TUI process.");
     }
@@ -379,6 +421,17 @@ public sealed class NativeExtensionSessionHooksProcessTests
         var error = await process.StandardError.ReadToEndAsync(cancellationToken);
         throw new EndOfStreamException($"RPC process closed before request {id} completed with exit code {process.ExitCode}. " +
             $"Records: {string.Join(" | ", records)}. Error: {error}");
+    }
+
+    private static void AssertSwitchCallbackContextsWereRevoked(IReadOnlyList<string> events)
+    {
+        var currentSessionIds = events.Where(line => line.StartsWith("before-switch:", StringComparison.Ordinal))
+            .Select(line => line.Split(':')[2]).ToArray();
+        var callbackSessionIds = events.Where(line => line.StartsWith("before-switch-context:", StringComparison.Ordinal))
+            .Select(line => line["before-switch-context:".Length..]).ToArray();
+        Assert.Equal(currentSessionIds, callbackSessionIds);
+        Assert.Equal(currentSessionIds.Length, events.Count(line => line == "before-switch-context-revoked"));
+        Assert.DoesNotContain("before-switch-context-live", events);
     }
 
     private static async Task<string> PackExternalSessionHooksPackageAsync(string outputDirectory)

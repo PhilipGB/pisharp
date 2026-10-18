@@ -118,7 +118,17 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
         SessionBranchResult branch;
         var reason = command == "/clone" ? PiSharpExtensionSessionStartReason.Fork : PiSharpExtensionSessionStartReason.New;
         if (command == "/clone")
+        {
+            var entryId = conversationBinding.Conversation.Tree.HeadId;
+            if (entryId is null)
+            {
+                Console.WriteLine("Nothing to clone yet.");
+                return;
+            }
+            await projectTransitions.BeforeSessionForkAsync(entryId, PiSharpExtensionForkPosition.At,
+                CancellationToken.None);
             branch = await projectTransitions.Sessions.CloneAsync(conversationBinding.Conversation, conversationBinding.Path);
+        }
         else
         {
             await projectTransitions.BeforeSessionSwitchAsync(PiSharpExtensionSessionSwitchReason.New,
