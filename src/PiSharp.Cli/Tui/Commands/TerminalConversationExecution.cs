@@ -52,28 +52,34 @@ internal sealed class TerminalConversationExecution
 
     public Task RunAsync(string input, IReadOnlyList<DataContent>? images = null,
         Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default,
-        Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut = null) =>
+        Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut = null,
+        PiSharpInputSource source = PiSharpInputSource.Interactive,
+        Func<string, CancellationToken, Task<bool>>? tryExecuteExtensionCommand = null) =>
         RunCoreAsync((promptExecution, transcript, cancellation) =>
             promptExecution.ExecuteAsync(input, images, _modelBinding.Selection, _projectBinding.Settings,
-                transcript, cancellation), handleApplicationAction, cancellationToken, handleExtensionShortcut);
+                transcript, cancellation, source), handleApplicationAction, cancellationToken, handleExtensionShortcut,
+            source == PiSharpInputSource.Interactive ? tryExecuteExtensionCommand : null);
 
     public Task RunCustomMessageAsync(PiSharpCustomMessage message, string? sourcePath,
         Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default,
-        Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut = null) =>
+        Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut = null,
+        Func<string, CancellationToken, Task<bool>>? tryExecuteExtensionCommand = null) =>
         RunCoreAsync((promptExecution, transcript, cancellation) =>
             promptExecution.ExecuteCustomMessageAsync(message, sourcePath, transcript, cancellation), handleApplicationAction,
-            cancellationToken, handleExtensionShortcut);
+            cancellationToken, handleExtensionShortcut, tryExecuteExtensionCommand);
 
     private async Task RunCoreAsync(
         Func<InteractivePromptExecution, InteractiveTranscript, CancellationTokenSource, Task> run,
         Func<string, Task>? handleApplicationAction, CancellationToken cancellationToken,
-        Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut)
+        Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut,
+        Func<string, CancellationToken, Task<bool>>? tryExecuteExtensionCommand)
     {
         using var runCancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var execution = new InteractivePromptExecution(_presentation.Editor, _presentation.Screen, () => Console.Error,
-            () => _projectBinding.Resources, () => _conversationBinding.Run, () => _presentation.IdleFooter(), ExecuteInteractiveBashAsync,
-            handleApplicationAction ?? (_ => Task.CompletedTask), handleExtensionShortcut);
+            () => _projectBinding.Resources, () => _conversationBinding.Run, () => _presentation.IdleFooter(),
+            () => _modelBinding.Selection, () => _projectBinding.Settings, ExecuteInteractiveBashAsync,
+            handleApplicationAction ?? (_ => Task.CompletedTask), handleExtensionShortcut, tryExecuteExtensionCommand);
         _presentation.Screen?.Activate();
         _presentation.Editor?.AttachScreen(_presentation.Screen);
         var transcript = _presentation.CreateInteractiveTranscript(interactive: !_print);

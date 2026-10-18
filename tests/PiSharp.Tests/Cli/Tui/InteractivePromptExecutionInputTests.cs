@@ -1,0 +1,104 @@
+using Microsoft.Extensions.AI;
+using PiSharp.Cli;
+using PiSharp.Cli.Tui;
+using PiSharp.Extensions.Abstractions;
+using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Sessions;
+
+namespace PiSharp.Tests;
+
+public sealed class InteractivePromptExecutionInputTests
+{
+    [Fact]
+    public async Task HandledIdleInputReturnsBeforeAuthenticationResourceResolutionAndRun()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        adapter.AddInputHandler((_, _, _) => ValueTask.FromResult<PiSharpInputResult?>(PiSharpInputResult.Handled));
+        adapter.Close();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(new RecordingClient(),
+            new CodingTools(Path.GetTempPath()), liveExtensionRegistration: registration), session);
+        var selection = CreateSelection(authenticated: false);
+        using var execution = new InteractivePromptExecution(null, null, () => TextWriter.Null,
+            () => throw new InvalidOperationException("Resource resolution should not run."), () => run, () => "",
+            () => selection, () => new UserSettings(), (_, _, _) => Task.CompletedTask,
+            _ => Task.CompletedTask, null, null);
+        using var cancellation = new CancellationTokenSource();
+        var transcript = new InteractiveTranscript(TextWriter.Null, TextWriter.Null, interactive: false);
+
+        await execution.ExecuteAsync("raw handled input", null, selection, new UserSettings(), transcript, cancellation);
+
+        Assert.Empty(session.ActiveMessages());
+    }
+
+    [Fact]
+    public async Task TransformedInputPreservesOmittedImagesAndClearsExplicitlyEmptyImages()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-tui-input-images-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            adapter.AddInputHandler((input, _, _) => ValueTask.FromResult<PiSharpInputResult?>(input.Text switch
+            {
+                "preserve" => PiSharpInputResult.Transform("preserved"),
+                "clear" => PiSharpInputResult.Transform("cleared", []),
+                _ => PiSharpInputResult.Continue
+            }));
+            adapter.Close();
+            var resources = await ResourceCatalog.LoadAsync(root, root, trusted: false, discoverSkills: false);
+            var session = new ConversationSession(root, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(new RecordingClient(),
+                new CodingTools(root), liveExtensionRegistration: registration), session);
+            var selection = CreateSelection(authenticated: true);
+            using var execution = new InteractivePromptExecution(null, null, () => TextWriter.Null,
+                () => resources, () => run, () => "", () => selection, () => new UserSettings(),
+                (_, _, _) => Task.CompletedTask, _ => Task.CompletedTask, null, null);
+            var transcript = new InteractiveTranscript(TextWriter.Null, TextWriter.Null, interactive: false);
+
+            foreach (var input in new[] { "preserve", "clear" })
+            {
+                using var cancellation = new CancellationTokenSource();
+                await execution.ExecuteAsync(input, [new DataContent(new byte[] { 1, 2, 3 }, "image/png")],
+                    selection, new UserSettings(), transcript, cancellation);
+            }
+
+            var userMessages = session.ActiveMessages().Where(message => message.Role == ChatRole.User).ToArray();
+            var preserved = Assert.Single(userMessages, message => message.Text == "preserved");
+            Assert.Contains(preserved.Contents, content => content is DataContent { MediaType: "image/png" });
+            var cleared = Assert.Single(userMessages, message => message.Text == "cleared");
+            Assert.DoesNotContain(cleared.Contents, content => content is DataContent);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static ModelSelection CreateSelection(bool authenticated)
+    {
+        var model = new ModelDescriptor("fixture-model", "fixture", 8192, "fixture", Input: ["text", "image"]);
+        var provider = new ProviderProfile("fixture", "Fixture", new Uri("http://127.0.0.1"),
+            AuthRequired: false, OAuthSupported: false, ApiKeyEnvironment: null, ConfiguredApiKey: null, [model]);
+        return new ModelSelection(provider, model, "fixture", authenticated, "fixture");
+    }
+
+    private sealed class RecordingClient : IChatClient
+    {
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation]
+            CancellationToken cancellationToken = default)
+        {
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "reply");
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+}

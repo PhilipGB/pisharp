@@ -182,15 +182,36 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 { await RespondAsync(id, type, false, "streamingBehavior must be 'steer' or 'followUp'."); break; }
                                 promptStreamingBehavior = requestedBehavior.GetString();
                             }
+                            var promptBehavior = busy ? promptStreamingBehavior switch
+                            {
+                                "steer" => PiSharpInputStreamingBehavior.Steer,
+                                "followUp" => PiSharpInputStreamingBehavior.FollowUp,
+                                _ => (PiSharpInputStreamingBehavior?)null
+                            } : null;
+                            var currentRun = CurrentRun;
+                            var intercepted = await currentRun.InterceptInputAsync(message.GetString()!, null,
+                                PiSharpInputSource.Rpc, promptBehavior, cancellationToken);
+                            if (intercepted.Action == PiSharpInputResultAction.Handled)
+                            {
+                                await RespondPromptAsync(id, true, "handled");
+                                break;
+                            }
+                            var promptText = intercepted.Action == PiSharpInputResultAction.Transform
+                                ? intercepted.Text! : message.GetString()!;
+                            var promptImages = intercepted.Action == PiSharpInputResultAction.Transform
+                                ? intercepted.Images : null;
                             string expanded;
                             try
                             {
                                 var activeResources = CurrentResources;
-                                expanded = activeResources is null ? message.GetString()! :
-                                await activeResources.ResolveInputAsync(message.GetString()!, cancellationToken, ReportResourceErrorAsync);
+                                expanded = activeResources is null ? promptText :
+                                await activeResources.ResolveInputAsync(promptText, cancellationToken, ReportResourceErrorAsync);
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
+                            var promptContents = new List<AIContent> { new TextContent(expanded) };
+                            if (promptImages is not null) promptContents.AddRange(promptImages);
+                            var promptMessage = new ChatMessage(ChatRole.User, promptContents);
                             if (busy)
                             {
                                 if (promptStreamingBehavior is null)
@@ -199,8 +220,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                         "The active run requires streamingBehavior 'steer' or 'followUp'.");
                                     break;
                                 }
-                                var currentRun = CurrentRun;
-                                currentRun.QueueRpcInput(expanded, promptStreamingBehavior == "steer",
+                                currentRun.QueueRpcInput(promptMessage, expanded, promptStreamingBehavior == "steer",
                                     item => PublishQueueUpdate(currentRun, item));
                                 await RespondPromptAsync(id, true, "queued");
                                 break;
@@ -215,7 +235,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             _abort?.Dispose();
                             _abort = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                             Volatile.Write(ref _activeSettled, 0);
-                            _active = ExecuteAsync(id, expanded, _abort.Token);
+                            _active = ExecuteAsync(id, promptMessage, expanded, _abort.Token);
                             break;
                         case "bash":
                             if (!root.TryGetProperty("command", out var bashCommand) || bashCommand.ValueKind != JsonValueKind.String)
@@ -238,17 +258,39 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                         case "follow_up":
                             if (!TryGetTextMessage(root, out var queuedMessage, out var queueError))
                             { await RespondAsync(id, type, false, queueError); break; }
+                            if (TryGetExtensionCommandName(queuedMessage!, CurrentExtensions, out var commandName))
+                            {
+                                await RespondAsync(id, type, false,
+                                    $"Extension command \"/{commandName}\" cannot be queued. Use prompt or execute the command when not streaming.");
+                                break;
+                            }
+                            var queueRun = CurrentRun;
+                            var queueBehavior = busy
+                                ? type == "steer" ? PiSharpInputStreamingBehavior.Steer : PiSharpInputStreamingBehavior.FollowUp
+                                : (PiSharpInputStreamingBehavior?)null;
+                            var queuedInput = await queueRun.InterceptInputAsync(queuedMessage!, null,
+                                PiSharpInputSource.Rpc, queueBehavior, cancellationToken);
+                            if (queuedInput.Action == PiSharpInputResultAction.Handled)
+                            {
+                                await RespondQueuedInputAsync(id, type, true, disposition: "handled");
+                                break;
+                            }
+                            var queueText = queuedInput.Action == PiSharpInputResultAction.Transform
+                                ? queuedInput.Text! : queuedMessage!;
+                            var queueImages = queuedInput.Action == PiSharpInputResultAction.Transform
+                                ? queuedInput.Images : null;
                             string queuedExpanded;
                             try
                             {
                                 var activeResources = CurrentResources;
-                                queuedExpanded = activeResources is null ? queuedMessage! :
-                                    await activeResources.ResolveInputAsync(queuedMessage!, cancellationToken, ReportResourceErrorAsync);
+                                queuedExpanded = activeResources is null ? queueText :
+                                    await activeResources.ResolveInputAsync(queueText, cancellationToken, ReportResourceErrorAsync);
                             }
                             catch (Exception error) when (error is ArgumentException or IOException)
                             { await RespondAsync(id, type, false, error.Message); break; }
-                            var queueRun = CurrentRun;
-                            queueRun.QueueRpcInput(queuedExpanded, type == "steer",
+                            var queueContents = new List<AIContent> { new TextContent(queuedExpanded) };
+                            if (queueImages is not null) queueContents.AddRange(queueImages);
+                            queueRun.QueueRpcInput(new ChatMessage(ChatRole.User, queueContents), queuedExpanded, type == "steer",
                                 item => PublishQueueUpdate(queueRun, item));
                             await RespondQueuedInputAsync(id, type, true);
                             break;
@@ -429,12 +471,24 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         return true;
     }
 
-    private async Task ExecuteAsync(JsonElement? id, string message, CancellationToken token)
+    private static bool TryGetExtensionCommandName(string text, ExtensionRegistration? extensions, out string name)
+    {
+        name = "";
+        if (extensions is null || text.Length == 0 || text[0] != '/') return false;
+        var separator = text.IndexOf(' ');
+        name = separator < 0 ? text[1..] : text[1..separator];
+        return name.Length > 0 &&
+            (extensions.Commands.ContainsKey(name) || extensions.ContextCommands.ContainsKey(name));
+    }
+
+    private async Task ExecuteAsync(JsonElement? id, ChatMessage promptMessage, string promptText, CancellationToken token)
     {
         var responded = false;
         try
         {
-            await Events.RunAsync(CurrentRun, message, token, async item =>
+            var currentRun = CurrentRun;
+            await Events.RunEventsAsync(currentRun,
+                currentRun.RunUserMessageEventsAsync(promptMessage, promptText, token), token, async item =>
             {
                 if (item.Type == "agent_settled")
                 {
@@ -523,19 +577,28 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         async (prompt, cancellationToken) =>
         {
             var currentRun = CurrentRun;
+            PiSharpInputStreamingBehavior? behavior = currentRun.IsActive
+                ? PiSharpInputStreamingBehavior.Steer : null;
+            var intercepted = await currentRun.InterceptInputAsync(prompt, null, PiSharpInputSource.Extension,
+                behavior, cancellationToken);
+            if (intercepted.Action == PiSharpInputResultAction.Handled) return;
+            var inputText = intercepted.Action == PiSharpInputResultAction.Transform ? intercepted.Text! : prompt;
+            var images = intercepted.Action == PiSharpInputResultAction.Transform ? intercepted.Images : null;
             var expanded = CurrentResources is { } activeResources
-                ? await activeResources.ResolveInputAsync(prompt, cancellationToken, ReportResourceErrorAsync)
-                : prompt;
+                ? await activeResources.ResolveInputAsync(inputText, cancellationToken, ReportResourceErrorAsync)
+                : inputText;
+            var contents = new List<AIContent> { new TextContent(expanded) };
+            if (images is not null) contents.AddRange(images);
+            var message = new ChatMessage(ChatRole.User, contents);
             if (currentRun.IsActive)
             {
-                if (!currentRun.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
+                if (!currentRun.TryQueueExtensionUserMessage(message, expanded))
                     throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
                 return;
             }
             var preflightError = promptPreflight?.Invoke();
             if (!string.IsNullOrWhiteSpace(preflightError)) throw new InvalidOperationException(preflightError);
-            await StartExtensionRunAsync(token => currentRun.RunUserMessageEventsAsync(
-                new ChatMessage(ChatRole.User, expanded), expanded, token), cancellationToken);
+            await StartExtensionRunAsync(token => currentRun.RunUserMessageEventsAsync(message, expanded, token), cancellationToken);
         };
 
     private Func<PiSharp.Extensions.Abstractions.PiSharpCustomMessage, bool,
@@ -733,9 +796,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private void PublishQueueUpdate(ConversationRun currentRun, AgentLifecycleEvent item) =>
         Events.EmitCommandLifecycleAsync(currentRun, item).GetAwaiter().GetResult();
 
-    private Task RespondQueuedInputAsync(JsonElement? id, string command, bool success, string? error = null) =>
+    private Task RespondQueuedInputAsync(JsonElement? id, string command, bool success, string? error = null,
+        string disposition = "queued") =>
         success
-            ? _writer.EmitAsync(new { id, type = "response", command, success = true, data = new { disposition = "queued" } })
+            ? _writer.EmitAsync(new { id, type = "response", command, success = true, data = new { disposition } })
             : RespondAsync(id, command, false, error);
 
     private Task RespondPromptAsync(JsonElement? id, bool success, string? disposition = null, string? error = null) =>
