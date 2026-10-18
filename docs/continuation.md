@@ -3,18 +3,25 @@
 ## Active milestone — Native Extension Session Transitions & Compaction Hooks — 2026-10-18
 
 Work is on `milestone/native-extension-session-hooks`, with implementation
-source `b7b2bbf5`, based on merged PR #12 and `main` at
+source `967c31b2`, based on merged PR #12 and `main` at
 `eef6f3f83247758d397b4e313d2c26b0088ee9ac`; configured Pi stays
 pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This bounded increment
 adds typed veto and completion hooks for session replacement, fork, tree
 navigation, and manual/automatic/overflow/virtual-model compaction. Existing
 Runtime owners retain transition preparation, canonical persistence, compaction
 planning, and history restoration. The public API, external package process
-fixture, and focused RPC, TUI, Runtime tests are in place. Local integrated
-verification passes, including 2,328 .NET tests; exact-head push and PR checks
-are recorded with the draft milestone PR. Keep broad extension parity
-`in_progress`; generic `pi.on(...)`, branch-summary injection, provider wire
-hooks, and other deferred fields remain open. See the [API guide](extensions.md)
+fixture, and focused RPC, TUI, Runtime tests are in place. A final audit against
+the pinned `agent-session-runtime.ts` and TUI caller found that Pi's `/clone`
+uses the fork hook with `position: "at"`; PiSharp now dispatches that hook in
+both TUI and RPC before clone preparation. The same audit added bounded
+post-commit `session_tree` delivery, cancellation-aware history restoration, and
+regressions for tree rollback, observer revocation, automatic custom compaction,
+and restored custom summaries. Local integrated verification passes 2,335 .NET
+tests with zero skips, architecture 7/7, Node 24/24, Python 50/50, and docs
+paths 142 documents / 547 references; the eight classified MCP conformance
+failures remain unchanged. Exact-head CI is pending on the pushed final head.
+Keep broad extension parity `in_progress`; generic `pi.on(...)`, branch-summary
+injection, provider wire hooks, and other deferred fields remain open. See the [API guide](extensions.md)
 and [milestone receipt](parity/fixtures/native-extension-session-hooks-2026-10-18.md).
 
 ## Previous milestone — Native Extension Events & Callback Context — 2026-10-18
