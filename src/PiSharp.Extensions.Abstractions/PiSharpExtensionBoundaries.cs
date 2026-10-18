@@ -52,8 +52,10 @@ public sealed record PiSharpCustomMessageEntryDraft : PiSharpSessionBoundaryDraf
         ArgumentNullException.ThrowIfNull(content);
         if (details is { ValueKind: JsonValueKind.Undefined })
             throw new ArgumentException("Details must be a JSON value when supplied.", nameof(details));
-        _content = content.Select(item => PiSharpExtensionEventSnapshots.CloneContent(
-            item ?? throw new ArgumentException("Content cannot contain null items.", nameof(content)))).ToArray();
+        var contentItems = content.ToArray();
+        if (contentItems.Any(item => item is null || !PiSharpBoundaryContentValidation.IsCustomMessageContent(item)))
+            throw new ArgumentException("Custom message content supports text and valid image data only.", nameof(content));
+        _content = contentItems.Select(PiSharpExtensionEventSnapshots.CloneContent).ToArray();
         CustomType = customType;
         Display = display;
         _details = details?.Clone();
@@ -78,9 +80,16 @@ public sealed record PiSharpContextEditEntryDraft : PiSharpSessionBoundaryDraft
     public PiSharpContextEditEntryDraft(string targetId, IEnumerable<AIContent>? replacement)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetId);
+        if (replacement is not null)
+        {
+            var replacementItems = replacement.ToArray();
+            if (replacementItems.Any(item => item is null || !PiSharpBoundaryContentValidation.IsContextEditContent(item)))
+                throw new ArgumentException(
+                    "Context edit content supports text, reasoning, valid image data, and tool calls only.",
+                    nameof(replacement));
+            _replacement = replacementItems.Select(PiSharpExtensionEventSnapshots.CloneContent).ToArray();
+        }
         TargetId = targetId;
-        _replacement = replacement?.Select(item => PiSharpExtensionEventSnapshots.CloneContent(
-            item ?? throw new ArgumentException("Replacement cannot contain null items.", nameof(replacement)))).ToArray();
     }
 
     /// <summary>Creates a text replacement for one existing entry.</summary>
@@ -284,3 +293,16 @@ public delegate ValueTask<PiSharpBoundaryResult?> PiSharpExtensionAgentBeforeSet
 public delegate ValueTask PiSharpExtensionAgentSettledHandler(
     PiSharpExtensionAgentSettledEvent eventData, PiSharpExtensionContext context,
     CancellationToken cancellationToken);
+
+internal static class PiSharpBoundaryContentValidation
+{
+    internal static bool IsCustomMessageContent(AIContent content) => content is TextContent ||
+        content is DataContent data && IsImage(data);
+
+    internal static bool IsContextEditContent(AIContent content) => content is TextContent or
+        TextReasoningContent or FunctionCallContent || content is DataContent data && IsImage(data);
+
+    private static bool IsImage(DataContent data) =>
+        data.MediaType is { } mediaType && mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) &&
+        data.Data.Length > 0;
+}
