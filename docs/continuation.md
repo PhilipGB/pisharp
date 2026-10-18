@@ -9,8 +9,8 @@ interactive, RPC, and extension-originated input before existing resource
 expansion and routes user `!`/`!!` and RPC `bash` through one ordered native
 user-bash boundary. `ConversationRun`, the existing prompt queues, the shared
 shell output/persistence pipeline, and package lifecycle retain ownership.
-Implementation and local verification are complete; exact-head CI and
-publication remain pending in the receipt. Broad extension parity remains
+Implementation and local verification are complete; draft PR #15 is open and
+final-head CI status is tracked there. Broad extension parity remains
 `in_progress`; provider wire hooks, public `exec`, advanced UI, TypeScript
 compatibility and the global audit remain deferred.
 

@@ -10,7 +10,7 @@ source-aware errors, and cancellation before existing resource expansion and
 queue/run owners. User-bash covers TUI `!`/`!!`, RPC `bash`, first-result
 precedence, fail-closed exceptions, full result replacement, custom output
 operations, cancellation, and canonical bash persistence. Local verification
-passed; exact-head CI and publication are pending in the
+passed; exact-head CI status is tracked on draft PR #15 in the
 [receipt](fixtures/native-extension-input-bash-2026-10-18.md). The broad
 extension capability remains `in_progress`.
 

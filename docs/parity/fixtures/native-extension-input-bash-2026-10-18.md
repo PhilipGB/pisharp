@@ -55,10 +55,6 @@ Local verification on that product source passed:
 
 The Linux PTY input test verifies that an unauthenticated handled input creates no provider request, a later input is transformed through both handlers before a loopback Responses request, and the terminal returns to idle before shutdown. The interactive bash PTY test verifies both `!` and `!!` replacement results, no local shell marker, preserved `excludeFromContext`, and no input-handler dispatch. Active TUI steering/follow-up and handled behavior, and active-run RPC bash deferral, also have deterministic in-process tests.
 
-Exact-head publication remains pending:
-
-- Final branch head: pending docs commit and push.
-- Draft PR URL: pending.
-- Push CI run and exact-head PR CI run: pending.
+At product/docs head `024b7272960b080526f6912bf8462c2f9673f81c`, [push CI run 39164330291](https://github.com/PhilipGB/pisharp/actions/runs/39164330291) and [PR CI run 39164339749](https://github.com/PhilipGB/pisharp/actions/runs/39164339749) both passed. This publication note is a documentation-only update, so it changes the branch head; the final-head run IDs are available in the [draft PR #15](https://github.com/PhilipGB/pisharp/pull/15) checks and completion report.
 
 Broad extension API/orchestration parity remains `in_progress`. Deferred surfaces include provider wire hooks, message lifecycle mutation, public `exec`, advanced UI/renderers, remaining tree/fork overrides, dynamic registration, provider OAuth/custom streams, TypeScript extensions, and the global parity audit.

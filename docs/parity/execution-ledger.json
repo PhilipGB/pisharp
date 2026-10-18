@@ -11882,7 +11882,7 @@
     "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "receipt": "docs/parity/fixtures/native-extension-input-bash-2026-10-18.md",
     "implementation": "Additive native input source/streaming/result contracts with ordered transform, handled, image and cancellation semantics at existing TUI/RPC/extension routes; user-bash full-result and custom-operation interception through existing shell output, cancellation and persistence owners.",
-    "verification": "Product source ed06a4c369197193280a55fc02e4cb9a67ec5966: restore, format, zero-warning build, full .NET 2,426/2,426 with zero skips, architecture 7/7, Node 24/24, Python 50/50, docs 144/558, and six timing-sensitive cases repeated 10 times all pass. MCP retains the same eight classified baseline failures and no new regressions. Exact-head push/PR CI and publication are pending; see the milestone receipt.",
+    "verification": "Product source ed06a4c369197193280a55fc02e4cb9a67ec5966: restore, format, zero-warning build, full .NET 2,426/2,426 with zero skips, architecture 7/7, Node 24/24, Python 50/50, docs 144/558, and six timing-sensitive cases repeated 10 times all pass. MCP retains the same eight classified baseline failures and no new regressions. Push run 39164330291 and PR run 39164339749 passed on product/docs head 024b7272960b080526f6912bf8462c2f9673f81c. The publication-note-only update changes the branch head; final-head CI status is tracked by draft PR #15. See the milestone receipt.",
     "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No global parity claim."
   }
 }

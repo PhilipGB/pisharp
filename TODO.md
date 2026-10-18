@@ -8,8 +8,8 @@ at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This milestone adds compiled
 extension interception for TUI, RPC, and extension-originated input, plus
 interactive and RPC user-bash commands, through the existing expansion,
 queueing, shell, cancellation, persistence, and package-lifecycle owners.
-Implementation and local acceptance evidence are complete; exact-head
-verification and publication are pending. Keep the broad extension capability
+Implementation and local acceptance evidence are complete. Draft PR #15 is
+open; final-head workflow status is tracked there. Keep the broad extension capability
 `in_progress`; provider-wire hooks, public `exec`, advanced UI, TypeScript
 compatibility and the global parity audit remain deferred.
 
