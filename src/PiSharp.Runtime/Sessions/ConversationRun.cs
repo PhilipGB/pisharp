@@ -832,11 +832,16 @@ public sealed partial class ConversationRun
                     if (conversationRunActivityStarted) _agent.EndConversationRunActivity();
                     if (nativeAgentStarted)
                     {
-                        using var settledCancellation = CancellationTokenSource.CreateLinkedTokenSource(consumerClosed.Token);
-                        settledCancellation.CancelAfter(TimeSpan.FromSeconds(2));
+                        var aborted = linked.IsCancellationRequested;
+                        using var settledCancellation = aborted
+                            ? CancellationTokenSource.CreateLinkedTokenSource(consumerClosed.Token)
+                            : CancellationTokenSource.CreateLinkedTokenSource(linked.Token, consumerClosed.Token);
+                        // An already aborted run still delivers its terminal observer, with bounded cleanup.
+                        // Normal settlement follows the owning lifetime without changing its captured outcome.
+                        if (aborted) settledCancellation.CancelAfter(TimeSpan.FromSeconds(2));
                         try
                         {
-                            await _agent.ExtensionEvents.DispatchAgentSettledAsync(new(linked.IsCancellationRequested),
+                            await _agent.ExtensionEvents.DispatchAgentSettledAsync(new(aborted),
                                 settledCancellation.Token, item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException) when (settledCancellation.IsCancellationRequested) { }

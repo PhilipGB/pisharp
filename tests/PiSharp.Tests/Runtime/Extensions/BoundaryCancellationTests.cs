@@ -206,13 +206,50 @@ public sealed class BoundaryCancellationTests
     }
 
     [Fact]
-    public async Task CancellationDuringSettledObserverDoesNotRewriteCompletedOutcomeAndRevokesContextOnRelease()
+    public async Task NormalSettledObserverRemainsActiveBeyondTwoSecondsUntilReleased()
     {
         var registration = new ExtensionRegistration();
         var adapter = new NativeExtensionRegistrationAdapter(registration);
-        var started = new TaskCompletionSource<(NativeContext Context, CancellationToken Token, bool Aborted)>(
+        var started = new TaskCompletionSource<(NativeContext Context, CancellationToken Token,
+            PiSharpExtensionAgentSettledEvent Event)>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        adapter.AddAgentSettledHandler(async (eventData, context, token) =>
+        {
+            started.TrySetResult((context, token, eventData));
+            await release.Task;
+        });
+        adapter.Close();
+
+        var fixture = await CreateRunAsync(registration, new ScriptedClient(Plan.Reply("finished")));
+        var run = ReadEventsAsync(fixture.Run, CancellationToken.None);
+        var observer = await AwaitCallbackAsync(started.Task, run);
+        try
+        {
+            // Cross the former production deadline while the handler deliberately remains pending.
+            await Task.Delay(TimeSpan.FromMilliseconds(2500));
+            Assert.False(observer.Token.IsCancellationRequested);
+            Assert.False(run.IsCompleted);
+            Assert.False(observer.Event.Aborted);
+            Assert.NotNull(observer.Context.Session!.Snapshot);
+            Assert.NotNull(observer.Context.Capabilities!.GetSessionSnapshot());
+        }
+        finally { release.TrySetResult(); }
+
+        var events = await run.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Single(events, item => item.Type == "agent_settled");
+        Assert.DoesNotContain(events, item => item.Error is not null);
+    }
+
+    [Fact]
+    public async Task CancellationDuringSettledObserverRevokesContextAndDetachesWithoutRewritingCompletedOutcome()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var started = new TaskCompletionSource<(NativeContext Context, CancellationToken Token,
+            PiSharpExtensionAgentSettledEvent Event)>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handlerFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var settledCalls = 0;
         var beforeSettle = new List<PiSharpExtensionAgentOutcome>();
         adapter.AddAgentBeforeSettleHandler((eventData, _, _) =>
@@ -223,26 +260,36 @@ public sealed class BoundaryCancellationTests
         adapter.AddAgentSettledHandler(async (eventData, context, token) =>
         {
             Interlocked.Increment(ref settledCalls);
-            started.TrySetResult((context, token, eventData.Aborted));
-            await release.Task;
+            started.TrySetResult((context, token, eventData));
+            try { await release.Task; }
+            finally { handlerFinished.TrySetResult(); }
         });
         adapter.Close();
 
         var fixture = await CreateRunAsync(registration, new ScriptedClient(Plan.Reply("finished")));
         using var cancellation = new CancellationTokenSource();
         var run = ReadEventsAsync(fixture.Run, cancellation.Token);
-        var observer = await started.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        Assert.False(observer.Aborted);
-        Assert.Equal(PiSharpExtensionAgentOutcome.Completed, Assert.Single(beforeSettle));
+        var observer = await AwaitCallbackAsync(started.Task, run);
+        var session = observer.Context.Session!;
+        var capabilities = observer.Context.Capabilities!;
+        try
+        {
+            Assert.False(observer.Event.Aborted);
+            Assert.Equal(PiSharpExtensionAgentOutcome.Completed, Assert.Single(beforeSettle));
 
-        cancellation.Cancel();
-        Assert.False(observer.Token.IsCancellationRequested);
-        release.TrySetResult();
-        var events = await run.WaitAsync(TimeSpan.FromSeconds(10));
+            cancellation.Cancel();
+            Assert.True(observer.Token.IsCancellationRequested);
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => session.AppendEntryAsync("after-cancel"));
+            Assert.Throws<ObjectDisposedException>(() => capabilities.GetSessionSnapshot());
+            var events = await run.WaitAsync(TimeSpan.FromSeconds(10));
 
-        Assert.Equal(1, settledCalls);
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => observer.Context.Session!.AppendEntryAsync("after-settled"));
-        Assert.Single(events, item => item.Type == "agent_settled");
+            Assert.False(handlerFinished.Task.IsCompleted);
+            Assert.False(observer.Event.Aborted);
+            Assert.Equal(1, settledCalls);
+            Assert.Single(events, item => item.Type == "agent_settled");
+        }
+        finally { release.TrySetResult(); }
+        await handlerFinished.Task.WaitAsync(TimeSpan.FromSeconds(10));
     }
 
     [Fact]
@@ -368,7 +415,10 @@ public sealed class BoundaryCancellationTests
         var session = new ConversationSession(Path.GetTempPath(), "boundary-cancellation", null);
         var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()), noBuiltinTools: true,
             liveExtensionRegistration: registration);
-        return new(await ConversationRun.OpenAsync(agent, session, save: save), session);
+        var run = await ConversationRun.OpenAsync(agent, session, save: save);
+        run.SetExtensionCapabilitiesFactory((_, contextSession) =>
+            new PiSharpExtensionCapabilities(null, contextSession, null));
+        return new(run, session);
     }
 
     private static async Task<IReadOnlyList<AgentLifecycleEvent>> ReadEventsAsync(ConversationRun run,
