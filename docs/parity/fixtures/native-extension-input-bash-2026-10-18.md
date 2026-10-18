@@ -79,9 +79,18 @@ passed 6/6. RPC image parsing requires `image/*`; CLI file attachments and TUI
 clipboard paths also construct only supported image media, so host-originated
 image inputs remain accepted without changes to those routes.
 
-Product fix commit and final exact-head CI run IDs are recorded in the PR #15
-completion report after publication. Broad extension parity remains
-`in_progress`.
+Product fix commit: `3c76b4dc230cda3bdcfbf026607d72b5de164a04`. Local
+verification on this correction passed format, warnings-as-errors build (0
+warnings/errors), full .NET tests (2,430 passed, 0 failed, 0 skipped with
+`TMPDIR=/tmp`), architecture tests (7/7), Node (24/24), Python (50/50), docs
+(144 documents / 558 references), and MCP conformance with no new failures and
+the same eight classified failures above. Exact-head push CI
+[39171099071](https://github.com/PhilipGB/pisharp/actions/runs/39171099071)
+and PR CI
+[39171101428](https://github.com/PhilipGB/pisharp/actions/runs/39171101428)
+both passed on the product fix commit. This receipt update is documentation-only;
+fresh exact-head CI for its resulting final branch head is recorded in the PR
+checks and completion report. Broad extension parity remains `in_progress`.
 
 At product/docs head `024b7272960b080526f6912bf8462c2f9673f81c`, [push CI run 39164330291](https://github.com/PhilipGB/pisharp/actions/runs/39164330291) and [PR CI run 39164339749](https://github.com/PhilipGB/pisharp/actions/runs/39164339749) both passed. This publication note is a documentation-only update, so it changes the branch head; the final-head run IDs are available in the [draft PR #15](https://github.com/PhilipGB/pisharp/pull/15) checks and completion report.
 
