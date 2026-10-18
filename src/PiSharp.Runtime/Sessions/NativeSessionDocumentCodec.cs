@@ -42,10 +42,12 @@ internal static class NativeSessionDocumentCodec
             if (node.Payload.ValueKind != JsonValueKind.Object ||
                 !node.Payload.TryGetProperty("summary", out var summary) || summary.ValueKind != JsonValueKind.String ||
                 string.IsNullOrWhiteSpace(summary.GetString()) || summary.GetString()!.Length > 64 * 1024 ||
-                !node.Payload.TryGetProperty("firstKeptEntryId", out var kept) || kept.ValueKind != JsonValueKind.String ||
+                !node.Payload.TryGetProperty("firstKeptEntryId", out var kept) ||
+                kept.ValueKind is not (JsonValueKind.String or JsonValueKind.Null) ||
                 node.Payload.TryGetProperty("fromHook", out var fromHook) &&
                     fromHook.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                 throw new InvalidDataException($"Invalid compaction at {node.Id}.");
+            if (kept.ValueKind == JsonValueKind.Null || kept.GetString() == node.Id) continue;
             tree.Select(node.ParentId);
             var path = tree.ActivePath();
             var boundary = path.ToList().FindIndex(entry => entry.Id == kept.GetString());

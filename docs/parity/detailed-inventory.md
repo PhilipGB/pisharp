@@ -1,5 +1,30 @@
 # Detailed reference interface inventory — interfaces originally inventoried at 7c696c00 (current Pi pin 955cc666; TUI delta reviewed 2026-09-25)
 
+## Active milestone — Native Extension Agent Settlement & Mutable Turn Boundaries — 2026-10-18
+
+Branch `milestone/native-extension-agent-settlement` starts from PR #13's actual
+merge on `main`, `ca47d554bd48887147100ab11195c8086361963d`. PR #13 was merged
+only after its expected head and both exact-head CI runs passed verification.
+Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+The additive SDK exposes four canonical boundary draft kinds, detached previews,
+ordered mutable turn-end and pre-settlement handlers, and a typed settled
+observer. `ConversationRun` retains prompt, retry, compaction and settlement
+ownership; MAF tool continuation reaches an awaited boundary before the next
+provider call. Existing turn observers keep their delegate and run before the
+mutable chain. Draft preview and commit share one canonical mapper; restoration
+and save failures roll back provisional entries and suppress continuation.
+
+Focused Runtime and external `.nupkg`/RPC acceptance cover continuation,
+provider-visible context, retries, tools, abort, save failure, compaction,
+package replacement/removal, collection of old load contexts, and fresh-process
+resume. Final integrated verification and publication are recorded in the
+receipt. Broad extension parity remains `in_progress`; provider wire/input
+hooks, advanced UI, TypeScript compatibility and the global audit stay deferred.
+
+See the [milestone receipt](fixtures/native-extension-agent-settlement-2026-10-18.md).
+
+
 Current execution status and the ordered Luna queue are in [the handover](../continuation.md) and `sol_luna_handover` in [the ledger](execution-ledger.json). Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` is the audited cutoff; all 194 IDs remain required. Instruction/trust, defaultProjectTrust and enableSkillCommands have current bounded closure evidence. Historical descriptions below do not supersede those contracts.
 
 ## Current audit checkpoint — 2026-10-12

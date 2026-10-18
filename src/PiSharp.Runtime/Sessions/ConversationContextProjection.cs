@@ -8,6 +8,19 @@ namespace PiSharp.Runtime.Sessions;
 /// <summary>Projects canonical branches into model context, usage estimates and compaction boundaries.</summary>
 internal static class ConversationContextProjection
 {
+    internal static IReadOnlyList<ConversationNode> ContextEntries(IReadOnlyList<ConversationNode> path)
+    {
+        var compactAt = path.ToList().FindLastIndex(node => node.Type == "compaction");
+        if (compactAt < 0) return path;
+        var compaction = path[compactAt];
+        var kept = compaction.Payload.GetProperty("firstKeptEntryId").GetString();
+        var from = kept is null ? compactAt : path.ToList().FindIndex(node => node.Id == kept);
+        if (from < 0 || from > compactAt) throw new InvalidDataException("Invalid compaction boundary.");
+        return new[] { compaction }.Concat(path.Skip(from).Take(compactAt - from)
+                .Where(node => ContextMessageForNode(node)?.Role != ChatRole.System))
+            .Concat(path.Skip(compactAt + 1)).ToArray();
+    }
+
     public static ContextUsageProjection ProjectContextUsageForEstimate(IReadOnlyList<ConversationNode> path)
     {
         var compactIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
@@ -125,11 +138,11 @@ internal static class ConversationContextProjection
         {
             var compact = path[compactAt].Payload;
             var kept = compact.GetProperty("firstKeptEntryId").GetString();
-            from = path.ToList().FindIndex(node => node.Id == kept);
+            from = kept is null ? compactAt : path.ToList().FindIndex(node => node.Id == kept);
             var piBoundary = PiJsonlEntryCodec.OriginalEntry(path[compactAt]) is not null;
-            if (from < 0 || from >= compactAt)
+            if (from < 0 || from > compactAt)
                 throw new InvalidDataException("Invalid compaction boundary.");
-            if (!piBoundary)
+            if (!piBoundary && from != compactAt)
             {
                 var role = ContextMessageForNode(path[from])?.Role;
                 if (role != ChatRole.User && role != ChatRole.Assistant)
@@ -170,8 +183,8 @@ internal static class ConversationContextProjection
         if (compactionIndex >= 0)
         {
             var firstKeptId = path[compactionIndex].Payload.GetProperty("firstKeptEntryId").GetString();
-            retainedFrom = path.ToList().FindIndex(node => node.Id == firstKeptId);
-            if (retainedFrom < 0 || retainedFrom >= compactionIndex)
+            retainedFrom = firstKeptId is null ? compactionIndex : path.ToList().FindIndex(node => node.Id == firstKeptId);
+            if (retainedFrom < 0 || retainedFrom > compactionIndex)
                 throw new InvalidDataException("Invalid compaction boundary.");
         }
 
@@ -225,8 +238,8 @@ internal static class ConversationContextProjection
         if (compactIndex >= 0)
         {
             var firstKeptId = path[compactIndex].Payload.GetProperty("firstKeptEntryId").GetString();
-            retainedFrom = path.ToList().FindIndex(node => node.Id == firstKeptId);
-            if (retainedFrom < 0 || retainedFrom >= compactIndex || sourceIndex < retainedFrom) return null;
+            retainedFrom = firstKeptId is null ? compactIndex : path.ToList().FindIndex(node => node.Id == firstKeptId);
+            if (retainedFrom < 0 || retainedFrom > compactIndex || sourceIndex < retainedFrom) return null;
         }
 
         var edits = new Dictionary<string, JsonElement>(StringComparer.Ordinal);

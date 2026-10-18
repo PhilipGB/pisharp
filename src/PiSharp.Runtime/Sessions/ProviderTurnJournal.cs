@@ -13,6 +13,7 @@ internal sealed class ProviderTurnJournal(ConversationSession conversation,
     private readonly ProviderTurnHistoryReconciler _history = new();
     private readonly ConcurrentDictionary<string, PiSharpNestedToolCalls> _nestedCalls = new(StringComparer.Ordinal);
     private readonly List<ChatMessage> _toolResults = [];
+    private int _completedPathLength = conversation.Tree.ActivePath().Count;
     public ChatMessage? Response { get; set; }
     public StringBuilder PartialAssistantText { get; } = new();
 
@@ -51,9 +52,14 @@ internal sealed class ProviderTurnJournal(ConversationSession conversation,
         var provider = ObservedChatClient.NormalizeReadImagesForHistory(providerHistory());
         var canonical = hasCompacted() ? conversation.ActiveMessages() : conversation.ContextMessages();
         AppendMissingMessages(hasCompacted() ? provider.Skip(historyCount()) : provider, canonical);
-        foreach (var result in _history.MissingToolResults(conversation.ContextMessages()))
+        if (completed.Message is { } assistant && !conversation.Tree.ActivePath().Skip(_completedPathLength)
+                .Any(entry => entry.Type == "chat" && ProviderTurnHistoryReconciler.AreEquivalent(
+                    ConversationMessageCodec.RestoreEntry(entry), assistant)))
+            conversation.Append(assistant);
+        foreach (var result in _history.MissingToolResults(conversation.ActiveMessages()))
             foreach (var normalized in ObservedChatClient.NormalizeReadImagesForHistory([result]))
                 conversation.Append(normalized, NestedCallsFor(normalized));
+        _completedPathLength = conversation.Tree.ActivePath().Count;
         return completed;
     }
 

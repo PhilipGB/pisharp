@@ -19,12 +19,15 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<IReadOnlyList<ChatMessage>, ChatOptions, System.Text.Json.JsonElement?>? projectToolTranscript = null,
     Func<string?>? getSystemInstructions = null,
     Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null,
-    Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null)
+    Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
+    Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? prepareTurnAsync = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
+        if (prepareTurnAsync is not null)
+            messages = await prepareTurnAsync(messages.ToArray(), cancellationToken).ConfigureAwait(false);
         publish(new("model_request_started"));
         var original = WithSteering(await WithContextMessagesAsync(messages, cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
@@ -72,6 +75,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        if (prepareTurnAsync is not null)
+            messages = await prepareTurnAsync(messages.ToArray(), cancellationToken).ConfigureAwait(false);
         publish(new("model_request_started"));
         var original = WithSteering(await WithContextMessagesAsync(messages, cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);

@@ -73,12 +73,33 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         NativeExtensions.PiSharpExtensionContext publicContext, CancellationToken cancellationToken,
         Func<ValueTask<TResult?>> invoke) where TResult : class
     {
+        var revoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var cancellationRegistration = cancellationToken.Register(static state =>
         {
-            try { ((NativeExtensions.PiSharpExtensionContext)state!).Dispose(); }
-            catch (Exception) { }
-        }, publicContext);
-        try { return await invoke().ConfigureAwait(false); }
+            var (context, completion) =
+                ((NativeExtensions.PiSharpExtensionContext, TaskCompletionSource))state!;
+            try { context.Dispose(); }
+            catch (Exception)
+            {
+                // Cancellation callbacks must not break host cancellation cleanup.
+            }
+            finally { completion.TrySetResult(); }
+        }, (publicContext, revoked));
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var handlerTask = invoke().AsTask();
+            if (!handlerTask.IsCompleted)
+            {
+                var completed = await Task.WhenAny(handlerTask, revoked.Task).ConfigureAwait(false);
+                if (completed == revoked.Task)
+                {
+                    ObserveIfFaulted(handlerTask);
+                    throw new OperationCanceledException(cancellationToken);
+                }
+            }
+            return await handlerTask.ConfigureAwait(false);
+        }
         finally { publicContext.Dispose(); }
     }
 }
