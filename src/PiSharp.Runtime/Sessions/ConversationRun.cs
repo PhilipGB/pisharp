@@ -1050,9 +1050,8 @@ public sealed class ConversationRun
                 else if (completedResult is null && terminalErrorMessage is null)
                 {
                     failureDispatchStarted = true;
-                    await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
-                        NativeExtensions.PiSharpExtensionCompactionReason.Manual, willRetry: false,
-                        aborted: true, errorMessage: null, CancellationToken.None).ConfigureAwait(false);
+                    await NativeExtensionCompactionEventPublisher.PublishAbortedAsync(_agent,
+                        NativeExtensions.PiSharpExtensionCompactionReason.Manual).ConfigureAwait(false);
                 }
                 throw;
             }
@@ -1361,9 +1360,8 @@ public sealed class ConversationRun
                         else if (completedResult is null && terminalErrorMessage is null)
                         {
                             failureDispatchStarted = true;
-                            await NativeExtensionCompactionEventPublisher.PublishFailedAsync(_agent,
-                                NativeExtensions.PiSharpExtensionCompactionReason.Threshold, willRetry: false,
-                                aborted: true, errorMessage: null, cancellationToken: CancellationToken.None)
+                            await NativeExtensionCompactionEventPublisher.PublishAbortedAsync(_agent,
+                                NativeExtensions.PiSharpExtensionCompactionReason.Threshold)
                                 .ConfigureAwait(false);
                         }
                         throw;

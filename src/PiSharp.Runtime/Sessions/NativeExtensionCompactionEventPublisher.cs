@@ -6,6 +6,8 @@ namespace PiSharp.Runtime.Sessions;
 
 internal static class NativeExtensionCompactionEventPublisher
 {
+    private static readonly TimeSpan AbortedObserverTimeout = TimeSpan.FromMilliseconds(250);
+
     public static Task PublishCompletedAsync(PiAgent agent, ConversationSession conversation,
         ConversationCompactionResult result, PiSharpExtensionCompactionReason reason, bool willRetry,
         CancellationToken cancellationToken)
@@ -29,5 +31,19 @@ internal static class NativeExtensionCompactionEventPublisher
         ArgumentNullException.ThrowIfNull(agent);
         return agent.ExtensionEvents.DispatchSessionCompactFailedAsync(new(reason, willRetry, aborted,
             aborted ? null : errorMessage, FromExtension: false), cancellationToken);
+    }
+
+    public static async Task PublishAbortedAsync(PiAgent agent, PiSharpExtensionCompactionReason reason)
+    {
+        using var observerTimeout = new CancellationTokenSource(AbortedObserverTimeout);
+        try
+        {
+            await PublishFailedAsync(agent, reason, willRetry: false, aborted: true, errorMessage: null,
+                observerTimeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (observerTimeout.IsCancellationRequested)
+        {
+            // Cancellation cleanup must not wait indefinitely for a terminal extension observer.
+        }
     }
 }

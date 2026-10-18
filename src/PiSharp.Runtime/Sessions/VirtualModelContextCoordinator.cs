@@ -49,9 +49,9 @@ internal sealed class VirtualModelContextCoordinator(ConversationSession convers
             if (!compactionCompleted)
             {
                 publish(new("compaction_end") { CompactionReason = force ? "overflow" : "threshold", CompactionAborted = true });
-                await NativeExtensionCompactionEventPublisher.PublishFailedAsync(agent,
-                    force ? PiSharpExtensionCompactionReason.Overflow : PiSharpExtensionCompactionReason.Threshold,
-                    willRetry: false, aborted: true, errorMessage: null, CancellationToken.None).ConfigureAwait(false);
+                await NativeExtensionCompactionEventPublisher.PublishAbortedAsync(agent,
+                    force ? PiSharpExtensionCompactionReason.Overflow : PiSharpExtensionCompactionReason.Threshold)
+                    .ConfigureAwait(false);
             }
             else if (!completionPublished)
             {

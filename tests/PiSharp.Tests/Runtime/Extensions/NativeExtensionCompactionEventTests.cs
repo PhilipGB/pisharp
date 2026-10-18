@@ -212,6 +212,61 @@ public sealed class NativeExtensionCompactionEventTests
     }
 
     [Fact]
+    public async Task ManualCompactionCancellationDoesNotWaitForFailureObserverOrHoldExecutionGate()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-compact-observer-cancel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        var observerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completeObserver = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            PiSharpExtensionSessionCompactFailedEvent? failed = null;
+            var observerToken = CancellationToken.None;
+            adapter.AddSessionCompactFailedHandler((eventData, _, cancellationToken) =>
+            {
+                failed = eventData;
+                observerToken = cancellationToken;
+                observerStarted.TrySetResult();
+                return new ValueTask(completeObserver.Task);
+            });
+            adapter.Close();
+
+            using var cancellation = new CancellationTokenSource();
+            var summaryRequests = 0;
+            var summaryClient = new SummaryClient(onRequest: () =>
+            {
+                if (Interlocked.Increment(ref summaryRequests) == 1) cancellation.Cancel();
+            });
+            var conversation = Seed(workingDirectory);
+            var agent = new PiAgent(summaryClient, new CodingTools(workingDirectory),
+                liveExtensionRegistration: registration);
+            var run = await ConversationRun.OpenAsync(agent, conversation);
+
+            var cancelledCompaction = run.CompactWithResultAsync(cancellationToken: cancellation.Token);
+            await observerStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                cancelledCompaction.WaitAsync(TimeSpan.FromSeconds(5)));
+
+            Assert.NotNull(failed);
+            Assert.True(failed.Aborted);
+            Assert.True(observerToken.IsCancellationRequested);
+
+            var nextCompaction = await run.CompactWithResultAsync(cancellationToken: CancellationToken.None)
+                .WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.NotNull(nextCompaction);
+            Assert.Equal(2, summaryRequests);
+        }
+        finally
+        {
+            completeObserver.TrySetResult();
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task VirtualRouteThresholdCompactionPublishesAfterPersistenceBeforeCompactionEnd()
     {
         var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-compact-threshold-event-" + Guid.NewGuid().ToString("N"));
