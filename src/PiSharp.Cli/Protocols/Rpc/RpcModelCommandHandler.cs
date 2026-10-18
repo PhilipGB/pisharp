@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 
@@ -11,6 +12,7 @@ internal sealed class RpcModelCommandHandler(
     Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverModels,
     Func<string?, CancellationToken, Task<IReadOnlyList<ModelDescriptor>>>? discoverCycleModels,
     Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? setModel,
+    Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? cycleModel,
     Func<ModelDescriptor, JsonElement> projectModel,
     Func<ConversationRun> currentRun,
     Func<string?>? getThinkingLevel,
@@ -98,7 +100,8 @@ internal sealed class RpcModelCommandHandler(
                         await writer.EmitAsync(new { id, type = "response", command, success = true, data = (object?)null }, cancellationToken);
                         return true;
                     }
-                    if (setModel is null) { await respond(id, command, false, "Model selection is unavailable."); return true; }
+                    var selectCycleModel = cycleModel ?? setModel;
+                    if (selectCycleModel is null) { await respond(id, command, false, "Model selection is unavailable."); return true; }
                     var current = currentRun();
                     var currentIndex = Array.FindIndex(models, model =>
                         model.Provider?.Equals(current.CurrentProvider, StringComparison.Ordinal) == true &&
@@ -106,7 +109,7 @@ internal sealed class RpcModelCommandHandler(
                     if (currentIndex < 0) currentIndex = 0;
                     var candidate = models[(currentIndex + 1) % models.Length];
                     var previousThinking = getThinkingLevel?.Invoke();
-                    var selectedModel = await setModel(candidate, cancellationToken);
+                    var selectedModel = await selectCycleModel(candidate, cancellationToken);
                     var selectedThinking = getThinkingLevel?.Invoke();
                     if (selectedThinking is not null &&
                         !string.Equals(previousThinking, selectedThinking, StringComparison.Ordinal))

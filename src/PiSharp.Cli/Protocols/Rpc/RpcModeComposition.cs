@@ -133,6 +133,10 @@ internal static class RpcModeComposition
                 cancel,
                 shutdown),
             createSettingsFlagContext: sourcePath =>
-                PiSharpExtensionSettingsFlagContextFactory.Create(projectBinding, sourcePath)).ServeAsync();
+                PiSharpExtensionSettingsFlagContextFactory.Create(projectBinding, sourcePath),
+            cycleModel: (model, token) => modelTransitions.SelectRpcModelAsync(model,
+                PiSharpExtensionModelSelectionSource.Cycle, token),
+            installExtensionCapabilitiesFactory: conversationBinding.SetExtensionCapabilitiesFactory,
+            getSystemPrompt: () => modelBinding.Agent.SystemInstructions).ServeAsync();
     }
 }

@@ -1,6 +1,26 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Native Extension Provider, MCP & Virtual Model Registration — 2026-10-17
+## Active milestone — Native Extension Events & Callback Context — 2026-10-18
+
+Work is on `milestone/native-extension-events-context`, based on PR #11 merge
+`1a0165c3858d973948c9ac8eb698e75ed0fcc535`; configured Pi stays pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This bounded increment adds typed
+compiled-extension observers for session metadata, compaction, agent and turn
+lifecycle, tool execution, model selection, and thinking-level changes. Events
+reuse the current Runtime/session owners, preserve registration order and
+source-aware error isolation, and expose detached payloads with callback-scoped
+state access. TUI/RPC contexts reuse existing controls; print/JSON and direct
+Runtime execution use read-only context where host controls are unavailable.
+
+The final source is `8f31c7ec1ef35882a8ea98a8988c18289dbaf206`. Exact-head push
+and PR Linux CI both pass, including 2,306 .NET tests. A cancelled event token
+revokes the public callback context even if its handler remains pending. Keep
+the broad Extensions / .NET API row `in_progress`; this milestone does not
+implement generic `pi.on(...)`, mutable turn-boundary hooks, or provider-specific
+OAuth/rendering work. See the [API guide](extensions.md) and
+[milestone receipt](parity/fixtures/native-extension-events-context-2026-10-17.md).
+
+## Previous milestone — Native Extension Provider, MCP & Virtual Model Registration — 2026-10-17
 
 Work is on `milestone/native-extension-provider-mcp-virtual-models`, based on
 the PR #10 merge `632bd08b87afb10ac6669b4072d08a8e3b452687`; configured Pi stays

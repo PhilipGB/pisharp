@@ -116,6 +116,9 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     public ChatMessage? ToolResultMessage { get; init; }
 
     [JsonIgnore]
+    internal bool? NativeToolObserverOnly { get; init; }
+
+    [JsonIgnore]
     public ChatMessage? TurnMessage { get; init; }
 
     [JsonIgnore]

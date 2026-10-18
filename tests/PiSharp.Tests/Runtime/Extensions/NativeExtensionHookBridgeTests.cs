@@ -11,6 +11,57 @@ namespace PiSharp.Tests;
 public sealed class NativeExtensionHookBridgeTests
 {
     [Fact]
+    public async Task LifecycleCapabilitiesShareSessionBridgeAndAreRevokedAfterCallback()
+    {
+        var cwd = NewWorkingDirectory();
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            NativeExtensions.PiSharpExtensionContext? observedContext = null;
+            NativeExtensions.PiSharpExtensionModelInfo? observedModel = null;
+            adapter.AddBeforeAgentStartHandler((_, context, _) =>
+            {
+                observedContext = context;
+                Assert.NotNull(context.Capabilities);
+                Assert.NotNull(context.Session);
+                observedModel = context.Capabilities.GetModel();
+                Assert.Equal(context.Session.SessionId,
+                    context.Capabilities.GetSessionSnapshot()!.SessionId);
+                return ValueTask.FromResult<NativeExtensions.PiSharpBeforeAgentStartResult?>(null);
+            });
+            adapter.Close();
+
+            var agent = new PiAgent(new HookBridgeClient(), new CodingTools(cwd), noBuiltinTools: true,
+                beforeAgentStartHandlers: registration.BeforeAgentStartHandlers,
+                extensionContextConfiguration: new PiSharpExtensionContextConfiguration(
+                    cwd, "print", false, true, new TestExtensionUi()));
+            var run = await ConversationRun.OpenAsync(agent, new ConversationSession(cwd, "test-model", null));
+            NativeExtensions.PiSharpExtensionSessionContext? factorySession = null;
+            run.SetExtensionCapabilitiesFactory((source, session) =>
+            {
+                Assert.Null(source);
+                factorySession = session;
+                return new NativeExtensions.PiSharpExtensionCapabilities(null, session, null,
+                    getModel: () => new("fixture", "model", "Fixture", 4096, true),
+                    getThinkingLevel: () => NativeExtensions.PiSharpThinkingLevel.Off,
+                    getActiveTools: () => Array.Empty<string>(),
+                    getConfiguredTools: () => Array.Empty<NativeExtensions.PiSharpExtensionToolInfo>());
+            });
+
+            await foreach (var _ in run.RunEventsAsync("inspect extension context")) { }
+
+            Assert.NotNull(observedContext);
+            Assert.Same(factorySession, observedContext.Session);
+            Assert.Equal("model", observedModel!.ModelId);
+            var observedCapabilities = observedContext.Capabilities!;
+            Assert.Throws<ObjectDisposedException>(() => observedCapabilities.GetModel());
+            Assert.Throws<ObjectDisposedException>(() => observedContext.Session!.Snapshot);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task PublicBeforeAgentStartContextCapturesCurrentTrustIdleAndPendingState()
     {
         var cwd = NewWorkingDirectory();

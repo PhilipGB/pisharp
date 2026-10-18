@@ -16,6 +16,8 @@ internal sealed class ProviderTurnJournal(ConversationSession conversation,
     public ChatMessage? Response { get; set; }
     public StringBuilder PartialAssistantText { get; } = new();
 
+    public ProviderTurnSnapshot SnapshotTurn() => new(Response, Array.AsReadOnly(_toolResults.ToArray()));
+
     public PiSharpNestedToolCalls? NestedCallsFor(ChatMessage message)
     {
         var callId = message.Contents.OfType<FunctionResultContent>().FirstOrDefault()?.CallId;
@@ -30,12 +32,13 @@ internal sealed class ProviderTurnJournal(ConversationSession conversation,
     }
 
     // The caller holds ConversationRun's runtime-state lock for result capture and turn closure.
-    public void CompleteTurn()
+    public ProviderTurnSnapshot CompleteTurn()
     {
+        var completed = SnapshotTurn();
         if (Response is not null)
         {
-            var response = Response;
-            var toolResults = _toolResults.ToArray();
+            var response = completed.Message!;
+            var toolResults = completed.ToolResults;
             _history.RecordCompletedTurn(response, toolResults);
             publish?.Invoke(new AgentLifecycleEvent("assistant_turn_completed")
             {
@@ -51,6 +54,7 @@ internal sealed class ProviderTurnJournal(ConversationSession conversation,
         foreach (var result in _history.MissingToolResults(conversation.ContextMessages()))
             foreach (var normalized in ObservedChatClient.NormalizeReadImagesForHistory([result]))
                 conversation.Append(normalized, NestedCallsFor(normalized));
+        return completed;
     }
 
     public void RestoreMissingMessages(List<ChatMessage> provider) => _history.RestoreMissingMessages(provider);
@@ -82,3 +86,5 @@ internal sealed class ProviderTurnJournal(ConversationSession conversation,
         }
     }
 }
+
+internal sealed record ProviderTurnSnapshot(ChatMessage? Message, IReadOnlyList<ChatMessage> ToolResults);

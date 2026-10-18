@@ -43,7 +43,29 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         var id = execution is null ? Guid.NewGuid().ToString("N") :
             await execution.StartToolAsync(Name, arguments, cancellationToken);
         var displayArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        publish(new AgentLifecycleEvent("tool_execution_started", Tool: Name, OperationId: id)
+        {
+            ToolArguments = callArguments ?? displayArguments,
+            ToolCallId = toolCallId,
+            ParentToolCallId = parentToolCallId,
+            NativeToolObserverOnly = false
+        });
         PiSharpToolExecutionContext? toolExecutionContext = null;
+        var toolStartedPublished = false;
+        void PublishToolStarted()
+        {
+            if (toolStartedPublished) return;
+            toolStartedPublished = true;
+            displayArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+            toolExecutionContext?.SetArguments(displayArguments);
+            publish(new AgentLifecycleEvent("tool_execution_started", Tool: Name, OperationId: id)
+            {
+                ToolArguments = displayArguments,
+                ToolCallId = toolCallId,
+                ParentToolCallId = parentToolCallId,
+                NativeToolObserverOnly = true
+            });
+        }
         if (loadout is not null)
         {
             Action<string>? onNestedUpdate = nestedInvocation?.OnUpdate is { } onUpdate
@@ -57,12 +79,6 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                 : nestedInvocation.Parent.ForToolCall(toolCallId, parentToolCallId, id, Name,
                     callArguments ?? displayArguments, onNestedUpdate);
         }
-        publish(new AgentLifecycleEvent("tool_execution_started", Tool: Name, OperationId: id)
-        {
-            ToolArguments = callArguments ?? displayArguments,
-            ToolCallId = toolCallId,
-            ParentToolCallId = parentToolCallId
-        });
         object? value = null;
         Exception? failure = null;
         long? startedAt = null;
@@ -84,7 +100,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                     if (toolExecutionContext is null)
                         publish(new AgentLifecycleEvent("tool_execution_update", Text: text, Tool: Name, OperationId: id)
                         {
-                            ToolArguments = callArguments ?? displayArguments,
+                            ToolArguments = displayArguments,
                             ToolCallId = toolCallId,
                             ParentToolCallId = parentToolCallId
                         });
@@ -103,6 +119,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             await (toolHooks?.BeforeAsync(new PiSharpToolCallContext(Name, toolCallId, parentToolCallId,
                 invocationArguments, reachesTools, toolNamespace), cancellationToken) ?? ValueTask.CompletedTask);
             displayArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+            PublishToolStarted();
             startedAt = Stopwatch.GetTimestamp();
             value = await base.InvokeCoreAsync(invocationArguments, cancellationToken);
         }
@@ -222,8 +239,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             toolResultMessage = new ChatMessage(ChatRole.Tool, [resultContent]);
         }
         publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
-            IsError: resultContext.IsError, Error: resultContext.Error,
-            Details: hasStructuredOutput ? details : null, Cost: contract?.Cost)
+                IsError: resultContext.IsError, Error: resultContext.Error,
+                Details: hasStructuredOutput ? details : null, Cost: contract?.Cost)
         {
             DurationMs = durationMs,
             Images = toolImages,

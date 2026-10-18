@@ -31,6 +31,18 @@ public sealed partial class ExtensionRegistration
                 OrderList(_contextTransforms, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_lifecycleHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_beforeAgentStartHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_sessionInfoChangedHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_sessionCompactHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_sessionCompactFailedHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_agentStartHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_agentEndHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_turnStartHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_turnEndHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_toolExecutionStartHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_toolExecutionUpdateHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_toolExecutionEndHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_modelSelectHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_thinkingLevelSelectHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_resourceDiscoveryHandlers, entry => Rank(entry.ExtensionSource.Path));
                 OrderList(_projectTrustHandlers, entry => Rank(entry.SourceInfo.Path));
             }

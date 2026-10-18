@@ -133,6 +133,18 @@ public sealed partial class ExtensionRegistration
         _beforeAgentStartHandlers.Clear();
         _sessionStartHandlers.Clear();
         _sessionShutdownHandlers.Clear();
+        _sessionInfoChangedHandlers.Clear();
+        _sessionCompactHandlers.Clear();
+        _sessionCompactFailedHandlers.Clear();
+        _agentStartHandlers.Clear();
+        _agentEndHandlers.Clear();
+        _turnStartHandlers.Clear();
+        _turnEndHandlers.Clear();
+        _toolExecutionStartHandlers.Clear();
+        _toolExecutionUpdateHandlers.Clear();
+        _toolExecutionEndHandlers.Clear();
+        _modelSelectHandlers.Clear();
+        _thinkingLevelSelectHandlers.Clear();
         _resourceDiscoveryHandlers.Clear();
         _projectTrustHandlers.Clear();
         lock (_mcpGate) _mcpServers.Clear();

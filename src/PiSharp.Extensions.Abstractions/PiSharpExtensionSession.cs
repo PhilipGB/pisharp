@@ -109,7 +109,14 @@ public sealed class PiSharpExtensionSessionContext : IDisposable
     }
 
     /// <summary>Gets a fresh read-only projection of the active branch.</summary>
-    public PiSharpExtensionSessionSnapshot Snapshot => _getSnapshot();
+    public PiSharpExtensionSessionSnapshot Snapshot
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(Volatile.Read(ref _isActive) == 0, this);
+            return _getSnapshot();
+        }
+    }
 
     /// <summary>The stable session identifier.</summary>
     public string SessionId => Snapshot.SessionId;

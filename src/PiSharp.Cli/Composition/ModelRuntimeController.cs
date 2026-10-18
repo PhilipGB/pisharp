@@ -114,21 +114,24 @@ internal sealed class ModelRuntimeController(
             selection.Model.ThinkingLevelMap);
     }
 
-    public async Task ApplySelectionAsync(ModelSelection selection, string thinkingLevel,
+    public async Task<bool> ApplySelectionAsync(ModelSelection selection, string thinkingLevel,
         PiAgent activeAgent, ConversationRun activeRun, Action<PreparedModelRuntime> updateCurrent,
-        Func<PreparedModelRuntime, Task> replaceIdle)
+        Func<PreparedModelRuntime, Task> replaceIdle,
+        Func<PreparedModelRuntime, CancellationToken, Task>? notifyAfterActivation = null)
     {
         var prepared = Prepare(selection, thinkingLevel);
         if (activeRun.TrySetModelDuringRun(prepared.Selection.Model.Id,
             prepared.Connection.Endpoint?.ToString(), prepared.Selection.Provider.Id,
             prepared.Pricing, prepared.ContextPolicy, prepared.KeepRecentTokens, prepared.Thinking, prepared.ReasoningOptions,
             () => activeAgent.SetModelRuntime(prepared.ChatClient, prepared.SupportsImages, prepared.ImageResizeOptions,
-                prepared.VirtualModelRouter), providerApi: ProviderChatClientFactory.ResolveProtocol(prepared.Selection)))
+                prepared.VirtualModelRouter), providerApi: ProviderChatClientFactory.ResolveProtocol(prepared.Selection),
+            notifyAfterActivation: notifyAfterActivation is null ? null : token =>
+                notifyAfterActivation(prepared, token), updateSelectionOwner: () => updateCurrent(prepared)))
         {
-            updateCurrent(prepared);
-            return;
+            return true;
         }
         await replaceIdle(prepared);
+        return false;
     }
 }
 

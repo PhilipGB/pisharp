@@ -21,6 +21,8 @@ public sealed class PiSharpExtensionContext
     private readonly Func<bool> _isIdle;
     private Func<bool> _hasPendingMessages = static () => false;
     private Func<string?, NativeExtensions.PiSharpExtensionSessionContext?> _getSessionContext = static _ => null;
+    private Func<string?, NativeExtensions.PiSharpExtensionSessionContext?,
+        NativeExtensions.PiSharpExtensionCapabilities?> _getCapabilities = static (_, _) => null;
 
     internal PiSharpExtensionContext(PiSharpExtensionContextConfiguration configuration,
         Func<ConversationSession?> getConversation, Func<IReadOnlyList<string>> getActiveToolNames,
@@ -51,11 +53,23 @@ public sealed class PiSharpExtensionContext
     internal NativeExtensions.PiSharpExtensionSessionContext? CreatePublicSessionContext(string? sourcePath) =>
         Volatile.Read(ref _getSessionContext)(sourcePath);
 
+    internal NativeExtensions.PiSharpExtensionCapabilities? CreatePublicCapabilities(string? sourcePath,
+        NativeExtensions.PiSharpExtensionSessionContext? session) =>
+        Volatile.Read(ref _getCapabilities)(sourcePath, session);
+
     internal void SetSessionContextFactory(
         Func<string?, NativeExtensions.PiSharpExtensionSessionContext?> getSessionContext)
     {
         ArgumentNullException.ThrowIfNull(getSessionContext);
         Volatile.Write(ref _getSessionContext, getSessionContext);
+    }
+
+    internal void SetCapabilitiesFactory(
+        Func<string?, NativeExtensions.PiSharpExtensionSessionContext?,
+            NativeExtensions.PiSharpExtensionCapabilities?> getCapabilities)
+    {
+        ArgumentNullException.ThrowIfNull(getCapabilities);
+        Volatile.Write(ref _getCapabilities, getCapabilities);
     }
 
     internal void SetPendingMessageState(Func<bool> getPendingMessages)

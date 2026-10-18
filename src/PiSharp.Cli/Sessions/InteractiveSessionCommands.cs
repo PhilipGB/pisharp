@@ -56,11 +56,7 @@ internal sealed class InteractiveSessionCommands(ConversationStore store, string
                 output.WriteLine($"Selected {matches[0].Id[..12]}");
                 return true;
             case "/name":
-                using (var nameChange = conversation.BeginSessionNameChange(argument))
-                {
-                    if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
-                    nameChange.Commit();
-                }
+                await conversationRun.SetSessionNameAsync(argument);
                 output.WriteLine($"Name: {conversation.Name ?? "(none)"}");
                 return true;
             case "/session":

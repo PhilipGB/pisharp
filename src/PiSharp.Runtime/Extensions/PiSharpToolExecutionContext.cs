@@ -58,7 +58,7 @@ public sealed class PiSharpToolExecutionContext
     private readonly Action<string>? _nestedUpdate;
     private readonly string? _operationId;
     private readonly string _toolName;
-    private readonly IReadOnlyDictionary<string, object?> _arguments;
+    private IReadOnlyDictionary<string, object?> _arguments;
     private readonly PiSharpExtensionContext? _extensionContext;
 
     internal static object ContextKey => s_contextKey;
@@ -98,6 +98,12 @@ public sealed class PiSharpToolExecutionContext
     internal string ToolCallId { get; }
     internal string? ParentToolCallId { get; }
     internal IReadOnlyList<UsageRecord> NestedUsage => _scope.Usage.Records;
+
+    internal void SetArguments(IReadOnlyDictionary<string, object?> arguments)
+    {
+        ArgumentNullException.ThrowIfNull(arguments);
+        _arguments = new Dictionary<string, object?>(arguments, StringComparer.Ordinal);
+    }
 
     internal void RecordToolUsage(string callId, string name, UsageDetails usage, decimal? cost)
     {

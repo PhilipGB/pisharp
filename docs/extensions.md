@@ -194,6 +194,68 @@ Repeated sends with identical type, content, display flag and source remain sepa
 
 Resource callbacks return paths to the existing skill, prompt-template and theme catalogs. Context transforms receive the provider-bound MEAI conversation and their output is request-local. Tool-call hooks run before normal binding/execution and can mutate arguments or block a call; result hooks can replace the value and explicit error state. All asynchronous callbacks receive the cancellation token for the run or tool operation that owns them.
 
+### Lifecycle event observers and callback capabilities
+
+Register typed observers during `Configure`. These are observational callbacks;
+the existing tool-call/result hooks and model/session owners remain responsible
+for changing execution.
+
+```csharp
+builder.AddAgentStartHandler((eventData, context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var capabilities = context.Capabilities!;
+    var model = capabilities.GetModel();
+    var sessionId = capabilities.GetSessionSnapshot()?.SessionId;
+    context.Ui.Notify($"Run started in {context.Mode}: {model?.ProviderId}/{model?.ModelId}, session {sessionId}.");
+    return ValueTask.CompletedTask;
+});
+
+builder.AddToolExecutionEndHandler((eventData, context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    context.Ui.Notify($"{eventData.ToolName} finished; error={eventData.IsError}.");
+    return ValueTask.CompletedTask;
+});
+```
+
+The event families and their observed boundaries are:
+
+| Registration | Trigger boundary and payload | Cancellation behavior | Host modes | Semantics |
+| --- | --- | --- | --- | --- |
+| `AddSessionInfoChangedHandler` | After a session name change saves and commits; clearing the name reports `Name == null`. | A canceled or failed save does not commit and emits no event. Cancellation during dispatch stops the current observer and later observers. | TUI, RPC, print/JSON and direct Runtime session owners. | Observation only; host and extension rename paths share the committed-name publisher. |
+| `AddSessionCompactHandler` / `AddSessionCompactFailedHandler` | After persisted success, or after failure/abort. Payloads include reason (`Manual`, `Threshold`, `Overflow`), result/entry metadata on success, and retry/abort/error details on failure. `FromExtension` is false because there is no custom-summary path. | The owning compaction token controls the observer sequence; cancellation stops observers. A failed or aborted operation emits no success event. | TUI, RPC, print/JSON compaction owners and direct Runtime compaction. | Observation only. Threshold and virtual-route overflow paths preserve their existing continuation/retry behavior. |
+| `AddAgentStartHandler` / `AddAgentEndHandler` | Once at the beginning and end of one logical agent event pump; end includes outcome and detached completed messages. Queued steering/follow-up within that pump does not start another lifecycle. | Ordinary completion and provider failure produce an end callback. A host cancellation that interrupts the stream or cancels observer dispatch may suppress terminal observers so the owning operation can settle. Pinned Pi emits `agent_end` when the agent loop returns an aborted response. | TUI, RPC, print/JSON and direct Runtime runs. | Observation only; messages are detached snapshots. |
+| `AddTurnStartHandler` / `AddTurnEndHandler` | Per logical model/tool continuation. Start has a zero-based index and timestamp; end has detached assistant/tool messages and canonical entry IDs where available. A provider retry without a logical response is not a new turn. | The run token owns callbacks. Cancellation may stop a terminal observer and still settles the run. | TUI, RPC, print/JSON and direct Runtime runs. | Observation only. PiSharp does not expose Pi's mutable turn-boundary state. |
+| `AddToolExecutionStartHandler` / `AddToolExecutionUpdateHandler` / `AddToolExecutionEndHandler` | Around actual model-issued, nested, extension, built-in or MCP execution. Start sees effective arguments after existing call hooks; updates contain only real partial output; end sees the finalized result after result hooks and has duration when execution started. Nested calls retain parent IDs. | The tool execution token owns callbacks. A call blocked before execution has no execution start/end event; cancellation stops the in-flight observer and tool operation. | TUI, RPC, print/JSON and direct Runtime tool loops. | Observation only. Existing tool-call/result hooks remain the mutation and blocking surface. |
+| `AddModelSelectHandler` | After an effective model selection becomes authoritative; includes selected/previous model and source (`Set`, `Cycle`, `Restore`). | Selection cancellation/rejection emits no change; observer cancellation stops later observers after the transition. | TUI, RPC, print/JSON startup restoration and direct Runtime selection owners. | Observation only; unchanged selections do not emit a change. |
+| `AddThinkingLevelSelectHandler` | After an effective thinking-level change; includes selected and previous levels after model-capability clamping. | Selection cancellation/rejection emits no change; observer cancellation stops later observers after the transition. | TUI, RPC, print/JSON startup restoration and direct Runtime selection owners. | Observation only; unchanged effective values do not emit a change. |
+
+Handlers run sequentially in resolved extension registration order. An ordinary
+handler exception is reported with its package source and later handlers still
+run. Host cancellation uses the token owned by the run or operation and is not
+reported as an ordinary extension failure. Tool observers do not replace or
+block the existing mutable call/result hooks.
+
+Lifecycle callbacks receive `PiSharpExtensionContext`; registered commands and
+shortcuts receive `PiSharpExtensionCommandContext`. Both expose a callback-scoped
+`Capabilities` facade alongside their existing mode, UI, and session properties.
+It provides a detached session snapshot; model, thinking, active/configured tool
+and command snapshots; effective settings and the calling package's flag;
+context usage when known; and the current system prompt when the host can provide
+it. TUI/RPC callbacks use the existing control owner for active-tool, model,
+thinking, abort, shutdown and message operations. Compaction is rejected while
+an agent callback is part of an active run, because waiting for that run from
+inside its callback would reenter the same run. Print/JSON and direct Runtime
+hosts expose read state and session-state operations; operations unavailable in
+that host phase fail clearly. Retained capability objects are revoked when the
+callback ends, and returned message/settings/session data are detached.
+
+These registrations do not implement generic `pi.on(...)`, mutable turn-boundary
+state, pre-switch/pre-fork vetoes, pre-compaction replacement, provider request
+hooks, or advanced renderers. The broad extension parity row remains
+`in_progress`.
+
 ### Providers, MCP servers and virtual models
 
 `IPiSharpExtensionBuilder` can register a provider, an MCP server, and a logical virtual model during `Configure`. These definitions are collected with the owning package and enter the ordinary provider catalogue, model selection, MCP startup and virtual-model route path.

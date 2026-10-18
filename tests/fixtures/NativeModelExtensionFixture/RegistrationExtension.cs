@@ -38,6 +38,9 @@ public sealed class RegistrationExtension : IPiSharpExtension
     public void Configure(IPiSharpExtensionBuilder builder)
     {
         var assemblyDirectory = Path.GetDirectoryName(typeof(RegistrationExtension).Assembly.Location)!;
+        builder.RegisterFlag("native-model-event-flag", PiSharpExtensionFlagType.Boolean,
+            defaultValue: PiSharpExtensionFlagValue.FromBoolean(false));
+        RegisterEventObservers(builder);
         builder.AddProvider(new PiSharpExtensionProviderDefinition(ProviderId, "Native fixture",
         [
             new(MainModel, "Native fixture " + FixtureRevision + " main", ContextLength: 32000, MaxOutputTokens: 2048,
@@ -81,6 +84,11 @@ public sealed class RegistrationExtension : IPiSharpExtension
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult("native model fixture " + FixtureRevision);
         }, "Report the native provider fixture revision.");
+        builder.AddCommand("native-model-fixture-rename", async (name, command, cancellationToken) =>
+        {
+            await command.Session.SetSessionNameAsync(name, cancellationToken);
+            return command.Session.SessionName ?? "<cleared>";
+        }, "Rename the session through the public extension session context.");
         builder.AddCommand("native-model-fixture-tools", (_, command, cancellationToken) =>
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -92,6 +100,82 @@ public sealed class RegistrationExtension : IPiSharpExtension
 #if NATIVE_MODEL_FIXTURE_v3
         throw new InvalidOperationException("native fixture Configure rollback probe");
 #endif
+    }
+
+    private static void RegisterEventObservers(IPiSharpExtensionBuilder builder)
+    {
+        builder.AddSessionInfoChangedHandler(async (eventData, context, cancellationToken) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|session-info|{eventData.Name ?? "<cleared>"}");
+            if (context.Session is { } session)
+                await session.AppendEntryAsync("native_event_observed",
+                    JsonSerializer.SerializeToElement(new { kind = "session-info", name = eventData.Name }),
+                    cancellationToken);
+        });
+        builder.AddSessionCompactHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|session-compact|{eventData.Reason}|{eventData.EntryId}|{eventData.WillRetry}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddSessionCompactFailedHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|session-compact-failed|{eventData.Reason}|{eventData.Aborted}|{eventData.WillRetry}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddModelSelectHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|model-select|{eventData.Source}|{eventData.PreviousModel?.ProviderId ?? "-"}/{eventData.PreviousModel?.ModelId ?? "-"}|{eventData.Model.ProviderId}/{eventData.Model.ModelId}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddThinkingLevelSelectHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|thinking-select|{eventData.PreviousLevel}|{eventData.Level}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddAgentStartHandler((_, context, _) =>
+        {
+            var capabilities = context.Capabilities ?? throw new InvalidOperationException(
+                "The host did not provide event callback capabilities.");
+            var session = capabilities.GetSessionSnapshot() ?? throw new InvalidOperationException(
+                "The host did not provide the current session snapshot.");
+            var model = capabilities.GetModel();
+            var thinking = capabilities.GetThinkingLevel();
+            var tools = string.Join(',', capabilities.GetActiveTools());
+            var settings = capabilities.GetSettings();
+            var flag = capabilities.GetFlag("native-model-event-flag")?.BooleanValue ?? false;
+            RecordTrace($"event|{FixtureRevision}|agent-start|{context.Mode}|{session.SessionId}|{model?.ProviderId}/{model?.ModelId}|{thinking}|{tools}|{settings.ValueKind}|{flag}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddAgentEndHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|agent-end|{eventData.Outcome}|{eventData.Messages.Count}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddTurnStartHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|turn-start|{eventData.TurnIndex}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddTurnEndHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|turn-end|{eventData.TurnIndex}|{eventData.MessageEntryId ?? "-"}|{eventData.ToolResultEntryIds.Count}|{eventData.Aborted}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddToolExecutionStartHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|tool-start|{eventData.ToolCallId}|{eventData.ToolName}|{eventData.ParentToolCallId ?? "-"}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddToolExecutionUpdateHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|tool-update|{eventData.ToolCallId}|{eventData.ToolName}");
+            return ValueTask.CompletedTask;
+        });
+        builder.AddToolExecutionEndHandler((eventData, _, _) =>
+        {
+            RecordTrace($"event|{FixtureRevision}|tool-end|{eventData.ToolCallId}|{eventData.ToolName}|{eventData.IsError}|{eventData.DurationMs?.ToString() ?? "-"}");
+            return ValueTask.CompletedTask;
+        });
     }
 
     internal static void RecordTrace(string line)
