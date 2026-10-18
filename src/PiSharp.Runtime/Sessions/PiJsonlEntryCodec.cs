@@ -10,22 +10,78 @@ namespace PiSharp.Runtime.Sessions;
 /// <summary>Converts Pi records and MAF content while preserving original entries and Pi metadata.</summary>
 internal static class PiJsonlEntryCodec
 {
+    private const string CustomTypeProperty = "pisharp.extension.customType";
+    private const string CustomDisplayProperty = "pisharp.extension.display";
+    private const string CustomSourceProperty = "pisharp.extension.source";
+    private const string CustomPiContentProperty = "pisharp.extension.piContent";
+    private const string CustomDetailsProperty = "pisharp.extension.details";
+
+    internal static JsonElement EncodeBoundaryContent(IReadOnlyList<AIContent> content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        var encoded = new JsonArray();
+        foreach (var part in content)
+        {
+            switch (part)
+            {
+                case TextContent text:
+                    encoded.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
+                    break;
+                case TextReasoningContent reasoning:
+                    encoded.Add(new JsonObject { ["type"] = "thinking", ["thinking"] = reasoning.Text });
+                    break;
+                case DataContent image when image.MediaType is { } mediaType &&
+                    mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) && image.Data.Length > 0:
+                    encoded.Add(new JsonObject
+                    {
+                        ["type"] = "image",
+                        ["data"] = Convert.ToBase64String(image.Data.ToArray()),
+                        ["mimeType"] = image.MediaType
+                    });
+                    break;
+                case DataContent:
+                    throw new InvalidDataException("Boundary content data must be a valid image.");
+                case FunctionCallContent call:
+                    if (string.IsNullOrWhiteSpace(call.CallId) || string.IsNullOrWhiteSpace(call.Name))
+                        throw new InvalidDataException("Boundary tool calls require an id and name.");
+                    var arguments = JsonSerializer.SerializeToNode(call.Arguments);
+                    if (arguments is not JsonObject)
+                        throw new InvalidDataException("Boundary tool call arguments must be an object.");
+                    encoded.Add(new JsonObject
+                    {
+                        ["type"] = "toolCall",
+                        ["id"] = call.CallId,
+                        ["name"] = call.Name,
+                        ["arguments"] = arguments
+                    });
+                    break;
+                default:
+                    throw new InvalidDataException($"Unsupported boundary content type '{part?.GetType().Name ?? "null"}'.");
+            }
+        }
+        return JsonSerializer.SerializeToElement(encoded);
+    }
+
     internal static JsonObject ProjectRuntimeMessage(ConversationSession session, ChatMessage message,
         string? api = null, string? toolName = null, DateTimeOffset? timestamp = null)
     {
         if (PiSharpCustomMessageProjection.TryRead(message, out var customMessage))
         {
-            return new JsonObject
+            var content = TryAdditionalJson(message, CustomPiContentProperty, out var preservedContent) &&
+                preservedContent.ValueKind == JsonValueKind.Array
+                ? JsonNode.Parse(preservedContent.GetRawText())
+                : JsonNode.Parse(EncodeBoundaryContent(message.Contents.ToArray()).GetRawText());
+            var customRecord = new JsonObject
             {
                 ["role"] = "custom",
                 ["customType"] = customMessage.CustomType,
-                ["content"] = new JsonArray
-                {
-                    new JsonObject { ["type"] = "text", ["text"] = customMessage.Content }
-                },
+                ["content"] = content,
                 ["display"] = customMessage.Display,
                 ["timestamp"] = (timestamp ?? DateTimeOffset.UtcNow).ToUnixTimeMilliseconds()
             };
+            if (TryAdditionalJson(message, CustomDetailsProperty, out var details))
+                customRecord["details"] = JsonNode.Parse(details.GetRawText());
+            return customRecord;
         }
 
         var node = new ConversationNode("rpc", null, "chat", default, timestamp ?? DateTimeOffset.UtcNow);
@@ -123,15 +179,22 @@ internal static class PiJsonlEntryCodec
                 $"The following is a summary of a branch that this conversation came back from:\n\n<summary>\n{summary}\n</summary>");
         if (node.Type != "custom_message" || OriginalEntry(node) is not { } custom ||
             !TryProperty(custom, "content", out var content)) return null;
-        var contentParts = ReadContent(content);
+        var contentParts = ReadContent(content, assistant: true);
         var contentText = string.Concat(contentParts.OfType<TextContent>().Select(part => part.Text));
         var display = !TryProperty(custom, "display", out var displayValue) || displayValue.ValueKind == JsonValueKind.True;
-        return StringProperty(custom, "customType") is { Length: > 0 } customType
-            ? PiSharpCustomMessageProjection.ToChatMessage(new PiSharpCustomMessage(customType, contentText, display)
-            {
-                Source = StringProperty(node.Payload, "source")
-            }, node.Id)
-            : new ChatMessage(ChatRole.User, contentParts);
+        if (StringProperty(custom, "customType") is not { Length: > 0 } customType)
+            return new ChatMessage(ChatRole.User, contentParts);
+
+        var properties = new AdditionalPropertiesDictionary
+        {
+            [CustomTypeProperty] = customType,
+            [CustomDisplayProperty] = display,
+            [CustomPiContentProperty] = content.Clone()
+        };
+        if (StringProperty(node.Payload, "source") is { Length: > 0 } source)
+            properties[CustomSourceProperty] = source;
+        if (TryProperty(custom, "details", out var details)) properties[CustomDetailsProperty] = details.Clone();
+        return new ChatMessage(ChatRole.User, contentParts) { MessageId = node.Id, AdditionalProperties = properties };
     }
 
     internal static bool TryGetContextEdit(ConversationNode node, out string targetId, out JsonElement replacement)
@@ -159,12 +222,30 @@ internal static class PiJsonlEntryCodec
         if (node.Type is not ("chat" or "custom_message") || !TryProperty(replacement, "content", out var content)) return message;
         if (node.Type == "chat" && OriginalEntry(node) is { } original && TryProperty(original, "message", out var piMessage))
             return ToChatMessage(piMessage, content);
-        if (node.Type == "custom_message" && PiSharpCustomMessageProjection.TryRead(message, out var customMessage))
-            return PiSharpCustomMessageProjection.ToChatMessage(customMessage with
+        if (node.Type == "custom_message")
+        {
+            var originalCustomEntry = OriginalEntry(node);
+            var parts = ReadContent(content, assistant: true);
+            if (originalCustomEntry is { } custom && StringProperty(custom, "customType") is { Length: > 0 } customType)
             {
-                Content = string.Concat(ReadContent(content).OfType<TextContent>().Select(part => part.Text))
-            }, message.MessageId);
-        return new ChatMessage(message.Role, ReadContent(content));
+                var properties = new AdditionalPropertiesDictionary
+                {
+                    [CustomTypeProperty] = customType,
+                    [CustomDisplayProperty] = !TryProperty(custom, "display", out var display) || display.ValueKind == JsonValueKind.True,
+                    [CustomPiContentProperty] = content.Clone()
+                };
+                if (StringProperty(node.Payload, "source") is { Length: > 0 } source)
+                    properties[CustomSourceProperty] = source;
+                if (TryProperty(custom, "details", out var details)) properties[CustomDetailsProperty] = details.Clone();
+                return new ChatMessage(ChatRole.User, parts) { MessageId = message.MessageId, AdditionalProperties = properties };
+            }
+            return new ChatMessage(message.Role, parts) { MessageId = message.MessageId };
+        }
+        return new ChatMessage(message.Role, ReadContent(content, assistant: message.Role == ChatRole.Assistant))
+        {
+            MessageId = message.MessageId,
+            AdditionalProperties = message.AdditionalProperties?.Clone()
+        };
     }
 
     internal static ConversationNode ToNode(JsonElement entry, string id, string? parentId, string type, DateTimeOffset timestamp)
@@ -251,7 +332,23 @@ internal static class PiJsonlEntryCodec
             if (TryProperty(message, "piSharpToolResult", out var preserved) &&
                 PiSharp.Runtime.Tools.ToolResultOutput.TryReadContract(preserved, out var contract))
             {
-                var preservedResult = new FunctionResultContent(callId, contract);
+                object preservedOutput = contract;
+                if (contentOverride is { } replacementContent)
+                {
+                    var replacementParts = ReadContent(replacementContent);
+                    var replacementText = string.Join('\n', replacementParts.OfType<TextContent>().Select(part => part.Text));
+                    var replacementImages = replacementParts.OfType<DataContent>()
+                        .Select(image => new PiSharpToolImage(image.MediaType, Convert.ToBase64String(image.Data.ToArray())))
+                        .ToArray();
+                    preservedOutput = contract with
+                    {
+                        Text = replacementText,
+                        Images = replacementImages.Length == 0 ? null : replacementImages
+                    };
+                }
+                var preservedResult = new FunctionResultContent(callId, preservedOutput);
+                if (BoolProperty(message, "isError"))
+                    preservedResult.Exception = new ToolFailureException("Pi session records a failed tool result.");
                 ImportDuration(preservedResult, message);
                 return new ChatMessage(ChatRole.Tool, [preservedResult]);
             }
@@ -349,7 +446,7 @@ internal static class PiJsonlEntryCodec
         if (node.Type == "compaction")
         {
             var payload = node.Payload;
-            var firstKept = StringProperty(payload, "firstKeptEntryId");
+            var firstKept = StringProperty(payload, "firstKeptEntryId") ?? node.Id;
             var entry = new JsonObject
             {
                 ["type"] = "compaction",
@@ -531,6 +628,30 @@ internal static class PiJsonlEntryCodec
 
     private static string? MessageProperty(ChatMessage message, string name) =>
         ChatMessageProperties.String(message.AdditionalProperties, name);
+
+    private static bool TryAdditionalJson(ChatMessage message, string key, out JsonElement value)
+    {
+        if (message.AdditionalProperties is not null && message.AdditionalProperties.TryGetValue(key, out var raw))
+        {
+            if (raw is JsonElement element)
+            {
+                value = element.Clone();
+                return true;
+            }
+            if (raw is JsonNode node)
+            {
+                value = JsonSerializer.SerializeToElement(node);
+                return true;
+            }
+            if (raw is not null)
+            {
+                value = JsonSerializer.SerializeToElement(raw);
+                return true;
+            }
+        }
+        value = default;
+        return false;
+    }
 
     private static object? ToObject(JsonElement element) => element.ValueKind switch
     {
