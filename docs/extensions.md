@@ -224,9 +224,9 @@ The event families and their observed boundaries are:
 | Registration | Trigger boundary and payload | Cancellation behavior | Host modes | Semantics |
 | --- | --- | --- | --- | --- |
 | `AddSessionInfoChangedHandler` | After a session name change saves and commits; clearing the name reports `Name == null`. | A canceled or failed save does not commit and emits no event. Cancellation during dispatch stops the current observer and later observers. | TUI, RPC, print/JSON and direct Runtime session owners. | Observation only; host and extension rename paths share the committed-name publisher. |
-| `AddSessionCompactHandler` / `AddSessionCompactFailedHandler` | After persisted success, or after failure/abort. Payloads include reason (`Manual`, `Threshold`, `Overflow`), result/entry metadata on success, and retry/abort/error details on failure. `FromExtension` is false because there is no custom-summary path. | The owning compaction token controls the observer sequence; cancellation stops observers. A failed or aborted operation emits no success event. | TUI, RPC, print/JSON compaction owners and direct Runtime compaction. | Observation only. Threshold and virtual-route overflow paths preserve their existing continuation/retry behavior. |
-| `AddAgentStartHandler` / `AddAgentEndHandler` | Once at the beginning and end of one logical agent event pump; end includes outcome and detached completed messages. Queued steering/follow-up within that pump does not start another lifecycle. | Ordinary completion and provider failure produce an end callback. A host cancellation that interrupts the stream or cancels observer dispatch may suppress terminal observers so the owning operation can settle. Pinned Pi emits `agent_end` when the agent loop returns an aborted response. | TUI, RPC, print/JSON and direct Runtime runs. | Observation only; messages are detached snapshots. |
-| `AddTurnStartHandler` / `AddTurnEndHandler` | Per logical model/tool continuation. Start has a zero-based index and timestamp; end has detached assistant/tool messages and canonical entry IDs where available. A provider retry without a logical response is not a new turn. | The run token owns callbacks. Cancellation may stop a terminal observer and still settles the run. | TUI, RPC, print/JSON and direct Runtime runs. | Observation only. PiSharp does not expose Pi's mutable turn-boundary state. |
+| `AddSessionCompactHandler` / `AddSessionCompactFailedHandler` | After persisted success, or after failure/abort. Payloads include reason (`Manual`, `Threshold`, `Overflow`), result/entry metadata on success, and retry/abort/error details on failure. `FromExtension` identifies an extension-supplied summary; the normal compaction coordinator still validates and commits it. | The owning compaction token controls the observer sequence; cancellation stops observers. A failed or aborted operation emits no success event. | TUI, RPC, print/JSON compaction owners and direct Runtime compaction. | Observation only. Threshold and virtual-route overflow paths preserve their existing continuation/retry behavior. |
+| `AddAgentStartHandler` / `AddAgentEndHandler` | Start fires once for the logical agent pump. End includes outcome and detached completed messages after its natural work drains, before pre-settlement. Work queued by end callbacks or pre-settlement can lead to another end callback; it does not repeat start. | Ordinary completion and provider failure produce an end callback. A host cancellation that interrupts the stream or cancels observer dispatch may suppress terminal observers so the owning operation can settle. Pinned Pi emits `agent_end` when the agent loop returns an aborted response. | TUI, RPC, print/JSON and direct Runtime runs. | Observation only; messages are detached snapshots. |
+| `AddTurnStartHandler` / `AddTurnEndHandler` | Per logical model/tool continuation. Start has a zero-based index and timestamp; end has detached assistant/tool messages and canonical entry IDs where available. A provider retry without a logical response is not a new turn. | The run token owns callbacks. Cancellation may stop a terminal observer and still settles the run. | TUI, RPC, print/JSON and direct Runtime runs. | The existing delegate remains observational and runs before the additive mutable boundary handlers described below. |
 | `AddToolExecutionStartHandler` / `AddToolExecutionUpdateHandler` / `AddToolExecutionEndHandler` | Around actual model-issued, nested, extension, built-in or MCP execution. Start sees effective arguments after existing call hooks; updates contain only real partial output; end sees the finalized result after result hooks and has duration when execution started. Nested calls retain parent IDs. | The tool execution token owns callbacks. A call blocked before execution has no execution start/end event; cancellation stops the in-flight observer and tool operation. | TUI, RPC, print/JSON and direct Runtime tool loops. | Observation only. Existing tool-call/result hooks remain the mutation and blocking surface. |
 | `AddModelSelectHandler` | After an effective model selection becomes authoritative; includes selected/previous model and source (`Set`, `Cycle`, `Restore`). | Selection cancellation/rejection emits no change; observer cancellation stops later observers after the transition. | TUI, RPC, print/JSON startup restoration and direct Runtime selection owners. | Observation only; unchanged selections do not emit a change. |
 | `AddThinkingLevelSelectHandler` | After an effective thinking-level change; includes selected and previous levels after model-capability clamping. | Selection cancellation/rejection emits no change; observer cancellation stops later observers after the transition. | TUI, RPC, print/JSON startup restoration and direct Runtime selection owners. | Observation only; unchanged effective values do not emit a change. |
@@ -251,10 +251,124 @@ hosts expose read state and session-state operations; operations unavailable in
 that host phase fail clearly. Retained capability objects are revoked when the
 callback ends, and returned message/settings/session data are detached.
 
-These registrations do not implement generic `pi.on(...)`, mutable turn-boundary
-state, provider request hooks, or advanced renderers. Session transition and
+These registrations do not implement generic `pi.on(...)`, provider request hooks,
+or advanced renderers. Session transition and
 compaction mutation hooks are documented in the following section. The broad
 extension parity row remains `in_progress`.
+
+### Mutable turn boundaries and agent settlement
+
+`AddTurnEndBoundaryHandler` adds mutable behavior without changing the compiled
+`AddTurnEndHandler` delegate. Legacy observers run once before the mutable
+handlers, after the assistant and finalized tool results have canonical entry
+IDs. `eventData.Turn` carries those detached messages, IDs and turn index;
+`Outcome` reuses `PiSharpExtensionAgentOutcome.Completed`, `Aborted`, or `Error`.
+The outcome describes the activity, independently of callback cancellation.
+
+```csharp
+builder.AddTurnEndBoundaryHandler((boundary, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    if (boundary.Turn.TurnIndex != 0)
+        return ValueTask.FromResult<PiSharpBoundaryResult?>(null);
+
+    return ValueTask.FromResult<PiSharpBoundaryResult?>(new(
+        entries: [new PiSharpCustomMessageEntryDraft(
+            "review-note", "Review the result once more.", display: false)],
+        @continue: true));
+});
+
+builder.AddAgentBeforeSettleHandler((boundary, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    return ValueTask.FromResult<PiSharpBoundaryResult?>(new(
+        entries: [new PiSharpCustomEntryDraft("review-complete")],
+        @continue: false));
+});
+
+builder.AddAgentSettledHandler((settled, _, _) =>
+{
+    Console.Error.WriteLine($"Agent settled; aborted={settled.Aborted}.");
+    return ValueTask.CompletedTask;
+});
+```
+
+The closed `PiSharpSessionBoundaryDraft` hierarchy maps to ordinary canonical
+session entries:
+
+| Draft | Persistence and context |
+| --- | --- |
+| `PiSharpCustomEntryDraft` | Extension custom type and optional JSON data, at most 1 MiB. Persists through the existing extension state/session machinery and Pi JSONL `custom` entries; excluded from model context. |
+| `PiSharpCustomMessageEntryDraft` | Text or supported image `AIContent`, display flag and optional detached JSON details. Uses the existing canonical custom-message representation. Display controls rendering, while the content participates in context; details do not become message text. |
+| `PiSharpContextEditEntryDraft` | Existing active-branch target ID and replacement content; null omits the target. `FromText` creates a text replacement. Replaces content while retaining message metadata and tool-result identity. The host validates roles and complete tool call/result pairs. |
+| `PiSharpCompactionEntryDraft` | Summary, retained entry ID (null retains no preceding entries), details and optional `PiSharpExtensionCompactionUsage`. Uses normal compaction projection, without calling the summarizer or the pre-compaction hook. Summary, branch boundary, tool pairs, usage and context are validated. |
+
+A boundary accepts at most 128 drafts and 8 MiB of serialized entries. Compaction
+summaries are bounded to 64 KiB; JSON details are bounded to 1 MiB. Unsupported
+content fails explicitly. Images are detached, then follow the selected model's
+normal image handling.
+
+`PiSharpBoundaryResult.Entries` and `Continue` are independently optional. A
+null field preserves the effective value from earlier handlers. An empty entry
+list explicitly clears the drafts; `Continue = false` explicitly cancels an
+earlier request to continue. Supplying entries replaces the entire draft list.
+To retain earlier drafts, return a list containing `boundary.Entries` plus the
+new draft. Handlers execute sequentially in resolved extension order, with a
+rebuilt preview after each result.
+
+`boundary.Context` is a detached `PiSharpBoundaryContextPreview` with canonical
+entry identity/type/metadata, `ContextMessages`, `PendingMessages`, and
+`CanContinue`. `ContextMessages` uses PiSharp's public MEAI message representation,
+which also supplies the provider request context; there is no duplicate
+`LlmMessages` alias. Normal request transforms, tool declarations, system
+instructions and model image filtering still run at the provider boundary.
+Reading a preview never appends, saves, changes MAF state, or publishes entry
+events. Mutating a returned MEAI object cannot change another getter's snapshot
+or the session.
+
+Invalid drafts produce a source-aware `extension_error`. A later handler sees
+the invalid effective draft list alongside the last valid preview and can
+replace it with a valid list. An invalid final list commits nothing and cannot
+continue. Ordinary callback exceptions are isolated so later handlers can run.
+`CanContinue` uses projected message roles and the existing pending queues;
+custom metadata alone cannot make a final assistant response runnable. Invalid
+explicit continuation is diagnosed; valid drafts remain committed.
+
+Valid drafts are applied through the same canonical mapper used for preview.
+The host prepares a restored MAF session, saves through the normal session
+owner, then adopts execution and exposes continuation. Save or restoration
+failure removes every provisional entry and preserves prior usable execution;
+there is no continuation. The next ordinary prompt can use that session.
+
+`Continue = true` keeps the logical agent run active and schedules one valid
+provider request, without adding a user message or replaying
+`before_agent_start`/`agent_start`. The original prompt remains checkpoint
+metadata. A tool turn already requires its natural continuation; requesting
+continuation there does not add a duplicate request. Steering is delivered at
+the normal provider handoff; follow-up input remains behind an explicit boundary
+continuation. Provider retries do not commit the same successful logical turn
+boundary twice. Automatic compaction continues through the existing coordinator
+and its typed hooks, including context enlarged by a boundary.
+
+`AddAgentBeforeSettleHandler` runs after `agent_end` and after retries, natural
+continuation, automatic compaction and already queued prompts have been resolved.
+It uses the same drafts, preview and replacement result. A requested continuation
+runs before already waiting follow-up work when runnable context is available;
+the hook is evaluated again afterward. Messages queued by `agent_end` are consumed
+before this hook. A context-only custom message queued during the hook becomes
+provider context when continuation is requested.
+
+`AddAgentSettledHandler` fires once when no work remains. It shares the final
+state transition with the internal `agent_settled` event and reports `Aborted`
+for host aborts, including abort during pre-settlement; a provider error alone
+does not set it. The session is idle during this observer. Settled observers and
+aborted turn-boundary dispatch have a bounded two-second deadline so an ignored
+cancellation cannot retain the host. Legacy `agent_end` keeps its existing run-token
+cancellation behavior. All callback contexts are revoked on completion or cancellation;
+late code cannot mutate another run through a retained context. Cancelling an
+in-flight boundary suppresses continuation and never commits a partial invalid
+proposal. See the [milestone receipt](parity/fixtures/native-extension-agent-settlement-2026-10-18.md)
+for pinned-source differences, deterministic evidence, and verification scope.
 
 ### Session transitions, tree navigation and compaction
 

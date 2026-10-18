@@ -1,14 +1,14 @@
-# Native extension agent settlement — initial contract receipt — 2026-10-18
+# Native extension agent settlement — 2026-10-18
 
-This is a pinned-source contract and an initial comparison matrix. It is not an implementation verification or a parity claim. PiSharp behavior remains **pending** until the milestone implementation is inspected and supported by deterministic tests.
+This receipt records the pinned-source contract, the bounded native SDK implementation, and deterministic evidence. It does not promote broad extension parity; `feature-extensions-net-api` and `extension-orchestration-api` remain `in_progress`. Final local and exact-head CI results are recorded below.
 
 ## Pins and integration checkpoint
 
-- Pi reference: `earendil-works/pi@b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` (`/tmp/pi-events-source`).
+- Pi reference: `earendil-works/pi@b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 - Actual PR #13 merge commit and PiSharp milestone base on `main`: `ca47d554bd48887147100ab11195c8086361963d` (parents `eef6f3f83247758d397b4e313d2c26b0088ee9ac` and `1172dc8ce270ba5a16ae9cdc6a52afed57165805`).
 - PR #13 head: `1172dc8ce270ba5a16ae9cdc6a52afed57165805`.
 - Required exact-head CI runs `39126827078` (push) and `39126829634` (PR) were verified green before merge by the milestone coordinator.
-- This receipt is being prepared on the clean milestone base; it does not attest to implementation or later CI.
+- Before merge, PR #13 was open/draft and mergeable, had no reviews/comments or unexpected commits, and both required CI runs reported success on its expected head. It was marked ready and merged using the repository's normal merge-commit method; the clean milestone branch was created only after fetching and verifying the actual merge.
 
 ## Pinned behavior
 
@@ -42,25 +42,104 @@ The loop drains steering and follow-up queues before its `agent_end`. Work enque
 
 `agent_settled` is emitted once after the active run's retry/compaction/queued continuations and any `agent_before_settle` continuation have finished. Therefore one settled event can follow multiple `agent_start`/`agent_end` cycles. During settled-handler dispatch Pi marks the run inactive; deferred actions that start another run are drained only after all settled handlers return. The settled event's `aborted` flag reports the run's abort request, including an abort during pre-settlement even if the most recent assistant response completed successfully (`agent-session.ts`, `_emitAgentSettled`; boundary suite, “continues from an agent_before_settle custom message before final settlement”, “defers runs started by agent_settled handlers…”, and “commits pre-settlement drafts but suppresses continuation when aborted during the hook”).
 
-## Initial contract matrix
+## Contract matrix
 
 | Surface | Pinned Pi behavior | PiSharp behavior | Evidence |
 | --- | --- | --- | --- |
-| `turn_end` entries | Fires after message/tool-result persistence; supplies persisted entry IDs and outcome. Drafts commit before the next request. | Pending; no implementation equivalence claimed. | Pi `agent-loop.ts`, `agent-session.ts`, `extensions/types.ts`; boundary suite synthetic failure and compaction handoff tests. |
-| `turn_end` continue | Effective boolean is replaced by later returned values; explicit continuation needs runnable context. Natural tool continuation remains independent. | Pending. | Pi `extensions/runner.ts`, `agent-session.ts`; boundary suite invalid continuation/tool continuation test. |
-| Preview rebuild | Later handlers see earlier effective drafts and rebuilt projected context, LLM messages, pending messages, and `canContinue`. | Pending. | Pi `extensions/runner.ts`, `agent-session.ts`; `extensions-runner.test.ts` boundary chaining. |
-| Invalid drafts | Handler errors are reported and dispatch proceeds; later handlers can repair an invalid draft. Unrepaired invalid entries/continuation are rejected. | Pending. | Pi `extensions/runner.ts`; `extensions-runner.test.ts` invalid preview repair test; boundary suite invalid continuation test. |
-| Retry interaction | Retry decision follows `turn_end` and `agent_end`; each failed turn can dispatch its own boundary. Pre-settlement waits until retry chain ends. | Pending. | Pi `agent-session.ts`, `_handlePostAgentRun`; `agent-session-retry-events.test.ts`. |
-| Tool-loop interaction | Tool results are persisted before `turn_end`; a tool call naturally continues. An invalid explicit continuation does not cancel that natural path. | Pending. | Pi `agent-loop.ts`; boundary suite invalid explicit continuation test. |
-| `agent_before_settle` | After `agent_end`, retries/compaction/queued loop work; may persist drafts and request one context-only continuation before settlement. | Pending. | Pi `agent-session.ts`, `_handlePostAgentRun`, `_runBeforeSettleBoundary`; boundary suite pre-settlement tests. |
-| Pending messages | Preview separates pending messages from current context; custom pending messages are flushed at the boundary; queued follow-up remains behind an explicit continuation. | Pending. | Pi `agent-session.ts`, `_buildBoundaryContext`, `_runBeforeSettleBoundary`; boundary suite pending custom/follow-up tests. |
-| `agent_settled` | Once after true active-run settlement, after requested continuation/retry/compaction; deferred new runs wait until all settled handlers finish. | Pending. | Pi `agent-session.ts`, `_emitAgentSettled`; boundary suite settled handler ordering test. |
-| Abort | Aborting during pre-settlement commits returned drafts but suppresses continuation; `agent_settled.aborted` reflects the abort request. | Pending. | Pi `agent-session.ts`; boundary suite abort-during-hook test. |
-| Persistence rollback | These pinned sources/tests do not establish an atomic rollback contract for boundary commit/save or agent-context restoration failures. | Pending; must be tested before claiming. | No direct pinned proof identified in the inspected boundary implementation/tests. |
+| `turn_end` entries | Finalized assistant/tool IDs; drafts commit before continuation. | Existing observer precedes additive mutable handlers; all four drafts use canonical session operations and persistence. | `AgentSettlementCharacterizationTests`; `BoundaryDraftProjectorTests`; `MutableAgentBoundaryTests`; `BoundaryPiJsonlEntryCodecTests`. |
+| `turn_end` continue | Ordered optional boolean replacement; runnable context required. | One provider continuation in the same logical pump, with no second start or synthetic user entry. | `MutableAgentBoundaryTests.TurnEndDraftContinuationIsVisibleToLaterHandlersAndUsesOneAgentBracket`; external process theory. |
+| Preview rebuild | Rebuild after each handler, preserving effective state. | Detached in-memory session snapshot uses the same draft mapper as commit; returned MEAI values clone on access. | `NativeExtensionBoundaryDispatcherTests` (including cancellation during rebuild); `BoundaryDraftProjectorTests.PreviewAppliesAllDraftKindsWithoutChangingCanonicalEntries`. |
+| Invalid drafts | Source-aware errors, later repair allowed, invalid final state rejected. | Later handlers receive invalid drafts and last good preview; invalid final drafts/continuation are discarded. | `NativeExtensionBoundaryDispatcherTests` invalid/recovery cases; stale target/tool-pair projector cases. |
+| Retry interaction | Provider-level retries and failed logical activities have different boundaries. | Request attempts do not duplicate successful mutable boundaries; exhausted logical failures expose `Error`; successful logical index remains stable; abort after retry cannot replay a stale failed attempt. | `MutableAgentBoundaryTests` retry case; external `retry` process case; `BoundaryRetryFailureTests` (partial output, exhausted retry, request preparation, and restoration failure). See adaptation below. |
+| Tool-loop interaction | Finalized tool result precedes natural continuation; explicit continuation does not duplicate it. | Awaited handoff inside the existing MAF request path; journal retains canonical results once. | `MutableAgentBoundaryTests.ToolLoopBoundaryUsesFinalizedResultIdsAndFeedsOneNaturalContinuationRequest`; external `tools` process case; existing steering regression tests. |
+| `agent_before_settle` | After end/retry/compaction/queued work, may continue and be evaluated again. | Existing prompt pump stays active through end callbacks and pre-settlement; valid continuation precedes final settlement. | `MutableAgentBoundaryTests` pre-settle and queued-end cases; `BoundaryCompactionAndRecoveryTests` (including normal final-output threshold compaction with pre-settle and settled-only registration); external settlement continuation case. |
+| Pending messages | Steering/custom/follow-up priority participates in continuation preview. | Uses existing prompt/controller/custom queues; pending snapshots are detached; steering is canonical at handoff and explicit continuation precedes follow-up. | `MutableAgentBoundaryTests`; `AgentLifecycleTests`; `ExtensionCustomMessageContinuationTests`; `NativeExtensionHookBridgeTests`; explicit boundary-before-follow-up and pending-custom pre-settlement regressions in `MutableAgentBoundaryTests`. |
+| `agent_settled` | Once at true terminal settlement, with abort-request flag. | Public observer and internal lifecycle item share the same terminal transition; error is distinct from abort. | `MutableAgentBoundaryTests`; `BoundaryCancellationTests`; external process trace counts. |
+| Abort | Abort during a completed pre-settlement callback suppresses further work; abort flag survives. | Revokes callbacks and releases ignored tasks; no continuation after cancellation. Completed provider activity is not relabeled because its callback was cancelled. | `BoundaryCancellationTests`; `MutableAgentBoundaryTests` abort case; cancellation-during-save recovery test. See adaptation below. |
+| Persistence rollback | Pinned inspected code does not establish atomic save/restore rollback. | Shared canonical mapper rolls back every provisional append; prepared MAF execution is adopted only after successful persistence. | `BoundaryDraftProjectorTests.CommitFailureRollsBackEveryEntryAndDoesNotAdoptExecution`; actual-run save failure and recovery/cancellation tests. |
+
+## PiSharp settlement ownership and API adaptations
+
+The baseline characterization commit precedes production refactoring. At that
+baseline, `RunEventsCoreAsync` accepted prompts, started one public agent run,
+and asked `AgentRunRetryController` to execute streaming attempts. `PiAgent`
+owned MAF invocation and normal tool execution. `ObservedChatClient` exposed
+provider attempts. `ProviderTurnJournal` reconciled finalized responses and tool
+results. The next `model_request_started` synchronously closed the previous
+observational turn; attempt completion closed the final turn. Retry restoration,
+compaction, pending runtime changes and prompt delivery retained their existing
+owners. The prompt controller previously closed before `agent_end`, leaving its
+callback unable to queue active-run work; conversation activity became idle only
+afterward, immediately before the internal settled item.
+
+The implementation moves turn closure to an awaited request handoff and awaits
+the final closure after the MAF stream. Mutable callbacks run outside runtime
+locks. The same prompt pump schedules explicit context-only continuation,
+drains queues before pre-settlement, closes ownership atomically, and publishes
+public/internal settlement. There is no second loop, journal, pending queue,
+session projection or compaction coordinator. The shared mapper and concrete
+boundary coordinator are cohesive components beside `ConversationRun`.
+
+PiSharp keeps one `agent_start` for a logical pump, as required by this milestone;
+pinned Pi can emit multiple low-level start/end cycles inside one settlement.
+`agent_end` can recur when its callback or pre-settlement causes another cycle.
+Legacy turn delegates are unchanged and run before mutable handlers. External
+process assertions compare their turn indices and tool-result counts, require
+finalized assistant IDs, and prove one legacy observer call per existing attempt
+(including the failed retry attempt) versus one mutable call per completed logical turn. C# draft
+lists are read-only; replacement is expressed through optional result fields,
+rather than TypeScript's additional in-place array-mutation surface.
+
+Pi's retry suite shows failed logical activities can expose their own boundary
+before a session retry. PiSharp's existing request and agent retry controllers
+collapse recoverable provider attempts into the requested successful logical
+turn, preserving its index and avoiding duplicated durable extension effects.
+A successful retry clears its deferred failed-attempt snapshot, including when the
+run is later aborted during pre-settlement. The legacy observer still sees its existing failed attempt snapshots; a mutable
+`Error` boundary is dispatched when the retry controller has exhausted recovery.
+This is the milestone's explicit logical-retry contract, rather than a claim
+that retry event counts are identical to Pi's low-level loop.
+
+PiSharp MEAI messages already represent provider-bound conversation content, so
+preview exposes `ContextMessages` without an identical `LlmMessages` alias.
+Pinned `_buildBoundaryContext` calls `convertToLlm` before the separate request
+transforms installed in `agent-session.ts` (around lines 1000 and 1773–1794).
+System/tool request instructions, configured context transforms and model image
+filtering remain owned by normal provider preparation and are not executed a
+second time while previewing. Entry metadata is a detached Pi-compatible JSON
+projection with stable canonical ID/type, never a canonical node or MAF object.
+
+For atomic commit, PiSharp validates/applies drafts and prepares a restored MAF
+session before saving, then adopts that execution only after save succeeds.
+This avoids persisting a boundary whose required execution restoration cannot
+succeed. Both preview and commit use the same role/tool-pair/compaction checks.
+A retain-none compaction maps internally to a null retained ID, exported as its
+own ID in Pi JSONL; native and Pi resume both project the summary correctly.
+Boundary usage uses normal session accounting, and automatic custom compaction
+continues to report `FromExtension` through PR #13's coordinator.
+
+Cancellation revokes capabilities immediately and detaches unfinished extension
+tasks. Pi can await a pre-settlement callback and commit a result returned after
+abort; PiSharp cannot wait indefinitely for such a result while satisfying this
+milestone's callback-lifetime requirement. The dispatcher waits for the host adapter to finish capability revocation before
+releasing the owning run, while the unfinished extension task stays detached.
+A cancelled incomplete proposal is not committed. A synchronously returned valid proposal after requesting abort is
+persisted once with a bounded commit token; continuation is suppressed. Already persisted valid drafts survive abort; no further provider
+request starts. Aborted provider turns and final settled observers use bounded
+terminal dispatch. Legacy `agent_end` retains its existing host-cancellation suppression; the new settled observer still reports the abort. These are deliberate lifetime guarantees, not evidence of
+identical unbounded JavaScript callback behavior.
+
+## Integration regressions covered
+
+- Async iterator resumption does not preserve the caller's gate-owner scope. The awaited turn closure establishes its own scope while the existing session gate is held, so callback session operations remain reentrant without reacquiring that gate. Cancellation tests cover first/later handlers, preview rebuild, persistence, pre-settlement, continuation requests and settled observers.
+- Steering is canonical before the provider response. MAF history inserts injected steering at the same position, recognizes canonical custom-message IDs, and reconciliation does not append the same occurrence twice. Existing idle RPC queue and before-start custom-trigger regressions remain intact.
+- A successful logical retry clears the failed-attempt boundary snapshot. A later abort during pre-settlement cannot replay that failed attempt or duplicate its durable extension state (`BoundaryRetryFailureTests.AbortAfterSuccessfulRetryDoesNotReplayTheFailedAttemptBoundary`).
+- Native boundary/settled registrations run the existing threshold-compaction check after `agent_end`, including when ordinary final assistant output crosses the budget without any draft mutation. Both pre-settlement and settled-only regressions require compaction completion before their observers and one provider request.
+- Legacy host-cancellation suppression for `agent_end` remains covered by the unchanged PR #12 regression. The additive settled observer independently reports the true abort flag at the authoritative terminal transition.
 
 ## Source and test index
 
-All paths below are relative to pinned `/tmp/pi-events-source` at the hash above.
+All source paths below are relative to the Pi repository at the pin above. The inspected files and SHA-256 manifest are archived locally under `artifacts/parity/native-extension-agent-settlement-2026-10-18/pi-source/` (ignored raw evidence).
 
 - `packages/coding-agent/src/core/extensions/types.ts`: public event and draft types, around lines 970–1075.
 - `packages/coding-agent/src/core/extensions/runner.ts`: sequential boundary dispatch and recovery, `emitBoundary` around lines 1036–1080.
@@ -72,6 +151,50 @@ All paths below are relative to pinned `/tmp/pi-events-source` at the hash above
 - `packages/coding-agent/test/extensions-runner.test.ts`: handler ordering, field replacement, preview rebuild, invalid-draft repair, and handler-error recovery.
 - `packages/coding-agent/test/suite/agent-session-retry-events.test.ts`: event ordering for retry, error, and abort.
 
-## PiSharp status and evidence still required
+## Deterministic acceptance and verification
 
-This receipt does not verify any PiSharp implementation behavior. Fill the PiSharp column only after inspecting the milestone code and recording deterministic evidence for each row. At minimum, the implementation audit must cover exact event order, draft replacement and context preview, context-edit replacement schema, `canContinue`, invalid handler recovery, retries, compaction, tool continuation, queued user/custom messages, abort during callbacks, exact-once settlement, and rollback/consistency failures. A matching event name alone is not evidence of matching semantics.
+The external `NativeSettlementExtension` package references only
+`PiSharp.Extensions.Abstractions`. Its process theory packs and installs the
+`.nupkg`, selects its deterministic local MEAI provider, drives real RPC,
+records legacy/mutable ordering and updated previews, requests continuation,
+checks provider context and exactly one settlement, exits, then starts a fresh
+process against the persisted session. Cases cover normal, retry, tool-loop and
+pre-settlement continuation. Package configure rollback, V1/V2 replacement,
+removal and collectible ALCs are covered separately through the production
+native loader/catalog fixtures.
+
+### Verified source and local gates
+
+- Final product source: `bdf5e03fcaf31bb3ced3a918e240fd19f2ed7004`.
+- Branch: `milestone/native-extension-agent-settlement`.
+- Local environment: .NET SDK `10.0.112`, MAF `1.21.0`, Node `24.21.0`, Python `3.14.4`.
+- Reviewed compact evidence is this receipt; raw command logs and pinned-source checksums are under `artifacts/parity/native-extension-agent-settlement-2026-10-18/` (ignored).
+
+| Gate | Final result |
+| --- | --- |
+| Restore | Passed, `dotnet restore PiSharp.slnx -p:NuGetAudit=false`. |
+| Format | Passed, `dotnet format PiSharp.slnx --verify-no-changes --no-restore`. |
+| Build | Passed, `dotnet build PiSharp.slnx --no-restore --warnaserror`; zero warnings/errors. |
+| Focused boundaries and compatibility | 69 passed, zero skipped. |
+| Final repetition wave | 10 consecutive runs of all 69 focused cases: 690 passed, zero failures/skips. Includes external process acceptance on every repetition. |
+| Full .NET | 2,395 passed, zero skipped; `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`. |
+| Architecture | 7/7 passed separately and in the full suite. |
+| Node terminal | 24/24 passed, `npm test --prefix tools/parity/terminal`. |
+| Python terminal | 50/50 passed, `python3 -m unittest discover -s tools/parity/terminal -p 'test_*.py'`. |
+| Documentation | 143 documents / 553 references, `python3 tools/validate_doc_paths.py`. |
+| MCP conformance | 261 assertions passed; the same eight classified baseline failures; no new regressions. Conformance project built with warnings as errors, then `node tools/parity/mcp-conformance/run.mjs`. |
+
+Local .NET build/test commands also used `--disable-build-servers -m:1` to isolate SDK workers. The full run used a 180-second VSTest hang detector without dumps; it exited normally. The final repetition wave supersedes earlier diagnostic failures and the earlier 67-case wave. Existing tests were retained; no skips were added. `test.pdf` was not modified or staged and is absent in this checkout. Broad extension parity remains `in_progress`.
+
+### Publication
+
+Draft PR and exact-head push/PR CI evidence are recorded after publication. This milestone PR must remain draft and must not be merged as part of this work.
+
+## Deferred scope
+
+Provider wire/header/response hooks; stream interception; input/user-bash
+interception; message start/update or mutable message-end; advanced UI,
+renderers, Markdown/editor/raw-terminal customization; tree-summary and remaining
+fork overrides; extension-initiated session switching; unrestricted dynamic
+registration; provider OAuth/custom protocols; TypeScript extensions; and the
+final global parity audit remain deferred.
