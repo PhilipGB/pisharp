@@ -468,6 +468,11 @@ public sealed partial class ConversationRun
         return _agent.InterceptUserBashAsync(command, excludeFromContext, Conversation.WorkingDirectory,
             emitUpdateAsync, cancellationToken);
     }
+    /// <summary>Executes a user-bash extension operation through the host's output and cancellation pipeline.</summary>
+    public Task<BashExecutionResult> ExecuteUserBashOperationAsync(string command,
+        NativeExtensions.PiSharpUserBashOperation operation, Action<string>? onUpdate = null,
+        CancellationToken cancellationToken = default) =>
+        _agent.ExecuteUserBashOperationAsync(command, operation, onUpdate, cancellationToken);
 
     public void AbortBash() => _agent.AbortBash();
 

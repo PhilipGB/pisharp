@@ -664,6 +664,11 @@ public sealed class PiAgent
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
         CancellationToken cancellationToken = default) => _codingTools.ExecuteBashAsync(command, onUpdate, cancellationToken);
 
+    internal Task<BashExecutionResult> ExecuteUserBashOperationAsync(string command,
+        PiSharp.Extensions.Abstractions.PiSharpUserBashOperation operation, Action<string>? onUpdate,
+        CancellationToken cancellationToken) =>
+        _codingTools.ExecuteUserBashOperationAsync(command, operation, onUpdate, cancellationToken);
+
     public void AbortBash() => _codingTools.AbortBash();
 
     public IReadOnlyList<ChatMessage> GetHistory(AgentSession session) =>

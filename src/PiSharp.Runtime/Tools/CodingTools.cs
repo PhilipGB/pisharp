@@ -124,6 +124,13 @@ public sealed class CodingTools
         _shell.ExecuteAsync(command, timeout: null, onUpdate, cancellationToken, returnCancellationResult: true,
             normalizeOutput: true, throttleUpdates: false);
 
+    internal Task<BashExecutionResult> ExecuteUserBashOperationAsync(string command,
+        PiSharp.Extensions.Abstractions.PiSharpUserBashOperation operation, Action<string>? onUpdate,
+        CancellationToken cancellationToken) =>
+        _shell.ExecuteWithOperationsAsync(command,
+            (effectiveCommand, workingDirectory, outputSink, token) =>
+                operation(effectiveCommand, workingDirectory, outputSink, token), onUpdate, cancellationToken);
+
     public void AbortBash() => _shell.AbortBash();
 
     private static IReadOnlyDictionary<string, string?>? CurrentBashSessionEnvironment()
