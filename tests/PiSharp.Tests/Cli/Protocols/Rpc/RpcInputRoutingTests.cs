@@ -38,7 +38,7 @@ public sealed class RpcInputRoutingTests
         var serving = new RpcMode(new CommandReader(channel.Reader), output, run, extensions: registration,
             promptPreflight: () => { preflightCalls++; return "provider is not authenticated"; }).ServeAsync();
 
-        channel.Writer.TryWrite("{\"id\":\"handled\",\"type\":\"prompt\",\"message\":\"raw input\"}");
+        channel.Writer.TryWrite("{\"id\":\"handled\",\"type\":\"prompt\",\"message\":\"raw input\",\"images\":[{\"type\":\"image\",\"data\":\"AQID\",\"mimeType\":\"image/png\"}]}");
         await WaitForAsync(output, "\"id\":\"handled\"");
         channel.Writer.Complete();
         await serving.WaitAsync(TimeSpan.FromSeconds(5));
@@ -52,6 +52,8 @@ public sealed class RpcInputRoutingTests
         Assert.DoesNotContain(output.Lines(), line => line.Contains("\"type\":\"agent_start\"", StringComparison.Ordinal));
         Assert.NotNull(received);
         Assert.Equal("raw input", received.Text);
+        Assert.Equal(new byte[] { 1, 2, 3 }, received.Images.Single().Data.ToArray());
+        Assert.Equal("image/png", received.Images.Single().MediaType);
         Assert.Equal(PiSharpInputSource.Rpc, received.Source);
         Assert.Null(received.StreamingBehavior);
     }
@@ -85,11 +87,15 @@ public sealed class RpcInputRoutingTests
                 {
                     "expand" => "/review concurrency",
                     "slash" => "/target transformed",
+                    "wire image" => "/review transmitted",
                     _ => null
                 };
                 return ValueTask.FromResult<PiSharpInputResult?>(transformed is null
-                    ? PiSharpInputResult.Continue : PiSharpInputResult.Transform(transformed,
-                        [new DataContent(new byte[] { 1, 2, 3 }, "image/png")]));
+                    ? PiSharpInputResult.Continue
+                    : eventData.Text == "wire image"
+                        ? PiSharpInputResult.Transform(transformed)
+                        : PiSharpInputResult.Transform(transformed,
+                            [new DataContent(new byte[] { 1, 2, 3 }, "image/png")]));
             });
             adapter.Close();
             var client = new RecordingClient();
@@ -105,14 +111,17 @@ public sealed class RpcInputRoutingTests
             await WaitForAsync(output, "agent_settled");
             channel.Writer.TryWrite("{\"id\":\"slash\",\"type\":\"prompt\",\"message\":\"slash\"}");
             await WaitForSettlementCountAsync(output, 2);
+            channel.Writer.TryWrite("{\"id\":\"wire-image\",\"type\":\"prompt\",\"message\":\"wire image\",\"images\":[{\"type\":\"image\",\"data\":\"AQID\",\"mimeType\":\"image/png\"}]}");
+            await WaitForSettlementCountAsync(output, 3);
             channel.Writer.Complete();
             await serving.WaitAsync(TimeSpan.FromSeconds(5));
 
             Assert.Equal(1, commandRuns);
-            Assert.Equal(["Review concurrency", "/target transformed"], client.UserTexts);
+            Assert.Equal(["Review concurrency", "/target transformed", "Review transmitted"], client.UserTexts);
             Assert.All(client.UserContentsByRequest, contents =>
                 Assert.Contains(contents, content => content is DataContent { MediaType: "image/png" }));
-            Assert.Equal(["expand", "slash"], seen.Select(item => item.Text));
+            Assert.Equal(["expand", "slash", "wire image"], seen.Select(item => item.Text));
+            Assert.Equal(new byte[] { 1, 2, 3 }, seen.Last().Images.Single().Data.ToArray());
             Assert.All(seen, item =>
             {
                 Assert.Equal(PiSharpInputSource.Rpc, item.Source);
@@ -161,13 +170,13 @@ public sealed class RpcInputRoutingTests
 
         channel.Writer.TryWrite("{\"id\":\"first\",\"type\":\"prompt\",\"message\":\"first\"}");
         await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        channel.Writer.TryWrite("{\"id\":\"consumed\",\"type\":\"prompt\",\"message\":\"consume\",\"streamingBehavior\":\"steer\"}");
+        channel.Writer.TryWrite("{\"id\":\"consumed\",\"type\":\"prompt\",\"message\":\"consume\",\"streamingBehavior\":\"steer\",\"images\":[{\"type\":\"image\",\"data\":\"BwgJ\",\"mimeType\":\"image/jpeg\"}]}");
         await WaitForAsync(output, "\"id\":\"consumed\"");
-        channel.Writer.TryWrite("{\"id\":\"prompt-steer\",\"type\":\"prompt\",\"message\":\"prompt steer\",\"streamingBehavior\":\"steer\"}");
+        channel.Writer.TryWrite("{\"id\":\"prompt-steer\",\"type\":\"prompt\",\"message\":\"prompt steer\",\"streamingBehavior\":\"steer\",\"images\":[{\"type\":\"image\",\"data\":\"BwgJ\",\"mimeType\":\"image/jpeg\"}]}");
         await WaitForAsync(output, "\"id\":\"prompt-steer\"");
-        channel.Writer.TryWrite("{\"id\":\"steer\",\"type\":\"steer\",\"message\":\"explicit steer\"}");
+        channel.Writer.TryWrite("{\"id\":\"steer\",\"type\":\"steer\",\"message\":\"explicit steer\",\"images\":[{\"type\":\"image\",\"data\":\"BwgJ\",\"mimeType\":\"image/jpeg\"}]}");
         await WaitForAsync(output, "\"id\":\"steer\"");
-        channel.Writer.TryWrite("{\"id\":\"follow\",\"type\":\"follow_up\",\"message\":\"explicit follow\"}");
+        channel.Writer.TryWrite("{\"id\":\"follow\",\"type\":\"follow_up\",\"message\":\"explicit follow\",\"images\":[{\"type\":\"image\",\"data\":\"BwgJ\",\"mimeType\":\"image/jpeg\"}]}");
         await WaitForAsync(output, "\"id\":\"follow\"");
         channel.Writer.TryWrite("{\"id\":\"extension\",\"type\":\"prompt\",\"message\":\"/send\"}");
         await WaitForAsync(output, "\"id\":\"extension\"");
@@ -181,6 +190,11 @@ public sealed class RpcInputRoutingTests
             item.StreamingBehavior == PiSharpInputStreamingBehavior.FollowUp);
         Assert.Contains(seen, item => item.Text == "extension raw" && item.Source == PiSharpInputSource.Extension &&
             item.StreamingBehavior == PiSharpInputStreamingBehavior.Steer);
+        Assert.All(seen.Where(item => item.Source == PiSharpInputSource.Rpc), item =>
+        {
+            if (item.Text == "prompt steer" || item.Text == "explicit steer" || item.Text == "explicit follow" || item.Text == "consume")
+                Assert.Equal(new byte[] { 7, 8, 9 }, item.Images.Single().Data.ToArray());
+        });
         using (var handled = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
             line.Contains("\"id\":\"consumed\"", StringComparison.Ordinal))))
             Assert.Equal("handled", handled.RootElement.GetProperty("data").GetProperty("disposition").GetString());
@@ -198,7 +212,7 @@ public sealed class RpcInputRoutingTests
                 candidate.Contents.OfType<TextContent>().Any(content => content.Text == text));
             Assert.NotEmpty(messages);
             Assert.All(messages, message =>
-                Assert.Contains(message.Contents, content => content is DataContent { MediaType: "image/png" }));
+                Assert.Contains(message.Contents, content => content is DataContent { MediaType: "image/png" or "image/jpeg" }));
         }
     }
 

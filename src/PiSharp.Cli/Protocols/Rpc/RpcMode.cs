@@ -172,8 +172,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 string.IsNullOrWhiteSpace(message.GetString()))
                             { await RespondAsync(id, type, false, "A nonempty text message is required."); break; }
                             if (promptCommandHandler.TryStart(message.GetString()!, id, cancellationToken)) break;
-                            if (root.TryGetProperty("images", out _))
-                            { await RespondAsync(id, type, false, "Images are not supported."); break; }
+                            if (!TryGetImages(root, out var promptInputImages, out var imageError))
+                            { await RespondAsync(id, type, false, imageError); break; }
                             string? promptStreamingBehavior = null;
                             if (root.TryGetProperty("streamingBehavior", out var requestedBehavior))
                             {
@@ -189,7 +189,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                                 _ => (PiSharpInputStreamingBehavior?)null
                             } : null;
                             var currentRun = CurrentRun;
-                            var intercepted = await currentRun.InterceptInputAsync(message.GetString()!, null,
+                            var intercepted = await currentRun.InterceptInputAsync(message.GetString()!, promptInputImages,
                                 PiSharpInputSource.Rpc, promptBehavior, cancellationToken);
                             if (intercepted.Action == PiSharpInputResultAction.Handled)
                             {
@@ -199,7 +199,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             var promptText = intercepted.Action == PiSharpInputResultAction.Transform
                                 ? intercepted.Text! : message.GetString()!;
                             var promptImages = intercepted.Action == PiSharpInputResultAction.Transform
-                                ? intercepted.Images : null;
+                                ? intercepted.Images : promptInputImages;
                             string expanded;
                             try
                             {
@@ -258,6 +258,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                         case "follow_up":
                             if (!TryGetTextMessage(root, out var queuedMessage, out var queueError))
                             { await RespondAsync(id, type, false, queueError); break; }
+                            if (!TryGetImages(root, out var queueInputImages, out var queueImageError))
+                            { await RespondAsync(id, type, false, queueImageError); break; }
                             if (TryGetExtensionCommandName(queuedMessage!, CurrentExtensions, out var commandName))
                             {
                                 await RespondAsync(id, type, false,
@@ -268,7 +270,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             var queueBehavior = busy
                                 ? type == "steer" ? PiSharpInputStreamingBehavior.Steer : PiSharpInputStreamingBehavior.FollowUp
                                 : (PiSharpInputStreamingBehavior?)null;
-                            var queuedInput = await queueRun.InterceptInputAsync(queuedMessage!, null,
+                            var queuedInput = await queueRun.InterceptInputAsync(queuedMessage!, queueInputImages,
                                 PiSharpInputSource.Rpc, queueBehavior, cancellationToken);
                             if (queuedInput.Action == PiSharpInputResultAction.Handled)
                             {
@@ -278,7 +280,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                             var queueText = queuedInput.Action == PiSharpInputResultAction.Transform
                                 ? queuedInput.Text! : queuedMessage!;
                             var queueImages = queuedInput.Action == PiSharpInputResultAction.Transform
-                                ? queuedInput.Images : null;
+                                ? queuedInput.Images : queueInputImages;
                             string queuedExpanded;
                             try
                             {
@@ -463,11 +465,61 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         message = null;
         error = null;
         if (!root.TryGetProperty("message", out var value) || value.ValueKind != JsonValueKind.String ||
-            string.IsNullOrWhiteSpace(message = value.GetString()) || root.TryGetProperty("images", out _))
+            string.IsNullOrWhiteSpace(message = value.GetString()))
         {
-            error = "A nonempty text message is required; images are not supported.";
+            error = "A nonempty text message is required.";
             return false;
         }
+        return true;
+    }
+
+    private static bool TryGetImages(JsonElement root, out IReadOnlyList<DataContent>? images, out string? error)
+    {
+        images = null;
+        error = null;
+        if (!root.TryGetProperty("images", out var value)) return true;
+        if (value.ValueKind != JsonValueKind.Array)
+        {
+            error = "images must be an array.";
+            return false;
+        }
+
+        var parsed = new List<DataContent>();
+        var index = 0;
+        foreach (var image in value.EnumerateArray())
+        {
+            if (image.ValueKind != JsonValueKind.Object ||
+                !image.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String ||
+                type.GetString() != "image")
+            {
+                error = $"images[{index}] must have type 'image'.";
+                return false;
+            }
+            if (!image.TryGetProperty("mimeType", out var mimeType) || mimeType.ValueKind != JsonValueKind.String ||
+                string.IsNullOrWhiteSpace(mimeType.GetString()) ||
+                !mimeType.GetString()!.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
+                error = $"images[{index}].mimeType must be an image media type.";
+                return false;
+            }
+            if (!image.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.String)
+            {
+                error = $"images[{index}].data must be a base64 string.";
+                return false;
+            }
+
+            byte[] bytes;
+            try { bytes = Convert.FromBase64String(data.GetString()!); }
+            catch (FormatException)
+            {
+                error = $"images[{index}].data must be valid base64.";
+                return false;
+            }
+            parsed.Add(new DataContent(bytes, mimeType.GetString()!));
+            index++;
+        }
+
+        images = parsed;
         return true;
     }
 
@@ -696,7 +748,17 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         try
         {
             var correlationId = GetCorrelationId(id);
-            var result = await ExecuteUserBashAsync(correlationId, command, excludeFromContext, operation.Cancellation.Token);
+            BashExecutionResult result;
+            try
+            {
+                result = await ExecuteUserBashAsync(correlationId, command, excludeFromContext,
+                    operation.Cancellation.Token);
+            }
+            catch (OperationCanceledException) when (operation.Cancellation.IsCancellationRequested)
+            {
+                result = new BashExecutionResult("", "(command cancelled)", null, true, false, null);
+            }
+
             var recordedNow = CurrentRun.RecordBashResult(command, result, excludeFromContext);
             if (recordedNow && save is not null) await save(CancellationToken.None);
             var data = new Dictionary<string, object?>
@@ -724,35 +786,30 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private async Task<BashExecutionResult> ExecuteUserBashAsync(string? correlationId, string command,
         bool excludeFromContext, CancellationToken cancellationToken)
     {
-        var activeExtensions = CurrentExtensions;
-        if (activeExtensions is not null)
+        Task EmitUpdateAsync(string delta) => EmitBashUpdateAsync(correlationId, delta);
+        var interception = await CurrentRun.InterceptUserBashAsync(command, excludeFromContext, EmitUpdateAsync,
+            cancellationToken);
+        if (interception is null)
         {
-            var context = new UserBashContext(command, excludeFromContext, CurrentRun.Conversation.WorkingDirectory,
-                delta => EmitBashUpdateAsync(correlationId, delta));
-            foreach (var handler in activeExtensions.UserBashHandlers)
-            {
-                try
-                {
-                    if (await handler(context, cancellationToken) is { } result) return result;
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-                catch (Exception error)
-                {
-                    await _writer.EmitAsync(new
-                    {
-                        type = "event",
-                        format = "pisharp",
-                        data = new AgentLifecycleEvent("extension_error", OperationId: correlationId, Error: error.Message)
-                    }, CancellationToken.None);
-                }
-            }
+            return await CurrentRun.ExecuteBashAsync(command,
+                delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), cancellationToken);
         }
 
-        return await CurrentRun.ExecuteBashAsync(command,
-            delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), cancellationToken);
+        if (interception.Kind == PiSharpUserBashResultKind.FullResult)
+        {
+            var output = interception.Output ?? "";
+            return new BashExecutionResult(output, output, interception.ExitCode, interception.Cancelled,
+                interception.Truncated, interception.FullOutputPath);
+        }
+
+        if (interception.Kind == PiSharpUserBashResultKind.CustomOperation &&
+            interception.CustomOperation is { } customOperation)
+        {
+            return await CurrentRun.ExecuteUserBashOperationAsync(command, customOperation,
+                delta => EmitBashUpdateAsync(correlationId, delta).GetAwaiter().GetResult(), cancellationToken);
+        }
+
+        throw new InvalidOperationException("The user_bash handler returned an invalid result.");
     }
 
     private Task EmitBashUpdateAsync(string? id, string delta) => _writer.EmitAsync(new
