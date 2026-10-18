@@ -6,7 +6,8 @@ namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Compacts the canonical branch for a chosen physical route before dispatch, without rerouting.</summary>
 internal sealed class VirtualModelContextCoordinator(ConversationSession conversation, PiAgent agent,
-    Func<CancellationToken, Task<ConversationCompactionResult?>> compact,
+    Func<PiSharpExtensionCompactionReason, bool, CancellationToken, Task<ConversationCompactionResult?>> compact,
+    Func<bool> compactionFromExtension, Func<bool> compactionCancelledByExtension,
     Func<bool> autoCompactionEnabled, Action<AgentLifecycleEvent> publish, Action beforeCompaction)
 {
     public bool HasCompacted { get; private set; }
@@ -17,6 +18,7 @@ internal sealed class VirtualModelContextCoordinator(ConversationSession convers
         var request = HasCompacted ? Project(messages) : messages;
         if (!autoCompactionEnabled() || route.ContextPolicy is not { TriggerTokens: > 0 } policy ||
             !force && AutoCompactionPolicy.Estimate(request, "") <= policy.TriggerTokens) return request;
+        var reason = force ? PiSharpExtensionCompactionReason.Overflow : PiSharpExtensionCompactionReason.Threshold;
         publish(new("compaction_start") { CompactionReason = force ? "overflow" : "threshold" });
         var compactionCompleted = false;
         var completionPublished = false;
@@ -24,12 +26,11 @@ internal sealed class VirtualModelContextCoordinator(ConversationSession convers
         try
         {
             beforeCompaction();
-            var result = await compact(cancellationToken).ConfigureAwait(false);
+            var result = await compact(reason, force, cancellationToken).ConfigureAwait(false);
             if (result is null) throw new InvalidOperationException("Physical model context exceeds its budget and no safe compaction boundary is available.");
             HasCompacted = true;
             compactedResult = result;
             compactionCompleted = true;
-            var reason = force ? PiSharpExtensionCompactionReason.Overflow : PiSharpExtensionCompactionReason.Threshold;
             await NativeExtensionCompactionEventPublisher.PublishCompletedAsync(agent, conversation, result,
                 reason, willRetry: force, cancellationToken).ConfigureAwait(false);
             publish(new("compaction_end")
@@ -50,7 +51,7 @@ internal sealed class VirtualModelContextCoordinator(ConversationSession convers
             {
                 publish(new("compaction_end") { CompactionReason = force ? "overflow" : "threshold", CompactionAborted = true });
                 await NativeExtensionCompactionEventPublisher.PublishAbortedAsync(agent,
-                    force ? PiSharpExtensionCompactionReason.Overflow : PiSharpExtensionCompactionReason.Threshold)
+                    reason, compactionFromExtension())
                     .ConfigureAwait(false);
             }
             else if (!completionPublished)
@@ -68,11 +69,25 @@ internal sealed class VirtualModelContextCoordinator(ConversationSession convers
         {
             if (!compactionCompleted)
             {
-                var reason = force ? PiSharpExtensionCompactionReason.Overflow : PiSharpExtensionCompactionReason.Threshold;
-                var errorMessage = (force ? "Context overflow recovery failed: " : "Auto-compaction failed: ") + error.Message;
-                publish(new("compaction_end", Error: errorMessage) { CompactionReason = force ? "overflow" : "threshold" });
-                await NativeExtensionCompactionEventPublisher.PublishFailedAsync(agent, reason,
-                    willRetry: false, aborted: false, errorMessage, cancellationToken).ConfigureAwait(false);
+                var abortedByExtension = compactionCancelledByExtension();
+                if (abortedByExtension)
+                {
+                    publish(new("compaction_end")
+                    {
+                        CompactionReason = force ? "overflow" : "threshold",
+                        CompactionAborted = true
+                    });
+                    await NativeExtensionCompactionEventPublisher.PublishAbortedAsync(agent, reason)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    var errorMessage = (force ? "Context overflow recovery failed: " : "Auto-compaction failed: ") + error.Message;
+                    publish(new("compaction_end", Error: errorMessage) { CompactionReason = force ? "overflow" : "threshold" });
+                    await NativeExtensionCompactionEventPublisher.PublishFailedAsync(agent, reason,
+                        willRetry: false, aborted: false, errorMessage, cancellationToken,
+                        fromExtension: compactionFromExtension()).ConfigureAwait(false);
+                }
             }
             else if (!completionPublished)
             {

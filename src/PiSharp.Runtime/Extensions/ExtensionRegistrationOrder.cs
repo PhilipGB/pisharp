@@ -43,6 +43,11 @@ public sealed partial class ExtensionRegistration
                 OrderList(_toolExecutionEndHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_modelSelectHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_thinkingLevelSelectHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_sessionBeforeSwitchHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_sessionBeforeForkHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_sessionBeforeTreeHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_sessionTreeHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_sessionBeforeCompactHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_resourceDiscoveryHandlers, entry => Rank(entry.ExtensionSource.Path));
                 OrderList(_projectTrustHandlers, entry => Rank(entry.SourceInfo.Path));
             }

@@ -112,6 +112,11 @@ public sealed class NativeExtensionCatalogTests
             Assert.Empty(catalog.Registration.SessionStartHandlers);
             Assert.Empty(catalog.Registration.SessionShutdownHandlers);
             Assert.Empty(catalog.Registration.AgentStartHandlers);
+            Assert.Empty(catalog.Registration.SessionBeforeSwitchHandlers);
+            Assert.Empty(catalog.Registration.SessionBeforeForkHandlers);
+            Assert.Empty(catalog.Registration.SessionBeforeTreeHandlers);
+            Assert.Empty(catalog.Registration.SessionTreeHandlers);
+            Assert.Empty(catalog.Registration.SessionBeforeCompactHandlers);
             AssertContextUnloaded(v2LoadContext);
         }
         finally { catalog.Dispose(); }
@@ -280,6 +285,10 @@ public sealed class NativeExtensionCatalogTests
             var v1Conversation = new ConversationSession(workingDirectory, "fixture", null);
             var v1Agent = CreateFixtureAgent(v1Client, workingDirectory, catalog.Registration);
             var v1Run = await ConversationRun.OpenAsync(v1Agent, v1Conversation);
+            var v1Switch = await v1Run.DispatchSessionBeforeSwitchAsync(
+                PiSharp.Extensions.Abstractions.PiSharpExtensionSessionSwitchReason.Resume,
+                "native-fixture-v1", null, CancellationToken.None);
+            Assert.True(v1Switch?.Cancel);
             await foreach (var _ in v1Run.RunEventsAsync("initial user turn")) { }
 
             Assert.Equal(2, v1Client.Requests.Count);
@@ -336,6 +345,14 @@ public sealed class NativeExtensionCatalogTests
             var v2Client = new NativeFixtureHookChatClient();
             var v2Run = await ConversationRun.OpenAsync(CreateFixtureAgent(v2Client, workingDirectory,
                     catalog.Registration), new ConversationSession(workingDirectory, "fixture", null));
+            var staleV1Switch = await v2Run.DispatchSessionBeforeSwitchAsync(
+                PiSharp.Extensions.Abstractions.PiSharpExtensionSessionSwitchReason.Resume,
+                "native-fixture-v1", null, CancellationToken.None);
+            Assert.Null(staleV1Switch);
+            var v2Switch = await v2Run.DispatchSessionBeforeSwitchAsync(
+                PiSharp.Extensions.Abstractions.PiSharpExtensionSessionSwitchReason.Resume,
+                "native-fixture-v2", null, CancellationToken.None);
+            Assert.True(v2Switch?.Cancel);
             await foreach (var _ in v2Run.RunEventsAsync("reloaded user turn")) { }
 
             Assert.Equal(2, v2Client.Requests.Count);
@@ -469,6 +486,7 @@ public sealed class NativeExtensionCatalogTests
         return new PiAgent(client, new CodingTools(workingDirectory), selectedTools: ["native_fixture_tool"],
             noTools: true, noBuiltinTools: true, extensionToolRegistrations: [tool],
             systemPrompt: "native fixture test prompt",
+            liveExtensionRegistration: registration,
             beforeAgentStartHandlers: registration.BeforeAgentStartHandlers,
             extensionContextTransforms: registration.ContextTransforms,
             extensionToolCallHooks: registration.ToolCallHooks,

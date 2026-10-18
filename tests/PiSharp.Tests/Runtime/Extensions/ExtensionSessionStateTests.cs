@@ -399,6 +399,48 @@ public sealed class ExtensionSessionStateTests
     }
 
     [Fact]
+    public async Task SessionLifecycleCallbacksRebindTheRunThatOwnsTheTransition()
+    {
+        var workingDirectory = CreateWorkingDirectory();
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            string? shutdownSessionId = null;
+            string? startSessionId = null;
+            adapter.AddSessionShutdownHandler((_, context, _) =>
+            {
+                shutdownSessionId = context.Session!.SessionId;
+                return ValueTask.CompletedTask;
+            });
+            adapter.AddSessionStartHandler((_, context, _) =>
+            {
+                startSessionId = context.Session!.SessionId;
+                return ValueTask.CompletedTask;
+            });
+            adapter.Close();
+
+            var agent = CreateAgent(new CompleteClient(), registration);
+            var previousConversation = new ConversationSession(workingDirectory, "fixture-model", null);
+            var previousRun = await ConversationRun.OpenAsync(agent, previousConversation);
+            var nextConversation = new ConversationSession(workingDirectory, "fixture-model", null);
+            var nextRun = await ConversationRun.OpenAsync(agent, nextConversation);
+
+            Assert.Empty(await previousRun.NotifySessionShutdownAsync(
+                NativeExtensions.PiSharpExtensionSessionShutdownReason.Fork));
+            Assert.Equal(previousConversation.Id, shutdownSessionId);
+
+            Assert.Empty(await nextRun.NotifySessionStartAsync(
+                NativeExtensions.PiSharpExtensionSessionStartReason.Fork));
+            Assert.Equal(nextConversation.Id, startSessionId);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task BeforeAgentCallbackCanPersistStateWhileTheRunOwnsItsExecutionGate()
     {
         var workingDirectory = CreateWorkingDirectory();

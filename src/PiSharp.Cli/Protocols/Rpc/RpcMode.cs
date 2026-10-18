@@ -336,6 +336,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
     private async Task<bool> StartNewSessionAsync(string? parentSession, CancellationToken cancellationToken)
     {
+        var current = CurrentRun;
+        var beforeSwitch = await current.DispatchSessionBeforeSwitchAsync(
+            PiSharpExtensionSessionSwitchReason.New, null, current.SessionFile, cancellationToken);
+        if (beforeSwitch?.Cancel == true)
+            throw new InvalidOperationException("Session transition was cancelled by an extension.");
         await CancelActiveRunAsync();
         return await newSession!(parentSession, cancellationToken);
     }
@@ -344,6 +349,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         var current = CurrentRun;
         var (branchSnapshot, selectedText) = current.Conversation.ForkAtUser(entryId, current.SessionFile);
+        var beforeFork = await current.DispatchSessionBeforeForkAsync(entryId,
+            PiSharpExtensionForkPosition.Before, current.SessionFile, cancellationToken);
+        if (beforeFork?.Cancel == true)
+            throw new InvalidOperationException("Session fork was cancelled by an extension.");
         await CancelActiveRunAsync();
         return await forkSession!(entryId, branchSnapshot, selectedText, cancellationToken);
     }
@@ -351,6 +360,14 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private async Task<bool> StartCloneSessionAsync(CancellationToken cancellationToken)
     {
         var current = CurrentRun;
+        var entryId = current.Conversation.Tree.HeadId;
+        if (entryId is not null)
+        {
+            var beforeFork = await current.DispatchSessionBeforeForkAsync(entryId,
+                PiSharpExtensionForkPosition.At, current.SessionFile, cancellationToken);
+            if (beforeFork?.Cancel == true)
+                throw new InvalidOperationException("Session fork was cancelled by an extension.");
+        }
         var branchSnapshot = current.Conversation.ForkForSessionReplacement(current.SessionFile);
         var branchPath = prepareCloneSession is null ? null :
             await prepareCloneSession(branchSnapshot, cancellationToken);
@@ -362,6 +379,13 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         if (validateSwitchSession is not null)
             await validateSwitchSession(sessionPath, cancellationToken);
+        var current = CurrentRun;
+        var targetSessionFile = Path.GetFullPath(sessionPath, current.Conversation.WorkingDirectory);
+        var beforeSwitch = await current.DispatchSessionBeforeSwitchAsync(
+            PiSharpExtensionSessionSwitchReason.Resume, targetSessionFile, current.SessionFile,
+            cancellationToken);
+        if (beforeSwitch?.Cancel == true)
+            throw new InvalidOperationException("Session transition was cancelled by an extension.");
         await CancelActiveRunAsync();
         return await switchSession!(sessionPath, cancellationToken);
     }

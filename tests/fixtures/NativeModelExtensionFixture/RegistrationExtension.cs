@@ -98,6 +98,15 @@ public sealed class RegistrationExtension : IPiSharpExtension
         }, "Inspect the current fixture MCP tool metadata.");
 
 #if NATIVE_MODEL_FIXTURE_v3
+        builder.AddSessionBeforeSwitchHandler((_, _, _) =>
+            ValueTask.FromResult<PiSharpExtensionSessionBeforeSwitchResult?>(new(Cancel: true)));
+        builder.AddSessionBeforeForkHandler((_, _, _) =>
+            ValueTask.FromResult<PiSharpExtensionSessionBeforeForkResult?>(new(Cancel: true)));
+        builder.AddSessionBeforeTreeHandler((_, _, _) =>
+            ValueTask.FromResult<PiSharpExtensionSessionBeforeTreeResult?>(new(Cancel: true)));
+        builder.AddSessionTreeHandler((_, _, _) => ValueTask.CompletedTask);
+        builder.AddSessionBeforeCompactHandler((_, _, _) =>
+            ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(new(Cancel: true)));
         throw new InvalidOperationException("native fixture Configure rollback probe");
 #endif
     }

@@ -42,7 +42,9 @@ internal static class NativeSessionDocumentCodec
             if (node.Payload.ValueKind != JsonValueKind.Object ||
                 !node.Payload.TryGetProperty("summary", out var summary) || summary.ValueKind != JsonValueKind.String ||
                 string.IsNullOrWhiteSpace(summary.GetString()) || summary.GetString()!.Length > 64 * 1024 ||
-                !node.Payload.TryGetProperty("firstKeptEntryId", out var kept) || kept.ValueKind != JsonValueKind.String)
+                !node.Payload.TryGetProperty("firstKeptEntryId", out var kept) || kept.ValueKind != JsonValueKind.String ||
+                node.Payload.TryGetProperty("fromHook", out var fromHook) &&
+                    fromHook.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                 throw new InvalidDataException($"Invalid compaction at {node.Id}.");
             tree.Select(node.ParentId);
             var path = tree.ActivePath();

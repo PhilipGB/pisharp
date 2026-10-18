@@ -357,8 +357,10 @@ internal static class PiJsonlEntryCodec
                 ["firstKeptEntryId"] = firstKept,
                 ["tokensBefore"] = IntProperty(payload, "tokensBefore") ?? 0
             };
-            if (TryProperty(payload, "details", out var details) && details.ValueKind == JsonValueKind.Object)
+            if (TryProperty(payload, "details", out var details) && details.ValueKind != JsonValueKind.Undefined)
                 entry["details"] = JsonNode.Parse(details.GetRawText());
+            if (TryProperty(payload, "fromHook", out var fromHook) && fromHook.ValueKind == JsonValueKind.True)
+                entry["fromHook"] = true;
             return entry;
         }
         if (node.Type == "model_change")

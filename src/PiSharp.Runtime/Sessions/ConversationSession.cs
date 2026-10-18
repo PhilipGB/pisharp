@@ -492,14 +492,31 @@ public sealed class ConversationSession
         ConversationCompactionCoordinator.PreparePlan(this, keepRecentTokens);
 
     public void AppendCompaction(CompactionPlan plan, string summary, int? keepRecentTokens = null,
-        int tokensBefore = 0, ConversationCompactionDetails? details = null)
+        int tokensBefore = 0, ConversationCompactionDetails? details = null, string? firstKeptEntryId = null,
+        JsonElement? extensionDetails = null, bool fromExtension = false)
     {
         if (string.IsNullOrWhiteSpace(summary) || summary.Length > 64 * 1024)
             throw new InvalidDataException("Compaction summary must be nonempty and at most 64KB.");
         if (PrepareCompaction(keepRecentTokens)?.FirstKeptEntryId != plan.FirstKeptEntryId)
             throw new InvalidOperationException("Conversation changed during compaction.");
+        var retainedEntryId = firstKeptEntryId ?? plan.FirstKeptEntryId;
+        ValidateCompactionBoundary(retainedEntryId);
+        var persistedDetails = extensionDetails?.Clone() ?? (details is null
+            ? null
+            : JsonSerializer.SerializeToElement(details));
         Tree.Append("compaction", JsonSerializer.SerializeToElement(new CompactionRecord(summary,
-            plan.FirstKeptEntryId, tokensBefore, details)));
+            retainedEntryId, tokensBefore, persistedDetails, fromExtension)));
+    }
+
+    private void ValidateCompactionBoundary(string firstKeptEntryId)
+    {
+        var path = Tree.ActivePath();
+        var boundaryIndex = path.ToList().FindIndex(entry => entry.Id == firstKeptEntryId);
+        var previousCompactionIndex = path.ToList().FindLastIndex(entry => entry.Type == "compaction");
+        var role = boundaryIndex < 0 ? null : ConversationContextProjection.ContextMessageForNode(path[boundaryIndex])?.Role;
+        if (boundaryIndex <= previousCompactionIndex ||
+            role != ChatRole.User && role != ChatRole.Assistant)
+            throw new InvalidDataException("Compaction boundary must identify a user or assistant entry on the active branch after the previous compaction.");
     }
 
     /// <summary>Close a crash-interrupted run without guessing which side effects happened.
@@ -661,7 +678,9 @@ public sealed class ConversationSession
         [property: JsonPropertyName("firstKeptEntryId")] string FirstKeptEntryId,
         [property: JsonPropertyName("tokensBefore")] int TokensBefore,
         [property: JsonPropertyName("details"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        ConversationCompactionDetails? Details);
+        JsonElement? Details,
+        [property: JsonPropertyName("fromHook"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        bool FromExtension);
 
     internal ConversationContextProjection.ContextUsageProjection ProjectContextUsageForEstimate() =>
         ConversationContextProjection.ProjectContextUsageForEstimate(Tree.ActivePath());

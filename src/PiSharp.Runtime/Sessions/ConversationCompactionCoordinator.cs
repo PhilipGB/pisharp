@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
+using PiSharp.Runtime.Resources;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -13,15 +15,24 @@ internal sealed class ConversationCompactionCoordinator(
     Func<ModelPricing?> getPricing,
     Func<CancellationToken, Task>? save,
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<AgentSession>> restoreHistory,
-    Action<AgentSession, int> adoptHistory)
+    Action<AgentSession, int> adoptHistory,
+    Func<bool> hasBeforeCompactHandlers,
+    Func<NativeExtensions.PiSharpExtensionSessionBeforeCompactEvent, CancellationToken,
+        Task<(NativeExtensions.PiSharpExtensionSessionBeforeCompactResult? Result, ResourceSourceInfo? SourceInfo)>> dispatchBeforeCompact)
 {
     private int _isCompacting;
 
     public bool IsCompacting => Volatile.Read(ref _isCompacting) != 0;
+    public bool LastCompactionFromExtension { get; private set; }
+    public bool LastCompactionCancelledByExtension { get; private set; }
 
     public async Task<ConversationCompactionResult?> CompactAsync(string? focus, CancellationToken cancellationToken,
-        bool adoptExecutionHistory = true)
+        bool adoptExecutionHistory = true,
+        NativeExtensions.PiSharpExtensionCompactionReason reason = NativeExtensions.PiSharpExtensionCompactionReason.Manual,
+        bool willRetry = false)
     {
+        LastCompactionFromExtension = false;
+        LastCompactionCancelledByExtension = false;
         var policy = getPolicy();
         var keepRecentTokens = policy?.KeepRecentTokens ?? getKeepRecentTokens();
         var plan = PreparePlan(conversation, keepRecentTokens);
@@ -30,15 +41,64 @@ internal sealed class ConversationCompactionCoordinator(
         var tokensBefore = EstimateContextTokens();
         var details = ConversationCompactionMetadata.CollectDetails(conversation, plan);
         var summaryText = "";
+        var previousHead = conversation.Tree.HeadId;
         Volatile.Write(ref _isCompacting, 1);
         try
         {
-            var summary = await SummarizeAsync(plan, focus, cancellationToken);
-            summaryText = summary.Text + ConversationCompactionMetadata.FormatFileOperations(details);
-            var previousHead = conversation.Tree.HeadId;
+            NativeExtensions.PiSharpExtensionCustomCompaction? customCompaction = null;
+            if (hasBeforeCompactHandlers())
+            {
+                var activePath = conversation.Tree.ActivePath();
+                var preparation = new NativeExtensions.PiSharpExtensionCompactionPreparation(
+                    plan.FirstKeptEntryId, plan.MessagesToSummarize, plan.TurnPrefixMessages ?? [], plan.IsSplitTurn,
+                    tokensBefore, plan.PreviousSummary,
+                    new NativeExtensions.PiSharpExtensionCompactionDetails(details.ReadFiles, details.ModifiedFiles));
+                var beforeCompact = new NativeExtensions.PiSharpExtensionSessionBeforeCompactEvent(reason, willRetry,
+                    preparation, activePath.Select(entry => new NativeExtensions.PiSharpExtensionSessionBranchEntry(
+                        entry.Id, entry.ParentId, entry.Type, entry.Timestamp)), focus);
+                var (decision, decisionSource) = await dispatchBeforeCompact(beforeCompact, cancellationToken)
+                    .ConfigureAwait(false);
+                if (decision?.Cancel == true)
+                {
+                    LastCompactionCancelledByExtension = true;
+                    throw new InvalidOperationException("Compaction cancelled by extension.");
+                }
+
+                customCompaction = decision?.Compaction;
+                LastCompactionFromExtension = customCompaction is not null;
+                if (customCompaction is not null)
+                {
+                    try { ValidateCustomCompaction(customCompaction, conversation, plan.FirstKeptEntryId); }
+                    catch (InvalidDataException error) when (decisionSource is not null)
+                    {
+                        throw new InvalidDataException(
+                            $"Extension '{decisionSource.Path}' supplied an invalid custom compaction: {error.Message}",
+                            error);
+                    }
+                }
+            }
+
+            if (conversation.Tree.HeadId != previousHead)
+                throw new InvalidOperationException("Conversation changed during compaction.");
+
+            var summary = customCompaction is null
+                ? await SummarizeAsync(plan, focus, cancellationToken).ConfigureAwait(false)
+                : new PiAgent.CompactionSummary(customCompaction.Summary,
+                    customCompaction.Usage is null ? null : CreateUsageDetails(customCompaction.Usage));
+            summaryText = customCompaction is null
+                ? summary.Text + ConversationCompactionMetadata.FormatFileOperations(details)
+                : customCompaction.Summary;
+            var firstKeptEntryId = customCompaction?.FirstKeptEntryId ?? plan.FirstKeptEntryId;
+            var compactionTokensBefore = customCompaction?.TokensBefore ?? tokensBefore;
+            var resultDetails = customCompaction is null
+                ? details
+                : new ConversationCompactionDetails([], []);
             try
             {
-                conversation.AppendCompaction(plan, summaryText, keepRecentTokens, tokensBefore, details);
+                if (conversation.Tree.HeadId != previousHead)
+                    throw new InvalidOperationException("Conversation changed during compaction.");
+                conversation.AppendCompaction(plan, summaryText, keepRecentTokens, compactionTokensBefore,
+                    resultDetails, firstKeptEntryId, customCompaction?.Details, LastCompactionFromExtension);
                 var usageRecords = CompactionUsageAccounting.Records(summary, conversation.Model, getPricing());
                 var usage = CompactionUsageAccounting.Aggregate(usageRecords);
                 foreach (var record in usageRecords) conversation.AppendUsage(record);
@@ -46,8 +106,9 @@ internal sealed class ConversationCompactionCoordinator(
                 var restored = adoptExecutionHistory ? await restoreHistory(messages, cancellationToken) : null;
                 if (save is not null) await save(cancellationToken);
                 if (restored is not null) adoptHistory(restored, messages.Count);
-                return new ConversationCompactionResult(summaryText, plan.FirstKeptEntryId, tokensBefore,
-                    ConversationCompactionMetadata.EstimateTokens(messages), usage, details);
+                return new ConversationCompactionResult(summaryText, firstKeptEntryId, compactionTokensBefore,
+                    ConversationCompactionMetadata.EstimateTokens(messages), usage, resultDetails,
+                    LastCompactionFromExtension, customCompaction?.Details);
             }
             catch
             {
@@ -57,6 +118,66 @@ internal sealed class ConversationCompactionCoordinator(
         }
         finally { Volatile.Write(ref _isCompacting, 0); }
     }
+
+    private static void ValidateCustomCompaction(NativeExtensions.PiSharpExtensionCustomCompaction custom,
+        ConversationSession conversation, string preparedFirstKeptEntryId)
+    {
+        if (string.IsNullOrWhiteSpace(custom.Summary) || custom.Summary.Length > 64 * 1024)
+            throw new InvalidDataException("Extension compaction summary must be nonempty and at most 64KB.");
+        if (custom.TokensBefore < 0)
+            throw new InvalidDataException("Extension compaction token count cannot be negative.");
+        if (custom.Details is { } details &&
+            System.Text.Encoding.UTF8.GetByteCount(details.GetRawText()) > 1024 * 1024)
+            throw new InvalidDataException("Extension compaction details cannot exceed 1MB.");
+        var activePath = conversation.Tree.ActivePath();
+        var retained = activePath.FirstOrDefault(entry => entry.Id == custom.FirstKeptEntryId);
+        var retainedIndex = retained is null ? -1 : activePath.ToList().FindIndex(entry => entry.Id == retained.Id);
+        var previousCompactionIndex = activePath.ToList().FindLastIndex(entry => entry.Type == "compaction");
+        var role = retained is null ? null : ConversationContextProjection.ContextMessageForNode(retained)?.Role;
+        if (retainedIndex <= previousCompactionIndex || role != ChatRole.User && role != ChatRole.Assistant)
+            throw new InvalidDataException("Extension compaction boundary must identify a user or assistant entry on the captured active branch after the previous compaction.");
+
+        var contextEntries = conversation.CompactionContextEntries(out var previousSummary);
+        var start = previousSummary is null ? 0 : 1;
+        var customBoundaryIndex = contextEntries.ToList().FindIndex(entry => entry.SourceEntryId == custom.FirstKeptEntryId);
+        var preparedBoundaryIndex = contextEntries.ToList().FindIndex(entry => entry.SourceEntryId == preparedFirstKeptEntryId);
+        if (customBoundaryIndex <= start || preparedBoundaryIndex < customBoundaryIndex)
+            throw new InvalidDataException("Extension compaction boundary must be a safe retained entry no later than the prepared boundary.");
+        var summarizedPrefix = contextEntries.Skip(start).Take(customBoundaryIndex - start)
+            .SelectMany(entry => entry.Messages).ToArray();
+        if (!HasCompleteToolCallPairs(summarizedPrefix))
+            throw new InvalidDataException("Extension compaction boundary splits an incomplete tool call/result pair.");
+
+        if (custom.Usage is { } usage &&
+            (usage.InputTokens < 0 || usage.OutputTokens < 0 || usage.CachedInputTokens < 0 ||
+             usage.ReasoningTokens < 0 || usage.TotalTokens < 0 || usage.CachedWriteTokens < 0))
+            throw new InvalidDataException("Extension compaction usage counts cannot be negative.");
+    }
+
+    private static bool HasCompleteToolCallPairs(IReadOnlyList<ChatMessage> messages)
+    {
+        var pending = new HashSet<string>(StringComparer.Ordinal);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var message in messages)
+        {
+            foreach (var call in message.Contents.OfType<FunctionCallContent>())
+                if (string.IsNullOrWhiteSpace(call.CallId) || !seen.Add(call.CallId) || !pending.Add(call.CallId))
+                    return false;
+            foreach (var result in message.Contents.OfType<FunctionResultContent>())
+                if (!pending.Remove(result.CallId)) return false;
+        }
+        return pending.Count == 0;
+    }
+
+    private static UsageDetails CreateUsageDetails(NativeExtensions.PiSharpExtensionCompactionUsage usage) => new()
+    {
+        InputTokenCount = usage.InputTokens,
+        OutputTokenCount = usage.OutputTokens,
+        CachedInputTokenCount = usage.CachedInputTokens,
+        ReasoningTokenCount = usage.ReasoningTokens,
+        TotalTokenCount = usage.TotalTokens,
+        AdditionalCounts = new() { ["cacheWriteTokens"] = usage.CachedWriteTokens }
+    };
 
     public static ConversationSession.CompactionPlan? PreparePlan(ConversationSession conversation,
         int? keepRecentTokens)

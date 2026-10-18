@@ -5,7 +5,7 @@ using NativeExtensions = PiSharp.Extensions.Abstractions;
 namespace PiSharp.Runtime.Extensions;
 
 /// <summary>Sequentially dispatches source-owned native extension event observers.</summary>
-internal sealed class NativeExtensionEventDispatcher(ExtensionRegistration registration,
+internal sealed partial class NativeExtensionEventDispatcher(ExtensionRegistration registration,
     PiSharpExtensionContext context, Action<AgentLifecycleEvent> report)
 {
     internal Task DispatchSessionInfoChangedAsync(NativeExtensions.PiSharpExtensionSessionInfoChangedEvent eventData,
@@ -85,7 +85,12 @@ internal sealed class NativeExtensionEventDispatcher(ExtensionRegistration regis
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                ObserveIfStillRunning(pending);
+                // The public adapter completes its callback wrapper only after revoking its
+                // callback-scoped context. Wait for that short host-owned cleanup before the
+                // cancellation escapes, while the extension's own unfinished task is detached.
+                try { await pending.ConfigureAwait(false); }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+                catch (Exception error) { Report(error, handler.SourceInfo, eventType, reportEvent); }
                 throw;
             }
             catch (Exception error)

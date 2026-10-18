@@ -27,6 +27,7 @@
     <ProjectReference Include="..\fixtures\NativeExtensionLoader\IncompatibleContract\Extension\Extension.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\fixtures\NativeExtensionFixture\NativeExtensionFixture.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\fixtures\NativeExtensionFixtureV2\NativeExtensionFixtureV2.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\fixtures\NativeSessionHooksExtension\NativeSessionHooksExtension.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\fixtures\SessionResumeProcess\SessionResumeProcess.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>

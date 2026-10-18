@@ -25,6 +25,9 @@ public sealed partial class ExtensionRegistration
                 Capture(_turnStartHandlers), Capture(_turnEndHandlers), Capture(_toolExecutionStartHandlers),
                 Capture(_toolExecutionUpdateHandlers), Capture(_toolExecutionEndHandlers),
                 Capture(_modelSelectHandlers), Capture(_thinkingLevelSelectHandlers),
+                Capture(_sessionBeforeSwitchHandlers), Capture(_sessionBeforeForkHandlers),
+                Capture(_sessionBeforeTreeHandlers), Capture(_sessionTreeHandlers),
+                Capture(_sessionBeforeCompactHandlers),
                 _virtualModels.CreateConfigurationCheckpoint(),
                 CreateExtensionProviderCheckpoint()];
                     return () =>

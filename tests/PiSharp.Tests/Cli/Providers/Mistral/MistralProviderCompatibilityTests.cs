@@ -407,6 +407,7 @@ public sealed class MistralProviderCompatibilityTests
     [Fact]
     public async Task MistralHeaderTimeoutStopsAtResponseHeaders()
     {
+        const int headerTimeoutMs = 1_000;
         using (var listener = StartListener(out var longPort))
         using (var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
         {
@@ -415,7 +416,7 @@ public sealed class MistralProviderCompatibilityTests
                 var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
                 using var reader = new StreamReader(request.Request.InputStream);
                 await reader.ReadToEndAsync(deadline.Token);
-                await Task.Delay(150, deadline.Token);
+                await Task.Delay(1_500, deadline.Token);
                 try
                 {
                     request.Response.ContentType = "text/event-stream";
@@ -434,10 +435,10 @@ public sealed class MistralProviderCompatibilityTests
                 true, false, null, null, [model], Api: "mistral-conversations"), model, "fixture-key", true, "fixture");
 
             var error = await Assert.ThrowsAsync<TimeoutException>(() =>
-                ProviderChatClientFactory.Create(selection, new ProviderRetrySettings(TimeoutMs: 30))
+                ProviderChatClientFactory.Create(selection, new ProviderRetrySettings(TimeoutMs: headerTimeoutMs))
                     .GetResponseAsync([new ChatMessage(ChatRole.User, "hello")], cancellationToken: deadline.Token));
             await server.WaitAsync(deadline.Token);
-            Assert.Equal("Mistral response headers timed out after 30ms", error.Message);
+            Assert.Equal($"Mistral response headers timed out after {headerTimeoutMs}ms", error.Message);
         }
 
         using (var listener = StartListener(out var port))
@@ -452,7 +453,7 @@ public sealed class MistralProviderCompatibilityTests
                 request.Response.SendChunked = true;
                 await request.Response.OutputStream.WriteAsync(Encoding.UTF8.GetBytes("\n"), deadline.Token);
                 await request.Response.OutputStream.FlushAsync(deadline.Token);
-                await Task.Delay(120, deadline.Token);
+                await Task.Delay(1_500, deadline.Token);
                 await request.Response.OutputStream.WriteAsync(Encoding.UTF8.GetBytes(
                     "data: {\"id\":\"late-body\",\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"late\"},\"finish_reason\":null}]}\n\ndata: {\"id\":\"late-body\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"), deadline.Token);
                 await request.Response.OutputStream.FlushAsync(deadline.Token);
@@ -464,7 +465,7 @@ public sealed class MistralProviderCompatibilityTests
                 true, false, null, null, [model], Api: "mistral-conversations"), model, "fixture-key", true, "fixture");
 
             var response = await ProviderChatClientFactory.Create(selection,
-                new ProviderRetrySettings(TimeoutMs: 30), httpIdleTimeoutMs: 1000)
+                new ProviderRetrySettings(TimeoutMs: headerTimeoutMs), httpIdleTimeoutMs: 3000)
                 .GetResponseAsync([new ChatMessage(ChatRole.User, "hello")], cancellationToken: deadline.Token);
             await server.WaitAsync(deadline.Token);
             Assert.Equal("late", response.Text);
