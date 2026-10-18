@@ -85,6 +85,79 @@ public sealed class BoundaryCompactionAndRecoveryTests
         Assert.Equal(["compaction_start", "compaction_end"], lifecycle);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AutomaticCompactionAfterFinalAssistantTurnPrecedesSettlementObservers(bool registerBeforeSettle)
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var registrationConversation = new ConversationSession(Path.GetTempPath(), "final-turn-compaction", null);
+        var client = new ScriptedClient([Reply(new string('r', 50_000))]);
+        var observerOrder = new List<string>();
+        var compacted = false;
+        var beforeSettleSawCompaction = false;
+        var settledSawCompaction = false;
+        PiSharpExtensionSessionBeforeCompactEvent? beforeCompact = null;
+        PiSharpExtensionSessionCompactEvent? compactEvent = null;
+        adapter.AddSessionBeforeCompactHandler((eventData, _, _) =>
+        {
+            beforeCompact = eventData;
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(new(Compaction:
+                new PiSharpExtensionCustomCompaction("Pre-settlement checkpoint",
+                    eventData.Preparation.FirstKeptEntryId, eventData.Preparation.TokensBefore)));
+        });
+        adapter.AddSessionCompactHandler((eventData, _, _) =>
+        {
+            compactEvent = eventData;
+            compacted = true;
+            observerOrder.Add("compaction");
+            return ValueTask.CompletedTask;
+        });
+        if (registerBeforeSettle)
+        {
+            adapter.AddAgentBeforeSettleHandler((_, _, _) =>
+            {
+                beforeSettleSawCompaction = compacted &&
+                    registrationConversation.Tree.ActivePath().Any(entry => entry.Type == "compaction");
+                observerOrder.Add("agent_before_settle");
+                return ValueTask.FromResult<PiSharpBoundaryResult?>(new PiSharpBoundaryResult());
+            });
+        }
+        adapter.AddAgentSettledHandler((_, _, _) =>
+        {
+            settledSawCompaction = compacted &&
+                registrationConversation.Tree.ActivePath().Any(entry => entry.Type == "compaction");
+            observerOrder.Add("agent_settled");
+            return ValueTask.CompletedTask;
+        });
+        adapter.Close();
+
+        registrationConversation.Append(new ChatMessage(ChatRole.User, "older user context"));
+        registrationConversation.Append(new ChatMessage(ChatRole.Assistant, "older assistant context"));
+        var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()), noBuiltinTools: true,
+            liveExtensionRegistration: registration);
+        var run = await ConversationRun.OpenAsync(agent, registrationConversation,
+            autoCompaction: new AutoCompactionPolicy(20_000, ReserveTokens: 0, KeepRecentTokens: 1));
+
+        var events = await ConsumeAsync(run.RunEventsAsync("short final turn"));
+
+        Assert.Single(client.Requests);
+        Assert.DoesNotContain(events, item => item.Type == "extension_error");
+        Assert.NotNull(beforeCompact);
+        Assert.Equal(PiSharpExtensionCompactionReason.Threshold, beforeCompact.Reason);
+        Assert.NotNull(compactEvent);
+        Assert.True(compactEvent.FromExtension);
+        Assert.Equal("Pre-settlement checkpoint", compactEvent.Result.Summary);
+        Assert.True(compacted);
+        Assert.True(settledSawCompaction);
+        Assert.Equal(registerBeforeSettle, beforeSettleSawCompaction);
+        Assert.Equal(registerBeforeSettle
+            ? new[] { "compaction", "agent_before_settle", "agent_settled" }
+            : new[] { "compaction", "agent_settled" }, observerOrder);
+        Assert.Single(registrationConversation.Tree.ActivePath(), entry => entry.Type == "compaction");
+    }
+
     [Fact]
     public async Task SelfRetainingBoundaryCompactionSurvivesNativeAndPiJsonlResume()
     {
