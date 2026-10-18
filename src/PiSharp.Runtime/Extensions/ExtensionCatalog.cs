@@ -140,6 +140,9 @@ public sealed partial class ExtensionRegistration
         _agentEndHandlers.Clear();
         _turnStartHandlers.Clear();
         _turnEndHandlers.Clear();
+        _turnEndBoundaryHandlers.Clear();
+        _agentBeforeSettleHandlers.Clear();
+        _agentSettledHandlers.Clear();
         _toolExecutionStartHandlers.Clear();
         _toolExecutionUpdateHandlers.Clear();
         _toolExecutionEndHandlers.Clear();

@@ -38,6 +38,9 @@ public sealed partial class ExtensionRegistration
                 OrderList(_agentEndHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_turnStartHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_turnEndHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_turnEndBoundaryHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_agentBeforeSettleHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_agentSettledHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_toolExecutionStartHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_toolExecutionUpdateHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_toolExecutionEndHandlers, entry => Rank(entry.SourceInfo.Path));

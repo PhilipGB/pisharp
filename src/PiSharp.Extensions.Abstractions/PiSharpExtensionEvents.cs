@@ -349,7 +349,7 @@ internal static class PiSharpExtensionEventSnapshots
         return clone;
     }
 
-    private static AIContent CloneContent(AIContent content)
+    internal static AIContent CloneContent(AIContent content)
     {
         AIContent clone = content switch
         {
@@ -375,6 +375,9 @@ internal static class PiSharpExtensionEventSnapshots
         }
         return clone;
     }
+
+    internal static IReadOnlyList<AIContent> SnapshotContents(IEnumerable<AIContent> contents) =>
+        Array.AsReadOnly(contents.Select(CloneContent).ToArray());
 
     private static AIAnnotation CloneAnnotation(AIAnnotation annotation)
     {

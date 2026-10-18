@@ -24,6 +24,7 @@ public sealed partial class ExtensionRegistration
                 Capture(_sessionCompactFailedHandlers), Capture(_agentStartHandlers), Capture(_agentEndHandlers),
                 Capture(_turnStartHandlers), Capture(_turnEndHandlers), Capture(_toolExecutionStartHandlers),
                 Capture(_toolExecutionUpdateHandlers), Capture(_toolExecutionEndHandlers),
+                Capture(_turnEndBoundaryHandlers), Capture(_agentBeforeSettleHandlers), Capture(_agentSettledHandlers),
                 Capture(_modelSelectHandlers), Capture(_thinkingLevelSelectHandlers),
                 Capture(_sessionBeforeSwitchHandlers), Capture(_sessionBeforeForkHandlers),
                 Capture(_sessionBeforeTreeHandlers), Capture(_sessionTreeHandlers),
