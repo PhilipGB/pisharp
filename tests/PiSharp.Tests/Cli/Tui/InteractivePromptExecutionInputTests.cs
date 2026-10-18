@@ -13,6 +13,67 @@ namespace PiSharp.Tests;
 public sealed class InteractivePromptExecutionInputTests
 {
     [Fact]
+    public async Task ActiveInputInterceptionTransformsSteeringAndFollowUpAndConsumesHandledInput()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-tui-active-input-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            var seen = new List<PiSharpInputEvent>();
+            adapter.AddInputHandler((input, _, _) =>
+            {
+                seen.Add(input);
+                if (input.Text == "consume")
+                    return ValueTask.FromResult<PiSharpInputResult?>(PiSharpInputResult.Handled);
+                return ValueTask.FromResult<PiSharpInputResult?>(PiSharpInputResult.Transform(input.Text switch
+                {
+                    "steer" => "steered",
+                    "follow" => "followed",
+                    _ => input.Text
+                }));
+            });
+            adapter.Close();
+            var resources = await ResourceCatalog.LoadAsync(root, root, trusted: false, discoverSkills: false);
+            var client = new BlockingClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(root),
+                liveExtensionRegistration: registration), new ConversationSession(root, "fixture", null));
+            using var runCancellation = new CancellationTokenSource();
+            var running = Task.Run(async () =>
+            {
+                await foreach (var _ in run.RunUserMessageEventsAsync(new Microsoft.Extensions.AI.ChatMessage(
+                                   Microsoft.Extensions.AI.ChatRole.User, "active"), "active", runCancellation.Token))
+                {
+                }
+            });
+            await client.RequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var error = new StringWriter();
+            using var execution = new InteractivePromptExecution(null, null, () => error, () => resources,
+                () => run, () => "", () => CreateSelection(authenticated: true), () => new UserSettings(),
+                (_, _, _) => Task.CompletedTask, _ => Task.CompletedTask, null, null);
+            Assert.True(await execution.QueueActiveInputAsync("steer", followUp: false, CancellationToken.None));
+            Assert.True(await execution.QueueActiveInputAsync("follow", followUp: true, CancellationToken.None));
+            Assert.True(await execution.QueueActiveInputAsync("consume", followUp: false, CancellationToken.None));
+
+            var pending = run.GetPendingPrompts();
+            Assert.Equal(["steered"], pending.Steering);
+            Assert.Equal(["followed"], pending.FollowUp);
+            Assert.Equal(["steer", "follow", "consume"], seen.Select(input => input.Text));
+            Assert.All(seen, input => Assert.Equal(PiSharpInputSource.Interactive, input.Source));
+            Assert.Equal([PiSharpInputStreamingBehavior.Steer, PiSharpInputStreamingBehavior.FollowUp,
+                PiSharpInputStreamingBehavior.Steer], seen.Select(input => input.StreamingBehavior));
+            Assert.Equal(["Queued steering message.", "Queued follow-up."], error.ToString()
+                .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+
+            runCancellation.Cancel();
+            await running.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task HandledIdleInputReturnsBeforeAuthenticationResourceResolutionAndRun()
     {
         var registration = new ExtensionRegistration();
@@ -96,6 +157,26 @@ public sealed class InteractivePromptExecutionInputTests
         {
             yield return new ChatResponseUpdate(ChatRole.Assistant, "reply");
             await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class BlockingClient : IChatClient
+    {
+        public TaskCompletionSource RequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation]
+            CancellationToken cancellationToken = default)
+        {
+            RequestStarted.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            yield break;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

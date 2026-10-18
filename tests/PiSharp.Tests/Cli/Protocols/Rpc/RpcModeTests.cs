@@ -1009,6 +1009,40 @@ public sealed class RpcModeTests
     }
 
     [Fact]
+    public async Task UserBashResultDuringActiveRunPersistsOnceAfterSettlement()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var client = new QueuedClient();
+        var extensions = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(extensions);
+        adapter.AddUserBashHandler((_, _, _) => ValueTask.FromResult<PiSharpUserBashResult?>(
+            PiSharpUserBashResult.Full("active-bash-result", 17, truncated: true)));
+        adapter.Close();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(Path.GetTempPath()),
+            liveExtensionRegistration: extensions), session);
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run, extensions: extensions).ServeAsync();
+
+        channel.Writer.TryWrite("{\"id\":\"active-prompt\",\"type\":\"prompt\",\"message\":\"one\"}");
+        await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        channel.Writer.TryWrite("{\"id\":\"active-bash\",\"type\":\"bash\",\"command\":\"remote status\"}");
+        await WaitForAsync(output, "\"id\":\"active-bash\",\"type\":\"response\",\"command\":\"bash\"");
+        Assert.DoesNotContain(run.Conversation.Tree.ActivePath(), item => item.Type == "bash_execution");
+
+        client.ReleaseFirstRequest.TrySetResult();
+        await WaitForAsync(output, "\"type\":\"agent_settled\"");
+        channel.Writer.Complete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var entry = Assert.Single(run.Conversation.Tree.ActivePath(), item => item.Type == "bash_execution");
+        Assert.Equal("remote status", entry.Payload.GetProperty("command").GetString());
+        Assert.Equal("active-bash-result", entry.Payload.GetProperty("output").GetString());
+        Assert.Equal(17, entry.Payload.GetProperty("exitCode").GetInt32());
+        Assert.True(entry.Payload.GetProperty("truncated").GetBoolean());
+    }
+
+    [Fact]
     public async Task CustomUserBashOperationUsesHostPipelineAndPersistsOnce()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-user-bash-operation-" + Guid.NewGuid().ToString("N"));

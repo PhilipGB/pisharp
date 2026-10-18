@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>PiSharp.TestExtensions.NativeInputBash</PackageId>
+    <Version>1.0.0</Version>
+    <AssemblyName>NativeInputBashExtension</AssemblyName>
+    <Authors>PiSharp tests</Authors>
+    <Description>External compiled extension fixture for input and user-bash interception.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../src/PiSharp.Extensions.Abstractions/PiSharp.Extensions.Abstractions.csproj" />
+    <None Include="$(TargetDir)$(AssemblyName).deps.json" Pack="true"
+          PackagePath="lib/$(TargetFramework)/" Visible="false" />
+    <None Include="$(IntermediateOutputPath)pisharp-extension.json" Pack="true"
+          PackagePath="/" Visible="false" />
+  </ItemGroup>
+
+  <Target Name="GeneratePiSharpExtensionManifest" BeforeTargets="_GetPackageFiles">
+    <WriteLinesToFile File="$(IntermediateOutputPath)pisharp-extension.json"
+                      Lines="{&quot;id&quot;:&quot;$(PackageId)&quot;,&quot;version&quot;:&quot;$(Version)&quot;,&quot;apiVersion&quot;:1,&quot;extensions&quot;:[{&quot;assembly&quot;:&quot;lib/$(TargetFramework)/$(AssemblyName).dll&quot;,&quot;type&quot;:&quot;PiSharp.TestExtensions.NativeInputBash.InputBashExtension&quot;}]}"
+                      Overwrite="true" />
+  </Target>
+</Project>

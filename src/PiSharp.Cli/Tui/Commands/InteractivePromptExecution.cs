@@ -66,42 +66,8 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             {
                 transcript.Render(update);
                 _monitorStarted = true;
-                _monitor = editor.MonitorRunAsync(async (text, followUp, token) =>
-                {
-                    try
-                    {
-                        if (InteractiveBashExecutor.TryParse(text, out var command, out var excludeFromContext))
-                        {
-                            await executeBash(command, excludeFromContext, token);
-                            return true;
-                        }
-                        if (tryExecuteExtensionCommand is not null && await tryExecuteExtensionCommand(text, token))
-                            return true;
-                        var behavior = followUp
-                            ? PiSharpInputStreamingBehavior.FollowUp
-                            : PiSharpInputStreamingBehavior.Steer;
-                        var intercepted = await getRun().InterceptInputAsync(text, null, PiSharpInputSource.Interactive,
-                            behavior, token);
-                        if (intercepted.Action == PiSharpInputResultAction.Handled) return true;
-                        var prompt = intercepted.Action == PiSharpInputResultAction.Transform ? intercepted.Text! : text;
-                        var images = intercepted.Action == PiSharpInputResultAction.Transform ? intercepted.Images : null;
-                        if (images is { Count: > 0 })
-                            ValidateImages(images, getModelSelection(), getUserSettings());
-                        var queued = await getResources().ResolveInputAsync(prompt, token,
-                            error => ReportResourceErrorAsync(error, render: true));
-                        var contents = new List<AIContent> { new TextContent(queued) };
-                        if (images is not null) contents.AddRange(images);
-                        var message = new ChatMessage(ChatRole.User, contents);
-                        var accepted = followUp ? getRun().TryFollowUp(message, queued) : getRun().TrySteer(message, queued);
-                        if (accepted) getError().WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
-                        return accepted;
-                    }
-                    catch (Exception queueError) when (queueError is ArgumentException or IOException)
-                    {
-                        getError().WriteLine($"Could not queue input: {queueError.Message}");
-                        return false;
-                    }
-                }, () => getRun().ClearPendingPrompts().InDeliveryOrder, cancellation.Cancel, _monitorStop.Token,
+                _monitor = editor.MonitorRunAsync(QueueActiveInputAsync,
+                    () => getRun().ClearPendingPrompts().InDeliveryOrder, cancellation.Cancel, _monitorStop.Token,
                     handleAction, handleExtensionShortcut);
                 return;
             }
@@ -116,6 +82,42 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             ProcessRunUpdate(update);
         transcript.FinishTurn();
         Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);
+    }
+
+    internal async Task<bool> QueueActiveInputAsync(string text, bool followUp, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (InteractiveBashExecutor.TryParse(text, out var command, out var excludeFromContext))
+            {
+                await executeBash(command, excludeFromContext, cancellationToken);
+                return true;
+            }
+            if (tryExecuteExtensionCommand is not null && await tryExecuteExtensionCommand(text, cancellationToken))
+                return true;
+            var behavior = followUp
+                ? PiSharpInputStreamingBehavior.FollowUp
+                : PiSharpInputStreamingBehavior.Steer;
+            var intercepted = await getRun().InterceptInputAsync(text, null, PiSharpInputSource.Interactive,
+                behavior, cancellationToken);
+            if (intercepted.Action == PiSharpInputResultAction.Handled) return true;
+            var prompt = intercepted.Action == PiSharpInputResultAction.Transform ? intercepted.Text! : text;
+            var images = intercepted.Action == PiSharpInputResultAction.Transform ? intercepted.Images : null;
+            if (images is { Count: > 0 }) ValidateImages(images, getModelSelection(), getUserSettings());
+            var queued = await getResources().ResolveInputAsync(prompt, cancellationToken,
+                error => ReportResourceErrorAsync(error, render: true));
+            var contents = new List<AIContent> { new TextContent(queued) };
+            if (images is not null) contents.AddRange(images);
+            var message = new ChatMessage(ChatRole.User, contents);
+            var accepted = followUp ? getRun().TryFollowUp(message, queued) : getRun().TrySteer(message, queued);
+            if (accepted) getError().WriteLine(followUp ? "Queued follow-up." : "Queued steering message.");
+            return accepted;
+        }
+        catch (Exception queueError) when (queueError is ArgumentException or IOException)
+        {
+            getError().WriteLine($"Could not queue input: {queueError.Message}");
+            return false;
+        }
     }
 
     public async Task StopMonitoringAsync()

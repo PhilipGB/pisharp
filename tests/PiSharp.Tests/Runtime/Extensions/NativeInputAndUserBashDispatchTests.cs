@@ -253,6 +253,35 @@ public sealed class NativeInputAndUserBashDispatchTests
     }
 
     [Fact]
+    public async Task ModelInvokedBashToolDoesNotDispatchUserBashHandlers()
+    {
+        var cwd = NewWorkingDirectory();
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = CreateAdapter(registration, cwd, "user-bash.dll");
+            var userBashCalls = 0;
+            adapter.AddUserBashHandler((_, _, _) =>
+            {
+                Interlocked.Increment(ref userBashCalls);
+                return ValueTask.FromResult<NativeExtensions.PiSharpUserBashResult?>(null);
+            });
+            adapter.Close();
+
+            var run = await ConversationRun.OpenAsync(new PiAgent(new ModelBashToolClient(),
+                new CodingTools(cwd), selectedTools: ["bash"], liveExtensionRegistration: registration),
+                new ConversationSession(cwd, "test-model", null));
+            await foreach (var _ in run.RunUserMessageEventsAsync(new ChatMessage(ChatRole.User, "run the tool"),
+                               "run the tool")) { }
+
+            Assert.Equal(0, userBashCalls);
+            Assert.Contains(run.Conversation.ActiveMessages().SelectMany(message => message.Contents), content =>
+                content is FunctionResultContent { CallId: "model-bash-call" });
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public void InputAndUserBashRegistrationsRollbackAndReconcileBySource()
     {
         var cwd = NewWorkingDirectory();
@@ -324,6 +353,36 @@ public sealed class NativeInputAndUserBashDispatchTests
 #pragma warning disable CS0162
             yield break;
 #pragma warning restore CS0162
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class ModelBashToolClient : IChatClient
+    {
+        private int _requests;
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Increment(ref _requests) == 1)
+            {
+                Assert.Contains(options?.Tools ?? [], tool => tool is AIFunction function && function.Name == "bash");
+                yield return new ChatResponseUpdate(ChatRole.Assistant,
+                    [new FunctionCallContent("model-bash-call", "bash",
+                        new Dictionary<string, object?> { ["command"] = "printf model-invoked-bash" })]);
+            }
+            else
+            {
+                Assert.Contains(messages.SelectMany(message => message.Contents), content =>
+                    content is FunctionResultContent { CallId: "model-bash-call" });
+                yield return new ChatResponseUpdate(ChatRole.Assistant, "finished");
+            }
+            await Task.CompletedTask;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

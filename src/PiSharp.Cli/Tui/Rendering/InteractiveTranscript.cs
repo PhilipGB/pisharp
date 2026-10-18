@@ -292,10 +292,17 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     private void FinishTool(AgentLifecycleEvent update)
     {
-        if (update.Tool == "bash" && update.OperationId is { } id && _liveBash.Remove(id, out var normalizer))
+        if (update.Tool == "bash" && update.OperationId is { } id)
         {
-            var trailing = normalizer.Finish();
-            if (trailing.Length != 0) status.Write(Safe(trailing));
+            if (_liveBash.Remove(id, out var normalizer))
+            {
+                var trailing = normalizer.Finish();
+                if (trailing.Length != 0) status.Write(Safe(trailing));
+            }
+            else if (update.Text is { Length: > 0 } output)
+            {
+                status.Write(Safe(ShellOutputNormalizer.NormalizeComplete(output)));
+            }
             status.WriteLine();
             var error = update.Error;
             var statusStart = error?.LastIndexOf("\n\nCommand ", StringComparison.Ordinal) ?? -1;
