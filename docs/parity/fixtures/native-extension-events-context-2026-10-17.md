@@ -9,7 +9,10 @@ the verification date is recorded when complete; this copy is dated 2026-10-18.
 - Branch: `milestone/native-extension-events-context`.
 - Pi source: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` (unchanged).
 - Product source SHA: `7fe25b4024e5441bb709dbc6fadd50c43411523f`.
-- Exact-head CI run IDs: pending publication.
+- Test-only compaction-recorder correction: `772edfb685414bc9453fdcd0193ccc44402633a3`.
+- Push and PR exact-head Linux CI for that code-and-test checkpoint:
+  [39082700470](https://github.com/PhilipGB/pisharp/actions/runs/39082700470)
+  and [39082703383](https://github.com/PhilipGB/pisharp/actions/runs/39082703383).
 
 Pinned references inspected: [extension event types](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/src/core/extensions/types.ts), [extension runner](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/src/core/extensions/runner.ts), [agent session](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/src/core/agent-session.ts), [agent loop](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/agent/src/agent-loop.ts), and the pinned extension [API documentation](https://github.com/earendil-works/pi/tree/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/docs/extensions).
 
@@ -65,8 +68,10 @@ Local validation on 2026-10-18:
   passed, with no new regression.
 - Event integration wave, including the external compiled-package process,
   package reload/removal and ALC collection: 25/25 passed.
-- Push/PR exact-head CI run IDs: pending publication.
-  pending publication.
+- The CI-discovered overflow-compaction ordering assertion combined typed
+  callback delivery with the independently consumed run-event stream. The test
+  now records and asserts each stream's ordering separately; all six focused
+  compaction tests and the full suite pass.
 
 This bounded milestone does not complete the broad Extensions / .NET API parity
 row.
