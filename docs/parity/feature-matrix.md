@@ -1,14 +1,15 @@
 ## Active bounded milestone — Native Extension Events & Callback Context — 2026-10-18
 
-Branch `milestone/native-extension-events-context` is based on the PR #11 merge
+Branch `milestone/native-extension-events-context` is at final source
+`8f31c7ec1ef35882a8ea98a8988c18289dbaf206`, based on the PR #11 merge
 `1a0165c3858d973948c9ac8eb698e75ed0fcc535`; Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This increment adds typed compiled
 extension observers across session metadata, compaction, agent/turn lifecycle,
 tool execution, and model/thinking selection, with callback-scoped capabilities
-that reuse existing host state and controls. Local validation is complete and
-exact-head CI is pending; the
-Extensions / .NET API row remains `In progress` and the bounded implementation
-does not imply broad Pi extension parity. See [the continuation](../continuation.md),
+that reuse existing host state and controls. Cancellation revokes retained event
+contexts even when an observer remains pending. Exact-head push and PR CI pass,
+including 2,306 .NET tests; the Extensions / .NET API row remains `In progress`
+and the bounded implementation does not imply broad Pi extension parity. See [the continuation](../continuation.md),
 [API guide](../extensions.md), and
 [milestone receipt](fixtures/native-extension-events-context-2026-10-17.md).
 

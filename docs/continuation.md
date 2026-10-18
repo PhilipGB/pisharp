@@ -12,8 +12,10 @@ source-aware error isolation, and expose detached payloads with callback-scoped
 state access. TUI/RPC contexts reuse existing controls; print/JSON and direct
 Runtime execution use read-only context where host controls are unavailable.
 
-Implementation and local verification are complete; exact-head CI is pending.
-Keep the broad Extensions / .NET API row `in_progress`; this milestone does not
+The final source is `8f31c7ec1ef35882a8ea98a8988c18289dbaf206`. Exact-head push
+and PR Linux CI both pass, including 2,306 .NET tests. A cancelled event token
+revokes the public callback context even if its handler remains pending. Keep
+the broad Extensions / .NET API row `in_progress`; this milestone does not
 implement generic `pi.on(...)`, mutable turn-boundary hooks, or provider-specific
 OAuth/rendering work. See the [API guide](extensions.md) and
 [milestone receipt](parity/fixtures/native-extension-events-context-2026-10-17.md).

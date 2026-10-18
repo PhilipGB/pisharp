@@ -2,14 +2,16 @@
 
 ## Active milestone — Native Extension Events & Callback Context — 2026-10-18
 
-Work is on `milestone/native-extension-events-context`, based on PR #11 merge
+Work is on `milestone/native-extension-events-context` at final source
+`8f31c7ec1ef35882a8ea98a8988c18289dbaf206`, based on PR #11 merge
 `1a0165c3858d973948c9ac8eb698e75ed0fcc535`, with Pi pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Add typed session, compaction,
 agent, turn, tool, model, and thinking observers to the compiled extension API.
 Reuse authoritative runtime execution and session transitions, provide detached
-callback snapshots plus safe host-owned capabilities, and retain the broad
-extension parity row as `in_progress`. Implementation and local verification
-are complete; exact-head CI remains pending. See [the continuation](docs/continuation.md), [API guide](docs/extensions.md),
+callback snapshots plus safe host-owned capabilities, and revoke public event
+contexts as soon as their owning token is cancelled. Exact-head push and PR CI
+both pass, including 2,306 .NET tests; broad extension parity remains
+`in_progress`. See [the continuation](docs/continuation.md), [API guide](docs/extensions.md),
 and [milestone receipt](docs/parity/fixtures/native-extension-events-context-2026-10-17.md).
 
 ## Previous milestone — Native Extension Provider, MCP & Virtual Model Registration — 2026-10-17
