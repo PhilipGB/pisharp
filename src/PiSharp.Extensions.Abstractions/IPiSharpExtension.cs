@@ -26,6 +26,12 @@ public partial interface IPiSharpExtensionBuilder
     /// <summary>Registers an AI function tool available to the agent.</summary>
     void AddTool(AIFunction tool);
 
+    /// <summary>Registers a callback that can transform or consume user-originated input.</summary>
+    void AddInputHandler(PiSharpExtensionInputHandler handler);
+
+    /// <summary>Registers a callback that can replace user-originated shell execution.</summary>
+    void AddUserBashHandler(PiSharpExtensionUserBashHandler handler);
+
     /// <summary>Registers a provider and its chat models for normal model selection.</summary>
     void AddProvider(PiSharpExtensionProviderDefinition provider);
 

@@ -26,6 +26,7 @@ public sealed partial class ExtensionRegistration
                 OrderList(_shortcuts, shortcut => Rank(shortcut.SourceInfo.Path));
                 OrderDictionary(_mcpServers, pair => Rank(pair.Value.ExtensionPath));
                 OrderList(_userBashHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_inputHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_toolCallHooks, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_toolResultHooks, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_contextTransforms, entry => Rank(entry.SourceInfo.Path));

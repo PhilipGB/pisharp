@@ -21,6 +21,20 @@ public sealed record UserBashContext(string Command, bool ExcludeFromContext, st
 
 public delegate Task<BashExecutionResult?> UserBashHandler(UserBashContext context, CancellationToken cancellationToken);
 
+internal delegate ValueTask<PiSharp.Extensions.Abstractions.PiSharpUserBashResult?> RegisteredNativeUserBashHandler(
+    PiSharp.Extensions.Abstractions.PiSharpUserBashEvent eventData,
+    PiSharp.Runtime.Extensions.PiSharpExtensionContext context,
+    CancellationToken cancellationToken);
+
+internal delegate ValueTask<PiSharp.Extensions.Abstractions.PiSharpInputResult?> RegisteredInputHandler(
+    PiSharp.Extensions.Abstractions.PiSharpInputEvent eventData,
+    PiSharp.Runtime.Extensions.PiSharpExtensionContext context,
+    CancellationToken cancellationToken);
+
+internal sealed record RegisteredUserBashHandler(UserBashHandler? LegacyHandler,
+    RegisteredNativeUserBashHandler? NativeHandler,
+    ResourceSourceInfo SourceInfo);
+
 public sealed record ExtensionCommandInfo(string? Description, ResourceSourceInfo SourceInfo);
 
 public sealed record ExtensionConflictDiagnostic(string Path, string Error);
@@ -57,7 +71,8 @@ public sealed partial class ExtensionRegistration
     private readonly object _toolGate = new();
     private readonly List<RegisteredExtensionCommand> _commands = [];
     private readonly Dictionary<string, List<RegisteredExtensionTool>> _toolCandidates = new(StringComparer.Ordinal);
-    private readonly List<ExtensionHandlerRegistration<UserBashHandler>> _userBashHandlers = [];
+    private readonly List<RegisteredUserBashHandler> _userBashHandlers = [];
+    private readonly List<ExtensionHandlerRegistration<RegisteredInputHandler>> _inputHandlers = [];
     private readonly List<ExtensionHandlerRegistration<PiSharpToolCallHook>> _toolCallHooks = [];
     private readonly List<ExtensionHandlerRegistration<PiSharpToolResultHook>> _toolResultHooks = [];
     private readonly List<ExtensionHandlerRegistration<PiSharpContextTransform>> _contextTransforms = [];
@@ -90,7 +105,11 @@ public sealed partial class ExtensionRegistration
             .ToDictionary(entry => entry.Name, entry => entry.Command.ContextHandler!, StringComparer.Ordinal);
     public IReadOnlyDictionary<string, ExtensionCommandInfo> CommandInfo => ResolveCommands()
         .ToDictionary(entry => entry.Name, entry => entry.Command.Info, StringComparer.Ordinal);
-    public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers.Select(entry => entry.Handler).ToArray();
+    public IReadOnlyList<UserBashHandler> UserBashHandlers => _userBashHandlers
+        .Where(entry => entry.LegacyHandler is not null).Select(entry => entry.LegacyHandler!).ToArray();
+    internal IReadOnlyList<RegisteredUserBashHandler> RegisteredUserBashHandlers => _userBashHandlers.ToArray();
+    internal IReadOnlyList<ExtensionHandlerRegistration<RegisteredInputHandler>>
+        InputHandlers => _inputHandlers.ToArray();
     public IReadOnlyList<PiSharpToolCallHook> ToolCallHooks => _toolCallHooks.Select(entry => entry.Handler).ToArray();
     public IReadOnlyList<PiSharpToolResultHook> ToolResultHooks => _toolResultHooks.Select(entry => entry.Handler).ToArray();
     public IReadOnlyList<PiSharpContextTransform> ContextTransforms => _contextTransforms.Select(entry => entry.Handler).ToArray();
@@ -126,6 +145,7 @@ public sealed partial class ExtensionRegistration
         _extensionFlags.Clear();
         _shortcuts.Clear();
         _userBashHandlers.Clear();
+        _inputHandlers.Clear();
         _toolCallHooks.Clear();
         _toolResultHooks.Clear();
         _contextTransforms.Clear();
@@ -563,7 +583,19 @@ public sealed partial class ExtensionRegistration
     public void AddUserBashHandler(UserBashHandler handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
-        _userBashHandlers.Add(new(handler, _currentSourceInfo ?? SourceInfoFromHandler(handler)));
+        _userBashHandlers.Add(new(handler, null, _currentSourceInfo ?? SourceInfoFromHandler(handler)));
+    }
+
+    internal void AddNativeUserBashHandler(RegisteredNativeUserBashHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        _userBashHandlers.Add(new(null, handler, CurrentSourceInfoFor(handler)));
+    }
+
+    internal void AddInputHandler(RegisteredInputHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        _inputHandlers.Add(new(handler, CurrentSourceInfoFor(handler)));
     }
 }
 

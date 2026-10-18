@@ -43,6 +43,7 @@ public sealed partial class ExtensionRegistration
                             _virtualModels.Unregister(model.Model.Provider!, model.Model.Id, previous.Path);
                     }
                     Reconcile(_userBashHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_inputHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_toolCallHooks, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_toolResultHooks, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_contextTransforms, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
