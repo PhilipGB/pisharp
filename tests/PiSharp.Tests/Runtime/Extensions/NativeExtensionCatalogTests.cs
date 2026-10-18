@@ -103,6 +103,7 @@ public sealed class NativeExtensionCatalogTests
             Assert.Equal(["native-fixture-v2-enabled", "native-fixture-v2-label"],
                 catalog.Registration.ExtensionFlags.Select(flag => flag.Name).Order(StringComparer.Ordinal));
             AssertContextUnloaded(v1LoadContext);
+            AssertReplacementAgentStartHandler(catalog, v2Roots[0].Path);
             var (removedCatalog, v2LoadContext) = LoadAndRemoveNativePackageCatalog(agentDirectory,
                 workingDirectory, catalog);
             catalog = removedCatalog;
@@ -110,6 +111,7 @@ public sealed class NativeExtensionCatalogTests
             Assert.Empty(catalog.Registration.ExtensionShortcuts);
             Assert.Empty(catalog.Registration.SessionStartHandlers);
             Assert.Empty(catalog.Registration.SessionShutdownHandlers);
+            Assert.Empty(catalog.Registration.AgentStartHandlers);
             AssertContextUnloaded(v2LoadContext);
         }
         finally { catalog.Dispose(); }
@@ -561,6 +563,8 @@ public sealed class NativeExtensionCatalogTests
             reloaded.Registration.CommandInfo.Values.Select(info => info.SourceInfo.Path));
         Assert.DoesNotContain(v1Roots[0].Path,
             reloaded.Registration.BeforeAgentStartHandlers.Select(handler => handler.SourceInfo.Path));
+        Assert.DoesNotContain(v1Roots[0].Path,
+            reloaded.Registration.AgentStartHandlers.Select(handler => handler.SourceInfo.Path));
         Assert.DoesNotContain(v1Roots[0].Path, reloaded.LoadedExtensions.Select(extension => extension.Path));
         Assert.Single(reloaded.NativePackageLoadContextReferences);
         return (reloaded, previousLoadContext);
@@ -576,6 +580,7 @@ public sealed class NativeExtensionCatalogTests
         Assert.Empty(removed.Registration.ExtensionShortcuts);
         Assert.Empty(removed.Registration.SessionStartHandlers);
         Assert.Empty(removed.Registration.SessionShutdownHandlers);
+        Assert.Empty(removed.Registration.AgentStartHandlers);
         return (removed, previousLoadContext);
     }
 
@@ -649,6 +654,13 @@ public sealed class NativeExtensionCatalogTests
             Thread.Sleep(10);
         }
         Assert.False(context.IsAlive, "The native extension load context remained reachable after catalog reload.");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void AssertReplacementAgentStartHandler(ExtensionCatalog catalog, string expectedSource)
+    {
+        var handler = Assert.Single(catalog.Registration.AgentStartHandlers);
+        Assert.Equal(expectedSource, handler.SourceInfo.Path);
     }
 
     private static async Task<string> CreateBrokenEntryPackageAsync(string source, string destination)

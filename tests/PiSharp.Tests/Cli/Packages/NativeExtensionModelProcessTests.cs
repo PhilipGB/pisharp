@@ -44,7 +44,8 @@ public sealed class NativeExtensionModelProcessTests
         Task? firstErrors = null;
         try
         {
-            first = StartProcess(fixture, sessionDirectory, tracePath, continueSession: false);
+            first = StartProcess(fixture, sessionDirectory, tracePath, continueSession: false,
+                sessionName: "startup event");
             firstErrorLines = new();
             firstErrors = CaptureStandardErrorAsync(first, firstErrorLines);
             JsonElement[] models;
@@ -74,6 +75,10 @@ public sealed class NativeExtensionModelProcessTests
             }
 
             await SetModelAsync(first, "select-physical", "native_fixture", "physical-main", timeout.Token);
+            var thinkingSelection = await SendRpcRequestAsync(first,
+                new { id = "select-high-thinking", type = "set_thinking_level", level = "high" },
+                "select-high-thinking", timeout.Token);
+            Assert.True(thinkingSelection.GetProperty("success").GetBoolean(), thinkingSelection.ToString());
             await NativeExtensionStateProcessTests.RunModelPromptAsync(first, "mcp-turn",
                 "Call the available native fixture tool", timeout.Token);
             var firstTrace = await WaitForTraceAsync(tracePath,
@@ -92,15 +97,49 @@ public sealed class NativeExtensionModelProcessTests
             await NativeExtensionStateProcessTests.RunModelPromptAsync(first, "virtual-turn-1",
                 "Use the automatic fixture route", timeout.Token);
             Assert.Contains(await File.ReadAllLinesAsync(tracePath), line => line == "route|user|low|0");
+            Assert.Equal("event lifecycle session", await NativeExtensionStateProcessTests.RunExtensionCommandAsync(
+                first, "rename-session", "/native-model-fixture-rename event lifecycle session", timeout.Token));
+            var compact = await SendRpcRequestAsync(first,
+                new { id = "compact-session", type = "compact" }, "compact-session", timeout.Token);
+            Assert.True(compact.GetProperty("success").GetBoolean(), compact.ToString());
+            var firstEvents = await File.ReadAllLinesAsync(tracePath);
+            Assert.Contains(firstEvents, line => line.StartsWith("event|v1|model-select|Set|", StringComparison.Ordinal));
+            Assert.Contains(firstEvents, line => line == "event|v1|thinking-select|Low|High");
+            Assert.Contains(firstEvents, line => line == "event|v1|session-info|startup event");
+            Assert.Contains(firstEvents, line => line == "event|v1|session-info|event lifecycle session");
+            Assert.Contains(firstEvents, line => line.StartsWith("event|v1|session-compact|Manual|", StringComparison.Ordinal));
+            Assert.Contains(firstEvents, line => line.StartsWith("event|v1|agent-start|rpc|", StringComparison.Ordinal));
+            Assert.Contains(firstEvents, line => line.StartsWith("event|v1|tool-start|native-fixture-mcp-call|", StringComparison.Ordinal));
+            Assert.Contains(firstEvents, line => line.StartsWith("event|v1|tool-end|native-fixture-mcp-call|", StringComparison.Ordinal));
+            Assert.Contains(firstEvents, line => line.StartsWith("event|v1|agent-end|Completed|", StringComparison.Ordinal));
+            var firstAgentContext = firstEvents.First(line =>
+                line.StartsWith("event|v1|agent-start|rpc|", StringComparison.Ordinal));
+            var agentStart = Array.FindIndex(firstEvents, line => line.StartsWith("event|v1|agent-start|", StringComparison.Ordinal));
+            var firstTurnStart = Array.FindIndex(firstEvents, line => line == "event|v1|turn-start|0");
+            var toolStart = Array.FindIndex(firstEvents, line => line.StartsWith("event|v1|tool-start|native-fixture-mcp-call|", StringComparison.Ordinal));
+            var toolEnd = Array.FindIndex(firstEvents, line => line.StartsWith("event|v1|tool-end|native-fixture-mcp-call|", StringComparison.Ordinal));
+            var firstTurnEnd = Array.FindIndex(firstEvents, line => line.StartsWith("event|v1|turn-end|0|", StringComparison.Ordinal));
+            var secondTurnStart = Array.FindIndex(firstEvents, line => line == "event|v1|turn-start|1");
+            var agentEnd = Array.FindIndex(firstEvents, line => line.StartsWith("event|v1|agent-end|Completed|", StringComparison.Ordinal));
+            Assert.True(agentStart < firstTurnStart && firstTurnStart < toolStart && toolStart < toolEnd &&
+                toolEnd < firstTurnEnd && firstTurnEnd < secondTurnStart && secondTurnStart < agentEnd,
+                "The external package observed an unexpected agent/turn/tool event order: " +
+                string.Join(" | ", firstEvents.Where(line => line.StartsWith("event|v1|", StringComparison.Ordinal))));
             await StopProcessAsync(first, timeout.Token);
             Assert.DoesNotContain("Unhandled exception", string.Join("\n", firstErrorLines), StringComparison.Ordinal);
             first.Dispose();
             first = null;
 
+            await RunJsonPromptAsync(fixture, tracePath, timeout.Token);
+            var jsonEvents = await File.ReadAllLinesAsync(tracePath, timeout.Token);
+            Assert.Contains(jsonEvents, line => line.StartsWith("event|v1|agent-start|json|", StringComparison.Ordinal));
+            Assert.Contains(jsonEvents, line => line.StartsWith("event|v1|agent-end|Completed|", StringComparison.Ordinal));
+
             var saved = Assert.Single(Directory.GetFiles(sessionDirectory, "*.session.json"));
             var savedContent = await File.ReadAllTextAsync(saved);
             Assert.Contains("native_fixture_virtual", savedContent, StringComparison.Ordinal);
             Assert.Contains("routeCount", savedContent, StringComparison.Ordinal);
+            Assert.Contains("native_event_observed", savedContent, StringComparison.Ordinal);
             using (var savedDocument = JsonDocument.Parse(savedContent))
             {
                 Assert.Equal("auto", savedDocument.RootElement.GetProperty("Model").GetString());
@@ -108,12 +147,19 @@ public sealed class NativeExtensionModelProcessTests
             }
 
             resumed = StartProcess(fixture, sessionDirectory, tracePath, continueSession: true);
+            var resumedTraceOffset = (await File.ReadAllLinesAsync(tracePath, timeout.Token)).Length;
             var resumedErrorLines = new ConcurrentQueue<string>();
             var resumedErrors = CaptureStandardErrorAsync(resumed, resumedErrorLines);
             await NativeExtensionStateProcessTests.RunModelPromptAsync(resumed, "virtual-turn-2",
                 "Continue the automatic fixture route", timeout.Token);
             Assert.Contains(await WaitForTraceAsync(tracePath, line => line == "route|user|low|1", timeout.Token),
                 "route|user|low|1", StringComparison.Ordinal);
+            var resumedEvents = (await File.ReadAllLinesAsync(tracePath, timeout.Token))
+                .Skip(resumedTraceOffset).ToArray();
+            var resumedAgentContext = Assert.Single(resumedEvents, line =>
+                line.StartsWith("event|v1|agent-start|rpc|", StringComparison.Ordinal));
+            Assert.Equal(firstAgentContext.Split('|')[4], resumedAgentContext.Split('|')[4]);
+            Assert.Contains("|native_fixture_virtual/auto|Low|", resumedAgentContext, StringComparison.Ordinal);
             await StopProcessAsync(resumed, timeout.Token);
             await resumedErrors.WaitAsync(timeout.Token);
             Assert.DoesNotContain("Unhandled exception", string.Join("\n", resumedErrorLines), StringComparison.Ordinal);
@@ -125,6 +171,7 @@ public sealed class NativeExtensionModelProcessTests
             Assert.Equal(0, updated.ExitCode);
             Assert.Contains("PiSharp.TestExtensions.NativeModelFixture 2.0.0", updated.Output, StringComparison.Ordinal);
             await WriteDefaultsAsync(fixture, "native_fixture_virtual", "auto-v2");
+            var replacementTraceOffset = (await File.ReadAllLinesAsync(tracePath, timeout.Token)).Length;
             replacement = StartProcess(fixture, replacementSessionDirectory, tracePath, continueSession: false);
             var replacementErrorLines = new ConcurrentQueue<string>();
             var replacementErrors = CaptureStandardErrorAsync(replacement, replacementErrorLines);
@@ -163,6 +210,13 @@ public sealed class NativeExtensionModelProcessTests
             await SetModelAsync(replacement, "select-physical-v2", "native_fixture", "physical-main-v2", timeout.Token);
             await NativeExtensionStateProcessTests.RunModelPromptAsync(replacement, "mcp-turn-v2",
                 "Call the replacement native fixture tool", timeout.Token);
+            var replacementEvents = await File.ReadAllLinesAsync(tracePath);
+            Assert.Contains(replacementEvents, line => line.StartsWith("event|v2|model-select|Set|", StringComparison.Ordinal));
+            Assert.Contains(replacementEvents, line => line.StartsWith("event|v2|agent-start|rpc|", StringComparison.Ordinal));
+            var replacementRunEvents = replacementEvents.Skip(replacementTraceOffset).ToArray();
+            Assert.DoesNotContain(replacementRunEvents, line => line.StartsWith("event|v1|", StringComparison.Ordinal));
+            Assert.Single(replacementRunEvents, line => line.StartsWith("event|v2|agent-start|rpc|", StringComparison.Ordinal));
+            Assert.Single(replacementRunEvents, line => line.StartsWith("event|v2|model-select|Set|", StringComparison.Ordinal));
             var replacementTrace = await WaitForTraceAsync(tracePath,
                 line => line.StartsWith("request|physical-main-v2|", StringComparison.Ordinal) &&
                     line.Contains("mcp__native_fixture_mcp_v2__echo_v2", StringComparison.Ordinal), timeout.Token);
@@ -256,7 +310,35 @@ public sealed class NativeExtensionModelProcessTests
         settings["defaultProvider"] = provider;
         settings["defaultModel"] = model;
         settings["defaultThinkingLevel"] = "low";
+        settings["compaction"] = new JsonObject { ["enabled"] = false, ["keepRecentTokens"] = 1 };
         await File.WriteAllTextAsync(path, settings.ToJsonString());
+    }
+
+    private static async Task RunJsonPromptAsync(ManagedNpmFixture fixture, string tracePath,
+        CancellationToken cancellationToken)
+    {
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = fixture.ProjectDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+        foreach (var argument in new[] { "--mode", "json", "--offline", "--provider", "native_fixture", "--model",
+                     "physical-main", "--no-tools", "--no-session", "external JSON callback" })
+            start.ArgumentList.Add(argument);
+        foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                     "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_NATIVE_MODEL_TRACE" })
+            start.Environment.Remove(name);
+        start.Environment["PISHARP_AGENT_DIR"] = fixture.AgentDirectory;
+        start.Environment["PISHARP_SESSION_DIR"] = Path.Combine(fixture.Root, "sessions-json");
+        start.Environment["PISHARP_NATIVE_MODEL_TRACE"] = tracePath;
+        using var process = Process.Start(start) ?? throw new IOException("Could not start native extension JSON process.");
+        var output = process.StandardOutput.ReadToEndAsync(cancellationToken);
+        var error = process.StandardError.ReadToEndAsync(cancellationToken);
+        await process.WaitForExitAsync(cancellationToken);
+        Assert.True(process.ExitCode == 0,
+            $"JSON process failed. stdout={await output}; stderr={await error}");
     }
 
     private static async Task WriteUnrelatedMcpAsync(ManagedNpmFixture fixture)
@@ -278,7 +360,7 @@ public sealed class NativeExtensionModelProcessTests
     }
 
     private static Process StartProcess(ManagedNpmFixture fixture, string sessionDirectory, string tracePath,
-        bool continueSession)
+        bool continueSession, string? sessionName = null)
     {
         var start = new ProcessStartInfo("dotnet")
         {
@@ -291,6 +373,11 @@ public sealed class NativeExtensionModelProcessTests
         foreach (var argument in new[] { "--mode", "rpc", "--offline", "--session-dir", sessionDirectory })
             start.ArgumentList.Add(argument);
         if (continueSession) start.ArgumentList.Add("--continue");
+        if (sessionName is not null)
+        {
+            start.ArgumentList.Add("--name");
+            start.ArgumentList.Add(sessionName);
+        }
         foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
                      "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH", "PISHARP_NATIVE_MODEL_TRACE" })
             start.Environment.Remove(name);

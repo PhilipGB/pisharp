@@ -135,6 +135,8 @@ internal static class RpcModeComposition
             createSettingsFlagContext: sourcePath =>
                 PiSharpExtensionSettingsFlagContextFactory.Create(projectBinding, sourcePath),
             cycleModel: (model, token) => modelTransitions.SelectRpcModelAsync(model,
-                PiSharpExtensionModelSelectionSource.Cycle, token)).ServeAsync();
+                PiSharpExtensionModelSelectionSource.Cycle, token),
+            installExtensionCapabilitiesFactory: conversationBinding.SetExtensionCapabilitiesFactory,
+            getSystemPrompt: () => modelBinding.Agent.SystemInstructions).ServeAsync();
     }
 }

@@ -42,12 +42,26 @@ public sealed class NativeExtensionSelectionTransitionTests
                 observed.Add("model_select");
                 return ValueTask.CompletedTask;
             });
+            adapter.AddTurnEndHandler((eventData, _, _) =>
+            {
+                observed.Add($"turn_end:{eventData.TurnIndex}");
+                return ValueTask.CompletedTask;
+            });
+            adapter.AddTurnStartHandler((eventData, _, _) =>
+            {
+                observed.Add($"turn_start:{eventData.TurnIndex}");
+                return ValueTask.CompletedTask;
+            });
             adapter.Close();
 
             var conversation = new ConversationSession(workingDirectory, "old-model", null, "old-provider");
             conversation.SelectModel("old-model", null, "old-provider");
             var client = new BlockingClient();
-            var agent = new PiAgent(client, new CodingTools(workingDirectory), noTools: true,
+            var nextClient = new SelectionBoundaryClient(observed);
+            var transitionTool = Microsoft.Extensions.AI.AIFunctionFactory.Create(() => "tool complete",
+                name: "transition_tool");
+            var agent = new PiAgent(client, new CodingTools(workingDirectory), noBuiltinTools: true,
+                extensionToolRegistrations: [new(transitionTool)],
                 liveExtensionRegistration: registration);
             var run = await ConversationRun.OpenAsync(agent, conversation, provider: "old-provider", reasoningLevel: "off");
 
@@ -60,7 +74,11 @@ public sealed class NativeExtensionSelectionTransitionTests
             var previous = new PiSharpExtensionModelInfo("old-provider", "old-model", "old-model", null, false);
             var current = new PiSharpExtensionModelInfo("new-provider", "new-model", "new-model", null, true);
             Assert.True(run.TrySetModelDuringRun("new-model", null, "new-provider", null, null, 0, "high",
-                new ReasoningOptions { Effort = ReasoningEffort.High }, () => runtimeActivated = true,
+                new ReasoningOptions { Effort = ReasoningEffort.High }, () =>
+                {
+                    runtimeActivated = true;
+                    agent.SetModelRuntime(nextClient, supportsImages: true, imageResizeOptions: null);
+                },
                 providerApi: "test-api",
                 notifyAfterActivation: async token =>
                 {
@@ -73,7 +91,7 @@ public sealed class NativeExtensionSelectionTransitionTests
 
             Assert.False(runtimeActivated);
             Assert.True(selectionOwnerUpdated);
-            Assert.Empty(observed);
+            Assert.Equal(["turn_start:0"], observed);
 
             client.ReleaseRequest.TrySetResult(true);
             await task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -81,7 +99,11 @@ public sealed class NativeExtensionSelectionTransitionTests
             Assert.True(runtimeActivated);
             Assert.True(selectionOwnerUpdated);
             Assert.False(observerRanBeforeActivation);
-            Assert.Equal(["thinking_level_select", "model_select"], observed);
+            Assert.True(nextClient.SawSelectionBeforeRequest,
+                "The replacement provider request started before the committed selection notifications.");
+            Assert.True(nextClient.SawFinalizedToolResult);
+            Assert.Equal(["turn_start:0", "turn_end:0", "thinking_level_select", "model_select", "turn_start:1",
+                "next_provider_request", "turn_end:1"], observed);
             Assert.Equal("new-model", conversation.Model);
         }
         finally { Directory.Delete(workingDirectory, recursive: true); }
@@ -102,10 +124,35 @@ public sealed class NativeExtensionSelectionTransitionTests
         {
             RequestStarted.TrySetResult(true);
             await ReleaseRequest.Task.WaitAsync(cancellationToken);
-            yield return new ChatResponseUpdate(ChatRole.Assistant, [new TextContent("completed")])
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [new FunctionCallContent("transition-tool-call", "transition_tool", new Dictionary<string, object?>())])
             {
-                FinishReason = ChatFinishReason.Stop
+                FinishReason = ChatFinishReason.ToolCalls
             };
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class SelectionBoundaryClient(List<string> observed) : IChatClient
+    {
+        public bool SawSelectionBeforeRequest { get; private set; }
+        public bool SawFinalizedToolResult { get; private set; }
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            observed.Add("next_provider_request");
+            SawSelectionBeforeRequest = observed.Contains("thinking_level_select") &&
+                observed.Contains("model_select") && observed.Contains("turn_start:1");
+            SawFinalizedToolResult = messages.SelectMany(message => message.Contents)
+                .OfType<FunctionResultContent>().Any(result => result.CallId == "transition-tool-call");
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "completed");
+            await Task.CompletedTask;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

@@ -57,7 +57,7 @@ internal sealed class TerminalConversationExecution
             promptExecution.ExecuteAsync(input, images, _modelBinding.Selection, _projectBinding.Settings,
                 transcript, cancellation), handleApplicationAction, cancellationToken, handleExtensionShortcut);
 
-    public Task RunCustomMessageAsync(PiSharpCustomMessage message, string sourcePath,
+    public Task RunCustomMessageAsync(PiSharpCustomMessage message, string? sourcePath,
         Func<string, Task>? handleApplicationAction = null, CancellationToken cancellationToken = default,
         Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut = null) =>
         RunCoreAsync((promptExecution, transcript, cancellation) =>

@@ -3,6 +3,7 @@ using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
+using NativeCustomMessage = PiSharp.Extensions.Abstractions.PiSharpCustomMessage;
 
 namespace PiSharp.Cli.Tui;
 
@@ -31,7 +32,7 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
             expanded, token), transcript, cancellation);
     }
 
-    public Task ExecuteCustomMessageAsync(PiSharpCustomMessage message, string sourcePath,
+    public Task ExecuteCustomMessageAsync(NativeCustomMessage message, string? sourcePath,
         InteractiveTranscript transcript, CancellationTokenSource cancellation) =>
         ExecuteEventsAsync(token => getRun().RunCustomMessageEventsAsync(message, sourcePath, token), transcript, cancellation);
 

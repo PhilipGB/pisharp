@@ -43,6 +43,13 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         var id = execution is null ? Guid.NewGuid().ToString("N") :
             await execution.StartToolAsync(Name, arguments, cancellationToken);
         var displayArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        publish(new AgentLifecycleEvent("tool_execution_started", Tool: Name, OperationId: id)
+        {
+            ToolArguments = callArguments ?? displayArguments,
+            ToolCallId = toolCallId,
+            ParentToolCallId = parentToolCallId,
+            NativeToolObserverOnly = false
+        });
         PiSharpToolExecutionContext? toolExecutionContext = null;
         var toolStartedPublished = false;
         void PublishToolStarted()
@@ -55,7 +62,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             {
                 ToolArguments = displayArguments,
                 ToolCallId = toolCallId,
-                ParentToolCallId = parentToolCallId
+                ParentToolCallId = parentToolCallId,
+                NativeToolObserverOnly = true
             });
         }
         if (loadout is not null)
@@ -230,8 +238,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             ToolExecutionDuration.Set(resultContent, durationMs);
             toolResultMessage = new ChatMessage(ChatRole.Tool, [resultContent]);
         }
-        if (startedAt is not null)
-            publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
+        publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
                 IsError: resultContext.IsError, Error: resultContext.Error,
                 Details: hasStructuredOutput ? details : null, Cost: contract?.Cost)
         {

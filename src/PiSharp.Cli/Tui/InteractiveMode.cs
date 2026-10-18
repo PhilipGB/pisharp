@@ -4,6 +4,7 @@ using PiSharp.Cli.Composition;
 using PiSharp.Cli.Sessions;
 using PiSharp.Cli.Startup;
 using PiSharp.Runtime.Extensions;
+using NativeCustomMessage = PiSharp.Extensions.Abstractions.PiSharpCustomMessage;
 
 namespace PiSharp.Cli.Tui;
 
@@ -105,36 +106,92 @@ internal static class InteractiveMode
                     Interlocked.Exchange(ref shutdownRequested, 1);
                     execution.AbortCurrentRun();
                 });
+            async Task SendUserMessageAsync(string text, CancellationToken cancellationToken)
+            {
+                if (run.IsActive)
+                {
+                    var expanded = await projectBinding.Resources.ResolveInputAsync(text, cancellationToken,
+                        error => Console.Error.WriteLineAsync($"Extension error ({error.ExtensionPath}): {error.Error}"));
+                    if (!run.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
+                        throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
+                    return;
+                }
+                await execution.RunAsync(text, handleApplicationAction: applicationActions.HandleAsync,
+                    cancellationToken: cancellationToken, handleExtensionShortcut: HandleExtensionShortcutAsync);
+            }
+
+            async Task SendCustomMessageAsync(NativeCustomMessage message, bool triggerTurn,
+                PiSharpMessageDeliveryMode deliveryMode, CancellationToken cancellationToken)
+            {
+                if (!await run.DeliverExtensionCustomMessageAsync(message,
+                    commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
+                await execution.RunCustomMessageAsync(message, commandInfo.SourceInfo.Path,
+                    applicationActions.HandleAsync, cancellationToken, HandleExtensionShortcutAsync);
+            }
+
+            var session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path);
+            var settingsAndFlags = PiSharpExtensionSettingsFlagContextFactory.Create(projectBinding,
+                commandInfo.SourceInfo.Path);
+            var capabilities = PiSharpExtensionCapabilitiesFactory.Create(projectBinding, modelBinding, run,
+                commandInfo.SourceInfo.Path, session, controls, SendUserMessageAsync, SendCustomMessageAsync,
+                GetExtensionCommands, settingsAndFlags);
             return new PiSharpExtensionCommandContext(projectBinding.WorkingDirectory, !run.IsActive,
                 projectBinding.Trusted, run.PendingPromptCount > 0,
-                async (text, cancellationToken) =>
-                {
-                    if (run.IsActive)
-                    {
-                        var expanded = await projectBinding.Resources.ResolveInputAsync(text, cancellationToken,
-                            error => Console.Error.WriteLineAsync($"Extension error ({error.ExtensionPath}): {error.Error}"));
-                        if (!run.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
-                            throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
-                        return;
-                    }
-                    await execution.RunAsync(text, handleApplicationAction: applicationActions.HandleAsync,
-                        cancellationToken: cancellationToken, handleExtensionShortcut: HandleExtensionShortcutAsync);
-                },
-                async (message, triggerTurn, deliveryMode, cancellationToken) =>
-                {
-                    var currentRun = conversationBinding.Run;
-                    if (!await currentRun.DeliverExtensionCustomMessageAsync(message,
-                        commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
-                    await execution.RunCustomMessageAsync(message, commandInfo.SourceInfo.Path,
-                        applicationActions.HandleAsync, cancellationToken, HandleExtensionShortcutAsync);
-                }, projectBinding.Configuration.ExtensionMode, projectBinding.Configuration.HasUserInterface,
+                SendUserMessageAsync, SendCustomMessageAsync,
+                projectBinding.Configuration.ExtensionMode, projectBinding.Configuration.HasUserInterface,
                 projectBinding.Configuration.ExtensionUi, controls)
             {
-                Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path),
-                SettingsAndFlags = PiSharpExtensionSettingsFlagContextFactory.Create(projectBinding,
-                    commandInfo.SourceInfo.Path)
+                Session = session,
+                SettingsAndFlags = settingsAndFlags,
+                Capabilities = capabilities
             };
         }
+
+        conversationBinding.SetExtensionCapabilitiesFactory(run => (sourcePath, session) =>
+        {
+            var controls = PiSharpExtensionCommandControlFactory.Create(
+                () => conversationBinding.Run,
+                GetExtensionCommands,
+                () => extensionLease.Current.Registration,
+                modelRuntime,
+                modelBinding,
+                modelTransitions,
+                execution.AbortCurrentRun,
+                execution.CancelActiveRunAsync,
+                () =>
+                {
+                    Interlocked.Exchange(ref shutdownRequested, 1);
+                    execution.AbortCurrentRun();
+                });
+
+            async Task SendUserMessageAsync(string text, CancellationToken cancellationToken)
+            {
+                var currentRun = conversationBinding.Run;
+                if (currentRun.IsActive)
+                {
+                    var expanded = await projectBinding.Resources.ResolveInputAsync(text, cancellationToken,
+                        error => Console.Error.WriteLineAsync($"Extension error ({error.ExtensionPath}): {error.Error}"));
+                    if (!currentRun.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
+                        throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
+                    return;
+                }
+                await execution.RunAsync(text, handleApplicationAction: applicationActions.HandleAsync,
+                    cancellationToken: cancellationToken, handleExtensionShortcut: HandleExtensionShortcutAsync);
+            }
+
+            async Task SendCustomMessageAsync(NativeCustomMessage message, bool triggerTurn,
+                PiSharpMessageDeliveryMode deliveryMode, CancellationToken cancellationToken)
+            {
+                var currentRun = conversationBinding.Run;
+                if (!await currentRun.DeliverExtensionCustomMessageAsync(message, sourcePath,
+                    triggerTurn, deliveryMode, cancellationToken)) return;
+                await execution.RunCustomMessageAsync(message, sourcePath, applicationActions.HandleAsync,
+                    cancellationToken, HandleExtensionShortcutAsync);
+            }
+
+            return PiSharpExtensionCapabilitiesFactory.Create(projectBinding, modelBinding, run, sourcePath,
+                session, controls, SendUserMessageAsync, SendCustomMessageAsync, GetExtensionCommands);
+        });
 
         async Task HandleExtensionShortcutAsync(ExtensionShortcutInfo shortcut, CancellationToken cancellationToken)
         {

@@ -124,31 +124,40 @@ public sealed class ConversationRun
     }
 
     /// <summary>Changes the active session name and commits only after its normal save succeeds.</summary>
-    public async Task SetSessionNameAsync(string name, CancellationToken cancellationToken = default)
+    public Task SetSessionNameAsync(string name, CancellationToken cancellationToken = default) =>
+        SetSessionNameAsync(name, saveOverride: null, cancellationToken);
+
+    internal async Task SetSessionNameAsync(string name,
+        Func<CancellationToken, Task>? saveOverride, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
         var ownsGate = ReferenceEquals(s_currentGateOwner.Value, this);
         if (!ownsGate) await _gate.WaitAsync(cancellationToken);
-        var changed = false;
+        var previousName = Conversation.Name;
         try
         {
-            var previousName = Conversation.Name;
             using var change = Conversation.BeginSessionNameChange(name);
-            if (_save is not null) await _save(cancellationToken).ConfigureAwait(false);
+            var save = _save ?? saveOverride;
+            if (save is not null) await save(cancellationToken).ConfigureAwait(false);
             change.Commit();
-            changed = !string.Equals(previousName, Conversation.Name, StringComparison.Ordinal);
         }
         finally
         {
             if (!ownsGate) _gate.Release();
         }
-        if (changed) await NotifySessionInfoChangedAsync(cancellationToken).ConfigureAwait(false);
+        await NotifySessionInfoChangedIfChangedAsync(previousName, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Publishes the already committed current session name to native extension observers.</summary>
     internal Task NotifySessionInfoChangedAsync(CancellationToken cancellationToken) =>
         _agent.ExtensionEvents.DispatchSessionInfoChangedAsync(
             new NativeExtensions.PiSharpExtensionSessionInfoChangedEvent(Conversation.Name), cancellationToken);
+
+    /// <summary>Publishes a name change only after its owner has committed the canonical session state.</summary>
+    internal Task NotifySessionInfoChangedIfChangedAsync(string? previousName, CancellationToken cancellationToken) =>
+        string.Equals(previousName, Conversation.Name, StringComparison.Ordinal)
+            ? Task.CompletedTask
+            : NotifySessionInfoChangedAsync(cancellationToken);
 
     /// <summary>Changes an existing entry label and commits only after its normal save succeeds.</summary>
     public async Task SetEntryLabelAsync(string entryId, string? label,
@@ -748,7 +757,7 @@ public sealed class ConversationRun
                         }
                         catch (OperationCanceledException) when (linked.IsCancellationRequested)
                         {
-                            // A host abort releases a pending extension observer and settles this run.
+                            // Host cancellation releases a pending terminal observer and settles this run.
                         }
                     }
                     if (owner is not null) await EndPromptLoopAsync(owner);
@@ -868,7 +877,7 @@ public sealed class ConversationRun
         }
     }
 
-    private async Task DispatchPendingRuntimeTransitionNotificationsAsync()
+    private async Task DispatchPendingRuntimeTransitionNotificationsAsync(CancellationToken cancellationToken = default)
     {
         while (true)
         {
@@ -876,7 +885,7 @@ public sealed class ConversationRun
             lock (_runtimeStateGate)
                 notification = _pendingRuntimeTransitionNotifications.TryDequeue(out var pending) ? pending : null;
             if (notification is null) return;
-            await notification(CancellationToken.None).ConfigureAwait(false);
+            await notification(cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -1214,6 +1223,7 @@ public sealed class ConversationRun
                     _providerRequestPricing = attribution.Pricing;
                 }
                 CompleteNativeTurn(previousTurn, aborted: false, errorMessage: null);
+                DispatchPendingRuntimeTransitionNotificationsAsync(cancellationToken).GetAwaiter().GetResult();
                 providerTurns.PartialAssistantText.Clear();
                 nativeTurnOpen = true;
                 _agent.ExtensionEvents.DispatchTurnStartAsync(new NativeExtensions.PiSharpExtensionTurnStartEvent(

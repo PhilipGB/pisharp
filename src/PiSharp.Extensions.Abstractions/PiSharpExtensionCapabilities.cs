@@ -21,6 +21,7 @@ public sealed class PiSharpExtensionCapabilities : IDisposable
     private readonly Func<IReadOnlyList<string>>? _getActiveTools;
     private readonly Func<IReadOnlyList<PiSharpExtensionToolInfo>>? _getConfiguredTools;
     private readonly Func<IReadOnlyList<PiSharpExtensionCommandInfo>>? _getCommands;
+    private readonly Func<bool>? _canCompact;
     private readonly CancellationTokenSource _lifetime = new();
     private int _isActive = 1;
     private int _shutdownRequested;
@@ -38,6 +39,7 @@ public sealed class PiSharpExtensionCapabilities : IDisposable
     /// <param name="getActiveTools">Current active tool names for modes without command controls.</param>
     /// <param name="getConfiguredTools">Current tool projections for modes without command controls.</param>
     /// <param name="getCommands">Current command projections for modes without command controls.</param>
+    /// <param name="canCompact">Whether the current callback phase can compact without reentering an active run.</param>
     public PiSharpExtensionCapabilities(
         PiSharpExtensionCommandControlOperations? controlOperations,
         PiSharpExtensionSessionContext? session,
@@ -50,7 +52,8 @@ public sealed class PiSharpExtensionCapabilities : IDisposable
         Func<PiSharpThinkingLevel>? getThinkingLevel = null,
         Func<IReadOnlyList<string>>? getActiveTools = null,
         Func<IReadOnlyList<PiSharpExtensionToolInfo>>? getConfiguredTools = null,
-        Func<IReadOnlyList<PiSharpExtensionCommandInfo>>? getCommands = null)
+        Func<IReadOnlyList<PiSharpExtensionCommandInfo>>? getCommands = null,
+        Func<bool>? canCompact = null)
     {
         _controls = controlOperations;
         _session = session;
@@ -64,6 +67,7 @@ public sealed class PiSharpExtensionCapabilities : IDisposable
         _getActiveTools = getActiveTools;
         _getConfiguredTools = getConfiguredTools;
         _getCommands = getCommands;
+        _canCompact = canCompact;
     }
 
     /// <summary>Returns a detached snapshot of the current session branch, when available.</summary>
@@ -200,6 +204,9 @@ public sealed class PiSharpExtensionCapabilities : IDisposable
         CancellationToken cancellationToken = default)
     {
         EnsureActive();
+        if (_canCompact is not null && !_canCompact())
+            return new(PiSharpCompactionStatus.Failed,
+                "Compaction is unavailable while an extension callback is part of an active agent run.");
         using var linked = Link(cancellationToken);
         return await RequireControls().CompactCurrentSessionAsync(linked.Token).ConfigureAwait(false);
     }

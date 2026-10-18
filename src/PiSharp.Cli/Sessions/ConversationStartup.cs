@@ -22,6 +22,7 @@ internal static class ConversationStartup
         var selection = initialModel.Selection;
         var initialSelection = selection;
         var thinking = initialModel.Thinking;
+        var initialThinking = thinking;
         var chat = initialModel.Chat;
         var agent = initialModel.Agent;
         var contextPolicy = initialModel.ContextPolicy;
@@ -50,19 +51,23 @@ internal static class ConversationStartup
                     modelRuntimeController.CreateVirtualModelRouter(selection), codemodeModels);
             }
             modelBinding = new ActiveModelRuntime(selection, chat, agent, thinking, contextPolicy, modelPricing);
+            var previousSessionName = conversation.Name;
             using var initialNameChange = cli.SessionName is null ? null : conversation.BeginSessionNameChange(cli.SessionName);
             if (!cli.NoSession) sessionPath ??= store.NewPath(conversation);
             var initialPath = sessionPath;
             conversationRun = await runComposition.OpenAsync(modelBinding, agent, conversation, initialPath);
             if (startupModel.RebuildRuntime)
-                await PiSharpExtensionSelectionEvents.PublishRestoreAsync(agent, initialSelection, selection,
-                    CancellationToken.None).ConfigureAwait(false);
+                await PiSharpExtensionSelectionEvents.PublishRestoreAsync(agent, initialSelection, initialThinking,
+                    selection, thinking, CancellationToken.None).ConfigureAwait(false);
             await ExtensionSessionLifecycleHost.NotifyStartAsync(conversationRun, startupConversation.StartReason);
             await projectRuntime.DiscoverExtensionResourcesAsync(agentDirectory, cli,
                 ExtensionResourceDiscoveryReason.Startup);
             if ((cli.SessionName is not null || cli.ForkSource is not null) && sessionPath is not null)
                 await store.SaveAsync(conversation, sessionPath);
             initialNameChange?.Commit();
+            if (initialNameChange is not null)
+                await conversationRun.NotifySessionInfoChangedIfChangedAsync(previousSessionName,
+                    CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
         {

@@ -440,6 +440,11 @@ public sealed class PiAgent
 
     private void PublishEvent(AgentLifecycleEvent item)
     {
+        if (item.NativeToolObserverOnly == true)
+        {
+            DispatchNativeToolEvent(item);
+            return;
+        }
         foreach (var registration in _extensionLifecycleHandlers)
         {
             try { registration.Handler(item, _extensionContext); }
@@ -462,7 +467,8 @@ public sealed class PiAgent
         var cancellationToken = Volatile.Read(ref _activeRunCancellation)?.Token ?? CancellationToken.None;
         switch (item.Type)
         {
-            case "tool_execution_started" when item.ToolCallId is { Length: > 0 } callId &&
+            case "tool_execution_started" when item.NativeToolObserverOnly != false &&
+                item.ToolCallId is { Length: > 0 } callId &&
                 item.Tool is { Length: > 0 } toolName:
                 _extensionEvents.DispatchToolExecutionStartAsync(new(callId, toolName,
                     SerializeToolArguments(item.ToolArguments), item.ParentToolCallId), cancellationToken)
@@ -474,7 +480,8 @@ public sealed class PiAgent
                     SerializeToolArguments(item.ToolArguments), JsonSerializer.SerializeToElement(item.Text),
                     item.ParentToolCallId), cancellationToken).GetAwaiter().GetResult();
                 break;
-            case "tool_execution_finished" when item.ToolCallId is { Length: > 0 } callId &&
+            case "tool_execution_finished" when item.DurationMs is not null &&
+                item.ToolCallId is { Length: > 0 } callId &&
                 item.Tool is { Length: > 0 } toolName:
                 _extensionEvents.DispatchToolExecutionEndAsync(new(callId, toolName,
                     SerializeToolArguments(item.ToolArguments), SerializeToolResult(item), item.IsError == true,

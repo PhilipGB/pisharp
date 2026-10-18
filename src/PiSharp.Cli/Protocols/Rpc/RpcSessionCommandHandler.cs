@@ -15,7 +15,8 @@ internal sealed class RpcSessionCommandHandler(
     Func<CancellationToken, Task<bool>>? cloneSession,
     Func<string, CancellationToken, Task<bool>>? switchSession,
     Func<JsonObject?>? getSystemMessage = null,
-    Func<string?>? getApi = null)
+    Func<string?>? getApi = null,
+    Func<CancellationToken, Task>? save = null)
 {
     public async Task<bool> TryHandleAsync(string command, JsonElement root, JsonElement? id,
         CancellationToken cancellationToken)
@@ -244,7 +245,7 @@ internal sealed class RpcSessionCommandHandler(
                         await respond(id, command, false, "Session name cannot be empty");
                         return true;
                     }
-                    try { await run.SetSessionNameAsync(updatedName, cancellationToken); }
+                    try { await run.SetSessionNameAsync(updatedName, save, cancellationToken); }
                     catch (Exception error)
                     {
                         await respond(id, command, false, error.Message);

@@ -14,6 +14,12 @@ public sealed class ExampleExtension : IPiSharpExtension
 
     public void Configure(IPiSharpExtensionBuilder builder)
     {
+        builder.AddAgentStartHandler((_, _, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            RecordLifecycleMarker($"native-fixture-agent-start-{FixtureRevision}");
+            return ValueTask.CompletedTask;
+        });
         NativeExtensionControlCommands.Register(builder, FixtureRevision);
         builder.AddCommand("native-fixture", (arguments, _) =>
             Task.FromResult($"{FixtureRevision} command / private dependency {NativeDependencyInfo.Version}: {arguments}"),

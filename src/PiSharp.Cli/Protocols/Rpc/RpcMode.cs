@@ -44,7 +44,10 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     PublicExtensionUi? extensionUi = null,
     Func<Action, Func<CancellationToken, Task>, Action, PiSharpExtensionCommandControlOperations>? createCommandControlOperations = null,
     Func<string, PiSharpExtensionSettingsFlagContext>? createSettingsFlagContext = null,
-    Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? cycleModel = null)
+    Func<ModelDescriptor, CancellationToken, Task<ModelDescriptor>>? cycleModel = null,
+    Action<Func<ConversationRun,
+        Func<string?, PiSharpExtensionSessionContext?, PiSharpExtensionCapabilities?>>>? installExtensionCapabilitiesFactory = null,
+    Func<string?>? getSystemPrompt = null)
 {
     private readonly JsonLineWriter _writer = new(output);
     private RpcEventWriter? _events;
@@ -65,6 +68,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         using var serveCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _serveCancellation = serveCancellation;
+        installExtensionCapabilitiesFactory?.Invoke(activeRun => (sourcePath, session) =>
+            CreateExtensionCapabilities(activeRun, sourcePath, session));
         var modelCommands = new RpcModelCommandHandler(_writer, RespondAsync, () => Events,
             discoverModels, discoverCycleModels ?? discoverModels, setModel, cycleModel,
             projectModel ?? RpcModelProjector.Project, () => CurrentRun, getThinkingLevel, isModelScoped,
@@ -84,7 +89,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             forkSession is null ? null : StartForkSessionAsync,
             cloneSession is null ? null : StartCloneSessionAsync,
             switchSession is null ? null : StartSwitchSessionAsync,
-            getSystemMessage, getApi);
+            getSystemMessage, getApi, save);
         var commandDiscoveryCommands = new RpcCommandDiscoveryHandler(_writer, () => CurrentResources, () => CurrentExtensions);
         var promptCommandHandler = new RpcPromptCommandHandler(_writer, () => CurrentExtensions,
             CreateExtensionCommandContext);
@@ -450,15 +455,48 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         ExtensionCommandInfo commandInfo)
     {
         var run = CurrentRun;
-        PiSharpExtensionCommandControlOperations? controls = null;
-        if (createCommandControlOperations is not null)
-            controls = createCommandControlOperations(() =>
+        var controls = CreateExtensionControls();
+        var session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path);
+        var settingsAndFlags = createSettingsFlagContext?.Invoke(commandInfo.SourceInfo.Path);
+        var sendUserMessageAsync = CreateExtensionUserMessageSender();
+        var sendCustomMessageAsync = CreateExtensionCustomMessageSender(commandInfo.SourceInfo.Path);
+        var capabilities = CreateExtensionCapabilities(run, commandInfo.SourceInfo.Path, session,
+            controls, sendUserMessageAsync, sendCustomMessageAsync, settingsAndFlags);
+
+        var workingDirectory = run.Conversation.WorkingDirectory;
+        var isProjectTrusted = getProjectTrusted?.Invoke() ?? false;
+        if (controls is null)
+        {
+            return new PiSharpExtensionCommandContext(workingDirectory, !IsActive, isProjectTrusted,
+                run.PendingPromptCount > 0, sendUserMessageAsync, sendCustomMessageAsync,
+                extensionMode, extensionHasUserInterface, extensionUi)
             {
-                try { _abort?.Cancel(); }
-                catch (ObjectDisposedException) { }
-            }, token => token.IsCancellationRequested ? Task.FromCanceled(token) : CancelActivePromptAsync(),
-                RequestShutdown);
-        async Task SendUserMessageAsync(string prompt, CancellationToken cancellationToken)
+                Session = session,
+                SettingsAndFlags = settingsAndFlags,
+                Capabilities = capabilities
+            };
+        }
+
+        return new PiSharpExtensionCommandContext(workingDirectory, !IsActive, isProjectTrusted,
+            run.PendingPromptCount > 0, sendUserMessageAsync, sendCustomMessageAsync,
+            extensionMode, extensionHasUserInterface, extensionUi, controls)
+        {
+            Session = session,
+            SettingsAndFlags = settingsAndFlags,
+            Capabilities = capabilities
+        };
+    }
+
+    private PiSharpExtensionCommandControlOperations? CreateExtensionControls() =>
+        createCommandControlOperations?.Invoke(() =>
+        {
+            try { _abort?.Cancel(); }
+            catch (ObjectDisposedException) { }
+        }, token => token.IsCancellationRequested ? Task.FromCanceled(token) : CancelActivePromptAsync(),
+            RequestShutdown);
+
+    private Func<string, CancellationToken, Task> CreateExtensionUserMessageSender() =>
+        async (prompt, cancellationToken) =>
         {
             var currentRun = CurrentRun;
             var expanded = CurrentResources is { } activeResources
@@ -474,38 +512,43 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             if (!string.IsNullOrWhiteSpace(preflightError)) throw new InvalidOperationException(preflightError);
             await StartExtensionRunAsync(token => currentRun.RunUserMessageEventsAsync(
                 new ChatMessage(ChatRole.User, expanded), expanded, token), cancellationToken);
-        }
-        async Task SendCustomMessageAsync(PiSharp.Extensions.Abstractions.PiSharpCustomMessage message,
-            bool triggerTurn, PiSharp.Extensions.Abstractions.PiSharpMessageDeliveryMode deliveryMode,
-            CancellationToken cancellationToken)
+        };
+
+    private Func<PiSharp.Extensions.Abstractions.PiSharpCustomMessage, bool,
+        PiSharpMessageDeliveryMode, CancellationToken, Task> CreateExtensionCustomMessageSender(string? sourcePath) =>
+        async (message, triggerTurn, deliveryMode, cancellationToken) =>
         {
             var currentRun = CurrentRun;
-            if (!await currentRun.DeliverExtensionCustomMessageAsync(message,
-                commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
+            if (!await currentRun.DeliverExtensionCustomMessageAsync(message, sourcePath,
+                triggerTurn, deliveryMode, cancellationToken)) return;
             await StartExtensionRunAsync(token => currentRun.RunCustomMessageEventsAsync(message,
-                commandInfo.SourceInfo.Path, token), cancellationToken);
-        }
-
-        var workingDirectory = run.Conversation.WorkingDirectory;
-        var isProjectTrusted = getProjectTrusted?.Invoke() ?? false;
-        if (controls is null)
-        {
-            return new PiSharpExtensionCommandContext(workingDirectory, !IsActive, isProjectTrusted,
-                run.PendingPromptCount > 0, SendUserMessageAsync, SendCustomMessageAsync,
-                extensionMode, extensionHasUserInterface, extensionUi)
-            {
-                Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path),
-                SettingsAndFlags = createSettingsFlagContext?.Invoke(commandInfo.SourceInfo.Path)
-            };
-        }
-
-        return new PiSharpExtensionCommandContext(workingDirectory, !IsActive, isProjectTrusted,
-            run.PendingPromptCount > 0, SendUserMessageAsync, SendCustomMessageAsync,
-            extensionMode, extensionHasUserInterface, extensionUi, controls)
-        {
-            Session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path),
-            SettingsAndFlags = createSettingsFlagContext?.Invoke(commandInfo.SourceInfo.Path)
+                sourcePath, token), cancellationToken);
         };
+
+    private PiSharpExtensionCapabilities CreateExtensionCapabilities(ConversationRun run, string? sourcePath,
+        PiSharpExtensionSessionContext? session,
+        PiSharpExtensionCommandControlOperations? controls = null,
+        Func<string, CancellationToken, Task>? sendUserMessageAsync = null,
+        Func<PiSharp.Extensions.Abstractions.PiSharpCustomMessage, bool,
+            PiSharpMessageDeliveryMode, CancellationToken, Task>? sendCustomMessageAsync = null,
+        PiSharpExtensionSettingsFlagContext? settingsAndFlags = null)
+    {
+        controls ??= CreateExtensionControls();
+        settingsAndFlags ??= string.IsNullOrWhiteSpace(sourcePath)
+            ? null
+            : createSettingsFlagContext?.Invoke(sourcePath);
+        sendUserMessageAsync ??= CreateExtensionUserMessageSender();
+        sendCustomMessageAsync ??= CreateExtensionCustomMessageSender(sourcePath);
+        return new PiSharpExtensionCapabilities(controls, session, settingsAndFlags,
+            () =>
+            {
+                var window = run.ContextWindowTokens;
+                if (window is not > 0) return null;
+                var tokens = run.EstimatedContextTokens;
+                double? percent = tokens is null ? null : Math.Clamp((double)tokens.Value / window.Value * 100, 0, 100);
+                return new PiSharpExtensionContextUsage(tokens, window.Value, percent);
+            }, getSystemPrompt, sendUserMessageAsync, sendCustomMessageAsync,
+            canCompact: () => run.CanCompactFromExtensionCallback);
     }
 
     private void RequestShutdown()

@@ -7,7 +7,7 @@ namespace PiSharp.Cli.Composition;
 
 internal sealed class ConversationRunComposition(ActiveProjectRuntime projectBinding, ModelRuntimeController modelRuntimeController)
 {
-    public Task<ConversationRun> OpenAsync(ActiveModelRuntime modelBinding, PiAgent runningAgent, ConversationSession session, string? path,
+    public async Task<ConversationRun> OpenAsync(ActiveModelRuntime modelBinding, PiAgent runningAgent, ConversationSession session, string? path,
         string? runProvider = null, string? reasoningLevel = null,
         ProjectRuntimeContext? targetProject = null,
         IReadOnlyList<string>? activeToolNamesOverride = null, PreparedModelRuntime? targetRuntime = null)
@@ -19,7 +19,7 @@ internal sealed class ConversationRunComposition(ActiveProjectRuntime projectBin
             Environment.GetEnvironmentVariable, $"{runModel.Provider.Id}/{runModel.Model.Id}");
         var runPricing = targetRuntime is not null ? targetRuntime.Pricing : targetProject is null ? modelBinding.Pricing :
             ModelPricing.FromEnvironment(Environment.GetEnvironmentVariable) ?? runModel.Model.Pricing;
-        return ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
+        var run = await ConversationRun.OpenAsync(runningAgent, session, save: path is null ? null :
             token => runProject.Store.SaveAsync(session, path, token), autoCompaction: runCompaction, pricing: runPricing,
             sessionFile: path, provider: runProvider ?? runModel.Provider.Id, reasoningLevel: reasoningLevel ?? modelBinding.Thinking,
             retryPolicy: runSettings.Retry?.ResolvePolicy() ?? AgentRunRetryPolicy.Default,
@@ -32,5 +32,9 @@ internal sealed class ConversationRunComposition(ActiveProjectRuntime projectBin
             providerApi: ProviderChatClientFactory.ResolveProtocol(runModel),
             activeToolNamesOverride: activeToolNamesOverride ?? DefaultToolReloadPolicy.ResolveResumeTools(
                 projectBinding.Arguments, session.ActiveToolLoadout(), runningAgent.ToolDeclarations.Select(tool => tool.Name)));
+        run.SetExtensionCapabilitiesFactory((sourcePath, extensionSession) =>
+            PiSharpExtensionCapabilitiesFactory.Create(projectBinding, modelBinding, run, sourcePath,
+                extensionSession));
+        return run;
     }
 }
