@@ -11872,7 +11872,7 @@
     "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "receipt": "docs/parity/fixtures/native-extension-agent-settlement-2026-10-18.md",
     "implementation": "Additive canonical drafts and detached previews; ordered mutable turn-end/pre-settlement callbacks; one ConversationRun settlement owner; atomic draft rollback and coherent MAF restoration.",
-    "verification": "Final source ccad28dbfc98b1e94166a86e024b221a262f1077: 74 focused cases repeated 10 times (740 passes), full .NET 2400/2400, architecture 7/7, Node 24/24, Python 50/50, docs 143/553, MCP no new regressions. Publication evidence is recorded in the receipt.",
+    "verification": "PR #14 settlement-lifetime correction source 4fd664e82fefcd41161ee405941cf8bad758b2fe: 75 focused cases pass, nine cancellation cases repeated 10 times (90 passes), architecture 7/7, Node 24/24, Python 50/50, docs 143/553, MCP 261 passing assertions with the same eight classified failures. Full-suite rerun and final exact-head push/PR CI evidence are recorded in the receipt's PR publication annex. Previously reviewed source ccad28dbfc98b1e94166a86e024b221a262f1077 had 74 focused cases repeated 10 times (740 passes) and full .NET 2400/2400.",
     "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No global parity claim."
   }
 }

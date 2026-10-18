@@ -125,12 +125,18 @@ milestone's callback-lifetime requirement. The dispatcher waits for the host ada
 releasing the owning run, while the unfinished extension task stays detached.
 A cancelled incomplete proposal is not committed. A synchronously returned valid proposal after requesting abort is
 persisted once with a bounded commit token; continuation is suppressed. Already persisted valid drafts survive abort; no further provider
-request starts. Aborted provider turns and final settled observers use bounded
+request starts. Normally completed/error runs await settled observers without a
+fixed deadline, using caller/consumer cancellation for their callback lifetime.
+Cancellation during that observer revokes its context and detaches its unfinished
+task without rewriting the already captured `Aborted=false` event. Runs already
+aborted before settlement deliver `Aborted=true` using a fresh terminal token
+bounded to two seconds; aborted provider turn boundaries also use bounded
 terminal dispatch. Legacy `agent_end` retains its existing host-cancellation suppression; the new settled observer still reports the abort. These are deliberate lifetime guarantees, not evidence of
 identical unbounded JavaScript callback behavior.
 
 ## Integration regressions covered
 
+- PR #14 review correction: `BoundaryCancellationTests.NormalSettledObserverRemainsActiveBeyondTwoSecondsUntilReleased` holds normal settlement pending for 2.5 seconds and verifies its token and context remain active until release. `CancellationDuringSettledObserverRevokesContextAndDetachesWithoutRewritingCompletedOutcome` cancels the caller during normal settlement, checks immediate Session/Capabilities revocation, and requires run cleanup before releasing the unfinished handler while the captured outcome remains false. Existing aborted-run terminal delivery coverage is retained.
 - Async iterator resumption does not preserve the caller's gate-owner scope. The awaited turn closure establishes its own scope while the existing session gate is held, so callback session operations remain reentrant without reacquiring that gate. Cancellation tests cover first/later handlers, preview rebuild, persistence, pre-settlement, continuation requests and settled observers.
 - Steering is canonical before the provider response. MAF history inserts injected steering at the same position, recognizes canonical custom-message IDs, and reconciliation does not append the same occurrence twice. Existing idle RPC queue and before-start custom-trigger regressions remain intact.
 - A successful logical retry clears the failed-attempt boundary snapshot. A later abort during pre-settlement cannot replay that failed attempt or duplicate its durable extension state (`BoundaryRetryFailureTests.AbortAfterSuccessfulRetryDoesNotReplayTheFailedAttemptBoundary`).
@@ -165,14 +171,14 @@ pre-settlement continuation. Package configure rollback, V1/V2 replacement,
 removal and collectible ALCs are covered separately through the production
 native loader/catalog fixtures.
 
-### Verified source and local gates
+### Previously reviewed source and local gates
 
-- Final product source: `ccad28dbfc98b1e94166a86e024b221a262f1077`.
+- Previously reviewed product source: `ccad28dbfc98b1e94166a86e024b221a262f1077`; reviewed PR head: `fc2f93e7932e28359d0d851a6db514318b9030d6`.
 - Branch: `milestone/native-extension-agent-settlement`.
 - Local environment: .NET SDK `10.0.112`, MAF `1.21.0`, Node `24.21.0`, Python `3.14.4`.
 - Reviewed compact evidence is this receipt; raw command logs and pinned-source checksums are under `artifacts/parity/native-extension-agent-settlement-2026-10-18/` (ignored).
 
-| Gate | Final result |
+| Gate | Previously reviewed result |
 | --- | --- |
 | Restore | Passed, `dotnet restore PiSharp.slnx -p:NuGetAudit=false`. |
 | Format | Passed, `dotnet format PiSharp.slnx --verify-no-changes --no-restore`. |
@@ -188,13 +194,28 @@ native loader/catalog fixtures.
 
 Local .NET build/test commands also used `--disable-build-servers -m:1` to isolate SDK workers. The full run used a 180-second VSTest hang detector without dumps; it exited normally. The final repetition wave supersedes earlier diagnostic failures and the earlier 67-, 69-, and 70-case waves. Existing tests were retained; no skips were added. `test.pdf` was not modified or staged and is absent in this checkout. Broad extension parity remains `in_progress`.
 
+### PR #14 review correction verification
+
+Correction source: `4fd664e82fefcd41161ee405941cf8bad758b2fe`. Only the
+settled observer's cancellation lifetime and its focused regression fixture
+changed. Both new assertions failed against the previous implementation:
+normal settlement was cancelled by elapsed time, and caller cancellation did
+not cancel an active settled callback.
+
+- All 75 boundary/compatibility cases pass, zero skipped, including external package/RPC acceptance.
+- All nine `BoundaryCancellationTests` pass in ten consecutive repetitions: 90 passes, zero failures/skips. Existing aborted terminal-delivery tests remain.
+- Format verification and the warnings-as-errors solution build pass, with zero warnings/errors. Architecture is 7/7, Node 24/24, Python 50/50, documentation 143 documents / 553 references, and MCP 261 passing assertions with the same eight classified failures.
+- The initial full run passed 2,400 cases with one `Address already in use` failure in `GoogleAndVertexRedactKeysFromProviderHttpErrors`. Both cases pass in isolation. The unchanged full-suite rerun and final-head CI outcomes are recorded in the publication annex in the [PR description](https://github.com/PhilipGB/pisharp/pull/14).
+- Correction command logs are under `artifacts/parity/native-extension-agent-settlement-2026-10-18/review-settled-lifetime/` (ignored). The earlier verification table remains the reviewed baseline, rather than attributing its 740 repetitions to the correction.
+
 ### Publication
 
 - Draft PR: [#14](https://github.com/PhilipGB/pisharp/pull/14), base `main`.
 - Verified publication checkpoint: `aef82770c66ead1a7a8c5f59a897a79997acbd77`.
 - Checkpoint push CI: [39140767181](https://github.com/PhilipGB/pisharp/actions/runs/39140767181), successful on that exact head.
 - Checkpoint PR CI: [39140783492](https://github.com/PhilipGB/pisharp/actions/runs/39140783492), successful on that exact head.
-- The queue-order correction and this receipt produce a subsequent head. The final branch SHA and its exact-head push/PR run IDs are recorded in the [PR description](https://github.com/PhilipGB/pisharp/pull/14), which can be updated without changing the verified commit. The coordinator requires both final-head runs to succeed before declaring completion.
+- Reviewed head `fc2f93e7932e28359d0d851a6db514318b9030d6`: push [39150099517](https://github.com/PhilipGB/pisharp/actions/runs/39150099517) and PR [39150103654](https://github.com/PhilipGB/pisharp/actions/runs/39150103654), both successful on that exact head.
+- The settlement-lifetime correction and this receipt produce a subsequent head. Its final SHA, full-suite rerun result, and exact-head push/PR run IDs are recorded in the [PR description](https://github.com/PhilipGB/pisharp/pull/14), which can be updated without changing the verified commit. Both final-head runs must succeed before declaring completion.
 
 The PR stays draft and is not merged. These checkpoint runs establish the published pre-correction source; the final-head publication annex in the PR description is part of this receipt and establishes the final source and receipt together. Keeping that annex external avoids a commit-SHA/CI-run self-reference when recording a run for the commit that contains this file.
 

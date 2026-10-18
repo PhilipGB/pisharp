@@ -361,9 +361,14 @@ provider context when continuation is requested.
 `AddAgentSettledHandler` fires once when no work remains. It shares the final
 state transition with the internal `agent_settled` event and reports `Aborted`
 for host aborts, including abort during pre-settlement; a provider error alone
-does not set it. The session is idle during this observer. Settled observers and
-aborted turn-boundary dispatch have a bounded two-second deadline so an ignored
-cancellation cannot retain the host. Legacy `agent_end` keeps its existing run-token
+does not set it. The session is idle during this observer. A normally settled
+callback has no fixed timeout and follows caller and event-consumer cancellation.
+Cancellation revokes its context and detaches an unfinished handler without
+changing the captured `Aborted=false` outcome. If the run was already aborted
+before settlement, the observer receives `Aborted=true` with a fresh terminal
+token bounded to two seconds, so it can run despite the cancelled operation token.
+Aborted turn-boundary dispatch uses the same bounded terminal pattern.
+Legacy `agent_end` keeps its existing run-token
 cancellation behavior. All callback contexts are revoked on completion or cancellation;
 late code cannot mutate another run through a retained context. Cancelling an
 in-flight boundary suppresses continuation and never commits a partial invalid
