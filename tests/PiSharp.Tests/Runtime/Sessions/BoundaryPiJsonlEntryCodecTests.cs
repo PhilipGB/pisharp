@@ -106,6 +106,61 @@ public sealed class BoundaryPiJsonlEntryCodecTests
         Assert.Equal("original failure", persistedContract.Error);
     }
 
+    [Fact]
+    public void NativeToolResultContextEditRetainsResultWrapperAuthorAndErrorMetadata()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "native-tool-edit", null);
+        session.Append(new ChatMessage(ChatRole.User, "request"));
+        session.Append(new ChatMessage(ChatRole.Assistant,
+            [new FunctionCallContent("native-call", "probe", new Dictionary<string, object?>())]));
+        var result = new FunctionResultContent("native-call",
+            new PiSharpToolResult("old output", Details: new { code = 11 }, IsError: true, Error: "tool failed"))
+        {
+            Exception = new InvalidOperationException("tool failed")
+        };
+        ToolExecutionDuration.Set(result, 12.5);
+        session.Append(new ChatMessage(ChatRole.Tool, [result]) { AuthorName = "probe" });
+        var targetId = session.Tree.HeadId!;
+        session.Tree.Append("context_edit", JsonSerializer.SerializeToElement(new
+        {
+            targetId,
+            replacement = new
+            {
+                content = new[] { new { type = "text", text = "edited output" } }
+            }
+        }));
+
+        var edited = session.ContextMessages()[^1];
+        var editedResult = Assert.Single(edited.Contents.OfType<FunctionResultContent>());
+        Assert.Equal("probe", edited.AuthorName);
+        Assert.Equal("native-call", editedResult.CallId);
+        Assert.NotNull(editedResult.Exception);
+        Assert.Equal(12.5, ToolExecutionDuration.Get(editedResult));
+        Assert.True(ToolResultOutput.TryReadContract(editedResult.Result, out var contract));
+        Assert.Equal("edited output", contract.Text);
+        Assert.True(contract.IsError);
+        Assert.Equal("tool failed", contract.Error);
+        Assert.Equal(11, Assert.IsType<JsonElement>(contract.Details).GetProperty("code").GetInt32());
+    }
+
+    [Fact]
+    public void NativeSelfRetainingCompactionExportsOwnBoundaryAndUsage()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "compaction-export", null);
+        using var payloadDocument = JsonDocument.Parse("""
+            {"summary":"checkpoint","firstKeptEntryId":null,"tokensBefore":99,"fromHook":true,"usage":{"input":10,"output":4,"cacheRead":2,"cacheWrite":1,"totalTokens":17}}
+            """);
+        var node = new PiSharp.Core.ConversationNode("compact-1", null, "compaction",
+            payloadDocument.RootElement.Clone(), DateTimeOffset.UnixEpoch);
+
+        var projected = PiJsonlEntryCodec.ExportNativeEntry(session, node);
+
+        Assert.Equal("compact-1", projected["firstKeptEntryId"]!.GetValue<string>());
+        Assert.Equal(10, projected["usage"]!["input"]!.GetValue<int>());
+        Assert.Equal(17, projected["usage"]!["totalTokens"]!.GetValue<int>());
+        Assert.True(projected["fromHook"]!.GetValue<bool>());
+    }
+
     private static string SessionJsonl(string entries) => $$"""
         {"type":"session","version":3,"id":"codec-fixture","timestamp":"2026-10-01T00:00:00Z","cwd":"{{Path.GetFullPath(Path.GetTempPath())}}"}
         {{entries}}

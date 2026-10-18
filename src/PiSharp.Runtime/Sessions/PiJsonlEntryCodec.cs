@@ -241,11 +241,37 @@ internal static class PiJsonlEntryCodec
             }
             return new ChatMessage(message.Role, parts) { MessageId = message.MessageId };
         }
-        return new ChatMessage(message.Role, ReadContent(content, assistant: message.Role == ChatRole.Assistant))
+        var clone = message.Clone();
+        var replacementParts = ReadContent(content, assistant: message.Role == ChatRole.Assistant);
+        if (message.Role == ChatRole.Tool && message.Contents.OfType<FunctionResultContent>().FirstOrDefault() is { } originalResult)
         {
-            MessageId = message.MessageId,
-            AdditionalProperties = message.AdditionalProperties?.Clone()
-        };
+            object resultValue = replacementParts.All(part => part is TextContent)
+                ? string.Join('\n', replacementParts.OfType<TextContent>().Select(part => part.Text))
+                : replacementParts;
+            if (ToolResultOutput.TryReadContract(originalResult.Result, out var contract))
+            {
+                var images = replacementParts.OfType<DataContent>()
+                    .Select(image => new PiSharpToolImage(image.MediaType, Convert.ToBase64String(image.Data.ToArray())))
+                    .ToArray();
+                resultValue = contract with
+                {
+                    Text = string.Join('\n', replacementParts.OfType<TextContent>().Select(part => part.Text)),
+                    Images = images.Length == 0 ? null : images
+                };
+            }
+            var result = new FunctionResultContent(originalResult.CallId, resultValue)
+            {
+                Exception = originalResult.Exception,
+                AdditionalProperties = originalResult.AdditionalProperties?.Clone()
+            };
+            ToolExecutionDuration.Set(result, ToolExecutionDuration.Get(originalResult));
+            clone.Contents.Clear();
+            clone.Contents.Add(result);
+            return clone;
+        }
+        clone.Contents.Clear();
+        foreach (var part in replacementParts) clone.Contents.Add(part);
+        return clone;
     }
 
     internal static ConversationNode ToNode(JsonElement entry, string id, string? parentId, string type, DateTimeOffset timestamp)
@@ -458,6 +484,8 @@ internal static class PiJsonlEntryCodec
                 entry["details"] = JsonNode.Parse(details.GetRawText());
             if (TryProperty(payload, "fromHook", out var fromHook) && fromHook.ValueKind == JsonValueKind.True)
                 entry["fromHook"] = true;
+            if (TryProperty(payload, "usage", out var usage) && usage.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined))
+                entry["usage"] = JsonNode.Parse(usage.GetRawText());
             return entry;
         }
         if (node.Type == "model_change")
