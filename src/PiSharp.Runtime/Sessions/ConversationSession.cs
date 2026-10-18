@@ -508,7 +508,7 @@ public sealed class ConversationSession
             retainedEntryId, tokensBefore, persistedDetails, fromExtension)));
     }
 
-    private void ValidateCompactionBoundary(string firstKeptEntryId)
+    internal void ValidateCompactionBoundary(string firstKeptEntryId)
     {
         var path = Tree.ActivePath();
         var boundaryIndex = path.ToList().FindIndex(entry => entry.Id == firstKeptEntryId);
@@ -517,6 +517,12 @@ public sealed class ConversationSession
         if (boundaryIndex <= previousCompactionIndex ||
             role != ChatRole.User && role != ChatRole.Assistant)
             throw new InvalidDataException("Compaction boundary must identify a user or assistant entry on the active branch after the previous compaction.");
+        var entries = CompactionContextEntries(out var previousSummary);
+        var retainedIndex = entries.ToList().FindIndex(entry => entry.SourceEntryId == firstKeptEntryId);
+        if (retainedIndex < 0 || !ConversationCompactionCoordinator.HasCompleteToolCallPairs(
+                entries.Skip(previousSummary is null ? 0 : 1).TakeWhile(entry => entry.SourceEntryId != firstKeptEntryId)
+                    .SelectMany(entry => entry.Messages).ToArray()))
+            throw new InvalidDataException("Compaction boundary splits an incomplete tool call/result pair.");
     }
 
     /// <summary>Close a crash-interrupted run without guessing which side effects happened.

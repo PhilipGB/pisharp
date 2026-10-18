@@ -13,7 +13,6 @@ internal static class PiJsonlEntryCodec
     private const string CustomTypeProperty = "pisharp.extension.customType";
     private const string CustomDisplayProperty = "pisharp.extension.display";
     private const string CustomSourceProperty = "pisharp.extension.source";
-    private const string CustomPiContentProperty = "pisharp.extension.piContent";
     private const string CustomDetailsProperty = "pisharp.extension.details";
 
     internal static JsonElement EncodeBoundaryContent(IReadOnlyList<AIContent> content)
@@ -28,7 +27,9 @@ internal static class PiJsonlEntryCodec
                     encoded.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
                     break;
                 case TextReasoningContent reasoning:
-                    encoded.Add(new JsonObject { ["type"] = "thinking", ["thinking"] = reasoning.Text });
+                    var thinking = new JsonObject { ["type"] = "thinking", ["thinking"] = reasoning.Text };
+                    if (reasoning.ProtectedData is { } signature) thinking["thinkingSignature"] = signature;
+                    encoded.Add(thinking);
                     break;
                 case DataContent image when image.MediaType is { } mediaType &&
                     mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) && image.Data.Length > 0:
@@ -67,10 +68,7 @@ internal static class PiJsonlEntryCodec
     {
         if (PiSharpCustomMessageProjection.TryRead(message, out var customMessage))
         {
-            var content = TryAdditionalJson(message, CustomPiContentProperty, out var preservedContent) &&
-                preservedContent.ValueKind == JsonValueKind.Array
-                ? JsonNode.Parse(preservedContent.GetRawText())
-                : JsonNode.Parse(EncodeBoundaryContent(message.Contents.ToArray()).GetRawText());
+            var content = JsonNode.Parse(EncodeBoundaryContent(message.Contents.ToArray()).GetRawText());
             var customRecord = new JsonObject
             {
                 ["role"] = "custom",
@@ -188,8 +186,7 @@ internal static class PiJsonlEntryCodec
         var properties = new AdditionalPropertiesDictionary
         {
             [CustomTypeProperty] = customType,
-            [CustomDisplayProperty] = display,
-            [CustomPiContentProperty] = content.Clone()
+            [CustomDisplayProperty] = display
         };
         if (StringProperty(node.Payload, "source") is { Length: > 0 } source)
             properties[CustomSourceProperty] = source;
@@ -231,8 +228,7 @@ internal static class PiJsonlEntryCodec
                 var properties = new AdditionalPropertiesDictionary
                 {
                     [CustomTypeProperty] = customType,
-                    [CustomDisplayProperty] = !TryProperty(custom, "display", out var display) || display.ValueKind == JsonValueKind.True,
-                    [CustomPiContentProperty] = content.Clone()
+                    [CustomDisplayProperty] = !TryProperty(custom, "display", out var display) || display.ValueKind == JsonValueKind.True
                 };
                 if (StringProperty(node.Payload, "source") is { Length: > 0 } source)
                     properties[CustomSourceProperty] = source;
@@ -418,7 +414,7 @@ internal static class PiJsonlEntryCodec
             if (StringProperty(item, "type") == "text" && StringProperty(item, "text") is { } text)
                 result.Add(new TextContent(text));
             else if (assistant && StringProperty(item, "type") == "thinking" && StringProperty(item, "thinking") is { } thinking)
-                result.Add(new TextReasoningContent(thinking));
+                result.Add(new TextReasoningContent(thinking) { ProtectedData = StringProperty(item, "thinkingSignature") });
             else if (assistant && StringProperty(item, "type") == "toolCall")
             {
                 var args = TryProperty(item, "arguments", out var arguments) && arguments.ValueKind == JsonValueKind.Object

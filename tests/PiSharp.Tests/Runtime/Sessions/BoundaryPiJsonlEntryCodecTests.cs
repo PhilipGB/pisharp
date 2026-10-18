@@ -13,7 +13,7 @@ public sealed class BoundaryPiJsonlEntryCodecTests
     {
         var content = PiJsonlEntryCodec.EncodeBoundaryContent([
             new TextContent("before"),
-            new TextReasoningContent("thinking"),
+            new TextReasoningContent("thinking") { ProtectedData = "reasoning-signature" },
             new DataContent(new byte[] { 1, 2, 3 }, "image/png"),
             new FunctionCallContent("call-1", "lookup", new Dictionary<string, object?> { ["q"] = "value" })
         ]);
@@ -21,6 +21,7 @@ public sealed class BoundaryPiJsonlEntryCodecTests
         Assert.Equal(["text", "thinking", "image", "toolCall"], content.EnumerateArray()
             .Select(item => item.GetProperty("type").GetString()));
         Assert.Equal("AQID", content[2].GetProperty("data").GetString());
+        Assert.Equal("reasoning-signature", content[1].GetProperty("thinkingSignature").GetString());
         Assert.Equal("call-1", content[3].GetProperty("id").GetString());
         Assert.Throws<InvalidDataException>(() => PiJsonlEntryCodec.EncodeBoundaryContent([
             new FunctionResultContent("call-1", "unsupported")
@@ -42,8 +43,6 @@ public sealed class BoundaryPiJsonlEntryCodecTests
         Assert.Equal("caption", customMessage.Content);
         Assert.Equal("fixture.image", Assert.IsType<string>(message.AdditionalProperties!["pisharp.extension.customType"]));
         Assert.False(Assert.IsType<bool>(message.AdditionalProperties["pisharp.extension.display"]));
-        Assert.Equal("AQID", Assert.IsType<JsonElement>(message.AdditionalProperties["pisharp.extension.piContent"])
-            .EnumerateArray().Last().GetProperty("data").GetString());
         Assert.Equal(2, Assert.IsType<JsonElement>(message.AdditionalProperties["pisharp.extension.details"])
             .GetProperty("index").GetInt32());
         var runtimeProjection = PiJsonlEntryCodec.ProjectRuntimeMessage(session, message);

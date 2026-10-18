@@ -48,6 +48,7 @@ public sealed class PiAgent
     private Func<bool, IReadOnlyList<ChatMessage>>? _takeSteering;
     private Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _takeContextMessagesForRequestAsync;
     private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
+    private Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _prepareTurn;
     private readonly List<(ChatMessage Message, string? AfterCallId)> _injectedSteering = [];
     private int _providerRequestIndex;
     private int _supportsImages;
@@ -177,7 +178,8 @@ public sealed class PiAgent
             _routedChatClient, GetToolsForRequest, _routedChatClient, GetAdditionalSystemInstructionsForCurrentTurn,
             _contextTransforms.ApplyAsync, (messages, options) =>
                 _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout,
-            () => thinkingBudgets, TakeContextMessagesForRequestAsync), new ChatClientAgentOptions
+            () => thinkingBudgets, TakeContextMessagesForRequestAsync,
+            (messages, token) => _prepareTurn?.Invoke(messages, token) ?? Task.FromResult(messages)), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -546,6 +548,9 @@ public sealed class PiAgent
     internal void SetVirtualModelContextPreparation(Func<IReadOnlyList<ChatMessage>, VirtualModelRequestRoute, bool,
         CancellationToken, Task<IReadOnlyList<ChatMessage>>>? prepare) => _routedChatClient.SetContextPreparation(prepare);
 
+    internal void SetTurnBoundaryPreparation(Func<IReadOnlyList<ChatMessage>, CancellationToken,
+        Task<IReadOnlyList<ChatMessage>>>? prepare) => _prepareTurn = prepare;
+
     internal void SetVirtualModelThinkingLevel(string thinkingLevel) => _routedChatClient.SetThinkingLevel(thinkingLevel);
 
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
@@ -694,8 +699,9 @@ public sealed class PiAgent
         var history = _history.GetMessages(session).ToList();
         foreach (var (message, afterCallId) in _injectedSteering)
         {
-            if (history.Any(item => ReferenceEquals(item, message))) continue;
-            var index = afterCallId is null ? history.Count - 1 : history.FindLastIndex(item =>
+            if (history.Any(item => ReferenceEquals(item, message) ||
+                    message.MessageId is { Length: > 0 } entryId && item.MessageId == entryId)) continue;
+            var index = afterCallId is null ? history.FindLastIndex(item => item.Role == ChatRole.User) : history.FindLastIndex(item =>
                 item.Contents.OfType<FunctionResultContent>().Any(result => result.CallId == afterCallId));
             var insertionIndex = Math.Clamp(index + 1, 0, history.Count);
             while (insertionIndex < history.Count && _injectedSteering.Any(steering =>

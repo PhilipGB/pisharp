@@ -136,6 +136,121 @@ public sealed class MutableAgentBoundaryTests
     }
 
     [Fact]
+    public async Task TurnEndContinuationRunsBeforeQueuedFollowUpWithoutLosingOrDuplicatingEither()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var client = new ScriptedClient((_, _) => [Reply("first response")],
+            (_, _) => [Reply("boundary continuation response")],
+            (_, _) => [Reply("follow-up response")]);
+        ConversationRun? run = null;
+        var queued = false;
+        var starts = 0;
+        var boundaryCalls = 0;
+        var settled = new List<bool>();
+        var firstBoundarySawPendingFollowUp = false;
+        adapter.AddAgentStartHandler((_, _, _) =>
+        {
+            starts++;
+            queued = run!.TryFollowUp("queued follow-up");
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddAgentSettledHandler((eventData, _, _) =>
+        {
+            settled.Add(eventData.Aborted);
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddTurnEndBoundaryHandler((eventData, _, _) =>
+        {
+            var call = Interlocked.Increment(ref boundaryCalls);
+            if (call == 1)
+            {
+                firstBoundarySawPendingFollowUp = eventData.Context.PendingMessages.Any(message =>
+                    message.Text == "queued follow-up");
+                return ValueTask.FromResult<PiSharpBoundaryResult?>(new([
+                    new PiSharpCustomMessageEntryDraft("before-follow-up", "boundary continuation", display: false)
+                ], @continue: true));
+            }
+            return ValueTask.FromResult<PiSharpBoundaryResult?>(new PiSharpBoundaryResult());
+        });
+        adapter.Close();
+        run = await OpenRunAsync(client, registration);
+
+        await foreach (var _ in run.RunEventsAsync("initial prompt")) { }
+
+        Assert.True(queued);
+        Assert.True(firstBoundarySawPendingFollowUp);
+        Assert.Equal(3, client.Requests.Count);
+        Assert.Contains(client.Requests[1], message => message.Text == "boundary continuation");
+        Assert.DoesNotContain(client.Requests[1], message => message.Text == "queued follow-up");
+        Assert.Single(client.Requests[2], message => message.Text == "queued follow-up");
+        Assert.Equal(3, boundaryCalls);
+        Assert.Equal(1, starts);
+        Assert.Equal([false], settled);
+        Assert.Single(run.Conversation.Tree.Entries, entry => entry.Type == "custom_message");
+        Assert.Single(run.Conversation.Tree.ActivePath(), entry => entry.Type == "chat" &&
+            ConversationMessageCodec.RestoreEntry(entry).Text == "queued follow-up");
+    }
+
+    [Fact]
+    public async Task BeforeSettleCustomPendingMessageAppearsInLaterPreviewAndContinuation()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var client = new ScriptedClient((_, _) => [Reply("initial response")], (_, _) => [Reply("continued response")]);
+        ConversationRun? run = null;
+        var calls = 0;
+        var queued = false;
+        var laterHandlerSawPendingMessage = false;
+        var starts = 0;
+        var settled = new List<bool>();
+        adapter.AddAgentStartHandler((_, _, _) =>
+        {
+            starts++;
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddAgentSettledHandler((eventData, _, _) =>
+        {
+            settled.Add(eventData.Aborted);
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddAgentBeforeSettleHandler(async (eventData, _, cancellationToken) =>
+        {
+            var call = Interlocked.Increment(ref calls);
+            if (call == 1)
+            {
+                queued = !await run!.DeliverExtensionCustomMessageAsync(
+                    new NativeExtensions.PiSharpCustomMessage("settlement.pending", "pending custom message", Display: false),
+                    sourcePath: null, triggerTurn: false,
+                    deliveryMode: NativeExtensions.PiSharpMessageDeliveryMode.Steer,
+                    cancellationToken: cancellationToken);
+                return new PiSharpBoundaryResult(@continue: true);
+            }
+            return new PiSharpBoundaryResult(@continue: false);
+        });
+        adapter.AddAgentBeforeSettleHandler((eventData, _, _) =>
+        {
+            laterHandlerSawPendingMessage |= eventData.Context.PendingMessages.Any(message =>
+                message.Text == "pending custom message");
+            return ValueTask.FromResult<PiSharpBoundaryResult?>(null);
+        });
+        adapter.Close();
+        run = await OpenRunAsync(client, registration);
+
+        await foreach (var _ in run.RunEventsAsync("settlement prompt")) { }
+
+        Assert.True(queued);
+        Assert.True(laterHandlerSawPendingMessage);
+        Assert.Equal(2, client.Requests.Count);
+        Assert.Contains(client.Requests[1], message => message.Text == "pending custom message");
+        Assert.Equal(2, calls);
+        Assert.Equal(1, starts);
+        Assert.Equal([false], settled);
+        Assert.Single(run.Conversation.Tree.Entries, entry => entry.Type == "custom_message");
+        Assert.Single(run.Conversation.ContextMessages(), message => message.Text == "pending custom message");
+    }
+
+    [Fact]
     public async Task InvalidContinuationIsReportedAtTurnEndAndBeforeSettle()
     {
         var registration = new ExtensionRegistration();
@@ -196,13 +311,23 @@ public sealed class MutableAgentBoundaryTests
         var adapter = new NativeExtensionRegistrationAdapter(registration);
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var ignoredHandlerFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         NativeExtensions.PiSharpExtensionContext? heldContext = null;
         var settledOutcomes = new List<bool>();
+        var beforeSettleCalls = 0;
         adapter.AddAgentBeforeSettleHandler(async (_, context, _) =>
         {
+            if (Interlocked.Increment(ref beforeSettleCalls) > 1) return null;
             heldContext = context;
             entered.TrySetResult();
-            await release.Task.ConfigureAwait(false); // Deliberately ignores host cancellation.
+            try
+            {
+                await release.Task.ConfigureAwait(false); // Deliberately ignores host cancellation.
+            }
+            finally
+            {
+                ignoredHandlerFinished.TrySetResult();
+            }
             return null;
         });
         adapter.AddAgentSettledHandler((eventData, _, _) =>
@@ -211,7 +336,8 @@ public sealed class MutableAgentBoundaryTests
             return ValueTask.CompletedTask;
         });
         adapter.Close();
-        var run = await OpenRunAsync(new ScriptedClient((_, _) => [Reply("done")]), registration);
+        var client = new ScriptedClient((_, _) => [Reply("done")], (_, _) => [Reply("second prompt completed")]);
+        var run = await OpenRunAsync(client, registration);
         using var cancellation = new CancellationTokenSource();
         var running = ConsumeAsync(run.RunEventsAsync("abort while settling", cancellation.Token));
 
@@ -219,11 +345,18 @@ public sealed class MutableAgentBoundaryTests
         cancellation.Cancel();
         var events = await running.WaitAsync(TimeSpan.FromSeconds(5));
         release.TrySetResult();
+        await ignoredHandlerFinished.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.NotNull(heldContext);
         Assert.Throws<ObjectDisposedException>(() => _ = heldContext!.Session!.Snapshot);
         Assert.Contains(events, item => item.Type == "agent_settled");
-        Assert.Equal([true], settledOutcomes);
+
+        var secondEvents = await ConsumeAsync(run.RunEventsAsync("second prompt"));
+
+        Assert.Contains(secondEvents, item => item.Type == "agent_run_completed");
+        Assert.Equal(2, client.Requests.Count);
+        Assert.Equal(2, beforeSettleCalls);
+        Assert.Equal([true, false], settledOutcomes);
     }
 
     [Fact]

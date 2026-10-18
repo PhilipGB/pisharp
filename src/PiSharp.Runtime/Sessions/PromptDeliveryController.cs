@@ -138,6 +138,11 @@ internal sealed class PromptDeliveryController
         lock (_stateGate) return _queue.Snapshot();
     }
 
+    internal IReadOnlyList<ChatMessage> SnapshotMessages()
+    {
+        lock (_stateGate) return _queue.SnapshotMessages();
+    }
+
     public PendingPrompts Clear(Action<AgentLifecycleEvent>? publishQueueUpdate = null)
     {
         lock (_stateGate)
@@ -191,7 +196,7 @@ internal sealed class PromptDeliveryController
         }
     }
 
-    public PromptDeliveryTransition TakeNextBatchOrClose(object owner, Func<bool> beforeTake)
+    public PromptDeliveryTransition TakeNextBatchOrClose(object owner, Func<bool> beforeTake, bool closeWhenEmpty = true)
     {
         lock (_stateGate)
         {
@@ -204,6 +209,7 @@ internal sealed class PromptDeliveryController
             }
             if (pendingContextMessagesAppended)
                 return new(null, Closed: false, PendingContextMessagesAppended: true);
+            if (!closeWhenEmpty) return new(null, Closed: true, PendingContextMessagesAppended: false);
             _owner = null;
             _events = null;
             _firstProviderRequestPending = false;

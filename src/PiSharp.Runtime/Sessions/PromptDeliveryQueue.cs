@@ -30,6 +30,9 @@ internal sealed class PromptDeliveryQueue
     public PendingPrompts Snapshot() => new(_steering.Select(item => item.Text).ToArray(),
         _followUp.Select(item => item.Text).ToArray());
 
+    internal IReadOnlyList<ChatMessage> SnapshotMessages() =>
+        _steering.Concat(_followUp).Select(item => item.Message).ToArray();
+
     public PendingPrompts Clear()
     {
         var pending = Snapshot();

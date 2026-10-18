@@ -57,7 +57,7 @@ public sealed class AgentSettlementCharacterizationTests
     }
 
     [Fact]
-    public async Task RetryHasOneAgentEndAfterPromptLoopClosesButBeforeAgentBecomesIdle()
+    public async Task RetryKeepsPromptLoopOpenForAgentEndQueuedWorkBeforeAgentBecomesIdle()
     {
         var registration = new ExtensionRegistration();
         var adapter = new NativeExtensionRegistrationAdapter(registration);
@@ -75,6 +75,7 @@ public sealed class AgentSettlementCharacterizationTests
         adapter.AddAgentEndHandler((_, context, _) =>
         {
             agentEnds++;
+            if (agentEnds > 1) return ValueTask.CompletedTask;
             activeAtEnd = run!.IsActive;
             idleAtEnd = context.IsIdle;
             queuedAtEnd = run.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, "late"), "late");
@@ -92,10 +93,10 @@ public sealed class AgentSettlementCharacterizationTests
         await foreach (var item in run.RunEventsAsync("retry")) events.Add(item);
 
         Assert.Equal(1, agentStarts);
-        Assert.Equal(1, agentEnds);
-        Assert.False(activeAtEnd);
+        Assert.Equal(2, agentEnds);
+        Assert.True(activeAtEnd);
         Assert.False(idleAtEnd);
-        Assert.False(queuedAtEnd);
+        Assert.True(queuedAtEnd);
         Assert.Single(events, item => item.Type == "auto_retry_start");
         Assert.Single(events, item => item.Type == "auto_retry_end");
         Assert.Single(events, item => item.Type == "agent_settled");

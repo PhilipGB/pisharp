@@ -215,6 +215,57 @@ public sealed class NativeExtensionBoundaryDispatcherTests
     }
 
     [Fact]
+    public async Task CancellationDuringPreviewRebuildPropagatesWithoutDiagnosticsOrLaterHandlers()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var callbackStarted = new TaskCompletionSource<PiSharp.Extensions.Abstractions.PiSharpExtensionContext>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var laterHandlerCalled = false;
+        adapter.AddTurnEndBoundaryHandler((_, context, _) =>
+        {
+            callbackStarted.TrySetResult(context);
+            return ValueTask.FromResult<PiSharpBoundaryResult?>(new(
+                [new PiSharpCustomEntryDraft("preview-cancel")]));
+        });
+        adapter.AddTurnEndBoundaryHandler((_, _, _) =>
+        {
+            laterHandlerCalled = true;
+            return ValueTask.FromResult<PiSharpBoundaryResult?>(null);
+        });
+        adapter.Close();
+
+        var runtimeContext = CreateContext();
+        runtimeContext.SetSessionContextFactory(_ => new PiSharpExtensionSessionContext(
+            () => new("session", null, null, []),
+            (_, _, _) => throw new InvalidOperationException("A revoked session context must not write.")));
+        var diagnostics = new List<AgentLifecycleEvent>();
+        var dispatcher = new NativeExtensionEventDispatcher(registration, runtimeContext, diagnostics.Add);
+        using var cancellation = new CancellationTokenSource();
+        var previewCalls = 0;
+        PiSharpBoundaryContextPreview Preview(IReadOnlyList<PiSharpSessionBoundaryDraft> drafts)
+        {
+            if (Interlocked.Increment(ref previewCalls) == 2)
+            {
+                cancellation.Cancel();
+                throw new OperationCanceledException(cancellation.Token);
+            }
+            return BuildPreview(drafts);
+        }
+
+        var dispatch = dispatcher.DispatchTurnEndBoundaryAsync(Turn(), PiSharpExtensionAgentOutcome.Completed,
+            Preview, cancellation.Token, diagnostics.Add);
+        var callbackContext = await callbackStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => dispatch);
+
+        Assert.Equal(2, previewCalls);
+        Assert.False(laterHandlerCalled);
+        Assert.Empty(diagnostics);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => callbackContext.Session!.AppendEntryAsync("revoked"));
+    }
+
+    [Fact]
     public async Task PreSettleAndSettledHandlersUseTheirRegisteredEventSurfaces()
     {
         var registration = new ExtensionRegistration();

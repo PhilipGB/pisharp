@@ -460,7 +460,8 @@ public sealed partial class ConversationRun
     public void SetAutoCompactionEnabled(bool enabled) => Volatile.Write(ref _autoCompactionEnabled, enabled ? 1 : 0);
 
     private sealed record PromptBatch(IReadOnlyList<ChatMessage> Messages, IReadOnlyList<string> Texts,
-        PiSharpCustomMessage? StartingCustomMessage = null, bool SkipBeforeAgentStart = false)
+        PiSharpCustomMessage? StartingCustomMessage = null, bool SkipBeforeAgentStart = false,
+        bool Continuation = false)
     {
         public string Text => string.Join("\n", Texts);
     }
@@ -615,11 +616,13 @@ public sealed partial class ConversationRun
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         using var consumerClosed = new CancellationTokenSource();
         var initialEntryIds = Conversation.Tree.ActivePath().Select(entry => entry.Id).ToHashSet(StringComparer.Ordinal);
+        var initialRunBoundaryVersion = _boundaryContextVersion;
         void Publish(AgentLifecycleEvent value) => channel.Writer.WriteAsync(value, linked.Token).AsTask().GetAwaiter().GetResult();
         var pump = Task.Run(async () =>
         {
             var accepted = false;
             var nativeAgentStarted = false;
+            var nativeAgentEnded = false;
             var nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Completed;
             string? nativeAgentError = null;
             var activeTurnOutcomeSent = false;
@@ -638,97 +641,126 @@ public sealed partial class ConversationRun
                     initialTexts.Add(nextTurnMessage.Text);
                 }
                 PromptBatch? current = new(initialMessages, initialTexts, startingCustomMessage);
+                _boundaryContinuationRequested = false;
+                _terminalBoundaryTurn = null;
                 var stopRun = false;
                 while (current is not null)
                 {
                     var turn = current;
                     activeTurnOutcomeSent = false;
-                    var currentMessage = turn.Messages[0];
+                    var currentMessage = turn.Messages.FirstOrDefault();
                     var customStart = turn.StartingCustomMessage;
                     if (!turn.SkipBeforeAgentStart && customStart is null &&
-                        PiSharpCustomMessageProjection.TryRead(currentMessage, out var queuedCustom))
+                        currentMessage is not null && PiSharpCustomMessageProjection.TryRead(currentMessage, out var queuedCustom))
                         customStart = queuedCustom;
                     AgentTurnOutcome outcome;
-                    _agent.ClearRunSystemPromptOverride();
-                    try
-                    {
-                        var injectedMessages = turn.SkipBeforeAgentStart ? [] :
-                            await _agent.PrepareBeforeAgentStartAsync(currentMessage,
-                                customStart is null ? turn.Texts[0] : "", Publish, linked.Token, _execution,
-                                customStart);
-                        var acceptedMessages = turn.Messages.Concat(injectedMessages.Select(
-                            PiSharpCustomMessageProjection.ToChatMessage)).ToArray();
-                        outcome = await _retryController.RunTurnAsync(
-                            (continuation, observeAttempt) => continuation
-                                ? RunStreamingContinuationAsync(turn.Text, linked.Token, observeAttempt)
-                                : turn.SkipBeforeAgentStart || customStart is not null || injectedMessages.Count > 0 || acceptedMessages.Length > 1
-                                    ? RunStreamingAcceptedMessagesAsync(acceptedMessages, turn.Text, linked.Token, observeAttempt)
-                                    : RunStreamingAsync(currentMessage, turn.Texts[0], linked.Token, observeAttempt),
-                            item =>
+                    if (!turn.Continuation) _agent.ClearRunSystemPromptOverride();
+                    var injectedMessages = turn.SkipBeforeAgentStart ? [] :
+                        await _agent.PrepareBeforeAgentStartAsync(currentMessage!,
+                            customStart is null ? turn.Texts[0] : "", Publish, linked.Token, _execution,
+                            customStart);
+                    var acceptedMessages = turn.Messages.Concat(injectedMessages.Select(
+                        PiSharpCustomMessageProjection.ToChatMessage)).ToArray();
+                    outcome = await _retryController.RunTurnAsync(
+                        (continuation, observeAttempt) => continuation || turn.Continuation
+                            ? RunStreamingContinuationAsync(turn.Text, linked.Token, observeAttempt)
+                            : turn.SkipBeforeAgentStart || customStart is not null || injectedMessages.Count > 0 || acceptedMessages.Length > 1
+                                ? RunStreamingAcceptedMessagesAsync(acceptedMessages, turn.Text, linked.Token, observeAttempt)
+                                : RunStreamingAsync(currentMessage!, turn.Texts[0], linked.Token, observeAttempt),
+                        item =>
+                        {
+                            if (item.Type == "prompt_accepted") accepted = true;
+                            if (item.Type is "prompt_accepted" or "agent_attempt_started")
                             {
-                                if (item.Type == "prompt_accepted") accepted = true;
-                                if (item.Type is "prompt_accepted" or "agent_attempt_started")
+                                nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Completed;
+                                nativeAgentError = null;
+                                if (item.Type == "prompt_accepted" && !nativeAgentStarted)
                                 {
-                                    nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Completed;
-                                    nativeAgentError = null;
-                                    if (item.Type == "prompt_accepted" && !nativeAgentStarted)
-                                    {
-                                        nativeAgentStarted = true;
-                                        _agent.BeginExtensionAgentRun();
-                                        _agent.ExtensionEvents.DispatchAgentStartAsync(
-                                            new NativeExtensions.PiSharpExtensionAgentStartEvent(), linked.Token, Publish)
-                                            .GetAwaiter().GetResult();
-                                    }
+                                    nativeAgentStarted = true;
+                                    _agent.BeginExtensionAgentRun();
+                                    _agent.ExtensionEvents.DispatchAgentStartAsync(
+                                        new NativeExtensions.PiSharpExtensionAgentStartEvent(), linked.Token, Publish)
+                                        .GetAwaiter().GetResult();
                                 }
-                                else if (item.Type == "turn_failed")
-                                {
-                                    nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Error;
-                                    nativeAgentError = item.Error;
-                                }
-                                else if (item.Type == "turn_interrupted")
-                                {
-                                    nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Aborted;
-                                    nativeAgentError = item.Error;
-                                }
-                                if (item.Type is "prompt_accepted" or "agent_attempt_started") activeTurnOutcomeSent = false;
-                                Publish(item);
-                                if (item.Type is "turn_completed" or "turn_failed" or "turn_interrupted" or "prompt_rejected")
-                                    activeTurnOutcomeSent = true;
-                            },
-                            update =>
+                            }
+                            else if (item.Type == "turn_failed")
                             {
-                                if (update.Contents is null) return;
-                                foreach (var content in update.Contents)
-                                {
-                                    if (content is TextReasoningContent reasoning && !string.IsNullOrEmpty(reasoning.Text))
-                                        Publish(new("reasoning_delta", Text: reasoning.Text));
-                                    else if (content is UsageContent usage)
-                                        Publish(UsageEvent(CurrentProviderUsage(usage.Details)));
-                                }
-                            },
-                            (head, pathLength, token) => OmitFailedRetryContextAsync(head, pathLength, Publish, token),
-                            async token =>
+                                nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Error;
+                                nativeAgentError = item.Error;
+                            }
+                            else if (item.Type == "turn_interrupted")
                             {
-                                var history = Conversation.ContextMessages();
-                                _execution = await RestoreExecutionAsync(history, token);
-                                _historyCount = history.Count;
-                            },
-                            FlushPendingBashExecutions,
-                            () => Conversation.Tree.HeadId,
-                            linked.Token);
-                    }
-                    finally
-                    {
-                        _agent.ClearRunSystemPromptOverride();
-                    }
+                                nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Aborted;
+                                nativeAgentError = item.Error;
+                            }
+                            if (item.Type is "prompt_accepted" or "agent_attempt_started") activeTurnOutcomeSent = false;
+                            Publish(item);
+                            if (item.Type is "turn_completed" or "turn_failed" or "turn_interrupted" or "prompt_rejected")
+                                activeTurnOutcomeSent = true;
+                        },
+                        update =>
+                        {
+                            if (update.Contents is null) return;
+                            foreach (var content in update.Contents)
+                            {
+                                if (content is TextReasoningContent reasoning && !string.IsNullOrEmpty(reasoning.Text))
+                                    Publish(new("reasoning_delta", Text: reasoning.Text));
+                                else if (content is UsageContent usage)
+                                    Publish(UsageEvent(CurrentProviderUsage(usage.Details)));
+                            }
+                        },
+                        (head, pathLength, token) => OmitFailedRetryContextAsync(head, pathLength, Publish, token),
+                        async token =>
+                        {
+                            var history = Conversation.ContextMessages();
+                            _execution = await RestoreExecutionAsync(history, token);
+                            _historyCount = history.Count;
+                        },
+                        FlushPendingBashExecutions,
+                        () => Conversation.Tree.HeadId,
+                        linked.Token);
                     activeTurnOutcomeSent = true;
                     if (outcome != AgentTurnOutcome.Completed)
                     {
                         nativeAgentOutcome = NativeExtensions.PiSharpExtensionAgentOutcome.Error;
                         stopRun = true;
-                        break;
+                        if (_terminalBoundaryTurn is { } terminalTurn)
+                        {
+                            await DispatchMutableTurnBoundaryAsync(terminalTurn, nativeAgentOutcome, linked.Token, Publish)
+                                .ConfigureAwait(false);
+                            _terminalBoundaryTurn = null;
+                        }
                     }
-                    current = await TakeQueuedPromptOrCloseAsync(owner);
+                    if (!stopRun && _boundaryContinuationRequested)
+                    {
+                        _boundaryContinuationRequested = false;
+                        await CompactAfterBoundaryAsync(linked.Token, Publish).ConfigureAwait(false);
+                        current = new([], [promptText], SkipBeforeAgentStart: true, Continuation: true);
+                        continue;
+                    }
+                    current = stopRun ? null : await TakeQueuedPromptOrCloseAsync(owner, closeWhenEmpty: false);
+                    if (current is not null) continue;
+                    if (nativeAgentStarted)
+                    {
+                        var messages = Conversation.Tree.ActivePath()
+                            .Where(entry => !initialEntryIds.Contains(entry.Id) && entry.Type == "chat")
+                            .Select(ConversationMessageCodec.RestoreEntry).ToArray();
+                        nativeAgentEnded = true;
+                        await _agent.ExtensionEvents.DispatchAgentEndAsync(new(messages, nativeAgentOutcome,
+                            nativeAgentError), linked.Token, Publish).ConfigureAwait(false);
+                    }
+                    current = await TakeQueuedPromptOrCloseAsync(owner, closeWhenEmpty: false);
+                    if (_boundaryContextVersion != initialRunBoundaryVersion || _agent.ExtensionEvents.HasBoundaryHandlers)
+                        await CompactAfterBoundaryAsync(linked.Token, Publish).ConfigureAwait(false);
+                    if (current is null && await DispatchBeforeSettleBoundaryAsync(nativeAgentOutcome, linked.Token, Publish)
+                            .ConfigureAwait(false))
+                        current = new([], [promptText], SkipBeforeAgentStart: true, Continuation: true);
+                    current ??= await TakeQueuedPromptOrCloseAsync(owner, closeWhenEmpty: true);
+                    if (current is not null)
+                    {
+                        nativeAgentEnded = false;
+                        stopRun = false;
+                    }
                 }
                 if (!stopRun) Publish(new("agent_run_completed"));
             }
@@ -762,7 +794,20 @@ public sealed partial class ConversationRun
             {
                 try
                 {
-                    if (nativeAgentStarted)
+                    if (nativeAgentStarted && linked.IsCancellationRequested &&
+                        _terminalBoundaryTurn is { } interruptedBoundary && !consumerClosed.IsCancellationRequested)
+                    {
+                        using var terminalCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                        try
+                        {
+                            await DispatchMutableTurnBoundaryAsync(interruptedBoundary,
+                                NativeExtensions.PiSharpExtensionAgentOutcome.Aborted, terminalCancellation.Token,
+                                item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (terminalCancellation.IsCancellationRequested) { }
+                        _terminalBoundaryTurn = null;
+                    }
+                    if (nativeAgentStarted && !nativeAgentEnded)
                     {
                         var messages = Conversation.Tree.ActivePath()
                             .Where(entry => !initialEntryIds.Contains(entry.Id) && entry.Type == "chat")
@@ -770,7 +815,8 @@ public sealed partial class ConversationRun
                         try
                         {
                             await _agent.ExtensionEvents.DispatchAgentEndAsync(new(messages, nativeAgentOutcome,
-                                nativeAgentError), linked.Token, Publish).ConfigureAwait(false);
+                                nativeAgentError), linked.Token,
+                                item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException) when (linked.IsCancellationRequested)
                         {
@@ -781,7 +827,19 @@ public sealed partial class ConversationRun
                 }
                 finally
                 {
+                    _agent.ClearRunSystemPromptOverride();
                     if (conversationRunActivityStarted) _agent.EndConversationRunActivity();
+                    if (nativeAgentStarted)
+                    {
+                        using var settledCancellation = CancellationTokenSource.CreateLinkedTokenSource(consumerClosed.Token);
+                        settledCancellation.CancelAfter(TimeSpan.FromSeconds(2));
+                        try
+                        {
+                            await _agent.ExtensionEvents.DispatchAgentSettledAsync(new(linked.IsCancellationRequested),
+                                settledCancellation.Token, item => channel.Writer.TryWrite(item)).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (settledCancellation.IsCancellationRequested) { }
+                    }
                     try { await channel.Writer.WriteAsync(new("agent_settled"), consumerClosed.Token); }
                     catch (OperationCanceledException) { }
                     channel.Writer.TryComplete();
@@ -803,10 +861,17 @@ public sealed partial class ConversationRun
     private object BeginPromptLoop(Action<AgentLifecycleEvent> publish,
         out IReadOnlyList<QueuedPrompt> nextTurnMessages) => _promptDelivery.Begin(publish, out nextTurnMessages);
 
-    private IReadOnlyList<ChatMessage> TakeSteeringForProvider(bool firstProviderRequest) =>
-        _promptDelivery.TakeSteeringForProvider(firstProviderRequest);
+    private IReadOnlyList<ChatMessage> TakeSteeringForProvider(bool firstProviderRequest)
+    {
+        lock (_runtimeStateGate)
+        {
+            var messages = _promptDelivery.TakeSteeringForProvider(firstProviderRequest);
+            foreach (var message in messages) Conversation.Append(message);
+            return messages;
+        }
+    }
 
-    private async Task<PromptBatch?> TakeQueuedPromptOrCloseAsync(object owner)
+    private async Task<PromptBatch?> TakeQueuedPromptOrCloseAsync(object owner, bool closeWhenEmpty = true)
     {
         while (true)
         {
@@ -814,7 +879,7 @@ public sealed partial class ConversationRun
             {
                 PersistPendingRuntimeChangesUnsafe();
                 return FlushPendingContextCustomMessagesUnsafe();
-            });
+            }, closeWhenEmpty);
             await DispatchPendingRuntimeTransitionNotificationsAsync().ConfigureAwait(false);
             if (transition.PendingContextMessagesAppended && _save is not null)
                 await _save(CancellationToken.None);
@@ -1270,6 +1335,7 @@ public sealed partial class ConversationRun
         var providerTurns = new ProviderTurnJournal(Conversation, () => _agent.GetHistory(_execution),
             () => virtualContext?.HasCompacted == true || physicalOverflowCompacted, () => _historyCount, onEvent);
         var nativeTurnOpen = false;
+        var initialBoundaryContextVersion = _boundaryContextVersion;
 
         ProviderTurnSnapshot CompleteProviderTurnUnsafe()
         {
@@ -1278,17 +1344,46 @@ public sealed partial class ConversationRun
             return completedTurn;
         }
 
-        void CompleteNativeTurn(ProviderTurnSnapshot turn, bool aborted, string? errorMessage)
+        async Task CompleteNativeTurnAsync(ProviderTurnSnapshot turn, bool aborted, string? errorMessage)
         {
             if (!nativeTurnOpen) return;
-            var turnIndex = _agent.ExtensionTurnIndex;
-            nativeTurnOpen = false;
-            _agent.CompleteExtensionTurn();
-            var entryIds = FindTurnEntryIds(turn);
-            _agent.ExtensionEvents.DispatchTurnEndAsync(new NativeExtensions.PiSharpExtensionTurnEndEvent(
-                turnIndex, turn.Message, turn.ToolResults, entryIds.MessageEntryId,
-                entryIds.ToolResultEntryIds, aborted, errorMessage), cancellationToken,
-                item => onEvent?.Invoke(item)).GetAwaiter().GetResult();
+            var previousOwner = s_currentGateOwner.Value;
+            s_currentGateOwner.Value = this;
+            try
+            {
+                var turnIndex = _agent.ExtensionTurnIndex;
+                nativeTurnOpen = false;
+                if (!aborted && errorMessage is null) _agent.CompleteExtensionTurn();
+                var entryIds = FindTurnEntryIds(turn);
+                var eventData = new NativeExtensions.PiSharpExtensionTurnEndEvent(
+                    turnIndex, turn.Message, turn.ToolResults, entryIds.MessageEntryId,
+                    entryIds.ToolResultEntryIds, aborted, errorMessage);
+                _terminalBoundaryTurn = aborted || errorMessage is not null ? eventData : null;
+                await _agent.ExtensionEvents.DispatchTurnEndAsync(eventData, cancellationToken,
+                    item => onEvent?.Invoke(item)).ConfigureAwait(false);
+                if (aborted || errorMessage is not null)
+                {
+                    return;
+                }
+                _boundaryContinuationRequested = await DispatchMutableTurnBoundaryAsync(eventData,
+                    NativeExtensions.PiSharpExtensionAgentOutcome.Completed, cancellationToken,
+                    item => onEvent?.Invoke(item)).ConfigureAwait(false);
+            }
+            finally { s_currentGateOwner.Value = previousOwner; }
+        }
+
+        async Task<IReadOnlyList<ChatMessage>> PrepareTurnAsync(IReadOnlyList<ChatMessage> messages,
+            CancellationToken token)
+        {
+            ProviderTurnSnapshot previousTurn;
+            lock (_runtimeStateGate) previousTurn = CompleteProviderTurnUnsafe();
+            await CompleteNativeTurnAsync(previousTurn, false, null).ConfigureAwait(false);
+            if (_boundaryContextVersion != initialBoundaryContextVersion)
+                await CompactAfterBoundaryAsync(token, item => onEvent?.Invoke(item)).ConfigureAwait(false);
+            await DispatchPendingRuntimeTransitionNotificationsAsync(token).ConfigureAwait(false);
+            if (_boundaryContextVersion == initialBoundaryContextVersion) return messages;
+            return messages.TakeWhile(message => message.Role == ChatRole.System || message.Role == new ChatRole("developer"))
+                .Concat(Conversation.ContextMessages()).ToArray();
         }
 
         void Observe(AgentLifecycleEvent item)
@@ -1307,10 +1402,8 @@ public sealed partial class ConversationRun
             }
             if (item.Type == "model_request_started")
             {
-                ProviderTurnSnapshot previousTurn;
                 lock (_runtimeStateGate)
                 {
-                    previousTurn = CompleteProviderTurnUnsafe();
                     // The provider request following tool execution is the natural continuation
                     // of that turn. Commit context-only extension messages after the completed
                     // tool results so the continuation sees them without starting another turn.
@@ -1319,8 +1412,7 @@ public sealed partial class ConversationRun
                     _providerRequestModel = attribution.Model;
                     _providerRequestPricing = attribution.Pricing;
                 }
-                CompleteNativeTurn(previousTurn, aborted: false, errorMessage: null);
-                DispatchPendingRuntimeTransitionNotificationsAsync(cancellationToken).GetAwaiter().GetResult();
+                _boundaryContinuationRequested = false;
                 providerTurns.PartialAssistantText.Clear();
                 nativeTurnOpen = true;
                 _agent.ExtensionEvents.DispatchTurnStartAsync(new NativeExtensions.PiSharpExtensionTurnStartEvent(
@@ -1710,6 +1802,7 @@ public sealed partial class ConversationRun
                 ? null
                 : (Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>)ProjectRequestContextAsync;
             lock (_runtimeStateGate) _toolState.BeginRun(_execution);
+            _agent.SetTurnBoundaryPreparation(PrepareTurnAsync);
             var codexSessionId = _providerApi == "openai-codex-responses" ? Conversation.Id : null;
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
@@ -1723,7 +1816,7 @@ public sealed partial class ConversationRun
                 yield return update;
             ProviderTurnSnapshot lastTurn;
             lock (_runtimeStateGate) lastTurn = CompleteProviderTurnUnsafe();
-            CompleteNativeTurn(lastTurn, aborted: false, errorMessage: null);
+            await CompleteNativeTurnAsync(lastTurn, aborted: false, errorMessage: null).ConfigureAwait(false);
             completed = true;
         }
         finally
@@ -1731,11 +1824,13 @@ public sealed partial class ConversationRun
             try
             {
                 _agent.SetVirtualModelContextPreparation(null);
+                _agent.SetTurnBoundaryPreparation(null);
                 var history = _agent.GetHistory(_execution);
                 if (history.Count < _historyCount) throw new InvalidDataException("MAF discarded canonical conversation history.");
                 var existing = Conversation.ContextMessages();
                 var hasCanonicalCompaction = virtualContext?.HasCompacted == true || physicalOverflowCompacted;
-                var expectedPrefix = hasCanonicalCompaction ? expectedProviderPrefix! :
+                var expectedPrefix = hasCanonicalCompaction && _boundaryContextVersion == initialBoundaryContextVersion
+                    ? expectedProviderPrefix! :
                     existing.Take(_historyCount).Select(message => JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions)).ToArray();
                 if (expectedPrefix.Count < _historyCount || Enumerable.Range(0, _historyCount).Any(index =>
                     !JsonElement.DeepEquals(expectedPrefix[index],
@@ -1788,7 +1883,8 @@ public sealed partial class ConversationRun
                 {
                     var turn = providerTurns.SnapshotTurn();
                     var aborted = !completed && attemptStream.InterruptionType == "turn_interrupted";
-                    CompleteNativeTurn(turn, aborted, !completed ? attemptStream.InterruptionError : null);
+                    await CompleteNativeTurnAsync(turn, aborted, !completed ? attemptStream.InterruptionError : null)
+                        .ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)

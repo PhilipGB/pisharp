@@ -129,13 +129,7 @@ internal sealed class ConversationCompactionCoordinator(
         if (custom.Details is { } details &&
             System.Text.Encoding.UTF8.GetByteCount(details.GetRawText()) > 1024 * 1024)
             throw new InvalidDataException("Extension compaction details cannot exceed 1MB.");
-        var activePath = conversation.Tree.ActivePath();
-        var retained = activePath.FirstOrDefault(entry => entry.Id == custom.FirstKeptEntryId);
-        var retainedIndex = retained is null ? -1 : activePath.ToList().FindIndex(entry => entry.Id == retained.Id);
-        var previousCompactionIndex = activePath.ToList().FindLastIndex(entry => entry.Type == "compaction");
-        var role = retained is null ? null : ConversationContextProjection.ContextMessageForNode(retained)?.Role;
-        if (retainedIndex <= previousCompactionIndex || role != ChatRole.User && role != ChatRole.Assistant)
-            throw new InvalidDataException("Extension compaction boundary must identify a user or assistant entry on the captured active branch after the previous compaction.");
+        conversation.ValidateCompactionBoundary(custom.FirstKeptEntryId);
 
         var contextEntries = conversation.CompactionContextEntries(out var previousSummary);
         var start = previousSummary is null ? 0 : 1;
@@ -154,7 +148,7 @@ internal sealed class ConversationCompactionCoordinator(
             throw new InvalidDataException("Extension compaction usage counts cannot be negative.");
     }
 
-    private static bool HasCompleteToolCallPairs(IReadOnlyList<ChatMessage> messages)
+    internal static bool HasCompleteToolCallPairs(IReadOnlyList<ChatMessage> messages)
     {
         var pending = new HashSet<string>(StringComparer.Ordinal);
         var seen = new HashSet<string>(StringComparer.Ordinal);
