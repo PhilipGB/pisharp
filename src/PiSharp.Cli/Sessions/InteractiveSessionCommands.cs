@@ -51,7 +51,6 @@ internal sealed class InteractiveSessionCommands(ConversationStore store, string
                 var matches = conversation.Tree.Entries.Where(node => node.Id.StartsWith(argument, StringComparison.Ordinal)).ToArray();
                 if (argument.Length == 0 || matches.Length != 1) throw new ArgumentException("Specify a unique entry id prefix from /tree.");
                 await conversationRun.SelectAsync(matches[0].Id);
-                if (sessionPath is not null) await store.SaveAsync(conversation, sessionPath);
                 loadTranscript();
                 output.WriteLine($"Selected {matches[0].Id[..12]}");
                 return true;

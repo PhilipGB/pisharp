@@ -22,13 +22,19 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
 
     private static InteractiveSessionController CreateSessions(ActiveProjectRuntime project, ActiveModelRuntime model,
         ConversationRunComposition runs, ActiveConversationRuntime conversation) =>
-        new(project.Store, project.Arguments.NoSession, async (branch, path, reason) =>
-        {
-            var nextRun = await runs.OpenAsync(model, model.Agent, branch, path);
-            await ExtensionSessionLifecycleHost.NotifyShutdownAsync(conversation.Run, ToShutdownReason(reason));
-            await ExtensionSessionLifecycleHost.NotifyStartAsync(nextRun, reason);
-            return nextRun;
-        });
+        new(project.Store, project.Arguments.NoSession,
+            (branch, path, _) => runs.OpenAsync(model, model.Agent, branch, path));
+
+    public async Task AdoptSessionBranchAsync(SessionBranchResult branch,
+        PiSharpExtensionSessionStartReason reason)
+    {
+        ArgumentNullException.ThrowIfNull(branch);
+        var outgoingRun = conversationBinding.Run;
+        var shutdownError = await NotifyShutdownForCommitAsync(outgoingRun, ToShutdownReason(reason));
+        conversationBinding.Adopt(branch.Conversation, branch.Run, branch.Path);
+        await ExtensionSessionLifecycleHost.NotifyStartAsync(branch.Run, reason);
+        ThrowTransitionErrors(shutdownError, null);
+    }
 
     private void RebindSessionControllers(bool rebuildFactory = true)
     {
@@ -188,6 +194,36 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
         cancellationToken.ThrowIfCancellationRequested();
         SessionFactory.ValidateExistingSwitchTarget(sessionReference, projectBinding.WorkingDirectory);
         return Task.CompletedTask;
+    }
+
+    public async Task BeforeSessionSwitchAsync(PiSharpExtensionSessionSwitchReason reason,
+        string? targetSessionFile, CancellationToken cancellationToken)
+    {
+        string? normalizedTarget = null;
+        if (reason == PiSharpExtensionSessionSwitchReason.Resume)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(targetSessionFile);
+            normalizedTarget = Path.GetFullPath(targetSessionFile, projectBinding.WorkingDirectory);
+            var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            if (conversationBinding.Path is not null && Path.GetFullPath(conversationBinding.Path).Equals(normalizedTarget, comparison))
+                return;
+
+            await ValidateSwitchAsync(normalizedTarget, cancellationToken);
+        }
+
+        var result = await conversationBinding.Run.DispatchSessionBeforeSwitchAsync(reason, normalizedTarget,
+            conversationBinding.Path, cancellationToken);
+        if (result?.Cancel == true)
+            throw new InvalidOperationException("Session transition was cancelled by an extension.");
+    }
+
+    public async Task BeforeSessionForkAsync(string entryId, PiSharpExtensionForkPosition position,
+        CancellationToken cancellationToken)
+    {
+        var result = await conversationBinding.Run.DispatchSessionBeforeForkAsync(entryId, position,
+            conversationBinding.Path, cancellationToken);
+        if (result?.Cancel == true)
+            throw new InvalidOperationException("Session fork was cancelled by an extension.");
     }
 
 }

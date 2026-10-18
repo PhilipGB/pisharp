@@ -14,6 +14,34 @@ public sealed class ExampleExtension : IPiSharpExtension
 
     public void Configure(IPiSharpExtensionBuilder builder)
     {
+        builder.AddSessionBeforeSwitchHandler((eventData, _, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeSwitchResult?>(
+                eventData.TargetSessionFile == $"native-fixture-{FixtureRevision}"
+                ? new PiSharpExtensionSessionBeforeSwitchResult(Cancel: true)
+                : null);
+        });
+        builder.AddSessionBeforeForkHandler((_, _, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeForkResult?>(null);
+        });
+        builder.AddSessionBeforeTreeHandler((_, _, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeTreeResult?>(null);
+        });
+        builder.AddSessionTreeHandler((_, _, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.CompletedTask;
+        });
+        builder.AddSessionBeforeCompactHandler((_, _, cancellationToken) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(null);
+        });
         builder.AddAgentStartHandler((_, _, cancellationToken) =>
         {
             cancellationToken.ThrowIfCancellationRequested();

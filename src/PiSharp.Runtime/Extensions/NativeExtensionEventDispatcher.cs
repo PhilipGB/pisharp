@@ -5,7 +5,7 @@ using NativeExtensions = PiSharp.Extensions.Abstractions;
 namespace PiSharp.Runtime.Extensions;
 
 /// <summary>Sequentially dispatches source-owned native extension event observers.</summary>
-internal sealed class NativeExtensionEventDispatcher(ExtensionRegistration registration,
+internal sealed partial class NativeExtensionEventDispatcher(ExtensionRegistration registration,
     PiSharpExtensionContext context, Action<AgentLifecycleEvent> report)
 {
     internal Task DispatchSessionInfoChangedAsync(NativeExtensions.PiSharpExtensionSessionInfoChangedEvent eventData,

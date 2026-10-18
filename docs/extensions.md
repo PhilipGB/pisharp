@@ -252,9 +252,69 @@ that host phase fail clearly. Retained capability objects are revoked when the
 callback ends, and returned message/settings/session data are detached.
 
 These registrations do not implement generic `pi.on(...)`, mutable turn-boundary
-state, pre-switch/pre-fork vetoes, pre-compaction replacement, provider request
-hooks, or advanced renderers. The broad extension parity row remains
-`in_progress`.
+state, provider request hooks, or advanced renderers. Session transition and
+compaction mutation hooks are documented in the following section. The broad
+extension parity row remains `in_progress`.
+
+### Session transitions, tree navigation and compaction
+
+Native extensions can inspect or veto the host's existing session transitions and compaction plan through typed hooks. These hooks run at the authoritative mutation boundary; they do not create sessions or forks, and they do not replace PiSharp's canonical session tree or compaction coordinator.
+
+```csharp
+builder.AddSessionBeforeSwitchHandler((change, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var denyResume = change.Reason == PiSharpExtensionSessionSwitchReason.Resume &&
+        change.TargetSessionFile?.EndsWith("blocked.jsonl", StringComparison.OrdinalIgnoreCase) == true;
+    return ValueTask.FromResult<PiSharpExtensionSessionBeforeSwitchResult?>(
+        new(Cancel: denyResume));
+});
+
+builder.AddSessionBeforeForkHandler((fork, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var denyForkAtRoot = fork.Position == PiSharpExtensionForkPosition.Before && fork.EntryId == "root";
+    return ValueTask.FromResult<PiSharpExtensionSessionBeforeForkResult?>(new(Cancel: denyForkAtRoot));
+});
+
+builder.AddSessionBeforeTreeHandler((navigation, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var denyLeaf = navigation.TargetEntryId == "protected-leaf";
+    return ValueTask.FromResult<PiSharpExtensionSessionBeforeTreeResult?>(new(Cancel: denyLeaf));
+});
+
+builder.AddSessionTreeHandler((navigation, context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    context.Ui.Notify($"Selected {navigation.NewLeafEntryId} from {navigation.OldLeafEntryId}.");
+    return ValueTask.CompletedTask;
+});
+```
+
+`session_before_switch` reports the outgoing session identity, `New` or `Resume`, and the destination file when known. Invalid destinations remain host validation errors. A veto occurs before the outgoing session is shut down; an allowed transition uses the existing prepare, shutdown, adopt, and start lifecycle. `session_before_fork` reports the selected entry and `Before`/`At` position. It applies to fork operations, not clone operations. Fork restoration overrides such as `skipConversationRestore` are deferred.
+
+`session_before_tree` receives detached target/current leaf IDs, their common ancestor, the entries that would be summarized, and whether the user requested a summary. This milestone does not create a branch summary. A veto leaves the selected leaf and persisted history unchanged. The `session_tree` observer runs once after a different leaf is restored and saved successfully; it does not run for a veto, failed restore/save, or no-op selection. Tree summary injection, instruction replacement, and label overrides remain unsupported.
+
+Pre-mutation hooks run in deterministic extension registration order. A `Cancel` result stops dispatch and prevents the operation. For non-cancel results, the last non-null result wins. An ordinary handler exception is reported with its owning extension and dispatch proceeds to the next handler; host cancellation propagates. Callback contexts belong to the outgoing session and are revoked when the callback ends or its operation is cancelled.
+
+The compaction hook receives a detached snapshot of the coordinator's actual plan, active branch metadata, reason (`Manual`, `Threshold`, or `Overflow`), retry state, and custom instructions when present. It can cancel or provide a summary for the existing canonical compaction operation. Physical provider overflow recovery uses this hook when the request history maps to a safe canonical boundary; provider-only in-flight projections without such a boundary retain their existing projection behavior.
+
+```csharp
+builder.AddSessionBeforeCompactHandler((request, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var preparation = request.Preparation;
+    var custom = new PiSharpExtensionCustomCompaction(
+        Summary: "Keep the user's goals, completed changes, and remaining work.",
+        FirstKeptEntryId: preparation.FirstKeptEntryId,
+        TokensBefore: preparation.TokensBefore);
+    return ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(
+        new(Compaction: custom));
+});
+```
+
+The custom result supports `Summary`, `FirstKeptEntryId`, `TokensBefore`, optional JSON `Details`, and optional supported token `Usage`. PiSharp validates the result against the captured active branch and safe compaction boundaries before canonical history is changed. The retained entry may precede the prepared boundary, but may not follow it or split a tool-call/result pair. A valid result bypasses the default summary request but still uses the coordinator's normal append, persistence, and history restoration path. `session_compact` reports `FromExtension=true` for a custom result and `false` for default summarization. A veto emits the existing aborted `session_compact_failed` event without appending a compaction entry. Invalid custom results fail the operation with an extension-attributed diagnostic and leave canonical session state unchanged. Existing cancellation deadlines and callback-context revocation apply to these hooks.
 
 ### Providers, MCP servers and virtual models
 

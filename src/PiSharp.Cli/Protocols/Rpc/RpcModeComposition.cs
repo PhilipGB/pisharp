@@ -60,16 +60,11 @@ internal static class RpcModeComposition
         Task ValidateRpcSessionSwitchAsync(string reference, CancellationToken token) =>
             projectTransitions.ValidateSwitchAsync(reference, token);
 
-        void AdoptRpcSession(SessionBranchResult replacement)
-        {
-            conversationBinding.Adopt(replacement.Conversation, replacement.Run, replacement.Path);
-        }
-
         async Task<bool> StartRpcSessionAsync(string? parentSession, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var created = await projectTransitions.Sessions.NewAsync(conversationBinding.Conversation, conversationBinding.Path, parentSession);
-            AdoptRpcSession(created);
+            await projectTransitions.AdoptSessionBranchAsync(created, PiSharpExtensionSessionStartReason.New);
             return false;
         }
 
@@ -78,7 +73,7 @@ internal static class RpcModeComposition
         {
             cancellationToken.ThrowIfCancellationRequested();
             var forked = await projectTransitions.Sessions.ForkPreparedAsync(conversationBinding.Conversation, conversationBinding.Path, entryId, branchSnapshot, prompt);
-            AdoptRpcSession(forked);
+            await projectTransitions.AdoptSessionBranchAsync(forked, PiSharpExtensionSessionStartReason.Fork);
             return forked.Prompt;
         }
 
@@ -93,7 +88,7 @@ internal static class RpcModeComposition
         {
             cancellationToken.ThrowIfCancellationRequested();
             var cloned = await projectTransitions.Sessions.ActivatePreparedCloneAsync(branchSnapshot, branchPath);
-            AdoptRpcSession(cloned);
+            await projectTransitions.AdoptSessionBranchAsync(cloned, PiSharpExtensionSessionStartReason.Fork);
             return false;
         }
 

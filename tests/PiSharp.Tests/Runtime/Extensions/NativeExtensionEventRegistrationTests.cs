@@ -70,6 +70,11 @@ public sealed class NativeExtensionEventRegistrationTests
         adapter.AddToolExecutionEndHandler((_, _, _) => ValueTask.CompletedTask);
         adapter.AddModelSelectHandler((_, _, _) => ValueTask.CompletedTask);
         adapter.AddThinkingLevelSelectHandler((_, _, _) => ValueTask.CompletedTask);
+        adapter.AddSessionBeforeSwitchHandler((_, _, _) => ValueTask.FromResult<PiSharpExtensionSessionBeforeSwitchResult?>(null));
+        adapter.AddSessionBeforeForkHandler((_, _, _) => ValueTask.FromResult<PiSharpExtensionSessionBeforeForkResult?>(null));
+        adapter.AddSessionBeforeTreeHandler((_, _, _) => ValueTask.FromResult<PiSharpExtensionSessionBeforeTreeResult?>(null));
+        adapter.AddSessionTreeHandler((_, _, _) => ValueTask.CompletedTask);
+        adapter.AddSessionBeforeCompactHandler((_, _, _) => ValueTask.FromResult<PiSharpExtensionSessionBeforeCompactResult?>(null));
     }
 
     private static IEnumerable<IEnumerable<ResourceSourceInfo>> EventHandlerSources(ExtensionRegistration registration) =>
@@ -85,7 +90,12 @@ public sealed class NativeExtensionEventRegistrationTests
         registration.ToolExecutionUpdateHandlers.Select(entry => entry.SourceInfo),
         registration.ToolExecutionEndHandlers.Select(entry => entry.SourceInfo),
         registration.ModelSelectHandlers.Select(entry => entry.SourceInfo),
-        registration.ThinkingLevelSelectHandlers.Select(entry => entry.SourceInfo)
+        registration.ThinkingLevelSelectHandlers.Select(entry => entry.SourceInfo),
+        registration.SessionBeforeSwitchHandlers.Select(entry => entry.SourceInfo),
+        registration.SessionBeforeForkHandlers.Select(entry => entry.SourceInfo),
+        registration.SessionBeforeTreeHandlers.Select(entry => entry.SourceInfo),
+        registration.SessionTreeHandlers.Select(entry => entry.SourceInfo),
+        registration.SessionBeforeCompactHandlers.Select(entry => entry.SourceInfo)
     ];
 
     private static ResourceSourceInfo Source(string path) =>

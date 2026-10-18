@@ -380,6 +380,198 @@ public sealed class RpcModeTests
         finally { Directory.Delete(cwd, recursive: true); }
     }
 
+    [Theory]
+    [InlineData("new_session")]
+    [InlineData("switch_session")]
+    public async Task ExtensionVetoOfSessionSwitchLeavesAnActiveRunUntouched(string command)
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-session-veto-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        PiSharpExtensionSessionBeforeSwitchEvent? observed = null;
+        var activeWhenCalled = false;
+        adapter.AddSessionBeforeSwitchHandler((eventData, context, cancellationToken) =>
+        {
+            observed = eventData;
+            activeWhenCalled = !context.IsIdle;
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeSwitchResult?>(new(Cancel: true));
+        });
+        adapter.Close();
+
+        var session = new ConversationSession(cwd, "fixture", null);
+        var initialRun = await ConversationRun.OpenAsync(new PiAgent(new PartialBlockingClient(),
+            new CodingTools(cwd), liveExtensionRegistration: registration), session);
+        var currentRun = initialRun;
+        var newCalls = 0;
+        var switchCalls = 0;
+        var service = new RpcMode(new CommandReader(channel.Reader), output, initialRun,
+            getCurrentRun: () => currentRun,
+            newSession: (_, _) =>
+            {
+                newCalls++;
+                return Task.FromResult(false);
+            },
+            switchSession: (_, _) =>
+            {
+                switchCalls++;
+                return Task.FromResult(false);
+            },
+            validateSwitchSession: (_, _) => Task.CompletedTask);
+        var serving = service.ServeAsync();
+        try
+        {
+            channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"hold open\"}");
+            await WaitForAsync(output, "\"type\":\"agent_start\"");
+            if (command == "new_session")
+                channel.Writer.TryWrite("{\"id\":\"replace\",\"type\":\"new_session\"}");
+            else
+                channel.Writer.TryWrite("{\"id\":\"replace\",\"type\":\"switch_session\",\"sessionPath\":\"next.session.json\"}");
+
+            await WaitForAsync(output, "\"id\":\"replace\"");
+            Assert.NotNull(observed);
+            Assert.True(activeWhenCalled);
+            Assert.Equal(session.Id, observed.CurrentSessionId);
+            Assert.Null(observed.CurrentSessionFile);
+            Assert.Equal(command == "new_session" ? PiSharpExtensionSessionSwitchReason.New :
+                PiSharpExtensionSessionSwitchReason.Resume, observed.Reason);
+            Assert.Equal(command == "new_session" ? null : Path.GetFullPath("next.session.json", cwd),
+                observed.TargetSessionFile);
+            Assert.True(initialRun.IsActive);
+            Assert.Same(initialRun, currentRun);
+            Assert.Equal(0, newCalls);
+            Assert.Equal(0, switchCalls);
+            Assert.DoesNotContain(output.Lines(), line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
+
+            channel.Writer.TryWrite("{\"id\":\"abort\",\"type\":\"abort\"}");
+            await WaitForAsync(output, "\"type\":\"agent_settled\"");
+            channel.Writer.TryComplete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+                line.Contains("\"id\":\"replace\"", StringComparison.Ordinal)));
+            Assert.False(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("Session transition was cancelled by an extension.",
+                response.RootElement.GetProperty("error").GetString());
+        }
+        finally
+        {
+            if (initialRun.IsActive) channel.Writer.TryWrite("{\"id\":\"cleanup-abort\",\"type\":\"abort\"}");
+            channel.Writer.TryComplete();
+            if (!serving.IsCompleted)
+                try { await serving.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (TimeoutException) { }
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ExtensionVetoOfForkLeavesActiveRunUncancelledAndDoesNotCreateBranch()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-fork-veto-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        PiSharpExtensionSessionBeforeForkEvent? observed = null;
+        var activeWhenCalled = false;
+        adapter.AddSessionBeforeForkHandler((eventData, context, cancellationToken) =>
+        {
+            observed = eventData;
+            activeWhenCalled = !context.IsIdle;
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeForkResult?>(new(Cancel: true));
+        });
+        adapter.Close();
+
+        var session = new ConversationSession(cwd, "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "selected fork prompt"));
+        var entryId = session.Tree.HeadId!;
+        var run = await ConversationRun.OpenAsync(new PiAgent(new PartialBlockingClient(),
+            new CodingTools(cwd), liveExtensionRegistration: registration), session);
+        var forkPath = Path.Combine(cwd, "must-not-exist.session.json");
+        var forkCalls = 0;
+        var service = new RpcMode(new CommandReader(channel.Reader), output, run,
+            forkSession: (_, _, _, _) =>
+            {
+                forkCalls++;
+                File.WriteAllText(forkPath, "unexpected");
+                return Task.FromResult<string?>(null);
+            });
+        var serving = service.ServeAsync();
+        try
+        {
+            channel.Writer.TryWrite("{\"id\":\"prompt\",\"type\":\"prompt\",\"message\":\"hold open\"}");
+            await WaitForAsync(output, "\"type\":\"agent_start\"");
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new { id = "fork", type = "fork", entryId }));
+            await WaitForAsync(output, "\"id\":\"fork\"");
+
+            Assert.NotNull(observed);
+            Assert.True(activeWhenCalled);
+            Assert.Equal(session.Id, observed.CurrentSessionId);
+            Assert.Equal(entryId, observed.EntryId);
+            Assert.Equal(PiSharpExtensionForkPosition.Before, observed.Position);
+            Assert.True(run.IsActive);
+            Assert.Equal(0, forkCalls);
+            Assert.False(File.Exists(forkPath));
+            Assert.DoesNotContain(output.Lines(), line => line.Contains("\"type\":\"agent_settled\"", StringComparison.Ordinal));
+
+            channel.Writer.TryWrite("{\"id\":\"abort\",\"type\":\"abort\"}");
+            await WaitForAsync(output, "\"type\":\"agent_settled\"");
+            channel.Writer.TryComplete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            using var response = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
+                line.Contains("\"id\":\"fork\"", StringComparison.Ordinal)));
+            Assert.False(response.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("Session fork was cancelled by an extension.",
+                response.RootElement.GetProperty("error").GetString());
+        }
+        finally
+        {
+            if (run.IsActive) channel.Writer.TryWrite("{\"id\":\"cleanup-abort\",\"type\":\"abort\"}");
+            channel.Writer.TryComplete();
+            if (!serving.IsCompleted)
+                try { await serving.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch (TimeoutException) { }
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CloneDoesNotDispatchTheForkInterceptionHook()
+    {
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var beforeForkCalls = 0;
+        adapter.AddSessionBeforeForkHandler((_, _, _) =>
+        {
+            beforeForkCalls++;
+            return ValueTask.FromResult<PiSharpExtensionSessionBeforeForkResult?>(new(Cancel: true));
+        });
+        adapter.Close();
+        var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        session.Append(new ChatMessage(ChatRole.User, "clone this session"));
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(),
+            new CodingTools(Path.GetTempPath()), liveExtensionRegistration: registration), session);
+        var service = new RpcMode(new CommandReader(channel.Reader), output, run,
+            prepareCloneSession: (_, _) => Task.FromResult<string?>(null),
+            cloneSession: (_, _, _) => Task.FromResult(false));
+        var serving = service.ServeAsync();
+        channel.Writer.TryWrite("{\"id\":\"clone\",\"type\":\"clone\"}");
+        await WaitForAsync(output, "\"id\":\"clone\"");
+        channel.Writer.TryComplete();
+        await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(0, beforeForkCalls);
+        using var response = JsonDocument.Parse(Assert.Single(output.Lines()));
+        Assert.True(response.RootElement.GetProperty("success").GetBoolean());
+    }
+
     [Fact]
     public async Task SwitchSessionAbortsAnActiveRunBeforeInvokingReplacement()
     {

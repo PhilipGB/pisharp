@@ -37,8 +37,11 @@ internal static class ConversationCompactionMetadata
         if (path.LastOrDefault(node => node.Type == "compaction") is { } previous)
         {
             var original = PiJsonlEntryCodec.OriginalEntry(previous);
-            if (original is not { } originalEntry ||
-                !originalEntry.TryGetProperty("fromHook", out var fromHook) || fromHook.ValueKind != JsonValueKind.True)
+            var fromExtension = previous.Payload.TryGetProperty("fromHook", out var persistedFromHook) &&
+                    persistedFromHook.ValueKind == JsonValueKind.True ||
+                original is { } originalEntry && originalEntry.TryGetProperty("fromHook", out var fromHook) &&
+                    fromHook.ValueKind == JsonValueKind.True;
+            if (!fromExtension)
             {
                 ReadFiles(previous.Payload, read, modified);
                 if (original is { } imported) ReadFiles(imported, read, modified);

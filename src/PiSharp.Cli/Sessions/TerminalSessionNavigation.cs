@@ -1,5 +1,6 @@
 using PiSharp.Cli.Composition;
 using PiSharp.Cli.Tui;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Sessions;
@@ -21,6 +22,8 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             return;
         }
 
+        await projectTransitions.BeforeSessionSwitchAsync(PiSharpExtensionSessionSwitchReason.Resume,
+            listing.Path, CancellationToken.None);
         await projectTransitions.SwitchAsync(listing.Path, adoptProjectSession, CancellationToken.None);
         Console.WriteLine($"Resumed {conversationBinding.Conversation.Id[..12]} · {conversationBinding.Conversation.Name ?? "(unnamed)"}");
     }
@@ -39,8 +42,16 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
 
     public async Task ForkFromUserAsync(string id)
     {
-        var branch = await projectTransitions.Sessions.ForkAtUserAsync(conversationBinding.Conversation, conversationBinding.Path, id);
-        conversationBinding.Adopt(branch.Conversation, branch.Run, branch.Path);
+        var matches = conversationBinding.Conversation.UserMessagesForForking()
+            .Where(item => item.Id.StartsWith(id, StringComparison.Ordinal)).ToArray();
+        if (matches.Length != 1)
+            throw new ArgumentException("Specify a unique user message id prefix from /fork.");
+        var selectedEntryId = matches[0].Id;
+        await projectTransitions.BeforeSessionForkAsync(selectedEntryId, PiSharpExtensionForkPosition.Before,
+            CancellationToken.None);
+        var branch = await projectTransitions.Sessions.ForkAtUserAsync(conversationBinding.Conversation,
+            conversationBinding.Path, selectedEntryId);
+        await projectTransitions.AdoptSessionBranchAsync(branch, PiSharpExtensionSessionStartReason.Fork);
         presentation.LoadSessionTranscript();
         if (branch.Prompt is { } draft) presentation.Editor?.Prefill(draft);
         Console.WriteLine($"Forked {branch.SourceEntryId![..12]} to {branch.Path ?? "(ephemeral)"}. Edit and submit the draft prompt.");
@@ -89,18 +100,7 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             return;
         }
 
-        var previousHead = conversation.Tree.HeadId;
         await conversationBinding.Run.SelectAsync(selected.Id);
-        try
-        {
-            if (conversationBinding.Path is not null)
-                await projectBinding.Store.SaveAsync(conversation, conversationBinding.Path);
-        }
-        catch
-        {
-            await conversationBinding.Run.SelectAsync(previousHead);
-            throw;
-        }
 
         presentation.LoadSessionTranscript();
         Console.WriteLine($"Selected {selected.Id[..12]} · {selected.Type}");
@@ -116,11 +116,16 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
     public async Task NewOrCloneAsync(string command)
     {
         SessionBranchResult branch;
+        var reason = command == "/clone" ? PiSharpExtensionSessionStartReason.Fork : PiSharpExtensionSessionStartReason.New;
         if (command == "/clone")
             branch = await projectTransitions.Sessions.CloneAsync(conversationBinding.Conversation, conversationBinding.Path);
         else
+        {
+            await projectTransitions.BeforeSessionSwitchAsync(PiSharpExtensionSessionSwitchReason.New,
+                targetSessionFile: null, CancellationToken.None);
             branch = await projectTransitions.Sessions.NewAsync(conversationBinding.Conversation, conversationBinding.Path, conversationBinding.Path);
-        conversationBinding.Adopt(branch.Conversation, branch.Run, branch.Path);
+        }
+        await projectTransitions.AdoptSessionBranchAsync(branch, reason);
         presentation.LoadSessionTranscript();
         Console.WriteLine($"{command[1..]}: {conversationBinding.Path ?? "(ephemeral)"}");
     }
