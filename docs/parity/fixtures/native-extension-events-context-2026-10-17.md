@@ -8,7 +8,7 @@ the verification date is recorded when complete; this copy is dated 2026-10-18.
 - Base: PR #11 merge `1a0165c3858d973948c9ac8eb698e75ed0fcc535`.
 - Branch: `milestone/native-extension-events-context`.
 - Pi source: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` (unchanged).
-- Product source SHA: pending final source commit.
+- Product source SHA: `7fe25b4024e5441bb709dbc6fadd50c43411523f`.
 - Exact-head CI run IDs: pending publication.
 
 Pinned references inspected: [extension event types](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/src/core/extensions/types.ts), [extension runner](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/src/core/extensions/runner.ts), [agent session](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/src/core/agent-session.ts), [agent loop](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/agent/src/agent-loop.ts), and the pinned extension [API documentation](https://github.com/earendil-works/pi/tree/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/docs/extensions).
@@ -65,7 +65,7 @@ Local validation on 2026-10-18:
   passed, with no new regression.
 - Event integration wave, including the external compiled-package process,
   package reload/removal and ALC collection: 25/25 passed.
-- Product source SHA: pending final source commit. Push/PR exact-head CI run IDs:
+- Push/PR exact-head CI run IDs: pending publication.
   pending publication.
 
 This bounded milestone does not complete the broad Extensions / .NET API parity
