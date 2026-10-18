@@ -554,7 +554,10 @@ requests use `user_bash` and bypass input handlers.
 Input images are detached `Microsoft.Extensions.AI.DataContent` snapshots. A
 text-only transform preserves the current images; passing an explicit empty
 image list to `Transform` removes them. Returning replacement images replaces
-the current set. The host performs its ordinary model and image validation
+the current set. Replacement content must have an `image/*` media type; invalid
+replacement image content is rejected as a handler error, reported against its
+extension source, and leaves the previous effective text and images in place
+for later handlers. The host performs its ordinary model and image validation
 after handlers complete. Callbacks receive the owning cancellation token and
 their context is revoked when the callback completes or is cancelled.
 

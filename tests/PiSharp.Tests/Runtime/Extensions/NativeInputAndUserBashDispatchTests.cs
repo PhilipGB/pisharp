@@ -99,6 +99,74 @@ public sealed class NativeInputAndUserBashDispatchTests
     }
 
     [Fact]
+    public async Task InvalidReplacementImagesReportSourceAndKeepPriorInputForLaterHandlers()
+    {
+        var cwd = NewWorkingDirectory();
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var diagnostics = new List<AgentLifecycleEvent>();
+            registration.AddLifecycleHandler((AgentLifecycleEvent item) => diagnostics.Add(item));
+            var first = CreateAdapter(registration, cwd, "handler-a.dll");
+            first.AddInputHandler((input, _, _) => ValueTask.FromResult<NativeExtensions.PiSharpInputResult?>(
+                NativeExtensions.PiSharpInputResult.Transform(input.Text + "-after-a")));
+            first.Close();
+
+            var second = CreateAdapter(registration, cwd, "handler-b.dll");
+            second.AddInputHandler((_, _, _) => ValueTask.FromResult<NativeExtensions.PiSharpInputResult?>(
+                NativeExtensions.PiSharpInputResult.Transform("discarded-by-invalid-result",
+                    [new DataContent(new byte[] { 9, 8, 7 }, "application/pdf")])));
+            second.Close();
+
+            string? laterText = null;
+            DataContent? laterImage = null;
+            var third = CreateAdapter(registration, cwd, "handler-c.dll");
+            third.AddInputHandler((input, _, _) =>
+            {
+                laterText = input.Text;
+                laterImage = Assert.Single(input.Images);
+                return ValueTask.FromResult<NativeExtensions.PiSharpInputResult?>(
+                    NativeExtensions.PiSharpInputResult.Continue);
+            });
+            third.Close();
+
+            var client = new RecordingInputClient();
+            var run = await ConversationRun.OpenAsync(new PiAgent(client, new CodingTools(cwd),
+                    liveExtensionRegistration: registration,
+                    extensionLifecycleHandlers: registration.RegisteredLifecycleHandlers),
+                new ConversationSession(cwd, "test-model", null));
+            var originalImage = new DataContent(new byte[] { 1, 2, 3 }, "image/png") { Name = "prior-image" };
+            var result = await run.InterceptInputAsync("raw", [originalImage],
+                NativeExtensions.PiSharpInputSource.Interactive, null);
+
+            Assert.Equal(NativeExtensions.PiSharpInputResultAction.Transform, result.Action);
+            Assert.Equal("raw-after-a", result.Text);
+            Assert.Equal("raw-after-a", laterText);
+            Assert.NotNull(laterImage);
+            Assert.Equal("prior-image", laterImage.Name);
+            Assert.Equal("image/png", laterImage.MediaType);
+            Assert.Equal(new byte[] { 1, 2, 3 }, laterImage.Data.ToArray());
+            Assert.Single(diagnostics);
+            var diagnostic = Assert.Single(diagnostics, item => item.Type == "extension_error");
+            var details = System.Text.Json.JsonSerializer.Serialize(diagnostic.Details);
+            Assert.Contains(Path.Combine(cwd, "handler-b.dll"), details, StringComparison.Ordinal);
+            Assert.Contains("input", details, StringComparison.Ordinal);
+            Assert.Contains("application/pdf", diagnostic.Error, StringComparison.Ordinal);
+            Assert.Contains("image/*", diagnostic.Error, StringComparison.Ordinal);
+
+            var contents = new List<AIContent> { new TextContent(result.Text!) };
+            contents.AddRange(result.Images!);
+            await foreach (var _ in run.RunUserMessageEventsAsync(new ChatMessage(ChatRole.User, contents), result.Text!)) { }
+
+            var processed = Assert.Single(client.UserMessages);
+            Assert.Equal("raw-after-a", processed.Text);
+            Assert.Contains(processed.Contents, content => content is DataContent
+            { MediaType: "image/png", Name: "prior-image" });
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task InputCancellationRevokesCallbackContextAndPropagates()
     {
         var cwd = NewWorkingDirectory();
@@ -393,6 +461,25 @@ public sealed class NativeInputAndUserBashDispatchTests
 #pragma warning disable CS0162
             yield break;
 #pragma warning restore CS0162
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private sealed class RecordingInputClient : IChatClient
+    {
+        public List<ChatMessage> UserMessages { get; } = [];
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            UserMessages.AddRange(messages.Where(message => message.Role == ChatRole.User));
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "processed");
+            await Task.CompletedTask;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;

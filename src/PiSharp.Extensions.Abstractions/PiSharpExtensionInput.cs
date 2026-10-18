@@ -37,6 +37,7 @@ public enum PiSharpInputResultAction
 public sealed record PiSharpInputEvent
 {
     /// <summary>Creates an input event with detached image snapshots.</summary>
+    /// <exception cref="ArgumentException">An image does not have an image media type.</exception>
     public PiSharpInputEvent(string text, IReadOnlyList<DataContent>? images, PiSharpInputSource source,
         PiSharpInputStreamingBehavior? streamingBehavior)
     {
@@ -84,11 +85,17 @@ public sealed record PiSharpInputResult
 
     /// <summary>
     /// Replacement image snapshots for a transform result. Null preserves existing images;
-    /// an explicitly empty collection clears them.
+    /// an explicitly empty collection clears them. Every item must have an <c>image/*</c>
+    /// media type.
     /// </summary>
     public IReadOnlyList<DataContent>? Images { get; }
 
-    /// <summary>Creates a transform result. Omit <paramref name="images"/> to preserve current images.</summary>
+    /// <summary>
+    /// Creates a transform result. Omit <paramref name="images"/> to preserve current images;
+    /// an explicitly empty collection clears them. Replacement content must have an
+    /// <c>image/*</c> media type.
+    /// </summary>
+    /// <exception cref="ArgumentException">Replacement content does not have an image media type.</exception>
     public static PiSharpInputResult Transform(string text, IReadOnlyList<DataContent>? images = null) =>
         new(PiSharpInputResultAction.Transform, text ?? throw new ArgumentNullException(nameof(text)), images);
 }
@@ -105,13 +112,20 @@ internal static class PiSharpInputSnapshots
     {
         if (images is null || images.Count == 0) return Array.Empty<DataContent>();
         var copies = new List<DataContent>(images.Count);
-        foreach (var image in images)
+        for (var index = 0; index < images.Count; index++)
         {
+            var image = images[index];
             ArgumentNullException.ThrowIfNull(image);
-            if (image.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) != true) continue;
+            var mediaType = image.MediaType;
+            if (mediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) != true ||
+                mediaType.Length == "image/".Length ||
+                string.IsNullOrWhiteSpace(mediaType["image/".Length..]))
+                throw new ArgumentException(
+                    $"Input image content at index {index} must have an image/* media type (received '{mediaType ?? "<null>"}').",
+                    nameof(images));
             var copy = image.Data is { } data
-                ? new DataContent(data.ToArray(), image.MediaType)
-                : new DataContent(image.Uri, image.MediaType);
+                ? new DataContent(data.ToArray(), mediaType)
+                : new DataContent(image.Uri, mediaType);
             copy.Name = image.Name;
             copies.Add(copy);
         }
