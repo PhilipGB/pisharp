@@ -8,11 +8,12 @@ the verification date is recorded when complete; this copy is dated 2026-10-18.
 - Base: PR #11 merge `1a0165c3858d973948c9ac8eb698e75ed0fcc535`.
 - Branch: `milestone/native-extension-events-context`.
 - Pi source: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6` (unchanged).
-- Product source SHA: `7fe25b4024e5441bb709dbc6fadd50c43411523f`.
+- Product source SHA: `5d58e62535335666281fa8cc288cfe1cde31a9d6`.
 - Test-only compaction-recorder correction: `772edfb685414bc9453fdcd0193ccc44402633a3`.
-- Push and PR exact-head Linux CI for that code-and-test checkpoint:
-  [39082700470](https://github.com/PhilipGB/pisharp/actions/runs/39082700470)
-  and [39082703383](https://github.com/PhilipGB/pisharp/actions/runs/39082703383).
+- Compaction observer cancellation fix and regression: `5d58e62535335666281fa8cc288cfe1cde31a9d6`.
+- Push and PR exact-head Linux CI for that source-and-test checkpoint:
+  [39086393714](https://github.com/PhilipGB/pisharp/actions/runs/39086393714)
+  and [39086396238](https://github.com/PhilipGB/pisharp/actions/runs/39086396238).
 
 Pinned references inspected: [extension event types](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/src/core/extensions/types.ts), [extension runner](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/src/core/extensions/runner.ts), [agent session](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/src/core/agent-session.ts), [agent loop](https://github.com/earendil-works/pi/blob/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/agent/src/agent-loop.ts), and the pinned extension [API documentation](https://github.com/earendil-works/pi/tree/b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6/packages/coding-agent/docs/extensions).
 
@@ -30,7 +31,7 @@ hooks remain authoritative.
 | --- | --- | --- | --- | --- |
 | `session_info_changed` | A committed session name change; carries the new name, including `null` when cleared. | Once per effective name change, after canonical save and commit. | Failed save leaves the old name and emits nothing. Cancellation during callback dispatch stops the current observer sequence. | Published centrally by the canonical session owner for extension, startup, TUI and RPC name changes. |
 | `session_compact` | Successful persisted compaction; includes reason, compaction result/entry metadata, `willRetry`, and `fromExtension`. | Once after successful persistence. | Not emitted for failure or abort. | `fromExtension` is false because this scope has no custom summary/replacement path. |
-| `session_compact_failed` | Failed or aborted compaction; includes reason, `willRetry`, `aborted`, and error text when present. | Once at the owning compaction failure boundary. | Failure does not emit success; cancellation is recorded as aborted when the host has a durable failure outcome. | Compaction stays with the existing coordinator and does not create a second compaction path. |
+| `session_compact_failed` | Failed or aborted compaction; includes reason, `willRetry`, `aborted`, and error text when present. | Once at the owning compaction failure boundary. | Failure does not emit success; cancellation is recorded as aborted when the host has a durable failure outcome. Aborted notifications use a host-owned 250 ms observer window so a stuck callback cannot block cancellation cleanup. | Compaction stays with the existing coordinator and does not create a second compaction path. |
 | `agent_start` | Beginning of one logical agent run. | Before its first turn; not repeated for provider continuations or queued prompts handled by the same event pump. | May be absent when cancellation prevents run startup. | Exposes the active mode and callback capabilities through the shared Runtime event path. |
 | `agent_end` | Logical run outcome and detached completed messages. | Once when the run pump reaches a terminal outcome. | Normal completion and provider failures are covered. A host abort can cancel terminal observer dispatch so the run settles promptly; pinned Pi guarantees an end event when its loop returns an aborted response, not when an exception escapes the loop. | PiSharp reports `Completed`, `Error`, or `Aborted` according to the observed terminal path; it does not synthesize Pi's mutable settlement phases. |
 | `turn_start` | Zero-based authoritative turn index and timestamp. | At each model/tool continuation, after the preceding `turn_end` and any committed selection notifications. Retries that do not begin a logical turn do not increment the index. | Uses the active run token. | Index comes from the agent run's authoritative turn owner. |
@@ -58,10 +59,12 @@ Local validation on 2026-10-18:
 - `dotnet restore PiSharp.slnx -p:NuGetAudit=false`: up to date.
 - `dotnet format PiSharp.slnx --verify-no-changes --no-restore`: passed.
 - `dotnet build PiSharp.slnx --no-restore --warnaserror`: passed, 0 warnings.
-- `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`: 2,305 passed,
+- `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`: 2,306 passed,
   0 failed, 0 skipped. The `/tmp` override matches CI; the ambient local TMPDIR
   is under the home directory and makes two existing path-presentation assertions
-  environment-dependent.
+  environment-dependent. The cancellation fix was built and the full suite run
+  in an isolated `/tmp` worktree because the main checkout's ignored build output
+  directories were read-only in this environment.
 - Architecture tests: 7/7; terminal Node tests: 24/24; Python terminal parity:
   50/50; documentation paths: 141 documents and 544 references.
 - MCP conformance: 8 previously classified failures unchanged; all other cases
@@ -72,6 +75,10 @@ Local validation on 2026-10-18:
   callback delivery with the independently consumed run-event stream. The test
   now records and asserts each stream's ordering separately; all six focused
   compaction tests and the full suite pass.
+- The compaction cancellation regression deliberately leaves the failure
+  observer incomplete, verifies its host-owned token is cancelled, and confirms
+  a subsequent compaction succeeds. All seven focused compaction event tests
+  pass.
 
 This bounded milestone does not complete the broad Extensions / .NET API parity
 row.
