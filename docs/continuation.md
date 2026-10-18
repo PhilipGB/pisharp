@@ -2,8 +2,9 @@
 
 ## Active milestone — Native Extension Session Transitions & Compaction Hooks — 2026-10-18
 
-Work is on `milestone/native-extension-session-hooks`, based on merged PR #12
-and `main` at `eef6f3f83247758d397b4e313d2c26b0088ee9ac`; configured Pi stays
+Work is on `milestone/native-extension-session-hooks`, with implementation
+source `b7b2bbf5`, based on merged PR #12 and `main` at
+`eef6f3f83247758d397b4e313d2c26b0088ee9ac`; configured Pi stays
 pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This bounded increment
 adds typed veto and completion hooks for session replacement, fork, tree
 navigation, and manual/automatic/overflow/virtual-model compaction. Existing

@@ -3,7 +3,7 @@
 ## Scope and source pins
 
 - Base `main`: `eef6f3f83247758d397b4e313d2c26b0088ee9ac` (merged PR #12).
-- Final source: recorded in the draft PR, with its exact-head checks linked there.
+- Final implementation source: `b7b2bbf5`.
 - Branch: `milestone/native-extension-session-hooks`.
 - Pinned Pi source: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; unchanged for this milestone.
 - Pi source inspected: `packages/coding-agent/src/core/extensions/types.ts`, `runner.ts`, `agent-session.ts`, `session-manager.ts`, `core/compaction/`, and `docs/extensions/` at the pin. The pinned extension docs do not describe these five hooks; their behavior was established from the pinned types and implementation.
@@ -38,6 +38,6 @@ Custom compaction supports summary, first retained entry ID, pre-compaction toke
 - Full .NET suite: 2,328 passed, 0 skipped. The run used `TMPDIR=/tmp`; the sandbox's default temporary root caused two unrelated existing resource-path assertions to compare expanded paths against the non-CI root.
 - Focused session-hook/runtime tests: 86 passed. Node: 24/24. Python: 50/50. Documentation paths: 142 documents and 546 references verified. `dotnet format` and the solution warnings-as-errors build passed.
 - MCP conformance: no regressions; all known baseline failures remain classified.
-- Exact-head push CI and PR merge-result CI: recorded with the draft PR after publication.
+- Exact-head push CI and PR merge-result CI: see the final-head checks on the draft PR.
 
 Broad extension parity remains `In progress`; this receipt records only the bounded hooks above.
