@@ -36,9 +36,33 @@ internal static class InteractiveBashExecutor
         BashExecutionResult result;
         try
         {
-            result = await run.ExecuteBashAsync(command,
-                delta => transcript.Render(new AgentLifecycleEvent("tool_execution_update", Text: delta,
-                    Tool: "bash", OperationId: operationId)), cancellationToken);
+            Task EmitUpdateAsync(string delta)
+            {
+                transcript.Render(new AgentLifecycleEvent("tool_execution_update", Text: delta,
+                    Tool: "bash", OperationId: operationId));
+                return Task.CompletedTask;
+            }
+
+            var interception = await run.InterceptUserBashAsync(command, excludeFromContext, EmitUpdateAsync,
+                cancellationToken);
+            result = interception?.Kind switch
+            {
+                null => await run.ExecuteBashAsync(command, EmitUpdate, cancellationToken),
+                PiSharp.Extensions.Abstractions.PiSharpUserBashResultKind.FullResult =>
+                    new BashExecutionResult(interception.Output ?? "", interception.Output ?? "", interception.ExitCode,
+                        interception.Cancelled, interception.Truncated, interception.FullOutputPath),
+                PiSharp.Extensions.Abstractions.PiSharpUserBashResultKind.CustomOperation
+                    when interception.CustomOperation is { } operation =>
+                    await run.ExecuteUserBashOperationAsync(command, operation, EmitUpdate, cancellationToken),
+                _ => throw new InvalidOperationException("The user_bash handler returned an invalid result.")
+            };
+
+            void EmitUpdate(string delta) => transcript.Render(new AgentLifecycleEvent("tool_execution_update", Text: delta,
+                Tool: "bash", OperationId: operationId));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            result = new BashExecutionResult("", "(no output)", null, true, false, null);
         }
         catch (Exception error)
         {
@@ -48,7 +72,7 @@ internal static class InteractiveBashExecutor
         }
 
         var recorded = run.RecordBashResult(command, result, excludeFromContext);
-        if (recorded && persist is not null) await persist(cancellationToken);
+        if (recorded && persist is not null) await persist(CancellationToken.None);
         var failed = !result.Cancelled && result.ExitCode is { } exitCode && exitCode != 0;
         transcript.Render(new AgentLifecycleEvent("tool_execution_finished", Text: result.DisplayOutput,
             Tool: "bash", OperationId: operationId, IsError: failed,
