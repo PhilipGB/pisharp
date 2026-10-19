@@ -9,8 +9,8 @@ adds compiled-extension `message_start`, `message_update`, and actionable
 `message_end` callbacks to the existing input, assistant stream, tool-result,
 and custom-message owners. Sequential validated replacements flow into the
 existing MAF and canonical transcript boundaries. Focused tests and final
-local validation are complete; branch publication and exact-head CI are pending
-in the
+local validation are complete. Draft PR #17 is open; its description tracks
+the exact-head CI links. See the
 [message lifecycle receipt](parity/fixtures/native-extension-message-lifecycle-2026-10-19.md).
 Broad extension parity remains `in_progress`.
 

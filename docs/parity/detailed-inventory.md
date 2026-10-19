@@ -7,8 +7,8 @@ actual merge on `main`, `0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff`; pinned Pi
 remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The bounded addition covers
 detached start/update snapshots and ordered, role-preserving finalized-message
 replacement at prompt, assistant stream, tool-result and custom-message
-boundaries. Final verification and exact-head CI are tracked in the
-[message lifecycle receipt](fixtures/native-extension-message-lifecycle-2026-10-19.md).
+boundaries. Draft PR #17 is open; its description tracks exact-head CI.
+See the [message lifecycle receipt](fixtures/native-extension-message-lifecycle-2026-10-19.md).
 The broad extension capability remains `in_progress`.
 
 ## Previous milestone — Native Extension Provider Wire Hooks — 2026-10-19

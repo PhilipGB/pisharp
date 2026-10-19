@@ -5,9 +5,9 @@ actual merge on `main`, `0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff`; Pi remains
 pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The public SDK adds typed
 `message_start`, assistant-stream `message_update`, and authoritative finalized
 `message_end` replacement hooks over the existing prompt, provider, tool-result,
-and custom-message owners. Local verification passes; exact-head publication
-is pending. The broad extension and orchestration rows remain `In progress`;
-the receipt records current evidence:
+and custom-message owners. Local verification passes; draft PR #17 is open, and
+its description tracks exact-head CI. The broad extension and orchestration
+rows remain `In progress`; the receipt records local evidence:
 [message lifecycle receipt](fixtures/native-extension-message-lifecycle-2026-10-19.md).
 
 See [the continuation](../continuation.md) and [extension API guide](../extensions.md).

@@ -7,8 +7,8 @@ actual merge on `main`, `0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff`; Pi remains
 pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Add typed
 `message_start`, assistant-stream `message_update`, and finalized
 `message_end` replacement handlers at the existing message owners. Focused and
-full validation pass; branch publication and exact-head CI are in
-progress. Keep broad extension parity `in_progress`.
+full validation pass. Draft PR #17 is open; exact-head CI links are tracked in
+its description. Keep broad extension parity `in_progress`.
 
 See the [continuation](docs/continuation.md), [extension API guide](docs/extensions.md),
 and [message lifecycle receipt](docs/parity/fixtures/native-extension-message-lifecycle-2026-10-19.md).

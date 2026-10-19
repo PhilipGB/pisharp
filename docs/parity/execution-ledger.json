@@ -11906,7 +11906,7 @@
       "documentation_paths": "146 documents, 568 references; passed",
       "mcp_conformance": "No regressions; the same eight classified baseline failures remain"
     },
-    "publication": "Pending exact-head push and draft PR #17 CI.",
+    "publication": "Draft PR #17 is open; exact-head CI status and run links are tracked in its description.",
     "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No broad parity claim or capability promotion.",
     "deferred": [
       "Pi-only stream start/end/done/error markers unavailable through MEAI",
