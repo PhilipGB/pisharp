@@ -39,8 +39,11 @@ property. Its public executor, options (`WorkingDirectory`, `TimeSpan? Timeout`)
 and result (`Stdout`, `Stderr`, `ExitCode`, `Killed`) live in Abstractions.
 Executors are captured during Configure and reused after callback revocation.
 The package handle owns revocation, cancellation and draining on failed
-configuration, replacement, removal and disposal. Retained host handles do not
-retain package ALCs. No enum/delegate/assembly identity changed.
+configuration, replacement, removal and disposal. Unload waits at most 15 seconds;
+execution cleanup failures and that deadline are isolated from catalog changes.
+Pending host-owned executions retain cancellation resources, finish termination
+and stream cleanup, and observe late task faults after unload returns. Retained
+host handles do not retain package ALCs. No enum/delegate/assembly identity changed.
 
 The small `ProcessLifetime` extraction supplies launch, tree termination and
 pipe-drain helpers to both shell and direct execution. A controlled blocked-reader
@@ -60,8 +63,15 @@ Unix process groups use `setsid` where installed and stronger tree cleanup than
 Pi's root-only kill; SIGTERM is followed by SIGKILL after five seconds if needed.
 Naturally detached programs remain extension-owned. Unexpected external Unix
 signals retain .NET status, typically 128 plus signal, while Pi maps null to zero.
-Relative directory overrides resolve against the captured package directory rather than Node's current process directory. Windows and hosts without `setsid` use .NET live-tree enumeration. Windows/macOS
-behavior is unverified; this milestone verifies Linux. No shell, PTY, sandbox,
+Relative directory overrides resolve against the captured package directory
+rather than Node's current process directory. Windows and hosts without `setsid`
+use .NET live-tree enumeration.
+If the root has already exited, that fallback cannot find surviving descendants;
+they remain extension-owned. Quiet inherited pipes are closed after the idle
+grace; cancellation bounds active draining, with drain failures surfaced to the
+caller. `Killed` records a termination request, not proof that all descendants
+exited. This narrower guarantee is consistent with pinned Pi's root-only kill.
+Windows/macOS behavior is unverified; this milestone verifies Linux. No shell, PTY, sandbox,
 remote execution, generic event API or deferred extension milestone was added.
 
 ## Regression evidence
@@ -78,12 +88,35 @@ configuration rollback, reload/removal and collectible ALCs. A fresh CLI process
 installs the external `.nupkg`, runs its startup event and invokes its RPC command.
 Historical API packages are also covered by the complete suite.
 
+## PR #18 teardown review corrections
+
+The review covered head `b6ea9e9c0ef2a68b0a9ea9c26d4c7887e3c543cd`.
+Both CI runs on that head (`39296257742`, `39296272272`) subsequently completed
+successfully; fresh CI is required for the corrections.
+
+- `UnloadDeadlineReleasesPackageWhileOwnedExecutionContinuesStopping` loads and
+  configures the external compiled package, starts a real TERM-resistant child,
+  and uses an internal zero-duration unload wait to reach the deadline while
+  termination is pending. Unload returns without throwing, revokes the executor,
+  clears package ownership and leaves the ALC collectible before the child has
+  stopped. The owned execution subsequently completes escalation and cleanup.
+  This regression runs on Linux with `setsid`.
+- `CleanupWithoutProcessGroupAfterRootExitClosesPipesButCannotFindDescendant`
+  launches a real ungrouped root which spawns a quiet descendant inheriting both
+  pipes and exits with code 7. With root exit explicitly awaited, the existing
+  fallback leaves the descendant alive and finishes pipe cleanup. The fixture
+  finally terminates the descendant itself. It is written for all hosts and was
+  executed on Linux; no native Windows/macOS result is claimed.
+
+The correction uses existing process ownership and documents its limit; it adds
+no process subsystem. The public API and pinned source revision are unchanged.
+
 ## Local validation
 
 | Gate | Result |
 |---|---|
-| Focused process/package/external RPC/historical API | 33 passed, zero failed/skipped |
-| Full .NET suite | 2,482 passed, zero failed/skipped |
+| Focused process/package/external RPC/historical API | 35 passed, zero failed/skipped |
+| Full .NET suite | 2,484 passed, zero failed/skipped |
 | Architecture | 7/7 |
 | Node terminal | 24/24, zero skips |
 | Python terminal parity | 50/50 |
@@ -94,7 +127,7 @@ Historical API packages are also covered by the complete suite.
 
 Commands: `dotnet format PiSharp.slnx --verify-no-changes --no-restore`,
 `dotnet build PiSharp.slnx --no-restore --warnaserror`, and
-`TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`.
+`TMPDIR=/tmp dotnet test PiSharp.slnx --no-restore`.
 Local .NET commands used `DOTNET_PROCESSOR_COUNT=2` after default parallelism
 aborted inside the CLR before compiler diagnostics. Restore retained audit and
 used a writable NuGet HTTP cache. The documented `TMPDIR=/tmp` resource-path
@@ -104,7 +137,8 @@ consecutive stress runs while formatting was active.
 
 A normal Debug `dotnet pack --no-build --no-restore` verifies the fixture's
 manifest, runtime configuration and Abstractions-only dependency boundary.
-Product source commit: 5d36e27deb255db5f9c3b78a2d95884f2c22ec5d.
+Initial product source commit: 5d36e27deb255db5f9c3b78a2d95884f2c22ec5d.
+Teardown correction commit: 4bbc133d25ae248c6246e6936d5fe714fca5f2f5.
 
 Final branch SHA and exact-head CI IDs belong in the draft PR description and
 completion report; no follow-up documentation commit is needed for those IDs.

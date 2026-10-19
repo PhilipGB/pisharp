@@ -7,10 +7,13 @@ PR #17 merged as `0737ee30524ebc86b845f2b1b5c19b9d481db212`, verified on
 actual merge. Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 This increment adds a package-owned executor captured during Configure, direct
 executable/argument invocation, separate UTF-8 streams, cancellation/timeouts,
-and removal/reload cleanup using shared process lifecycle helpers. Implementation and local verification are complete: 2,482 .NET tests pass with
-zero failures/skips; focused checks pass 33/33. Draft publication and exact-head
+and removal/reload cleanup using shared process lifecycle helpers. Implementation and local verification are complete: 2,484 .NET tests pass with
+zero failures/skips; focused checks pass 35/35. Draft publication and exact-head
 Linux CI evidence are tracked in the
 [general execution receipt](docs/parity/fixtures/native-extension-general-exec-2026-10-19.md).
+Teardown review corrections isolate the 15-second unload deadline and cover
+the already-exited-root fallback; surviving descendants without a process
+group remain extension-owned, as documented.
 PR #18 must remain a draft for independent review. Broad extension parity remains
 `in_progress`; no next milestone is started.
 
