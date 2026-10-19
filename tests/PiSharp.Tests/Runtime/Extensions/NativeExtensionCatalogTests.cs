@@ -117,6 +117,8 @@ public sealed class NativeExtensionCatalogTests
             Assert.Empty(catalog.Registration.SessionBeforeTreeHandlers);
             Assert.Empty(catalog.Registration.SessionTreeHandlers);
             Assert.Empty(catalog.Registration.SessionBeforeCompactHandlers);
+            Assert.Empty(catalog.Registration.InputHandlers);
+            Assert.Empty(catalog.Registration.RegisteredUserBashHandlers);
             AssertContextUnloaded(v2LoadContext);
         }
         finally { catalog.Dispose(); }
@@ -583,8 +585,15 @@ public sealed class NativeExtensionCatalogTests
             reloaded.Registration.BeforeAgentStartHandlers.Select(handler => handler.SourceInfo.Path));
         Assert.DoesNotContain(v1Roots[0].Path,
             reloaded.Registration.AgentStartHandlers.Select(handler => handler.SourceInfo.Path));
+        Assert.DoesNotContain(v1Roots[0].Path,
+            reloaded.Registration.InputHandlers.Select(handler => handler.SourceInfo.Path));
+        Assert.DoesNotContain(v1Roots[0].Path,
+            reloaded.Registration.RegisteredUserBashHandlers.Select(handler => handler.SourceInfo.Path));
         Assert.DoesNotContain(v1Roots[0].Path, reloaded.LoadedExtensions.Select(extension => extension.Path));
         Assert.Single(reloaded.NativePackageLoadContextReferences);
+        Assert.Equal(v2Roots[0].Path, Assert.Single(reloaded.Registration.InputHandlers).SourceInfo.Path);
+        Assert.Equal(v2Roots[0].Path,
+            Assert.Single(reloaded.Registration.RegisteredUserBashHandlers).SourceInfo.Path);
         return (reloaded, previousLoadContext);
     }
 
@@ -599,6 +608,8 @@ public sealed class NativeExtensionCatalogTests
         Assert.Empty(removed.Registration.SessionStartHandlers);
         Assert.Empty(removed.Registration.SessionShutdownHandlers);
         Assert.Empty(removed.Registration.AgentStartHandlers);
+        Assert.Empty(removed.Registration.InputHandlers);
+        Assert.Empty(removed.Registration.RegisteredUserBashHandlers);
         return (removed, previousLoadContext);
     }
 

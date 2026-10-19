@@ -4,6 +4,7 @@ using PiSharp.Cli.Composition;
 using PiSharp.Cli.Sessions;
 using PiSharp.Cli.Startup;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Sessions;
 using NativeCustomMessage = PiSharp.Extensions.Abstractions.PiSharpCustomMessage;
 
 namespace PiSharp.Cli.Tui;
@@ -85,9 +86,28 @@ internal static class InteractiveMode
             return Array.AsReadOnly(commands.GroupBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First()).ToArray());
         }
+        Task<bool> TryExecuteActiveExtensionCommandAsync(string text, CancellationToken cancellationToken) =>
+            InteractiveResourceCommands.TryExecuteExtensionCommandAsync(text,
+                () => extensionLease.Current.Registration, CreateExtensionCommandContext, cancellationToken);
+        async Task QueueExtensionUserMessageAsync(ConversationRun run, string text, CancellationToken cancellationToken)
+        {
+            var intercepted = await run.InterceptInputAsync(text, null, PiSharpInputSource.Extension,
+                PiSharpInputStreamingBehavior.Steer, cancellationToken);
+            if (intercepted.Action == PiSharpInputResultAction.Handled) return;
+            var prompt = intercepted.Action == PiSharpInputResultAction.Transform ? intercepted.Text! : text;
+            var images = intercepted.Action == PiSharpInputResultAction.Transform ? intercepted.Images : null;
+            InteractivePromptExecution.ValidateImages(images, modelBinding.Selection, projectBinding.Settings);
+            var expanded = await projectBinding.Resources.ResolveInputAsync(prompt, cancellationToken,
+                error => Console.Error.WriteLineAsync($"Extension error ({error.ExtensionPath}): {error.Error}"));
+            var contents = new List<AIContent> { new TextContent(expanded) };
+            if (images is not null) contents.AddRange(images);
+            if (!run.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, contents), expanded))
+                throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
+        }
         Task RunAsync(string input, IReadOnlyList<DataContent>? images = null) =>
             execution.RunAsync(input, images, applicationActions.HandleAsync,
-                handleExtensionShortcut: HandleExtensionShortcutAsync);
+                handleExtensionShortcut: HandleExtensionShortcutAsync,
+                tryExecuteExtensionCommand: TryExecuteActiveExtensionCommandAsync);
 
         PiSharpExtensionCommandContext CreateExtensionCommandContext(ExtensionCommandInfo commandInfo)
         {
@@ -110,14 +130,13 @@ internal static class InteractiveMode
             {
                 if (run.IsActive)
                 {
-                    var expanded = await projectBinding.Resources.ResolveInputAsync(text, cancellationToken,
-                        error => Console.Error.WriteLineAsync($"Extension error ({error.ExtensionPath}): {error.Error}"));
-                    if (!run.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
-                        throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
+                    await QueueExtensionUserMessageAsync(run, text, cancellationToken);
                     return;
                 }
                 await execution.RunAsync(text, handleApplicationAction: applicationActions.HandleAsync,
-                    cancellationToken: cancellationToken, handleExtensionShortcut: HandleExtensionShortcutAsync);
+                    cancellationToken: cancellationToken, handleExtensionShortcut: HandleExtensionShortcutAsync,
+                    source: PiSharpInputSource.Extension,
+                    tryExecuteExtensionCommand: TryExecuteActiveExtensionCommandAsync);
             }
 
             async Task SendCustomMessageAsync(NativeCustomMessage message, bool triggerTurn,
@@ -126,7 +145,8 @@ internal static class InteractiveMode
                 if (!await run.DeliverExtensionCustomMessageAsync(message,
                     commandInfo.SourceInfo.Path, triggerTurn, deliveryMode, cancellationToken)) return;
                 await execution.RunCustomMessageAsync(message, commandInfo.SourceInfo.Path,
-                    applicationActions.HandleAsync, cancellationToken, HandleExtensionShortcutAsync);
+                    applicationActions.HandleAsync, cancellationToken, HandleExtensionShortcutAsync,
+                    TryExecuteActiveExtensionCommandAsync);
             }
 
             var session = run.CreateExtensionSessionContext(commandInfo.SourceInfo.Path);
@@ -169,14 +189,13 @@ internal static class InteractiveMode
                 var currentRun = conversationBinding.Run;
                 if (currentRun.IsActive)
                 {
-                    var expanded = await projectBinding.Resources.ResolveInputAsync(text, cancellationToken,
-                        error => Console.Error.WriteLineAsync($"Extension error ({error.ExtensionPath}): {error.Error}"));
-                    if (!currentRun.TryQueueExtensionUserMessage(new ChatMessage(ChatRole.User, expanded), expanded))
-                        throw new InvalidOperationException("The active conversation run settled before the message could be queued.");
+                    await QueueExtensionUserMessageAsync(currentRun, text, cancellationToken);
                     return;
                 }
                 await execution.RunAsync(text, handleApplicationAction: applicationActions.HandleAsync,
-                    cancellationToken: cancellationToken, handleExtensionShortcut: HandleExtensionShortcutAsync);
+                    cancellationToken: cancellationToken, handleExtensionShortcut: HandleExtensionShortcutAsync,
+                    source: PiSharpInputSource.Extension,
+                    tryExecuteExtensionCommand: TryExecuteActiveExtensionCommandAsync);
             }
 
             async Task SendCustomMessageAsync(NativeCustomMessage message, bool triggerTurn,
@@ -186,7 +205,7 @@ internal static class InteractiveMode
                 if (!await currentRun.DeliverExtensionCustomMessageAsync(message, sourcePath,
                     triggerTurn, deliveryMode, cancellationToken)) return;
                 await execution.RunCustomMessageAsync(message, sourcePath, applicationActions.HandleAsync,
-                    cancellationToken, HandleExtensionShortcutAsync);
+                    cancellationToken, HandleExtensionShortcutAsync, TryExecuteActiveExtensionCommandAsync);
             }
 
             return PiSharpExtensionCapabilitiesFactory.Create(projectBinding, modelBinding, run, sourcePath,

@@ -1,6 +1,23 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Native Extension Agent Settlement & Mutable Turn Boundaries — 2026-10-18
+## Active milestone — Native Extension Input & User-Bash Interception — 2026-10-18
+
+Branch `milestone/native-extension-input-bash` is based on PR #14's actual
+merge on `main`, `1da1eb9a00ecdcfeaab1b0eb1ba35191e4893a2e`. Pi remains pinned
+at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The additive SDK intercepts
+interactive, RPC, and extension-originated input before existing resource
+expansion and routes user `!`/`!!` and RPC `bash` through one ordered native
+user-bash boundary. `ConversationRun`, the existing prompt queues, the shared
+shell output/persistence pipeline, and package lifecycle retain ownership.
+Implementation and local verification are complete; draft PR #15 is open and
+final-head CI status is tracked there. Broad extension parity remains
+`in_progress`; provider wire hooks, public `exec`, advanced UI, TypeScript
+compatibility and the global audit remain deferred.
+
+See the [API guide](extensions.md) and
+[milestone receipt](parity/fixtures/native-extension-input-bash-2026-10-18.md).
+
+## Previous milestone — Native Extension Agent Settlement & Mutable Turn Boundaries — 2026-10-18
 
 Branch `milestone/native-extension-agent-settlement` starts from PR #13's actual
 merge on `main`, `ca47d554bd48887147100ab11195c8086361963d`. PR #13 was merged

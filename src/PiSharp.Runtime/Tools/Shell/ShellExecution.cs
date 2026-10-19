@@ -196,6 +196,60 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
         }
     }
 
+    /// <summary>Executes an extension-selected operation through the host-owned output and cancellation path.</summary>
+    internal async Task<BashExecutionResult> ExecuteWithOperationsAsync(string command,
+        Func<string, string, Func<ReadOnlyMemory<byte>, ValueTask>, CancellationToken, ValueTask<int?>> operation,
+        Action<string>? onUpdate, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(operation);
+        if (!Directory.Exists(workingDirectory))
+            throw new ToolFailureException($"Working directory does not exist: {workingDirectory}\nCannot execute bash commands.");
+
+        var operationId = Guid.NewGuid();
+        using var abortSource = new CancellationTokenSource();
+        _runningBash[operationId] = abortSource;
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, abortSource.Token);
+        await using var output = new ShellOutputBuffer(normalizeOutput: true);
+        using var updates = new BashOutputUpdates(onUpdate, throttle: false);
+        var startTime = Stopwatch.GetTimestamp();
+        var effectiveCommand = shellCommandPrefix is { Length: > 0 } prefix ? $"{prefix}\n{command}" : command;
+
+        async ValueTask AppendOutputAsync(ReadOnlyMemory<byte> bytes)
+        {
+            await output.AppendAsync(bytes, linked.Token, updates.Append).ConfigureAwait(false);
+        }
+
+        async Task<BashExecutionResult> FinishAsync(int? exitCode, bool cancelled)
+        {
+            updates.Append(await output.FlushDecoderAsync().ConfigureAwait(false));
+            updates.Complete();
+            var result = await output.FinishWithMetadataAsync().ConfigureAwait(false);
+            return new(result.Output, result.DisplayOutput, cancelled ? null : exitCode, cancelled,
+                result.Truncated, result.FullOutputPath,
+                WallTimeSeconds: Math.Round(Stopwatch.GetElapsedTime(startTime).TotalSeconds, 1,
+                    MidpointRounding.AwayFromZero));
+        }
+
+        try
+        {
+            linked.Token.ThrowIfCancellationRequested();
+            var exitCode = await operation(effectiveCommand, workingDirectory, AppendOutputAsync, linked.Token)
+                .ConfigureAwait(false);
+            var cancelled = cancellationToken.IsCancellationRequested || abortSource.IsCancellationRequested;
+            return await FinishAsync(exitCode, cancelled).ConfigureAwait(false);
+        }
+        catch (Exception) when (cancellationToken.IsCancellationRequested || abortSource.IsCancellationRequested)
+        {
+            // Custom operations may signal an abort by throwing their own cancellation exception.
+            return await FinishAsync(null, cancelled: true).ConfigureAwait(false);
+        }
+        finally
+        {
+            _runningBash.TryRemove(operationId, out _);
+        }
+    }
+
     private static ProcessStartInfo CreateStartInfo(string shell, string command, string workingDirectory,
         out bool processGroup, IReadOnlyDictionary<string, string?>? sessionEnvironment)
     {

@@ -123,10 +123,19 @@ internal sealed class PromptDeliveryController
     public void QueueRpcInput(string prompt, bool steering, Action<AgentLifecycleEvent> publishQueueUpdate)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
+        QueueRpcInput(new ChatMessage(ChatRole.User, prompt), prompt, steering, publishQueueUpdate);
+    }
+
+    public void QueueRpcInput(ChatMessage message, string prompt, bool steering,
+        Action<AgentLifecycleEvent> publishQueueUpdate)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentException.ThrowIfNullOrWhiteSpace(prompt);
         ArgumentNullException.ThrowIfNull(publishQueueUpdate);
+        var queuedPrompt = new QueuedPrompt(prompt, message);
         lock (_stateGate)
         {
-            _queue.Enqueue(prompt, steering);
+            _queue.Enqueue(queuedPrompt, steering);
             if (_owner is not null)
                 _events?.Invoke(new("prompt_queued", Text: prompt, Tool: steering ? "steering" : "follow_up"));
             publishQueueUpdate(QueueEvent(_queue.Snapshot()));

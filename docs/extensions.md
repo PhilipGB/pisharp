@@ -532,6 +532,84 @@ The source path lets `pisharp update --extension Example.Greeting` read a new lo
 
 PiSharp does not run Pi TypeScript or JavaScript extension source and does not compile package source at install or startup. Native extension assemblies execute as trusted in-process .NET code with the application's operating-system permissions; a collectible load context supports dependency isolation and reload, not a security sandbox.
 
+### Input interception and user-bash replacement
+
+Compiled extensions can intercept user-originated input at the existing TUI,
+RPC, and extension-message boundaries. The input callback receives
+`PiSharpInputEvent` with `Source` (`Interactive`, `Rpc`, or `Extension`) and
+`StreamingBehavior` (`Steer`, `FollowUp`, or `null` while idle). Handlers run in
+resolved extension order. A transform becomes the input seen by the next
+handler; `Handled` stops the chain and returns without starting an agent run or
+queueing input. A failed input handler reports a source-aware extension error
+and lets the next handler see the last successfully transformed value.
+
+Input interception follows registered extension-command handling and runs before
+skill or prompt-template expansion. It also runs before model/auth preflight, so
+handled input does not require an authenticated provider. Continued input still
+uses the normal resource, image, authentication, queue, and agent paths. A
+transform that produces slash-command text is not routed through extension
+command recognition a second time. Recognized `!`/`!!` input and RPC `bash`
+requests use `user_bash` and bypass input handlers.
+
+Input images are detached `Microsoft.Extensions.AI.DataContent` snapshots. A
+text-only transform preserves the current images; passing an explicit empty
+image list to `Transform` removes them. Returning replacement images replaces
+the current set. Replacement content must have an `image/*` media type; invalid
+replacement image content is rejected as a handler error, reported against its
+extension source, and leaves the previous effective text and images in place
+for later handlers. The host performs its ordinary model and image validation
+after handlers complete. Callbacks receive the owning cancellation token and
+their context is revoked when the callback completes or is cancelled.
+
+```csharp
+builder.AddInputHandler((input, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    return ValueTask.FromResult<PiSharpInputResult?>(input.Text.StartsWith("internal:",
+        StringComparison.Ordinal)
+        ? PiSharpInputResult.Handled
+        : PiSharpInputResult.Transform("Please answer: " + input.Text));
+});
+```
+
+`AddUserBashHandler` handles user-entered shell commands only; it does not run
+for the model's built-in bash tool. The event includes the command, current
+working directory, and `ExcludeFromContext`. TUI `!command` sets the flag to
+false and `!!command` sets it to true. RPC `bash` uses the same handler order
+and result projection. The first non-null result wins. Returning `null` lets
+the next registered handler run, then uses the normal local shell when all
+handlers decline. A handler exception reports its extension source and stops
+the command without falling back to the shell.
+
+`PiSharpUserBashResult.Full` replaces execution and supplies output, optional
+exit code, cancellation, truncation, and full-output path metadata. The host
+records the original requested command once through the canonical bash history
+path and preserves `ExcludeFromContext`. `PiSharpUserBashResult.Custom` supplies
+a narrow operation callback with the host-resolved command, working directory,
+cancellation token, and an output-byte sink. Output still flows through the
+host's capture, truncation, UI/RPC streaming, and persistence pipeline; the
+extension does not implement a process manager. The configured shell prefix is
+applied before a custom operation receives the command, matching the ordinary
+executor. RPC `abort_bash` cancels an active custom operation; a full replacement
+result has no running operation to abort.
+
+```csharp
+builder.AddUserBashHandler((request, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    if (!request.Command.StartsWith("remote-status", StringComparison.Ordinal))
+        return ValueTask.FromResult<PiSharpUserBashResult?>(null);
+
+    return ValueTask.FromResult<PiSharpUserBashResult?>(PiSharpUserBashResult.Custom(
+        async (command, workingDirectory, output, token) =>
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes($"{workingDirectory}: {command}\n");
+            await output(bytes, token);
+            return 0;
+        }));
+});
+```
+
 ## Internal PiSharp extension runtime
 
 The examples below use `PiSharp.Runtime.Extensions.ExtensionRegistration`, which is an internal host surface for built-ins and first-party integrations. External compiled packages use `IPiSharpExtensionBuilder` from `PiSharp.Extensions.Abstractions`; they cannot call `ExtensionRegistration`, Runtime session types, CLI types or services.

@@ -9,6 +9,7 @@ using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
 namespace PiSharp.Runtime;
 
 /// <summary>One shared streaming runtime for terminal and one-shot invocation.</summary>
@@ -435,6 +436,111 @@ public sealed class PiAgent
         return Array.AsReadOnly(errors.ToArray());
     }
 
+    internal async Task<NativeExtensions.PiSharpInputResult> InterceptInputAsync(string text,
+        IReadOnlyList<DataContent>? images, NativeExtensions.PiSharpInputSource source,
+        NativeExtensions.PiSharpInputStreamingBehavior? streamingBehavior, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var currentText = text;
+        var currentImages = CloneInputImages(images);
+        var transformed = false;
+        foreach (var registration in _liveExtensionRegistration?.InputHandlers ?? [])
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                var result = await registration.Handler(
+                    new NativeExtensions.PiSharpInputEvent(currentText, currentImages, source, streamingBehavior),
+                    _extensionContext, cancellationToken).ConfigureAwait(false);
+                if (result is null || result.Action == NativeExtensions.PiSharpInputResultAction.Continue) continue;
+                if (result.Action == NativeExtensions.PiSharpInputResultAction.Handled)
+                    return NativeExtensions.PiSharpInputResult.Handled;
+                if (result.Action != NativeExtensions.PiSharpInputResultAction.Transform || result.Text is null)
+                    throw new InvalidOperationException("An input transform must include replacement text.");
+                currentText = result.Text;
+                if (result.Images is not null) currentImages = CloneInputImages(result.Images);
+                transformed = true;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception error)
+            {
+                ReportExtensionError(error, registration.SourceInfo.Path, "input");
+            }
+        }
+
+        return transformed
+            ? NativeExtensions.PiSharpInputResult.Transform(currentText, currentImages)
+            : NativeExtensions.PiSharpInputResult.Continue;
+    }
+
+    internal async Task<NativeExtensions.PiSharpUserBashResult?> InterceptUserBashAsync(string command,
+        bool excludeFromContext, string workingDirectory, Func<string, Task> emitUpdateAsync,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+        ArgumentNullException.ThrowIfNull(emitUpdateAsync);
+        foreach (var registration in _liveExtensionRegistration?.RegisteredUserBashHandlers ?? [])
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                if (registration.LegacyHandler is { } legacyHandler)
+                {
+                    var legacyResult = await legacyHandler(new UserBashContext(command, excludeFromContext,
+                        workingDirectory, emitUpdateAsync), cancellationToken).ConfigureAwait(false);
+                    if (legacyResult is not null)
+                        return NativeExtensions.PiSharpUserBashResult.Full(legacyResult.Output,
+                            legacyResult.ExitCode, legacyResult.Cancelled, legacyResult.Truncated,
+                            legacyResult.FullOutputPath);
+                }
+                else if (registration.NativeHandler is { } nativeHandler)
+                {
+                    var result = await nativeHandler(new NativeExtensions.PiSharpUserBashEvent(command,
+                        excludeFromContext, workingDirectory), _extensionContext, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (result is not null) return result;
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception error)
+            {
+                ReportExtensionError(error, registration.SourceInfo.Path, "user_bash");
+                throw new InvalidOperationException(
+                    $"Extension '{registration.SourceInfo.Path}' failed during user_bash: {error.Message}", error);
+            }
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<DataContent> CloneInputImages(IReadOnlyList<DataContent>? images)
+    {
+        if (images is null || images.Count == 0) return Array.Empty<DataContent>();
+        var copies = new List<DataContent>(images.Count);
+        foreach (var image in images)
+        {
+            ArgumentNullException.ThrowIfNull(image);
+            if (image.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) != true) continue;
+            var copy = image.Data is { } data
+                ? new DataContent(data.ToArray(), image.MediaType)
+                : new DataContent(image.Uri, image.MediaType);
+            copy.Name = image.Name;
+            copies.Add(copy);
+        }
+        return Array.AsReadOnly(copies.ToArray());
+    }
+
+    private void ReportExtensionError(Exception error, string sourcePath, string eventType) =>
+        PublishEvent(new AgentLifecycleEvent("extension_error", Error: error.Message,
+            Details: new { extensionPath = sourcePath, eventType }));
+
     private static AgentLifecycleEvent ExtensionSessionLifecycleError(Exception error, string sourcePath,
         string eventType) => new("extension_error", Error: error.Message,
         Details: new { extensionPath = sourcePath, eventType });
@@ -557,6 +663,11 @@ public sealed class PiAgent
 
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
         CancellationToken cancellationToken = default) => _codingTools.ExecuteBashAsync(command, onUpdate, cancellationToken);
+
+    internal Task<BashExecutionResult> ExecuteUserBashOperationAsync(string command,
+        PiSharp.Extensions.Abstractions.PiSharpUserBashOperation operation, Action<string>? onUpdate,
+        CancellationToken cancellationToken) =>
+        _codingTools.ExecuteUserBashOperationAsync(command, operation, onUpdate, cancellationToken);
 
     public void AbortBash() => _codingTools.AbortBash();
 

@@ -14,6 +14,9 @@ public sealed class ExampleExtension : IPiSharpExtension
 
     public void Configure(IPiSharpExtensionBuilder builder)
     {
+        builder.AddInputHandler((_, _, _) =>
+            ValueTask.FromResult<PiSharpInputResult?>(PiSharpInputResult.Continue));
+        builder.AddUserBashHandler((_, _, _) => ValueTask.FromResult<PiSharpUserBashResult?>(null));
         builder.AddSessionBeforeSwitchHandler((eventData, _, cancellationToken) =>
         {
             cancellationToken.ThrowIfCancellationRequested();

@@ -449,6 +449,31 @@ public sealed partial class ConversationRun
     public Task<BashExecutionResult> ExecuteBashAsync(string command, Action<string>? onUpdate = null,
         CancellationToken cancellationToken = default) => _agent.ExecuteBashAsync(command, onUpdate, cancellationToken);
 
+    /// <summary>Runs the ordered extension input interception before normal prompt processing.</summary>
+    public Task<NativeExtensions.PiSharpInputResult> InterceptInputAsync(string text,
+        IReadOnlyList<DataContent>? images, NativeExtensions.PiSharpInputSource source,
+        NativeExtensions.PiSharpInputStreamingBehavior? streamingBehavior,
+        CancellationToken cancellationToken = default)
+    {
+        BindExtensionContext();
+        return _agent.InterceptInputAsync(text, images, source, streamingBehavior, cancellationToken);
+    }
+
+    /// <summary>Runs source-ordered user-bash handlers. A handler error terminates dispatch.</summary>
+    public Task<NativeExtensions.PiSharpUserBashResult?> InterceptUserBashAsync(string command,
+        bool excludeFromContext, Func<string, Task> emitUpdateAsync,
+        CancellationToken cancellationToken = default)
+    {
+        BindExtensionContext();
+        return _agent.InterceptUserBashAsync(command, excludeFromContext, Conversation.WorkingDirectory,
+            emitUpdateAsync, cancellationToken);
+    }
+    /// <summary>Executes a user-bash extension operation through the host's output and cancellation pipeline.</summary>
+    public Task<BashExecutionResult> ExecuteUserBashOperationAsync(string command,
+        NativeExtensions.PiSharpUserBashOperation operation, Action<string>? onUpdate = null,
+        CancellationToken cancellationToken = default) =>
+        _agent.ExecuteUserBashOperationAsync(command, operation, onUpdate, cancellationToken);
+
     public void AbortBash() => _agent.AbortBash();
 
     public bool IsRetrying => _retryController.IsRetrying;

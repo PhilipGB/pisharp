@@ -7,6 +7,35 @@ namespace PiSharp.Cli.Tui;
 
 internal static class InteractiveResourceCommands
 {
+    public static async Task<bool> TryExecuteExtensionCommandAsync(string text,
+        Func<ExtensionRegistration> getExtensions,
+        Func<ExtensionCommandInfo, PiSharpExtensionCommandContext> createCommandContext,
+        CancellationToken cancellationToken)
+    {
+        if (text.Length == 0 || text[0] != '/') return false;
+        var separator = text.IndexOf(' ');
+        var name = separator < 0 ? text[1..] : text[1..separator];
+        if (name.Length == 0) return false;
+        var arguments = separator < 0 ? "" : text[(separator + 1)..];
+        var extensions = getExtensions();
+        if (extensions.ContextCommands.TryGetValue(name, out var contextHandler))
+        {
+            if (!extensions.CommandInfo.TryGetValue(name, out var info))
+                throw new InvalidOperationException($"Extension command /{name} requires a host command context.");
+            using var context = createCommandContext(info);
+            var result = await contextHandler(arguments, context, cancellationToken);
+            if (!string.IsNullOrEmpty(result)) Console.WriteLine(result);
+            return true;
+        }
+        if (extensions.Commands.TryGetValue(name, out var handler))
+        {
+            var result = await handler(arguments, cancellationToken);
+            if (!string.IsNullOrEmpty(result)) Console.WriteLine(result);
+            return true;
+        }
+        return false;
+    }
+
     public static async Task ExecuteAsync(string command, string argument, string line, Func<ResourceCatalog> getResources,
         Func<ExtensionRegistration> getExtensions, Func<string, Task> run, TerminalEditor? editor, TerminalScreen? screen,
         Func<string, Task> applicationAction, Func<Task> reload,
