@@ -38,6 +38,27 @@ internal static class SystemMessageTranscript
         message.Role == ChatRole.System && Metadata(message) is { } metadata &&
         (metadata.TryGetProperty("toolsAdded", out _) || metadata.TryGetProperty("toolsRemoved", out _));
 
+    internal static bool HasToolRevision(ChatMessage message) =>
+        message.Role == ChatRole.System && (AddedTools(message).Length > 0 || RemovedTools(message).Length > 0);
+
+    internal static void ReplaceText(ChatMessage message, string? text, bool clearSections)
+    {
+        message.Contents = string.IsNullOrEmpty(text) ? [] : [new TextContent(text)];
+        if (!clearSections || Metadata(message) is not { } source) return;
+
+        var metadata = JsonNode.Parse(source.GetRawText())!.AsObject();
+        metadata.Remove("sections");
+        if (metadata.Count == 0)
+            message.AdditionalProperties?.Remove(MetadataKey);
+        else
+        {
+            message.AdditionalProperties ??= new();
+            message.AdditionalProperties[MetadataKey] = JsonSerializer.SerializeToElement(metadata);
+        }
+    }
+
+    internal static void ClearText(ChatMessage message) => ReplaceText(message, null, clearSections: true);
+
     internal static string[] RemovedTools(ChatMessage message) =>
         Metadata(message) is { } metadata && metadata.TryGetProperty("toolsRemoved", out var tools) &&
         tools.ValueKind == JsonValueKind.Array ? tools.EnumerateArray()

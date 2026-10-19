@@ -22,7 +22,7 @@ internal sealed class NativeContextMutationRequest
             _sourceMessages is { } source && MessagesEqual(source, messages))
         {
             result = new(PiSharpContextTransformPipeline.CloneMessagesForNativeContext(_result.Messages),
-                _result.SystemInstructions, _result.MessagesChanged);
+                _result.SystemInstructions, _result.MessagesChanged, _result.MessageStructureChanged);
             return true;
         }
         result = null!;
@@ -37,7 +37,7 @@ internal sealed class NativeContextMutationRequest
         _sourceInstructions = sourceInstructions;
         _sourceToolNames = sourceToolNames.ToArray();
         _result = new(PiSharpContextTransformPipeline.CloneMessagesForNativeContext(result.Messages),
-            result.SystemInstructions, result.MessagesChanged);
+            result.SystemInstructions, result.MessagesChanged, result.MessageStructureChanged);
     }
 
     internal static NativeContextMutationRequest? From(ChatOptions? options) =>

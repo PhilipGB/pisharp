@@ -17,6 +17,7 @@ internal sealed partial class NativeExtensionEventDispatcher
     {
         var current = messages.ToList();
         var messagesChanged = false;
+        var messageStructureChanged = false;
         foreach (var handler in registration.ContextHandlers)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -65,6 +66,7 @@ internal sealed partial class NativeExtensionEventDispatcher
                     var restoredSystem = SystemMessageTranscript.ReplayForContext(working);
                     current = restoredSystem is null ? replacement.ToList() : [restoredSystem, .. replacement];
                     messagesChanged = true;
+                    messageStructureChanged |= HasMessageStructureChanged(visible, eventData.Messages);
                 }
                 else
                 {
@@ -91,6 +93,7 @@ internal sealed partial class NativeExtensionEventDispatcher
                 continue;
             }
             var beforeCallback = PiSharpContextTransformPipeline.CloneMessagesForNativeContext(working);
+            var beforeReferences = working.ToArray();
             var initialInstructions = systemInstructions;
             var initiallyLedWithSystem = working.FirstOrDefault()?.Role == ChatRole.System;
             var eventData = new NativeExtensions.PiSharpContextWithSystemEvent(working,
@@ -105,6 +108,7 @@ internal sealed partial class NativeExtensionEventDispatcher
                 {
                     current = ValidateAndClone(working);
                     systemInstructions = eventData.SystemInstructions;
+                    messageStructureChanged |= HasMessageStructureChanged(beforeReferences, working);
                     if (!SameMessages(beforeCallback, current) || !string.Equals(initialInstructions,
                             systemInstructions, StringComparison.Ordinal))
                         messagesChanged = true;
@@ -123,6 +127,7 @@ internal sealed partial class NativeExtensionEventDispatcher
             {
                 current = ValidateAndClone(eventData.Messages);
                 systemInstructions = eventData.SystemInstructions;
+                messageStructureChanged |= HasMessageStructureChanged(beforeReferences, eventData.Messages);
                 if (!SameMessages(beforeCallback, current) || !string.Equals(initialInstructions,
                         systemInstructions, StringComparison.Ordinal))
                     messagesChanged = true;
@@ -136,7 +141,7 @@ internal sealed partial class NativeExtensionEventDispatcher
             }
         }
 
-        return new(current, systemInstructions, messagesChanged);
+        return new(current, systemInstructions, messagesChanged, messageStructureChanged);
     }
 
     private async Task<bool> InvokeContextHandlerAsync(
@@ -217,6 +222,20 @@ internal sealed partial class NativeExtensionEventDispatcher
         right is not null && left.Count == right.Count && left.Select((message, index) =>
             ReferenceEquals(message, right[index])).All(same => same);
 
+    private static bool HasMessageStructureChanged(IReadOnlyList<ChatMessage> before,
+        IList<ChatMessage>? after)
+    {
+        if (after is null || before.Count != after.Count) return true;
+        if (SameReferences(before, after)) return false;
+
+        for (var beforeIndex = 0; beforeIndex < before.Count; beforeIndex++)
+        {
+            for (var afterIndex = 0; afterIndex < after.Count; afterIndex++)
+                if (afterIndex != beforeIndex && ReferenceEquals(after[afterIndex], before[beforeIndex])) return true;
+        }
+        return false;
+    }
+
     private static bool SameMessages(IReadOnlyList<ChatMessage> left, IReadOnlyList<ChatMessage> right)
     {
         if (left.Count != right.Count) return false;
@@ -266,4 +285,4 @@ internal sealed partial class NativeExtensionEventDispatcher
 }
 
 internal sealed record NativeContextMutationResult(IReadOnlyList<ChatMessage> Messages,
-    string? SystemInstructions, bool MessagesChanged);
+    string? SystemInstructions, bool MessagesChanged, bool MessageStructureChanged);

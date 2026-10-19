@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
@@ -173,11 +174,22 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
 
         var updated = options?.Clone() ?? new ChatOptions();
         updated.Instructions = result.SystemInstructions;
-        if (result.MessagesChanged && updated.AdditionalProperties?.ContainsKey("pisharp.toolTranscript") == true)
+        var instructionsChanged = !string.Equals(result.SystemInstructions, options?.Instructions,
+            StringComparison.Ordinal);
+        var removedSystemContext = result.SystemInstructions is null &&
+            !result.Messages.Any(message => message.Role == ChatRole.System) &&
+            (options?.Instructions is not null || messages.Any(message => message.Role == ChatRole.System));
+        if (updated.AdditionalProperties?.TryGetValue("pisharp.toolTranscript", out var transcriptValue) == true &&
+            transcriptValue is JsonElement { ValueKind: JsonValueKind.Array } transcript &&
+            (instructionsChanged || result.MessageStructureChanged || removedSystemContext))
         {
             updated.AdditionalProperties = updated.AdditionalProperties.Clone();
-            updated.AdditionalProperties["pisharp.toolTranscript"] =
-                ToolDeclarationTranscript.CollapseForContext(result.SystemInstructions, tools);
+            var updatedTranscript = ToolDeclarationTranscript.ApplyContextMutation(transcript, messages, result.Messages,
+                result.SystemInstructions, instructionsChanged, result.MessageStructureChanged, removedSystemContext);
+            if (updatedTranscript is { } transcriptElement)
+                updated.AdditionalProperties["pisharp.toolTranscript"] = transcriptElement;
+            else
+                updated.AdditionalProperties.Remove("pisharp.toolTranscript");
         }
         return (result.Messages, updated);
     }

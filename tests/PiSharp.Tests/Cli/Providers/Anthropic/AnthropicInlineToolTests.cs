@@ -134,6 +134,102 @@ public sealed class AnthropicInlineToolTests
     }
 
     [Fact]
+    public async Task NativeInstructionEditPreservesAnthropicToolRevisionTimelineOnTheWire()
+    {
+        var (payload, beta) = await Capture([], true, true, streaming: true, requestCount: 2,
+            invoke: async (client, token) =>
+            {
+                var registration = new ExtensionRegistration();
+                var adapter = new NativeExtensionRegistrationAdapter(registration);
+                var contextCalls = 0;
+                adapter.AddContextWithSystemHandler((eventData, _, _) =>
+                {
+                    if (Interlocked.Increment(ref contextCalls) == 2)
+                        eventData.SystemInstructions = "native prompt edit";
+                    return ValueTask.CompletedTask;
+                });
+                adapter.Close();
+                registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "A",
+                    name: "tool_a", description: "tool A")));
+                registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "B",
+                    name: "tool_b", description: "tool B")));
+
+                var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()),
+                    selectedTools: ["tool_a", "tool_b"], initialActiveToolNames: ["tool_a"],
+                    noBuiltinTools: true, systemPrompt: "base prompt",
+                    extensionToolRegistrations: registration.ToolDefinitions,
+                    liveExtensionRegistration: registration);
+                var conversation = new ConversationSession(Path.GetTempPath(), "claude-opus-5", null);
+                var run = await ConversationRun.OpenAsync(agent, conversation);
+                await foreach (var _ in run.RunEventsAsync("before", token)) { }
+                run.SetActiveTools(["tool_b"]);
+                await foreach (var _ in run.RunEventsAsync("after", token)) { }
+            });
+
+        Assert.Contains("inline-tools-2026-09-15", beta);
+        Assert.Equal("native prompt edit", payload.GetProperty("system")[0].GetProperty("text").GetString());
+        Assert.Equal(["tool_a", "__pi_deferred_placeholder__"], payload.GetProperty("tools").EnumerateArray()
+            .Select(tool => tool.GetProperty("name").GetString()));
+        var update = Assert.Single(payload.GetProperty("messages").EnumerateArray(),
+            message => message.GetProperty("role").GetString() == "system");
+        var blocks = update.GetProperty("content").EnumerateArray().ToArray();
+        Assert.Equal(["tool_removal", "tool_addition"], blocks.Select(block => block.GetProperty("type").GetString()));
+        Assert.Equal("tool_a", blocks[0].GetProperty("tool").GetProperty("name").GetString());
+        Assert.Equal("tool_b", blocks[1].GetProperty("tool").GetProperty("definition").GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task NativeFullSystemRemovalDoesNotReappearInAnthropicProjection()
+    {
+        var (payload, beta) = await Capture([], true, true, streaming: true, requestCount: 2,
+            invoke: async (client, token) =>
+            {
+                var registration = new ExtensionRegistration();
+                var adapter = new NativeExtensionRegistrationAdapter(registration);
+                var contextCalls = 0;
+                adapter.AddContextWithSystemHandler((eventData, _, _) =>
+                {
+                    if (Interlocked.Increment(ref contextCalls) == 2)
+                    {
+                        for (var index = eventData.Messages.Count - 1; index >= 0; index--)
+                            if (eventData.Messages[index].Role == ChatRole.System)
+                                eventData.Messages.RemoveAt(index);
+                        eventData.SystemInstructions = null;
+                    }
+                    return ValueTask.CompletedTask;
+                });
+                adapter.Close();
+                registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "A",
+                    name: "tool_a", description: "tool A")));
+                registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "B",
+                    name: "tool_b", description: "tool B")));
+
+                var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()),
+                    selectedTools: ["tool_a", "tool_b"], initialActiveToolNames: ["tool_a"],
+                    noBuiltinTools: true, systemPrompt: "base prompt",
+                    extensionToolRegistrations: registration.ToolDefinitions,
+                    liveExtensionRegistration: registration);
+                var conversation = new ConversationSession(Path.GetTempPath(), "claude-opus-5", null);
+                var run = await ConversationRun.OpenAsync(agent, conversation);
+                await foreach (var _ in run.RunEventsAsync("before", token)) { }
+                run.SetActiveTools(["tool_b"]);
+                await foreach (var _ in run.RunEventsAsync("after", token)) { }
+            });
+
+        Assert.Contains("inline-tools-2026-09-15", beta);
+        Assert.False(payload.TryGetProperty("system", out _));
+        Assert.DoesNotContain("base prompt", payload.GetRawText(), StringComparison.Ordinal);
+        Assert.Equal(["tool_a", "__pi_deferred_placeholder__"], payload.GetProperty("tools").EnumerateArray()
+            .Select(tool => tool.GetProperty("name").GetString()));
+        var update = Assert.Single(payload.GetProperty("messages").EnumerateArray(),
+            message => message.GetProperty("role").GetString() == "system");
+        var blocks = update.GetProperty("content").EnumerateArray().ToArray();
+        Assert.Equal(["tool_removal", "tool_addition"], blocks.Select(block => block.GetProperty("type").GetString()));
+        Assert.Equal("tool_a", blocks[0].GetProperty("tool").GetProperty("name").GetString());
+        Assert.Equal("tool_b", blocks[1].GetProperty("tool").GetProperty("definition").GetProperty("name").GetString());
+    }
+
+    [Fact]
     public async Task NativeToolUpdatesKeepInitialDefinitionsAndDefineLaterToolsByValue()
     {
         var session = Import("""

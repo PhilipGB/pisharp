@@ -24,22 +24,94 @@ internal sealed class ToolDeclarationTranscript
         message = JsonSerializer.SerializeToElement(revision.Message, AIJsonUtilities.DefaultOptions)
     }));
 
-    internal static JsonElement CollapseForContext(string? instructions, IReadOnlyList<AITool> tools)
+    internal static JsonElement? ApplyContextMutation(JsonElement transcript,
+        IReadOnlyList<ChatMessage> sourceMessages, IReadOnlyList<ChatMessage> updatedMessages,
+        string? instructions, bool instructionsChanged, bool messageStructureChanged, bool removeSystemContext)
     {
-        var message = new ChatMessage(ChatRole.System, instructions ?? "");
-        var declarations = tools.OfType<AIFunctionDeclaration>().Select(ToolDeclarationJson.Create).ToArray();
-        if (declarations.Length > 0)
-            SystemMessageTranscript.ImportMetadata(message,
-                JsonSerializer.SerializeToElement(new { toolsAdded = declarations }));
-        return JsonSerializer.SerializeToElement(new[]
-        {
-            new
+        var revisions = transcript.ValueKind == JsonValueKind.Array
+            ? transcript.EnumerateArray().Select(revision =>
             {
-                afterMessageCount = 0,
-                message = JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions)
+                var message = revision.GetProperty("message").Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)!;
+                return (AfterMessageCount: revision.GetProperty("afterMessageCount").GetInt32(), Message: message);
+            }).ToList()
+            : [];
+
+        if (messageStructureChanged)
+        {
+            var mapBoundary = CreateBoundaryMapper(sourceMessages, updatedMessages);
+            for (var index = 0; index < revisions.Count; index++)
+                revisions[index] = (mapBoundary(revisions[index].AfterMessageCount), revisions[index].Message);
+        }
+
+        if (removeSystemContext)
+        {
+            foreach (var revision in revisions) SystemMessageTranscript.ClearText(revision.Message);
+            revisions.RemoveAll(revision => !SystemMessageTranscript.HasToolRevision(revision.Message));
+        }
+        else if (instructionsChanged)
+        {
+            var initialIndex = revisions.FindIndex(revision => revision.AfterMessageCount == 0);
+            if (initialIndex < 0 && instructions is not null)
+            {
+                revisions.Insert(0, (0, new ChatMessage(ChatRole.System, instructions)));
             }
-        });
+            else if (initialIndex >= 0)
+            {
+                var initial = revisions[initialIndex].Message;
+                SystemMessageTranscript.ReplaceText(initial, instructions, clearSections: true);
+            }
+        }
+
+        if (revisions.Count == 0) return null;
+        return JsonSerializer.SerializeToElement(revisions.Select(revision => new
+        {
+            afterMessageCount = revision.AfterMessageCount,
+            message = JsonSerializer.SerializeToElement(revision.Message, AIJsonUtilities.DefaultOptions)
+        }));
     }
+
+    private static Func<int, int> CreateBoundaryMapper(IReadOnlyList<ChatMessage> sourceMessages,
+        IReadOnlyList<ChatMessage> updatedMessages)
+    {
+        try
+        {
+            var source = sourceMessages.Select(MessageSignature).ToArray();
+            var updated = updatedMessages.Select(MessageSignature).ToArray();
+            var positions = new Dictionary<string, Queue<int>>(StringComparer.Ordinal);
+            for (var index = 0; index < updated.Length; index++)
+            {
+                if (!positions.TryGetValue(updated[index], out var queue)) positions[updated[index]] = queue = new();
+                queue.Enqueue(index);
+            }
+
+            var sourceToUpdated = new int?[source.Length];
+            var lastUpdated = -1;
+            foreach (var (signature, sourceIndex) in source.Select((signature, index) => (signature, index)))
+            {
+                if (!positions.TryGetValue(signature, out var queue)) continue;
+                while (queue.Count > 0 && queue.Peek() <= lastUpdated) queue.Dequeue();
+                if (queue.Count == 0) continue;
+                lastUpdated = queue.Dequeue();
+                sourceToUpdated[sourceIndex] = lastUpdated;
+            }
+
+            return boundary =>
+            {
+                if (boundary <= 0) return 0;
+                if (boundary >= sourceToUpdated.Length) return updated.Length;
+                for (var index = boundary; index < sourceToUpdated.Length; index++)
+                    if (sourceToUpdated[index] is { } mapped) return mapped;
+                return updated.Length;
+            };
+        }
+        catch (Exception)
+        {
+            return boundary => Math.Clamp(boundary, 0, updatedMessages.Count);
+        }
+    }
+
+    private static string MessageSignature(ChatMessage message) =>
+        JsonSerializer.Serialize(message, AIJsonUtilities.DefaultOptions);
 
     internal JsonElement Project(IReadOnlyList<ChatMessage> messages, ChatOptions options)
     {

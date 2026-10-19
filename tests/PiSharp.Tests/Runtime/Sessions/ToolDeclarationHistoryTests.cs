@@ -64,6 +64,43 @@ public sealed class ToolDeclarationHistoryTests
         Assert.Equal(2, restoredClient.Options[0].Tools!.Count);
     }
 
+    [Fact]
+    public void StructuralContextEditRebasesToolRevisionWithoutCollapsingItsHistory()
+    {
+        var initial = new ChatMessage(ChatRole.System, "base prompt");
+        SystemMessageTranscript.ImportMetadata(initial, JsonSerializer.SerializeToElement(new
+        {
+            toolsAdded = new[] { new { name = "tool_a", description = "A", parameters = new { type = "object" } } }
+        }));
+        var update = new ChatMessage(ChatRole.System, "");
+        SystemMessageTranscript.ImportMetadata(update, JsonSerializer.SerializeToElement(new
+        {
+            toolsRemoved = new[] { new { name = "tool_a" } },
+            toolsAdded = new[] { new { name = "tool_b", description = "B", parameters = new { type = "object" } } }
+        }));
+        var transcript = JsonSerializer.SerializeToElement(new[]
+        {
+            new { afterMessageCount = 0, message = JsonSerializer.SerializeToElement(initial, AIJsonUtilities.DefaultOptions) },
+            new { afterMessageCount = 2, message = JsonSerializer.SerializeToElement(update, AIJsonUtilities.DefaultOptions) }
+        });
+        ChatMessage[] sourceMessages = [new(ChatRole.User, "one"), new(ChatRole.Assistant, "two"), new(ChatRole.User, "three")];
+        ChatMessage[] updatedMessages = [sourceMessages[0], sourceMessages[2]];
+
+        var result = ToolDeclarationTranscript.ApplyContextMutation(transcript, sourceMessages, updatedMessages,
+            "edited prompt", instructionsChanged: true, messageStructureChanged: true, removeSystemContext: false);
+
+        var revisions = Assert.IsType<JsonElement>(result).EnumerateArray().ToArray();
+        Assert.Equal([0, 1], revisions.Select(revision => revision.GetProperty("afterMessageCount").GetInt32()));
+        var projectedInitial = revisions[0].GetProperty("message").Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)!;
+        var projectedUpdate = revisions[1].GetProperty("message").Deserialize<ChatMessage>(AIJsonUtilities.DefaultOptions)!;
+        Assert.Equal("edited prompt", projectedInitial.Text);
+        Assert.Equal("tool_a", Assert.Single(SystemMessageTranscript.AddedTools(projectedInitial))
+            .GetProperty("name").GetString());
+        Assert.Equal("tool_a", Assert.Single(SystemMessageTranscript.RemovedTools(projectedUpdate)));
+        Assert.Equal("tool_b", Assert.Single(SystemMessageTranscript.AddedTools(projectedUpdate))
+            .GetProperty("name").GetString());
+    }
+
     private static PiAgent CreateAgent(IChatClient client, ExtensionRegistration registration) =>
         new(client, new CodingTools(Path.GetTempPath()), noBuiltinTools: true, systemPrompt: "base prompt",
             extensionToolRegistrations: registration.ToolDefinitions, liveExtensionRegistration: registration);
