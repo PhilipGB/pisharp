@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
 
 namespace PiSharp.Runtime.Tools;
 
@@ -9,7 +8,6 @@ namespace PiSharp.Runtime.Tools;
 internal sealed class ShellExecution(string workingDirectory, string? shellPath, string? shellCommandPrefix)
 {
     private const double MaxTimeoutSeconds = int.MaxValue / 1000d;
-    private static readonly TimeSpan s_stdioIdleGrace = TimeSpan.FromMilliseconds(100);
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _runningBash = new();
     public static IReadOnlyList<string> SessionEnvironmentNames { get; } = Array.AsReadOnly<string>(
         ["PI_SESSION_ID", "PI_SESSION_FILE", "PI_PROVIDER", "PI_MODEL", "PI_REASONING_LEVEL"]);
@@ -77,7 +75,7 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
                 Interlocked.Exchange(ref lastOutputTicks, ticks));
             await process.WaitForExitAsync(linked.Token);
             Interlocked.Exchange(ref lastOutputTicks, Stopwatch.GetTimestamp());
-            await DrainOutputAfterExitAsync(process, stdout, stderr, linked.Token, pumpStop,
+            await ProcessLifetime.DrainOutputAfterExitAsync(process, stdout, stderr, linked.Token, pumpStop,
                 () => Interlocked.Read(ref lastOutputTicks));
             var finalDecoded = await output.FlushDecoderAsync();
             updates.Append(finalDecoded);
@@ -91,9 +89,9 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
         }
         catch (OperationCanceledException) when (started)
         {
-            KillProcessTree(process, processGroup);
-            await WaitForExitQuietlyAsync(process);
-            await StopPumpsAsync(process, stdout, stderr, pumpStop);
+            ProcessLifetime.KillProcessTree(process, processGroup);
+            await ProcessLifetime.WaitForExitQuietlyAsync(process);
+            await ProcessLifetime.StopPumpsAsync(process, stdout, stderr, pumpStop);
             var finalDecoded = await output.FlushDecoderAsync();
             updates.Append(finalDecoded);
             var result = await output.FinishWithMetadataAsync();
@@ -120,9 +118,9 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
         {
             if (started)
             {
-                KillProcessTree(process, processGroup);
-                await WaitForExitQuietlyAsync(process);
-                await StopPumpsAsync(process, stdout, stderr, pumpStop);
+                ProcessLifetime.KillProcessTree(process, processGroup);
+                await ProcessLifetime.WaitForExitQuietlyAsync(process);
+                await ProcessLifetime.StopPumpsAsync(process, stdout, stderr, pumpStop);
             }
             throw new ToolFailureException($"Error executing command: {e.Message}", inner: e);
         }
@@ -131,9 +129,9 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
             _runningBash.TryRemove(operationId, out _);
             if (started && (!process.HasExited || stdout is { IsCompleted: false } || stderr is { IsCompleted: false }))
             {
-                KillProcessTree(process, processGroup);
-                await WaitForExitQuietlyAsync(process);
-                await StopPumpsAsync(process, stdout, stderr, pumpStop);
+                ProcessLifetime.KillProcessTree(process, processGroup);
+                await ProcessLifetime.WaitForExitQuietlyAsync(process);
+                await ProcessLifetime.StopPumpsAsync(process, stdout, stderr, pumpStop);
             }
         }
 
@@ -153,46 +151,6 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
             catch (OperationCanceledException) when (stop.IsCancellationRequested) { }
             catch (IOException) when (stop.IsCancellationRequested) { }
             catch (ObjectDisposedException) when (stop.IsCancellationRequested) { }
-        }
-
-        static async Task DrainOutputAfterExitAsync(Process process, Task stdoutTask, Task stderrTask,
-            CancellationToken cancellationToken, CancellationTokenSource stop, Func<long> lastOutput)
-        {
-            var streams = Task.WhenAll(stdoutTask, stderrTask);
-            while (!streams.IsCompleted)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var quietFor = Stopwatch.GetElapsedTime(lastOutput());
-                var remaining = s_stdioIdleGrace - quietFor;
-                if (remaining <= TimeSpan.Zero) break;
-                await Task.WhenAny(streams, Task.Delay(remaining, cancellationToken));
-            }
-            if (!streams.IsCompleted)
-            {
-                stop.Cancel();
-                process.StandardOutput.Close();
-                process.StandardError.Close();
-            }
-            await streams;
-        }
-
-        static async Task StopPumpsAsync(Process process, Task? stdoutTask, Task? stderrTask,
-            CancellationTokenSource stop)
-        {
-            stop.Cancel();
-            try { process.StandardOutput.Close(); } catch (InvalidOperationException) { }
-            try { process.StandardError.Close(); } catch (InvalidOperationException) { }
-            var active = new[] { stdoutTask, stderrTask }.Where(task => task is not null).Cast<Task>().ToArray();
-            if (active.Length == 0) return;
-            try { await Task.WhenAll(active).WaitAsync(TimeSpan.FromSeconds(5)); }
-            catch (TimeoutException) { }
-        }
-
-        static async Task WaitForExitQuietlyAsync(Process process)
-        {
-            try { await process.WaitForExitAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5)); }
-            catch (TimeoutException) { }
-            catch (InvalidOperationException) { }
         }
     }
 
@@ -253,29 +211,7 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
     private static ProcessStartInfo CreateStartInfo(string shell, string command, string workingDirectory,
         out bool processGroup, IReadOnlyDictionary<string, string?>? sessionEnvironment)
     {
-        processGroup = false;
-        var start = new ProcessStartInfo
-        {
-            WorkingDirectory = workingDirectory,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
-        if (!OperatingSystem.IsWindows() && FindExecutable("setsid") is { } setsid)
-        {
-            start.FileName = setsid;
-            start.ArgumentList.Add(shell);
-            start.ArgumentList.Add("-c");
-            start.ArgumentList.Add(command);
-            processGroup = true;
-        }
-        else
-        {
-            start.FileName = shell;
-            start.ArgumentList.Add("-c");
-            start.ArgumentList.Add(command);
-        }
+        var start = ProcessLifetime.CreateStartInfo(shell, ["-c", command], workingDirectory, out processGroup);
         var pathKey = start.Environment.Keys.FirstOrDefault(key => key.Equals("PATH", StringComparison.OrdinalIgnoreCase)) ?? "PATH";
         var path = start.Environment.TryGetValue(pathKey, out var inheritedPath) ? inheritedPath ?? "" : "";
         var appDirectory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -310,14 +246,14 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Git", "bin", "bash.exe"),
                 Environment.GetEnvironmentVariable("ProgramFiles(x86)") is { Length: > 0 } x86
                     ? Path.Combine(x86, "Git", "bin", "bash.exe") : null,
-                FindExecutable("bash.exe")
+                ProcessLifetime.FindExecutable("bash.exe")
             };
             var match = candidates.FirstOrDefault(candidate => candidate is not null && File.Exists(candidate));
             if (match is not null) return match;
             throw new ToolFailureException("No bash shell found. Install Git for Windows, add bash.exe to PATH, or set shellPath in settings.json.");
         }
         if (File.Exists("/bin/bash")) return "/bin/bash";
-        if (FindExecutable("bash") is { } bash) return bash;
+        if (ProcessLifetime.FindExecutable("bash") is { } bash) return bash;
         return File.Exists("/bin/sh") ? "/bin/sh" : "sh";
     }
 
@@ -330,35 +266,4 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
         var drive = char.ToUpperInvariant(parts[driveIndex][0]) + ":\\";
         return parts.Length == driveIndex + 1 ? drive : Path.Combine(drive, Path.Combine(parts[(driveIndex + 1)..]));
     }
-
-    private static string? FindExecutable(string name)
-    {
-        foreach (var directory in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator,
-                     StringSplitOptions.RemoveEmptyEntries))
-        {
-            var candidate = Path.Combine(directory, name);
-            if (File.Exists(candidate)) return candidate;
-        }
-        return null;
-    }
-
-    private static void KillProcessTree(Process process, bool processGroup)
-    {
-        try
-        {
-            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD())
-            {
-                if (processGroup && kill(-process.Id, 9) == 0) return;
-            }
-            if (!process.HasExited) process.Kill(entireProcessTree: true);
-        }
-        catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception)
-        {
-            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
-            catch (Exception fallback) when (fallback is InvalidOperationException or System.ComponentModel.Win32Exception) { }
-        }
-    }
-
-    [DllImport("libc", SetLastError = true)]
-    private static extern int kill(int processId, int signal);
 }

@@ -825,9 +825,10 @@ public sealed partial class ExtensionCatalog : IDisposable
                     catalog.Registration.SetCurrentSourceInfo(sourceInfo);
                     try
                     {
+                        handle.InitializeProcessExecutor(cwd);
                         foreach (var extension in handle.Extensions)
                         {
-                            var builder = new NativeExtensionRegistrationAdapter(catalog.Registration);
+                            var builder = new NativeExtensionRegistrationAdapter(catalog.Registration, handle.ProcessExecutor);
                             try { extension.Configure(builder); }
                             finally { builder.Close(); }
                         }

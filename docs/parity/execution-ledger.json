@@ -11887,7 +11887,7 @@
   },
   "native_extension_message_lifecycle_milestone": {
     "date": "2026-10-19",
-    "status": "in_progress",
+    "status": "complete",
     "branch": "milestone/native-extension-message-lifecycle",
     "base_main": "0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff",
     "product_source_commit": "e4f06852798d0b49ebdd46a5c5f8a333ce54317d",
@@ -11907,12 +11907,57 @@
       "documentation_paths": "146 documents, 568 references; passed",
       "mcp_conformance": "No regressions; the same eight classified baseline failures remain"
     },
-    "publication": "Draft PR #17 is open; exact-head CI status and run links are tracked in its description.",
+    "publication": "PR #17 merged after reviewed head and both exact-head CI runs were reverified; actual merge is contained in origin/main.",
     "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No broad parity claim or capability promotion.",
     "deferred": [
       "Pi-only stream start/end/done/error markers unavailable through MEAI",
       "Opaque provider-content reconstruction",
       "Generic pi.on(...), TypeScript extensions, provider OAuth, dynamic registration, advanced UI/renderers, and broader extension parity"
-    ]
+    ],
+    "actual_merge_sha": "0737ee30524ebc86b845f2b1b5c19b9d481db212"
+  },
+  "native_extension_general_exec_milestone": {
+    "date": "2026-10-19",
+    "status": "implemented",
+    "branch": "milestone/native-extension-general-exec",
+    "pr17_reviewed_head": "9182227d321d1e1d7871a6273f73534549835569",
+    "pr17_merge_sha": "0737ee30524ebc86b845f2b1b5c19b9d481db212",
+    "base_main": "0737ee30524ebc86b845f2b1b5c19b9d481db212",
+    "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "receipt": "docs/parity/fixtures/native-extension-general-exec-2026-10-19.md",
+    "implementation": "Additive Abstractions ProcessExecutor captured during Configure, explicit ArgumentList direct invocation, separate incremental UTF-8 streams, TimeSpan timeout/caller cancellation, package-owned revocation and cleanup, shared shell/process lifecycle helpers.",
+    "focused_tests": "35/35 passed, zero failed/skipped: 32 process/package/external RPC checks plus 3 historical compiled API checks. The two new teardown regressions also passed a repeat run. Coverage includes unload deadline expiry while an execution remains pending, ALC collection before cleanup finishes, no-group cleanup after root exit, buffered reader starvation and cancellation after root exit.",
+    "local_verification": {
+      "format": "passed",
+      "build": "passed, zero warnings/errors",
+      "dotnet_tests": "2484 passed, 0 failed, 0 skipped",
+      "architecture": "7/7 passed",
+      "node_terminal": "24/24 passed, zero skips",
+      "python_terminal": "50/50 passed",
+      "documentation_paths": "147 documents, 568 references; passed",
+      "mcp_conformance": "No regressions; the same eight classified baseline failures remain"
+    },
+    "publication": "Draft PR #18 is the review boundary; final head and exact-head push/PR Linux CI evidence are tracked in its description. Do not merge.",
+    "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No broad extension parity promotion.",
+    "deviations": [
+      "Pre-start cancellation launches nothing and throws.",
+      "Missing executable/directory fails explicitly, without a fabricated exit code.",
+      "Incremental UTF-8 decoding preserves split characters.",
+      "64 MiB aggregate raw output safeguard fails explicitly and terminates the process.",
+      "Package unload cancels active calls with a failure-isolated 15-second wait; pending cleanup remains observed. Unix process groups get bounded TERM/KILL cleanup. Without a process group, descendants surviving root exit remain extension-owned.",
+      "External signal exits use native .NET status. Windows/macOS process behavior is unverified.",
+      "Relative working-directory overrides resolve against the captured package directory instead of Node process.cwd()."
+    ],
+    "product_source_commit": "4bbc133d25ae248c6246e6936d5fe714fca5f2f5",
+    "review_corrections": {
+      "reviewed_head": "b6ea9e9c0ef2a68b0a9ea9c26d4c7887e3c543cd",
+      "unload": "A bounded 15-second wait cannot propagate cancellation/cleanup failures or expiry into catalog changes; pending host-owned executions finish termination and stream cleanup, observe late faults, and release cancellation resources after completion. ALC unload still runs.",
+      "regressions": [
+        "UnloadDeadlineReleasesPackageWhileOwnedExecutionContinuesStopping: compiled package, real TERM-resistant child, immediate internal unload deadline, revoked executor, collectible ALC while execution is pending, eventual termination.",
+        "CleanupWithoutProcessGroupAfterRootExitClosesPipesButCannotFindDescendant: real root exits with code 7, inherited pipes remain open, no-group fallback leaves descendant alive, bounded pipe cleanup, explicit fixture-owned descendant termination."
+      ],
+      "platform_scope": "Both regressions executed on Linux. Without a process group, including Windows/Unix without setsid, descendants surviving root exit remain extension-owned; documented consistently with pinned Pi root-only termination. Native Windows/macOS execution remains unverified."
+    },
+    "initial_product_source_commit": "5d36e27deb255db5f9c3b78a2d95884f2c22ec5d"
   }
 }

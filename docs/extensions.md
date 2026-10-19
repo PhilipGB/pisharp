@@ -905,6 +905,110 @@ context.
 
 The internal runtime hook distinguishes submitted user prompts from custom-message runs, receives custom-message metadata and user image attachments, and can return a durable injected custom message. The public compiled equivalent is `IPiSharpExtensionBuilder.AddBeforeAgentStartHandler`, documented above. Structured mutation of individual system-prompt options remains deferred.
 
+## General process execution
+
+Capture `builder.ProcessExecutor` during `Configure`. The resulting
+`PiSharpExtensionProcessExecutor` belongs to that loaded package and remains
+usable by commands, tools, and asynchronous events after individual callback
+contexts expire. The SDK contract lives entirely in
+`PiSharp.Extensions.Abstractions`.
+
+```csharp
+public void Configure(IPiSharpExtensionBuilder builder)
+{
+    var processes = builder.ProcessExecutor;
+    builder.AddCommand("git-status", async (_, cancellationToken) =>
+    {
+        var result = await processes.ExecuteAsync("git", ["status", "--porcelain"],
+            new PiSharpExtensionExecOptions
+            {
+                Timeout = TimeSpan.FromSeconds(30),
+                WorkingDirectory = "subproject"
+            }, cancellationToken);
+        return $"exit={result.ExitCode}; killed={result.Killed}\n" +
+            result.Stdout + result.Stderr;
+    });
+}
+```
+
+`ExecuteAsync(string command, IReadOnlyList<string> args,
+PiSharpExtensionExecOptions? options = null,
+CancellationToken cancellationToken = default)` starts the executable directly
+with `UseShellExecute=false` and an individual `ArgumentList`. Spaces, quotes,
+empty arguments, Unicode, wildcards, and shell syntax are literal arguments.
+To use a shell, explicitly name that shell as the executable and supply its
+arguments yourself. Standard input is closed; environment variables inherit
+from the host without the model bash tool's session-variable rewriting.
+
+The default working directory is captured when the package is configured.
+`WorkingDirectory` overrides it; relative overrides resolve against that
+captured directory. Missing directories fail before starting. A retained old
+handle cannot select the replacement package's directory. `Timeout` uses
+`TimeSpan`; positive values enable it, null and nonpositive values disable it.
+Values above the .NET timer's maximum of 4,294,967,294 milliseconds are rejected.
+Pass the callback's cancellation token to respect the current operation's abort.
+
+`PiSharpExtensionExecResult` contains `Stdout`, `Stderr`, `ExitCode`, and `Killed`.
+Both streams drain asynchronously and independently using incremental UTF-8
+decoders. Results preserve carriage returns, ANSI escapes, BOMs and other output
+bytes represented as text. There is no shell presentation formatting or display
+truncation. A nonzero program exit returns a normal result. Cancellation or
+timeout after start requests process termination and returns partial captured
+output with `Killed=true` and `ExitCode=0`, matching pinned Pi's null signal-exit
+code mapping. If the root already exited before cancellation during descendant
+output draining, its original exit code is retained. A natural exit has
+`Killed=false`. Process-start errors throw;
+no exit status is invented for a program that did not start. Cancellation before
+start throws `OperationCanceledException` and launches nothing. Termination or
+bounded stream-drain failures throw instead of returning a result.
+
+Removal, replacement, failed configuration, and host disposal revoke the
+package's executor. New calls on an old handle throw `ObjectDisposedException`;
+already-running calls are cancelled. Unload waits up to 15 seconds for cleanup;
+cleanup failures and expiry of that wait do not interrupt package removal or
+replacement. If an execution is still stopping, its host-owned task continues
+process termination and stream cleanup, observes late failures, and releases
+cancellation resources when finished. The package load context is released even
+when that deadline expires. The replacement gets an independent executor. Unix
+hosts use the existing `setsid` process group helper when installed, request
+SIGTERM and escalate to SIGKILL after five seconds; other hosts use .NET process
+tree termination while the root is alive. Without a process group (including on
+Windows and Unix hosts without `setsid`), an already-exited root cannot be used to
+find or terminate surviving descendants. Those descendants remain the
+extension's responsibility; inherited pipes are closed after the output-idle
+grace, and cancellation bounds active output draining. `Killed=true` records the
+termination request, not proof that every descendant exited. This is consistent
+with pinned Pi's root-only termination contract. Exit and stream cleanup waits
+are bounded. Successful processes have no default deadline. After natural exit,
+a 100 ms sliding output-idle grace
+releases pipes held by quiet descendants while retaining continuously arriving
+output. On Unix, bytes already buffered in a pipe keep draining even when a
+reader continuation is delayed. Naturally detached background programs remain
+the extension's responsibility.
+
+A trusted native extension has the host's OS permissions. This API adds no
+sandbox or permission prompt and does not route through model tool permissions.
+Project package trust checks still apply before loading extension code. General
+execution is independent of user-bash interception (`!`, `!!`, RPC `bash`) and
+model-issued bash tools; their output rendering and truncation are unchanged.
+The host does not log arguments, environment, or captured output by default.
+
+Verified differences from pinned Pi: pre-cancelled calls do not spawn; start
+errors throw rather than returning Pi's synthetic code 1; incremental decoding
+preserves split UTF-8 characters that Pi's per-chunk `toString()` can replace;
+a combined 64 MiB raw-output budget throws `IOException` and cleans up the child
+instead of growing memory without limit or silently truncating. Package unload
+cancels active calls; termination covers owned process groups or live trees,
+with the already-exited-root limitation described above. Signal exit codes not
+requested by the host use the native .NET status (Unix typically 128 plus the
+signal) rather than Pi's zero.
+Relative directory overrides resolve against the captured package directory,
+whereas Pi passes them to Node relative to its current process directory.
+Windows and Unix hosts without `setsid` rely on .NET's live-tree enumeration;
+Linux process behavior is covered by the fixture tests and Linux CI, while
+macOS and Windows execution remain unverified. See the bounded
+[general execution receipt](parity/fixtures/native-extension-general-exec-2026-10-19.md).
+
 ## Current boundaries
 
 The .NET API does not aim for TypeScript source compatibility. Per-session extension state, late dynamic registration, custom providers, extension keybindings, general extension UI and settings remain open parity work. Resource discovery is currently a startup/reload callback rather than a full resource-management API. Tool output schemas and a complete structured-result contract are also open. See the [parity ledger](parity/execution-ledger.json) for implementation evidence and current gaps.

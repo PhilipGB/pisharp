@@ -1,17 +1,29 @@
 # PiSharp capability parity
 
-## Active milestone — Native Extension Message Lifecycle Hooks — 2026-10-19
+## Active milestone — Native Extension General Process Execution — 2026-10-19
 
-Branch `milestone/native-extension-message-lifecycle` starts from PR #16's
-actual merge on `main`, `0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff`; Pi remains
-pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Add typed
-`message_start`, assistant-stream `message_update`, and finalized
-`message_end` replacement handlers at the existing message owners. Focused and
-full validation pass. Draft PR #17 is open; exact-head CI links are tracked in
-its description. Keep broad extension parity `in_progress`.
+PR #17 merged as `0737ee30524ebc86b845f2b1b5c19b9d481db212`, verified on
+`origin/main`. Branch `milestone/native-extension-general-exec` starts at that
+actual merge. Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+This increment adds a package-owned executor captured during Configure, direct
+executable/argument invocation, separate UTF-8 streams, cancellation/timeouts,
+and removal/reload cleanup using shared process lifecycle helpers. Implementation and local verification are complete: 2,484 .NET tests pass with
+zero failures/skips; focused checks pass 35/35. Draft publication and exact-head
+Linux CI evidence are tracked in the
+[general execution receipt](docs/parity/fixtures/native-extension-general-exec-2026-10-19.md).
+Teardown review corrections isolate the 15-second unload deadline and cover
+the already-exited-root fallback; surviving descendants without a process
+group remain extension-owned, as documented.
+PR #18 must remain a draft for independent review. Broad extension parity remains
+`in_progress`; no next milestone is started.
 
-See the [continuation](docs/continuation.md), [extension API guide](docs/extensions.md),
-and [message lifecycle receipt](docs/parity/fixtures/native-extension-message-lifecycle-2026-10-19.md).
+## Previous milestone — Native Extension Message Lifecycle Hooks — 2026-10-19
+
+PR #17 is merged at `0737ee30524ebc86b845f2b1b5c19b9d481db212`. The reviewed
+head was `9182227d321d1e1d7871a6273f73534549835569`; push CI `39279759725`
+and PR CI `39279767767` passed on that exact revision. No additional comments,
+reviews or commits appeared before the expected-head merge. See the
+[message lifecycle receipt](docs/parity/fixtures/native-extension-message-lifecycle-2026-10-19.md).
 
 ## Previous milestone — Native Extension Provider Wire Hooks — 2026-10-19
 
