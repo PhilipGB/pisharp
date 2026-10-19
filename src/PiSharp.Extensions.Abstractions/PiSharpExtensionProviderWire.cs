@@ -30,7 +30,7 @@ public sealed record PiSharpProviderRequestEvent
 /// <summary>Final provider request headers before transport dispatch.</summary>
 public sealed record PiSharpProviderHeadersEvent
 {
-    private readonly IReadOnlyDictionary<string, string?> _headers;
+    private readonly Dictionary<string, string?> _headers;
 
     /// <summary>Creates a detached final request headers event.</summary>
     public PiSharpProviderHeadersEvent(string providerId, string modelId, string protocol,
@@ -39,8 +39,7 @@ public sealed record PiSharpProviderHeadersEvent
         ProviderId = providerId;
         ModelId = modelId;
         Protocol = protocol;
-        _headers = new ReadOnlyDictionary<string, string?>(
-            new Dictionary<string, string?>(headers, StringComparer.OrdinalIgnoreCase));
+        _headers = new Dictionary<string, string?>(headers, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>Selected physical provider identity.</summary>
@@ -49,8 +48,11 @@ public sealed record PiSharpProviderHeadersEvent
     public string ModelId { get; }
     /// <summary>Physical request protocol.</summary>
     public string Protocol { get; }
-    /// <summary>Detached final headers. Null values represent removal requests.</summary>
-    public IReadOnlyDictionary<string, string?> Headers => _headers;
+    /// <summary>
+    /// Mutable, detached final headers. Changes take effect immediately, even if this handler throws.
+    /// Remove a key or set its value to null to remove that header before dispatch.
+    /// </summary>
+    public IDictionary<string, string?> Headers => _headers;
 }
 
 /// <summary>HTTP response metadata exposed before the provider response body is consumed.</summary>
@@ -113,11 +115,10 @@ public delegate ValueTask<JsonElement?> PiSharpBeforeProviderRequestHandler(
     PiSharpProviderRequestEvent eventData, PiSharpExtensionContext context, CancellationToken cancellationToken);
 
 /// <summary>
-/// Asynchronous mutation hook for final provider headers. A null result preserves the current
-/// headers; returned entries add or replace headers, and null-valued entries remove those headers
-/// before dispatch.
+/// Asynchronous mutation hook for final provider headers. Mutate the detached event headers
+/// directly; mutations made before a handler throws remain effective for later handlers.
 /// </summary>
-public delegate ValueTask<IReadOnlyDictionary<string, string?>?> PiSharpBeforeProviderHeadersHandler(
+public delegate ValueTask PiSharpBeforeProviderHeadersHandler(
     PiSharpProviderHeadersEvent eventData, PiSharpExtensionContext context, CancellationToken cancellationToken);
 
 /// <summary>Asynchronous observer for provider HTTP response metadata.</summary>

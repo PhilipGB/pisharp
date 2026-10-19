@@ -5,7 +5,7 @@ namespace PiSharp.Runtime.Extensions;
 
 internal delegate ValueTask<JsonElement?> RegisteredBeforeProviderRequestHandler(
     PiSharpProviderRequestEvent eventData, PiSharpExtensionContext context, CancellationToken cancellationToken);
-internal delegate ValueTask<IReadOnlyDictionary<string, string?>?> RegisteredBeforeProviderHeadersHandler(
+internal delegate ValueTask RegisteredBeforeProviderHeadersHandler(
     PiSharpProviderHeadersEvent eventData, PiSharpExtensionContext context, CancellationToken cancellationToken);
 internal delegate ValueTask RegisteredAfterProviderResponseHandler(
     PiSharpProviderResponseEvent eventData, PiSharpExtensionContext context, CancellationToken cancellationToken);

@@ -12,13 +12,10 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddBeforeProviderRequestHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try
-            {
-                var publicEvent = new NativeExtensions.PiSharpProviderRequestEvent(eventData.ProviderId,
-                    eventData.ModelId, eventData.Protocol, eventData.Payload);
-                return await handler(publicEvent, publicContext, cancellationToken).ConfigureAwait(false);
-            }
-            finally { publicContext.Dispose(); }
+            var publicEvent = new NativeExtensions.PiSharpProviderRequestEvent(eventData.ProviderId,
+                eventData.ModelId, eventData.Protocol, eventData.Payload);
+            return await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(publicEvent, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -30,13 +27,19 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddBeforeProviderHeadersHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
+            var publicEvent = new NativeExtensions.PiSharpProviderHeadersEvent(eventData.ProviderId,
+                eventData.ModelId, eventData.Protocol,
+                new Dictionary<string, string?>(eventData.Headers, StringComparer.OrdinalIgnoreCase));
             try
             {
-                var publicEvent = new NativeExtensions.PiSharpProviderHeadersEvent(eventData.ProviderId,
-                    eventData.ModelId, eventData.Protocol, eventData.Headers);
-                return await handler(publicEvent, publicContext, cancellationToken).ConfigureAwait(false);
+                await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                    () => handler(publicEvent, publicContext, cancellationToken)).ConfigureAwait(false);
             }
-            finally { publicContext.Dispose(); }
+            finally
+            {
+                eventData.Headers.Clear();
+                foreach (var (name, value) in publicEvent.Headers) eventData.Headers[name] = value;
+            }
         });
     }
 
@@ -48,13 +51,10 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddAfterProviderResponseHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try
-            {
-                var publicEvent = new NativeExtensions.PiSharpProviderResponseEvent(eventData.ProviderId,
-                    eventData.ModelId, eventData.Protocol, eventData.StatusCode, eventData.Headers);
-                await handler(publicEvent, publicContext, cancellationToken).ConfigureAwait(false);
-            }
-            finally { publicContext.Dispose(); }
+            var publicEvent = new NativeExtensions.PiSharpProviderResponseEvent(eventData.ProviderId,
+                eventData.ModelId, eventData.Protocol, eventData.StatusCode, eventData.Headers);
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(publicEvent, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
@@ -66,13 +66,44 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddProviderStreamEventHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            try
-            {
-                var publicEvent = new NativeExtensions.PiSharpProviderStreamEvent(eventData.ProviderId,
-                    eventData.ModelId, eventData.Protocol, eventData.EventType, eventData.Data);
-                await handler(publicEvent, publicContext, cancellationToken).ConfigureAwait(false);
-            }
-            finally { publicContext.Dispose(); }
+            var publicEvent = new NativeExtensions.PiSharpProviderStreamEvent(eventData.ProviderId,
+                eventData.ModelId, eventData.Protocol, eventData.EventType, eventData.Data);
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(publicEvent, publicContext, cancellationToken)).ConfigureAwait(false);
         });
+    }
+
+    private static async ValueTask<TResult> InvokeWithRevocableContextAsync<TResult>(
+        NativeExtensions.PiSharpExtensionContext publicContext, CancellationToken cancellationToken,
+        Func<ValueTask<TResult>> invoke)
+    {
+        var revoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var cancellationRegistration = cancellationToken.Register(static state =>
+        {
+            var (context, completion) =
+                ((NativeExtensions.PiSharpExtensionContext, TaskCompletionSource))state!;
+            try { context.Dispose(); }
+            catch (Exception)
+            {
+                // Cancellation callbacks must not be able to break host cancellation cleanup.
+            }
+            finally { completion.TrySetResult(); }
+        }, (publicContext, revoked));
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var handlerTask = invoke().AsTask();
+            if (!handlerTask.IsCompleted)
+            {
+                var completed = await Task.WhenAny(handlerTask, revoked.Task).ConfigureAwait(false);
+                if (completed == revoked.Task)
+                {
+                    ObserveIfFaulted(handlerTask);
+                    throw new OperationCanceledException(cancellationToken);
+                }
+            }
+            return await handlerTask.ConfigureAwait(false);
+        }
+        finally { publicContext.Dispose(); }
     }
 }

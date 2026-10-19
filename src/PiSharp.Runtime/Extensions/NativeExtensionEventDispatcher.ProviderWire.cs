@@ -40,29 +40,30 @@ internal sealed partial class NativeExtensionEventDispatcher
         var headers = new Dictionary<string, string?>(eventData.Headers, StringComparer.OrdinalIgnoreCase);
         foreach (var handler in registration.BeforeProviderHeadersHandlers)
         {
-            var (success, changes) = await InvokeProviderHandlerAsync(
-                token => handler.Handler(new(eventData.ProviderId, eventData.ModelId, eventData.Protocol, headers),
-                    context, token), handler.SourceInfo, "before_provider_headers", cancellationToken)
+            var handlerEvent = new PiSharpProviderHeadersEvent(eventData.ProviderId, eventData.ModelId,
+                eventData.Protocol, headers);
+            _ = await InvokeProviderHandlerAsync(async token =>
+            {
+                await handler.Handler(handlerEvent, context, token).ConfigureAwait(false);
+                return true;
+            }, handler.SourceInfo, "before_provider_headers", cancellationToken)
                 .ConfigureAwait(false);
-            if (!success || changes is null) continue;
 
             var candidate = new Dictionary<string, string?>(headers, StringComparer.OrdinalIgnoreCase);
-            var valid = true;
-            foreach (var (name, value) in changes)
+            foreach (var name in candidate.Keys.ToArray())
+            {
+                if (!handlerEvent.Headers.ContainsKey(name)) candidate.Remove(name);
+            }
+            foreach (var (name, value) in handlerEvent.Headers)
             {
                 if (!IsValidProviderHeader(name, value))
                 {
-                    valid = false;
-                    break;
+                    Report(new InvalidDataException("Provider header mutation contains an invalid name or value."),
+                        handler.SourceInfo, "before_provider_headers", null);
+                    continue;
                 }
                 if (value is null) candidate.Remove(name);
                 else candidate[name] = value;
-            }
-            if (!valid)
-            {
-                Report(new InvalidDataException("Provider header replacement contains an invalid name or value."),
-                    handler.SourceInfo, "before_provider_headers", null);
-                continue;
             }
             headers = candidate;
         }
