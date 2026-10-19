@@ -37,35 +37,34 @@ internal sealed partial class NativeExtensionEventDispatcher
     internal async Task<IReadOnlyDictionary<string, string?>> DispatchProviderHeadersAsync(
         PiSharpProviderHeadersEvent eventData, CancellationToken cancellationToken)
     {
-        var headers = new Dictionary<string, string?>(eventData.Headers, StringComparer.OrdinalIgnoreCase);
+        var sharedEvent = new PiSharpProviderHeadersEvent(eventData.ProviderId, eventData.ModelId, eventData.Protocol,
+            new Dictionary<string, string?>(eventData.Headers, StringComparer.OrdinalIgnoreCase));
+        var headers = sharedEvent.Headers;
         foreach (var handler in registration.BeforeProviderHeadersHandlers)
         {
-            var handlerEvent = new PiSharpProviderHeadersEvent(eventData.ProviderId, eventData.ModelId,
-                eventData.Protocol, headers);
+            var before = new Dictionary<string, string?>(headers, StringComparer.OrdinalIgnoreCase);
             _ = await InvokeProviderHandlerAsync(async token =>
             {
-                await handler.Handler(handlerEvent, context, token).ConfigureAwait(false);
+                await handler.Handler(sharedEvent, context, token).ConfigureAwait(false);
                 return true;
             }, handler.SourceInfo, "before_provider_headers", cancellationToken)
                 .ConfigureAwait(false);
 
-            var candidate = new Dictionary<string, string?>(headers, StringComparer.OrdinalIgnoreCase);
-            foreach (var name in candidate.Keys.ToArray())
-            {
-                if (!handlerEvent.Headers.ContainsKey(name)) candidate.Remove(name);
-            }
-            foreach (var (name, value) in handlerEvent.Headers)
+            var invalid = false;
+            foreach (var (name, value) in headers.ToArray())
             {
                 if (!IsValidProviderHeader(name, value))
                 {
-                    Report(new InvalidDataException("Provider header mutation contains an invalid name or value."),
-                        handler.SourceInfo, "before_provider_headers", null);
+                    invalid = true;
+                    if (before.TryGetValue(name, out var previous)) headers[name] = previous;
+                    else headers.Remove(name);
                     continue;
                 }
-                if (value is null) candidate.Remove(name);
-                else candidate[name] = value;
+                if (value is null) headers.Remove(name);
             }
-            headers = candidate;
+            if (invalid)
+                Report(new InvalidDataException("Provider header mutation contains an invalid name or value."),
+                    handler.SourceInfo, "before_provider_headers", null);
         }
         return new Dictionary<string, string?>(headers, StringComparer.OrdinalIgnoreCase);
     }

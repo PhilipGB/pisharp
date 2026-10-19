@@ -27,19 +27,8 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddBeforeProviderHeadersHandler(async (eventData, context, cancellationToken) =>
         {
             var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
-            var publicEvent = new NativeExtensions.PiSharpProviderHeadersEvent(eventData.ProviderId,
-                eventData.ModelId, eventData.Protocol,
-                new Dictionary<string, string?>(eventData.Headers, StringComparer.OrdinalIgnoreCase));
-            try
-            {
-                await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
-                    () => handler(publicEvent, publicContext, cancellationToken)).ConfigureAwait(false);
-            }
-            finally
-            {
-                eventData.Headers.Clear();
-                foreach (var (name, value) in publicEvent.Headers) eventData.Headers[name] = value;
-            }
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
         });
     }
 
