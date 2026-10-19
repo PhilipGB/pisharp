@@ -714,6 +714,50 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
+    public async Task ProviderHeaderMutationsBeforeFailureReachThePhysicalRequest()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        string? headerA = null;
+        string? headerB = null;
+        string? removedHeader = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            headerA = request.Request.Headers["X-A"];
+            headerB = request.Request.Headers["X-B"];
+            removedHeader = request.Request.Headers["x-remove"];
+            request.Response.ContentType = "text/event-stream";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("data: {\"id\":\"chatcmpl_wire\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":null}]}\n\n");
+            await writer.WriteAsync("data: {\"id\":\"chatcmpl_wire\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n");
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        var wire = new ProviderWireTestSupport(mutateHeadersBeforeFailure: true);
+        using var wireScope = wire.Enter(deadline.Token);
+        using var client = ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}/v1",
+            "openai-completions"));
+
+        var responseText = new System.Text.StringBuilder();
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            cancellationToken: deadline.Token))
+            responseText.Append(update.Text);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("ok", responseText.ToString());
+        Assert.Equal("one", wire.HeaderAfterFailure);
+        Assert.Equal("one", headerA);
+        Assert.Equal("two", headerB);
+        Assert.Null(removedHeader);
+        var diagnostic = Assert.Single(wire.Diagnostics, item => item.Type == "extension_error");
+        Assert.Contains("header-a.dll", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
+        Assert.Contains("before_provider_headers", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
+        Assert.Contains("fixture header handler failure", diagnostic.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AnthropicMessagesUsesNativeHeadersAndBody()
     {
         using var listener = StartLoopbackListener(out var port);

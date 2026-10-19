@@ -12,11 +12,31 @@ internal sealed class ProviderWireTestSupport
     private readonly NativeExtensionEventDispatcher _dispatcher;
 
     public ProviderWireTestSupport(string sourcePath = "/extensions/wire-probe.dll",
-        bool attemptSigV4ReservedHeaderChanges = false)
+        bool attemptSigV4ReservedHeaderChanges = false, bool mutateHeadersBeforeFailure = false)
     {
         Registration = new ExtensionRegistration();
         var adapter = new NativeExtensionRegistrationAdapter(Registration);
         Registration.SetCurrentSourceInfo(new(sourcePath, "native-package", "user", "package", "/extensions"));
+        if (mutateHeadersBeforeFailure)
+        {
+            Registration.SetCurrentSourceInfo(new("/extensions/header-a.dll", "native-package", "user", "package",
+                "/extensions"));
+            adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
+            {
+                eventData.Headers["X-A"] = "one";
+                eventData.Headers["x-remove"] = null;
+                throw new InvalidOperationException("fixture header handler failure");
+            });
+            Registration.SetCurrentSourceInfo(new("/extensions/header-b.dll", "native-package", "user", "package",
+                "/extensions"));
+            adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
+            {
+                HeaderAfterFailure = eventData.Headers["x-a"];
+                eventData.Headers["X-B"] = "two";
+                return ValueTask.CompletedTask;
+            });
+            Registration.SetCurrentSourceInfo(new(sourcePath, "native-package", "user", "package", "/extensions"));
+        }
         adapter.AddBeforeProviderRequestHandler((eventData, _, _) =>
         {
             Events.Add("payload:" + eventData.Protocol);
@@ -30,14 +50,14 @@ internal sealed class ProviderWireTestSupport
         {
             Events.Add("headers:" + eventData.Protocol);
             ProviderIds.Add(eventData.ProviderId);
-            var headers = new Dictionary<string, string?> { ["x-pisharp-wire-probe"] = "transformed" };
+            eventData.Headers["x-pisharp-wire-probe"] = "transformed";
             if (attemptSigV4ReservedHeaderChanges)
             {
-                headers["authorization"] = "Bearer forged";
-                headers["host"] = "forged.example";
-                headers["x-amz-date"] = "forged-date";
+                eventData.Headers["authorization"] = "Bearer forged";
+                eventData.Headers["host"] = "forged.example";
+                eventData.Headers["x-amz-date"] = "forged-date";
             }
-            return ValueTask.FromResult<IReadOnlyDictionary<string, string?>?>(headers);
+            return ValueTask.CompletedTask;
         });
         adapter.AddAfterProviderResponseHandler((eventData, _, _) =>
         {
@@ -63,6 +83,7 @@ internal sealed class ProviderWireTestSupport
     public List<string> Events { get; } = [];
     public List<string> ProviderIds { get; } = [];
     public List<AgentLifecycleEvent> Diagnostics { get; } = [];
+    public string? HeaderAfterFailure { get; private set; }
     public TaskCompletionSource ResponseObserved { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public IDisposable Enter(CancellationToken cancellationToken) =>

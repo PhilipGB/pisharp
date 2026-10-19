@@ -96,7 +96,7 @@ public sealed class NativeExtensionHistoricalApiTests
         adapter.AddBeforeProviderHeadersHandler((_, _, _) =>
         {
             headerCalls++;
-            return ValueTask.FromResult<IReadOnlyDictionary<string, string?>?>(null);
+            return ValueTask.CompletedTask;
         });
         adapter.AddAfterProviderResponseHandler((_, _, _) =>
         {

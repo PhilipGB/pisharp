@@ -512,7 +512,11 @@ await foreach (var rawEvent in ParseEvents(response.Content, cancellationToken))
 
 The bridge owns extension ordering, callback contexts, diagnostics,
 cancellation, source ownership, and reload behavior; the provider only calls it
-at the real wire boundary. The original `PiSharpExtensionProviderClientContext`
+at the real wire boundary. `before_provider_headers` exposes a mutable detached
+header map: valid mutations apply immediately and remain effective if that
+handler later throws, so later handlers see them. Remove a header with
+`Headers.Remove(name)` or by assigning a null value. The host validates header
+names and values before returning the final map to the transport. The original `PiSharpExtensionProviderClientContext`
 constructor is unchanged and the bridge property is optional. Existing
 extension packages compiled against the PR #11 `IChatClient` provider surface
 remain binary compatible and continue to work when they ignore the bridge.

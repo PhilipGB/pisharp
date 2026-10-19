@@ -74,8 +74,8 @@ public sealed class RegistrationExtension : IPiSharpExtension
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 RegistrationExtension.RecordTrace($"wire|headers|{eventData.ProviderId}|{eventData.Protocol}");
-                return ValueTask.FromResult<IReadOnlyDictionary<string, string?>?>(
-                    new Dictionary<string, string?> { ["x-native-wire"] = "host-transformed" });
+                eventData.Headers["x-native-wire"] = "host-transformed";
+                return ValueTask.CompletedTask;
             });
             builder.AddAfterProviderResponseHandler((eventData, _, cancellationToken) =>
             {

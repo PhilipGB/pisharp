@@ -3,6 +3,7 @@ using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Tests;
 
@@ -38,8 +39,8 @@ public sealed class NativeExtensionProviderWireDispatcherTests
         adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
         {
             Assert.Equal("fixture-provider", eventData.ProviderId);
-            return ValueTask.FromResult<IReadOnlyDictionary<string, string?>?>(
-                new Dictionary<string, string?> { ["x-wire-test"] = "visible" });
+            eventData.Headers["x-wire-test"] = "visible";
+            return ValueTask.CompletedTask;
         });
         adapter.AddAfterProviderResponseHandler((eventData, _, _) =>
         {
@@ -78,12 +79,164 @@ public sealed class NativeExtensionProviderWireDispatcherTests
         Assert.Contains("fixture payload handler failure", diagnostic.Error, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ProviderHeaderMutationsBeforeFailureRemainVisibleAndReachTheTransportMap()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        registration.SetCurrentSourceInfo(Source("/extensions/header-a.dll"));
+        adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
+        {
+            eventData.Headers["X-A"] = "one";
+            eventData.Headers["x-remove"] = null;
+            throw new InvalidOperationException("fixture header handler failure");
+        });
+        registration.SetCurrentSourceInfo(Source("/extensions/header-b.dll"));
+        string? seenByB = null;
+        adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
+        {
+            seenByB = eventData.Headers["x-a"];
+            eventData.Headers["X-B"] = "two";
+            return ValueTask.CompletedTask;
+        });
+        registration.SetCurrentSourceInfo(null);
+        adapter.Close();
+
+        var diagnostics = new List<AgentLifecycleEvent>();
+        var dispatcher = new NativeExtensionEventDispatcher(registration, CreateContext(), diagnostics.Add);
+        var headers = await dispatcher.DispatchProviderHeadersAsync(new("fixture-provider", "fixture-model",
+            "openai-responses", new Dictionary<string, string?>
+            {
+                ["x-remove"] = "present",
+                ["X-Existing"] = "kept"
+            }), CancellationToken.None);
+
+        Assert.Equal("one", seenByB);
+        Assert.Equal("one", headers["x-a"]);
+        Assert.Equal("two", headers["X-B"]);
+        Assert.Equal("kept", headers["x-existing"]);
+        Assert.DoesNotContain("x-remove", headers.Keys, StringComparer.OrdinalIgnoreCase);
+        var diagnostic = Assert.Single(diagnostics, item => item.Type == "extension_error");
+        Assert.Contains("header-a.dll", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
+        Assert.Contains("before_provider_headers", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
+        Assert.Contains("fixture header handler failure", diagnostic.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CancellationDetachesPendingProviderRequestAndRevokesItsPublicContext()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var started = new TaskCompletionSource<(NativeExtensions.PiSharpExtensionContext Context, CancellationToken Token)>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handlerFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = 0;
+        adapter.AddBeforeProviderRequestHandler(async (_, context, token) =>
+        {
+            if (Interlocked.Increment(ref calls) == 1)
+            {
+                started.TrySetResult((context, token));
+                try { await release.Task; }
+                finally { handlerFinished.TrySetResult(); }
+                return null;
+            }
+            return null;
+        });
+        adapter.Close();
+
+        var runtimeContext = CreateRevocableContext();
+        var dispatcher = new NativeExtensionEventDispatcher(registration, runtimeContext, _ => { });
+        using var cancellation = new CancellationTokenSource();
+        using var invocation = ProviderWireInvocation.Enter(dispatcher, cancellation.Token);
+        var bridge = new NativeExtensionProviderWireBridge("fixture-provider", "fixture-model", "openai-responses");
+        using var payload = JsonDocument.Parse("{\"input\":\"hello\"}");
+        var operation = bridge.TransformPayloadAsync(payload.RootElement).AsTask();
+        var callback = await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var session = callback.Context.Session!;
+        var capabilities = callback.Context.Capabilities!;
+
+        try
+        {
+            cancellation.Cancel();
+
+            Assert.True(callback.Token.IsCancellationRequested);
+            Assert.Throws<ObjectDisposedException>(() => { _ = session.Snapshot; });
+            Assert.Throws<ObjectDisposedException>(() => { _ = capabilities.GetSessionSnapshot(); });
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.False(handlerFinished.Task.IsCompleted);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await handlerFinished.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        using var nextInvocation = ProviderWireInvocation.Enter(dispatcher, CancellationToken.None);
+        var next = await bridge.TransformPayloadAsync(payload.RootElement).AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("hello", next.GetProperty("input").GetString());
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    public async Task CancellationDetachesPendingProviderResponseAndRevokesItsPublicContext()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var started = new TaskCompletionSource<(NativeExtensions.PiSharpExtensionContext Context, CancellationToken Token)>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handlerFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        adapter.AddAfterProviderResponseHandler(async (_, context, token) =>
+        {
+            started.TrySetResult((context, token));
+            try { await release.Task; }
+            finally { handlerFinished.TrySetResult(); }
+        });
+        adapter.Close();
+
+        var dispatcher = new NativeExtensionEventDispatcher(registration, CreateRevocableContext(), _ => { });
+        using var cancellation = new CancellationTokenSource();
+        using var invocation = ProviderWireInvocation.Enter(dispatcher, cancellation.Token);
+        var bridge = new NativeExtensionProviderWireBridge("fixture-provider", "fixture-model", "openai-responses");
+        var operation = bridge.ObserveResponseAsync(200, new Dictionary<string, string>()).AsTask();
+        var callback = await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var session = callback.Context.Session!;
+        var capabilities = callback.Context.Capabilities!;
+
+        try
+        {
+            cancellation.Cancel();
+
+            Assert.True(callback.Token.IsCancellationRequested);
+            Assert.Throws<ObjectDisposedException>(() => { _ = session.Snapshot; });
+            Assert.Throws<ObjectDisposedException>(() => { _ = capabilities.GetSessionSnapshot(); });
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.False(handlerFinished.Task.IsCompleted);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await handlerFinished.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
     private static ResourceSourceInfo Source(string path) =>
         new(path, "native-package", "user", "package", "/extensions");
 
     private static PiSharp.Runtime.Extensions.PiSharpExtensionContext CreateContext() => new(
         new PiSharpExtensionContextConfiguration("/tmp", "test", HasUserInterface: false,
             IsProjectTrusted: true, new TestUi()), static () => null, static () => [], static () => true);
+
+    private static PiSharp.Runtime.Extensions.PiSharpExtensionContext CreateRevocableContext()
+    {
+        var context = CreateContext();
+        context.SetSessionContextFactory(_ => new PiSharpExtensionSessionContext(
+            () => new("session", null, null, []),
+            (_, _, _) => throw new InvalidOperationException("revoked session operation")));
+        context.SetCapabilitiesFactory((_, session) => new PiSharpExtensionCapabilities(null, session, null));
+        return context;
+    }
 
     private sealed class TestUi : PiSharp.Runtime.Extensions.IPiSharpExtensionUi
     {

@@ -11,6 +11,21 @@ remains `in_progress`.
 
 ## Review finding and correction
 
+PR #16 review found that provider callback cancellation still waited for the
+extension's task after the host token was canceled. A retained context therefore
+remained live while a non-cooperative callback blocked. The provider request,
+header, response, and raw-event adapters now use the established revocable
+callback lifetime: cancellation revokes the public context, detaches the
+unfinished callback, observes any later fault, and releases the provider
+operation.
+
+Review also found that `before_provider_headers` used a return-value change set,
+which discarded mutations when a handler threw. The hook now exposes a mutable,
+case-insensitive detached header map. Valid edits made before an exception stay
+effective for later handlers and the physical request; removing a key or
+assigning null deletes it. The transport still receives the host's detached
+validated result.
+
 The protocol audit found that a shared MEAI-level wrapper cannot satisfy Pi's
 provider-wire contract: several adapters finalize provider-specific payloads,
 headers, response metadata, and raw events at different physical boundaries.
@@ -81,6 +96,8 @@ transform before passing them to the adapter in [`models.ts`](https://github.com
 ## Regression evidence
 
 - `ProviderStreamIdleDeadlineResetsOnSseBytesBeforeTheNextParsedUpdate` runs actual OpenAI Responses, Chat Completions, and Anthropic HTTP/SSE adapters. It verifies transformed payloads and headers, response-before-body observation, raw stream callbacks, and the selected physical provider ID.
+- `ProviderHeaderMutationsBeforeFailureRemainVisibleAndReachTheTransportMap` proves that a throwing handler's valid mutation remains visible to the next handler, case-insensitive lookup works, null deletes a header, and the source-attributed `before_provider_headers` error is retained. `ProviderHeaderMutationsBeforeFailureReachThePhysicalRequest` proves both handlers' mutations reach an actual Chat Completions HTTP request after the first handler throws.
+- `CancellationDetachesPendingProviderRequestAndRevokesItsPublicContext` and `CancellationDetachesPendingProviderResponseAndRevokesItsPublicContext` prove cancellation reaches a deliberately blocked callback, revokes its retained session/capabilities context, returns while the extension task remains unfinished, and allows a subsequent provider request after request cancellation.
 - `AnthropicMessagesStreamsTextAndUsage`, `MistralMapsNativeReasoningEffortAndNormalizesToolCallIds`, and `AzureResponsesSendsMappedDeploymentApiKeyAndApiVersionToResponsesEndpoint` exercise each distinct request mapping. Azure asserts its deployment path, API version, API-key header, and transformed final body/header.
 - `CodexResponsesUsesCachedAccountScopedWebSocketAndRealResponsesClient` verifies payload, WebSocket headers and raw events with zero response calls. `CodexResponsesFallsBackToAccountScopedSseWhenWebSocketClosesBeforeFirstEvent` verifies the HTTP response callback and raw events.
 - Both cases in `GoogleAndVertexUseTheirRealSseProtocolsAndProjectMafOptionsAndUsage` verify the actual Google SDK SSE routes, transformed headers/payload, and zero response calls.
@@ -90,23 +107,25 @@ transform before passing them to the adapter in [`models.ts`](https://github.com
 - `Pr11LegacyProviderPackageLoadsAndRunsWithoutFabricatedWireCallbacks` loads an external package compiled against the PR #11 contract snapshot without shipping its Abstractions DLL, completes its provider request, and asserts all four wire observer counts stay zero.
 
 Original local product commit: `9ccff7546842f6462b3ca9c7c50a9edf36e20ced`.
-Integrated product-source commit: `b31940137201e565b15d8061055ac7b692b627e9`.
-The integrated branch descends directly from post-merge `main`; the published
-branch head and exact-head CI run IDs will be recorded after publication.
+Original integrated product-source commit: `b31940137201e565b15d8061055ac7b692b627e9`.
+The integrated product-source commit including these review corrections is
+`3a1aa94f3d7dcba2fe35fb74f866ee6920648a0c`. The integrated branch descends
+directly from post-merge `main`; the final branch head and exact-head CI run IDs
+are recorded in the PR description and final review report so CI does not
+self-reference a commit that records its own run IDs.
 
 ## Local verification
 
-- Integrated focused provider-wire, adapter, bridge, process, and legacy compatibility batch: 67 passed, 0 failed, 0 skipped. This includes the Bedrock reserved-header/signing regression, the packed external wire-aware provider process acceptance, and the legacy PR #11 package regression.
+- Focused provider-wire protocol, adapter, bridge, process, and legacy compatibility batch after the review corrections: 72 passed, 0 failed, 0 skipped. This includes the Bedrock reserved-header/signing regression, the packed external wire-aware provider process acceptance, the legacy PR #11 package regression, and the new provider-wire regressions.
 - `dotnet format PiSharp.slnx --verify-no-changes --no-restore`: passed.
 - `dotnet build PiSharp.slnx --no-restore --warnaserror`: passed with 0 warnings and 0 errors.
-- `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`: 2,434 passed, 0 failed, 0 skipped. `TMPDIR=/tmp` is the existing workaround for workspace-specific resource path assertions.
+- `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`: 2,438 passed, 0 failed, 0 skipped. `TMPDIR=/tmp` is the existing workaround for workspace-specific resource path assertions.
 - Architecture tests: 7 passed, 0 failed, 0 skipped.
 - Node terminal tests: 24 passed, 0 failed, 0 skipped.
 - Python terminal parity tests: 50 passed, 0 failed, 0 skipped.
 - Documentation path validation: 145 documents and 561 references verified.
 - MCP conformance: no regressions; the same eight classified baseline failures remain (six elicitation checks, basic CIMD client-id behavior, and scope retry-limit behavior).
 - PR #15 was merged from reviewed head `7c93a3d06a82b6c3de55dccc8b19b08647d2f851` as `2ea360f991b0e15c59203557a68a5a1e3c026450`; its exact-head push CI run `39171720211` and PR CI run `39171722992` both passed before merge.
-- Provider-wire branch `milestone/native-extension-provider-wire-hooks` was pushed at `3286c91a782e14986ed3d277d533454c7e12b1e6`; draft PR [#16](https://github.com/PhilipGB/pisharp/pull/16) is open against `main`.
-- Exact-head push CI [39184810044](https://github.com/PhilipGB/pisharp/actions/runs/39184810044) and PR CI [39184840231](https://github.com/PhilipGB/pisharp/actions/runs/39184840231) both passed on `3286c91a782e14986ed3d277d533454c7e12b1e6`. This receipt update creates a new branch head; fresh exact-head checks are required for that head before completion.
+- Before these review corrections, PR #16 was open and draft at `d656f26876436e446eed6ff0a23a882e679044cd`; exact-head push CI `39185619823` and PR CI `39185623785` were green. The corrected branch is pushed separately and remains a draft; its final head and exact-head CI run IDs are recorded in the PR description and final review report.
 
 Broad extension parity remains `in_progress`.
