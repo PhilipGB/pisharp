@@ -602,6 +602,11 @@ public sealed partial class ConversationRun
                 var previousHistoryCount = _historyCount;
                 try
                 {
+                    var snapshot = PiSharpExtensionMessageMapper.Snapshot(chatMessage);
+                    await _agent.ExtensionEvents.DispatchMessageStartAsync(new(snapshot), cancellationToken).ConfigureAwait(false);
+                    var finalized = await _agent.ExtensionEvents.DispatchMessageEndAsync(snapshot,
+                        cancellationToken).ConfigureAwait(false);
+                    chatMessage = PiSharpExtensionMessageMapper.Restore(finalized);
                     Conversation.Append(chatMessage);
                     _agent.AppendToHistory(_execution, chatMessage);
                     _historyCount++;
@@ -763,7 +768,7 @@ public sealed partial class ConversationRun
                         current = new([], [promptText], SkipBeforeAgentStart: true, Continuation: true);
                         continue;
                     }
-                    current = stopRun ? null : await TakeQueuedPromptOrCloseAsync(owner, closeWhenEmpty: false);
+                    current = stopRun ? null : await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: false);
                     if (current is not null) continue;
                     if (nativeAgentStarted)
                     {
@@ -774,14 +779,14 @@ public sealed partial class ConversationRun
                         await _agent.ExtensionEvents.DispatchAgentEndAsync(new(messages, nativeAgentOutcome,
                             nativeAgentError), linked.Token, Publish).ConfigureAwait(false);
                     }
-                    current = await TakeQueuedPromptOrCloseAsync(owner, closeWhenEmpty: false);
+                    current = await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: false);
                     if (_boundaryContextVersion != initialRunBoundaryVersion || _agent.ExtensionEvents.HasBoundaryHandlers)
                         await CompactAfterBoundaryAsync(linked.Token, Publish).ConfigureAwait(false);
-                    current ??= await TakeQueuedPromptOrCloseAsync(owner, closeWhenEmpty: false);
+                    current ??= await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: false);
                     if (current is null && await DispatchBeforeSettleBoundaryAsync(nativeAgentOutcome, linked.Token, Publish)
                             .ConfigureAwait(false))
                         current = new([], [promptText], SkipBeforeAgentStart: true, Continuation: true);
-                    current ??= await TakeQueuedPromptOrCloseAsync(owner, closeWhenEmpty: true);
+                    current ??= await TakeQueuedPromptOrCloseAsync(owner, linked.Token, closeWhenEmpty: true);
                     if (current is not null)
                     {
                         nativeAgentEnded = false;
@@ -892,27 +897,57 @@ public sealed partial class ConversationRun
     private object BeginPromptLoop(Action<AgentLifecycleEvent> publish,
         out IReadOnlyList<QueuedPrompt> nextTurnMessages) => _promptDelivery.Begin(publish, out nextTurnMessages);
 
-    private IReadOnlyList<ChatMessage> TakeSteeringForProvider(bool firstProviderRequest, bool contextContinuation)
+    private async Task<IReadOnlyList<ChatMessage>> TakeSteeringForProviderAsync(bool firstProviderRequest,
+        bool contextContinuation, CancellationToken cancellationToken)
     {
+        ChatMessage[] messages;
         lock (_runtimeStateGate)
         {
-            var messages = _promptDelivery.TakeSteeringForProvider(firstProviderRequest, contextContinuation);
-            foreach (var message in messages) Conversation.Append(message);
-            return messages;
+            messages = _promptDelivery.TakeSteeringForProvider(firstProviderRequest, contextContinuation).ToArray();
         }
+        if (messages.Length == 0) return messages;
+
+        var accepted = new List<ChatMessage>(messages.Length);
+        try
+        {
+            foreach (var message in messages)
+            {
+                var snapshot = PiSharpExtensionMessageMapper.Snapshot(message);
+                await _agent.ExtensionEvents.DispatchMessageStartAsync(new(snapshot), cancellationToken).ConfigureAwait(false);
+                var finalized = await _agent.ExtensionEvents.DispatchMessageEndAsync(snapshot, cancellationToken).ConfigureAwait(false);
+                accepted.Add(PiSharpExtensionMessageMapper.Restore(finalized));
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            accepted.Clear();
+            accepted.AddRange(messages);
+            lock (_runtimeStateGate)
+                foreach (var message in accepted) Conversation.Append(message);
+            if (_save is not null) await _save(CancellationToken.None).ConfigureAwait(false);
+            throw;
+        }
+
+        lock (_runtimeStateGate)
+            foreach (var message in accepted) Conversation.Append(message);
+        if (_save is not null) await _save(CancellationToken.None).ConfigureAwait(false);
+        return accepted;
     }
 
-    private async Task<PromptBatch?> TakeQueuedPromptOrCloseAsync(object owner, bool closeWhenEmpty = true)
+    private async Task<PromptBatch?> TakeQueuedPromptOrCloseAsync(object owner, CancellationToken cancellationToken,
+        bool closeWhenEmpty = true)
     {
         while (true)
         {
+            var appendedPendingContextMessages = await FlushPendingContextCustomMessagesAsync(
+                includeInNextProviderRequest: false, cancellationToken).ConfigureAwait(false);
             var transition = _promptDelivery.TakeNextBatchOrClose(owner, () =>
             {
                 PersistPendingRuntimeChangesUnsafe();
-                return FlushPendingContextCustomMessagesUnsafe();
+                return false;
             }, closeWhenEmpty);
             await DispatchPendingRuntimeTransitionNotificationsAsync().ConfigureAwait(false);
-            if (transition.PendingContextMessagesAppended && _save is not null)
+            if ((transition.PendingContextMessagesAppended || appendedPendingContextMessages) && _save is not null)
                 await _save(CancellationToken.None);
 
             if (transition.Batch is { } batch)
@@ -927,28 +962,63 @@ public sealed partial class ConversationRun
         }
     }
 
-    private bool FlushPendingContextCustomMessagesUnsafe(bool includeInNextProviderRequest = false)
+    private async Task<bool> FlushPendingContextCustomMessagesAsync(bool includeInNextProviderRequest,
+        CancellationToken cancellationToken)
     {
-        var appended = false;
-        while (_pendingContextCustomMessages.TryDequeue(out var customMessage))
+        List<PiSharpCustomMessage> pending = [];
+        lock (_runtimeStateGate)
+            while (_pendingContextCustomMessages.TryDequeue(out var customMessage)) pending.Add(customMessage);
+        if (pending.Count == 0) return false;
+
+        var accepted = new List<ChatMessage>(pending.Count);
+        try
         {
-            var chatMessage = PiSharpCustomMessageProjection.ToChatMessage(customMessage);
-            Conversation.Append(chatMessage);
-            _agent.AppendToHistory(_execution, chatMessage);
-            _historyCount++;
-            if (includeInNextProviderRequest) _pendingProviderContextMessages.Enqueue(chatMessage);
-            appended = true;
+            foreach (var customMessage in pending)
+            {
+                var chatMessage = PiSharpCustomMessageProjection.ToChatMessage(customMessage);
+                var snapshot = PiSharpExtensionMessageMapper.Snapshot(chatMessage);
+                await _agent.ExtensionEvents.DispatchMessageStartAsync(new(snapshot), cancellationToken).ConfigureAwait(false);
+                var finalized = await _agent.ExtensionEvents.DispatchMessageEndAsync(snapshot,
+                    cancellationToken).ConfigureAwait(false);
+                accepted.Add(PiSharpExtensionMessageMapper.Restore(finalized));
+            }
         }
-        return appended;
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            accepted.Clear();
+            accepted.AddRange(pending.Select(message => PiSharpCustomMessageProjection.ToChatMessage(message)));
+            AppendAccepted(accepted);
+            if (_save is not null) await _save(CancellationToken.None).ConfigureAwait(false);
+            throw;
+        }
+
+        AppendAccepted(accepted);
+        if (_save is not null) await _save(CancellationToken.None).ConfigureAwait(false);
+        return true;
+
+        void AppendAccepted(IReadOnlyList<ChatMessage> messages)
+        {
+            lock (_runtimeStateGate)
+            {
+                foreach (var message in messages)
+                {
+                    Conversation.Append(message);
+                    _agent.AppendToHistory(_execution, message);
+                    _historyCount++;
+                    if (includeInNextProviderRequest) _pendingProviderContextMessages.Enqueue(message);
+                }
+            }
+        }
     }
 
     private async Task<IReadOnlyList<ChatMessage>> TakePendingProviderContextMessagesAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ChatMessage[] messages;
+        await FlushPendingContextCustomMessagesAsync(includeInNextProviderRequest: true, cancellationToken)
+            .ConfigureAwait(false);
         lock (_runtimeStateGate)
         {
-            FlushPendingContextCustomMessagesUnsafe(includeInNextProviderRequest: true);
             messages = _pendingProviderContextMessages.ToArray();
             _pendingProviderContextMessages.Clear();
         }
@@ -970,12 +1040,13 @@ public sealed partial class ConversationRun
     {
         while (true)
         {
-            bool appended;
-            bool ended = false;
+            var appended = await FlushPendingContextCustomMessagesAsync(includeInNextProviderRequest: false,
+                CancellationToken.None).ConfigureAwait(false);
+            if (appended) continue;
+            var ended = false;
             lock (_runtimeStateGate)
             {
-                appended = FlushPendingContextCustomMessagesUnsafe();
-                if (!appended)
+                if (_pendingContextCustomMessages.Count == 0)
                 {
                     EndPromptLoop(owner);
                     ended = true;
@@ -1366,6 +1437,7 @@ public sealed partial class ConversationRun
         var providerTurns = new ProviderTurnJournal(Conversation, () => _agent.GetHistory(_execution),
             () => virtualContext?.HasCompacted == true || physicalOverflowCompacted, () => _historyCount, onEvent);
         var nativeTurnOpen = false;
+        var nativeTurnStartDispatched = false;
         var initialBoundaryContextVersion = _boundaryContextVersion;
 
         ProviderTurnSnapshot CompleteProviderTurnUnsafe()
@@ -1384,6 +1456,7 @@ public sealed partial class ConversationRun
             {
                 var turnIndex = _agent.ExtensionTurnIndex;
                 nativeTurnOpen = false;
+                nativeTurnStartDispatched = false;
                 if (!aborted && errorMessage is null) _agent.CompleteExtensionTurn();
                 var entryIds = FindTurnEntryIds(turn);
                 var eventData = new NativeExtensions.PiSharpExtensionTurnEndEvent(
@@ -1433,22 +1506,28 @@ public sealed partial class ConversationRun
             }
             if (item.Type == "model_request_started")
             {
+                FlushPendingContextCustomMessagesAsync(includeInNextProviderRequest: true, cancellationToken)
+                    .GetAwaiter().GetResult();
                 lock (_runtimeStateGate)
                 {
                     // The provider request following tool execution is the natural continuation
                     // of that turn. Commit context-only extension messages after the completed
                     // tool results so the continuation sees them without starting another turn.
-                    FlushPendingContextCustomMessagesUnsafe(includeInNextProviderRequest: true);
                     attribution.Begin(_currentModel, _currentProvider, _providerApi, _pricing);
                     _providerRequestModel = attribution.Model;
                     _providerRequestPricing = attribution.Pricing;
                 }
                 _boundaryContinuationRequested = false;
                 providerTurns.PartialAssistantText.Clear();
-                nativeTurnOpen = true;
-                _agent.ExtensionEvents.DispatchTurnStartAsync(new NativeExtensions.PiSharpExtensionTurnStartEvent(
-                    _agent.ExtensionTurnIndex, DateTimeOffset.UtcNow), cancellationToken,
-                    item => onEvent?.Invoke(item)).GetAwaiter().GetResult();
+                if (!nativeTurnOpen)
+                {
+                    if (!nativeTurnStartDispatched)
+                        _agent.ExtensionEvents.DispatchTurnStartAsync(new NativeExtensions.PiSharpExtensionTurnStartEvent(
+                            _agent.ExtensionTurnIndex, DateTimeOffset.UtcNow), cancellationToken,
+                            item => onEvent?.Invoke(item)).GetAwaiter().GetResult();
+                    nativeTurnStartDispatched = false;
+                    nativeTurnOpen = true;
+                }
                 onEvent?.Invoke(new("assistant_turn_started"));
             }
             else if (item.Type == "model_request_routed")
@@ -1649,26 +1728,72 @@ public sealed partial class ConversationRun
             var inputMessages = promptMessage is not null ? [promptMessage] : acceptedPromptMessages ?? [];
             if (inputMessages.Count > 0)
             {
-                var previousHead = Conversation.Tree.HeadId;
-                foreach (var inputMessage in inputMessages) Conversation.Append(inputMessage);
+                var originalInputMessages = inputMessages.ToArray();
+                var acceptedInputMessages = new List<ChatMessage>(inputMessages.Count);
+                async Task PersistInputMessagesAsync(IReadOnlyList<ChatMessage> messages)
+                {
+                    var previousHead = Conversation.Tree.HeadId;
+                    foreach (var inputMessage in messages) Conversation.Append(inputMessage);
+                    try
+                    {
+                        if (promptMessage is null)
+                        {
+                            var history = Conversation.ContextMessages();
+                            _execution = await RestoreExecutionAsync(history, cancellationToken);
+                            _historyCount = history.Count;
+                        }
+                        if (_save is not null) await _save(CancellationToken.None);
+                    }
+                    catch
+                    {
+                        Conversation.Tree.Select(previousHead);
+                        var history = Conversation.ContextMessages();
+                        _execution = await RestoreExecutionAsync(history, CancellationToken.None);
+                        _historyCount = history.Count;
+                        throw;
+                    }
+                }
+
                 try
                 {
-                    if (promptMessage is null)
+                    foreach (var originalMessage in inputMessages)
                     {
-                        var history = Conversation.ContextMessages();
-                        _execution = await RestoreExecutionAsync(history, cancellationToken);
-                        _historyCount = history.Count;
+                        var promptImages = originalMessage.Contents?.OfType<DataContent>().ToArray();
+                        var messageText = promptMessage is not null ? prompt : originalMessage.Text ?? string.Empty;
+                        onEvent?.Invoke(new("prompt_accepted", Text: messageText)
+                        {
+                            Images = promptImages is { Length: > 0 } ? promptImages : null,
+                            PromptMessage = originalMessage,
+                            MessageTimestamp = DateTimeOffset.UtcNow,
+                            RunStartHead = attemptStartHead,
+                            RunStartPathLength = attemptStartPathLength
+                        });
+
+                        if (!nativeTurnOpen && !nativeTurnStartDispatched)
+                        {
+                            await _agent.ExtensionEvents.DispatchTurnStartAsync(new(
+                                _agent.ExtensionTurnIndex, DateTimeOffset.UtcNow), cancellationToken,
+                                item => onEvent?.Invoke(item)).ConfigureAwait(false);
+                            nativeTurnStartDispatched = true;
+                        }
+
+                        var snapshot = PiSharpExtensionMessageMapper.Snapshot(originalMessage);
+                        await _agent.ExtensionEvents.DispatchMessageStartAsync(new(snapshot), cancellationToken).ConfigureAwait(false);
+                        var finalized = await _agent.ExtensionEvents.DispatchMessageEndAsync(snapshot,
+                            cancellationToken).ConfigureAwait(false);
+                        acceptedInputMessages.Add(PiSharpExtensionMessageMapper.Restore(finalized));
                     }
-                    if (_save is not null) await _save(CancellationToken.None);
                 }
-                catch
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    Conversation.Tree.Select(previousHead);
-                    var history = Conversation.ContextMessages();
-                    _execution = await RestoreExecutionAsync(history, CancellationToken.None);
-                    _historyCount = history.Count;
+                    acceptedInputMessages.Clear();
+                    acceptedInputMessages.AddRange(originalInputMessages);
+                    if (promptMessage is not null) promptMessage = acceptedInputMessages[0];
+                    await PersistInputMessagesAsync(acceptedInputMessages).ConfigureAwait(false);
                     throw;
                 }
+                if (promptMessage is not null) promptMessage = acceptedInputMessages[0];
+                await PersistInputMessagesAsync(acceptedInputMessages).ConfigureAwait(false);
             }
             accepted = true;
             if (inputMessages.Count == 0)
@@ -1679,19 +1804,8 @@ public sealed partial class ConversationRun
                 });
             else
             {
-                foreach (var inputMessage in inputMessages)
-                {
-                    var promptImages = inputMessage.Contents?.OfType<DataContent>().ToArray();
-                    var messageText = promptMessage is not null ? prompt : inputMessage.Text ?? string.Empty;
-                    onEvent?.Invoke(new("prompt_accepted", Text: messageText)
-                    {
-                        Images = promptImages is { Length: > 0 } ? promptImages : null,
-                        PromptMessage = inputMessage,
-                        MessageTimestamp = DateTimeOffset.UtcNow,
-                        RunStartHead = attemptStartHead,
-                        RunStartPathLength = attemptStartPathLength
-                    });
-                }
+                // Each input was published before its lifecycle callbacks so agent_start precedes
+                // message_start; the accepted replacement is persisted and passed to MAF below.
             }
             virtualContext = new VirtualModelContextCoordinator(Conversation, _agent,
                 (reason, willRetry, token) => _compactionCoordinator.CompactAsync(null, token,
@@ -1837,10 +1951,10 @@ public sealed partial class ConversationRun
             var codexSessionId = _providerApi == "openai-codex-responses" ? Conversation.Id : null;
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
-                    Observe, first => TakeSteeringForProvider(first, retryContinuation), projectRequestContext,
+                    Observe, (first, token) => TakeSteeringForProviderAsync(first, retryContinuation, token), projectRequestContext,
                     CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync)
                 : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
-                    Observe, first => TakeSteeringForProvider(first, retryContinuation), projectRequestContext,
+                    Observe, (first, token) => TakeSteeringForProviderAsync(first, retryContinuation, token), projectRequestContext,
                     CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync);
             await foreach (var update in attemptStream.PumpAsync(updates, durable,
                 usage => Conversation.AppendUsage(attribution.Usage(usage)), cancellationToken))

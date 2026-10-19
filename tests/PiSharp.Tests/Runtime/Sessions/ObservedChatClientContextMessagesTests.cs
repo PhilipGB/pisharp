@@ -26,7 +26,8 @@ public sealed class ObservedChatClientContextMessagesTests
         };
         if (snapshotIncludesOccurrence) snapshot.Add(pending.Clone());
         var provider = new RecordingClient();
-        using var observed = new ObservedChatClient(provider, _ => { }, ProviderRetryPolicy.None, _ => [],
+        using var observed = new ObservedChatClient(provider, _ => { }, ProviderRetryPolicy.None,
+            (_, _) => Task.FromResult<IReadOnlyList<ChatMessage>>([]),
             takeContextMessagesForRequestAsync: _ => Task.FromResult<IReadOnlyList<ChatMessage>>([pending]));
 
         if (streaming)
@@ -48,7 +49,8 @@ public sealed class ObservedChatClientContextMessagesTests
     public async Task FailedContextPersistencePreventsProviderDispatch(bool streaming)
     {
         var provider = new RecordingClient();
-        using var observed = new ObservedChatClient(provider, _ => { }, ProviderRetryPolicy.None, _ => [],
+        using var observed = new ObservedChatClient(provider, _ => { }, ProviderRetryPolicy.None,
+            (_, _) => Task.FromResult<IReadOnlyList<ChatMessage>>([]),
             takeContextMessagesForRequestAsync: _ => Task.FromException<IReadOnlyList<ChatMessage>>(
                 new IOException("Session save failed.")));
 

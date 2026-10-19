@@ -1327,7 +1327,8 @@ public sealed class ProviderChatClientFactoryTests
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var routed = new RoutedChatClient(new MutableChatClient(ProviderChatClientFactory.Create(selection)), _ => { });
         routed.SetThinkingLevel("max");
-        var observed = new ObservedChatClient(routed, _ => { }, ProviderRetryPolicy.None, _ => [],
+        var observed = new ObservedChatClient(routed, _ => { }, ProviderRetryPolicy.None,
+            (_, _) => Task.FromResult<IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>>([]),
             getReasoning: () => ThinkingLevels.ToOptions("max", thinkingMap.RootElement), routedChatClient: routed);
         var response = await observed.GetResponseAsync(
             [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")], options, deadline.Token);

@@ -5,6 +5,9 @@ namespace PiSharp.Runtime.Extensions;
 internal delegate ValueTask ExtensionEventHandler<in TEventData>(TEventData eventData,
     PiSharpExtensionContext context, CancellationToken cancellationToken);
 
+internal delegate ValueTask<TResult?> ExtensionDecisionHandler<in TEventData, TResult>(TEventData eventData,
+    PiSharpExtensionContext context, CancellationToken cancellationToken) where TResult : class;
+
 /// <summary>Source-owned typed callbacks registered by compiled native extensions.</summary>
 public sealed partial class ExtensionRegistration
 {
@@ -20,6 +23,13 @@ public sealed partial class ExtensionRegistration
         _agentEndHandlers = [];
     private readonly List<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionTurnStartEvent>>>
         _turnStartHandlers = [];
+    private readonly List<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionMessageStartEvent>>>
+        _messageStartHandlers = [];
+    private readonly List<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionMessageUpdateEvent>>>
+        _messageUpdateHandlers = [];
+    private readonly List<ExtensionHandlerRegistration<ExtensionDecisionHandler<NativeExtensions.PiSharpExtensionMessageEndEvent,
+            NativeExtensions.PiSharpExtensionMessageEndResult>>>
+        _messageEndHandlers = [];
     private readonly List<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionTurnEndEvent>>>
         _turnEndHandlers = [];
     private readonly List<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionToolExecutionStartEvent>>>
@@ -45,6 +55,13 @@ public sealed partial class ExtensionRegistration
         AgentEndHandlers => _agentEndHandlers.ToArray();
     internal IReadOnlyList<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionTurnStartEvent>>>
         TurnStartHandlers => _turnStartHandlers.ToArray();
+    internal IReadOnlyList<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionMessageStartEvent>>>
+        MessageStartHandlers => _messageStartHandlers.ToArray();
+    internal IReadOnlyList<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionMessageUpdateEvent>>>
+        MessageUpdateHandlers => _messageUpdateHandlers.ToArray();
+    internal IReadOnlyList<ExtensionHandlerRegistration<ExtensionDecisionHandler<NativeExtensions.PiSharpExtensionMessageEndEvent,
+            NativeExtensions.PiSharpExtensionMessageEndResult>>>
+        MessageEndHandlers => _messageEndHandlers.ToArray();
     internal IReadOnlyList<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionTurnEndEvent>>>
         TurnEndHandlers => _turnEndHandlers.ToArray();
     internal IReadOnlyList<ExtensionHandlerRegistration<ExtensionEventHandler<NativeExtensions.PiSharpExtensionToolExecutionStartEvent>>>
@@ -70,6 +87,12 @@ public sealed partial class ExtensionRegistration
         Add(_agentEndHandlers, handler);
     internal void AddTurnStartHandler(ExtensionEventHandler<NativeExtensions.PiSharpExtensionTurnStartEvent> handler) =>
         Add(_turnStartHandlers, handler);
+    internal void AddMessageStartHandler(ExtensionEventHandler<NativeExtensions.PiSharpExtensionMessageStartEvent> handler) =>
+        Add(_messageStartHandlers, handler);
+    internal void AddMessageUpdateHandler(ExtensionEventHandler<NativeExtensions.PiSharpExtensionMessageUpdateEvent> handler) =>
+        Add(_messageUpdateHandlers, handler);
+    internal void AddMessageEndHandler(ExtensionDecisionHandler<NativeExtensions.PiSharpExtensionMessageEndEvent,
+        NativeExtensions.PiSharpExtensionMessageEndResult> handler) => Add(_messageEndHandlers, handler);
     internal void AddTurnEndHandler(ExtensionEventHandler<NativeExtensions.PiSharpExtensionTurnEndEvent> handler) =>
         Add(_turnEndHandlers, handler);
     internal void AddToolExecutionStartHandler(ExtensionEventHandler<NativeExtensions.PiSharpExtensionToolExecutionStartEvent> handler) =>

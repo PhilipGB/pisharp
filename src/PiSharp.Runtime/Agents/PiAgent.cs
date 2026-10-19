@@ -46,7 +46,7 @@ public sealed class PiAgent
     private int _isRunning;
     private int _activeConversationRuns;
     private Action<AgentLifecycleEvent>? _events;
-    private Func<bool, IReadOnlyList<ChatMessage>>? _takeSteering;
+    private Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _takeSteering;
     private Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _takeContextMessagesForRequestAsync;
     private Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _projectContext;
     private Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? _prepareTurn;
@@ -182,7 +182,7 @@ public sealed class PiAgent
                 _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout,
             () => thinkingBudgets, TakeContextMessagesForRequestAsync,
             (messages, token) => _prepareTurn?.Invoke(messages, token) ?? Task.FromResult(messages),
-            token => ProviderWireInvocation.Enter(_extensionEvents, token)), new ChatClientAgentOptions
+            token => ProviderWireInvocation.Enter(_extensionEvents, token), _extensionEvents), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,
@@ -196,10 +196,12 @@ public sealed class PiAgent
             });
     }
 
-    private IReadOnlyList<ChatMessage> TakeSteeringForRequest(IEnumerable<ChatMessage> messages)
+    private async Task<IReadOnlyList<ChatMessage>> TakeSteeringForRequest(IEnumerable<ChatMessage> messages,
+        CancellationToken cancellationToken)
     {
         var firstProviderRequest = _providerRequestIndex++ == 0;
-        var steering = _takeSteering?.Invoke(firstProviderRequest) ?? [];
+        var steering = _takeSteering is null ? [] :
+            await _takeSteering(firstProviderRequest, cancellationToken).ConfigureAwait(false);
         if (steering.Count == 0) return steering;
         var afterCallId = firstProviderRequest ? null : messages.SelectMany(message => message.Contents).OfType<FunctionResultContent>()
             .LastOrDefault()?.CallId;
@@ -386,7 +388,7 @@ public sealed class PiAgent
         _runtimeToolFunctions[name] = new DurableToolFunction(registration.Function, () => _active,
             PublishEvent, _toolBatchTermination, () => Volatile.Read(ref _currentToolLoadout),
             () => _runtimeToolFunctions, _toolHooks, registration.OutputSchema, _codemodeModels,
-            registration.ReachesTools, registration.Namespace, () => _extensionContext);
+            registration.ReachesTools, registration.Namespace, () => _extensionContext, _extensionEvents);
     }
 
     internal void SetExtensionConversation(ConversationSession conversation) =>
@@ -708,7 +710,7 @@ public sealed class PiAgent
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(string prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
-        Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
         Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null) =>
@@ -717,7 +719,8 @@ public sealed class PiAgent
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable,
-        Action<AgentLifecycleEvent>? onEvent = null, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Action<AgentLifecycleEvent>? onEvent = null,
+        Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
         Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null) =>
@@ -726,7 +729,7 @@ public sealed class PiAgent
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationDurableAsync(AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
-        Func<bool, IReadOnlyList<ChatMessage>>? takeSteering = null,
+        Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
         Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null) =>
@@ -736,7 +739,8 @@ public sealed class PiAgent
     private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableCoreAsync(ChatMessage? prompt,
         AgentSession session,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken, DurableExecution? durable,
-        Action<AgentLifecycleEvent>? onEvent, Func<bool, IReadOnlyList<ChatMessage>>? takeSteering,
+        Action<AgentLifecycleEvent>? onEvent,
+        Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment, string? conversationSessionId,
         Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync)
