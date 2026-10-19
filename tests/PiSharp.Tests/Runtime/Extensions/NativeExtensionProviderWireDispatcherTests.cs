@@ -84,9 +84,11 @@ public sealed class NativeExtensionProviderWireDispatcherTests
     {
         var registration = new ExtensionRegistration();
         var adapter = new NativeExtensionRegistrationAdapter(registration);
+        IDictionary<string, string?>? headerMapSeenByA = null;
         registration.SetCurrentSourceInfo(Source("/extensions/header-a.dll"));
         adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
         {
+            headerMapSeenByA = eventData.Headers;
             eventData.Headers["X-A"] = "one";
             eventData.Headers["x-remove"] = null;
             throw new InvalidOperationException("fixture header handler failure");
@@ -95,6 +97,7 @@ public sealed class NativeExtensionProviderWireDispatcherTests
         string? seenByB = null;
         adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
         {
+            Assert.Same(headerMapSeenByA, eventData.Headers);
             seenByB = eventData.Headers["x-a"];
             eventData.Headers["X-B"] = "two";
             return ValueTask.CompletedTask;

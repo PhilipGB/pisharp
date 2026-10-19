@@ -96,7 +96,7 @@ transform before passing them to the adapter in [`models.ts`](https://github.com
 ## Regression evidence
 
 - `ProviderStreamIdleDeadlineResetsOnSseBytesBeforeTheNextParsedUpdate` runs actual OpenAI Responses, Chat Completions, and Anthropic HTTP/SSE adapters. It verifies transformed payloads and headers, response-before-body observation, raw stream callbacks, and the selected physical provider ID.
-- `ProviderHeaderMutationsBeforeFailureRemainVisibleAndReachTheTransportMap` proves that a throwing handler's valid mutation remains visible to the next handler, case-insensitive lookup works, null deletes a header, and the source-attributed `before_provider_headers` error is retained. `ProviderHeaderMutationsBeforeFailureReachThePhysicalRequest` proves both handlers' mutations reach an actual Chat Completions HTTP request after the first handler throws.
+- `ProviderHeaderMutationsBeforeFailureRemainVisibleAndReachTheTransportMap` proves that a throwing handler's valid mutation remains visible to the next handler on the same header-map object, case-insensitive lookup works, null deletes a header, and the source-attributed `before_provider_headers` error is retained. `ProviderHeaderMutationsBeforeFailureReachThePhysicalRequest` proves both handlers' mutations reach an actual Chat Completions HTTP request after the first handler throws.
 - `CancellationDetachesPendingProviderRequestAndRevokesItsPublicContext` and `CancellationDetachesPendingProviderResponseAndRevokesItsPublicContext` prove cancellation reaches a deliberately blocked callback, revokes its retained session/capabilities context, returns while the extension task remains unfinished, and allows a subsequent provider request after request cancellation.
 - `AnthropicMessagesStreamsTextAndUsage`, `MistralMapsNativeReasoningEffortAndNormalizesToolCallIds`, and `AzureResponsesSendsMappedDeploymentApiKeyAndApiVersionToResponsesEndpoint` exercise each distinct request mapping. Azure asserts its deployment path, API version, API-key header, and transformed final body/header.
 - `CodexResponsesUsesCachedAccountScopedWebSocketAndRealResponsesClient` verifies payload, WebSocket headers and raw events with zero response calls. `CodexResponsesFallsBackToAccountScopedSseWhenWebSocketClosesBeforeFirstEvent` verifies the HTTP response callback and raw events.
@@ -108,9 +108,11 @@ transform before passing them to the adapter in [`models.ts`](https://github.com
 
 Original local product commit: `9ccff7546842f6462b3ca9c7c50a9edf36e20ced`.
 Original integrated product-source commit: `b31940137201e565b15d8061055ac7b692b627e9`.
-The integrated product-source commit including these review corrections is
-`3a1aa94f3d7dcba2fe35fb74f866ee6920648a0c`. The integrated branch descends
-directly from post-merge `main`; the final branch head and exact-head CI run IDs
+The integrated product-source commits including these review corrections are
+`3a1aa94f3d7dcba2fe35fb74f866ee6920648a0c` and
+`c0e32b35ce79632f754c42e831e95ccc90714d6c`; the latter is the final
+product-source commit. The integrated branch descends directly from post-merge
+`main`; the final branch head and exact-head CI run IDs
 are recorded in the PR description and final review report so CI does not
 self-reference a commit that records its own run IDs.
 
@@ -119,11 +121,11 @@ self-reference a commit that records its own run IDs.
 - Focused provider-wire protocol, adapter, bridge, process, and legacy compatibility batch after the review corrections: 72 passed, 0 failed, 0 skipped. This includes the Bedrock reserved-header/signing regression, the packed external wire-aware provider process acceptance, the legacy PR #11 package regression, and the new provider-wire regressions.
 - `dotnet format PiSharp.slnx --verify-no-changes --no-restore`: passed.
 - `dotnet build PiSharp.slnx --no-restore --warnaserror`: passed with 0 warnings and 0 errors.
-- `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`: 2,438 passed, 0 failed, 0 skipped. `TMPDIR=/tmp` is the existing workaround for workspace-specific resource path assertions.
+- `TMPDIR=/tmp dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-build --no-restore`: 2,438 passed, 0 failed, 0 skipped. `TMPDIR=/tmp` is the existing workaround for workspace-specific resource path assertions. An initial solution-level run hit one transient MCP listener-disposal failure; that test passed in isolation, and this complete test-project rerun passed unchanged.
 - Architecture tests: 7 passed, 0 failed, 0 skipped.
 - Node terminal tests: 24 passed, 0 failed, 0 skipped.
 - Python terminal parity tests: 50 passed, 0 failed, 0 skipped.
-- Documentation path validation: 145 documents and 561 references verified.
+- Documentation path validation: 145 documents and 562 references verified.
 - MCP conformance: no regressions; the same eight classified baseline failures remain (six elicitation checks, basic CIMD client-id behavior, and scope retry-limit behavior).
 - PR #15 was merged from reviewed head `7c93a3d06a82b6c3de55dccc8b19b08647d2f851` as `2ea360f991b0e15c59203557a68a5a1e3c026450`; its exact-head push CI run `39171720211` and PR CI run `39171722992` both passed before merge.
 - Before these review corrections, PR #16 was open and draft at `d656f26876436e446eed6ff0a23a882e679044cd`; exact-head push CI `39185619823` and PR CI `39185623785` were green. The corrected branch is pushed separately and remains a draft; its final head and exact-head CI run IDs are recorded in the PR description and final review report.
