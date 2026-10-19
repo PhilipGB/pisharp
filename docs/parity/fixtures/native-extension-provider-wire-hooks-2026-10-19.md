@@ -22,9 +22,15 @@ operation.
 Review also found that `before_provider_headers` used a return-value change set,
 which discarded mutations when a handler threw. The hook now exposes a mutable,
 case-insensitive detached header map. Valid edits made before an exception stay
-effective for later handlers and the physical request; removing a key or
-assigning null deletes it. The transport still receives the host's detached
-validated result.
+effective for later handlers and the physical request.
+
+The remaining review finding was that valid null-valued headers were normalized
+to absent between handlers. The dispatcher now preserves null entries in the
+same mutable map through the complete handler chain. Later handlers can
+distinguish a removed key from a present null-valued key, and can restore a
+null-valued key to a string. HTTP, Bedrock, Codex, and wire-aware extension
+providers interpret any remaining null as physical deletion only after the
+handler chain completes. Bedrock reserved-header protection is unchanged.
 
 The protocol audit found that a shared MEAI-level wrapper cannot satisfy Pi's
 provider-wire contract: several adapters finalize provider-specific payloads,
@@ -96,36 +102,36 @@ transform before passing them to the adapter in [`models.ts`](https://github.com
 ## Regression evidence
 
 - `ProviderStreamIdleDeadlineResetsOnSseBytesBeforeTheNextParsedUpdate` runs actual OpenAI Responses, Chat Completions, and Anthropic HTTP/SSE adapters. It verifies transformed payloads and headers, response-before-body observation, raw stream callbacks, and the selected physical provider ID.
-- `ProviderHeaderMutationsBeforeFailureRemainVisibleAndReachTheTransportMap` proves that a throwing handler's valid mutation remains visible to the next handler on the same header-map object, case-insensitive lookup works, null deletes a header, and the source-attributed `before_provider_headers` error is retained. `ProviderHeaderMutationsBeforeFailureReachThePhysicalRequest` proves both handlers' mutations reach an actual Chat Completions HTTP request after the first handler throws.
+- `ProviderHeaderMutationsBeforeFailureRemainVisibleAndReachTheTransportMap` proves that a throwing handler's valid mutation remains visible to the next handler on the same header-map object, case-insensitive lookup works, a present null is visible and restorable by a later handler, and the source-attributed `before_provider_headers` error is retained. `ProviderHeaderRemovalRemainsDistinctFromPresentNullForLaterHandlers` proves `Remove` leaves a key absent while assigning null leaves a present null-valued key, with no diagnostic. `InvalidProviderHeaderMutationsAreRevertedWithoutDroppingValidState` proves invalid CR/LF mutations restore the prior good value, remove a newly invalid key, and emit a diagnostic.
+- `ProviderHeaderMutationsBeforeFailureReachThePhysicalRequest` proves valid mutations still reach an actual Chat Completions HTTP request after the first handler throws. `ProviderWireHookAppliesNullHeaderAsPhysicalHttpDeletion` begins with `X-Remove: present` on a real loopback HTTP request, applies a null mutation, and verifies the receiving server sees no header.
 - `CancellationDetachesPendingProviderRequestAndRevokesItsPublicContext` and `CancellationDetachesPendingProviderResponseAndRevokesItsPublicContext` prove cancellation reaches a deliberately blocked callback, revokes its retained session/capabilities context, returns while the extension task remains unfinished, and allows a subsequent provider request after request cancellation.
 - `AnthropicMessagesStreamsTextAndUsage`, `MistralMapsNativeReasoningEffortAndNormalizesToolCallIds`, and `AzureResponsesSendsMappedDeploymentApiKeyAndApiVersionToResponsesEndpoint` exercise each distinct request mapping. Azure asserts its deployment path, API version, API-key header, and transformed final body/header.
 - `CodexResponsesUsesCachedAccountScopedWebSocketAndRealResponsesClient` verifies payload, WebSocket headers and raw events with zero response calls. `CodexResponsesFallsBackToAccountScopedSseWhenWebSocketClosesBeforeFirstEvent` verifies the HTTP response callback and raw events.
 - Both cases in `GoogleAndVertexUseTheirRealSseProtocolsAndProjectMafOptionsAndUsage` verify the actual Google SDK SSE routes, transformed headers/payload, and zero response calls.
 - `BedrockWireHooksTransformMarshalledRequestBeforeSigningAndObserveResponseBeforeStreamRead` uses the real AWS SDK pipeline with a local fake HTTP transport and no credentials. A gated event stream proves response observation precedes reads; it also asserts the transformed body, SigV4 coverage of the extension header, reserved-header protection, and raw event observation.
 - `ProviderFactoryUsesPiMessagesHttpAndMapsStreamingResponse` exercises Pi Messages payload serialization, final headers, response observation, raw SSE JSON, and normal MEAI conversion.
-- `PackedExternalWireProviderUsesHostBridgeAtRealHttpBoundaries` installs a packed external `.nupkg` in a fresh CLI process. Its wire-aware provider sends an actual HTTP request and verifies host-transformed payload/header plus callback order across all four bridge methods. `NativeExtensionProviderWireDispatcherTests.ProviderWireCallbacksPreserveOrderAndAttributeFailuresToTheirSource` verifies ordered host dispatch and source-attributed failure isolation.
+- `PackedExternalWireProviderUsesHostBridgeAtRealHttpBoundaries` installs a packed external `.nupkg` in a fresh CLI process. Its wire-aware provider verifies that the bridge returns a present null-valued header, then omits that header from its actual HTTP request; it also verifies host-transformed payload/header and callback order across all four bridge methods. `NativeExtensionProviderWireDispatcherTests.ProviderWireCallbacksPreserveOrderAndAttributeFailuresToTheirSource` verifies ordered host dispatch and source-attributed failure isolation.
 - `Pr11LegacyProviderPackageLoadsAndRunsWithoutFabricatedWireCallbacks` loads an external package compiled against the PR #11 contract snapshot without shipping its Abstractions DLL, completes its provider request, and asserts all four wire observer counts stay zero.
 
 Original local product commit: `9ccff7546842f6462b3ca9c7c50a9edf36e20ced`.
 Original integrated product-source commit: `b31940137201e565b15d8061055ac7b692b627e9`.
-The integrated product-source commits including these review corrections are
-`3a1aa94f3d7dcba2fe35fb74f866ee6920648a0c` and
-`c0e32b35ce79632f754c42e831e95ccc90714d6c`; the latter is the final
-product-source commit. The integrated branch descends directly from post-merge
-`main`; the final branch head and exact-head CI run IDs
-are recorded in the PR description and final review report so CI does not
-self-reference a commit that records its own run IDs.
+The prior integrated product-source commit was
+`c0e32b35ce79632f754c42e831e95ccc90714d6c`. The nullable-header correction's
+product-source commit is `baae0980e1cdeafc2df5641b510f9276a2849f00`. The
+integrated branch descends directly from post-merge `main`. The final branch
+head is this receipt-bearing commit; its exact SHA and final exact-head CI run
+IDs are recorded in the PR description and final review report.
 
 ## Local verification
 
-- Focused provider-wire protocol, adapter, bridge, process, and legacy compatibility batch after the review corrections: 72 passed, 0 failed, 0 skipped. This includes the Bedrock reserved-header/signing regression, the packed external wire-aware provider process acceptance, the legacy PR #11 package regression, and the new provider-wire regressions.
+- Focused provider-wire protocol, adapter, bridge, process, and legacy compatibility batch after the nullable-header correction: 78 passed, 0 failed, 0 skipped. This includes dispatcher null-lifetime, remove-versus-null, invalid-mutation rollback, and mutation-on-error regressions; physical HTTP deletion; Bedrock reserved-header/signing; Codex SSE/WebSocket; the packed external wire-aware provider process acceptance; legacy PR #11 compatibility; and provider callback cancellation regressions.
 - `dotnet format PiSharp.slnx --verify-no-changes --no-restore`: passed.
 - `dotnet build PiSharp.slnx --no-restore --warnaserror`: passed with 0 warnings and 0 errors.
-- `TMPDIR=/tmp dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-build --no-restore`: 2,438 passed, 0 failed, 0 skipped. `TMPDIR=/tmp` is the existing workaround for workspace-specific resource path assertions. An initial solution-level run hit one transient MCP listener-disposal failure; that test passed in isolation, and this complete test-project rerun passed unchanged.
+- `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`: 2,441 passed, 0 failed, 0 skipped. `TMPDIR=/tmp` is the existing workaround for workspace-specific resource path assertions.
 - Architecture tests: 7 passed, 0 failed, 0 skipped.
 - Node terminal tests: 24 passed, 0 failed, 0 skipped.
 - Python terminal parity tests: 50 passed, 0 failed, 0 skipped.
-- Documentation path validation: 145 documents and 562 references verified.
+- Documentation path validation after the receipt and extension-guide edits: 145 documents and 561 references verified.
 - MCP conformance: no regressions; the same eight classified baseline failures remain (six elicitation checks, basic CIMD client-id behavior, and scope retry-limit behavior).
 - PR #15 was merged from reviewed head `7c93a3d06a82b6c3de55dccc8b19b08647d2f851` as `2ea360f991b0e15c59203557a68a5a1e3c026450`; its exact-head push CI run `39171720211` and PR CI run `39171722992` both passed before merge.
 - Before these review corrections, PR #16 was open and draft at `d656f26876436e446eed6ff0a23a882e679044cd`; exact-head push CI `39185619823` and PR CI `39185623785` were green. The corrected branch is pushed separately and remains a draft; its final head and exact-head CI run IDs are recorded in the PR description and final review report.
