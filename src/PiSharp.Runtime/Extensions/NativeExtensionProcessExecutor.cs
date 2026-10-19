@@ -4,9 +4,11 @@ using PiSharp.Runtime.Tools;
 namespace PiSharp.Runtime.Extensions;
 
 /// <summary>Owns direct executions for one loaded package without retaining package code.</summary>
-internal sealed class NativeExtensionProcessExecutor(string workingDirectory) : PiSharpExtensionProcessExecutor, IDisposable
+internal sealed class NativeExtensionProcessExecutor(string workingDirectory, TimeSpan? unloadTimeout = null)
+    : PiSharpExtensionProcessExecutor, IDisposable
 {
     private readonly string _workingDirectory = Path.GetFullPath(workingDirectory);
+    private readonly TimeSpan _unloadTimeout = unloadTimeout ?? TimeSpan.FromSeconds(15);
     private readonly object _gate = new();
     private readonly CancellationTokenSource _lifetime = new();
     private readonly HashSet<Task> _running = [];
@@ -25,6 +27,8 @@ internal sealed class NativeExtensionProcessExecutor(string workingDirectory) : 
             _running.Add(task);
             _ = task.ContinueWith(completed =>
             {
+                // Package code may abandon the returned task when its load context is unloaded.
+                _ = completed.Exception;
                 lock (_gate) _running.Remove(completed);
             }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             return task;
@@ -48,15 +52,24 @@ internal sealed class NativeExtensionProcessExecutor(string workingDirectory) : 
             _disposed = true;
             running = _running.ToArray();
         }
+        var completion = Task.WhenAll(running);
         try
         {
             _lifetime.Cancel();
-            try { Task.WhenAll(running).WaitAsync(TimeSpan.FromSeconds(15)).GetAwaiter().GetResult(); }
-            catch (Exception) when (running.All(task => task.IsCompleted))
-            {
-                // Each caller observes its own execution failure; package cleanup must still finish.
-            }
+            completion.WaitAsync(_unloadTimeout).GetAwaiter().GetResult();
         }
-        finally { _lifetime.Dispose(); }
+        catch (Exception)
+        {
+            // Cancellation, cleanup failure, or the unload deadline must not interrupt catalog changes.
+            // Pending executions keep their process ownership and finish termination and pipe cleanup.
+        }
+        finally
+        {
+            _ = completion.ContinueWith(completed =>
+            {
+                _ = completed.Exception;
+                _lifetime.Dispose();
+            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        }
     }
 }

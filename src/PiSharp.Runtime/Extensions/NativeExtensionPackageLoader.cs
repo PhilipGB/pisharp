@@ -35,8 +35,8 @@ internal sealed class NativeExtensionPackageHandle : IDisposable
     /// <summary>Releases entry instances after the host has captured their registrations.</summary>
     internal void ReleaseExtensions() => _extensions = [];
 
-    internal void InitializeProcessExecutor(string workingDirectory) =>
-        ProcessExecutor = new(workingDirectory);
+    internal void InitializeProcessExecutor(string workingDirectory, TimeSpan? unloadTimeout = null) =>
+        ProcessExecutor = new(workingDirectory, unloadTimeout);
 
     internal void Unload()
     {

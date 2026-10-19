@@ -6,6 +6,7 @@ using Microsoft.Extensions.AI;
 using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Tests;
 
@@ -150,6 +151,54 @@ public sealed class NativeExtensionExecPackageTests : IDisposable
         var archive = await CreatePackageAsync(_root, version);
         var installed = await store.InstallAsync(Project, archive, "user");
         return await store.ResolveAsync(Project, trusted: true, userSources: [installed]);
+    }
+
+    [Fact]
+    public async Task UnloadDeadlineReleasesPackageWhileOwnedExecutionContinuesStopping()
+    {
+        if (!OperatingSystem.IsLinux() || ProcessLifetime.FindExecutable("setsid") is null) return;
+        var root = Assert.Single(await InstallAsync("1.0.0"));
+        using var handle = ConfigureWithImmediateUnloadDeadline(root.Path);
+        var context = handle.LoadContextReference;
+        var executor = GetExecutor(context);
+        var marker = Path.Combine(_root, "unload-deadline");
+        var pending = executor.ExecuteAsync("dotnet",
+            [NativeExtensionProcessExecutionTests.FixtureAssembly, "wait", marker, "ignore-term"]);
+        try
+        {
+            await ProcessTestHelpers.WaitForFileAsync(marker);
+            // The child ignores TERM and remains owned during the five-second escalation grace.
+            // An immediate unload deadline exercises the pending-task path without a 15-second delay.
+            handle.Unload();
+            Assert.False(pending.IsCompleted);
+            Assert.Null(handle.ProcessExecutor);
+            Assert.Null(handle.LoadContext);
+            Assert.Throws<ObjectDisposedException>(() => { _ = executor.ExecuteAsync("dotnet", []); });
+            AssertCollected(context);
+        }
+        finally
+        {
+            handle.Unload();
+            Assert.True((await pending.WaitAsync(TimeSpan.FromSeconds(15))).Killed);
+            ProcessTestHelpers.WaitForLinuxProcessExit(ProcessTestHelpers.ReadLinuxProcessId(marker));
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private NativeExtensionPackageHandle ConfigureWithImmediateUnloadDeadline(string path)
+    {
+        var loaded = NativeExtensionPackageLoader.Load(path, new(path, "fixture", "user", "package", path));
+        Assert.Null(loaded.Error);
+        var handle = Assert.IsType<NativeExtensionPackageHandle>(loaded.Handle);
+        handle.InitializeProcessExecutor(Project, TimeSpan.Zero);
+        var builder = new NativeExtensionRegistrationAdapter(new(), handle.ProcessExecutor);
+        try
+        {
+            foreach (var extension in handle.Extensions) extension.Configure(builder);
+        }
+        finally { builder.Close(); }
+        handle.ReleaseExtensions();
+        return handle;
     }
 
     internal static async Task<string> CreatePackageAsync(string root, string version)

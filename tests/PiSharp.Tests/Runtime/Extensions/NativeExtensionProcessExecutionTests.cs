@@ -159,6 +159,63 @@ public sealed class NativeExtensionProcessExecutionTests : IDisposable
     }
 
     [Fact]
+    public async Task CleanupWithoutProcessGroupAfterRootExitClosesPipesButCannotFindDescendant()
+    {
+        var marker = Path.Combine(_directory, "ungrouped-exited-root");
+        // Launch directly to exercise the Windows / no-setsid ownership path on every host.
+        var start = new ProcessStartInfo(Environment.ProcessPath!)
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        foreach (var argument in new[] { FixtureAssembly, "inherit", marker, "wait", "7" })
+            start.ArgumentList.Add(argument);
+        using var root = Process.Start(start)!;
+        Process? descendant = null;
+        using var stop = new CancellationTokenSource();
+        async Task ReadAsync(Stream stream)
+        {
+            try { await stream.CopyToAsync(Stream.Null, stop.Token); }
+            catch (Exception error) when (stop.IsCancellationRequested &&
+                error is OperationCanceledException or IOException or ObjectDisposedException)
+            { }
+        }
+        var stdout = ReadAsync(root.StandardOutput.BaseStream);
+        var stderr = ReadAsync(root.StandardError.BaseStream);
+        try
+        {
+            await ProcessTestHelpers.WaitForFileAsync(marker);
+            descendant = Process.GetProcessById(ProcessTestHelpers.ReadLinuxProcessId(marker));
+            await root.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(7, root.ExitCode);
+            Assert.False(stdout.IsCompleted);
+            Assert.False(stderr.IsCompleted);
+
+            await ProcessLifetime.TerminateAsync(root, processGroup: false);
+            Assert.False(descendant.HasExited);
+            var lastOutput = Stopwatch.GetTimestamp();
+            await ProcessLifetime.DrainOutputAfterExitAsync(root, stdout, stderr, CancellationToken.None,
+                stop, () => lastOutput).WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(stdout.IsCompletedSuccessfully);
+            Assert.True(stderr.IsCompletedSuccessfully);
+            Assert.False(descendant.HasExited);
+        }
+        finally
+        {
+            if (!root.HasExited) root.Kill(entireProcessTree: true);
+            if (descendant is not null)
+            {
+                if (!descendant.HasExited) descendant.Kill(entireProcessTree: true);
+                if (OperatingSystem.IsLinux()) AssertExited(marker);
+                else await descendant.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                descendant.Dispose();
+            }
+            await ProcessLifetime.StopPumpsAsync(root, stdout, stderr, stop);
+        }
+    }
+
+    [Fact]
     public async Task TimeoutEscalatesForProcessIgnoringTermination()
     {
         using var executor = new NativeExtensionProcessExecutor(_directory);

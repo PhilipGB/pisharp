@@ -959,20 +959,32 @@ code mapping. If the root already exited before cancellation during descendant
 output draining, its original exit code is retained. A natural exit has
 `Killed=false`. Process-start errors throw;
 no exit status is invented for a program that did not start. Cancellation before
-start throws `OperationCanceledException` and launches nothing.
+start throws `OperationCanceledException` and launches nothing. Termination or
+bounded stream-drain failures throw instead of returning a result.
 
 Removal, replacement, failed configuration, and host disposal revoke the
 package's executor. New calls on an old handle throw `ObjectDisposedException`;
-already-running calls are cancelled and their process trees and streams cleaned
-up before package unload. The replacement gets an independent executor. Unix
+already-running calls are cancelled. Unload waits up to 15 seconds for cleanup;
+cleanup failures and expiry of that wait do not interrupt package removal or
+replacement. If an execution is still stopping, its host-owned task continues
+process termination and stream cleanup, observes late failures, and releases
+cancellation resources when finished. The package load context is released even
+when that deadline expires. The replacement gets an independent executor. Unix
 hosts use the existing `setsid` process group helper when installed, request
 SIGTERM and escalate to SIGKILL after five seconds; other hosts use .NET process
-tree termination. Exit and stream cleanup waits are bounded. Successful processes
-have no default deadline. After natural exit, a 100 ms sliding output-idle grace
+tree termination while the root is alive. Without a process group (including on
+Windows and Unix hosts without `setsid`), an already-exited root cannot be used to
+find or terminate surviving descendants. Those descendants remain the
+extension's responsibility; inherited pipes are closed after the output-idle
+grace, and cancellation bounds active output draining. `Killed=true` records the
+termination request, not proof that every descendant exited. This is consistent
+with pinned Pi's root-only termination contract. Exit and stream cleanup waits
+are bounded. Successful processes have no default deadline. After natural exit,
+a 100 ms sliding output-idle grace
 releases pipes held by quiet descendants while retaining continuously arriving
 output. On Unix, bytes already buffered in a pipe keep draining even when a
-reader continuation is delayed. Naturally detached background programs remain the extension's
-responsibility.
+reader continuation is delayed. Naturally detached background programs remain
+the extension's responsibility.
 
 A trusted native extension has the host's OS permissions. This API adds no
 sandbox or permission prompt and does not route through model tool permissions.
@@ -986,9 +998,10 @@ errors throw rather than returning Pi's synthetic code 1; incremental decoding
 preserves split UTF-8 characters that Pi's per-chunk `toString()` can replace;
 a combined 64 MiB raw-output budget throws `IOException` and cleans up the child
 instead of growing memory without limit or silently truncating. Package unload
-cancels active calls, and termination covers owned process groups/trees rather
-than only the root. Signal exit codes not requested by the host use the native
-.NET status (Unix typically 128 plus the signal) rather than Pi's zero.
+cancels active calls; termination covers owned process groups or live trees,
+with the already-exited-root limitation described above. Signal exit codes not
+requested by the host use the native .NET status (Unix typically 128 plus the
+signal) rather than Pi's zero.
 Relative directory overrides resolve against the captured package directory,
 whereas Pi passes them to Node relative to its current process directory.
 Windows and Unix hosts without `setsid` rely on .NET's live-tree enumeration;
