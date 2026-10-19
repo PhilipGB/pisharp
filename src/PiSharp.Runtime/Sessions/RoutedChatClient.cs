@@ -1,11 +1,15 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Routes logical virtual-model calls before they reach a physical provider client.</summary>
-internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLifecycleEvent> publish, Action<VirtualModelRequestRoute>? physicalResponse = null)
+internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLifecycleEvent> publish,
+    Action<VirtualModelRequestRoute>? physicalResponse = null,
+    NativeExtensionEventDispatcher? contextMutationDispatcher = null, bool directBlockImages = false,
+    Func<bool>? directSupportsImages = null)
     : DelegatingChatClient(inner), IProviderToolCallDeltaSource
 {
     private VirtualModelRequestRouter? _router;
@@ -21,6 +25,7 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
     public VirtualModelRequestRoute? CurrentRoute => Volatile.Read(ref _currentRoute);
     public string SelectedThinkingLevel => Volatile.Read(ref _thinkingLevel);
     public bool HasRouter => Volatile.Read(ref _router) is not null;
+    public bool HasContextMutationHandlers => contextMutationDispatcher?.HasContextMutationHandlers == true;
 
     public void SetRouter(VirtualModelRequestRouter? router)
     {
@@ -90,7 +95,11 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
         if (router is null)
         {
             Volatile.Write(ref _currentRoute, null);
-            return (null, messages, options);
+            var (directMessages, directOptions) = await ApplyContextMutationsAsync(messages, options,
+                cancellationToken).ConfigureAwait(false);
+            var filteredMessages = ObservedChatClient.FilterImagesForModel(directMessages, directBlockImages,
+                directSupportsImages?.Invoke() ?? true);
+            return (null, filteredMessages, NativeContextMutationRequest.Strip(directOptions));
         }
         var session = Volatile.Read(ref _session) ??
             throw new InvalidOperationException("Virtual model requests require an active conversation session.");
@@ -127,11 +136,50 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
         });
         if (hint?.Reason is not null and not "direct" && Volatile.Read(ref _prepareContext) is { } prepare)
             messages = await prepare(messages, route, hint.ForceCompaction, cancellationToken).ConfigureAwait(false);
+        var (contextMessages, contextOptions) = await ApplyContextMutationsAsync(messages, options,
+            cancellationToken).ConfigureAwait(false);
         if (hint?.Execution?.ToolCallCapture is { } capture)
             capture.Bind((route.ChatClient as IProviderToolCallDeltaSource)?.BeginToolCallDeltaCapture());
-        var routedMessages = ObservedChatClient.FilterImagesForModel(messages, blockImages: false,
+        var routedMessages = ObservedChatClient.FilterImagesForModel(contextMessages, blockImages: false,
             supportsImages: route.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
-        return (route, routedMessages, VirtualModelRequestHints.ForPhysicalModel(options, route));
+        var physicalOptions = NativeContextMutationRequest.Strip(contextOptions);
+        return (route, routedMessages, VirtualModelRequestHints.ForPhysicalModel(physicalOptions, route));
+    }
+
+    private async Task<(IReadOnlyList<ChatMessage> Messages, ChatOptions? Options)> ApplyContextMutationsAsync(
+        IReadOnlyList<ChatMessage> messages, ChatOptions? options, CancellationToken cancellationToken)
+    {
+        if (contextMutationDispatcher?.HasContextMutationHandlers != true)
+            return (messages, options);
+
+        var tools = options?.Tools?.ToArray() ?? [];
+        var toolNames = tools.OfType<AIFunctionDeclaration>().Select(tool => tool.Name).ToArray();
+        var scope = NativeContextMutationRequest.From(options);
+        NativeContextMutationResult result;
+        if (scope is not null && scope.TryGet(messages, options?.Instructions, toolNames, out result))
+        {
+            // The previous attempt already ran extension code for this exact logical request.
+        }
+        else
+        {
+            result = await contextMutationDispatcher.DispatchContextMutationsAsync(messages,
+                options?.Instructions, tools, cancellationToken).ConfigureAwait(false);
+            scope?.Store(messages, options?.Instructions, toolNames, result);
+        }
+
+        if (ReferenceEquals(result.Messages, messages) &&
+            string.Equals(result.SystemInstructions, options?.Instructions, StringComparison.Ordinal))
+            return (result.Messages, options);
+
+        var updated = options?.Clone() ?? new ChatOptions();
+        updated.Instructions = result.SystemInstructions;
+        if (result.MessagesChanged && updated.AdditionalProperties?.ContainsKey("pisharp.toolTranscript") == true)
+        {
+            updated.AdditionalProperties = updated.AdditionalProperties.Clone();
+            updated.AdditionalProperties["pisharp.toolTranscript"] =
+                ToolDeclarationTranscript.CollapseForContext(result.SystemInstructions, tools);
+        }
+        return (result.Messages, updated);
     }
 
     internal static ChatResponse ApplyPhysicalIdentity(ChatResponse response, VirtualModelRequestRoute route)

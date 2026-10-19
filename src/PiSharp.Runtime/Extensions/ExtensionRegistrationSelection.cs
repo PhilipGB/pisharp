@@ -51,6 +51,8 @@ public sealed partial class ExtensionRegistration
                     Reconcile(_toolCallHooks, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_toolResultHooks, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_contextTransforms, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_contextHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_contextWithSystemHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_lifecycleHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_beforeAgentStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_sessionStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });

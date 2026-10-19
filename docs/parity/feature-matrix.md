@@ -1,19 +1,15 @@
-## Active milestone — Native Extension General Process Execution — 2026-10-19
+## Active milestone — Native Extension Two-Stage Context Mutation — 2026-10-19
 
-PR #17 merged as `0737ee30524ebc86b845f2b1b5c19b9d481db212`, verified on
-`origin/main`. Branch `milestone/native-extension-general-exec` starts at that
-actual merge. Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
-This increment adds a package-owned executor captured during Configure, direct
-executable/argument invocation, separate UTF-8 streams, cancellation/timeouts,
-and removal/reload cleanup using shared process lifecycle helpers. Implementation and local verification are complete: 2,484 .NET tests pass with
-zero failures/skips; focused checks pass 35/35. Draft publication and exact-head
-Linux CI evidence are tracked in the
-[general execution receipt](fixtures/native-extension-general-exec-2026-10-19.md).
-Teardown review corrections isolate the 15-second unload deadline and cover
-the already-exited-root fallback; surviving descendants without a process
-group remain extension-owned, as documented.
-PR #18 must remain a draft for independent review. Broad extension parity remains
-`in_progress`; no next milestone is started.
+PR #18 merged as `3be359066d6d3bef815a2acefcc0a117bac12666`; branch
+`milestone/native-extension-context-mutation` starts at that actual merge.
+The Pi pin remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This increment
+adds ordered native `context` and `context_with_system` callbacks at the final
+route-aware provider boundary, with detached message edits, host-owned tool
+configuration, request-only prompt changes, source-attributed error isolation,
+and retry/compaction behavior. Focused Runtime tests and a package compiled
+against the current public API are in place; full required validation and PR #19
+publication remain. PR #19 must stay a draft and must not be merged. Broad
+extension parity remains `in_progress`; no next milestone is started.
 
 ## Previous milestone — Native Extension Message Lifecycle Hooks — 2026-10-19
 
@@ -320,6 +316,7 @@ See the [thinking-budget receipt](fixtures/thinking-budgets-current-pi-2026-10-1
 [package CLI receipt](fixtures/package-cli-real-process-2026-10-15.json),
 [extension conflict receipt](fixtures/extension-conflicts-current-pi-2026-10-15.json),
 [extension context receipt](fixtures/extension-context-runtime-current-pi-2026-10-15.json),
+[native extension context mutation receipt](fixtures/native-extension-context-mutation-2026-10-19.md),
 [sampling receipt](fixtures/provider-sampling-options-current-pi-2026-10-15.json),
 [provider call receipt](fixtures/provider-tool-call-validation-current-pi-2026-10-15.json),
 and [Radius receipt](fixtures/radius-catalog-oauth-setup-current-pi-2026-10-15.json).

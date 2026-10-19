@@ -37,6 +37,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
+        if (routedChatClient?.HasContextMutationHandlers == true)
+            options = NativeContextMutationRequest.Attach(options, new NativeContextMutationRequest());
         var overflowRecovered = false;
         var routeReason = GetRouteReason(requestMessages);
         VirtualModelFailedRequest? failedRequest = null;
@@ -89,6 +91,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
+        if (routedChatClient?.HasContextMutationHandlers == true)
+            options = NativeContextMutationRequest.Attach(options, new NativeContextMutationRequest());
         var overflowRecovered = false;
         var routeReason = GetRouteReason(requestMessages);
         VirtualModelFailedRequest? failedRequest = null;

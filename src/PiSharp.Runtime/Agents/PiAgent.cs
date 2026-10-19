@@ -148,7 +148,9 @@ public sealed class PiAgent
         _selectedImageResizeOptions = tools.ImageResizeOptions;
         _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
         _chatClient = new MutableChatClient(client);
-        _routedChatClient = new RoutedChatClient(_chatClient, PublishEvent, route => SetPhysicalImageLimits(route.Model));
+        _routedChatClient = new RoutedChatClient(_chatClient, PublishEvent,
+            route => SetPhysicalImageLimits(route.Model), _extensionEvents, blockImages,
+            () => Volatile.Read(ref _supportsImages) != 0);
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         _supportsImages = supportsImages ? 1 : 0;
         _reasoning = reasoning;

@@ -12,6 +12,32 @@ internal sealed partial class NativeExtensionRegistrationAdapter
         registration.AddContextTransform((messages, cancellationToken) => transform(messages, cancellationToken));
     }
 
+    public void AddContextHandler(NativeExtensions.PiSharpContextHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        EnsureConfiguring();
+        var source = registration.CurrentSourceInfo?.Path;
+        registration.AddContextHandler(async (eventData, context, cancellationToken) =>
+        {
+            var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
+        });
+    }
+
+    public void AddContextWithSystemHandler(NativeExtensions.PiSharpContextWithSystemHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        EnsureConfiguring();
+        var source = registration.CurrentSourceInfo?.Path;
+        registration.AddContextWithSystemHandler(async (eventData, context, cancellationToken) =>
+        {
+            var publicContext = NativeExtensionPublicContextMapper.Create(context, source);
+            await InvokeWithRevocableContextAsync(publicContext, cancellationToken,
+                () => handler(eventData, publicContext, cancellationToken)).ConfigureAwait(false);
+        });
+    }
+
     public void AddToolCallHook(NativeExtensions.PiSharpToolCallHook hook)
     {
         ArgumentNullException.ThrowIfNull(hook);

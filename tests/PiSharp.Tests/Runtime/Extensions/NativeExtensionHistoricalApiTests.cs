@@ -1,12 +1,15 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
+using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Tools;
 using PiSharp.Tests.TestInfrastructure;
 
 namespace PiSharp.Tests;
@@ -127,7 +130,66 @@ public sealed class NativeExtensionHistoricalApiTests
         Assert.Equal(0, streamCalls);
     }
 
-    private static async Task<string> PackFixtureAsync(string fixtureName, string outputDirectory)
+    [Fact]
+    public async Task CurrentCompiledPackageRunsBothContextMutationStages()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        Directory.CreateDirectory(fixture.ProjectDirectory);
+        Directory.CreateDirectory(fixture.AgentDirectory);
+        var packages = Path.Combine(fixture.Root, "packages");
+        var packageV1 = await PackFixtureAsync("NativeExtensionApiV10", packages, "1.0.0", "V1");
+        var packageV2 = await PackFixtureAsync("NativeExtensionApiV10", packages, "2.0.0", "V2");
+        AssertPublicPackage(packageV1, "NativeExtensionApiV10Fixture.dll");
+        AssertPublicPackage(packageV2, "NativeExtensionApiV10Fixture.dll");
+        var store = new NativeExtensionPackageStore(fixture.AgentDirectory);
+        var installedV1 = await store.InstallAsync(fixture.ProjectDirectory, packageV1, "user");
+        var installedV2 = await store.InstallAsync(fixture.ProjectDirectory, packageV2, "user");
+        var rootsV1 = await store.ResolveAsync(fixture.ProjectDirectory, trusted: true, userSources: [installedV1]);
+        var rootsV2 = await store.ResolveAsync(fixture.ProjectDirectory, trusted: true, userSources: [installedV2]);
+
+        var catalog = ExtensionCatalog.Load(fixture.AgentDirectory, fixture.ProjectDirectory,
+            projectTrusted: true, nativeExtensionPackageRoots: rootsV1);
+        try
+        {
+            Assert.Empty(catalog.Warnings);
+            Assert.Single(catalog.Registration.ContextHandlers);
+            Assert.Single(catalog.Registration.ContextWithSystemHandlers);
+            var v1LoadContext = Assert.Single(catalog.NativePackageLoadContextReferences);
+
+            var v1Provider = await RunContextMutationPackageAsync(catalog, fixture.ProjectDirectory, "package v1 prompt");
+            var v1Request = Assert.Single(v1Provider.Requests);
+            Assert.Contains("package v1 prompt [compiled context handler v1]",
+                v1Request.Messages.Last(message => message.Role == ChatRole.User).Text);
+            Assert.Equal("compiled context_with_system handler v1", v1Request.Options!.Instructions);
+
+            catalog = ExtensionCatalog.Load(fixture.AgentDirectory, fixture.ProjectDirectory,
+                projectTrusted: true, preloaded: catalog, nativeExtensionPackageRoots: rootsV2);
+            Assert.True(catalog.Registration.ContextHandlers.Count == 1,
+                $"warnings: {string.Join(" | ", catalog.Warnings.Select(warning => warning.Warning))}; " +
+                $"errors: {string.Join(" | ", catalog.LoadErrors.Select(error => error.Error))}; root: {rootsV2[0].Path}");
+            Assert.Single(catalog.Registration.ContextWithSystemHandlers);
+            Assert.Equal(rootsV2[0].Path, Assert.Single(catalog.Registration.ContextHandlers).SourceInfo.Path);
+            AssertContextUnloaded(v1LoadContext);
+
+            var v2LoadContext = Assert.Single(catalog.NativePackageLoadContextReferences);
+            var v2Provider = await RunContextMutationPackageAsync(catalog, fixture.ProjectDirectory, "package v2 prompt");
+            var v2Request = Assert.Single(v2Provider.Requests);
+            Assert.Contains("package v2 prompt [compiled context handler v2]",
+                v2Request.Messages.Last(message => message.Role == ChatRole.User).Text);
+            Assert.Equal("compiled context_with_system handler v2", v2Request.Options!.Instructions);
+
+            catalog = ExtensionCatalog.Load(fixture.AgentDirectory, fixture.ProjectDirectory,
+                projectTrusted: true, preloaded: catalog, nativeExtensionPackageRoots: []);
+            Assert.Empty(catalog.Registration.ContextHandlers);
+            Assert.Empty(catalog.Registration.ContextWithSystemHandlers);
+            AssertContextUnloaded(v2LoadContext);
+        }
+        finally { catalog.Dispose(); }
+    }
+
+    private static async Task<string> PackFixtureAsync(string fixtureName, string outputDirectory,
+        string packageVersion = "1.0.0", string? contextMutationRevision = null)
     {
         Directory.CreateDirectory(outputDirectory);
         var repositoryRoot = FindRepositoryRoot();
@@ -142,12 +204,15 @@ public sealed class NativeExtensionHistoricalApiTests
                 RedirectStandardError = true
             }
         };
-        foreach (var argument in new[]
+        var arguments = new List<string>
                  {
                      "pack", projectPath, "--configuration", BuildConfiguration(), "--output", outputDirectory,
                      "--nologo", "--disable-build-servers", "-p:NuGetAudit=false",
-                     "-p:RestoreIgnoreFailedSources=true"
-                 })
+                     "-p:RestoreIgnoreFailedSources=true", "-p:Version=" + packageVersion
+                 };
+        if (contextMutationRevision is not null)
+            arguments.Add("-p:ContextMutationRevision=" + contextMutationRevision);
+        foreach (var argument in arguments)
             process.StartInfo.ArgumentList.Add(argument);
 
         if (!process.Start()) throw new IOException($"Could not start dotnet pack for {fixtureName}.");
@@ -171,7 +236,7 @@ public sealed class NativeExtensionHistoricalApiTests
         if (process.ExitCode != 0)
             throw new InvalidOperationException($"dotnet pack failed for {fixtureName}:\n{stderr}\n{stdout}");
         var packageName = fixtureName.Replace("NativeExtensionApi", "PiSharp.TestExtensions.NativeApi") +
-            "Fixture.1.0.0.nupkg";
+            $"Fixture.{packageVersion}.nupkg";
         var packagePath = Path.Combine(outputDirectory, packageName);
         return File.Exists(packagePath) ? packagePath :
             throw new FileNotFoundException($"dotnet pack did not create the {fixtureName} package.", packagePath);
@@ -207,6 +272,50 @@ public sealed class NativeExtensionHistoricalApiTests
         public Task<string?> InputAsync(string title, string? placeholder = null,
             CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
         public void Notify(string message, string type = "info") { }
+    }
+
+    private sealed class ContextMutationPackageClient : IChatClient
+    {
+        internal List<(ChatMessage[] Messages, ChatOptions? Options)> Requests { get; } = [];
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            Requests.Add((messages.Select(PiSharpContextTransformPipeline.CloneMessage).ToArray(), options?.Clone()));
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "done");
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    [MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static async Task<ContextMutationPackageClient> RunContextMutationPackageAsync(
+        ExtensionCatalog catalog, string workingDirectory, string prompt)
+    {
+        var provider = new ContextMutationPackageClient();
+        var agent = new PiAgent(provider, new CodingTools(workingDirectory), noBuiltinTools: true,
+            systemPrompt: "host prompt", liveExtensionRegistration: catalog.Registration);
+        var run = await ConversationRun.OpenAsync(agent, new ConversationSession(workingDirectory, "fixture", null));
+        await foreach (var _ in run.RunEventsAsync(prompt)) { }
+        return provider;
+    }
+
+    [MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static void AssertContextUnloaded(WeakReference context)
+    {
+        for (var attempt = 0; attempt < 20 && context.IsAlive; attempt++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            Thread.Sleep(10);
+        }
+        Assert.False(context.IsAlive, "A replaced native context-mutation package remained reachable.");
     }
 
     private static string FindRepositoryRoot()

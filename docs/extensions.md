@@ -880,6 +880,56 @@ registration.AddContextTransform((messages, cancellationToken) =>
 
 Transforms run in registration order after PiSharp projects the conversation and before provider-only repair and image preparation. They also run for follow-up requests in a tool loop and after context-overflow compaction. The host copies messages and text, tool-call, and tool-result content between transforms; other content payloads should be treated as read-only. Transformed messages are used for that provider request and do not enter saved conversation history. Cancellation is passed through, and a transform failure fails the provider request. Transforms are captured when an agent is created, so registering one later does not change existing agents.
 
+### Native two-stage context events
+
+Compiled extensions can register the two ordered context stages exposed by Pi's
+extension runner:
+
+```csharp
+builder.AddContextHandler((eventData, context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    var user = eventData.Messages.LastOrDefault(message => message.Role == ChatRole.User);
+    if (user?.Contents.OfType<TextContent>().LastOrDefault() is { } text)
+        text.Text += " Apply the extension's request-specific guidance.";
+    return ValueTask.CompletedTask;
+});
+
+builder.AddContextWithSystemHandler((eventData, context, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    eventData.SystemInstructions = (eventData.SystemInstructions ?? "") +
+        "\nFollow the extension's system-level policy.";
+    return ValueTask.CompletedTask;
+});
+```
+
+`AddContextHandler` runs after the legacy `AddContextTransform` point and after
+route-specific context preparation. Each callback sees a detached request copy
+with system-role messages hidden. The separately assembled system instructions
+and active tool declarations remain host-owned during this stage. A changed
+visible message list causes PiSharp to restore the current system message and
+active tool declarations into its provider-only projection, matching Pi's
+context restoration behavior.
+
+After every `context` callback has run, `AddContextWithSystemHandler` receives
+the full message list, mutable `SystemInstructions`, and a read-only snapshot of
+`ToolNames`. Assign `null` to `SystemInstructions` to remove the prompt. The
+host keeps the executable `ChatOptions.Tools` configuration authoritative;
+extensions can inspect tool names but cannot replace tool functions through
+this event.
+
+Both stages run sequentially in extension order for each logical provider
+request, including the initial request, tool-loop/follow-up requests, and a new
+request after overflow compaction. Equivalent physical retries reuse the
+accepted request projection. Accepted mutations affect only that provider
+request and never enter saved conversation history. Invalid callback output and
+handler exceptions emit source-attributed `extension_error` events, roll back
+that handler's invalid result, and allow later handlers to run. Removing an
+existing leading system message in `context_with_system` emits a nonfatal
+`extension_warning`; the requested output is still honored. Cancellation stops
+dispatch and revokes the callback-scoped public context.
+
 ### Internal before-agent-start handler
 
 Use `AddBeforeAgentStartHandler` to inspect the expanded user prompt and replace the

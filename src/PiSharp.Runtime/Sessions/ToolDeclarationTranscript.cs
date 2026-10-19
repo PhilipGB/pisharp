@@ -24,6 +24,23 @@ internal sealed class ToolDeclarationTranscript
         message = JsonSerializer.SerializeToElement(revision.Message, AIJsonUtilities.DefaultOptions)
     }));
 
+    internal static JsonElement CollapseForContext(string? instructions, IReadOnlyList<AITool> tools)
+    {
+        var message = new ChatMessage(ChatRole.System, instructions ?? "");
+        var declarations = tools.OfType<AIFunctionDeclaration>().Select(ToolDeclarationJson.Create).ToArray();
+        if (declarations.Length > 0)
+            SystemMessageTranscript.ImportMetadata(message,
+                JsonSerializer.SerializeToElement(new { toolsAdded = declarations }));
+        return JsonSerializer.SerializeToElement(new[]
+        {
+            new
+            {
+                afterMessageCount = 0,
+                message = JsonSerializer.SerializeToElement(message, AIJsonUtilities.DefaultOptions)
+            }
+        });
+    }
+
     internal JsonElement Project(IReadOnlyList<ChatMessage> messages, ChatOptions options)
     {
         var head = messages.FirstOrDefault() is { } message
