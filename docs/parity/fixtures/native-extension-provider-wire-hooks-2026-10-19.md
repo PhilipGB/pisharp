@@ -106,6 +106,7 @@ branch head and exact-head CI run IDs will be recorded after publication.
 - Documentation path validation: 145 documents and 561 references verified.
 - MCP conformance: no regressions; the same eight classified baseline failures remain (six elicitation checks, basic CIMD client-id behavior, and scope retry-limit behavior).
 - PR #15 was merged from reviewed head `7c93a3d06a82b6c3de55dccc8b19b08647d2f851` as `2ea360f991b0e15c59203557a68a5a1e3c026450`; its exact-head push CI run `39171720211` and PR CI run `39171722992` both passed before merge.
-- Provider-wire publication is in progress. Exact-head push and PR CI run IDs will be recorded after the integrated branch is pushed and its draft PR is open.
+- Provider-wire branch `milestone/native-extension-provider-wire-hooks` was pushed at `3286c91a782e14986ed3d277d533454c7e12b1e6`; draft PR [#16](https://github.com/PhilipGB/pisharp/pull/16) is open against `main`.
+- Exact-head push CI [39184810044](https://github.com/PhilipGB/pisharp/actions/runs/39184810044) and PR CI [39184840231](https://github.com/PhilipGB/pisharp/actions/runs/39184840231) both passed on `3286c91a782e14986ed3d277d533454c7e12b1e6`. This receipt update creates a new branch head; fresh exact-head checks are required for that head before completion.
 
 Broad extension parity remains `in_progress`.
