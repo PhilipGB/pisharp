@@ -3,10 +3,20 @@ using NativeExtensions = PiSharp.Extensions.Abstractions;
 namespace PiSharp.Runtime.Extensions;
 
 /// <summary>Adapts the versioned public authoring contract to PiSharp's existing extension runtime.</summary>
-internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegistration registration)
+internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegistration registration,
+    NativeExtensionProcessExecutor? processExecutor = null)
     : NativeExtensions.IPiSharpExtensionBuilder
 {
     private int _isConfiguring = 1;
+
+    public NativeExtensions.PiSharpExtensionProcessExecutor ProcessExecutor
+    {
+        get
+        {
+            EnsureConfiguring();
+            return processExecutor ?? throw new NotSupportedException("No package process executor is available.");
+        }
+    }
 
     public void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler,
         string? description = null)

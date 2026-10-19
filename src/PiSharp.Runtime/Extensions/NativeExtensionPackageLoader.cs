@@ -14,6 +14,7 @@ internal sealed class NativeExtensionPackageHandle : IDisposable
 {
     private AssemblyLoadContext? _loadContext;
     private IReadOnlyList<NativeContract> _extensions;
+    internal NativeExtensionProcessExecutor? ProcessExecutor { get; private set; }
 
     internal NativeExtensionPackageHandle(NativeExtensionPackageManifest manifest, ResourceSourceInfo sourceInfo,
         AssemblyLoadContext loadContext, IReadOnlyList<NativeContract> extensions)
@@ -34,12 +35,20 @@ internal sealed class NativeExtensionPackageHandle : IDisposable
     /// <summary>Releases entry instances after the host has captured their registrations.</summary>
     internal void ReleaseExtensions() => _extensions = [];
 
+    internal void InitializeProcessExecutor(string workingDirectory) =>
+        ProcessExecutor = new(workingDirectory);
+
     internal void Unload()
     {
-        NativeExtensionFunctionCache.ReleaseDefaultOptionsDescriptors();
-        ReleaseExtensions();
-        var context = Interlocked.Exchange(ref _loadContext, null);
-        context?.Unload();
+        try { ProcessExecutor?.Dispose(); }
+        finally
+        {
+            ProcessExecutor = null;
+            NativeExtensionFunctionCache.ReleaseDefaultOptionsDescriptors();
+            ReleaseExtensions();
+            var context = Interlocked.Exchange(ref _loadContext, null);
+            context?.Unload();
+        }
     }
 
     public void Dispose() => Unload();

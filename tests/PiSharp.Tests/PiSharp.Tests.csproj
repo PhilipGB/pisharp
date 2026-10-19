@@ -30,6 +30,7 @@
     <ProjectReference Include="..\fixtures\NativeSessionHooksExtension\NativeSessionHooksExtension.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\fixtures\NativeSettlementExtension\NativeSettlementExtension.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\fixtures\SessionResumeProcess\SessionResumeProcess.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\fixtures\NativeExecExtension\NativeExecExtension.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TestInfrastructure/Fixtures/mcp_fixture.py" CopyToOutputDirectory="PreserveNewest" />
@@ -41,9 +42,11 @@
       <NativeLoaderV1Files Include="../fixtures/NativeExtensionLoader/ExtensionV1/bin/$(Configuration)/net10.0/*" />
       <NativeLoaderV2Files Include="../fixtures/NativeExtensionLoader/ExtensionV2/bin/$(Configuration)/net10.0/*" />
       <NativeLoaderIncompatibleContractFiles Include="../fixtures/NativeExtensionLoader/IncompatibleContract/Extension/bin/$(Configuration)/net10.0/*" />
+      <NativeExecFiles Include="../fixtures/NativeExecExtension/bin/$(Configuration)/net10.0/*" />
     </ItemGroup>
     <Copy SourceFiles="@(NativeLoaderV1Files)" DestinationFolder="$(OutDir)NativeExtensionLoaderFixtures/V1" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(NativeLoaderV2Files)" DestinationFolder="$(OutDir)NativeExtensionLoaderFixtures/V2" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(NativeLoaderIncompatibleContractFiles)" DestinationFolder="$(OutDir)NativeExtensionLoaderFixtures/IncompatibleContract" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(NativeExecFiles)" DestinationFolder="$(OutDir)NativeExecFixture" SkipUnchangedFiles="true" />
   </Target>
 </Project>
