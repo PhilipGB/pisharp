@@ -2,8 +2,9 @@
 
 ## Active milestone — Native Extension Provider Wire Hooks — 2026-10-19
 
-Branch `milestone/native-extension-provider-wire-hooks` continues from PR #15's
-product head `7c93a3d06a82b6c3de55dccc8b19b08647d2f851`, with Pi pinned at
+Branch `milestone/native-extension-provider-wire-hooks` descends from PR #15's
+actual merge commit on `main`, `2ea360f991b0e15c59203557a68a5a1e3c026450`,
+with Pi pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The increment implements the four
 provider-wire hooks at pinned-equivalent physical boundaries for each required
 built-in protocol, preserves the pinned no-response cases, and adds the
@@ -17,8 +18,9 @@ and [provider-wire receipt](docs/parity/fixtures/native-extension-provider-wire-
 
 ## Previous milestone — Native Extension Input & User-Bash Interception — 2026-10-18
 
-Draft PR #15 remains open and unmerged on `milestone/native-extension-input-bash`.
-Its completed input and user-bash correction is recorded in the [milestone receipt](docs/parity/fixtures/native-extension-input-bash-2026-10-18.md).
+PR #15 was merged from `milestone/native-extension-input-bash` as
+`2ea360f991b0e15c59203557a68a5a1e3c026450`. Its completed input and user-bash
+correction is recorded in the [milestone receipt](docs/parity/fixtures/native-extension-input-bash-2026-10-18.md).
 
 ## Previous milestone — Native Extension Agent Settlement & Mutable Turn Boundaries — 2026-10-18
 

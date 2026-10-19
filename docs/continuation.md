@@ -2,8 +2,9 @@
 
 ## Active milestone — Native Extension Provider Wire Hooks — 2026-10-19
 
-Branch `milestone/native-extension-provider-wire-hooks` continues from PR #15
-product head `7c93a3d06a82b6c3de55dccc8b19b08647d2f851`, with Pi pinned at
+Branch `milestone/native-extension-provider-wire-hooks` descends from PR #15's
+actual merge commit on `main`, `2ea360f991b0e15c59203557a68a5a1e3c026450`,
+with Pi pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This increment implements the
 four wire hooks at the pinned adapters' actual payload, header, response, and
 raw-event boundaries; preserves the pinned no-response outcomes for Google
@@ -16,7 +17,8 @@ See the [API guide](extensions.md) and
 [provider-wire receipt](parity/fixtures/native-extension-provider-wire-hooks-2026-10-19.md).
 
 The preceding Native Extension Input & User-Bash milestone is complete on
-draft PR #15; its review correction and verification are recorded in the
+merged PR #15 (`2ea360f991b0e15c59203557a68a5a1e3c026450`); its review
+correction and verification are recorded in the
 [input/bash receipt](parity/fixtures/native-extension-input-bash-2026-10-18.md).
 
 ## Previous milestone — Native Extension Agent Settlement & Mutable Turn Boundaries — 2026-10-18

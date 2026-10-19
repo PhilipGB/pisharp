@@ -1,9 +1,13 @@
 # Native extension provider wire hooks — 2026-10-19
 
-This bounded increment continues from PR #15 product head
-`7c93a3d06a82b6c3de55dccc8b19b08647d2f851` and keeps pinned Pi at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Broad extension parity remains
-`in_progress`.
+This bounded increment descends from the actual PR #15 merge commit on `main`,
+`2ea360f991b0e15c59203557a68a5a1e3c026450`, which merged reviewed head
+`7c93a3d06a82b6c3de55dccc8b19b08647d2f851`. The post-merge base is the same
+commit. Existing provider-wire work was rebased onto that base without
+conflicts; original local product commit `9ccff7546842f6462b3ca9c7c50a9edf36e20ced`
+is now integrated as `b31940137201e565b15d8061055ac7b692b627e9`. Pinned Pi
+remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Broad extension parity
+remains `in_progress`.
 
 ## Review finding and correction
 
@@ -85,21 +89,23 @@ transform before passing them to the adapter in [`models.ts`](https://github.com
 - `PackedExternalWireProviderUsesHostBridgeAtRealHttpBoundaries` installs a packed external `.nupkg` in a fresh CLI process. Its wire-aware provider sends an actual HTTP request and verifies host-transformed payload/header plus callback order across all four bridge methods. `NativeExtensionProviderWireDispatcherTests.ProviderWireCallbacksPreserveOrderAndAttributeFailuresToTheirSource` verifies ordered host dispatch and source-attributed failure isolation.
 - `Pr11LegacyProviderPackageLoadsAndRunsWithoutFabricatedWireCallbacks` loads an external package compiled against the PR #11 contract snapshot without shipping its Abstractions DLL, completes its provider request, and asserts all four wire observer counts stay zero.
 
-Product source commit: `9ccff7546842f6462b3ca9c7c50a9edf36e20ced`.
-Final verified code SHA: `9ccff7546842f6462b3ca9c7c50a9edf36e20ced`.
+Original local product commit: `9ccff7546842f6462b3ca9c7c50a9edf36e20ced`.
+Integrated product-source commit: `b31940137201e565b15d8061055ac7b692b627e9`.
+The integrated branch descends directly from post-merge `main`; the published
+branch head and exact-head CI run IDs will be recorded after publication.
 
 ## Local verification
 
-- Focused provider-wire adapter batch: 14 passed, 0 failed, 0 skipped; the Bedrock reserved-header regression also passed 1/1, and the legacy PR #11 package regression passed 1/1.
+- Integrated focused provider-wire, adapter, bridge, process, and legacy compatibility batch: 67 passed, 0 failed, 0 skipped. This includes the Bedrock reserved-header/signing regression, the packed external wire-aware provider process acceptance, and the legacy PR #11 package regression.
 - `dotnet format PiSharp.slnx --verify-no-changes --no-restore`: passed.
 - `dotnet build PiSharp.slnx --no-restore --warnaserror`: passed with 0 warnings and 0 errors.
-- `env TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`: 2,434 passed, 0 failed, 0 skipped. `TMPDIR=/tmp` is the existing workaround for workspace-specific resource path assertions.
+- `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`: 2,434 passed, 0 failed, 0 skipped. `TMPDIR=/tmp` is the existing workaround for workspace-specific resource path assertions.
 - Architecture tests: 7 passed, 0 failed, 0 skipped.
 - Node terminal tests: 24 passed, 0 failed, 0 skipped.
 - Python terminal parity tests: 50 passed, 0 failed, 0 skipped.
 - Documentation path validation: 145 documents and 561 references verified.
 - MCP conformance: no regressions; the same eight classified baseline failures remain (six elicitation checks, basic CIMD client-id behavior, and scope retry-limit behavior).
-- PR #15 remains open and draft, unmerged, at `7c93a3d06a82b6c3de55dccc8b19b08647d2f851`.
-- Exact-head push CI and PR CI: not run; this continuation is on a local provider-wire milestone branch and has not been published. No CI run IDs exist for this branch.
+- PR #15 was merged from reviewed head `7c93a3d06a82b6c3de55dccc8b19b08647d2f851` as `2ea360f991b0e15c59203557a68a5a1e3c026450`; its exact-head push CI run `39171720211` and PR CI run `39171722992` both passed before merge.
+- Provider-wire publication is in progress. Exact-head push and PR CI run IDs will be recorded after the integrated branch is pushed and its draft PR is open.
 
 Broad extension parity remains `in_progress`.
