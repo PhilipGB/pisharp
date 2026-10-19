@@ -85,8 +85,8 @@ transform before passing them to the adapter in [`models.ts`](https://github.com
 - `PackedExternalWireProviderUsesHostBridgeAtRealHttpBoundaries` installs a packed external `.nupkg` in a fresh CLI process. Its wire-aware provider sends an actual HTTP request and verifies host-transformed payload/header plus callback order across all four bridge methods. `NativeExtensionProviderWireDispatcherTests.ProviderWireCallbacksPreserveOrderAndAttributeFailuresToTheirSource` verifies ordered host dispatch and source-attributed failure isolation.
 - `Pr11LegacyProviderPackageLoadsAndRunsWithoutFabricatedWireCallbacks` loads an external package compiled against the PR #11 contract snapshot without shipping its Abstractions DLL, completes its provider request, and asserts all four wire observer counts stay zero.
 
-Product source commit: pending local commit.
-Final verified code SHA: pending local commit.
+Product source commit: `9ccff7546842f6462b3ca9c7c50a9edf36e20ced`.
+Final verified code SHA: `9ccff7546842f6462b3ca9c7c50a9edf36e20ced`.
 
 ## Local verification
 
