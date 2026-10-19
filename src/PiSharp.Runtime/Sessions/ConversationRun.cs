@@ -1485,6 +1485,11 @@ public sealed partial class ConversationRun
             if (_boundaryContextVersion != initialBoundaryContextVersion)
                 await CompactAfterBoundaryAsync(token, item => onEvent?.Invoke(item)).ConfigureAwait(false);
             await DispatchPendingRuntimeTransitionNotificationsAsync(token).ConfigureAwait(false);
+            // Message lifecycle handlers can be asynchronous. Flush context messages here,
+            // before the synchronous request-start observer emits this request's turn notifications.
+            // The later provider-context handoff collects any messages queued by those notifications.
+            await FlushPendingContextCustomMessagesAsync(includeInNextProviderRequest: true, token)
+                .ConfigureAwait(false);
             if (_boundaryContextVersion == initialBoundaryContextVersion) return messages;
             return messages.TakeWhile(message => message.Role == ChatRole.System || message.Role == new ChatRole("developer"))
                 .Concat(Conversation.ContextMessages()).ToArray();
@@ -1506,8 +1511,6 @@ public sealed partial class ConversationRun
             }
             if (item.Type == "model_request_started")
             {
-                FlushPendingContextCustomMessagesAsync(includeInNextProviderRequest: true, cancellationToken)
-                    .GetAwaiter().GetResult();
                 lock (_runtimeStateGate)
                 {
                     // The provider request following tool execution is the natural continuation

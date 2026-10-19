@@ -43,7 +43,8 @@ internal sealed partial class NativeExtensionEventDispatcher(ExtensionRegistrati
         "message_update", cancellationToken);
 
     internal async Task<NativeExtensions.PiSharpExtensionMessage> DispatchMessageEndAsync(
-        NativeExtensions.PiSharpExtensionMessage message, CancellationToken cancellationToken)
+        NativeExtensions.PiSharpExtensionMessage message, CancellationToken cancellationToken,
+        Func<NativeExtensions.PiSharpExtensionMessage, string?>? validateReplacement = null)
     {
         var current = message;
         foreach (var handler in registration.MessageEndHandlers)
@@ -92,6 +93,8 @@ internal sealed partial class NativeExtensionEventDispatcher(ExtensionRegistrati
             }
             try
             {
+                if (validateReplacement?.Invoke(replacement) is { } validationError)
+                    throw new InvalidOperationException(validationError);
                 if (replacement.ResponseMetadata != current.ResponseMetadata)
                     replacement = replacement.WithResponseMetadata(current.ResponseMetadata);
                 if (!ReferenceEquals(replacement, current)) _ = PiSharpExtensionMessageMapper.Restore(replacement);

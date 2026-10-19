@@ -163,6 +163,168 @@ public sealed class NativeExtensionMessageLifecycleTests
     }
 
     [Fact]
+    public async Task IncompleteContextMessageCallbackFinishesBeforeTheSubsequentProviderRequest()
+    {
+        var workingDirectory = CreateWorkingDirectory();
+        var toolStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseTool = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var contextMessageStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseContextMessage = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var order = new List<string>();
+        Task? runTask = null;
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            adapter.AddTurnStartHandler((_, _, _) =>
+            {
+                order.Add("turn_start");
+                return ValueTask.CompletedTask;
+            });
+            adapter.AddMessageStartHandler(async (eventData, _, _) =>
+            {
+                if (eventData.Message.Role != PiSharpExtensionMessageRole.Custom) return;
+                order.Add("context_message_start");
+                contextMessageStarted.TrySetResult();
+                await releaseContextMessage.Task.ConfigureAwait(false);
+            });
+            adapter.AddMessageEndHandler((eventData, _, _) =>
+            {
+                if (eventData.Message.Role == PiSharpExtensionMessageRole.Custom)
+                    order.Add("context_message_end");
+                return ValueTask.FromResult<PiSharpExtensionMessageEndResult?>(null);
+            });
+            adapter.Close();
+
+            var tool = AIFunctionFactory.Create(async (string value) =>
+            {
+                toolStarted.TrySetResult();
+                await releaseTool.Task.ConfigureAwait(false);
+                return "raw tool result";
+            }, name: "echo");
+            var client = new ToolCallClient();
+            var agent = new PiAgent(client, new CodingTools(workingDirectory), noBuiltinTools: true,
+                liveExtensionRegistration: registration,
+                extensionToolRegistrations: [new PiSharpToolRegistration(tool, ToolExposure.ModelOnly)]);
+            var conversation = new ConversationSession(workingDirectory, "fixture", null);
+            var run = await ConversationRun.OpenAsync(agent, conversation, save: _ => Task.CompletedTask);
+            runTask = Task.Run(async () =>
+            {
+                await foreach (var _ in run.RunEventsAsync("run tool")) { }
+            });
+
+            await toolStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(await run.DeliverExtensionCustomMessageAsync(new("context", "after tool"),
+                "/extensions/context.dll", triggerTurn: false, PiSharpMessageDeliveryMode.Steer));
+            releaseTool.TrySetResult();
+
+            await contextMessageStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Single(client.Requests);
+            Assert.False(runTask.IsCompleted);
+            releaseContextMessage.TrySetResult();
+            await runTask.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.Equal(2, client.Requests.Count);
+            Assert.Contains(client.Requests[1], message => message.Text == "after tool" &&
+                PiSharpCustomMessageProjection.TryRead(message, out var custom) && custom.CustomType == "context");
+            var observedOrder = order.ToArray();
+            Assert.True(Array.IndexOf(observedOrder, "context_message_end") >= 0);
+            Assert.True(Array.LastIndexOf(observedOrder, "turn_start") >
+                Array.IndexOf(observedOrder, "context_message_end"));
+        }
+        finally
+        {
+            releaseTool.TrySetResult();
+            releaseContextMessage.TrySetResult();
+            if (runTask is not null)
+            {
+                try { await runTask.WaitAsync(TimeSpan.FromSeconds(10)); }
+                catch (Exception) { }
+            }
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("changed")]
+    [InlineData("duplicate")]
+    public async Task ToolResultReplacementRequiresExactlyOneMatchingCallId(string replacementShape)
+    {
+        var workingDirectory = CreateWorkingDirectory();
+        try
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            var source = Source("/extensions/invalid-tool-result.dll");
+            var laterHandlerSawOriginal = false;
+            registration.SetCurrentSourceInfo(source);
+            adapter.AddMessageEndHandler((eventData, _, _) =>
+            {
+                if (eventData.Message.Role != PiSharpExtensionMessageRole.ToolResult)
+                    return ValueTask.FromResult<PiSharpExtensionMessageEndResult?>(null);
+                PiSharpExtensionMessageContent[] contents = replacementShape switch
+                {
+                    "missing" => [new(PiSharpExtensionMessageContentKind.Text, "unassociated result")],
+                    "changed" => [new("different-call", JsonSerializer.SerializeToElement("replacement result"))],
+                    "duplicate" => [
+                        new("call-1", JsonSerializer.SerializeToElement("first result")),
+                        new("call-1", JsonSerializer.SerializeToElement("second result"))
+                    ],
+                    _ => throw new ArgumentOutOfRangeException(nameof(replacementShape))
+                };
+                return ValueTask.FromResult<PiSharpExtensionMessageEndResult?>(new(new(
+                    PiSharpExtensionMessageRole.ToolResult, contents)));
+            });
+            adapter.AddMessageEndHandler((eventData, _, _) =>
+            {
+                if (eventData.Message.Role == PiSharpExtensionMessageRole.ToolResult)
+                {
+                    var originalResult = Assert.Single(eventData.Message.Contents,
+                        content => content.Kind == PiSharpExtensionMessageContentKind.FunctionResult);
+                    laterHandlerSawOriginal = originalResult.CallId == "call-1" &&
+                        originalResult.JsonValue?.GetString() == "raw tool result";
+                }
+                return ValueTask.FromResult<PiSharpExtensionMessageEndResult?>(null);
+            });
+            adapter.Close();
+
+            var tool = AIFunctionFactory.Create((string value) => "raw tool result", name: "echo");
+            var client = new ToolCallClient();
+            var agent = new PiAgent(client, new CodingTools(workingDirectory), noBuiltinTools: true,
+                liveExtensionRegistration: registration,
+                extensionToolRegistrations: [new PiSharpToolRegistration(tool, ToolExposure.ModelOnly)]);
+            var conversation = new ConversationSession(workingDirectory, "fixture", null);
+            var run = await ConversationRun.OpenAsync(agent, conversation, save: _ => Task.CompletedTask);
+            var events = new List<AgentLifecycleEvent>();
+            await foreach (var item in run.RunEventsAsync("run tool")) events.Add(item);
+
+            var followUpRequest = Assert.Single(client.Requests.Skip(1));
+            var functionResult = Assert.Single(followUpRequest.SelectMany(message => message.Contents)
+                .OfType<FunctionResultContent>());
+            var resultText = functionResult.Result is JsonElement resultJson
+                ? resultJson.GetString()
+                : functionResult.Result?.ToString();
+            Assert.Equal("raw tool result", resultText);
+            var persistedResult = Assert.Single(conversation.ContextMessages().SelectMany(message => message.Contents)
+                .OfType<FunctionResultContent>());
+            Assert.Equal("call-1", persistedResult.CallId);
+            var persistedResultText = persistedResult.Result is JsonElement persistedJson
+                ? persistedJson.GetString()
+                : persistedResult.Result?.ToString();
+            Assert.Equal("raw tool result", persistedResultText);
+            Assert.True(laterHandlerSawOriginal);
+            Assert.Contains(events, item => item.Type == "extension_error" &&
+                item.Error?.Contains("exactly one function result", StringComparison.Ordinal) == true &&
+                ExtensionPath(item) == source.Path);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task EndHandlersComposeAndRejectRoleChangesWithoutStoppingLaterHandlers()
     {
         var registration = new ExtensionRegistration();

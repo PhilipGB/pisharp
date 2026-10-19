@@ -232,13 +232,21 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                 if (messageEvents is not null)
                 {
                     var finalized = await messageEvents.DispatchMessageEndAsync(toolMessageSnapshot,
-                        cancellationToken).ConfigureAwait(false);
+                        cancellationToken, replacement =>
+                        {
+                            var functionResults = replacement.Contents.Where(content =>
+                                content.Kind == PiSharp.Extensions.Abstractions.PiSharpExtensionMessageContentKind.FunctionResult)
+                                .ToArray();
+                            return functionResults.Length == 1 && functionResults[0].CallId == callContent.CallId
+                                ? null
+                                : $"A tool-result message_end replacement must contain exactly one function result for call '{callContent.CallId}'.";
+                        }).ConfigureAwait(false);
                     if (!ReferenceEquals(toolMessageSnapshot, finalized))
                     {
                         toolResultMessage = PiSharpExtensionMessageMapper.Restore(finalized);
                         var acceptedResult = toolResultMessage.Contents.OfType<FunctionResultContent>()
-                            .FirstOrDefault(content => content.CallId == callContent.CallId);
-                        value = acceptedResult?.Result;
+                            .Single(content => content.CallId == callContent.CallId);
+                        value = acceptedResult.Result;
                         ToolResultOutput.TryReadContract(value, out var replacementContract);
                         contract = replacementContract;
                         resultContext.IsError = contract?.IsError == true;
