@@ -16,7 +16,8 @@ internal static class PiMessagesChatClientFactory
         var endpoint = selection.Model.BaseUrl ?? selection.Connection.Endpoint?.ToString() ??
             selection.Provider.Endpoint.ToString();
         var baseUri = ProviderProfileLoader.ParseEndpoint(endpoint, "Pi Messages base URL");
-        var handler = new ProviderWireActivityHandler(innerHandler ?? new HttpClientHandler { AllowAutoRedirect = false });
+        var handler = ProviderWireHookHandler.CreateWithActivity(selection, "pi-messages",
+            innerHandler ?? new HttpClientHandler { AllowAutoRedirect = false });
         var http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         var apiKey = selection.ApiKey is "not-needed" or "not-configured" ? string.Empty : selection.ApiKey;
         return new PiMessagesChatClient(http, baseUri, selection.Model, apiKey,

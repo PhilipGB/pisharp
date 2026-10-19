@@ -631,12 +631,16 @@ public sealed class ProviderChatClientFactoryTests
     {
         using var listener = StartLoopbackListener(out var port);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        string? requestBody = null;
+        string? hookHeader = null;
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            hookHeader = request.Request.Headers["x-pisharp-wire-probe"];
             using var reader = new StreamReader(request.Request.InputStream);
-            await reader.ReadToEndAsync(deadline.Token);
+            requestBody = await reader.ReadToEndAsync(deadline.Token);
             request.Response.ContentType = "text/event-stream";
+            request.Response.Headers["x-wire-response"] = "before-body";
             request.Response.SendChunked = true;
             await using var writer = new StreamWriter(request.Response.OutputStream);
             try
@@ -682,6 +686,8 @@ public sealed class ProviderChatClientFactoryTests
         // Leave room for runner scheduling while keeping the timeout below the fragmented event's full delivery time.
         var client = ProviderChatClientFactory.Create(selection,
             new ProviderRetrySettings(TimeoutMs: 5_000), httpIdleTimeoutMs: 1_000);
+        var wire = new ProviderWireTestSupport();
+        using var wireScope = wire.Enter(deadline.Token);
         var firstUpdate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var text = new System.Text.StringBuilder();
         var streaming = Task.Run(async () =>
@@ -700,6 +706,11 @@ public sealed class ProviderChatClientFactoryTests
         await server.WaitAsync(deadline.Token);
 
         Assert.Contains("wire activity", text.ToString());
+        using var sent = JsonDocument.Parse(requestBody!);
+        Assert.True(sent.RootElement.GetProperty("wire_probe").GetBoolean());
+        Assert.Equal("transformed", hookHeader);
+        wire.AssertHooks(protocol, responseExposed: true);
+        Assert.All(wire.ProviderIds, providerId => Assert.Equal("fixture", providerId));
     }
 
     [Fact]
@@ -936,14 +947,18 @@ public sealed class ProviderChatClientFactoryTests
     public async Task AnthropicMessagesStreamsTextAndUsage()
     {
         using var listener = StartLoopbackListener(out var port);
+        string? hookHeader = null;
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
             Assert.Equal("/v1/messages", request.Request.Url?.AbsolutePath);
+            hookHeader = request.Request.Headers["x-pisharp-wire-probe"];
             using var reader = new StreamReader(request.Request.InputStream);
             using var body = System.Text.Json.JsonDocument.Parse(await reader.ReadToEndAsync());
             Assert.True(body.RootElement.GetProperty("stream").GetBoolean());
+            Assert.True(body.RootElement.GetProperty("wire_probe").GetBoolean());
             request.Response.ContentType = "text/event-stream";
+            request.Response.Headers["x-wire-response"] = "before-body";
             await using var writer = new StreamWriter(request.Response.OutputStream);
             await writer.WriteAsync("""
                 event: message_start
@@ -969,13 +984,17 @@ public sealed class ProviderChatClientFactoryTests
             request.Response.Close();
         });
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var agent = new PiAgent(ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages")),
-            new CodingTools(Path.GetTempPath()));
-        var session = await agent.CreateSessionAsync(deadline.Token);
+        var wire = new ProviderWireTestSupport();
+        using var wireScope = wire.Enter(deadline.Token);
+        using var client = ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages"));
         var text = "";
-        await foreach (var update in agent.RunStreamingAsync("hello", session, deadline.Token)) text += update.Text;
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            cancellationToken: deadline.Token)) text += update.Text;
         await server.WaitAsync(deadline.Token);
         Assert.Equal("streamed", text);
+        Assert.Equal("transformed", hookHeader);
+        wire.AssertHooks("anthropic-messages", responseExposed: true);
     }
 
     [Fact]

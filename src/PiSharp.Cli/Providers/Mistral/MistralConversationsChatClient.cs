@@ -17,7 +17,8 @@ internal static class MistralConversationsChatClientFactory
         var endpoint = selection.Connection.Endpoint ?? selection.Provider.Endpoint;
         var requestContext = new MistralChatRequestContext();
         var handler = new MistralChatCompatibilityHandler(requestContext,
-            new ProviderWireActivityHandler(new HttpClientHandler()));
+            ProviderWireHookHandler.CreateWithActivity(selection, "mistral-conversations",
+                new HttpClientHandler()));
         var http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         var client = new MistralConversationsChatClient(http, BuildEndpoint(endpoint), selection.Model,
             selection.ApiKey, headerTimeoutMs);

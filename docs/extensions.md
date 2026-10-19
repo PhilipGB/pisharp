@@ -251,10 +251,10 @@ hosts expose read state and session-state operations; operations unavailable in
 that host phase fail clearly. Retained capability objects are revoked when the
 callback ends, and returned message/settings/session data are detached.
 
-These registrations do not implement generic `pi.on(...)`, provider request hooks,
-or advanced renderers. Session transition and
-compaction mutation hooks are documented in the following section. The broad
-extension parity row remains `in_progress`.
+These registrations do not implement generic `pi.on(...)` or advanced
+renderers. Session transition and compaction mutation hooks are documented in
+the following section; provider wire hooks are described under Providers below.
+The broad extension parity row remains `in_progress`.
 
 ### Mutable turn boundaries and agent settlement
 
@@ -485,6 +485,46 @@ builder.AddVirtualModel(new PiSharpExtensionVirtualModelDefinition(
 ```
 
 The provider's model metadata describes the models shown by normal model discovery. `Input` currently supports `text` and `image`; `Reasoning` and the optional thinking-level map feed PiSharp's usual thinking controls. The provider factory receives only the selected provider/model IDs, configured endpoint, and the resolved API key. `ApiKeyEnvironment` uses the existing host credential resolver; the key is request-time data and is not added to extension metadata or session files. Keep it out of logs and dispose clients according to the `IChatClient` contract. The provider API identity is `PiSharpExtensionProviderContract.ChatApi`; provider-specific OAuth callbacks, browser/device login, and custom protocols outside `IChatClient` are not part of this contract.
+
+Wire-aware provider clients can use the additive `context.ProviderWire` bridge
+to invoke host-owned callbacks at their physical boundaries. The bridge applies
+payload and header handlers in extension registration order, reports handler
+failures with their package source, and continues with the previous effective
+value after a failed transform. Apply transformed headers before any signing
+step. Call response observation after status and headers arrive but before
+reading the response body, and call stream observation after parsing each raw
+provider event but before converting it to MEAI updates.
+
+```csharp
+var wire = context.ProviderWire ?? throw new InvalidOperationException(
+    "The host did not provide the provider wire bridge.");
+var payload = await wire.TransformPayloadAsync(builtPayload, cancellationToken);
+var headers = await wire.TransformHeadersAsync(finalHeaders, cancellationToken);
+using var response = await httpClient.SendAsync(
+    CreateRequest(payload, headers), HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+await wire.ObserveResponseAsync((int)response.StatusCode, CopyHeaders(response), cancellationToken);
+await foreach (var rawEvent in ParseEvents(response.Content, cancellationToken))
+{
+    await wire.ObserveStreamEventAsync(rawEvent.Type, rawEvent.Data, cancellationToken);
+    yield return Normalize(rawEvent);
+}
+```
+
+The bridge owns extension ordering, callback contexts, diagnostics,
+cancellation, source ownership, and reload behavior; the provider only calls it
+at the real wire boundary. The original `PiSharpExtensionProviderClientContext`
+constructor is unchanged and the bridge property is optional. Existing
+extension packages compiled against the PR #11 `IChatClient` provider surface
+remain binary compatible and continue to work when they ignore the bridge.
+Plain `IChatClient` operations do not expose provider wire boundaries, so the
+host does not invent payload, header, response, or stream callbacks from MEAI
+messages and updates.
+
+For the built-in Bedrock adapter, `host`, `authorization`, and `x-amz-*`
+headers remain owned by the transport and SigV4 signer. Other transformed
+headers are installed before signing so they are covered by the signature.
+This matches pinned Pi's reserved-header rule and is covered by a deterministic
+AWS-pipeline test with no credentials or live service.
 
 MCP definitions use the existing MCP configuration fields and startup manager. Stdio is supported, as are the existing HTTP and streamable-HTTP transports, headers, auth-provider, timeout, exposure, and OAuth configuration fields. The MCP runtime owns connection lifetime and discovered tools/resources. Model-visible tool names use the server's normal `mcp__<namespace>__<tool>` form; configured-tool metadata includes the extension source path. Extension servers are not written to `mcp.json`; configured servers continue to load normally. Names that collide after MCP namespace normalization follow the same deterministic configured-server precedence and diagnostics as other extension MCP registrations.
 

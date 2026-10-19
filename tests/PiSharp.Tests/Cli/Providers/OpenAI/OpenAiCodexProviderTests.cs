@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using PiSharp.Cli;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Tests;
@@ -453,6 +454,7 @@ public sealed class OpenAiCodexProviderTests
         string? beta = null;
         string? sessionId = null;
         string? requestId = null;
+        string? wireHeader = null;
         string? staleContinuationRequest = null;
         string? firstRequest = null;
         string? secondRequest = null;
@@ -466,6 +468,7 @@ public sealed class OpenAiCodexProviderTests
             beta = context.Request.Headers["OpenAI-Beta"];
             sessionId = context.Request.Headers["session-id"];
             requestId = context.Request.Headers["x-client-request-id"];
+            wireHeader = context.Request.Headers["x-pisharp-wire-probe"];
             var accepted = await context.AcceptWebSocketAsync(null);
             using var socket = accepted.WebSocket;
             firstRequest = await ReceiveWebSocketMessageAsync(socket);
@@ -492,6 +495,8 @@ public sealed class OpenAiCodexProviderTests
             _ => Task.FromResult((refreshedToken, "account-refreshed")));
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         using var client = ProviderChatClientFactory.Create(selection);
+        var wire = new ProviderWireTestSupport();
+        using var wireScope = wire.Enter(deadline.Token);
         var options = new Microsoft.Extensions.AI.ChatOptions { ConversationId = "codex-session-fixture" };
         var firstOutput = await ReadTextAsync(client, "Say hello one", options, deadline.Token);
         var secondOutput = await ReadMessagesAsync(client,
@@ -515,6 +520,8 @@ public sealed class OpenAiCodexProviderTests
         using var stale = JsonDocument.Parse(staleContinuationRequest!);
         using var second = JsonDocument.Parse(secondRequest!);
         Assert.Equal("response.create", first.RootElement.GetProperty("type").GetString());
+        Assert.True(first.RootElement.GetProperty("wire_probe").GetBoolean());
+        Assert.Equal("transformed", wireHeader);
         Assert.Equal("gpt-5.5", first.RootElement.GetProperty("model").GetString());
         Assert.Equal("codex-session-fixture", first.RootElement.GetProperty("prompt_cache_key").GetString());
         Assert.False(first.RootElement.GetProperty("store").GetBoolean());
@@ -528,6 +535,7 @@ public sealed class OpenAiCodexProviderTests
         Assert.Equal(JsonValueKind.Array, delta.ValueKind);
         Assert.Equal(3, delta.GetArrayLength());
         Assert.Contains("Say hello two", delta.GetRawText(), StringComparison.Ordinal);
+        wire.AssertHooks("openai-codex-responses", responseExposed: false);
     }
 
     [Fact]
@@ -613,10 +621,12 @@ public sealed class OpenAiCodexProviderTests
         string? requestBody = null;
         string? websocketBeta = null;
         string? websocketRequestBody = null;
+        string? wireHeader = null;
         var server = Task.Run(async () =>
         {
             var websocketAttempt = await listener.GetContextAsync();
             websocketBeta = websocketAttempt.Request.Headers["OpenAI-Beta"];
+            wireHeader = websocketAttempt.Request.Headers["x-pisharp-wire-probe"];
             var accepted = await websocketAttempt.AcceptWebSocketAsync(null);
             using (accepted.WebSocket)
             {
@@ -657,6 +667,8 @@ public sealed class OpenAiCodexProviderTests
             _ => Task.FromResult((refreshedToken, "account-refreshed")));
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         using var client = ProviderChatClientFactory.Create(selection);
+        var wire = new ProviderWireTestSupport();
+        using var wireScope = wire.Enter(deadline.Token);
         var output = new StringBuilder();
         await foreach (var update in client.GetStreamingResponseAsync(
             [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "Say hello")],
@@ -673,6 +685,8 @@ public sealed class OpenAiCodexProviderTests
         Assert.Equal("responses_websockets=2026-02-06", websocketBeta);
         using var websocketRequest = JsonDocument.Parse(websocketRequestBody!);
         Assert.Equal("response.create", websocketRequest.RootElement.GetProperty("type").GetString());
+        Assert.True(websocketRequest.RootElement.GetProperty("wire_probe").GetBoolean());
+        Assert.Equal("transformed", wireHeader);
         Assert.Equal("/backend-api/codex/responses", requestPath);
         Assert.Equal($"Bearer {refreshedToken}", authorization);
         Assert.Equal("account-refreshed", accountId);
@@ -690,6 +704,7 @@ public sealed class OpenAiCodexProviderTests
         Assert.True(sent.RootElement.GetProperty("parallel_tool_calls").GetBoolean());
         Assert.Equal("auto", sent.RootElement.GetProperty("tool_choice").GetString());
         Assert.Equal("low", sent.RootElement.GetProperty("text").GetProperty("verbosity").GetString());
+        wire.AssertHooks("openai-codex-responses", responseExposed: true);
         Assert.Equal("high", sent.RootElement.GetProperty("reasoning").GetProperty("effort").GetString());
         Assert.Equal("auto", sent.RootElement.GetProperty("reasoning").GetProperty("summary").GetString());
         Assert.Contains("reasoning.encrypted_content", sent.RootElement.GetProperty("include").EnumerateArray()

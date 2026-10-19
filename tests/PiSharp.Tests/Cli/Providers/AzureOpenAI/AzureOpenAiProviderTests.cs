@@ -73,6 +73,7 @@ public sealed class AzureOpenAiProviderTests
         string? authorizationHeader = null;
         string? requestBody = null;
         string? apiVersion = null;
+        string? wireHeader = null;
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
@@ -80,9 +81,11 @@ public sealed class AzureOpenAiProviderTests
             apiVersion = request.Request.QueryString["api-version"];
             apiKeyHeader = request.Request.Headers["api-key"];
             authorizationHeader = request.Request.Headers["Authorization"];
+            wireHeader = request.Request.Headers["x-pisharp-wire-probe"];
             using var reader = new StreamReader(request.Request.InputStream);
             requestBody = await reader.ReadToEndAsync();
             request.Response.ContentType = "text/event-stream";
+            request.Response.Headers["x-wire-response"] = "before-body";
             await using var writer = new StreamWriter(request.Response.OutputStream);
             await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_azure\",\"object\":\"response\",\"created_at\":1,\"model\":\"deployment-gpt41mini\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
             await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"item_azure\",\"output_index\":0,\"content_index\":0,\"delta\":\"azure response\"}\n\n");
@@ -107,6 +110,8 @@ public sealed class AzureOpenAiProviderTests
                 name => environment.GetValueOrDefault(name), http);
             var selection = await runtime.ResolveAsync("azure-openai-responses", "gpt-5-mini");
             using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var wire = new ProviderWireTestSupport();
+            using var wireScope = wire.Enter(deadline.Token);
 
             var output = new System.Text.StringBuilder();
             var updates = new List<ChatResponseUpdate>();
@@ -135,6 +140,9 @@ public sealed class AzureOpenAiProviderTests
             Assert.Equal("azure-key", apiKeyHeader);
             Assert.Null(authorizationHeader);
             using var sent = JsonDocument.Parse(requestBody!);
+            Assert.True(sent.RootElement.GetProperty("wire_probe").GetBoolean());
+            Assert.Equal("transformed", wireHeader);
+            wire.AssertHooks("azure-openai-responses", responseExposed: true);
             Assert.Equal("deployment-gpt5mini", sent.RootElement.GetProperty("model").GetString());
             Assert.Equal(new string('c', 64), sent.RootElement.GetProperty("prompt_cache_key").GetString());
             Assert.False(sent.RootElement.GetProperty("store").GetBoolean());

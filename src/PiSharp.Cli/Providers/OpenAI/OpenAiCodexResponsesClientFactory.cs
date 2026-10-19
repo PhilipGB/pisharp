@@ -24,8 +24,9 @@ internal static class OpenAiCodexResponsesClientFactory
             RetryPolicy = new ClientRetryPolicy(0),
             Transport = new HttpClientPipelineTransport(new HttpClient(
                 new OpenAiCodexRequestHandler(selection.ApiKey, requestContext,
-                    new ProviderWireActivityHandler(new OpenAiCodexWebSocketBridgeHandler(
-                        requestContext, new HttpClientHandler { AllowAutoRedirect = false }, TimeSpan.FromSeconds(15))),
+                    ProviderWireHookHandler.CreateWithActivity(selection, "openai-codex-responses",
+                        new OpenAiCodexWebSocketBridgeHandler(requestContext,
+                            new HttpClientHandler { AllowAutoRedirect = false }, TimeSpan.FromSeconds(15))),
                     selection.OAuthCredentialResolver, selection.Authenticated),
                 disposeHandler: true))
         };
