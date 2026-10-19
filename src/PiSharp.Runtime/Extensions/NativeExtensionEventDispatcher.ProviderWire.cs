@@ -60,7 +60,6 @@ internal sealed partial class NativeExtensionEventDispatcher
                     else headers.Remove(name);
                     continue;
                 }
-                if (value is null) headers.Remove(name);
             }
             if (invalid)
                 Report(new InvalidDataException("Provider header mutation contains an invalid name or value."),

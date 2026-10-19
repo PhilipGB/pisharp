@@ -75,6 +75,7 @@ public sealed class RegistrationExtension : IPiSharpExtension
                 cancellationToken.ThrowIfCancellationRequested();
                 RegistrationExtension.RecordTrace($"wire|headers|{eventData.ProviderId}|{eventData.Protocol}");
                 eventData.Headers["x-native-wire"] = "host-transformed";
+                eventData.Headers["x-native-remove"] = null;
                 return ValueTask.CompletedTask;
             });
             builder.AddAfterProviderResponseHandler((eventData, _, cancellationToken) =>
@@ -296,8 +297,11 @@ internal sealed class NativeFixtureWireChatClient(IPiSharpExtensionProviderWireB
         var transformed = await wire.TransformPayloadAsync(payload, cancellationToken);
         var headers = await wire.TransformHeadersAsync(new Dictionary<string, string?>
         {
-            ["accept"] = "text/event-stream"
+            ["accept"] = "text/event-stream",
+            ["x-native-remove"] = "present"
         }, cancellationToken);
+        if (!headers.TryGetValue("x-native-remove", out var removedHeader) || removedHeader is not null)
+            throw new InvalidOperationException("The host bridge did not preserve the nullable provider header.");
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = new StringContent(transformed.GetRawText(), System.Text.Encoding.UTF8, "application/json")

@@ -758,6 +758,37 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
+    public async Task ProviderWireHookAppliesNullHeaderAsPhysicalHttpDeletion()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        string? receivedHeader = "not-observed";
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            receivedHeader = request.Request.Headers["X-Remove"];
+            request.Response.StatusCode = (int)HttpStatusCode.OK;
+            request.Response.Close();
+        });
+
+        var wire = new ProviderWireTestSupport(removeHeader: true);
+        using var wireScope = wire.Enter(deadline.Token);
+        using var handler = new SeedProviderHeaderHandler(new ProviderWireHookHandler("fixture-provider",
+            "fixture-model", "openai-completions", new HttpClientHandler()));
+        using var client = new HttpClient(handler);
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{port}/wire")
+        {
+            Content = new StringContent("{\"probe\":true}")
+        };
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(receivedHeader);
+        Assert.Empty(wire.Diagnostics);
+    }
+
+    [Fact]
     public async Task AnthropicMessagesUsesNativeHeadersAndBody()
     {
         using var listener = StartLoopbackListener(out var port);
@@ -1565,5 +1596,15 @@ public sealed class ProviderChatClientFactoryTests
         var model = new ModelDescriptor("fixture-model", provider, null, "fixture", Provider: provider, Api: api);
         return new(new ProviderProfile(provider, provider, new Uri(url), true, false, null, null, [model]), model,
             "fixture-key", true, "fixture");
+    }
+
+    private sealed class SeedProviderHeaderHandler(HttpMessageHandler innerHandler) : DelegatingHandler(innerHandler)
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            request.Headers.TryAddWithoutValidation("X-Remove", "present");
+            return base.SendAsync(request, cancellationToken);
+        }
     }
 }

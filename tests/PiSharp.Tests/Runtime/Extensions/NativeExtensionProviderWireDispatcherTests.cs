@@ -99,6 +99,9 @@ public sealed class NativeExtensionProviderWireDispatcherTests
         {
             Assert.Same(headerMapSeenByA, eventData.Headers);
             seenByB = eventData.Headers["x-a"];
+            Assert.True(eventData.Headers.ContainsKey("x-remove"));
+            Assert.Null(eventData.Headers["X-REMOVE"]);
+            eventData.Headers["X-Remove"] = "restored";
             eventData.Headers["X-B"] = "two";
             return ValueTask.CompletedTask;
         });
@@ -118,11 +121,81 @@ public sealed class NativeExtensionProviderWireDispatcherTests
         Assert.Equal("one", headers["x-a"]);
         Assert.Equal("two", headers["X-B"]);
         Assert.Equal("kept", headers["x-existing"]);
-        Assert.DoesNotContain("x-remove", headers.Keys, StringComparer.OrdinalIgnoreCase);
+        Assert.Equal("restored", headers["X-REMOVE"]);
         var diagnostic = Assert.Single(diagnostics, item => item.Type == "extension_error");
         Assert.Contains("header-a.dll", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
         Assert.Contains("before_provider_headers", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
         Assert.Contains("fixture header handler failure", diagnostic.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProviderHeaderRemovalRemainsDistinctFromPresentNullForLaterHandlers()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        IDictionary<string, string?>? headerMapSeenByA = null;
+        adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
+        {
+            headerMapSeenByA = eventData.Headers;
+            eventData.Headers.Remove("X-A");
+            eventData.Headers["X-B"] = null;
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
+        {
+            Assert.Same(headerMapSeenByA, eventData.Headers);
+            Assert.False(eventData.Headers.ContainsKey("x-a"));
+            Assert.True(eventData.Headers.ContainsKey("x-b"));
+            Assert.Null(eventData.Headers["X-B"]);
+            return ValueTask.CompletedTask;
+        });
+        adapter.Close();
+
+        var diagnostics = new List<AgentLifecycleEvent>();
+        var dispatcher = new NativeExtensionEventDispatcher(registration, CreateContext(), diagnostics.Add);
+        var headers = await dispatcher.DispatchProviderHeadersAsync(new("fixture-provider", "fixture-model",
+            "openai-responses", new Dictionary<string, string?> { ["X-A"] = "a", ["X-B"] = "b" }),
+            CancellationToken.None);
+
+        Assert.DoesNotContain("X-A", headers.Keys, StringComparer.OrdinalIgnoreCase);
+        Assert.True(headers.ContainsKey("x-b"));
+        Assert.Null(headers["X-B"]);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task InvalidProviderHeaderMutationsAreRevertedWithoutDroppingValidState()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        registration.SetCurrentSourceInfo(Source("/extensions/invalid-header.dll"));
+        adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
+        {
+            eventData.Headers["X-Good"] = "bad\r\nvalue";
+            eventData.Headers["X-New"] = "bad\nvalue";
+            return ValueTask.CompletedTask;
+        });
+        registration.SetCurrentSourceInfo(Source("/extensions/header-observer.dll"));
+        adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
+        {
+            Assert.Equal("before", eventData.Headers["x-good"]);
+            Assert.False(eventData.Headers.ContainsKey("x-new"));
+            return ValueTask.CompletedTask;
+        });
+        registration.SetCurrentSourceInfo(null);
+        adapter.Close();
+
+        var diagnostics = new List<AgentLifecycleEvent>();
+        var dispatcher = new NativeExtensionEventDispatcher(registration, CreateContext(), diagnostics.Add);
+        var headers = await dispatcher.DispatchProviderHeadersAsync(new("fixture-provider", "fixture-model",
+            "openai-responses", new Dictionary<string, string?> { ["X-Good"] = "before" }),
+            CancellationToken.None);
+
+        Assert.Equal("before", headers["X-Good"]);
+        Assert.DoesNotContain("X-New", headers.Keys, StringComparer.OrdinalIgnoreCase);
+        var diagnostic = Assert.Single(diagnostics, item => item.Type == "extension_error");
+        Assert.Contains("invalid-header.dll", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
+        Assert.Contains("before_provider_headers", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
     }
 
     [Fact]

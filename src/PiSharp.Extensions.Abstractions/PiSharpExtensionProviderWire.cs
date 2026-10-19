@@ -50,7 +50,8 @@ public sealed record PiSharpProviderHeadersEvent
     public string Protocol { get; }
     /// <summary>
     /// Mutable, detached final headers. Changes take effect immediately, even if this handler throws.
-    /// Remove a key or set its value to null to remove that header before dispatch.
+    /// Remove a key to make it absent to later handlers, or set its value to null to keep a null-valued
+    /// entry visible to later handlers. The transport interprets null as physical removal after the handler chain.
     /// </summary>
     public IDictionary<string, string?> Headers => _headers;
 }
@@ -135,7 +136,10 @@ public interface IPiSharpExtensionProviderWireBridge
     /// <summary>Transforms a detached provider payload through the host's ordered request handlers.</summary>
     ValueTask<JsonElement> TransformPayloadAsync(JsonElement payload, CancellationToken cancellationToken = default);
 
-    /// <summary>Transforms provider headers through the host's ordered header handlers.</summary>
+    /// <summary>
+    /// Transforms provider headers through the host's ordered handlers. Null-valued entries remain present in
+    /// the returned map; the provider applies them as physical removals after the handler chain completes.
+    /// </summary>
     ValueTask<IReadOnlyDictionary<string, string?>> TransformHeadersAsync(
         IReadOnlyDictionary<string, string?> headers, CancellationToken cancellationToken = default);
 

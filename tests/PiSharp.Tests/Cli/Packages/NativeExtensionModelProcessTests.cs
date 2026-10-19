@@ -31,10 +31,12 @@ public sealed class NativeExtensionModelProcessTests
         using var listener = StartWireListener(out var port);
         string? body = null;
         string? wireHeader = null;
+        string? removedHeader = "not-observed";
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
             wireHeader = request.Request.Headers["x-native-wire"];
+            removedHeader = request.Request.Headers["x-native-remove"];
             using var reader = new StreamReader(request.Request.InputStream);
             body = await reader.ReadToEndAsync();
             request.Response.ContentType = "text/event-stream";
@@ -62,6 +64,7 @@ public sealed class NativeExtensionModelProcessTests
         Assert.Equal("call the wire fixture", sent.RootElement.GetProperty("prompt").GetString());
         Assert.True(sent.RootElement.GetProperty("hostTransformed").GetBoolean());
         Assert.Equal("host-transformed", wireHeader);
+        Assert.Null(removedHeader);
         var wireEvents = (await File.ReadAllLinesAsync(tracePath, timeout.Token))
             .Where(line => line.StartsWith("wire|", StringComparison.Ordinal)).ToArray();
         Assert.Equal([

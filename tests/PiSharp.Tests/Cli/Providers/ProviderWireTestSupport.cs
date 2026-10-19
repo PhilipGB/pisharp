@@ -12,11 +12,18 @@ internal sealed class ProviderWireTestSupport
     private readonly NativeExtensionEventDispatcher _dispatcher;
 
     public ProviderWireTestSupport(string sourcePath = "/extensions/wire-probe.dll",
-        bool attemptSigV4ReservedHeaderChanges = false, bool mutateHeadersBeforeFailure = false)
+        bool attemptSigV4ReservedHeaderChanges = false, bool mutateHeadersBeforeFailure = false,
+        bool removeHeader = false)
     {
         Registration = new ExtensionRegistration();
         var adapter = new NativeExtensionRegistrationAdapter(Registration);
         Registration.SetCurrentSourceInfo(new(sourcePath, "native-package", "user", "package", "/extensions"));
+        if (removeHeader)
+            adapter.AddBeforeProviderHeadersHandler((eventData, _, _) =>
+            {
+                eventData.Headers["X-Remove"] = null;
+                return ValueTask.CompletedTask;
+            });
         if (mutateHeadersBeforeFailure)
         {
             Registration.SetCurrentSourceInfo(new("/extensions/header-a.dll", "native-package", "user", "package",
