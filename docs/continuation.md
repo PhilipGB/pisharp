@@ -1,19 +1,29 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Native Extension Provider Wire Hooks — 2026-10-19
+## Active milestone — Native Extension Message Lifecycle Hooks — 2026-10-19
 
-Branch `milestone/native-extension-provider-wire-hooks` descends from PR #15's
-actual merge commit on `main`, `2ea360f991b0e15c59203557a68a5a1e3c026450`,
-with Pi pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This increment implements the
-four wire hooks at the pinned adapters' actual payload, header, response, and
-raw-event boundaries; preserves the pinned no-response outcomes for Google
-Generative AI, Vertex, and Codex WebSocket; and adds a host-owned bridge for
-new wire-aware extension providers. Existing PR #11 `IChatClient` providers
-remain compatible and receive no synthesized callbacks. Broad extension
-parity remains `in_progress`.
+Branch `milestone/native-extension-message-lifecycle` starts from the actual
+PR #16 merge on `main`, `0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff`; Pi remains
+pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This bounded increment
+adds compiled-extension `message_start`, `message_update`, and actionable
+`message_end` callbacks to the existing input, assistant stream, tool-result,
+and custom-message owners. Sequential validated replacements flow into the
+existing MAF and canonical transcript boundaries. Focused tests and final
+local validation are complete; branch publication and exact-head CI are pending
+in the
+[message lifecycle receipt](parity/fixtures/native-extension-message-lifecycle-2026-10-19.md).
+Broad extension parity remains `in_progress`.
 
-See the [API guide](extensions.md) and
+See the [API guide](extensions.md).
+
+## Previous milestone — Native Extension Provider Wire Hooks — 2026-10-19
+
+PR #16 merged the provider-wire increment at
+`0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff`. Its actual payload, header,
+response, and raw-event boundaries preserve the pinned no-response outcomes
+for Google Generative AI, Vertex, and Codex WebSocket; a host-owned bridge
+supports new wire-aware extension providers, while pre-bridge `IChatClient`
+providers receive no fabricated callbacks. See the
 [provider-wire receipt](parity/fixtures/native-extension-provider-wire-hooks-2026-10-19.md).
 
 The preceding Native Extension Input & User-Bash milestone is complete on

@@ -231,6 +231,74 @@ The event families and their observed boundaries are:
 | `AddModelSelectHandler` | After an effective model selection becomes authoritative; includes selected/previous model and source (`Set`, `Cycle`, `Restore`). | Selection cancellation/rejection emits no change; observer cancellation stops later observers after the transition. | TUI, RPC, print/JSON startup restoration and direct Runtime selection owners. | Observation only; unchanged selections do not emit a change. |
 | `AddThinkingLevelSelectHandler` | After an effective thinking-level change; includes selected and previous levels after model-capability clamping. | Selection cancellation/rejection emits no change; observer cancellation stops later observers after the transition. | TUI, RPC, print/JSON startup restoration and direct Runtime selection owners. | Observation only; unchanged effective values do not emit a change. |
 
+### Message lifecycle hooks
+
+Message lifecycle callbacks observe newly accepted messages and assistant stream updates. A
+message-end callback can return a validated finalized-message replacement:
+
+```csharp
+builder.AddMessageStartHandler((eventData, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    Console.WriteLine($"Starting {eventData.Message.Role} message");
+    return ValueTask.CompletedTask;
+});
+
+builder.AddMessageUpdateHandler((eventData, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    if (eventData.Content?.Kind == PiSharpExtensionMessageContentKind.Text)
+        Console.Write(eventData.TextDelta);
+    return ValueTask.CompletedTask;
+});
+
+builder.AddMessageEndHandler((eventData, _, cancellationToken) =>
+{
+    cancellationToken.ThrowIfCancellationRequested();
+    if (eventData.Message.Role != PiSharpExtensionMessageRole.Assistant)
+        return ValueTask.FromResult<PiSharpExtensionMessageEndResult?>(null);
+    var contents = eventData.Message.Contents.Select(content => content.Kind == PiSharpExtensionMessageContentKind.Text
+        ? new PiSharpExtensionMessageContent(content.Kind, content.Text! + " [reviewed]")
+        : content);
+    var replacement = new PiSharpExtensionMessage(eventData.Message.Role, contents,
+        messageId: eventData.Message.MessageId, authorName: eventData.Message.AuthorName,
+        createdAt: eventData.Message.CreatedAt, additionalProperties: eventData.Message.AdditionalProperties);
+    return ValueTask.FromResult<PiSharpExtensionMessageEndResult?>(new(replacement));
+});
+```
+
+`message_start` and `message_end` run for newly submitted user messages, finalized assistant
+messages, tool results, and custom messages at their PiSharp message boundaries; old transcript
+entries are not replayed. Assistant `message_start` runs on the first content update, or at
+finalization if the provider returned no content updates. `message_update` follows stream order
+and carries the current detached assistant snapshot plus its structured content item, content
+index, and available text delta. PiSharp reports supported MEAI update kinds as `text_delta`,
+`thinking_delta`, `toolcall_delta`, or `content_update`. MEAI does not expose Pi's separate
+text/reasoning/tool-call start, end, done, and error markers, so PiSharp does not invent those
+distinctions. A provider failure without a finalized assistant response can produce start and
+update callbacks without `message_end`; no synthetic final message is created.
+
+Start and update snapshots are notification-only. End handlers run in extension registration
+order. A null result leaves the current message in place; each valid replacement becomes the
+input to the next handler. The role and original role name are invariant. Wrong-role or malformed
+replacements are reported against their source and ignored, while later handlers still run and
+ordinary handler failures do not roll back earlier accepted replacements. The last valid
+replacement is the message persisted and passed to subsequent provider work. Tool-result
+replacement happens before the durable tool result is returned to the model loop. Input and
+custom-message replacements are applied before canonical persistence. Assistant streaming updates
+are buffered until end handlers finish so an accepted replacement reaches the existing MAF
+message boundary; when handlers make no replacement, PiSharp forwards the original provider
+updates. Provider lifecycle notifications and token deltas continue during that buffer.
+
+Snapshots detach text, reasoning, binary and URI data, function calls/results, message/content
+additional properties as JSON, and available response metadata. Unsupported provider content is
+visible as detached opaque JSON but cannot be recreated by a replacement; replacing a message
+with opaque content is rejected. MEAI does not retain Pi-only message fields or the provider's raw
+representation. Each callback receives a fresh public context; cancellation signals its token,
+revokes the context, and detaches extension code that does not finish cooperatively. Message
+handlers inherit package ordering, removal/reload ownership, Configure rollback, and source-aware
+failure reporting from the native registration path.
+
 Handlers run sequentially in resolved extension registration order. An ordinary
 handler exception is reported with its package source and later handlers still
 run. Host cancellation uses the token owned by the run or operation and is not
