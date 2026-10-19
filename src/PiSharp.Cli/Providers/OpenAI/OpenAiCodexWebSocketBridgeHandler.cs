@@ -13,6 +13,10 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(OpenAiCodexRequestContex
     HttpMessageHandler innerHandler, TimeSpan connectTimeout)
     : DelegatingHandler(innerHandler)
 {
+    internal static readonly HttpRequestOptionsKey<string> UsedTransportKey =
+        new("PiSharp.OpenAiCodex.Transport");
+    internal const string WebSocketTransportValue = "websocket";
+
     private const string WebSocketBeta = "responses_websockets=2026-02-06";
     private static readonly TimeSpan SessionWebSocketIdleTtl = TimeSpan.FromMinutes(5);
     private readonly ConcurrentDictionary<(string SessionId, string AccountId), CachedConnection> _connections = new();
@@ -111,6 +115,7 @@ internal sealed class OpenAiCodexWebSocketBridgeHandler(OpenAiCodexRequestContex
                         responseEvent => connection.Continuation = CreateContinuation(originalBody, responseEvent),
                         keepConnection => Release(connection, cacheable, keepConnection))
                 };
+                request.Options.Set(UsedTransportKey, WebSocketTransportValue);
                 socket = null;
                 return response;
             }

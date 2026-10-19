@@ -1,21 +1,25 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Native Extension Input & User-Bash Interception — 2026-10-18
+## Active milestone — Native Extension Provider Wire Hooks — 2026-10-19
 
-Branch `milestone/native-extension-input-bash` is based on PR #14's actual
-merge on `main`, `1da1eb9a00ecdcfeaab1b0eb1ba35191e4893a2e`. Pi remains pinned
-at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The additive SDK intercepts
-interactive, RPC, and extension-originated input before existing resource
-expansion and routes user `!`/`!!` and RPC `bash` through one ordered native
-user-bash boundary. `ConversationRun`, the existing prompt queues, the shared
-shell output/persistence pipeline, and package lifecycle retain ownership.
-Implementation and local verification are complete; draft PR #15 is open and
-final-head CI status is tracked there. Broad extension parity remains
-`in_progress`; provider wire hooks, public `exec`, advanced UI, TypeScript
-compatibility and the global audit remain deferred.
+Branch `milestone/native-extension-provider-wire-hooks` descends from PR #15's
+actual merge commit on `main`, `2ea360f991b0e15c59203557a68a5a1e3c026450`,
+with Pi pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This increment implements the
+four wire hooks at the pinned adapters' actual payload, header, response, and
+raw-event boundaries; preserves the pinned no-response outcomes for Google
+Generative AI, Vertex, and Codex WebSocket; and adds a host-owned bridge for
+new wire-aware extension providers. Existing PR #11 `IChatClient` providers
+remain compatible and receive no synthesized callbacks. Broad extension
+parity remains `in_progress`.
 
 See the [API guide](extensions.md) and
-[milestone receipt](parity/fixtures/native-extension-input-bash-2026-10-18.md).
+[provider-wire receipt](parity/fixtures/native-extension-provider-wire-hooks-2026-10-19.md).
+
+The preceding Native Extension Input & User-Bash milestone is complete on
+merged PR #15 (`2ea360f991b0e15c59203557a68a5a1e3c026450`); its review
+correction and verification are recorded in the
+[input/bash receipt](parity/fixtures/native-extension-input-bash-2026-10-18.md).
 
 ## Previous milestone — Native Extension Agent Settlement & Mutable Turn Boundaries — 2026-10-18
 

@@ -32,6 +32,18 @@ public partial interface IPiSharpExtensionBuilder
     /// <summary>Registers a callback that can replace user-originated shell execution.</summary>
     void AddUserBashHandler(PiSharpExtensionUserBashHandler handler);
 
+    /// <summary>Transforms the final physical provider payload before it is serialized or sent.</summary>
+    void AddBeforeProviderRequestHandler(PiSharpBeforeProviderRequestHandler handler);
+
+    /// <summary>Transforms final physical provider headers before transport dispatch.</summary>
+    void AddBeforeProviderHeadersHandler(PiSharpBeforeProviderHeadersHandler handler);
+
+    /// <summary>Observes provider response metadata before the response body is consumed.</summary>
+    void AddAfterProviderResponseHandler(PiSharpAfterProviderResponseHandler handler);
+
+    /// <summary>Observes raw parsed provider events before conversion to MEAI updates.</summary>
+    void AddProviderStreamEventHandler(PiSharpProviderStreamEventHandler handler);
+
     /// <summary>Registers a provider and its chat models for normal model selection.</summary>
     void AddProvider(PiSharpExtensionProviderDefinition provider);
 

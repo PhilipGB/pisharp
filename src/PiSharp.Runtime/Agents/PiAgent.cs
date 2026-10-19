@@ -181,7 +181,8 @@ public sealed class PiAgent
             _contextTransforms.ApplyAsync, (messages, options) =>
                 _currentToolTranscript?.Project(messages, options), GetSystemInstructionsForCurrentLoadout,
             () => thinkingBudgets, TakeContextMessagesForRequestAsync,
-            (messages, token) => _prepareTurn?.Invoke(messages, token) ?? Task.FromResult(messages)), new ChatClientAgentOptions
+            (messages, token) => _prepareTurn?.Invoke(messages, token) ?? Task.FromResult(messages),
+            token => ProviderWireInvocation.Enter(_extensionEvents, token)), new ChatClientAgentOptions
             {
                 Name = "PiSharp",
                 ChatHistoryProvider = _history,

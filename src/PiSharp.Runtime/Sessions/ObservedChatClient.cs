@@ -20,7 +20,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<string?>? getSystemInstructions = null,
     Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null,
     Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
-    Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? prepareTurnAsync = null)
+    Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? prepareTurnAsync = null,
+    Func<CancellationToken, IDisposable>? providerWireScopeFactory = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
@@ -41,6 +42,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 AddRouteHint(options, routeReason, failedRequest, overflowRecovered));
             try
             {
+                using var providerWireScope = providerWireScopeFactory?.Invoke(cancellationToken);
                 var response = await base.GetResponseAsync(requestMessages, requestOptions, cancellationToken);
                 publish(new("model_request_completed")
                 {
@@ -92,6 +94,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             var producedOutput = false;
             Exception? failure = null;
             var responseUpdates = new List<ChatResponseUpdate>();
+            using var providerWireScope = providerWireScopeFactory?.Invoke(cancellationToken);
             IProviderToolCallDeltaCapture? toolCallCapture = null;
             IAsyncEnumerator<ProviderToolCallDelta>? toolCallEnumerator = null;
             Task<bool>? toolCallMove = null;

@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Net;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using PiSharp.Cli;
@@ -12,6 +14,68 @@ namespace PiSharp.Tests;
 [Collection("Managed npm subprocesses")]
 public sealed class NativeExtensionModelProcessTests
 {
+    [Fact]
+    public async Task PackedExternalWireProviderUsesHostBridgeAtRealHttpBoundaries()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var sessionDirectory = Path.Combine(fixture.Root, "wire-sessions");
+        var tracePath = Path.Combine(fixture.Root, "native-wire-trace.log");
+        Directory.CreateDirectory(sessionDirectory);
+        var package = await ResourcePackageCommandProcessTests.PackExternalNativeModelFixtureAsync(
+            Path.Combine(fixture.Root, "native-wire-package"));
+        var installed = await NativeExtensionStateProcessTests.RunCliAsync(fixture, "install", package);
+        Assert.Equal(0, installed.ExitCode);
+
+        using var listener = StartWireListener(out var port);
+        string? body = null;
+        string? wireHeader = null;
+        string? removedHeader = "not-observed";
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            wireHeader = request.Request.Headers["x-native-wire"];
+            removedHeader = request.Request.Headers["x-native-remove"];
+            using var reader = new StreamReader(request.Request.InputStream);
+            body = await reader.ReadToEndAsync();
+            request.Response.ContentType = "text/event-stream";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("data: {\"text\":\"bridge response\"}\n\n");
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        using var process = StartProcess(fixture, sessionDirectory, tracePath, continueSession: false,
+            wireEndpoint: $"http://127.0.0.1:{port}/wire");
+        var errors = new ConcurrentQueue<string>();
+        var stderr = CaptureStandardErrorAsync(process, errors);
+        await SetModelAsync(process, "select-wire", "native_wire_fixture", "wire-model", timeout.Token);
+        await NativeExtensionStateProcessTests.RunModelPromptAsync(process, "wire-turn", "call the wire fixture",
+            timeout.Token);
+        await server.WaitAsync(timeout.Token);
+        await WaitForTraceAsync(tracePath, line => line ==
+            "wire|stream|native_wire_fixture|pisharp-extension|message", timeout.Token);
+        await StopProcessAsync(process, timeout.Token);
+        await stderr.WaitAsync(timeout.Token);
+
+        using var sent = JsonDocument.Parse(body!);
+        Assert.Equal("call the wire fixture", sent.RootElement.GetProperty("prompt").GetString());
+        Assert.True(sent.RootElement.GetProperty("hostTransformed").GetBoolean());
+        Assert.Equal("host-transformed", wireHeader);
+        Assert.Null(removedHeader);
+        var wireEvents = (await File.ReadAllLinesAsync(tracePath, timeout.Token))
+            .Where(line => line.StartsWith("wire|", StringComparison.Ordinal)).ToArray();
+        Assert.Equal([
+            "wire|payload|native_wire_fixture|pisharp-extension",
+            "wire|headers|native_wire_fixture|pisharp-extension",
+            "wire|response|native_wire_fixture|pisharp-extension|200",
+            "wire|stream|native_wire_fixture|pisharp-extension|message"
+        ], wireEvents);
+        Assert.DoesNotContain("Unhandled exception", string.Join("\n", errors), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task PackedExtensionRegistersProviderMcpAndVirtualModelAcrossProcessesAndReplacement()
     {
@@ -376,7 +440,7 @@ public sealed class NativeExtensionModelProcessTests
     }
 
     private static Process StartProcess(ManagedNpmFixture fixture, string sessionDirectory, string tracePath,
-        bool continueSession, string? sessionName = null)
+        bool continueSession, string? sessionName = null, string? wireEndpoint = null)
     {
         var start = new ProcessStartInfo("dotnet")
         {
@@ -400,7 +464,21 @@ public sealed class NativeExtensionModelProcessTests
         start.Environment["PISHARP_AGENT_DIR"] = fixture.AgentDirectory;
         start.Environment["PISHARP_SESSION_DIR"] = sessionDirectory;
         start.Environment["PISHARP_NATIVE_MODEL_TRACE"] = tracePath;
+        start.Environment.Remove("PISHARP_NATIVE_WIRE_ENDPOINT");
+        if (wireEndpoint is not null) start.Environment["PISHARP_NATIVE_WIRE_ENDPOINT"] = wireEndpoint;
         return Process.Start(start) ?? throw new IOException("Could not start native extension model RPC process.");
+    }
+
+    private static HttpListener StartWireListener(out int port)
+    {
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+        var listener = new HttpListener();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        return listener;
     }
 
     private static async Task<JsonElement[]> GetModelsAsync(Process process, string id,

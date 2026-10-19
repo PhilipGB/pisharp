@@ -17,11 +17,13 @@ public sealed class MistralProviderCompatibilityTests
     {
         using var listener = StartListener(out var port);
         string? requestBody = null;
+        string? wireHeader = null;
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
             Assert.Equal("/v1/chat/completions", request.Request.Url?.AbsolutePath);
             Assert.Equal("Bearer fixture-key", request.Request.Headers["Authorization"]);
+            wireHeader = request.Request.Headers["x-pisharp-wire-probe"];
             using var reader = new StreamReader(request.Request.InputStream);
             requestBody = await reader.ReadToEndAsync();
             request.Response.ContentType = "text/event-stream";
@@ -56,6 +58,8 @@ public sealed class MistralProviderCompatibilityTests
             new(ChatRole.User, "continue")
         ];
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var wire = new ProviderWireTestSupport();
+        using var wireScope = wire.Enter(deadline.Token);
 
         var response = await ProviderChatClientFactory.Create(selection).GetResponseAsync(messages,
             new ChatOptions { Reasoning = new ReasoningOptions { Effort = ReasoningEffort.ExtraHigh } }, deadline.Token);
@@ -78,6 +82,10 @@ public sealed class MistralProviderCompatibilityTests
             .Select(message => message.GetProperty("tool_call_id").GetString()).ToArray();
         Assert.Equal(firstId, resultIds[0]);
         Assert.Equal(secondId, resultIds[1]);
+        using var wirePayload = JsonDocument.Parse(requestBody!);
+        Assert.True(wirePayload.RootElement.GetProperty("wire_probe").GetBoolean());
+        Assert.Equal("transformed", wireHeader);
+        wire.AssertHooks("mistral-conversations", responseExposed: true);
     }
 
     [Fact]

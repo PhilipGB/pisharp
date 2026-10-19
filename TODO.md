@@ -1,20 +1,26 @@
 # PiSharp capability parity
 
-## Active milestone — Native Extension Input & User-Bash Interception — 2026-10-18
+## Active milestone — Native Extension Provider Wire Hooks — 2026-10-19
 
-Branch `milestone/native-extension-input-bash` is based on PR #14's actual
-merge on `main`, `1da1eb9a00ecdcfeaab1b0eb1ba35191e4893a2e`. Pi remains pinned
-at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This milestone adds compiled
-extension interception for TUI, RPC, and extension-originated input, plus
-interactive and RPC user-bash commands, through the existing expansion,
-queueing, shell, cancellation, persistence, and package-lifecycle owners.
-Implementation and local acceptance evidence are complete. Draft PR #15 is
-open; final-head workflow status is tracked there. Keep the broad extension capability
-`in_progress`; provider-wire hooks, public `exec`, advanced UI, TypeScript
-compatibility and the global parity audit remain deferred.
+Branch `milestone/native-extension-provider-wire-hooks` descends from PR #15's
+actual merge commit on `main`, `2ea360f991b0e15c59203557a68a5a1e3c026450`,
+with Pi pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The increment implements the four
+provider-wire hooks at pinned-equivalent physical boundaries for each required
+built-in protocol, preserves the pinned no-response cases, and adds the
+host-owned bridge for new wire-aware extension providers. Existing PR #11
+`IChatClient` providers remain compatible without synthesized callbacks.
+Broad extension parity remains `in_progress`; this milestone does not promote
+the wider capability inventory.
 
 See the [continuation](docs/continuation.md), [extension API guide](docs/extensions.md),
-and [milestone receipt](docs/parity/fixtures/native-extension-input-bash-2026-10-18.md).
+and [provider-wire receipt](docs/parity/fixtures/native-extension-provider-wire-hooks-2026-10-19.md).
+
+## Previous milestone — Native Extension Input & User-Bash Interception — 2026-10-18
+
+PR #15 was merged from `milestone/native-extension-input-bash` as
+`2ea360f991b0e15c59203557a68a5a1e3c026450`. Its completed input and user-bash
+correction is recorded in the [milestone receipt](docs/parity/fixtures/native-extension-input-bash-2026-10-18.md).
 
 ## Previous milestone — Native Extension Agent Settlement & Mutable Turn Boundaries — 2026-10-18
 

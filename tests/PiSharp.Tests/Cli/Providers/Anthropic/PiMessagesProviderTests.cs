@@ -80,16 +80,19 @@ public sealed class PiMessagesProviderTests
         string? accept = null;
         string? path = null;
         string? body = null;
+        string? wireHeader = null;
         var server = Task.Run(async () =>
         {
             var context = await listener.GetContextAsync();
             authorization = context.Request.Headers["Authorization"];
             accept = context.Request.Headers["Accept"];
+            wireHeader = context.Request.Headers["x-pisharp-wire-probe"];
             path = context.Request.Url?.PathAndQuery;
             using var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding);
             body = await reader.ReadToEndAsync();
             context.Response.StatusCode = (int)HttpStatusCode.OK;
             context.Response.ContentType = "text/event-stream";
+            context.Response.Headers["x-wire-response"] = "before-body";
             var events = new object[]
             {
                 new { type = "start" },
@@ -133,6 +136,8 @@ public sealed class PiMessagesProviderTests
         Assert.Equal("pi-messages", ProviderChatClientFactory.ResolveProtocol(selection));
         using var client = ProviderChatClientFactory.Create(selection,
             new ProviderRetrySettings(MaxRetries: 0, TimeoutMs: 5000, MaxRetryDelayMs: 60000), httpIdleTimeoutMs: 5000);
+        var wire = new ProviderWireTestSupport();
+        using var wireScope = wire.Enter(CancellationToken.None);
         var options = new ChatOptions
         {
             Instructions = "fixture instructions",
@@ -157,6 +162,10 @@ public sealed class PiMessagesProviderTests
         var response = updates.ToChatResponse();
 
         Assert.Equal("Bearer " + apiKey, authorization);
+        Assert.Equal("transformed", wireHeader);
+        using (var hookedRequest = JsonDocument.Parse(body!))
+            Assert.True(hookedRequest.RootElement.GetProperty("wire_probe").GetBoolean());
+        wire.AssertHooks("pi-messages", responseExposed: true);
         Assert.Equal("text/event-stream", accept);
         Assert.Equal("/v1/messages?debug=1", path);
         using var sent = JsonDocument.Parse(body!);

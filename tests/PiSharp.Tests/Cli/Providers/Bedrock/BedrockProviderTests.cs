@@ -1,6 +1,11 @@
 using Amazon.BedrockRuntime;
 using Amazon.BedrockRuntime.Model;
+using Amazon.Runtime;
 using Amazon.Runtime.EventStreams;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
@@ -10,6 +15,50 @@ namespace PiSharp.Tests;
 
 public sealed class BedrockProviderTests
 {
+    [Fact]
+    public async Task BedrockWireHooksTransformMarshalledRequestBeforeSigningAndObserveResponseBeforeStreamRead()
+    {
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var wire = new ProviderWireTestSupport(attemptSigV4ReservedHeaderChanges: true);
+        var eventBytes = Concat(
+            EventFrame("messageStart", "{\"role\":\"assistant\"}"),
+            EventFrame("contentBlockStart", "{\"contentBlockIndex\":0,\"start\":{\"text\":\"\"}}"),
+            EventFrame("contentBlockDelta", "{\"contentBlockIndex\":0,\"delta\":{\"text\":\"bedrock wire\"}}"),
+            EventFrame("contentBlockStop", "{\"contentBlockIndex\":0}"),
+            EventFrame("messageStop", "{\"stopReason\":\"end_turn\"}"));
+        var handler = new BedrockWireHttpHandler(wire, eventBytes);
+
+        var config = new AmazonBedrockRuntimeConfig
+        {
+            ServiceURL = "http://bedrock-wire-fixture",
+            AuthenticationRegion = "us-east-1",
+            MaxErrorRetry = 0,
+            HttpClientFactory = new BedrockWireHttpClientFactory(handler)
+        };
+        var runtime = new AmazonBedrockRuntimeClient(new BasicAWSCredentials("fixture-access", "fixture-secret"), config);
+        BedrockProviderWirePipelineCustomizer.Install(runtime);
+        var model = BedrockModelCatalog.Load().Single(item => item.Id == "global.anthropic.claude-sonnet-4-6");
+        using var client = new BedrockConverseChatClient(new AwsBedrockConverseTransport(runtime), model,
+            enablePromptCaching: false, oneHourCache: false, forcePromptCaching: false, region: "us-east-1");
+        using var wireScope = wire.Enter(deadline.Token);
+        var output = new StringBuilder();
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new ChatMessage(ChatRole.User, "hello bedrock")], cancellationToken: deadline.Token))
+            output.Append(update.Text);
+
+        Assert.Equal("bedrock wire", output.ToString());
+        using var sent = JsonDocument.Parse(handler.RequestBody!);
+        Assert.True(sent.RootElement.TryGetProperty("wire_probe", out var wireProbe) && wireProbe.GetBoolean(),
+            $"Bedrock request payload was not transformed. Body: {handler.RequestBody}. Hooks: {string.Join(",", wire.Events)}");
+        Assert.Equal("transformed", handler.HookHeader);
+        Assert.StartsWith("AWS4-HMAC-SHA256", handler.Authorization, StringComparison.Ordinal);
+        Assert.Contains("x-pisharp-wire-probe", handler.Authorization, StringComparison.OrdinalIgnoreCase);
+        Assert.NotEqual("forged.example", handler.Host);
+        Assert.NotEqual("forged-date", handler.AmzDate);
+        wire.AssertHooks("bedrock-converse-stream", responseExposed: true);
+        Assert.Equal("amazon-bedrock", Assert.Single(wire.ProviderIds.Distinct()));
+    }
+
     [Theory]
     [InlineData("""{"text":"\url{x}","mode":"w"}""", "\\url{x}")]
     [InlineData("""{"text":"ab\u00""", null)]
@@ -220,6 +269,94 @@ public sealed class BedrockProviderTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await enumerator.MoveNextAsync());
         Assert.True(transport.CancellationObserved);
         await enumerator.DisposeAsync();
+    }
+
+    private static byte[] EventFrame(string eventType, string payload)
+    {
+        var eventHeader = new EventStreamHeader(":event-type");
+        eventHeader.SetString(eventType);
+        var messageHeader = new EventStreamHeader(":message-type");
+        messageHeader.SetString("event");
+        var contentHeader = new EventStreamHeader(":content-type");
+        contentHeader.SetString("application/json");
+        return new EventStreamMessage([eventHeader, messageHeader, contentHeader], Encoding.UTF8.GetBytes(payload))
+            .ToByteArray();
+    }
+
+    private static byte[] Concat(params byte[][] buffers)
+    {
+        var result = new byte[buffers.Sum(buffer => buffer.Length)];
+        var offset = 0;
+        foreach (var buffer in buffers)
+        {
+            buffer.CopyTo(result, offset);
+            offset += buffer.Length;
+        }
+        return result;
+    }
+
+    private sealed class BedrockWireHttpClientFactory(HttpMessageHandler handler) : HttpClientFactory
+    {
+        public override HttpClient CreateHttpClient(IClientConfig config) => new(handler, disposeHandler: false);
+        public override bool UseSDKHttpClientCaching(IClientConfig config) => false;
+        public override bool DisposeHttpClientsAfterUse(IClientConfig config) => true;
+    }
+
+    private sealed class BedrockWireHttpHandler(ProviderWireTestSupport wire, byte[] responseBytes)
+        : HttpMessageHandler
+    {
+        public string? RequestBody { get; private set; }
+        public string? HookHeader { get; private set; }
+        public string? Authorization { get; private set; }
+        public string? Host { get; private set; }
+        public string? AmzDate { get; private set; }
+        public string RequestHeaders { get; private set; } = "";
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            RequestBody = await request.Content!.ReadAsStringAsync(cancellationToken);
+            HookHeader = request.Headers.TryGetValues("x-pisharp-wire-probe", out var values)
+                ? values.SingleOrDefault() : null;
+            Authorization = request.Headers.TryGetValues("Authorization", out var authValues)
+                ? string.Join(", ", authValues) : null;
+            Host = request.Headers.Host;
+            AmzDate = request.Headers.TryGetValues("x-amz-date", out var dateValues)
+                ? string.Join(", ", dateValues) : null;
+            RequestHeaders = request.Headers.ToString();
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                RequestMessage = request,
+                Content = new StreamContent(new BedrockWireGateStream(responseBytes, wire.ResponseObserved.Task))
+            };
+            response.Headers.TryAddWithoutValidation("x-amzn-requestid", "wire-fixture-request");
+            response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                "application/vnd.amazon.eventstream");
+            return response;
+        }
+    }
+
+    private sealed class BedrockWireGateStream(byte[] bytes, Task responseObserved) : MemoryStream(bytes, writable: false)
+    {
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer,
+            CancellationToken cancellationToken = default)
+        {
+            await responseObserved.WaitAsync(cancellationToken);
+            return await base.ReadAsync(buffer, cancellationToken);
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count,
+            CancellationToken cancellationToken)
+        {
+            await responseObserved.WaitAsync(cancellationToken);
+            return await base.ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            responseObserved.GetAwaiter().GetResult();
+            return base.Read(buffer, offset, count);
+        }
     }
 
     private sealed class RecordingTransport(IReadOnlyList<IEventStreamEvent> events,

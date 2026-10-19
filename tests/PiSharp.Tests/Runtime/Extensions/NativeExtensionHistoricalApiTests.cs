@@ -1,8 +1,12 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json;
+using Microsoft.Extensions.AI;
+using PiSharp.Cli;
 using PiSharp.Runtime.Extensions;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Sessions;
 using PiSharp.Tests.TestInfrastructure;
 
 namespace PiSharp.Tests;
@@ -58,6 +62,69 @@ public sealed class NativeExtensionHistoricalApiTests
             await catalog.Registration.Commands["api-v9-legacy"]("still compatible", CancellationToken.None));
         Assert.Single(catalog.Registration.ExtensionShortcuts);
         Assert.Single(catalog.Registration.SessionStartHandlers);
+    }
+
+    [Fact]
+    public async Task Pr11LegacyProviderPackageLoadsAndRunsWithoutFabricatedWireCallbacks()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        Directory.CreateDirectory(fixture.ProjectDirectory);
+        Directory.CreateDirectory(fixture.AgentDirectory);
+        var package = await PackFixtureAsync("NativeExtensionApiProviderV11", Path.Combine(fixture.Root, "packages"));
+        AssertPublicPackage(package, "NativeExtensionApiProviderV11Fixture.dll");
+        var store = new NativeExtensionPackageStore(fixture.AgentDirectory);
+        var installed = await store.InstallAsync(fixture.ProjectDirectory, package, "user");
+        var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: true, userSources: [installed]);
+
+        using var catalog = ExtensionCatalog.Load(fixture.AgentDirectory, fixture.ProjectDirectory,
+            projectTrusted: true, nativeExtensionPackageRoots: roots);
+        Assert.Empty(catalog.Warnings);
+
+        var requestCalls = 0;
+        var headerCalls = 0;
+        var responseCalls = 0;
+        var streamCalls = 0;
+        var hooks = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(hooks);
+        hooks.SetCurrentSourceInfo(Source("/extensions/current-wire-hooks.dll"));
+        adapter.AddBeforeProviderRequestHandler((_, _, _) =>
+        {
+            requestCalls++;
+            return ValueTask.FromResult<JsonElement?>(null);
+        });
+        adapter.AddBeforeProviderHeadersHandler((_, _, _) =>
+        {
+            headerCalls++;
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddAfterProviderResponseHandler((_, _, _) =>
+        {
+            responseCalls++;
+            return ValueTask.CompletedTask;
+        });
+        adapter.AddProviderStreamEventHandler((_, _, _) =>
+        {
+            streamCalls++;
+            return ValueTask.CompletedTask;
+        });
+        hooks.SetCurrentSourceInfo(null);
+        adapter.Close();
+        var dispatcher = new NativeExtensionEventDispatcher(hooks, CreateContext(), _ => { });
+
+        using var http = new HttpClient();
+        var runtime = await ProviderModelRuntime.CreateAsync(fixture.ProjectDirectory, false, _ => null, http,
+            offline: true);
+        runtime.SetExtensionProviders(catalog.Registration.ExtensionProviders);
+        var client = ProviderChatClientFactory.Create(await runtime.ResolveAsync("legacy_wire_fixture", "legacy-model"));
+        using var invocation = ProviderWireInvocation.Enter(dispatcher, CancellationToken.None);
+        var response = await client.GetResponseAsync([new ChatMessage(ChatRole.User, "legacy request")]);
+
+        Assert.Equal("legacy provider response", response.Text);
+        Assert.Equal(0, requestCalls);
+        Assert.Equal(0, headerCalls);
+        Assert.Equal(0, responseCalls);
+        Assert.Equal(0, streamCalls);
     }
 
     private static async Task<string> PackFixtureAsync(string fixtureName, string outputDirectory)
@@ -124,6 +191,23 @@ public sealed class NativeExtensionHistoricalApiTests
     }
 
     private static string BuildConfiguration() => new DirectoryInfo(AppContext.BaseDirectory).Parent?.Name ?? "Debug";
+
+    private static ResourceSourceInfo Source(string path) => new(path, "native-package", "user", "package", null);
+
+    private static PiSharp.Runtime.Extensions.PiSharpExtensionContext CreateContext() => new(
+        new PiSharpExtensionContextConfiguration("/tmp", "test", HasUserInterface: false,
+            IsProjectTrusted: true, new TestUi()), static () => null, static () => [], static () => true);
+
+    private sealed class TestUi : PiSharp.Runtime.Extensions.IPiSharpExtensionUi
+    {
+        public Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
+            CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+        public Task<bool> ConfirmAsync(string title, string message,
+            CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<string?> InputAsync(string title, string? placeholder = null,
+            CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+        public void Notify(string message, string type = "info") { }
+    }
 
     private static string FindRepositoryRoot()
     {

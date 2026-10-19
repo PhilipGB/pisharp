@@ -44,6 +44,10 @@ public sealed partial class ExtensionRegistration
                     }
                     Reconcile(_userBashHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_inputHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_beforeProviderRequestHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_beforeProviderHeadersHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_afterProviderResponseHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_providerStreamEventHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_toolCallHooks, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_toolResultHooks, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_contextTransforms, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });

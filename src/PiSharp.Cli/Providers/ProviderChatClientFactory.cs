@@ -8,6 +8,7 @@ using OpenAI;
 using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.VirtualModels;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Cli;
 
@@ -78,7 +79,11 @@ public static class ProviderChatClientFactory
             {
                 providerClient = extension.CreateChatClient(new(selection.Provider.Id, selection.Model.Id,
                     extension.Endpoint, selection.Authenticated && selection.AuthSource != "not required" &&
-                    selection.ApiKey is not ("not-needed" or "not-configured") ? selection.ApiKey : null)) ??
+                    selection.ApiKey is not ("not-needed" or "not-configured") ? selection.ApiKey : null)
+                {
+                    ProviderWire = new NativeExtensionProviderWireBridge(selection.Provider.Id, selection.Model.Id,
+                        protocol)
+                }) ??
                     throw new InvalidOperationException("Provider factory returned no chat client.");
             }
             catch (Exception error) when (error is not OperationCanceledException)
@@ -126,7 +131,8 @@ public static class ProviderChatClientFactory
                 BaseUrl = baseUrl,
                 MaxRetries = 0,
                 Timeout = sdkTimeout,
-                Handlers = [new AnthropicSystemMessageHandler(transcript), argumentCapture.CreateHandler(), new ProviderWireActivityHandler()]
+                Handlers = [new AnthropicSystemMessageHandler(transcript), argumentCapture.CreateHandler(),
+                    ProviderWireHookHandler.CreateAnthropic(selection)]
             };
             if (selection.AnthropicIsOAuthToken)
             {
@@ -171,7 +177,8 @@ public static class ProviderChatClientFactory
             if (protocol == "openai-responses")
                 options.Transport = new HttpClientPipelineTransport(
                     new HttpClient(new ProviderSamplingRequestHandler(samplingContext!,
-                        new ProviderWireActivityHandler(new HttpClientHandler())), disposeHandler: true));
+                        ProviderWireHookHandler.CreateWithActivity(selection, protocol,
+                            new HttpClientHandler())), disposeHandler: true));
             OpenAiToolCallDeltaCapture? toolCallCapture = null;
             MistralChatRequestContext? mistralContext = null;
             AzureOpenAiRequestContext? azureContext = null;
@@ -183,7 +190,8 @@ public static class ProviderChatClientFactory
                 options.Transport = new HttpClientPipelineTransport(new HttpClient(
                     new ProviderSamplingRequestHandler(samplingContext!,
                         new AzureOpenAiRequestHandler(selection.ApiKey, azureOptions, azureContext,
-                            new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false }))),
+                            ProviderWireHookHandler.CreateWithActivity(selection, protocol,
+                                new HttpClientHandler { AllowAutoRedirect = false }))),
                     disposeHandler: true));
             }
             if (protocol is "openai-completions" or "mistral-conversations")
@@ -193,7 +201,8 @@ public static class ProviderChatClientFactory
                 {
                     mistralContext = new MistralChatRequestContext();
                     handler = new MistralChatCompatibilityHandler(mistralContext,
-                        new ProviderWireActivityHandler(new HttpClientHandler()));
+                        ProviderWireHookHandler.CreateWithActivity(selection, protocol,
+                            new HttpClientHandler()));
                 }
                 else
                 {
@@ -201,7 +210,8 @@ public static class ProviderChatClientFactory
                     HttpMessageHandler innerHandler = new OpenAiCompletionsRequestCompatibilityHandler(selection.Model,
                         selection.Provider.Id, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
                         selection.Provider.Compatibility,
-                        new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = !azureFoundry }));
+                        ProviderWireHookHandler.CreateWithActivity(selection, protocol,
+                            new HttpClientHandler { AllowAutoRedirect = !azureFoundry }));
                     if (azureFoundry)
                     {
                         var azureOptions = selection.Provider.AzureOpenAi ??

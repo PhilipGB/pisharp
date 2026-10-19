@@ -631,12 +631,16 @@ public sealed class ProviderChatClientFactoryTests
     {
         using var listener = StartLoopbackListener(out var port);
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        string? requestBody = null;
+        string? hookHeader = null;
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            hookHeader = request.Request.Headers["x-pisharp-wire-probe"];
             using var reader = new StreamReader(request.Request.InputStream);
-            await reader.ReadToEndAsync(deadline.Token);
+            requestBody = await reader.ReadToEndAsync(deadline.Token);
             request.Response.ContentType = "text/event-stream";
+            request.Response.Headers["x-wire-response"] = "before-body";
             request.Response.SendChunked = true;
             await using var writer = new StreamWriter(request.Response.OutputStream);
             try
@@ -682,6 +686,8 @@ public sealed class ProviderChatClientFactoryTests
         // Leave room for runner scheduling while keeping the timeout below the fragmented event's full delivery time.
         var client = ProviderChatClientFactory.Create(selection,
             new ProviderRetrySettings(TimeoutMs: 5_000), httpIdleTimeoutMs: 1_000);
+        var wire = new ProviderWireTestSupport();
+        using var wireScope = wire.Enter(deadline.Token);
         var firstUpdate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var text = new System.Text.StringBuilder();
         var streaming = Task.Run(async () =>
@@ -700,6 +706,86 @@ public sealed class ProviderChatClientFactoryTests
         await server.WaitAsync(deadline.Token);
 
         Assert.Contains("wire activity", text.ToString());
+        using var sent = JsonDocument.Parse(requestBody!);
+        Assert.True(sent.RootElement.GetProperty("wire_probe").GetBoolean());
+        Assert.Equal("transformed", hookHeader);
+        wire.AssertHooks(protocol, responseExposed: true);
+        Assert.All(wire.ProviderIds, providerId => Assert.Equal("fixture", providerId));
+    }
+
+    [Fact]
+    public async Task ProviderHeaderMutationsBeforeFailureReachThePhysicalRequest()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        string? headerA = null;
+        string? headerB = null;
+        string? removedHeader = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            headerA = request.Request.Headers["X-A"];
+            headerB = request.Request.Headers["X-B"];
+            removedHeader = request.Request.Headers["x-remove"];
+            request.Response.ContentType = "text/event-stream";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("data: {\"id\":\"chatcmpl_wire\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":null}]}\n\n");
+            await writer.WriteAsync("data: {\"id\":\"chatcmpl_wire\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n");
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        var wire = new ProviderWireTestSupport(mutateHeadersBeforeFailure: true);
+        using var wireScope = wire.Enter(deadline.Token);
+        using var client = ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}/v1",
+            "openai-completions"));
+
+        var responseText = new System.Text.StringBuilder();
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            cancellationToken: deadline.Token))
+            responseText.Append(update.Text);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("ok", responseText.ToString());
+        Assert.Equal("one", wire.HeaderAfterFailure);
+        Assert.Equal("one", headerA);
+        Assert.Equal("two", headerB);
+        Assert.Null(removedHeader);
+        var diagnostic = Assert.Single(wire.Diagnostics, item => item.Type == "extension_error");
+        Assert.Contains("header-a.dll", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
+        Assert.Contains("before_provider_headers", JsonSerializer.Serialize(diagnostic.Details), StringComparison.Ordinal);
+        Assert.Contains("fixture header handler failure", diagnostic.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ProviderWireHookAppliesNullHeaderAsPhysicalHttpDeletion()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+        string? receivedHeader = "not-observed";
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            receivedHeader = request.Request.Headers["X-Remove"];
+            request.Response.StatusCode = (int)HttpStatusCode.OK;
+            request.Response.Close();
+        });
+
+        var wire = new ProviderWireTestSupport(removeHeader: true);
+        using var wireScope = wire.Enter(deadline.Token);
+        using var handler = new SeedProviderHeaderHandler(new ProviderWireHookHandler("fixture-provider",
+            "fixture-model", "openai-completions", new HttpClientHandler()));
+        using var client = new HttpClient(handler);
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{port}/wire")
+        {
+            Content = new StringContent("{\"probe\":true}")
+        };
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(receivedHeader);
+        Assert.Empty(wire.Diagnostics);
     }
 
     [Fact]
@@ -936,14 +1022,18 @@ public sealed class ProviderChatClientFactoryTests
     public async Task AnthropicMessagesStreamsTextAndUsage()
     {
         using var listener = StartLoopbackListener(out var port);
+        string? hookHeader = null;
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
             Assert.Equal("/v1/messages", request.Request.Url?.AbsolutePath);
+            hookHeader = request.Request.Headers["x-pisharp-wire-probe"];
             using var reader = new StreamReader(request.Request.InputStream);
             using var body = System.Text.Json.JsonDocument.Parse(await reader.ReadToEndAsync());
             Assert.True(body.RootElement.GetProperty("stream").GetBoolean());
+            Assert.True(body.RootElement.GetProperty("wire_probe").GetBoolean());
             request.Response.ContentType = "text/event-stream";
+            request.Response.Headers["x-wire-response"] = "before-body";
             await using var writer = new StreamWriter(request.Response.OutputStream);
             await writer.WriteAsync("""
                 event: message_start
@@ -969,13 +1059,17 @@ public sealed class ProviderChatClientFactoryTests
             request.Response.Close();
         });
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        var agent = new PiAgent(ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages")),
-            new CodingTools(Path.GetTempPath()));
-        var session = await agent.CreateSessionAsync(deadline.Token);
+        var wire = new ProviderWireTestSupport();
+        using var wireScope = wire.Enter(deadline.Token);
+        using var client = ProviderChatClientFactory.Create(Selection("fixture", $"http://127.0.0.1:{port}", "anthropic-messages"));
         var text = "";
-        await foreach (var update in agent.RunStreamingAsync("hello", session, deadline.Token)) text += update.Text;
+        await foreach (var update in client.GetStreamingResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            cancellationToken: deadline.Token)) text += update.Text;
         await server.WaitAsync(deadline.Token);
         Assert.Equal("streamed", text);
+        Assert.Equal("transformed", hookHeader);
+        wire.AssertHooks("anthropic-messages", responseExposed: true);
     }
 
     [Fact]
@@ -1502,5 +1596,15 @@ public sealed class ProviderChatClientFactoryTests
         var model = new ModelDescriptor("fixture-model", provider, null, "fixture", Provider: provider, Api: api);
         return new(new ProviderProfile(provider, provider, new Uri(url), true, false, null, null, [model]), model,
             "fixture-key", true, "fixture");
+    }
+
+    private sealed class SeedProviderHeaderHandler(HttpMessageHandler innerHandler) : DelegatingHandler(innerHandler)
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            request.Headers.TryAddWithoutValidation("X-Remove", "present");
+            return base.SendAsync(request, cancellationToken);
+        }
     }
 }

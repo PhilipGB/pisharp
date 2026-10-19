@@ -51,6 +51,46 @@ public sealed class RegistrationExtension : IPiSharpExtension
         {
             AuthRequired = false
         });
+        var wireEndpoint = Environment.GetEnvironmentVariable("PISHARP_NATIVE_WIRE_ENDPOINT");
+        if (Uri.TryCreate(wireEndpoint, UriKind.Absolute, out var endpoint))
+        {
+            builder.AddProvider(new PiSharpExtensionProviderDefinition("native_wire_fixture", "Native wire fixture",
+                [new("wire-model", "Native wire fixture model", Input: ["text"])],
+                context => new NativeFixtureWireChatClient(context.ProviderWire ?? throw new InvalidOperationException(
+                    "The host did not provide the provider wire bridge."), endpoint))
+            {
+                Endpoint = endpoint,
+                AuthRequired = false
+            });
+            builder.AddBeforeProviderRequestHandler((eventData, _, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                RegistrationExtension.RecordTrace($"wire|payload|{eventData.ProviderId}|{eventData.Protocol}");
+                var payload = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(eventData.Payload.GetRawText())!;
+                payload["hostTransformed"] = JsonSerializer.SerializeToElement(true);
+                return ValueTask.FromResult<JsonElement?>(JsonSerializer.SerializeToElement(payload));
+            });
+            builder.AddBeforeProviderHeadersHandler((eventData, _, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                RegistrationExtension.RecordTrace($"wire|headers|{eventData.ProviderId}|{eventData.Protocol}");
+                eventData.Headers["x-native-wire"] = "host-transformed";
+                eventData.Headers["x-native-remove"] = null;
+                return ValueTask.CompletedTask;
+            });
+            builder.AddAfterProviderResponseHandler((eventData, _, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                RegistrationExtension.RecordTrace($"wire|response|{eventData.ProviderId}|{eventData.Protocol}|{eventData.StatusCode}");
+                return ValueTask.CompletedTask;
+            });
+            builder.AddProviderStreamEventHandler((eventData, _, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                RegistrationExtension.RecordTrace($"wire|stream|{eventData.ProviderId}|{eventData.Protocol}|{eventData.EventType}");
+                return ValueTask.CompletedTask;
+            });
+        }
         builder.AddMcpServer(McpServerName, new PiSharpExtensionMcpServerConfiguration
         {
             Type = "stdio",
@@ -238,4 +278,53 @@ internal sealed class NativeFixtureChatClient(string modelId, string mcpToolName
 #else
     private const string MainModel = "physical-main";
 #endif
+}
+
+internal sealed class NativeFixtureWireChatClient(IPiSharpExtensionProviderWireBridge wire, Uri endpoint) : IChatClient
+{
+    public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        var updates = GetStreamingResponseAsync(messages, options, cancellationToken);
+        return await updates.ToChatResponseAsync(cancellationToken);
+    }
+
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+        ChatOptions? options = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var payload = JsonSerializer.SerializeToElement(new { prompt = string.Join("\n", messages.Select(message => message.Text)) });
+        var transformed = await wire.TransformPayloadAsync(payload, cancellationToken);
+        var headers = await wire.TransformHeadersAsync(new Dictionary<string, string?>
+        {
+            ["accept"] = "text/event-stream",
+            ["x-native-remove"] = "present"
+        }, cancellationToken);
+        if (!headers.TryGetValue("x-native-remove", out var removedHeader) || removedHeader is not null)
+            throw new InvalidOperationException("The host bridge did not preserve the nullable provider header.");
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Content = new StringContent(transformed.GetRawText(), System.Text.Encoding.UTF8, "application/json")
+        };
+        foreach (var (name, value) in headers)
+            if (value is not null) request.Headers.TryAddWithoutValidation(name, value);
+        using var client = new HttpClient();
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        await wire.ObserveResponseAsync((int)response.StatusCode,
+            response.Headers.Concat(response.Content.Headers).ToDictionary(header => header.Key,
+                header => string.Join(", ", header.Value), StringComparer.OrdinalIgnoreCase), cancellationToken);
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var reader = new StreamReader(stream);
+        while (await reader.ReadLineAsync(cancellationToken) is { } line)
+        {
+            if (!line.StartsWith("data:", StringComparison.Ordinal)) continue;
+            using var document = JsonDocument.Parse(line[5..].Trim());
+            await wire.ObserveStreamEventAsync("message", document.RootElement, cancellationToken);
+            var text = document.RootElement.GetProperty("text").GetString();
+            if (!string.IsNullOrEmpty(text)) yield return new(ChatRole.Assistant, [new TextContent(text)]);
+        }
+    }
+
+    public object? GetService(Type serviceType, object? serviceKey = null) => null;
+    public void Dispose() { }
 }

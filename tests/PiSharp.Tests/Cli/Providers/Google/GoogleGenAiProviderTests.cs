@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Tests;
@@ -97,6 +98,7 @@ public sealed class GoogleGenAiProviderTests
         string? authorization = null;
         string? accept = null;
         string? requestBody = null;
+        string? wireProbeHeader = null;
         var server = Task.Run(async () =>
         {
             var request = await listener.GetContextAsync();
@@ -105,6 +107,7 @@ public sealed class GoogleGenAiProviderTests
             apiKey = request.Request.Headers["x-goog-api-key"];
             authorization = request.Request.Headers["Authorization"];
             accept = request.Request.Headers["Accept"];
+            wireProbeHeader = request.Request.Headers["x-pisharp-wire-probe"];
             using var body = await JsonDocument.ParseAsync(request.Request.InputStream);
             requestBody = body.RootElement.GetRawText();
             request.Response.ContentType = "text/event-stream";
@@ -127,6 +130,8 @@ public sealed class GoogleGenAiProviderTests
         var echo = AIFunctionFactory.Create((string text) => "echo:" + text, name: "echo");
         var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/bX8AAAAASUVORK5CYII=");
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var wire = new ProviderWireTestSupport();
+        using var wireScope = wire.Enter(deadline.Token);
         using var client = ProviderChatClientFactory.Create(selection);
         var updates = new List<ChatResponseUpdate>();
         await foreach (var update in client.GetStreamingResponseAsync(
@@ -151,6 +156,9 @@ public sealed class GoogleGenAiProviderTests
         Assert.Contains("text/event-stream", accept, StringComparison.OrdinalIgnoreCase);
         using var sent = JsonDocument.Parse(requestBody!);
         var root = sent.RootElement;
+        Assert.True(root.GetProperty("wire_probe").GetBoolean());
+        Assert.Equal("transformed", wireProbeHeader);
+        wire.AssertHooks(vertex ? "google-vertex" : "google-generative-ai", responseExposed: false);
         Assert.Equal("fixture system prompt", root.GetProperty("systemInstruction").GetProperty("parts")[0].GetProperty("text").GetString());
         var userParts = root.GetProperty("contents")[0].GetProperty("parts");
         Assert.Equal("say hello", userParts[0].GetProperty("text").GetString());

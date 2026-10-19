@@ -13,7 +13,8 @@ internal static class GoogleGenAiChatClientFactory
 {
     public static IChatClient Create(ModelSelection selection)
     {
-        var handler = new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false });
+        var handler = ProviderWireHookHandler.CreateWithActivity(selection, "google-generative-ai",
+            new HttpClientHandler { AllowAutoRedirect = false }, observeResponse: false);
         var http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         return new GoogleGenAiChatClient(http, selection.Connection.Endpoint ?? selection.Provider.Endpoint,
             selection.ApiKey, selection.Model);
@@ -48,7 +49,8 @@ internal static class GoogleVertexChatClientFactory
             requestOptions = new(providerOptions.Project, providerOptions.Location, IncludeProjectLocation: false);
         }
 
-        var handler = new ProviderWireActivityHandler(new HttpClientHandler { AllowAutoRedirect = false });
+        var handler = ProviderWireHookHandler.CreateWithActivity(selection, "google-vertex",
+            new HttpClientHandler { AllowAutoRedirect = false }, observeResponse: false);
         var http = new HttpClient(handler, disposeHandler: true) { Timeout = Timeout.InfiniteTimeSpan };
         return new GoogleGenAiChatClient(http, endpoint, selection.ApiKey, selection.Model, requestOptions);
     }

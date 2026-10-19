@@ -25,7 +25,14 @@ public sealed record PiSharpExtensionProviderClientContext(
     string ProviderId,
     string ModelId,
     Uri? Endpoint,
-    string? ApiKey);
+    string? ApiKey)
+{
+    /// <summary>
+    /// Host-owned physical wire callbacks for providers that can expose their real request and
+    /// response boundaries. Existing IChatClient providers may ignore this optional capability.
+    /// </summary>
+    public IPiSharpExtensionProviderWireBridge? ProviderWire { get; init; }
+}
 
 /// <summary>A provider and its models, backed by a standard MEAI chat client.</summary>
 public sealed record PiSharpExtensionProviderDefinition(

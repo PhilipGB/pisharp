@@ -146,6 +146,10 @@ public sealed partial class ExtensionRegistration
         _shortcuts.Clear();
         _userBashHandlers.Clear();
         _inputHandlers.Clear();
+        _beforeProviderRequestHandlers.Clear();
+        _beforeProviderHeadersHandlers.Clear();
+        _afterProviderResponseHandlers.Clear();
+        _providerStreamEventHandlers.Clear();
         _toolCallHooks.Clear();
         _toolResultHooks.Clear();
         _contextTransforms.Clear();

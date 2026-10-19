@@ -6,6 +6,7 @@ using Amazon.BedrockRuntime.Model;
 using Amazon.Runtime.EventStreams;
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime.Providers;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Cli;
 
@@ -20,6 +21,7 @@ internal static class BedrockConverseChatClientFactory
         var model = selection.Model with { BaseUrl = modelEndpoint };
         var config = providerOptions.CreateClientConfig(model, selection.ApiKey);
         var runtime = new AmazonBedrockRuntimeClient(config);
+        BedrockProviderWirePipelineCustomizer.Install(runtime);
         return new BedrockConverseChatClient(new AwsBedrockConverseTransport(runtime), model,
             providerOptions.EnablePromptCaching, providerOptions.OneHourPromptCache,
             providerOptions.ForcePromptCaching, providerOptions.Region);
@@ -47,6 +49,11 @@ internal sealed class BedrockConverseChatClient(IBedrockConverseTransport transp
 
         await foreach (var item in response.Events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
+            if (ProviderWireInvocation.Current is { } invocation)
+                await invocation.ObserveStreamEventAsync("amazon-bedrock", model.Id,
+                    "bedrock-converse-stream", GetEventType(item), ProjectEvent(item), cancellationToken)
+                    .ConfigureAwait(false);
+
             switch (item)
             {
                 case MessageStartEvent start when start.Role != ConversationRole.Assistant:
@@ -205,6 +212,62 @@ internal sealed class BedrockConverseChatClient(IBedrockConverseTransport transp
         JsonValueKind.True => true,
         JsonValueKind.False => false,
         _ => null
+    };
+
+    private static string GetEventType(IEventStreamEvent item) => item switch
+    {
+        MessageStartEvent => "messageStart",
+        ContentBlockStartEvent => "contentBlockStart",
+        ContentBlockDeltaEvent => "contentBlockDelta",
+        ContentBlockStopEvent => "contentBlockStop",
+        MessageStopEvent => "messageStop",
+        ConverseStreamMetadataEvent => "metadata",
+        _ => item.GetType().Name
+    };
+
+    private static JsonElement ProjectEvent(IEventStreamEvent item) => item switch
+    {
+        MessageStartEvent start => JsonSerializer.SerializeToElement(new { role = start.Role.ToString() }),
+        ContentBlockStartEvent start => JsonSerializer.SerializeToElement(new
+        {
+            contentBlockIndex = start.ContentBlockIndex,
+            toolUse = start.Start?.ToolUse is { } toolUse
+                ? new { toolUseId = toolUse.ToolUseId, name = toolUse.Name }
+                : null
+        }),
+        ContentBlockDeltaEvent delta => JsonSerializer.SerializeToElement(new
+        {
+            contentBlockIndex = delta.ContentBlockIndex,
+            text = delta.Delta?.Text,
+            toolUse = delta.Delta?.ToolUse is { } toolUse
+                ? new { input = toolUse.Input?.ToString() }
+                : null,
+            reasoningContent = delta.Delta?.ReasoningContent is { } reasoning
+                ? new { text = reasoning.Text, signature = reasoning.Signature, redactedContent = reasoning.RedactedContent }
+                : null
+        }),
+        ContentBlockStopEvent stop => JsonSerializer.SerializeToElement(new
+        {
+            contentBlockIndex = stop.ContentBlockIndex
+        }),
+        MessageStopEvent stop => JsonSerializer.SerializeToElement(new { stopReason = stop.StopReason }),
+        ConverseStreamMetadataEvent metadata => JsonSerializer.SerializeToElement(new
+        {
+            usage = metadata.Usage is { } usage
+                ? new
+                {
+                    inputTokens = usage.InputTokens,
+                    outputTokens = usage.OutputTokens,
+                    totalTokens = usage.TotalTokens,
+                    cacheReadInputTokens = usage.CacheReadInputTokens
+                }
+                : null
+        }),
+        _ => JsonSerializer.SerializeToElement(new
+        {
+            eventType = item.GetType().Name,
+            value = item.ToString()
+        })
     };
 
     private sealed class ResponseBlock
