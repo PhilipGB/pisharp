@@ -11884,5 +11884,35 @@
     "implementation": "Additive native input source/streaming/result contracts with ordered transform, handled, image and cancellation semantics at existing TUI/RPC/extension routes; user-bash full-result and custom-operation interception through existing shell output, cancellation and persistence owners.",
     "verification": "Product source ed06a4c369197193280a55fc02e4cb9a67ec5966: restore, format, zero-warning build, full .NET 2,426/2,426 with zero skips, architecture 7/7, Node 24/24, Python 50/50, docs 144/558, and six timing-sensitive cases repeated 10 times all pass. MCP retains the same eight classified baseline failures and no new regressions. Push run 39164330291 and PR run 39164339749 passed on product/docs head 024b7272960b080526f6912bf8462c2f9673f81c. The publication-note-only update changes the branch head; final-head CI status is tracked by draft PR #15. See the milestone receipt.",
     "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No global parity claim."
+  },
+  "native_extension_message_lifecycle_milestone": {
+    "date": "2026-10-19",
+    "status": "in_progress",
+    "branch": "milestone/native-extension-message-lifecycle",
+    "base_main": "0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff",
+    "product_source_commit": "e4f06852798d0b49ebdd46a5c5f8a333ce54317d",
+    "review_correction_commit": "484564466fd6d6bc546bdbe93bc24c8caa1cc185",
+    "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "receipt": "docs/parity/fixtures/native-extension-message-lifecycle-2026-10-19.md",
+    "implementation": "Additive native extension message_start/message_update/message_end DTOs and callbacks; ordered, source-owned finalized replacements at the current user, assistant, tool-result, and custom-message owners; accepted content reaches existing MAF, tool, and canonical transcript processing.",
+    "focused_tests": "19/19 passed, zero skipped: lifecycle, registration/rollback/order/removal, and observed-client context. Related custom-message continuation/request-context tests: 51/51. Compiled external-package lifecycle process test: 4/4 packaging variants passed. New coverage verifies incomplete async callback ordering and missing/changed/duplicate tool-result call IDs.",
+    "local_verification": {
+      "restore": "passed with NuGetAudit=false after default audit reported NU1900 because the shared home NuGet HTTP cache is read-only",
+      "format": "passed",
+      "build": "passed with zero warnings and errors",
+      "dotnet_tests": "2452 passed, 0 failed, 0 skipped after PR review corrections",
+      "architecture": "7/7 passed",
+      "node_terminal": "24/24 passed",
+      "python_terminal": "50/50 passed",
+      "documentation_paths": "146 documents, 568 references; passed",
+      "mcp_conformance": "No regressions; the same eight classified baseline failures remain"
+    },
+    "publication": "Draft PR #17 is open; exact-head CI status and run links are tracked in its description.",
+    "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No broad parity claim or capability promotion.",
+    "deferred": [
+      "Pi-only stream start/end/done/error markers unavailable through MEAI",
+      "Opaque provider-content reconstruction",
+      "Generic pi.on(...), TypeScript extensions, provider OAuth, dynamic registration, advanced UI/renderers, and broader extension parity"
+    ]
   }
 }

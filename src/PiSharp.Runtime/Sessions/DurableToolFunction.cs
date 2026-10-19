@@ -16,7 +16,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
     PiSharpToolHookPipeline? toolHooks = null, JsonElement? outputSchema = null, ICodemodeModels? codemodeModels = null,
     Func<IDictionary<string, object?>, PiSharpToolReach?>? reachesTools = null,
     PiSharpToolNamespace? toolNamespace = null,
-    Func<PiSharpExtensionContext?>? currentExtensionContext = null) : DelegatingAIFunction(inner)
+    Func<PiSharpExtensionContext?>? currentExtensionContext = null,
+    NativeExtensionEventDispatcher? messageEvents = null) : DelegatingAIFunction(inner)
 {
     private readonly ToolResultSchemaValidator _outputValidator = new(outputSchema);
 
@@ -212,6 +213,80 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             nestedInvocation.IsError = resultContext.IsError;
             nestedInvocation.Error = resultContext.Error;
         }
+        IReadOnlyList<Microsoft.Extensions.AI.DataContent>? toolImages =
+            ReadToolOutput.TryRead(value, out var readOutput) && readOutput.TryCreateImageContent(out var image) ? [image] : null;
+        if (contract?.Images is { Count: > 0 })
+            toolImages = contract.Images.Select(item => item.ToDataContent()).OfType<Microsoft.Extensions.AI.DataContent>().ToArray();
+        ChatMessage? toolResultMessage = null;
+        OperationCanceledException? messageLifecycleCancellation = null;
+        if (callContent is not null)
+        {
+            var resultContent = new FunctionResultContent(callContent.CallId, value) { Exception = failure };
+            ToolExecutionDuration.Set(resultContent, durationMs);
+            toolResultMessage = new ChatMessage(ChatRole.Tool, [resultContent]);
+            var toolMessageSnapshot = PiSharpExtensionMessageMapper.Snapshot(toolResultMessage);
+            try
+            {
+                await (messageEvents?.DispatchMessageStartAsync(new(toolMessageSnapshot), cancellationToken) ?? Task.CompletedTask)
+                    .ConfigureAwait(false);
+                if (messageEvents is not null)
+                {
+                    var finalized = await messageEvents.DispatchMessageEndAsync(toolMessageSnapshot,
+                        cancellationToken, replacement =>
+                        {
+                            var functionResults = replacement.Contents.Where(content =>
+                                content.Kind == PiSharp.Extensions.Abstractions.PiSharpExtensionMessageContentKind.FunctionResult)
+                                .ToArray();
+                            return functionResults.Length == 1 && functionResults[0].CallId == callContent.CallId
+                                ? null
+                                : $"A tool-result message_end replacement must contain exactly one function result for call '{callContent.CallId}'.";
+                        }).ConfigureAwait(false);
+                    if (!ReferenceEquals(toolMessageSnapshot, finalized))
+                    {
+                        toolResultMessage = PiSharpExtensionMessageMapper.Restore(finalized);
+                        var acceptedResult = toolResultMessage.Contents.OfType<FunctionResultContent>()
+                            .Single(content => content.CallId == callContent.CallId);
+                        value = acceptedResult.Result;
+                        ToolResultOutput.TryReadContract(value, out var replacementContract);
+                        contract = replacementContract;
+                        resultContext.IsError = contract?.IsError == true;
+                        resultContext.Error = contract?.Error;
+                        var replacementImageContents = toolResultMessage.Contents
+                            .OfType<Microsoft.Extensions.AI.DataContent>().ToArray();
+                        if (replacementImageContents.Length > 0)
+                        {
+                            var replacementImages = replacementImageContents
+                                .Select(content => new PiSharpToolImage(content.MediaType ?? "application/octet-stream",
+                                    Convert.ToBase64String(content.Data.Span))).ToArray();
+                            contract = contract is null
+                                ? new PiSharpToolResult(value?.ToString() ?? string.Empty, Details: value,
+                                    IsError: resultContext.IsError, Error: resultContext.Error, Images: replacementImages)
+                                : contract with { Images = replacementImages };
+                            value = contract;
+                            var replacementContents = toolResultMessage.Contents
+                                .Where(content => content is not Microsoft.Extensions.AI.DataContent).ToArray();
+                            var functionResultIndex = Array.FindIndex(replacementContents,
+                                content => content is FunctionResultContent result && result.CallId == callContent.CallId);
+                            if (functionResultIndex >= 0)
+                            {
+                                replacementContents[functionResultIndex] = new FunctionResultContent(callContent.CallId, value)
+                                {
+                                    Exception = acceptedResult?.Exception,
+                                    AdditionalProperties = acceptedResult?.AdditionalProperties?.Clone()
+                                };
+                            }
+                            toolResultMessage = new ChatMessage(ChatRole.Tool, replacementContents);
+                        }
+                        toolImages = replacementImageContents.Length > 0 ? replacementImageContents :
+                            contract?.Images?.Select(image => image.ToDataContent()).OfType<Microsoft.Extensions.AI.DataContent>().ToArray();
+                    }
+                }
+            }
+            catch (OperationCanceledException error) when (cancellationToken.IsCancellationRequested)
+            {
+                messageLifecycleCancellation = error;
+            }
+        }
         var hasStructuredOutput = ToolResultOutput.TryRead(value, out var resultText, out var details);
         if (!hasStructuredOutput) resultText = value?.ToString();
         try
@@ -224,20 +299,9 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             publish(new("tool_outcome_unknown", Tool: Name, OperationId: id, IsError: true, Error: error.Message));
             throw;
         }
-        IReadOnlyList<Microsoft.Extensions.AI.DataContent>? toolImages =
-            ReadToolOutput.TryRead(value, out var readOutput) && readOutput.TryCreateImageContent(out var image) ? [image] : null;
-        if (contract?.Images is { Count: > 0 })
-            toolImages = contract.Images.Select(item => item.ToDataContent()).OfType<Microsoft.Extensions.AI.DataContent>().ToArray();
         if (nestedInvocation is null && FunctionInvokingChatClient.CurrentContext is { } invocationContext &&
             termination.Record(invocationContext, failure is null && contract?.Terminate == true))
             invocationContext.Terminate = true;
-        ChatMessage? toolResultMessage = null;
-        if (callContent is not null)
-        {
-            var resultContent = new FunctionResultContent(callContent.CallId, value) { Exception = failure };
-            ToolExecutionDuration.Set(resultContent, durationMs);
-            toolResultMessage = new ChatMessage(ChatRole.Tool, [resultContent]);
-        }
         publish(new("tool_execution_finished", Text: resultText, Tool: Name, OperationId: id,
                 IsError: resultContext.IsError, Error: resultContext.Error,
                 Details: hasStructuredOutput ? details : null, Cost: contract?.Cost)
@@ -254,6 +318,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             ToolResultMessage = toolResultMessage
         });
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
+        if (messageLifecycleCancellation is not null)
+            ExceptionDispatchInfo.Capture(messageLifecycleCancellation).Throw();
         return value;
     }
 }

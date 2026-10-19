@@ -49,6 +49,17 @@ public sealed class NativeExtensionSettlementProcessTests
             finally { await StopAsync(process); }
         }
         var records = await File.ReadAllLinesAsync(log, timeout.Token);
+        Assert.Contains("message-start:User", records);
+        Assert.Contains("message-start:Assistant", records);
+        Assert.Contains("message-update:text_delta", records);
+        Assert.Contains("message-end:User", records);
+        Assert.Contains("message-end:Assistant", records);
+        if (model == "tools")
+        {
+            Assert.Contains("message-update:toolcall_delta", records);
+            Assert.Contains("message-start:ToolResult", records);
+            Assert.Contains("message-end:ToolResult", records);
+        }
         Assert.Single(records, record => record == "agent-start");
         Assert.Single(records, record => record == "settled:False");
         Assert.Equal(expectedRequests, records.Count(record => record.StartsWith("request:", StringComparison.Ordinal)));

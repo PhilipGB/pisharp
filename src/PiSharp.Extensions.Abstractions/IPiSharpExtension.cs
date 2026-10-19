@@ -92,6 +92,15 @@ public partial interface IPiSharpExtensionBuilder
     /// <summary>Observes the start of each logical model turn.</summary>
     void AddTurnStartHandler(PiSharpExtensionTurnStartHandler handler);
 
+    /// <summary>Observes a newly accepted message before it is added to the agent's working context.</summary>
+    void AddMessageStartHandler(PiSharpExtensionMessageStartHandler handler);
+
+    /// <summary>Observes a partial update to an assistant message while a provider response is streaming.</summary>
+    void AddMessageUpdateHandler(PiSharpExtensionMessageUpdateHandler handler);
+
+    /// <summary>Observes a finalized message and may replace it before it is consumed or persisted.</summary>
+    void AddMessageEndHandler(PiSharpExtensionMessageEndHandler handler);
+
     /// <summary>Observes the finalized or interrupted state of each logical model turn.</summary>
     void AddTurnEndHandler(PiSharpExtensionTurnEndHandler handler);
 

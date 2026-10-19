@@ -1,18 +1,27 @@
 # Detailed reference interface inventory — interfaces originally inventoried at 7c696c00 (current Pi pin 955cc666; TUI delta reviewed 2026-09-25)
 
-## Active milestone — Native Extension Input & User-Bash Interception — 2026-10-18
+## Active milestone — Native Extension Message Lifecycle Hooks — 2026-10-19
 
-Branch `milestone/native-extension-input-bash` starts from PR #14's merge
-`1da1eb9a00ecdcfeaab1b0eb1ba35191e4893a2e`; pinned Pi remains
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The input contract covers source,
-steer/follow-up behavior, chained transforms, handled input, detached images,
-source-aware errors, and cancellation before existing resource expansion and
-queue/run owners. User-bash covers TUI `!`/`!!`, RPC `bash`, first-result
-precedence, fail-closed exceptions, full result replacement, custom output
-operations, cancellation, and canonical bash persistence. Local verification
-passed; exact-head CI status is tracked on draft PR #15 in the
-[receipt](fixtures/native-extension-input-bash-2026-10-18.md). The broad
-extension capability remains `in_progress`.
+Branch `milestone/native-extension-message-lifecycle` starts from PR #16's
+actual merge on `main`, `0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff`; pinned Pi
+remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The bounded addition covers
+detached start/update snapshots and ordered, role-preserving finalized-message
+replacement at prompt, assistant stream, tool-result and custom-message
+boundaries. Draft PR #17 is open; its description tracks exact-head CI.
+See the [message lifecycle receipt](fixtures/native-extension-message-lifecycle-2026-10-19.md).
+The broad extension capability remains `in_progress`.
+
+## Previous milestone — Native Extension Provider Wire Hooks — 2026-10-19
+
+PR #16 merged pinned-equivalent provider payload, header, response and raw-event
+hooks. See the
+[provider-wire receipt](fixtures/native-extension-provider-wire-hooks-2026-10-19.md).
+
+## Previous milestone — Native Extension Input & User-Bash Interception — 2026-10-18
+
+PR #15 was merged from `milestone/native-extension-input-bash` as
+`2ea360f991b0e15c59203557a68a5a1e3c026450`. Its completed input and user-bash
+correction is recorded in the [receipt](fixtures/native-extension-input-bash-2026-10-18.md).
 
 ## Previous milestone — Native Extension Agent Settlement & Mutable Turn Boundaries — 2026-10-18
 

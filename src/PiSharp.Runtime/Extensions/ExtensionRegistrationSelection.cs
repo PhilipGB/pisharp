@@ -61,6 +61,9 @@ public sealed partial class ExtensionRegistration
                     Reconcile(_agentStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_agentEndHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_turnStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_messageStartHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_messageUpdateHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
+                    Reconcile(_messageEndHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_turnEndHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_turnEndBoundaryHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });
                     Reconcile(_agentBeforeSettleHandlers, entry => entry.SourceInfo, (entry, source) => entry with { SourceInfo = source });

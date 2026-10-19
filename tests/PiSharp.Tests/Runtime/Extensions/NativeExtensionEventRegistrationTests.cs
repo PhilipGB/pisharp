@@ -64,6 +64,9 @@ public sealed class NativeExtensionEventRegistrationTests
         adapter.AddAgentStartHandler((_, _, _) => ValueTask.CompletedTask);
         adapter.AddAgentEndHandler((_, _, _) => ValueTask.CompletedTask);
         adapter.AddTurnStartHandler((_, _, _) => ValueTask.CompletedTask);
+        adapter.AddMessageStartHandler((_, _, _) => ValueTask.CompletedTask);
+        adapter.AddMessageUpdateHandler((_, _, _) => ValueTask.CompletedTask);
+        adapter.AddMessageEndHandler((_, _, _) => ValueTask.FromResult<PiSharpExtensionMessageEndResult?>(null));
         adapter.AddTurnEndHandler((_, _, _) => ValueTask.CompletedTask);
         adapter.AddToolExecutionStartHandler((_, _, _) => ValueTask.CompletedTask);
         adapter.AddToolExecutionUpdateHandler((_, _, _) => ValueTask.CompletedTask);
@@ -85,6 +88,9 @@ public sealed class NativeExtensionEventRegistrationTests
         registration.AgentStartHandlers.Select(entry => entry.SourceInfo),
         registration.AgentEndHandlers.Select(entry => entry.SourceInfo),
         registration.TurnStartHandlers.Select(entry => entry.SourceInfo),
+        registration.MessageStartHandlers.Select(entry => entry.SourceInfo),
+        registration.MessageUpdateHandlers.Select(entry => entry.SourceInfo),
+        registration.MessageEndHandlers.Select(entry => entry.SourceInfo),
         registration.TurnEndHandlers.Select(entry => entry.SourceInfo),
         registration.ToolExecutionStartHandlers.Select(entry => entry.SourceInfo),
         registration.ToolExecutionUpdateHandlers.Select(entry => entry.SourceInfo),

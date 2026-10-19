@@ -8,6 +8,8 @@ namespace PiSharp.Runtime.Extensions;
 internal sealed partial class NativeExtensionEventDispatcher(ExtensionRegistration registration,
     PiSharpExtensionContext context, Action<AgentLifecycleEvent> report)
 {
+    internal bool HasMessageEndHandlers => registration.MessageEndHandlers.Count > 0;
+
     internal Task DispatchSessionInfoChangedAsync(NativeExtensions.PiSharpExtensionSessionInfoChangedEvent eventData,
         CancellationToken cancellationToken) => DispatchAsync(registration.SessionInfoChangedHandlers, eventData,
         "session_info_changed", cancellationToken);
@@ -31,6 +33,82 @@ internal sealed partial class NativeExtensionEventDispatcher(ExtensionRegistrati
     internal Task DispatchTurnStartAsync(NativeExtensions.PiSharpExtensionTurnStartEvent eventData,
         CancellationToken cancellationToken, Action<AgentLifecycleEvent>? reportEvent = null) =>
         DispatchAsync(registration.TurnStartHandlers, eventData, "turn_start", cancellationToken, reportEvent);
+
+    internal Task DispatchMessageStartAsync(NativeExtensions.PiSharpExtensionMessageStartEvent eventData,
+        CancellationToken cancellationToken) => DispatchAsync(registration.MessageStartHandlers, eventData,
+        "message_start", cancellationToken);
+
+    internal Task DispatchMessageUpdateAsync(NativeExtensions.PiSharpExtensionMessageUpdateEvent eventData,
+        CancellationToken cancellationToken) => DispatchAsync(registration.MessageUpdateHandlers, eventData,
+        "message_update", cancellationToken);
+
+    internal async Task<NativeExtensions.PiSharpExtensionMessage> DispatchMessageEndAsync(
+        NativeExtensions.PiSharpExtensionMessage message, CancellationToken cancellationToken,
+        Func<NativeExtensions.PiSharpExtensionMessage, string?>? validateReplacement = null)
+    {
+        var current = message;
+        foreach (var handler in registration.MessageEndHandlers)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Task<NativeExtensions.PiSharpExtensionMessageEndResult?> pending;
+            try
+            {
+                pending = handler.Handler(new(current), context, cancellationToken).AsTask();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception error)
+            {
+                Report(error, handler.SourceInfo, "message_end", null);
+                continue;
+            }
+
+            NativeExtensions.PiSharpExtensionMessageEndResult? result;
+            try
+            {
+                result = await pending.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                try { await pending.ConfigureAwait(false); }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+                catch (Exception error) { Report(error, handler.SourceInfo, "message_end", null); }
+                throw;
+            }
+            catch (Exception error)
+            {
+                Report(error, handler.SourceInfo, "message_end", null);
+                continue;
+            }
+
+            var replacement = result?.Replacement;
+            if (replacement is null) continue;
+            if (replacement.Role != current.Role || replacement.RoleName != current.RoleName)
+            {
+                Report(new InvalidOperationException("A message_end replacement must keep the original role."),
+                    handler.SourceInfo, "message_end", null);
+                continue;
+            }
+            try
+            {
+                if (validateReplacement?.Invoke(replacement) is { } validationError)
+                    throw new InvalidOperationException(validationError);
+                if (replacement.ResponseMetadata != current.ResponseMetadata)
+                    replacement = replacement.WithResponseMetadata(current.ResponseMetadata);
+                if (!ReferenceEquals(replacement, current)) _ = PiSharpExtensionMessageMapper.Restore(replacement);
+            }
+            catch (Exception error)
+            {
+                Report(error, handler.SourceInfo, "message_end", null);
+                continue;
+            }
+            current = replacement;
+        }
+
+        return current;
+    }
 
     internal Task DispatchTurnEndAsync(NativeExtensions.PiSharpExtensionTurnEndEvent eventData,
         CancellationToken cancellationToken, Action<AgentLifecycleEvent>? reportEvent = null) =>

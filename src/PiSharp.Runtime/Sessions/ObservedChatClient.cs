@@ -1,6 +1,8 @@
 using System.ClientModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.AI;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Tools;
 
@@ -8,7 +10,7 @@ namespace PiSharp.Runtime.Sessions;
 
 /// <summary>Observes every actual provider request, including subsequent tool-loop model calls.</summary>
 internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycleEvent> publish,
-    ProviderRetryPolicy retryPolicy, Func<IEnumerable<ChatMessage>, IReadOnlyList<ChatMessage>> takeSteering,
+    ProviderRetryPolicy retryPolicy, Func<IEnumerable<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>> takeSteering,
     bool blockImages = false,
     Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
     bool supportsImages = true, Func<ReasoningOptions?>? getReasoning = null,
@@ -21,7 +23,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     Func<IReadOnlyDictionary<string, int>?>? getThinkingBudgets = null,
     Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
     Func<IReadOnlyList<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? prepareTurnAsync = null,
-    Func<CancellationToken, IDisposable>? providerWireScopeFactory = null)
+    Func<CancellationToken, IDisposable>? providerWireScopeFactory = null,
+    NativeExtensionEventDispatcher? messageEvents = null)
     : DelegatingChatClient(inner)
 {
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages,
@@ -30,7 +33,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         if (prepareTurnAsync is not null)
             messages = await prepareTurnAsync(messages.ToArray(), cancellationToken).ConfigureAwait(false);
         publish(new("model_request_started"));
-        var original = WithSteering(await WithContextMessagesAsync(messages, cancellationToken)).ToArray();
+        var original = (await WithSteeringAsync(await WithContextMessagesAsync(messages, cancellationToken),
+            cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
@@ -44,6 +48,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             {
                 using var providerWireScope = providerWireScopeFactory?.Invoke(cancellationToken);
                 var response = await base.GetResponseAsync(requestMessages, requestOptions, cancellationToken);
+                await ProcessCompletedResponseMessagesAsync(response, cancellationToken).ConfigureAwait(false);
                 publish(new("model_request_completed")
                 {
                     ProviderResponse = response.Messages.LastOrDefault(),
@@ -80,7 +85,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         if (prepareTurnAsync is not null)
             messages = await prepareTurnAsync(messages.ToArray(), cancellationToken).ConfigureAwait(false);
         publish(new("model_request_started"));
-        var original = WithSteering(await WithContextMessagesAsync(messages, cancellationToken)).ToArray();
+        var original = (await WithSteeringAsync(await WithContextMessagesAsync(messages, cancellationToken),
+            cancellationToken)).ToArray();
         var requestMessages = await PrepareRequestAsync(original, force: false, cancellationToken);
         options = ApplyCurrentToolLoadout(ApplyCurrentReasoning(options));
         var overflowRecovered = false;
@@ -94,6 +100,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             var producedOutput = false;
             Exception? failure = null;
             var responseUpdates = new List<ChatResponseUpdate>();
+            var assistantMessageStarted = false;
+            var bufferForMessageEnd = messageEvents?.HasMessageEndHandlers == true;
             using var providerWireScope = providerWireScopeFactory?.Invoke(cancellationToken);
             IProviderToolCallDeltaCapture? toolCallCapture = null;
             IAsyncEnumerator<ProviderToolCallDelta>? toolCallEnumerator = null;
@@ -191,6 +199,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                         }
                         var update = enumerator.Current;
                         responseUpdates.Add(update);
+                        await DispatchAssistantUpdateAsync(responseUpdates, update, cancellationToken,
+                            () => assistantMessageStarted, () => assistantMessageStarted = true).ConfigureAwait(false);
                         while (toolCallMove is { IsCompletedSuccessfully: true })
                         {
                             if (!toolCallMove.Result) { toolCallMove = null; break; }
@@ -206,7 +216,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                         {
                             ProviderUpdate = update
                         });
-                        yield return update;
+                        if (!bufferForMessageEnd) yield return update;
                     }
                 }
                 finally
@@ -263,6 +273,14 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 var response = responseUpdates.ToChatResponse();
                 var physicalRoute = VirtualModelRequestHints.ReadHint(requestOptions)?.Execution?.Route;
                 if (physicalRoute is not null) RoutedChatClient.ApplyPhysicalIdentity(response, physicalRoute);
+                var assistantMessageReplaced = await FinalizeAssistantMessageAsync(response, assistantMessageStarted, cancellationToken,
+                    started => assistantMessageStarted = started).ConfigureAwait(false);
+                if (bufferForMessageEnd)
+                {
+                    IEnumerable<ChatResponseUpdate> finalUpdates = assistantMessageReplaced
+                        ? response.ToChatResponseUpdates() : responseUpdates;
+                    foreach (var finalUpdate in finalUpdates) yield return finalUpdate;
+                }
                 publish(new("model_request_completed")
                 {
                     ProviderResponse = response.Messages.LastOrDefault(),
@@ -459,9 +477,10 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
 
     private static bool IsImage(DataContent content) =>
         content.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
-    private IEnumerable<ChatMessage> WithSteering(IEnumerable<ChatMessage> messages)
+    private async Task<IEnumerable<ChatMessage>> WithSteeringAsync(IEnumerable<ChatMessage> messages,
+        CancellationToken cancellationToken)
     {
-        var steering = takeSteering(messages);
+        var steering = await takeSteering(messages, cancellationToken).ConfigureAwait(false);
         if (steering.Count == 0) return messages;
         if (messages is ICollection<ChatMessage> mutable && !mutable.IsReadOnly)
         {
@@ -469,6 +488,108 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             return messages;
         }
         return messages.Concat(steering);
+    }
+
+    private async Task DispatchAssistantUpdateAsync(IReadOnlyList<ChatResponseUpdate> responseUpdates,
+        ChatResponseUpdate update, CancellationToken cancellationToken, Func<bool> hasStarted, Action markStarted)
+    {
+        if (messageEvents is null || update.Contents?.Any(content => content is not UsageContent) != true) return;
+        var currentMessage = responseUpdates.ToChatResponse().Messages.LastOrDefault(message =>
+            message.Role == ChatRole.Assistant);
+        if (currentMessage is null) return;
+        var messageSnapshot = PiSharpExtensionMessageMapper.Snapshot(currentMessage,
+            CreateResponseMetadata(currentMessage, responseUpdate: update));
+        if (!hasStarted())
+        {
+            await messageEvents.DispatchMessageStartAsync(new(messageSnapshot), cancellationToken).ConfigureAwait(false);
+            markStarted();
+        }
+
+        var contentIndex = 0;
+        foreach (var content in update.Contents)
+        {
+            if (content is UsageContent) continue;
+            var (updateType, textDelta) = content switch
+            {
+                TextContent text => ("text_delta", text.Text),
+                TextReasoningContent reasoning => ("thinking_delta", reasoning.Text),
+                FunctionCallContent _ => ("toolcall_delta", null),
+                _ => ("content_update", null)
+            };
+            await messageEvents.DispatchMessageUpdateAsync(new(messageSnapshot, updateType,
+                contentIndex, textDelta, PiSharpExtensionMessageMapper.SnapshotContent(content)),
+                cancellationToken).ConfigureAwait(false);
+            contentIndex++;
+        }
+    }
+
+    private async Task<bool> FinalizeAssistantMessageAsync(ChatResponse response, bool hasStarted,
+        CancellationToken cancellationToken, Action<bool> setStarted)
+    {
+        if (messageEvents is null) return false;
+        var index = -1;
+        for (var current = response.Messages.Count - 1; current >= 0; current--)
+        {
+            if (response.Messages[current].Role != ChatRole.Assistant) continue;
+            index = current;
+            break;
+        }
+        if (index < 0) return false;
+        if (!hasStarted)
+        {
+            await messageEvents.DispatchMessageStartAsync(new(
+                PiSharpExtensionMessageMapper.Snapshot(response.Messages[index],
+                    CreateResponseMetadata(response.Messages[index], response))), cancellationToken).ConfigureAwait(false);
+            setStarted(true);
+        }
+        if (!messageEvents.HasMessageEndHandlers) return false;
+        var snapshot = PiSharpExtensionMessageMapper.Snapshot(response.Messages[index],
+            CreateResponseMetadata(response.Messages[index], response));
+        var accepted = await messageEvents.DispatchMessageEndAsync(snapshot, cancellationToken).ConfigureAwait(false);
+        response.Messages[index] = PiSharpExtensionMessageMapper.Restore(accepted);
+        return !ReferenceEquals(snapshot, accepted);
+    }
+
+    private async Task ProcessCompletedResponseMessagesAsync(ChatResponse response,
+        CancellationToken cancellationToken)
+    {
+        if (messageEvents is null) return;
+        for (var index = 0; index < response.Messages.Count; index++)
+        {
+            var message = response.Messages[index];
+            if (message.Role != ChatRole.Assistant) continue;
+            var snapshot = PiSharpExtensionMessageMapper.Snapshot(message, CreateResponseMetadata(message, response));
+            await messageEvents.DispatchMessageStartAsync(new(snapshot), cancellationToken).ConfigureAwait(false);
+            if (!messageEvents.HasMessageEndHandlers) continue;
+            var accepted = await messageEvents.DispatchMessageEndAsync(snapshot, cancellationToken).ConfigureAwait(false);
+            response.Messages[index] = PiSharpExtensionMessageMapper.Restore(accepted);
+        }
+    }
+
+    private static NativeExtensions.PiSharpExtensionMessageResponseMetadata CreateResponseMetadata(
+        ChatMessage message, ChatResponse? response = null, ChatResponseUpdate? responseUpdate = null)
+    {
+        var usage = response?.Usage ?? responseUpdate?.Contents?.OfType<UsageContent>().LastOrDefault()?.Details;
+        return new NativeExtensions.PiSharpExtensionMessageResponseMetadata(
+            response?.ResponseId ?? responseUpdate?.ResponseId,
+            response?.ModelId ?? responseUpdate?.ModelId,
+            AdditionalProperty(message, "pisharp.provider"),
+            AdditionalProperty(message, "pisharp.api"),
+            response?.FinishReason?.Value ?? responseUpdate?.FinishReason?.Value,
+            usage is null ? null : new NativeExtensions.PiSharpExtensionMessageUsage(
+                usage.InputTokenCount, usage.OutputTokenCount, usage.TotalTokenCount,
+                usage.CachedInputTokenCount, usage.ReasoningTokenCount));
+    }
+
+    private static string? AdditionalProperty(ChatMessage message, string key)
+    {
+        if (message.AdditionalProperties?.TryGetValue(key, out var value) != true) return null;
+        return value switch
+        {
+            string text => text,
+            System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.String } json => json.GetString(),
+            _ => null
+        };
     }
 
     private async Task<IEnumerable<ChatMessage>> WithContextMessagesAsync(IEnumerable<ChatMessage> messages,

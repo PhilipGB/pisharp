@@ -16,6 +16,21 @@ public sealed class SettlementExtension : IPiSharpExtension
             context => new SettlementClient(context.ModelId))
         { AuthRequired = false });
         builder.AddTool(AIFunctionFactory.Create(() => "package tool result", name: "settlement_probe"));
+        builder.AddMessageStartHandler((data, _, _) =>
+        {
+            Record("message-start:" + data.Message.Role);
+            return ValueTask.CompletedTask;
+        });
+        builder.AddMessageUpdateHandler((data, _, _) =>
+        {
+            Record("message-update:" + data.UpdateType);
+            return ValueTask.CompletedTask;
+        });
+        builder.AddMessageEndHandler((data, _, _) =>
+        {
+            Record("message-end:" + data.Message.Role);
+            return ValueTask.FromResult<PiSharpExtensionMessageEndResult?>(null);
+        });
         builder.AddAgentStartHandler((_, _, _) => { Record("agent-start"); return ValueTask.CompletedTask; });
         builder.AddTurnStartHandler((data, _, _) =>
         {

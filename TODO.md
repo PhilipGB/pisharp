@@ -1,20 +1,23 @@
 # PiSharp capability parity
 
-## Active milestone — Native Extension Provider Wire Hooks — 2026-10-19
+## Active milestone — Native Extension Message Lifecycle Hooks — 2026-10-19
 
-Branch `milestone/native-extension-provider-wire-hooks` descends from PR #15's
-actual merge commit on `main`, `2ea360f991b0e15c59203557a68a5a1e3c026450`,
-with Pi pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The increment implements the four
-provider-wire hooks at pinned-equivalent physical boundaries for each required
-built-in protocol, preserves the pinned no-response cases, and adds the
-host-owned bridge for new wire-aware extension providers. Existing PR #11
-`IChatClient` providers remain compatible without synthesized callbacks.
-Broad extension parity remains `in_progress`; this milestone does not promote
-the wider capability inventory.
+Branch `milestone/native-extension-message-lifecycle` starts from PR #16's
+actual merge on `main`, `0f1f68b14bb636d4ed85bfd7dcce6916aa00cbff`; Pi remains
+pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Add typed
+`message_start`, assistant-stream `message_update`, and finalized
+`message_end` replacement handlers at the existing message owners. Focused and
+full validation pass. Draft PR #17 is open; exact-head CI links are tracked in
+its description. Keep broad extension parity `in_progress`.
 
 See the [continuation](docs/continuation.md), [extension API guide](docs/extensions.md),
-and [provider-wire receipt](docs/parity/fixtures/native-extension-provider-wire-hooks-2026-10-19.md).
+and [message lifecycle receipt](docs/parity/fixtures/native-extension-message-lifecycle-2026-10-19.md).
+
+## Previous milestone — Native Extension Provider Wire Hooks — 2026-10-19
+
+PR #16 merged provider wire hooks at the pinned physical payload, header,
+response, and raw-event boundaries; see the
+[provider-wire receipt](docs/parity/fixtures/native-extension-provider-wire-hooks-2026-10-19.md).
 
 ## Previous milestone — Native Extension Input & User-Bash Interception — 2026-10-18
 
