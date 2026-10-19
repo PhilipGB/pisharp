@@ -6,6 +6,7 @@
 - Pinned Pi: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 - Branch: `milestone/native-extension-message-lifecycle`.
 - Product source commit: `e4f06852798d0b49ebdd46a5c5f8a333ce54317d`.
+- Review correction commit: `484564466fd6d6bc546bdbe93bc24c8caa1cc185`.
 - Scope: additive native compiled-extension `message_start`, assistant stream
   `message_update`, and finalized `message_end` replacement callbacks.
 
@@ -36,6 +37,9 @@ end. Supported text, reasoning, data, URI, function-call/result content,
 additional JSON properties, and available response metadata are detached.
 Opaque provider content can be observed as JSON but cannot be reconstructed by
 a replacement. MEAI also omits Pi-only fields and raw provider representation.
+At PiSharp's tool-result boundary, a replacement must retain exactly one
+function-result content with the original tool-call ID; missing, changed, and
+duplicate IDs are rejected with a source-aware extension error.
 
 Assistant updates are held until end handlers finish when replacement handlers
 are registered, so accepted final content reaches the authoritative MAF message
@@ -54,14 +58,19 @@ queued follow-up replacement, tool-call update structure and tool-result
 replacement on the following request, idle custom-message lifecycle and
 replacement, role/malformed replacement rejection, continued dispatch after
 ordinary failure, provider failure without message end, and callback
-cancellation/context revocation. `NativeExtensionEventRegistrationTests`
+cancellation/context revocation. It also covers an incomplete asynchronous
+context-message callback before the next provider request and verifies that the
+context lifecycle remains ordered before the request's turn-start notification.
+Missing, changed, and duplicate tool-call IDs are rejected; a later handler
+sees the original result and the provider and canonical transcript retain the
+original call ID and result. `NativeExtensionEventRegistrationTests`
 covers source order, checkpoint rollback, source replacement and removal for
 the new handler lists. Existing compiled-provider history fixtures continue to
 build and load against the additive Abstractions API.
 
-Focused lifecycle, registration, and observed-client tests: 15 passed, zero
-failed/skipped. The suite includes custom messages, queued follow-up, and
-partial-provider failure behavior. The compiled external-package lifecycle
+Focused lifecycle, registration, and observed-client tests: 19 passed, zero
+failed/skipped. Related custom-message continuation and request-context tests:
+51 passed, zero failed/skipped. The compiled external-package lifecycle
 process test passed all four packaging variants, including user, assistant, and
 tool-result start/end callbacks plus text and tool-call updates.
 
@@ -71,7 +80,7 @@ Restore completed with `dotnet restore PiSharp.slnx -p:NuGetAudit=false` after
 the default audit request reported `NU1900`: the sandbox's shared vulnerability
 cache under `/home/philip/.local/share/NuGet/http-cache` is read-only. Format
 verification passed. The solution warnings-as-errors build passed with zero
-warnings and errors. The final full .NET suite passed **2,448/2,448**, zero
+warnings and errors. The final full .NET suite passed **2,452/2,452**, zero
 skipped, with `TMPDIR=/tmp`; Architecture passed **7/7**. One earlier full run
 had a transient missing fixture output path in an unrelated model-package test;
 that test passed alone and the complete suite passed on rerun. Node terminal

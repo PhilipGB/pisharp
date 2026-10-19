@@ -284,7 +284,9 @@ input to the next handler. The role and original role name are invariant. Wrong-
 replacements are reported against their source and ignored, while later handlers still run and
 ordinary handler failures do not roll back earlier accepted replacements. The last valid
 replacement is the message persisted and passed to subsequent provider work. Tool-result
-replacement happens before the durable tool result is returned to the model loop. Input and
+replacement must retain exactly one function-result content with the original tool-call ID;
+missing, changed, or duplicate call IDs are reported and rejected before later handlers run.
+Replacement happens before the durable tool result is returned to the model loop. Input and
 custom-message replacements are applied before canonical persistence. Assistant streaming updates
 are buffered until end handlers finish so an accepted replacement reaches the existing MAF
 message boundary; when handlers make no replacement, PiSharp forwards the original provider
