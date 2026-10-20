@@ -2429,7 +2429,8 @@ public sealed class TerminalPtyTests
                 }
                 catch (OperationCanceledException)
                 {
-                    throw new InvalidOperationException($"Timed out waiting for editor input '{expected}'. Current screen:\n{screen.LastFrame}");
+                    throw new InvalidOperationException($"Timed out waiting for editor input '{expected}'. " +
+                        $"Decoded input was '{EditorInputLine(screen.LastFrame)}'. Current screen:\n{screen.LastFrame}");
                 }
             }
 
@@ -2889,7 +2890,8 @@ public sealed class TerminalPtyTests
     {
         return frame.Split('\n').Select(line => line.Trim())
             .LastOrDefault(line => line.StartsWith('@') ||
-                line.StartsWith('/') && line.Count(character => character == '/') == 1) ?? "";
+                line.StartsWith('/') && line.Count(character => character == '/') == 1 &&
+                !line.Contains("   ", StringComparison.Ordinal)) ?? "";
     }
 
     private static string ShellQuote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";

@@ -1,5 +1,6 @@
 using PiSharp.Cli;
 using PiSharp.Cli.Tui;
+using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Tests;
 
@@ -141,6 +142,106 @@ public sealed class TerminalScreenCompositorTests
         Assert.Contains(rows, row => row.Contains("→ first", StringComparison.Ordinal));
         Assert.Contains(rows, row => row.Contains("second", StringComparison.Ordinal));
         Assert.DoesNotContain(rows, row => row.Contains("third", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ExtensionPresentationOccupiesIndependentRowsAroundTheEditorAndFooter()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var frame = compositor.Compose("draft", 5, null, null, "conversation", "model status",
+            overlay: null, scrollOffset: 0, columns: 48, height: 18,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            extensionStatuses: [("build", "ready")],
+            extensionHeader: [new("extension header", "accent")],
+            extensionWidgetsAbove: [new("above editor", "success")],
+            extensionWidgetsBelow: [new("below editor", "warning")],
+            extensionFooter: [new("extension footer", "muted")]);
+        var plain = frame.Rows.Select(TerminalTextLayout.StripFormatting).ToArray();
+        var header = Array.FindIndex(plain, row => row.Contains("extension header", StringComparison.Ordinal));
+        var conversation = Array.FindIndex(plain, row => row.Contains("conversation", StringComparison.Ordinal));
+        var above = Array.FindIndex(plain, row => row.Contains("above editor", StringComparison.Ordinal));
+        var editor = Array.FindIndex(plain, row => row.Contains("draft", StringComparison.Ordinal));
+        var below = Array.FindIndex(plain, row => row.Contains("below editor", StringComparison.Ordinal));
+        var extensionFooter = Array.FindIndex(plain, row => row.Contains("extension footer", StringComparison.Ordinal));
+
+        Assert.True(header < conversation);
+        Assert.True(conversation < above);
+        Assert.True(above < editor);
+        Assert.True(editor < below);
+        Assert.True(below < extensionFooter);
+        Assert.Contains(plain, row => row.Contains("build: ready", StringComparison.Ordinal));
+        Assert.Contains(plain[^1], "model status");
+        Assert.DoesNotContain("above editor", frame.Rows[^1]);
+    }
+
+    [Fact]
+    public void ExtensionWidgetsAreSanitizedAndRemainInsideVeryShortScreens()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var frame = compositor.Compose("draft", 5, null, null, "conversation", "model status",
+            overlay: null, scrollOffset: 0, columns: 20, height: 5,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            extensionStatuses: [("status", "live")],
+            extensionHeader: [new("\u001b]0;injected\u0007 header")],
+            extensionWidgetsAbove: Enumerable.Range(0, 20).Select(index => new PiSharpExtensionUiLine($"top {index}")).ToArray(),
+            extensionWidgetsBelow: Enumerable.Range(0, 20).Select(index => new PiSharpExtensionUiLine($"bottom {index}")).ToArray());
+        var plain = frame.Rows.Select(TerminalTextLayout.StripFormatting).ToArray();
+
+        Assert.Equal(5, frame.Rows.Count);
+        Assert.All(frame.Rows, row => Assert.True(TerminalTextLayout.Width(row) <= 20));
+        Assert.Contains(plain[^1], "model status");
+        Assert.DoesNotContain("\u001b]0;", string.Join("\n", frame.Rows));
+    }
+
+    [Fact]
+    public void ExtensionPresentationClipsWideAndCombiningUnicodeByTerminalCells()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var frame = compositor.Compose("draft界e\u0301", 5, null, null, "conversation界", "model status",
+            overlay: null, scrollOffset: 0, columns: 17, height: 14,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            extensionStatuses: [("build", "ready")],
+            extensionHeader: [new("header 界界界 e\u0301")],
+            extensionWidgetsAbove: [new("above 界界界界界界界界")],
+            extensionWidgetsBelow: [new("below e\u0301 界界界界")],
+            extensionFooter: [new("footer 界界界界界界界界")],
+            extensionCustomOverlay: [new("overlay 界界界界界界")],
+            extensionCustomOverlayOptions: new(Left: 3, Top: 2, Width: 11, Height: 5));
+
+        Assert.Equal(14, frame.Rows.Count);
+        Assert.All(frame.Rows, row => Assert.InRange(TerminalTextLayout.Width(row), 0, 17));
+        Assert.DoesNotContain("\u001b]52;", string.Join("\n", frame.Rows));
+        Assert.Contains(frame.Rows.Select(TerminalTextLayout.StripFormatting),
+            row => row.Contains("overlay", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ExtensionFullScreenLayoutsStayWithinBoundsAcrossTerminalSizes()
+    {
+        for (var columns = 1; columns <= 80; columns++)
+            for (var height = 1; height <= 30; height++)
+                foreach (var hostingMode in new[] { "focused", "overlay" })
+                {
+                    var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+                    var frame = compositor.Compose("draft with wrapped text 界", 14, null, null,
+                        "conversation content 界", "model status", overlay: null, scrollOffset: 0,
+                        columns, height, new TranscriptSearchController(), new TerminalMouseRouter(),
+                        TerminalTheme.Default,
+                        extensionStatuses: [("build", "ready")],
+                        extensionHeader: [new("extension header")],
+                        extensionWidgetsAbove: [new("above editor widget")],
+                        extensionWidgetsBelow: [new("below editor widget")],
+                        extensionFooter: [new("extension footer")],
+                        extensionCustomOverlay: hostingMode == "overlay" ? [new("overlay panel")] : null,
+                        extensionCustomOverlayOptions: new(Left: columns / 3, Top: height / 3,
+                            Width: Math.Max(5, columns / 2), Height: Math.Max(1, height / 2)),
+                        extensionCustomPanel: hostingMode == "focused" ? [new("focused custom panel")] : null);
+
+                    Assert.Equal(height, frame.Rows.Count);
+                    Assert.All(frame.Rows, row => Assert.InRange(TerminalTextLayout.Width(row), 0, columns));
+                    Assert.InRange(frame.CursorRow, 0, height - 1);
+                    Assert.InRange(frame.CursorColumn, 1, columns + 1);
+                }
     }
 
     [Fact]
@@ -451,6 +552,19 @@ public sealed class TerminalScreenCompositorTests
             Assert.True(currentIndex > previousIndex, $"Expected startup hint in order: {hint}");
             previousIndex = currentIndex;
         }
+    }
+
+    [Fact]
+    public void ExtensionOverlayFallsBackToClippedContentOnVerySmallTerminals()
+    {
+        var rows = new[] { "", "" };
+
+        TerminalOverlayLayout.ApplyExtension(rows, ["Extension panel", "Second line"],
+            columns: 4, rows: 2, theme: TerminalTheme.Default, options: null);
+
+        Assert.Equal(new[] { "Exte", "Seco" }, rows);
+        Assert.All(rows, row => Assert.InRange(TerminalTextLayout.Width(row), 0, 4));
+        Assert.DoesNotContain("+", string.Join("", rows));
     }
 
     [Fact]

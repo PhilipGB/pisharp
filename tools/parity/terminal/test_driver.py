@@ -16,7 +16,7 @@ from unittest.mock import patch
 from compare import ControlTrace, canonical_render_frames, compare_products, differences
 from fixture_http import FixtureServer
 from pty_process import RenderFrameSequence, RenderFrameStore, TerminalProcess
-from run import commands, environment, expand_environment, prepare_workspace, write_json_stream, write_scenario_files
+from run import commands, environment, expand_environment, prepare_workspace, stage_native_extension_package, write_json_stream, write_scenario_files
 from thread_limits import TEST_THREAD_LIMIT, apply_test_thread_limit, thread_limit_environment
 
 apply_test_thread_limit()
@@ -177,6 +177,44 @@ class DriverTests(unittest.TestCase):
             self.assertNotIn(str(extension.resolve()), result['pi'])
             with self.assertRaises(ValueError):
                 commands(Path('/current-pi'), Path('/pisharp.dll'), scenario)
+
+    def test_fixture_stages_compiled_native_extension_as_a_manifest_package(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            agent = root / 'agent'
+            agent.mkdir()
+            extension = root / 'NativeFixture.dll'
+            extension.write_bytes(b'compiled-extension')
+            extension.with_suffix('.deps.json').write_text('{"runtimeTarget":{}}')
+            scenario = {
+                'pisharpExtension': True,
+                'pisharpNativeExtensionPackage': {
+                    'id': 'Example.Native-Fixture',
+                    'version': '1.0.0',
+                    'type': 'Example.NativeFixture.EntryPoint',
+                },
+            }
+            (agent / 'settings.json').write_text('{"theme":"dark"}')
+
+            stage_native_extension_package(agent, scenario, extension)
+
+            package_root = agent / 'native-extensions' / 'example.native-fixture' / '1.0.0'
+            manifest = json.loads((package_root / 'pisharp-extension.json').read_text())
+            settings = json.loads((agent / 'settings.json').read_text())
+            self.assertEqual('Example.Native-Fixture', manifest['id'])
+            self.assertEqual('Example.NativeFixture.EntryPoint', manifest['extensions'][0]['type'])
+            self.assertEqual(b'compiled-extension', (package_root / 'lib/net10.0/NativeFixture.dll').read_bytes())
+            self.assertEqual(1, len(settings['nativeExtensions']))
+            self.assertTrue(settings['nativeExtensions'][0]['source'].endswith('.nupkg'))
+            self.assertTrue(Path(settings['nativeExtensions'][0]['source']).is_file())
+
+            command = commands(Path('/current-pi'), Path('/pisharp.dll'), scenario, extension)['pisharp']
+            self.assertNotIn('--extension', command)
+
+            unsafe = copy.deepcopy(scenario)
+            unsafe['pisharpNativeExtensionPackage']['id'] = '../outside'
+            with self.assertRaises(ValueError):
+                stage_native_extension_package(agent, unsafe, extension)
 
     def test_runner_restarts_keep_render_frame_spooling_enabled(self):
         from run import start_terminal_process

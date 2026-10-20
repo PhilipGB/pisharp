@@ -4,10 +4,20 @@ namespace PiSharp.Runtime.Extensions;
 
 /// <summary>Adapts the versioned public authoring contract to PiSharp's existing extension runtime.</summary>
 internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegistration registration,
-    NativeExtensionProcessExecutor? processExecutor = null)
+    NativeExtensionProcessExecutor? processExecutor = null,
+    IPiSharpExtensionUiPackageScope? uiScope = null)
     : NativeExtensions.IPiSharpExtensionBuilder
 {
     private int _isConfiguring = 1;
+
+    public NativeExtensions.IPiSharpExtensionUiRegistration Ui
+    {
+        get
+        {
+            EnsureConfiguring();
+            return (NativeExtensions.IPiSharpExtensionUiRegistration?)uiScope ?? UnavailableUiRegistration.Instance;
+        }
+    }
 
     public NativeExtensions.PiSharpExtensionProcessExecutor ProcessExecutor
     {
@@ -94,5 +104,10 @@ internal sealed partial class NativeExtensionRegistrationAdapter(ExtensionRegist
     {
         if (Volatile.Read(ref _isConfiguring) == 0)
             throw new InvalidOperationException("Extension registrations are only available during Configure.");
+    }
+
+    private sealed class UnavailableUiRegistration : NativeExtensions.IPiSharpExtensionUiRegistration
+    {
+        internal static UnavailableUiRegistration Instance { get; } = new();
     }
 }

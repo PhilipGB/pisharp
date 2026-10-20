@@ -161,13 +161,18 @@ public sealed class ExtensionContextFixture : IPiSharpExtension
                 "tool_execution_update" or "tool_execution_finished")
                 Trace("event:" + item.Type + ":" + context.CurrentModelId);
         });
-        registration.AddTool(AIFunctionFactory.Create((AIFunctionArguments arguments) =>
+        registration.AddTool(AIFunctionFactory.Create(async (AIFunctionArguments arguments,
+            CancellationToken cancellationToken) =>
         {
             var invocation = PiSharpToolExecutionContext.Get(arguments) ??
                 throw new InvalidOperationException("PiSharp tool invocation context was not attached.");
             var context = invocation.ExtensionContext ??
                 throw new InvalidOperationException("PiSharp extension context was not attached.");
             invocation.ReportProgress("extension context progress");
+            var selected = await context.Ui.SelectAsync("RPC region", ["North", "South"], cancellationToken);
+            var confirmed = await context.Ui.ConfirmAsync("RPC confirm", "Continue?", cancellationToken);
+            var label = await context.Ui.InputAsync("RPC label", "Name", cancellationToken);
+            var edited = await context.Ui.EditAsync("RPC editor", "prefill", cancellationToken);
             context.Ui.Notify("extension context notification", "warning");
             var state = new
             {
@@ -181,7 +186,11 @@ public sealed class ExtensionContextFixture : IPiSharpExtension
                 context.SessionId,
                 context.SessionName,
                 context.ConversationHeadId,
-                ActiveToolNames = context.ActiveToolNames
+                ActiveToolNames = context.ActiveToolNames,
+                Selected = selected,
+                Confirmed = confirmed,
+                Label = label,
+                Edited = edited
             };
             Trace("state:" + JsonSerializer.Serialize(state, JsonSerializerOptions.Web));
             return JsonSerializer.Serialize(state, JsonSerializerOptions.Web);

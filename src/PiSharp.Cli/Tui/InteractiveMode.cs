@@ -19,6 +19,8 @@ internal static class InteractiveMode
     {
         var editor = presentation.Editor;
         var terminalScreen = presentation.Screen;
+        using var extensionUiBinding = projectBinding.Configuration.ExtensionUi is ProjectTrustStartupUi packageUi &&
+            terminalScreen is not null ? packageUi.BindInteractiveScreen(terminalScreen, editor, presentation) : null;
         if (projectBinding.Configuration.ExtensionUi is ProjectTrustStartupUi extensionUi && terminalScreen is not null)
             extensionUi.SetInteractiveNotificationHandler((message, type) => terminalScreen.AppendThemedStatusLine(
                 type == "info" ? message : $"{type}: {message}"));
@@ -155,11 +157,13 @@ internal static class InteractiveMode
             var capabilities = PiSharpExtensionCapabilitiesFactory.Create(projectBinding, modelBinding, run,
                 commandInfo.SourceInfo.Path, session, controls, SendUserMessageAsync, SendCustomMessageAsync,
                 GetExtensionCommands, settingsAndFlags);
+            var callbackUi = extensionLease.Current.Registration.CreateCallbackUi(commandInfo.SourceInfo.Path,
+                projectBinding.Configuration.ExtensionUi);
             return new PiSharpExtensionCommandContext(projectBinding.WorkingDirectory, !run.IsActive,
                 projectBinding.Trusted, run.PendingPromptCount > 0,
                 SendUserMessageAsync, SendCustomMessageAsync,
                 projectBinding.Configuration.ExtensionMode, projectBinding.Configuration.HasUserInterface,
-                projectBinding.Configuration.ExtensionUi, controls)
+                callbackUi, controls)
             {
                 Session = session,
                 SettingsAndFlags = settingsAndFlags,
@@ -229,6 +233,8 @@ internal static class InteractiveMode
                 else Console.Error.WriteLine($"Extension \"{shortcut.SourceInfo.Path}\" error: {error.Message}");
             }
         }
+
+        editor?.SetExtensionModalActionHandlers(HandleEditorApplicationAction, HandleExtensionShortcutAsync);
 
         if (!string.IsNullOrWhiteSpace(prompt) || (projectBinding.Arguments.FileArguments?.Count ?? 0) > 0)
         {

@@ -7,6 +7,9 @@ namespace PiSharp.Cli.Tui;
 public sealed class EditorBuffer
 {
     private sealed record Snapshot(string Text, int Cursor, int? SelectionAnchor);
+    private sealed record ExtensionEditState(string Text, int Cursor, Snapshot[] Undo, string[] History,
+        int HistoryIndex, string Draft, int DraftCursor, int? SelectionAnchor, int? PreferredColumn,
+        bool CoalesceTypedWord, LastEditAction LastEditAction, string? LastYankedText, string[] KillRing);
     private enum LastEditAction { None, Kill, Yank }
     private enum KillDirection { Backward, Forward }
 
@@ -32,6 +35,46 @@ public sealed class EditorBuffer
     public int? SelectionEnd => _selectionAnchor is { } anchor && anchor != Cursor ? Math.Max(anchor, Cursor) : null;
     public string? SelectedText => SelectionStart is { } start && SelectionEnd is { } end ? _text[start..end] : null;
     public IReadOnlyList<string> History => _history;
+
+    internal object CaptureExtensionEditState() => new ExtensionEditState(_text, Cursor, [.. _undo],
+        [.. _history], _historyIndex, _draft, _draftCursor, _selectionAnchor, _preferredColumn,
+        _coalesceTypedWord, _lastEditAction, _lastYankedText, _killRing.Capture());
+
+    internal void BeginExtensionEdit(string? text)
+    {
+        _text = text ?? string.Empty;
+        Cursor = _text.Length;
+        _historyIndex = _history.Count;
+        _draft = _text;
+        _draftCursor = Cursor;
+        _undo.Clear();
+        ClearSelection();
+        _preferredColumn = null;
+        _coalesceTypedWord = false;
+        BreakKillYankChain();
+    }
+
+    internal void RestoreExtensionEditState(object capturedState)
+    {
+        ArgumentNullException.ThrowIfNull(capturedState);
+        if (capturedState is not ExtensionEditState state)
+            throw new ArgumentException("The editor state was not captured by this editor.", nameof(capturedState));
+        _text = state.Text;
+        Cursor = state.Cursor;
+        _undo.Clear();
+        _undo.AddRange(state.Undo);
+        _history.Clear();
+        _history.AddRange(state.History);
+        _historyIndex = state.HistoryIndex;
+        _draft = state.Draft;
+        _draftCursor = state.DraftCursor;
+        _selectionAnchor = state.SelectionAnchor;
+        _preferredColumn = state.PreferredColumn;
+        _coalesceTypedWord = state.CoalesceTypedWord;
+        _lastEditAction = state.LastEditAction;
+        _lastYankedText = state.LastYankedText;
+        _killRing.Restore(state.KillRing);
+    }
 
     public EditorAction Handle(ConsoleKeyInfo key)
     {

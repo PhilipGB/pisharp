@@ -171,7 +171,80 @@ builder.AddSessionShutdownHandler((eventData, context, cancellationToken) =>
 
 Start reasons are `Startup`, `Reload`, `New`, `Resume`, and `Fork`; shutdown reasons are `Quit`, `Reload`, `New`, `Resume`, and `Fork`. A new session has its own state branch, while a resumed or forked session projects only entries on its active branch. Lifecycle callbacks run in extension registration order. One handler failure is reported through extension diagnostics and does not prevent later handlers from running. The host owns callback cancellation and shutdown; lifecycle handlers are not background tasks.
 
-The public `context.Ui` adapts the existing safe host UI and supports only `SelectAsync`, `ConfirmAsync`, `InputAsync`, and `Notify`. Select/input return `null` and confirm returns `false` when dialogs are unavailable or dismissed. Cancellation propagates. TUI notifications appear in the terminal; headless host notifications use the host's diagnostic output. RPC and print modes do not start terminal dialogs.
+The public `context.Ui` adapts the host UI. Its dialog methods are `SelectAsync`, `ConfirmAsync`, `InputAsync`, their timeout-aware `*WithOptionsAsync` forms, `EditAsync`, and `ShowCustomAsync<T>`. It also exposes `Notify`, editor draft operations, theme and tool-expansion controls, and the persistent UI registrations described below. Select/input/edit return `null` when unavailable or dismissed; confirm returns `false`; a custom component returns a cancelled result. Caller cancellation propagates. TUI notifications appear in the terminal. RPC sends the matching `extension_ui_request` event and waits for an `extension_ui_response` for dialogs; caller cancellation, package removal, and timeout clear the pending request. Print, JSON, and direct Runtime notifications use diagnostic output.
+
+### Interactive UI and package-owned registrations
+
+Capture `builder.Ui` during `Configure` when a registration must remain active after the callback returns. The builder capability is owned by the compiled package: removal, reload and failed configuration revoke it and remove its statuses, widgets, components, input listeners, autocomplete providers and presentation overrides. Calls through a callback's `context.Ui` remain callback-scoped and are revoked when that callback ends. Components installed through the package capability are disposed when replaced, cleared or removed with their package.
+
+```csharp
+using System.Text;
+
+public sealed class DashboardExtension : IPiSharpExtension
+{
+    public void Configure(IPiSharpExtensionBuilder builder)
+    {
+        var ui = builder.Ui;
+        ui.SetStatus("build", "Build ready");
+        ui.SetWidget("build", ["Build dashboard is ready"], PiSharpExtensionWidgetPlacement.AboveEditor);
+        ui.OnTerminalInput(input => input.Text == "!"
+            ? PiSharpExtensionTerminalInputResult.Consume
+            : PiSharpExtensionTerminalInputResult.PassThrough);
+
+        builder.AddCommand("dashboard", async (_, context, cancellationToken) =>
+        {
+            var result = await context.Ui.ShowCustomAsync<string>(
+                complete => new DashboardPanel(complete),
+                cancellationToken: cancellationToken);
+            if (result.IsCancelled) return "Dashboard closed.";
+
+            context.Ui.SetEditorText(result.Value ?? string.Empty);
+            var theme = context.Ui.SetTheme("light");
+            context.Ui.SetToolsExpanded(true);
+            return theme.Success ? "Dashboard updated." : theme.Error ?? "Theme unavailable.";
+        });
+    }
+}
+
+public sealed class DashboardPanel(Action<string> complete) : IPiSharpExtensionUiComponent
+{
+    private readonly StringBuilder _text = new();
+
+    public IReadOnlyList<PiSharpExtensionUiLine> Render(PiSharpExtensionUiRenderContext context) =>
+        [new("Dashboard", "accent"), new($"Value: {_text}")];
+
+    public PiSharpExtensionUiInputDisposition HandleInput(PiSharpExtensionUiInputEvent input)
+    {
+        if (input.Key == nameof(ConsoleKey.Enter))
+        {
+            complete(_text.ToString());
+            return PiSharpExtensionUiInputDisposition.Handled;
+        }
+        if (input.Text is { Length: > 0 } text)
+        {
+            _text.Append(text);
+            return PiSharpExtensionUiInputDisposition.Handled;
+        }
+        return PiSharpExtensionUiInputDisposition.PassThrough;
+    }
+
+    public void OnResize(PiSharpExtensionUiSize size) { }
+    public void AttachRedraw(Action requestRedraw) { }
+    public void Dispose() { }
+}
+```
+
+`IPiSharpExtensionUiComponent` renders plain lines with optional host theme style names, receives parsed input, can observe resize, request redraw through the supplied callback, and is disposed by the host. `ShowCustomAsync<T>` supports focused and overlay hosting, typed one-shot completion, Escape/dismissal, cancellation and package removal. The host restores editor focus and preserves the draft when the component closes. A second active custom component cancels and disposes the first. Component exceptions are reported and isolated from terminal rendering; a custom component render failure also cancels that request. Component disposal waits for an in-flight render, resize or input callback to return.
+
+Persistent statuses are keyed per package and ordered deterministically in the footer. When names collide, the footer retains each active owner entry and dynamic components receive a single stable status key whose value comes from the latest active owner. Widgets can be static lines or dynamic components placed above or below the editor; `ClearWidget(key)` clears either form without an ambiguous `SetWidget(key, null)` overload. Header, footer, editor, working-message, working-indicator, hidden-thinking-label, and title changes are owned by the installing package; removing the current owner restores another eligible contribution or the host default. `SetTheme(name)` selects a catalog theme and saves it to the active user's settings, matching Pi's settings-manager behavior; the selection remains after the extension is removed. Tool-output expansion is session presentation state and is not reverted solely because its setter package unloads. Content is terminal-sanitized and clipped/wrapped through the existing cell-aware screen compositor. Working indicators use the screen's bounded refresh path rather than extension-owned background loops.
+
+`PasteToEditor` inserts through the active `EditorBuffer`, so normal line-ending and control-character handling applies; unlike Pi's editor it does not replace large pastes with expandable markers. `SetEditorText` and `GetEditorText` operate on the active draft. `EditAsync` temporarily uses the host editor and restores the saved draft on submit or cancellation. Autocomplete providers run in package and registration order after existing host completions, with cancellation, duplicate suppression and per-provider failure isolation. Custom editor components receive keys before the default editor and can return `PassThrough` to retain built-in handling. Set `ReplacesDefaultEditor` to replace the visible editor row while keeping the host draft and submit path. Theme methods inspect detached snapshots from the existing theme catalog; `SetTheme` reports failure if the theme cannot be loaded, settings cannot be saved, or no interactive screen is available.
+
+Input handlers receive decoded events, including `RawData` and parsed mouse information. Internal terminal replies are filtered before extension callbacks; package listeners run before focused custom components, normal shortcuts and editor handling, while reserved abort/clear keys and the configured exit key on an empty draft remain host-owned. Listeners may pass, consume, or replace the current event with at most 4096 UTF-8 bytes. Replacement data is decoded through the host input parser, and later listeners see the resulting key, text or mouse events in registration order. Reserved abort/clear keys produced by a rewrite bypass later extension listeners and reach the host. The callback runs after the original input was parsed, so it cannot observe or replace a partial terminal sequence as Pi's raw-byte listeners can. Extension code is trusted in-process code; rewritten control sequences enter the editor input path and are never written to the terminal as output.
+
+RPC mode exposes Pi's line protocol for `select`, `confirm`, `input`, `editor`, `notify`, `setStatus`, static-line `setWidget`, `setTitle`, and `set_editor_text` requests. `PasteToEditor` maps to `set_editor_text`; the synchronous `GetEditorText` returns an empty string because RPC cannot query the client synchronously. RPC does not render custom components, component widgets, headers, footers, working presentation overrides, raw input listeners, autocomplete, custom editors, or themes; those operations are ignored or return an unavailable result, and unsupported components are disposed. `HasUserInterface` remains false in RPC, preserving its established meaning as availability of the interactive terminal UI; remote dialog support is available through `context.Ui` independently of that flag.
+
+Print, JSON, and direct Runtime modes have no interactive terminal UI. Dialogs and custom components return their no-UI result immediately, persistent visual registrations have no rendered surface, and notifications use diagnostic output. `HasUserInterface` reports availability of the interactive terminal surface; RPC remote dialogs do not change that meaning.
 
 Compiled extensions can register an independent TUI shortcut:
 

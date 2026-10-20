@@ -1,22 +1,44 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Native Extension Two-Stage Context Mutation — 2026-10-19
+## Active milestone — Complete Native Extension Interactive UI — 2026-10-20
 
-PR #18 merged as `3be359066d6d3bef815a2acefcc0a117bac12666`; branch
-`milestone/native-extension-context-mutation` starts at that actual merge.
-The Pi pin remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This increment
-adds ordered native `context` and `context_with_system` callbacks at the final
-route-aware provider boundary, with detached message edits, host-owned tool
-configuration, request-only prompt changes, source-attributed error isolation,
-and retry/compaction behavior. The review correction preserves Anthropic
-system/tool revision history across structural context edits and verifies the
-final physical request projection. Local validation passes 2,505 .NET tests,
-format, warning-as-error build, architecture, Node, Python, documentation, and
-MCP baseline checks. Fresh exact-head Linux CI is recorded in the PR #19
-description and remains the final publication gate. See the
+PR #19 was verified merged at `b4cfac1ca83b38215311d8441069286cca0dc4e6`;
+`origin/main` and the active branch base match that SHA. Its reviewed head was
+`c26ef860978da0117b49f491de36d05dbe9b41b6`, with successful exact-head push
+CI `39346174499` and PR CI `39346177476`. The pinned Pi revision remains
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+The PR #20 implementation is on `milestone/native-extension-interactive-ui`
+from that merge. It adds additive public UI contracts, a
+package-owned retained capability with removal/reload revocation, terminal
+screen contributions, focused and overlay components, editor/autocomplete and
+theme integration, decoded input interception, and a compiled-package PTY
+journey. The final focused UI/input/PTY/RPC/compositor selection passes 260/260;
+the shortcut-aligned external-package PTY journey passes 10/10 repeated runs.
+Coverage includes listener teardown, autocomplete cancellation, screen-binding
+cleanup, concurrent assistant-stream/UI updates, adjacent buffered-character
+input interception, the tiny-terminal overlay fallback, and RPC transport
+disposal waiting for registered event writes. The final full .NET suite passes
+2,566/2,566 with zero failures and skips. The source-pinned terminal fixture
+reaches all checkpoints and matches
+its startup, widget, and input-update viewports, but full state/render
+comparison differs in 22,411 places (14,009 render differences; raw output
+differs from byte 2). The final warnings-as-errors build, format verification,
+architecture, Node, Python, and MCP checks pass; documentation path validation
+passed 149 files and 576 references. Exact-head push and PR CI results will be
+recorded in the draft PR description after publication; PR #20 remains
+unmerged.
+Evidence is recorded in the
+[interactive UI receipt](parity/fixtures/native-extension-interactive-ui-2026-10-20.md).
+Broad extension parity remains `in_progress`.
+
+## Previous milestone — Native Extension Two-Stage Context Mutation — 2026-10-19
+
+PR #19 merged at `b4cfac1ca83b38215311d8441069286cca0dc4e6`. It adds ordered
+native `context` and `context_with_system` callbacks at the route-aware
+provider boundary, detached message edits, host-owned tool configuration,
+request-only prompt changes and the Anthropic lineage correction. See the
 [context mutation receipt](parity/fixtures/native-extension-context-mutation-2026-10-19.md).
-PR #19 must stay a draft and must not be merged. Broad
-extension parity remains `in_progress`; no next milestone is started.
 
 ## Previous milestone — Native Extension Message Lifecycle Hooks — 2026-10-19
 

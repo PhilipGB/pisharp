@@ -7,6 +7,7 @@ using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Tools;
+using PiSharp.Cli.Tui;
 using PublicExtensionUi = PiSharp.Extensions.Abstractions.IPiSharpExtensionUi;
 
 namespace PiSharp.Cli.Protocols;
@@ -58,6 +59,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     private Task? _active;
     private int _activeSettled;
     private int _shutdownRequested;
+    internal Func<CancellationToken, Task>? AfterServeBeforeUiShutdown { get; set; }
     private bool IsActive => _active is { IsCompleted: false } && Volatile.Read(ref _activeSettled) == 0;
     private ConversationRun CurrentRun => getCurrentRun?.Invoke() ?? run;
     private PiSharp.Runtime.Resources.ResourceCatalog? CurrentResources => getCurrentResources?.Invoke() ?? resources;
@@ -68,6 +70,8 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
     {
         using var serveCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _serveCancellation = serveCancellation;
+        RpcExtensionUiTransport? rpcUiTransport = null;
+        var startupUi = extensionUi as ProjectTrustStartupUi;
         installExtensionCapabilitiesFactory?.Invoke(activeRun => (sourcePath, session) =>
             CreateExtensionCapabilities(activeRun, sourcePath, session));
         var modelCommands = new RpcModelCommandHandler(_writer, RespondAsync, () => Events,
@@ -95,6 +99,12 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             CreateExtensionCommandContext);
         try
         {
+            if (startupUi is not null)
+            {
+                rpcUiTransport = new(_writer);
+                startupUi.BindRpcUiTransport(rpcUiTransport);
+                await rpcUiTransport.FlushAsync();
+            }
             while (await input.ReadLineAsync(serveCancellation.Token) is { } line)
             {
                 if (line.Length > 1024 * 1024)
@@ -114,6 +124,11 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
                         continue;
                     }
                     var type = kind.GetString()!;
+                    if (type == "extension_ui_response")
+                    {
+                        rpcUiTransport?.ReceiveResponse(root);
+                        continue;
+                    }
                     var id = root.TryGetProperty("id", out var requestId) ? requestId.Clone() : (JsonElement?)null;
                     if (type == "compact")
                     {
@@ -344,7 +359,21 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
             if (compactions.Length > 0)
                 await Task.WhenAll(compactions.Select(operation => operation.Completed.Task));
             _abort?.Dispose();
-            _serveCancellation = null;
+            rpcUiTransport?.StopDialogs();
+            try
+            {
+                if (AfterServeBeforeUiShutdown is not null)
+                    await AfterServeBeforeUiShutdown(CancellationToken.None);
+            }
+            finally
+            {
+                if (rpcUiTransport is not null)
+                {
+                    startupUi?.UnbindRpcUiTransport(rpcUiTransport);
+                    await rpcUiTransport.DisposeAsync();
+                }
+                _serveCancellation = null;
+            }
         }
     }
 
@@ -592,6 +621,9 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         var sendCustomMessageAsync = CreateExtensionCustomMessageSender(commandInfo.SourceInfo.Path);
         var capabilities = CreateExtensionCapabilities(run, commandInfo.SourceInfo.Path, session,
             controls, sendUserMessageAsync, sendCustomMessageAsync, settingsAndFlags);
+        var callbackUi = extensionUi is not null && CurrentExtensions is { } currentExtensions
+            ? currentExtensions.CreateCallbackUi(commandInfo.SourceInfo.Path, extensionUi)
+            : extensionUi;
 
         var workingDirectory = run.Conversation.WorkingDirectory;
         var isProjectTrusted = getProjectTrusted?.Invoke() ?? false;
@@ -599,7 +631,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
         {
             return new PiSharpExtensionCommandContext(workingDirectory, !IsActive, isProjectTrusted,
                 run.PendingPromptCount > 0, sendUserMessageAsync, sendCustomMessageAsync,
-                extensionMode, extensionHasUserInterface, extensionUi)
+                extensionMode, extensionHasUserInterface, callbackUi)
             {
                 Session = session,
                 SettingsAndFlags = settingsAndFlags,
@@ -609,7 +641,7 @@ public sealed class RpcMode(TextReader input, TextWriter output, ConversationRun
 
         return new PiSharpExtensionCommandContext(workingDirectory, !IsActive, isProjectTrusted,
             run.PendingPromptCount > 0, sendUserMessageAsync, sendCustomMessageAsync,
-            extensionMode, extensionHasUserInterface, extensionUi, controls)
+            extensionMode, extensionHasUserInterface, callbackUi, controls)
         {
             Session = session,
             SettingsAndFlags = settingsAndFlags,

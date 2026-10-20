@@ -253,6 +253,28 @@ internal sealed class TerminalTranscriptBuffer
         Revision++;
     }
 
+    public void SetHiddenThinkingLabel(string label, TerminalTheme theme)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(label);
+        ArgumentNullException.ThrowIfNull(theme);
+        var changed = false;
+        foreach (var segment in _segments.Where(segment => segment.IsThinkingBlock))
+        {
+            segment.HiddenThinkingText = label;
+            if (!segment.ThinkingHidden) continue;
+            var renderer = segment.HiddenThinkingRenderer!;
+            var rendered = renderer(theme);
+            _transcriptCharacters += rendered.Length - segment.Text.Length;
+            segment.Text.Clear().Append(rendered);
+            segment.ThemeRenderer = renderer;
+            ReplaceCapturedThinking(segment.CapturedThinkingChunk, label);
+            changed = true;
+        }
+        if (!changed) return;
+        TrimTranscript();
+        Revision++;
+    }
+
     public void Clear()
     {
         _liveTools.Clear();
@@ -463,7 +485,7 @@ internal sealed class TerminalTranscriptBuffer
         public Func<TerminalTheme, string>? CollapsedRenderer { get; set; } = collapsedRenderer;
         public CapturedChunkBuilder? CapturedStatusChunk { get; set; } = capturedStatusChunk;
         public string? ThinkingSource { get; set; } = thinkingSource;
-        public string? HiddenThinkingText { get; } = hiddenThinkingText;
+        public string? HiddenThinkingText { get; set; } = hiddenThinkingText;
         public Func<TerminalTheme, string>? VisibleThinkingRenderer { get; set; } = visibleThinkingRenderer;
         public Func<TerminalTheme, string>? HiddenThinkingRenderer { get; set; } = hiddenThinkingRenderer;
         public CapturedChunkBuilder? CapturedThinkingChunk { get; set; } = capturedThinkingChunk;

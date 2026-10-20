@@ -1,87 +1,124 @@
 using PiSharp.Runtime.Extensions;
+using PiSharp.Cli.Protocols;
+using PiSharp.Extensions.Abstractions;
 
 namespace PiSharp.Cli.Tui;
 
-/// <summary>Provides Pi-shaped extension dialogs before the main interactive screen is created.</summary>
-internal sealed class ProjectTrustStartupUi(bool hasUserInterface, string mode, TextWriter output, TextWriter error)
-    : IProjectTrustExtensionUi
+/// <summary>Adapts project-trust dialogs and compiled-extension UI hosting to the CLI startup boundary.</summary>
+internal sealed class ProjectTrustStartupUi : IProjectTrustExtensionUi, IPiSharpExtensionUiPackageFactory
 {
-    private Action<string, string>? _interactiveNotificationHandler;
-    private bool CanShowDialog => hasUserInterface && mode == "interactive";
+    private readonly NativeExtensionInteractiveUiHost _interactiveUi;
+
+    internal ProjectTrustStartupUi(bool hasUserInterface, string mode, TextWriter output, TextWriter error) =>
+        _interactiveUi = new(hasUserInterface, mode, output, error);
 
     internal void SetInteractiveNotificationHandler(Action<string, string> handler) =>
-        _interactiveNotificationHandler = handler;
+        _interactiveUi.SetInteractiveNotificationHandler(handler);
+
+    internal IDisposable BindInteractiveScreen(TerminalScreen screen, TerminalEditor? editor = null,
+        TerminalPresentation? presentation = null) =>
+        _interactiveUi.BindInteractiveScreen(screen, editor, presentation);
+
+    internal void BindRpcUiTransport(RpcExtensionUiTransport transport) =>
+        _interactiveUi.BindRpcUiTransport(transport);
+
+    internal void UnbindRpcUiTransport(RpcExtensionUiTransport transport) =>
+        _interactiveUi.UnbindRpcUiTransport(transport);
+
+    public IPiSharpExtensionUiPackageScope CreatePackageScope(string sourcePath) =>
+        _interactiveUi.CreatePackageScope(sourcePath);
+
+    internal TerminalInputInterception InterceptTerminalInput(TerminalInputEvent input, bool reserved) =>
+        _interactiveUi.InterceptTerminalInput(input, reserved);
 
     public Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (!CanShowDialog || options.Count == 0) return Task.FromResult<string?>(null);
+        CancellationToken cancellationToken = default) =>
+        _interactiveUi.SelectAsync(title, options, cancellationToken);
 
-        using var screen = CreateScreen(out var editor);
-        var terminalOptions = options.Select((option, index) =>
-            new TerminalSelectionOption<string>(index.ToString(), option, option)).ToArray();
-        var selected = editor.ShowInlineSelectionList(title, terminalOptions,
-            footer: "↑↓ navigate  enter select  escape/ctrl+c cancel",
-            cancellationToken: cancellationToken, extensionDialog: true);
-        return Task.FromResult(selected?.Option.Value);
-    }
+    public Task<string?> SelectWithOptionsAsync(string title, IReadOnlyList<string> options,
+        PiSharpExtensionUiDialogOptions? dialogOptions = null, CancellationToken cancellationToken = default) =>
+        _interactiveUi.SelectWithOptionsAsync(Guid.Empty, title, options, dialogOptions,
+            cancellationToken, CancellationToken.None);
 
-    public Task<bool> ConfirmAsync(string title, string message, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (!CanShowDialog) return Task.FromResult(false);
+    public Task<bool> ConfirmAsync(string title, string message, CancellationToken cancellationToken = default) =>
+        _interactiveUi.ConfirmAsync(title, message, cancellationToken);
 
-        using var screen = CreateScreen(out var editor);
-        var options = new[]
-        {
-            new TerminalSelectionOption<bool>("yes", true, "Yes"),
-            new TerminalSelectionOption<bool>("no", false, "No")
-        };
-        var selected = editor.ShowInlineSelectionList($"{title}\n{message}", options,
-            footer: "↑↓ navigate  enter select  escape/ctrl+c cancel",
-            cancellationToken: cancellationToken, extensionDialog: true);
-        return Task.FromResult(selected?.Option.Value ?? false);
-    }
+    public Task<bool> ConfirmWithOptionsAsync(string title, string message,
+        PiSharpExtensionUiDialogOptions? dialogOptions = null, CancellationToken cancellationToken = default) =>
+        _interactiveUi.ConfirmWithOptionsAsync(Guid.Empty, title, message, dialogOptions,
+            cancellationToken, CancellationToken.None);
 
-    public async Task<string?> InputAsync(string title, string? placeholder = null,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (!CanShowDialog) return null;
+    public Task<string?> InputAsync(string title, string? placeholder = null,
+        CancellationToken cancellationToken = default) =>
+        _interactiveUi.InputAsync(title, placeholder, cancellationToken);
 
-        using var screen = CreateScreen(out var editor);
-        var values = await editor.PromptSequenceAsync(title, [(title, placeholder)],
-            cancellationToken: cancellationToken, extensionDialog: true).ConfigureAwait(false);
-        return values?.FirstOrDefault();
-    }
+    public Task<string?> InputWithOptionsAsync(string title, string? placeholder = null,
+        PiSharpExtensionUiDialogOptions? dialogOptions = null, CancellationToken cancellationToken = default) =>
+        _interactiveUi.InputWithOptionsAsync(Guid.Empty, title, placeholder, dialogOptions,
+            cancellationToken, CancellationToken.None);
 
-    public void Notify(string message, string type = "info")
-    {
-        if (mode == "interactive")
-        {
-            _interactiveNotificationHandler?.Invoke(message, type);
-            return;
-        }
-        var color = type switch
-        {
-            "error" => "31",
-            "warning" => "33",
-            _ => "36"
-        };
-        var styledMessage = !Console.IsErrorRedirected && Environment.GetEnvironmentVariable("NO_COLOR") is null
-            ? $"\u001b[{color}m{message}\u001b[0m"
-            : message;
-        error.WriteLine(styledMessage);
-        error.Flush();
-    }
+    public Task<string?> EditAsync(string title, string? prefill = null,
+        CancellationToken cancellationToken = default) =>
+        _interactiveUi.EditAsync(Guid.Empty, title, prefill, cancellationToken, CancellationToken.None);
 
-    private TerminalScreen CreateScreen(out TerminalEditor editor)
-    {
-        var screen = new TerminalScreen(output, error, useAlternateScreen: false, deferInitialRender: true);
-        screen.Activate();
-        editor = new TerminalEditor();
-        editor.AttachScreen(screen);
-        return screen;
-    }
+    public Task<PiSharpExtensionUiCompletion<T>> ShowCustomAsync<T>(
+        Func<Action<T>, IPiSharpExtensionUiComponent> factory,
+        PiSharpExtensionUiCustomOptions? options = null, CancellationToken cancellationToken = default) =>
+        _interactiveUi.ShowCustomAsync(Guid.Empty, factory, options, cancellationToken, CancellationToken.None);
+
+    public void PasteToEditor(string text) => _interactiveUi.PasteToEditor(text);
+
+    public void SetEditorText(string text) => _interactiveUi.SetEditorText(text);
+
+    public string GetEditorText() => _interactiveUi.GetEditorText();
+
+    public void SetStatus(string key, string? text) => _interactiveUi.SetStatus(Guid.Empty, 0, key, text);
+
+    public void SetWidget(string key, IReadOnlyList<string>? lines,
+        PiSharpExtensionWidgetPlacement placement = PiSharpExtensionWidgetPlacement.AboveEditor) =>
+        _interactiveUi.SetWidget(Guid.Empty, 0, key, lines, placement);
+
+    public void SetWidget(string key, IPiSharpExtensionUiComponent? component,
+        PiSharpExtensionWidgetPlacement placement = PiSharpExtensionWidgetPlacement.AboveEditor) =>
+        _interactiveUi.SetWidget(Guid.Empty, 0, key, component, placement);
+
+    public void SetHeader(IPiSharpExtensionUiComponent? component) => _interactiveUi.SetHeader(Guid.Empty, component);
+
+    public void SetFooter(IPiSharpExtensionUiComponent? component) => _interactiveUi.SetFooter(Guid.Empty, component);
+
+    public IDisposable OnTerminalInput(PiSharpExtensionTerminalInputHandler handler) =>
+        _interactiveUi.AddTerminalInputListener(Guid.Empty, 0, handler);
+
+    public void SetTitle(string title) => _interactiveUi.SetTitle(Guid.Empty, title);
+
+    public void SetWorkingMessage(string? message) => _interactiveUi.SetWorkingMessage(Guid.Empty, message);
+
+    public void SetWorkingVisible(bool visible) => _interactiveUi.SetWorkingVisible(Guid.Empty, visible);
+
+    public void SetWorkingIndicator(PiSharpExtensionWorkingIndicatorOptions? options) =>
+        _interactiveUi.SetWorkingIndicator(Guid.Empty, options);
+
+    public void SetHiddenThinkingLabel(string? label) => _interactiveUi.SetHiddenThinkingLabel(Guid.Empty, label);
+
+    public IDisposable AddAutocompleteProvider(PiSharpExtensionAutocompleteProvider provider) =>
+        _interactiveUi.AddAutocompleteProvider(Guid.Empty, 0, provider);
+
+    public void SetEditorComponent(IPiSharpExtensionEditorComponent? component) =>
+        _interactiveUi.SetEditorComponent(Guid.Empty, component);
+
+    public IPiSharpExtensionEditorComponent? GetEditorComponent() => _interactiveUi.GetEditorComponent();
+
+    public PiSharpExtensionUiTheme Theme => _interactiveUi.GetCurrentTheme();
+
+    public IReadOnlyList<(string Name, string? Path)> GetAllThemes() => _interactiveUi.GetAllThemes();
+
+    public PiSharpExtensionUiTheme? GetTheme(string name) => _interactiveUi.GetTheme(name);
+
+    public PiSharpExtensionUiThemeResult SetTheme(string name) => _interactiveUi.SetTheme(name);
+
+    public bool GetToolsExpanded() => _interactiveUi.GetToolsExpanded();
+
+    public void SetToolsExpanded(bool expanded) => _interactiveUi.SetToolsExpanded(expanded);
+
+    public void Notify(string message, string type = "info") => _interactiveUi.Notify(message, type);
 }

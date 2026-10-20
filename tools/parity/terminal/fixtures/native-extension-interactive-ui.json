@@ -1,0 +1,85 @@
+{
+  "id": "native-extension-interactive-ui",
+  "pisharpExtension": true,
+  "pisharpNativeExtensionPackage": {
+    "id": "PiSharp.NativeExtensionInteractiveUiFixture",
+    "version": "1.0.0",
+    "type": "PiSharp.NativeExtensionInteractiveUiFixture.InteractiveUiExtension"
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--offline",
+      "--no-session",
+      "--no-tools",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--offline",
+      "--no-session",
+      "--no-tools",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files"
+    ]
+  },
+  "files": {
+    "pi": {
+      "extensions/01-native-ui.ts": "import { Key } from '@mariozechner/pi-tui';\n\nexport default function(pi) {\n  pi.registerShortcut(Key.ctrlShift('z'), {\n    description: 'Exercise ordinary shortcut pass-through from the editor component.',\n    handler: async ctx => { ctx.ui.notify('native-ui-shortcut'); }\n  });\n  let count = 0;\n  const widget = (_tui, theme) => ({\n    render() { return [theme.fg('success', `native-ui-widget:${count}:idle`), `native-ui-theme:${theme.name}`, 'native-ui-size:120x40']; },\n    invalidate() {}\n  });\n  pi.on('session_start', (_event, ctx) => {\n    ctx.ui.setStatus('dashboard', 'native-ui:ready');\n    ctx.ui.setWidget('dashboard', widget);\n    ctx.ui.setWidget('dashboard-editor', (_tui, theme) => ({ render() { return [theme.fg('muted', ' native-ui-editor:pass-through')]; }, invalidate() {} }), { placement: 'belowEditor' });\n    ctx.ui.setHeader(() => ({ render() { return ['native-ui:header']; }, invalidate() {} }));\n    ctx.ui.setFooter((_tui, theme) => ({\n      render(width) {\n        const status = `dashboard: ${count === 0 ? 'native-ui:ready' : `native-ui:${count}:updated`}`;\n        const cwd = process.cwd();\n        const left = '0.0%/8.2k (auto)';\n        const right = 'fixture-model';\n        const gap = ' '.repeat(Math.max(1, 120 - left.length - right.length));\n        return ['native-ui:footer', theme.fg('dim', status), theme.fg('dim', cwd), theme.fg('dim', `${left}${gap}${right}`)];\n      },\n      invalidate() {}\n    }));\n    ctx.ui.setTitle('Native UI Dashboard');\n    ctx.ui.onTerminalInput(data => {\n      if (data === '!') {\n        count++;\n        ctx.ui.setStatus('dashboard', `native-ui:${count}:updated`);\n        ctx.ui.setWidget('dashboard', widget);\n        return { consume: true };\n      }\n    });\n  });\n}"
+    }
+  },
+  "actions": [
+    {
+      "id": "native-ui-startup",
+      "expect": "native-ui:ready"
+    },
+    {
+      "id": "native-ui-widget",
+      "expect": "native-ui-widget:0:idle",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "native-ui-input-update",
+      "send": "!",
+      "expect": "native-ui:1:updated"
+    },
+    {
+      "id": "native-ui-quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "settings": {
+    "quietStartup": true
+  },
+  "assertionFrames": [
+    "native-ui-startup",
+    "native-ui-widget",
+    "native-ui-input-update",
+    "native-ui-quit"
+  ]
+}

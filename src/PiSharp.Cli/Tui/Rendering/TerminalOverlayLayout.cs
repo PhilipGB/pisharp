@@ -1,5 +1,7 @@
 namespace PiSharp.Cli.Tui;
 
+using PiSharp.Extensions.Abstractions;
+
 /// <summary>Places modal content over the idle or active terminal compositor.</summary>
 internal static class TerminalOverlayLayout
 {
@@ -38,6 +40,50 @@ internal static class TerminalOverlayLayout
                   "\u001b[0m" + theme.Fg("border") + " |\u001b[0m";
             screenRows[verticalOffset + index] = new string(' ', horizontalOffset) + rendered;
         }
+    }
+
+    public static void ApplyExtension(string[] screenRows, IReadOnlyList<string> content,
+        int columns, int rows, TerminalTheme theme, PiSharpExtensionUiOverlayOptions? options)
+    {
+        if (screenRows.Length == 0 || content.Count == 0) return;
+        if (columns < 5 || rows < 3)
+        {
+            var count = Math.Min(content.Count, screenRows.Length);
+            var start = Math.Max(0, (screenRows.Length - count) / 2);
+            for (var index = 0; index < count; index++)
+                screenRows[start + index] = TerminalTranscriptViewport.Clip(content[index], columns);
+            return;
+        }
+
+        var maximumCardWidth = columns;
+        var naturalWidth = Math.Max(1, content.Max(line => TerminalTextLayout.Width(line)) + 4);
+        var cardWidth = Math.Clamp(options?.Width ?? naturalWidth, 5, maximumCardWidth);
+        var innerWidth = Math.Max(1, cardWidth - 4);
+        var maxFrameHeight = Math.Clamp(options?.Height ?? rows, 1, rows);
+        var maxContentLines = Math.Max(0, maxFrameHeight - 2);
+        var visibleContent = content.Count <= maxContentLines
+            ? content
+            : content.Skip(Math.Max(0, (content.Count - maxContentLines) / 2)).Take(maxContentLines).ToArray();
+        var frame = new List<string>(visibleContent.Count + 2)
+        {
+            theme.Style("borderAccent", "+" + new string('-', innerWidth + 2) + "+")
+        };
+        foreach (var line in visibleContent)
+        {
+            var clipped = TerminalTranscriptViewport.Clip(line, innerWidth);
+            var padding = Math.Max(0, innerWidth - TerminalTextLayout.Width(clipped));
+            frame.Add(theme.Fg("border") + "| " + "\u001b[0m" + clipped +
+                new string(' ', padding) + theme.Fg("border") + " |\u001b[0m");
+        }
+        if (maxFrameHeight >= 2)
+            frame.Add(theme.Style("borderAccent", "+" + new string('-', innerWidth + 2) + "+"));
+
+        var left = Math.Clamp(options?.Left ?? (columns - (innerWidth + 4)) / 2,
+            0, Math.Max(0, columns - (innerWidth + 4)));
+        var top = Math.Clamp(options?.Top ?? (rows - frame.Count) / 2,
+            0, Math.Max(0, rows - Math.Min(rows, frame.Count)));
+        for (var index = 0; index < frame.Count && top + index < screenRows.Length; index++)
+            screenRows[top + index] = TerminalTranscriptViewport.Clip(new string(' ', left) + frame[index], columns);
     }
 
     public static int? ContentLineAt(IReadOnlyList<string> content, int columns, int rows, int column, int row)

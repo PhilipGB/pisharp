@@ -101,7 +101,9 @@ public sealed class NativeExtensionHookBridgeTests
             Assert.Equal(cwd, observedContext.WorkingDirectory);
             Assert.Equal("print", observedContext.Mode);
             Assert.False(observedContext.HasUserInterface);
-            Assert.Same(extensionUi, observedContext.Ui);
+            Assert.NotSame(extensionUi, observedContext.Ui);
+            await Assert.ThrowsAsync<ObjectDisposedException>(() =>
+                observedContext.Ui.SelectAsync("Expired", ["one"]));
             Assert.False(observedContext.IsIdle);
             Assert.True(observedContext.IsProjectTrusted);
             Assert.False(observedContext.HasPendingMessages);

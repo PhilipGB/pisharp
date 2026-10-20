@@ -890,6 +890,28 @@ public sealed class TerminalScreenTests
         Assert.Contains("answer", shownFrame);
     }
 
+    [Fact]
+    public void HiddenThinkingLabelCanBeOverriddenAndRestoredWithoutChangingVisibility()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24);
+        screen.AppendAssistantThinkingBlock("private reasoning");
+        screen.SetThinkingBlocksHidden(true);
+
+        screen.SetHiddenThinkingLabel("Reasoning hidden by policy");
+        var overridden = VisibleFrame(output.ToString());
+        Assert.Contains("Reasoning hidden by policy", overridden);
+        Assert.DoesNotContain("private reasoning", overridden);
+        Assert.True(screen.ThinkingBlocksHidden);
+
+        screen.SetHiddenThinkingLabel(null);
+        var restored = VisibleFrame(output.ToString());
+        Assert.Contains("Thinking...", restored);
+        Assert.DoesNotContain("private reasoning", restored);
+        Assert.True(screen.ThinkingBlocksHidden);
+    }
+
     private static string VisibleFrame(string output)
     {
         var frames = TerminalOutputFrameReader.Read(output, rows: 24, columns: 80);

@@ -211,8 +211,6 @@ if (projectBinding.Arguments.Mode == "rpc")
 {
     await RpcModeComposition.ServeAsync(agentDirectory, projectBinding, modelBinding, conversationBinding,
         modelRuntime, modelTransitions, projectTransitions, extensionLease, presentation);
-    await ExtensionSessionLifecycleHost.NotifyShutdownAsync(conversationBinding.Run,
-        PiSharp.Extensions.Abstractions.PiSharpExtensionSessionShutdownReason.Quit);
 
     return;
 }

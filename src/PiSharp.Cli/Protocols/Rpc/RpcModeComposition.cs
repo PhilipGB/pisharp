@@ -92,7 +92,7 @@ internal static class RpcModeComposition
             return false;
         }
 
-        await new RpcMode(Console.In, Console.Out, conversationBinding.Run,
+        var rpcMode = new RpcMode(Console.In, Console.Out, conversationBinding.Run,
             cancellationToken => conversationBinding.Run.PersistAsync(cancellationToken),
             projectBinding.Resources, GetRpcModelsAsync,
             extensionLease.Current.Registration, () => modelBinding.Selection.Authenticated ? null :
@@ -132,6 +132,9 @@ internal static class RpcModeComposition
             cycleModel: (model, token) => modelTransitions.SelectRpcModelAsync(model,
                 PiSharpExtensionModelSelectionSource.Cycle, token),
             installExtensionCapabilitiesFactory: conversationBinding.SetExtensionCapabilitiesFactory,
-            getSystemPrompt: () => modelBinding.Agent.SystemInstructions).ServeAsync();
+            getSystemPrompt: () => modelBinding.Agent.SystemInstructions);
+        rpcMode.AfterServeBeforeUiShutdown = token => ExtensionSessionLifecycleHost.NotifyShutdownAsync(
+            conversationBinding.Run, PiSharpExtensionSessionShutdownReason.Quit, token);
+        await rpcMode.ServeAsync();
     }
 }

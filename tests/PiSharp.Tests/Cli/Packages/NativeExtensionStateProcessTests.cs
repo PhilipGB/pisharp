@@ -43,7 +43,6 @@ public sealed class NativeExtensionStateProcessTests
             };
             first = StartRpcProcess(fixture, sessionDirectory, continueSession: false,
                 noTools: false, lifecyclePath: lifecyclePath, extraArguments: ["--approve"]);
-            var firstErrors = first.StandardError.ReadToEndAsync();
             var snapshot = JsonDocument.Parse(await RunExtensionCommandAsync(first, "snapshot-1",
                 "/native-fixture-controls", timeout.Token));
             Assert.Equal("project-prefix", snapshot.RootElement.GetProperty("shellCommandPrefix").GetString());
@@ -64,10 +63,11 @@ public sealed class NativeExtensionStateProcessTests
                 "/native-fixture-label-entry set persistent-label", timeout.Token);
             Assert.False(string.IsNullOrWhiteSpace(entryId));
             await RunExtensionCommandAsync(first, "shutdown", "/native-fixture-shutdown", timeout.Token);
+            var firstOutputTail = first.StandardOutput.ReadToEndAsync();
             await first.WaitForExitAsync(timeout.Token);
             Assert.Equal(0, first.ExitCode);
-            var firstErrorText = await firstErrors.WaitAsync(timeout.Token);
-            Assert.Contains("native-fixture-session-shutdown-v1:Quit", firstErrorText);
+            var firstOutputText = await firstOutputTail.WaitAsync(timeout.Token);
+            Assert.Contains("\"message\":\"native-fixture-session-shutdown-v1:Quit\"", firstOutputText);
             Assert.Equal(1, (await File.ReadAllLinesAsync(lifecyclePath)).Count(line =>
                 line == "native-fixture-session-shutdown-v1:Quit"));
 
@@ -78,18 +78,23 @@ public sealed class NativeExtensionStateProcessTests
 
             resumed = StartRpcProcess(fixture, sessionDirectory, continueSession: true,
                 noTools: false, lifecyclePath: lifecyclePath, extraArguments: extensionArguments);
-            var resumedErrors = resumed.StandardError.ReadToEndAsync();
+            var resumedEvents = new List<JsonElement>();
             using var resumedSnapshot = JsonDocument.Parse(await RunExtensionCommandAsync(resumed, "snapshot-2",
-                "/native-fixture-controls", timeout.Token));
+                "/native-fixture-controls", timeout.Token, resumedEvents.Add));
             Assert.Equal("metadata-control-session", resumedSnapshot.RootElement.GetProperty("sessionName").GetString());
             Assert.True(resumedSnapshot.RootElement.GetProperty("enabled").GetBoolean());
             Assert.Equal("process-label", resumedSnapshot.RootElement.GetProperty("label").GetString());
             Assert.Equal("label cleared", await RunExtensionCommandAsync(resumed, "label-clear",
                 $"/native-fixture-label-entry clear {entryId}", timeout.Token));
             await RunExtensionCommandAsync(resumed, "shutdown-2", "/native-fixture-shutdown", timeout.Token);
+            var resumedOutputTail = resumed.StandardOutput.ReadToEndAsync();
             await resumed.WaitForExitAsync(timeout.Token);
             Assert.Equal(0, resumed.ExitCode);
-            Assert.Contains("native-fixture-session-start-v1:Resume", await resumedErrors.WaitAsync(timeout.Token));
+            var resumedOutputText = await resumedOutputTail.WaitAsync(timeout.Token);
+            Assert.Contains(resumedEvents, item => item.GetProperty("type").GetString() == "extension_ui_request" &&
+                item.GetProperty("method").GetString() == "notify" &&
+                item.GetProperty("message").GetString() == "native-fixture-session-start-v1:Resume:");
+            Assert.Contains("\"message\":\"native-fixture-session-shutdown-v1:Quit\"", resumedOutputText);
 
             using var unknownFlag = StartRpcProcess(fixture, sessionDirectory, continueSession: false,
                 extraArguments: ["--approve", "--not-a-registered-extension-flag"]);
@@ -166,9 +171,9 @@ public sealed class NativeExtensionStateProcessTests
                 installed.Output);
 
             first = StartRpcProcess(fixture, sessionDirectory, continueSession: false);
-            var firstErrors = first.StandardError.ReadToEndAsync();
+            var firstEvents = new List<JsonElement>();
             Assert.Equal("v1 state saved", await RunExtensionCommandAsync(first, "set-state-1",
-                "/native-fixture-state-set SECRET_STATE_MARKER", timeout.Token));
+                "/native-fixture-state-set SECRET_STATE_MARKER", timeout.Token, firstEvents.Add));
             Assert.Equal("v1 state saved", await RunExtensionCommandAsync(first, "set-state-2",
                 "/native-fixture-state-set SECRET_STATE_MARKER", timeout.Token));
             Assert.Equal("SECRET_STATE_MARKER|SECRET_STATE_MARKER",
@@ -178,14 +183,17 @@ public sealed class NativeExtensionStateProcessTests
             Assert.Equal("native fixture UI selection cancelled",
                 await RunExtensionCommandAsync(first, "headless-ui", "/native-fixture-ui", timeout.Token));
             await RunModelPromptAsync(first, "provider-turn", "ordinary model request", timeout.Token);
+            var firstOutputTail = first.StandardOutput.ReadToEndAsync();
             first.StandardInput.Close();
             await first.WaitForExitAsync(timeout.Token);
-            var firstErrorText = await firstErrors.WaitAsync(timeout.Token);
+            var firstOutputText = await firstOutputTail.WaitAsync(timeout.Token);
             await provider.WaitAsync(timeout.Token);
 
             Assert.Equal(0, first.ExitCode);
-            Assert.Contains("native-fixture-session-start-v1:Startup:", firstErrorText);
-            Assert.Contains("native-fixture-session-shutdown-v1:Quit", firstErrorText);
+            Assert.Contains("\"message\":\"native-fixture-session-shutdown-v1:Quit\"", firstOutputText);
+            Assert.Contains(firstEvents, item => item.GetProperty("type").GetString() == "extension_ui_request" &&
+                item.GetProperty("method").GetString() == "notify" &&
+                item.GetProperty("message").GetString() == "native-fixture-session-start-v1:Startup:");
             Assert.NotNull(providerRequest);
             Assert.DoesNotContain("SECRET_STATE_MARKER", providerRequest, StringComparison.Ordinal);
             var persistedSession = Assert.Single(Directory.GetFiles(sessionDirectory, "*.session.json"));
@@ -200,9 +208,10 @@ public sealed class NativeExtensionStateProcessTests
 
             resumed = StartRpcProcess(fixture, sessionDirectory, continueSession: true,
                 extraArguments: ["--native-fixture-v2-enabled", "--native-fixture-v2-label", "v2-label"]);
-            var resumedErrors = resumed.StandardError.ReadToEndAsync();
+            var resumedEvents = new List<JsonElement>();
             Assert.Equal("SECRET_STATE_MARKER|SECRET_STATE_MARKER",
-                await RunExtensionCommandAsync(resumed, "resumed-state", "/native-fixture-state-show", timeout.Token));
+                await RunExtensionCommandAsync(resumed, "resumed-state", "/native-fixture-state-show", timeout.Token,
+                    resumedEvents.Add));
             using (var controlSnapshot = JsonDocument.Parse(await RunExtensionCommandAsync(resumed,
                 "resumed-controls", "/native-fixture-controls", timeout.Token)))
             {
@@ -210,18 +219,25 @@ public sealed class NativeExtensionStateProcessTests
                 Assert.True(controlSnapshot.RootElement.GetProperty("enabled").GetBoolean());
                 Assert.Equal("v2-label", controlSnapshot.RootElement.GetProperty("label").GetString());
             }
-            await SendRpcCommandAsync(resumed, "new-session", "new_session", timeout.Token);
+            await SendRpcCommandAsync(resumed, "new-session", "new_session", timeout.Token, resumedEvents.Add);
             Assert.Equal("no native fixture state", await RunExtensionCommandAsync(resumed, "new-state",
-                "/native-fixture-state-show", timeout.Token));
+                "/native-fixture-state-show", timeout.Token, resumedEvents.Add));
+            var resumedOutputTail = resumed.StandardOutput.ReadToEndAsync();
             resumed.StandardInput.Close();
             await resumed.WaitForExitAsync(timeout.Token);
-            var resumedErrorText = await resumedErrors.WaitAsync(timeout.Token);
+            var resumedOutputText = await resumedOutputTail.WaitAsync(timeout.Token);
             Assert.Equal(0, resumed.ExitCode);
-            Assert.Contains("native-fixture-session-start-v2:Resume:SECRET_STATE_MARKER|SECRET_STATE_MARKER",
-                resumedErrorText);
-            Assert.Contains("native-fixture-session-shutdown-v2:New", resumedErrorText);
-            Assert.Contains("native-fixture-session-start-v2:New:", resumedErrorText);
-            Assert.Contains("native-fixture-session-shutdown-v2:Quit", resumedErrorText);
+            Assert.Contains(resumedEvents, item => item.GetProperty("type").GetString() == "extension_ui_request" &&
+                item.GetProperty("method").GetString() == "notify" &&
+                item.GetProperty("message").GetString() ==
+                    "native-fixture-session-start-v2:Resume:SECRET_STATE_MARKER|SECRET_STATE_MARKER");
+            Assert.Contains(resumedEvents, item => item.GetProperty("type").GetString() == "extension_ui_request" &&
+                item.GetProperty("method").GetString() == "notify" &&
+                item.GetProperty("message").GetString() == "native-fixture-session-start-v2:New:");
+            Assert.Contains(resumedEvents, item => item.GetProperty("type").GetString() == "extension_ui_request" &&
+                item.GetProperty("method").GetString() == "notify" &&
+                item.GetProperty("message").GetString() == "native-fixture-session-shutdown-v2:New");
+            Assert.Contains("\"message\":\"native-fixture-session-shutdown-v2:Quit\"", resumedOutputText);
         }
         finally
         {
@@ -281,7 +297,7 @@ public sealed class NativeExtensionStateProcessTests
     }
 
     internal static async Task<string> RunExtensionCommandAsync(Process process, string id, string message,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Action<JsonElement>? onRecord = null)
     {
         await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new { id, type = "prompt", message })
             .AsMemory(), cancellationToken);
@@ -290,11 +306,24 @@ public sealed class NativeExtensionStateProcessTests
         {
             using var document = JsonDocument.Parse(line);
             var record = document.RootElement;
+            onRecord?.Invoke(record.Clone());
             if (record.TryGetProperty("type", out var type) && type.GetString() == "event" &&
                 record.TryGetProperty("data", out var data) && data.TryGetProperty("Type", out var eventType) &&
                 eventType.GetString() == "extension_command_output" &&
                 data.TryGetProperty("OperationId", out var operationId) && operationId.GetString() == id)
                 return data.GetProperty("Text").GetString() ?? "";
+            if (record.TryGetProperty("type", out type) && type.GetString() == "extension_ui_request" &&
+                record.TryGetProperty("method", out var method) &&
+                method.GetString() is "select" or "confirm" or "input" or "editor")
+            {
+                await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new
+                {
+                    type = "extension_ui_response",
+                    id = record.GetProperty("id").GetString(),
+                    cancelled = true
+                }).AsMemory(), cancellationToken);
+                await process.StandardInput.FlushAsync(cancellationToken);
+            }
             if (record.TryGetProperty("id", out var responseId) && responseId.GetString() == id &&
                 record.TryGetProperty("type", out type) && type.GetString() == "response")
             {
@@ -309,7 +338,7 @@ public sealed class NativeExtensionStateProcessTests
     }
 
     private static async Task SendRpcCommandAsync(Process process, string id, string type,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Action<JsonElement>? onRecord = null)
     {
         await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new { id, type }).AsMemory(),
             cancellationToken);
@@ -318,6 +347,7 @@ public sealed class NativeExtensionStateProcessTests
         {
             using var document = JsonDocument.Parse(line);
             var record = document.RootElement;
+            onRecord?.Invoke(record.Clone());
             if (!record.TryGetProperty("id", out var responseId) || responseId.GetString() != id ||
                 !record.TryGetProperty("type", out var responseType) || responseType.GetString() != "response")
                 continue;

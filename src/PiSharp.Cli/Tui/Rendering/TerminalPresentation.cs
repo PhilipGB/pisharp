@@ -1,6 +1,7 @@
 using PiSharp.Cli.Composition;
 using PiSharp.Cli.Sessions;
 using PiSharp.Cli.Startup;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 
@@ -20,6 +21,7 @@ internal sealed class TerminalPresentation : IDisposable
     private readonly TerminalMode? _terminalMode;
     private TerminalThemeCatalog _terminalThemeCatalog = null!;
     private string? _cliThemeOverride;
+    private string? _extensionThemeOverride;
     private bool _hideThinkingBlock;
     public TerminalEditor? Editor => _editor;
     public TerminalScreen? Screen => _terminalScreen;
@@ -103,7 +105,38 @@ internal sealed class TerminalPresentation : IDisposable
         }
     }
 
-    public void ClearThemeOverride() => _cliThemeOverride = null;
+    public void ClearThemeOverride()
+    {
+        _cliThemeOverride = null;
+        _extensionThemeOverride = null;
+    }
+
+    internal PiSharpExtensionUiThemeResult SetExtensionTheme(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return new(false, "Theme name cannot be empty.");
+        if (_terminalScreen is null) return new(false, "Interactive theme selection is unavailable.");
+        try
+        {
+            _ = _terminalThemeCatalog.Load(name);
+            var saved = UserSettingsPersistence.SaveAsync(_agentDirectory, _projectBinding.WorkingDirectory,
+                projectScope: false, trusted: _projectBinding.Trusted, setting: "theme", value: name,
+                user: _projectBinding.BaseUserSettings, project: _projectBinding.ProjectSettings,
+                environment: Environment.GetEnvironmentVariable).GetAwaiter().GetResult();
+            _projectBinding.SetSettings(saved.User, saved.Project, saved.Effective);
+            _projectBinding.PublishSettingsConfiguration();
+            _cliThemeOverride = null;
+            _extensionThemeOverride = name;
+            RefreshTerminalTheme();
+            return new(true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
+            InvalidDataException or System.Text.Json.JsonException or ArgumentException or FormatException or
+            NotSupportedException)
+        {
+            return new(false, exception.Message);
+        }
+    }
+
     public void SetHideThinking(bool hide)
     {
         _hideThinkingBlock = hide;
@@ -127,7 +160,7 @@ internal sealed class TerminalPresentation : IDisposable
         finally { _terminalScreen?.Dispose(); }
     }
 
-    public string? ActiveThemeSetting() => _cliThemeOverride ?? _projectBinding.Settings.Theme;
+    public string? ActiveThemeSetting() => _extensionThemeOverride ?? _cliThemeOverride ?? _projectBinding.Settings.Theme;
     TerminalThemeCatalog CreateTerminalThemeCatalog() => new(_agentDirectory, _projectBinding.Trusted ? _projectBinding.WorkingDirectory : null,
         trueColorOverride: _projectBinding.Settings.TerminalTrueColorOverride,
         userThemePaths: _projectBinding.BaseUserSettings.Themes, projectThemePaths: _projectBinding.ProjectSettings?.Themes,

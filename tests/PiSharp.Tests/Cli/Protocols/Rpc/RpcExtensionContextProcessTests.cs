@@ -82,16 +82,24 @@ public sealed class RpcExtensionContextProcessTests
             while (await process.StandardOutput.ReadLineAsync(timeout.Token) is { } line)
             {
                 using var document = JsonDocument.Parse(line);
-                output.Add(document.RootElement.Clone());
-                if (document.RootElement.GetProperty("type").GetString() == "agent_settled") break;
+                var record = document.RootElement.Clone();
+                output.Add(record);
+                if (record.GetProperty("type").GetString() == "extension_ui_request" &&
+                    record.GetProperty("method").GetString() != "notify")
+                    await RespondToUiRequestAsync(process, record, timeout.Token);
+                if (record.GetProperty("type").GetString() == "agent_settled") break;
             }
             process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
             await server.WaitAsync(timeout.Token);
-            var errorOutput = await stderr.WaitAsync(timeout.Token);
+            _ = await stderr.WaitAsync(timeout.Token);
 
             Assert.Equal(0, process.ExitCode);
-            Assert.Contains("extension context notification", errorOutput);
+            Assert.Equal(4, output.Count(item => item.GetProperty("type").GetString() == "extension_ui_request" &&
+                item.GetProperty("method").GetString() is "select" or "confirm" or "input" or "editor"));
+            Assert.Contains(output, item => item.GetProperty("type").GetString() == "extension_ui_request" &&
+                item.GetProperty("method").GetString() == "notify" &&
+                item.GetProperty("message").GetString() == "extension context notification");
             Assert.Contains(output, item => item.GetProperty("type").GetString() == "tool_execution_update" &&
                 item.GetProperty("partialResult").GetProperty("content")[0].GetProperty("text").GetString() ==
                     "extension context progress");
@@ -104,6 +112,10 @@ public sealed class RpcExtensionContextProcessTests
             Assert.Equal(Path.GetFullPath(root), state.GetProperty("workingDirectory").GetString());
             Assert.Equal("rpc", state.GetProperty("mode").GetString());
             Assert.False(state.GetProperty("hasUserInterface").GetBoolean());
+            Assert.Equal("South", state.GetProperty("selected").GetString());
+            Assert.True(state.GetProperty("confirmed").GetBoolean());
+            Assert.Equal("label", state.GetProperty("label").GetString());
+            Assert.Equal("line one\nline two", state.GetProperty("edited").GetString());
             Assert.True(state.GetProperty("isProjectTrusted").GetBoolean());
             Assert.False(state.GetProperty("isIdle").GetBoolean());
             Assert.Equal("rpc-extension-context-fixture", state.GetProperty("currentModelId").GetString());
@@ -133,6 +145,23 @@ public sealed class RpcExtensionContextProcessTests
             catch (Exception error) when (error is OperationCanceledException or HttpListenerException or ObjectDisposedException) { }
             Directory.Delete(root, recursive: true);
         }
+    }
+
+    private static async Task RespondToUiRequestAsync(Process process, JsonElement request,
+        CancellationToken cancellationToken)
+    {
+        var method = request.GetProperty("method").GetString();
+        var id = request.GetProperty("id").GetString();
+        object response = method switch
+        {
+            "select" => new { type = "extension_ui_response", id, value = "South" },
+            "confirm" => new { type = "extension_ui_response", id, confirmed = true },
+            "input" => new { type = "extension_ui_response", id, value = "label" },
+            "editor" => new { type = "extension_ui_response", id, value = "line one\nline two" },
+            _ => throw new InvalidOperationException($"Unexpected RPC extension UI request method '{method}'.")
+        };
+        await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(response));
+        await process.StandardInput.FlushAsync(cancellationToken);
     }
 
     private static async Task WriteToolCallAsync(HttpListenerContext context, CancellationToken cancellationToken)

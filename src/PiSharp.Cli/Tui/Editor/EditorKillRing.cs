@@ -30,4 +30,12 @@ internal sealed class EditorKillRing
         _entries.RemoveAt(_entries.Count - 1);
         _entries.Insert(0, latest);
     }
+
+    internal string[] Capture() => [.. _entries];
+
+    internal void Restore(IEnumerable<string> entries)
+    {
+        _entries.Clear();
+        _entries.AddRange(entries);
+    }
 }

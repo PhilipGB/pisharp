@@ -9,10 +9,12 @@ import itertools
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
 import time
+import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pi_reference import verify_pi_checkout
@@ -79,7 +81,8 @@ def commands(pi, pisharp, scenario, pisharp_extension=None):
     if scenario.get('pisharpExtension'):
         if pisharp_extension is None or not pisharp_extension.is_file():
             raise ValueError('This fixture requires an existing --pisharp-extension assembly')
-        result['pisharp'].extend(['--extension', str(pisharp_extension.resolve())])
+        if not scenario.get('pisharpNativeExtensionPackage'):
+            result['pisharp'].extend(['--extension', str(pisharp_extension.resolve())])
     return result
 
 
@@ -191,7 +194,57 @@ def write_assertion_evidence(path, products, dimensions, theme, mode, frame_ids=
             compressed.close()
 
 
-def run_product(label, command, scenario, dimensions, theme, mode, server):
+def stage_native_extension_package(agent, scenario, extension):
+    package = scenario.get('pisharpNativeExtensionPackage')
+    if not isinstance(package, dict):
+        raise ValueError('Native extension package fixtures require pisharpNativeExtensionPackage metadata')
+    package_id = package.get('id')
+    version = package.get('version')
+    entry_type = package.get('type')
+    if not all(isinstance(value, str) and value.strip() for value in (package_id, version, entry_type)):
+        raise ValueError('pisharpNativeExtensionPackage requires non-empty id, version, and type values')
+    if (len(package_id) > 128 or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]*', package_id) or
+            '..' in package_id):
+        raise ValueError(f'Invalid native extension package id: {package_id!r}')
+    version_pattern = r'\d+(?:\.\d+){1,3}(?:-[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*)?(?:\+[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*)?'
+    if len(version) > 128 or not re.fullmatch(version_pattern, version):
+        raise ValueError(f'Invalid native extension package version: {version!r}')
+    if (len(entry_type) > 1024 or '.' not in entry_type or '/' in entry_type or '\\' in entry_type or
+            any(character.isspace() or ord(character) < 32 for character in entry_type)):
+        raise ValueError(f'Invalid native extension entry type: {entry_type!r}')
+    deps = extension.with_suffix('.deps.json')
+    if not deps.is_file():
+        raise ValueError(f'Native extension assembly has no adjacent dependency manifest: {deps}')
+
+    package_root = agent / 'native-extensions' / package_id.lower() / version
+    assembly_directory = package_root / 'lib/net10.0'
+    assembly_directory.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(extension, assembly_directory / extension.name)
+    shutil.copy2(deps, assembly_directory / deps.name)
+    manifest = {
+        'id': package_id,
+        'version': version,
+        'apiVersion': 1,
+        'extensions': [{
+            'assembly': f'lib/net10.0/{extension.name}',
+            'type': entry_type,
+        }],
+    }
+    (package_root / 'pisharp-extension.json').write_text(json.dumps(manifest))
+    archive_path = agent / f'{package_id}-{version}.nupkg'
+    with zipfile.ZipFile(archive_path, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in package_root.rglob('*'):
+            if path.is_file():
+                archive.write(path, path.relative_to(package_root).as_posix())
+
+    settings_path = agent / 'settings.json'
+    settings = json.loads(settings_path.read_text())
+    configured = settings.setdefault('nativeExtensions', [])
+    configured.append({'id': package_id, 'version': version, 'source': str(archive_path.resolve())})
+    settings_path.write_text(json.dumps(settings))
+
+
+def run_product(label, command, scenario, dimensions, theme, mode, server, pisharp_extension=None):
     agent = AGENT_DIRECTORY
     marker = agent / '.pisharp-terminal-harness'
     if agent.exists() and not marker.exists():
@@ -221,6 +274,10 @@ def run_product(label, command, scenario, dimensions, theme, mode, server):
     (agent / 'models.json').write_text(json.dumps(dict(providers=dict(fixture=dict(baseUrl=server.url + '/v1',
                                                                                  apiKey='fixture-key', api='openai-completions', models=[model])))))
     write_scenario_files(scenario.get('files', {}).get(label, {}), agent)
+    if label == 'pisharp' and scenario.get('pisharpExtension') and scenario.get('pisharpNativeExtensionPackage'):
+        if pisharp_extension is None or not pisharp_extension.is_file():
+            raise ValueError('This fixture requires an existing --pisharp-extension assembly')
+        stage_native_extension_package(agent, scenario, pisharp_extension.resolve())
     options = dict(dimensions, foreground='#dddddd' if theme == 'dark' else '#222222',
                    background='#111111' if theme == 'dark' else '#ffffff')
     options.update(scenario.get('terminal', {}))
@@ -397,7 +454,7 @@ def main():
             for label, command in product_commands.items():
                 server.reset()
                 products[label] = run_product('pi' if args.calibrate else label, product_commands['pi'] if args.calibrate else command,
-                                              scenario, dimensions, theme, mode, server)
+                                              scenario, dimensions, theme, mode, server, args.pisharp_extension)
             comparison = compare_products(products['pi'], products['pisharp'],
                                           scenario.get('concurrentHttpGroups', []))
             delta = comparison['differences']

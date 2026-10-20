@@ -9,9 +9,24 @@ public interface IPiSharpExtensionUi : NativeExtensions.IPiSharpExtensionUi
 {
 }
 
+/// <summary>A package-owned UI capability that is revoked and cleaned up with its loaded extension package.</summary>
+public interface IPiSharpExtensionUiPackageScope : IPiSharpExtensionUi, IDisposable
+{
+}
+
+/// <summary>Creates one independent retained UI scope for a compiled extension package.</summary>
+public interface IPiSharpExtensionUiPackageFactory
+{
+    IPiSharpExtensionUiPackageScope CreatePackageScope(string sourcePath);
+}
+
 /// <summary>Project-scoped configuration used to build the live context exposed during tool execution.</summary>
 public sealed record PiSharpExtensionContextConfiguration(string WorkingDirectory, string Mode,
-    bool HasUserInterface, bool IsProjectTrusted, IPiSharpExtensionUi Ui);
+    bool HasUserInterface, bool IsProjectTrusted, IPiSharpExtensionUi Ui)
+{
+    /// <summary>Creates a callback-scoped UI handle for the extension source being invoked.</summary>
+    public Func<string?, NativeExtensions.IPiSharpExtensionUi>? CreateCallbackUi { get; init; }
+}
 
 /// <summary>Read-only project and conversation state available to a native extension tool invocation.</summary>
 public sealed class PiSharpExtensionContext
@@ -41,6 +56,9 @@ public sealed class PiSharpExtensionContext
     public bool HasUserInterface => Configuration.HasUserInterface;
     public bool IsProjectTrusted => Configuration.IsProjectTrusted;
     public IPiSharpExtensionUi Ui => Configuration.Ui;
+
+    internal NativeExtensions.IPiSharpExtensionUi CreateCallbackUi(string? sourcePath) =>
+        Configuration.CreateCallbackUi?.Invoke(sourcePath) ?? new NativeExtensionUiCallbackScope(Configuration.Ui);
     public bool IsIdle => _isIdle();
     public string? CurrentModelId => _getConversation()?.Model;
     public string? CurrentProviderId => _getConversation()?.Provider;
