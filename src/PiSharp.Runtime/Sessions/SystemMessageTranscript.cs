@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Runtime.Sessions;
 
@@ -36,6 +37,27 @@ internal static class SystemMessageTranscript
     internal static bool HasToolDeclarations(ChatMessage message) =>
         message.Role == ChatRole.System && Metadata(message) is { } metadata &&
         (metadata.TryGetProperty("toolsAdded", out _) || metadata.TryGetProperty("toolsRemoved", out _));
+
+    internal static bool HasToolRevision(ChatMessage message) =>
+        message.Role == ChatRole.System && (AddedTools(message).Length > 0 || RemovedTools(message).Length > 0);
+
+    internal static void ReplaceText(ChatMessage message, string? text, bool clearSections)
+    {
+        message.Contents = string.IsNullOrEmpty(text) ? [] : [new TextContent(text)];
+        if (!clearSections || Metadata(message) is not { } source) return;
+
+        var metadata = JsonNode.Parse(source.GetRawText())!.AsObject();
+        metadata.Remove("sections");
+        if (metadata.Count == 0)
+            message.AdditionalProperties?.Remove(MetadataKey);
+        else
+        {
+            message.AdditionalProperties ??= new();
+            message.AdditionalProperties[MetadataKey] = JsonSerializer.SerializeToElement(metadata);
+        }
+    }
+
+    internal static void ClearText(ChatMessage message) => ReplaceText(message, null, clearSections: true);
 
     internal static string[] RemovedTools(ChatMessage message) =>
         Metadata(message) is { } metadata && metadata.TryGetProperty("toolsRemoved", out var tools) &&
@@ -79,5 +101,41 @@ internal static class SystemMessageTranscript
                 else sections[section.Name] = section.Value.GetString()!;
         }
         return string.Join("\n\n", content.Concat(sections.Values).Where(text => text.Length > 0));
+    }
+
+    internal static ChatMessage? ReplayForContext(IEnumerable<ChatMessage> messages)
+    {
+        var systems = messages.Where(message => message.Role == ChatRole.System).ToArray();
+        if (systems.Length == 0) return null;
+        if (systems.Any(message => message.Contents.Any(content => content is not TextContent)))
+            throw new InvalidDataException("System context contains content that cannot be replayed as text.");
+
+        var currentText = CurrentText(systems);
+        var replayed = PiSharpContextTransformPipeline.CloneMessageForNativeContext(systems[0]);
+        replayed.Contents = currentText.Length == 0 ? [] : [new TextContent(currentText)];
+        var metadata = new JsonObject();
+        var sections = new JsonObject();
+        foreach (var message in systems)
+        {
+            if (Metadata(message) is not { } source ||
+                !source.TryGetProperty("sections", out var sourceSections) ||
+                sourceSections.ValueKind != JsonValueKind.Object) continue;
+            foreach (var section in sourceSections.EnumerateObject())
+            {
+                if (section.Value.ValueKind == JsonValueKind.Null) sections.Remove(section.Name);
+                else sections[section.Name] = JsonNode.Parse(section.Value.GetRawText());
+            }
+        }
+        if (sections.Count > 0) metadata["sections"] = sections;
+        var tools = CurrentTools(systems);
+        if (tools.Count > 0)
+            metadata["toolsAdded"] = new JsonArray(tools.Select(tool => JsonNode.Parse(tool.GetRawText())).ToArray());
+
+        replayed.AdditionalProperties ??= new();
+        if (metadata.Count > 0)
+            replayed.AdditionalProperties[MetadataKey] = JsonSerializer.SerializeToElement(metadata);
+        else
+            replayed.AdditionalProperties.Remove(MetadataKey);
+        return replayed;
     }
 }

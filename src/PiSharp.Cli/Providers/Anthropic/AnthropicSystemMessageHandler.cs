@@ -11,16 +11,16 @@ internal sealed class AnthropicSystemMessageHandler(AnthropicTranscriptRequest c
         {
             var payload = JsonNode.Parse(await content.ReadAsStringAsync(cancellationToken))!.AsObject();
             var messages = payload["messages"]!.AsArray();
-            var assistant = 0;
+            var baseMessageCount = messages.Count;
             var inserted = 0;
-            for (var index = 0; index < messages.Count; index++)
+            var orderedUpdates = updates.Select((update, order) => (
+                    Boundary: ResolveBoundary(messages, update.BeforeMessage), order, update))
+                .OrderBy(item => item.Boundary).ThenBy(item => item.order);
+            foreach (var item in orderedUpdates)
             {
-                if (messages[index]?["role"]?.GetValue<string>() != "assistant") continue;
-                while (inserted < updates.Count && updates[inserted].BeforeAssistant == assistant)
-                    messages.Insert(index++, updates[inserted++].Message.DeepClone());
-                assistant++;
+                var boundary = Math.Clamp(item.Boundary, 0, baseMessageCount);
+                messages.Insert(boundary + inserted++, item.update.Message.DeepClone());
             }
-            while (inserted < updates.Count) messages.Add(updates[inserted++].Message.DeepClone());
             foreach (var message in messages.OfType<JsonObject>())
             {
                 if (message["content"] is not JsonArray contentBlocks) continue;
@@ -58,4 +58,39 @@ internal sealed class AnthropicSystemMessageHandler(AnthropicTranscriptRequest c
         if (context.Attempt.Value is { } attempt) attempt.StatusCode = response.StatusCode;
         return response;
     }
+
+    private static int ResolveBoundary(JsonArray messages, int requestedBoundary)
+    {
+        var boundary = Math.Clamp(requestedBoundary, 0, messages.Count);
+        if (boundary == 0 || messages[boundary - 1] is not JsonObject assistant ||
+            StringValue(assistant["role"]) != "assistant") return boundary;
+
+        var pendingToolCalls = ToolIds(assistant, "tool_use", "id").ToHashSet(StringComparer.Ordinal);
+        if (pendingToolCalls.Count == 0) return boundary;
+
+        var resultBoundary = boundary;
+        var foundToolResult = false;
+        for (var index = boundary; index < messages.Count; index++)
+        {
+            if (messages[index] is not JsonObject nextMessage) break;
+            var role = StringValue(nextMessage["role"]);
+            if (role == "assistant") break;
+            if (role != "user") continue;
+            foreach (var toolId in ToolIds(nextMessage, "tool_result", "tool_use_id"))
+                foundToolResult |= pendingToolCalls.Remove(toolId);
+            resultBoundary = index + 1;
+        }
+        return foundToolResult ? resultBoundary : boundary;
+    }
+
+    private static IEnumerable<string> ToolIds(JsonObject message, string blockType, string idProperty)
+    {
+        if (message["content"] is not JsonArray blocks) yield break;
+        foreach (var block in blocks.OfType<JsonObject>())
+            if (StringValue(block["type"]) == blockType && StringValue(block[idProperty]) is { Length: > 0 } id)
+                yield return id;
+    }
+
+    private static string? StringValue(JsonNode? value) =>
+        value is JsonValue json && json.TryGetValue<string>(out var text) ? text : null;
 }

@@ -59,6 +59,14 @@ public partial interface IPiSharpExtensionBuilder
     /// <summary>Registers a transform applied to each provider-bound conversation request.</summary>
     void AddContextTransform(PiSharpContextTransform transform);
 
+    /// <summary>Registers an ordered handler for provider-bound messages without system messages.</summary>
+    void AddContextHandler(PiSharpContextHandler handler) => throw new NotSupportedException(
+        "This extension host does not support the context event.");
+
+    /// <summary>Registers an ordered handler for the full provider-bound context after context handlers.</summary>
+    void AddContextWithSystemHandler(PiSharpContextWithSystemHandler handler) => throw new NotSupportedException(
+        "This extension host does not support the context_with_system event.");
+
     /// <summary>Registers an ordered hook before model-issued and nested tool calls.</summary>
     void AddToolCallHook(PiSharpToolCallHook hook);
 

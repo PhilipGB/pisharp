@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>NativeExtensionApiV10Fixture</AssemblyName>
+    <PackageId>PiSharp.TestExtensions.NativeApiV10Fixture</PackageId>
+    <Version>1.0.0</Version>
+    <Description>Fixture compiled against the native two-stage context mutation API.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <ContextMutationRevision Condition="'$(ContextMutationRevision)' == ''">V1</ContextMutationRevision>
+    <DefineConstants>$(DefineConstants);CONTEXT_MUTATION_$(ContextMutationRevision)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../../src/PiSharp.Extensions.Abstractions/PiSharp.Extensions.Abstractions.csproj"
+                      GlobalPropertiesToRemove="Version" />
+    <None Include="$(TargetDir)$(AssemblyName).deps.json" Pack="true"
+          PackagePath="lib/$(TargetFramework)/" Visible="false" />
+    <None Include="$(IntermediateOutputPath)pisharp-extension.json" Pack="true"
+          PackagePath="/" Visible="false" />
+    <None Include="../README.md" Pack="true" PackagePath="/README.md" />
+  </ItemGroup>
+  <Target Name="GeneratePiSharpExtensionManifest" BeforeTargets="_GetPackageFiles">
+    <WriteLinesToFile File="$(IntermediateOutputPath)pisharp-extension.json"
+                      Lines="{&quot;id&quot;:&quot;$(PackageId)&quot;,&quot;version&quot;:&quot;$(Version)&quot;,&quot;apiVersion&quot;:1,&quot;extensions&quot;:[{&quot;assembly&quot;:&quot;lib/$(TargetFramework)/$(AssemblyName).dll&quot;,&quot;type&quot;:&quot;PiSharp.TestExtensions.NativeApiV10.ContextMutationExtension&quot;}]}"
+                      Overwrite="true" />
+  </Target>
+</Project>

@@ -153,6 +153,8 @@ public sealed partial class ExtensionRegistration
         _toolCallHooks.Clear();
         _toolResultHooks.Clear();
         _contextTransforms.Clear();
+        _contextHandlers.Clear();
+        _contextWithSystemHandlers.Clear();
         _lifecycleHandlers.Clear();
         _beforeAgentStartHandlers.Clear();
         _sessionStartHandlers.Clear();

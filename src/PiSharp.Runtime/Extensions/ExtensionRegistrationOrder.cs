@@ -30,6 +30,8 @@ public sealed partial class ExtensionRegistration
                 OrderList(_toolCallHooks, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_toolResultHooks, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_contextTransforms, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_contextHandlers, entry => Rank(entry.SourceInfo.Path));
+                OrderList(_contextWithSystemHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_lifecycleHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_beforeAgentStartHandlers, entry => Rank(entry.SourceInfo.Path));
                 OrderList(_sessionInfoChangedHandlers, entry => Rank(entry.SourceInfo.Path));

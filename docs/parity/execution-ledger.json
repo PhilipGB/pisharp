@@ -7231,7 +7231,7 @@
       ],
       "implementation": [
         "PiSharp ExtensionRegistration exposes native tools, commands, safe terminal renderers and direct RPC Bash handlers. PiSharpToolRegistration now also supplies exposure, namespace, default activation, loadout projection and nested invocation controls.",
-        "PiSharpToolExecutionContext and the durable wrapper provide shared nested execution, lifecycle/persistence and call/result hooks with allow/block decisions. ExtensionCatalog now loads built-ins through ExtensionRegistration with builtin: source identity, trust-gated configured paths, explicit loading, disable rules and reload construction. ExtensionRegistration now exposes ordered asynchronous provider-context transforms, wired through PiAgent and ObservedChatClient after context projection and before provider-only repair and image preparation. Transforms receive copied messages and known mutable text/tool content, run on initial, tool-loop and context-overflow retry requests, and do not persist changes into conversation history. Registrations are captured when an agent is created. Native extensions now register ordered asynchronous startup/reload discovery callbacks for skills, prompts, and themes; resource behavior has paired current-Pi semantic evidence but full screen/request parity remains open. Extension state, late/dynamic registration, provider/model, MCP server, keybinding and interactive UI registration remain open.",
+        "PiSharpToolExecutionContext and the durable wrapper provide shared nested execution, lifecycle/persistence and call/result hooks with allow/block decisions. ExtensionCatalog now loads built-ins through ExtensionRegistration with builtin: source identity, trust-gated configured paths, explicit loading, disable rules and reload construction. ExtensionRegistration now exposes ordered asynchronous provider-context transforms, wired through PiAgent and ObservedChatClient after context projection and before provider-only repair and image preparation. Transforms receive copied messages and known mutable text/tool content, run on initial, tool-loop and context-overflow retry requests, and do not persist changes into conversation history. Registrations are captured when an agent is created. Native extensions also have ordered context and context_with_system callbacks after route-specific context preparation, with detached message copies, separate prompt editing, authoritative tools, retry reuse, overflow re-dispatch, source-attributed failure isolation and request-only projection. Native extensions register ordered asynchronous startup/reload discovery callbacks for skills, prompts, and themes; resource behavior has paired current-Pi semantic evidence but full screen/request parity remains open. Extension state, late/dynamic registration, provider/model, MCP server, keybinding and interactive UI registration remain open.",
         "ExtensionRegistration.AddProjectTrustHandler exposes a native pre-trust decision hook and reuses user/global and CLI bootstrap instances after resolution. ProjectTrustExtensionContext currently exposes the working directory and HasUserInterface only; current Pi's project-trust select/confirm/input/notify UI methods remain open.",
         "PiSharpToolRegistration now optionally declares ReachesTools; PiSharpToolCallContext carries reach and namespace metadata to hooks. MCP only auto-activates codemode/tool_search definitions that declare reach.",
         "The extension runtime now exposes typed lifecycle event callbacks with live PiSharpExtensionContext, project/session/model/provider/tool-loadout state and the shared UI contract; lifecycle callbacks are checkpointed, ordered and reconciled with extension selection. CLI configuration carries mode, trust, UI availability and the UI adapter through resource reload/session replacement.",
@@ -7250,7 +7250,8 @@
         "docs/parity/fixtures/extension-context-runtime-current-pi-2026-10-15.json",
         "Draft PR #8 custom-message delivery regression follow-up: focused runtime tests distinguish idle triggerTurn=false context insertion from NextTurn staging, verify busy triggerTurn=false custom messages append after tool results without an additional request, and verify busy/idle NextTurn messages follow the next run's starting prompt. Local format verification, warnings-as-errors build, docs validation (137 documents / 531 references), and the complete .NET suite pass (2,204 tests, zero skipped) with TMPDIR=/tmp. Exact-head push CI 39021311731 and PR merge-result CI 39021313792 both pass test (2,204/2,204, zero skipped) and MCP conformance. See docs/parity/fixtures/native-extension-runtime-bridge-2026-10-17.md.",
         "ExtensionSessionStateTests covers canonical persistence/rollback, ordered repeated entries, active-branch fork and compaction behavior, lifecycle ordering/error isolation, and bridge revocation. Packed external-package state/process acceptance and the Linux PTY shortcut reload/removal workflow pass. Replaced package load contexts collect after old callback completion. Full local verification passes 2,237/2,237 .NET tests, architecture 7/7, Node 24/24, Python 50/50, docs 138/532; MCP conformance has no new regression. Exact-head push CI 39039746664 and PR merge-result CI 39039758081 pass on product source 2c24b4fd; see docs/parity/fixtures/native-extension-state-interactive-controls-2026-10-17.md.",
-        "docs/parity/fixtures/native-extension-agent-settlement-2026-10-18.md records pinned source and deterministic boundary, cancellation, rollback, retry, tool, compaction, external package/RPC/resume and package lifecycle evidence. Broad extension parity remains in_progress."
+        "docs/parity/fixtures/native-extension-agent-settlement-2026-10-18.md records pinned source and deterministic boundary, cancellation, rollback, retry, tool, compaction, external package/RPC/resume and package lifecycle evidence. Broad extension parity remains in_progress.",
+        "NativeExtensionContextMutationTests cover ordered two-stage dispatch, hidden-system restoration, valid/invalid output handling, source-attributed error and warning diagnostics, detached mutable metadata, callback revocation on cancellation, route-preparation ordering, retry result reuse, initial and tool-loop requests, prompt transcript synchronization, and canonical history isolation. NativeExtensionApiV10 is a compiled external package exercised through ExtensionCatalog and PiAgent. The focused evidence does not promote the broad extension capability."
       ],
       "dependencies": [
         "tool-exposure-loadout",
@@ -11959,5 +11960,39 @@
       "platform_scope": "Both regressions executed on Linux. Without a process group, including Windows/Unix without setsid, descendants surviving root exit remain extension-owned; documented consistently with pinned Pi root-only termination. Native Windows/macOS execution remains unverified."
     },
     "initial_product_source_commit": "5d36e27deb255db5f9c3b78a2d95884f2c22ec5d"
+  },
+  "native_extension_context_mutation_milestone": {
+    "date": "2026-10-19",
+    "status": "active",
+    "branch": "milestone/native-extension-context-mutation",
+    "base_main": "3be359066d6d3bef815a2acefcc0a117bac12666",
+    "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "receipt": "docs/parity/fixtures/native-extension-context-mutation-2026-10-19.md",
+    "implementation": "Additive compiled extension context and context_with_system callbacks at the route-aware provider boundary; detached mutable messages, hidden system restoration, separately editable system instructions, read-only tool names and host-owned executable tools.",
+    "focused_tests": "Review-correction selection: 23/23 dispatcher, transcript and Anthropic physical-projection tests; Anthropic provider group: 51/51. The initial focused extension/API suite passed 16/16, including historical and compiled-package compatibility.",
+    "local_verification": {
+      "restore": "passed with NuGetAudit=false because the shared home NuGet HTTP cache is read-only",
+      "format": "passed",
+      "build": "passed with zero warnings and errors",
+      "dotnet_tests": "2,505 passed, 0 failed, 0 skipped",
+      "architecture": "7/7 passed",
+      "node_terminal": "24/24 passed",
+      "python_terminal": "50/50 passed",
+      "documentation_paths": "148 documents, 568 references; passed",
+      "mcp_conformance": "No regressions; the same eight classified baseline failures remain"
+    },
+    "publication": "PR #19 remains draft; fresh exact-head push and PR Linux CI results are recorded in its description. Do not merge.",
+    "review_correction": {
+      "reviewed_head": "3cc4df1368aea3a74712b0799b78885dca0134d8",
+      "finding": "Structural native context edits collapsed the request-local Anthropic transcript and erased authoritative historical system/tool revisions; serialized-content matching also confused edited or duplicate messages when rebasing boundaries.",
+      "correction": "Carry original message-index lineage through both native stages. Rebase existing transcript revisions only for structural message changes, preserve timeline on ordinary content/instruction edits, and project Anthropic updates at message boundaries while retaining tool-result ordering. Explicit full-context system removal clears prompt text in provider projection.",
+      "regressions": [
+        "Dispatcher regression reproduced the old boundary 2 versus expected boundary 1 after removing an intervening message while editing retained message content.",
+        "Anthropic physical-request regression verifies the A-to-B tool update remains between retained users after the same structural edit and instruction change.",
+        "Anthropic physical-adapter regression verifies full system removal does not restore prompt text and still projects the retained tool revision.",
+        "Lineage tests cover first-stage edits/removal, duplicate content, insertion, reordering and replacement messages."
+      ]
+    },
+    "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No broad parity promotion."
   }
 }

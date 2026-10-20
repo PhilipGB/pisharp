@@ -134,6 +134,175 @@ public sealed class AnthropicInlineToolTests
     }
 
     [Fact]
+    public async Task NativeInstructionEditPreservesAnthropicToolRevisionTimelineOnTheWire()
+    {
+        var (payload, beta) = await Capture([], true, true, streaming: true, requestCount: 2,
+            invoke: async (client, token) =>
+            {
+                var registration = new ExtensionRegistration();
+                var adapter = new NativeExtensionRegistrationAdapter(registration);
+                var contextCalls = 0;
+                adapter.AddContextWithSystemHandler((eventData, _, _) =>
+                {
+                    if (Interlocked.Increment(ref contextCalls) == 2)
+                        eventData.SystemInstructions = "native prompt edit";
+                    return ValueTask.CompletedTask;
+                });
+                adapter.Close();
+                registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "A",
+                    name: "tool_a", description: "tool A")));
+                registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "B",
+                    name: "tool_b", description: "tool B")));
+
+                var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()),
+                    selectedTools: ["tool_a", "tool_b"], initialActiveToolNames: ["tool_a"],
+                    noBuiltinTools: true, systemPrompt: "base prompt",
+                    extensionToolRegistrations: registration.ToolDefinitions,
+                    liveExtensionRegistration: registration);
+                var conversation = new ConversationSession(Path.GetTempPath(), "claude-opus-5", null);
+                var run = await ConversationRun.OpenAsync(agent, conversation);
+                await foreach (var _ in run.RunEventsAsync("before", token)) { }
+                run.SetActiveTools(["tool_b"]);
+                await foreach (var _ in run.RunEventsAsync("after", token)) { }
+            });
+
+        Assert.Contains("inline-tools-2026-09-15", beta);
+        Assert.Equal("native prompt edit", payload.GetProperty("system")[0].GetProperty("text").GetString());
+        Assert.Equal(["tool_a", "__pi_deferred_placeholder__"], payload.GetProperty("tools").EnumerateArray()
+            .Select(tool => tool.GetProperty("name").GetString()));
+        var update = Assert.Single(payload.GetProperty("messages").EnumerateArray(),
+            message => message.GetProperty("role").GetString() == "system");
+        var blocks = update.GetProperty("content").EnumerateArray().ToArray();
+        Assert.Equal(["tool_removal", "tool_addition"], blocks.Select(block => block.GetProperty("type").GetString()));
+        Assert.Equal("tool_a", blocks[0].GetProperty("tool").GetProperty("name").GetString());
+        Assert.Equal("tool_b", blocks[1].GetProperty("tool").GetProperty("definition").GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task NativeFullSystemRemovalDoesNotReappearInAnthropicProjection()
+    {
+        var (payload, beta) = await Capture([], true, true, streaming: true, requestCount: 2,
+            invoke: async (client, token) =>
+            {
+                var registration = new ExtensionRegistration();
+                var adapter = new NativeExtensionRegistrationAdapter(registration);
+                var contextCalls = 0;
+                adapter.AddContextWithSystemHandler((eventData, _, _) =>
+                {
+                    if (Interlocked.Increment(ref contextCalls) == 2)
+                    {
+                        for (var index = eventData.Messages.Count - 1; index >= 0; index--)
+                            if (eventData.Messages[index].Role == ChatRole.System)
+                                eventData.Messages.RemoveAt(index);
+                        eventData.SystemInstructions = null;
+                    }
+                    return ValueTask.CompletedTask;
+                });
+                adapter.Close();
+                registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "A",
+                    name: "tool_a", description: "tool A")));
+                registration.AddTool(new PiSharpToolRegistration(AIFunctionFactory.Create(() => "B",
+                    name: "tool_b", description: "tool B")));
+
+                var agent = new PiAgent(client, new CodingTools(Path.GetTempPath()),
+                    selectedTools: ["tool_a", "tool_b"], initialActiveToolNames: ["tool_a"],
+                    noBuiltinTools: true, systemPrompt: "base prompt",
+                    extensionToolRegistrations: registration.ToolDefinitions,
+                    liveExtensionRegistration: registration);
+                var conversation = new ConversationSession(Path.GetTempPath(), "claude-opus-5", null);
+                var run = await ConversationRun.OpenAsync(agent, conversation);
+                await foreach (var _ in run.RunEventsAsync("before", token)) { }
+                run.SetActiveTools(["tool_b"]);
+                await foreach (var _ in run.RunEventsAsync("after", token)) { }
+            });
+
+        Assert.Contains("inline-tools-2026-09-15", beta);
+        Assert.False(payload.TryGetProperty("system", out _));
+        Assert.DoesNotContain("base prompt", payload.GetRawText(), StringComparison.Ordinal);
+        Assert.Equal(["tool_a", "__pi_deferred_placeholder__"], payload.GetProperty("tools").EnumerateArray()
+            .Select(tool => tool.GetProperty("name").GetString()));
+        var update = Assert.Single(payload.GetProperty("messages").EnumerateArray(),
+            message => message.GetProperty("role").GetString() == "system");
+        var blocks = update.GetProperty("content").EnumerateArray().ToArray();
+        Assert.Equal(["tool_removal", "tool_addition"], blocks.Select(block => block.GetProperty("type").GetString()));
+        Assert.Equal("tool_a", blocks[0].GetProperty("tool").GetProperty("name").GetString());
+        Assert.Equal("tool_b", blocks[1].GetProperty("tool").GetProperty("definition").GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task StructuralContextEditKeepsAnthropicToolRevisionBetweenRetainedMessages()
+    {
+        ChatMessage[] messages =
+        [
+            new(ChatRole.User, "User A"),
+            new(ChatRole.Assistant, "Assistant B"),
+            new(ChatRole.User, "User C")
+        ];
+        var originalMessages = JsonSerializer.Serialize(messages, AIJsonUtilities.DefaultOptions);
+        var toolA = AIFunctionFactory.Create(() => "A", name: "tool_a", description: "tool A");
+        var toolB = AIFunctionFactory.Create(() => "B", name: "tool_b", description: "tool B");
+        var initial = new ChatMessage(ChatRole.System, "stale prompt");
+        SystemMessageTranscript.ImportMetadata(initial, JsonSerializer.SerializeToElement(new
+        {
+            toolsAdded = new[] { ToolDeclarationJson.Create(toolA) }
+        }));
+        var update = new ChatMessage(ChatRole.System, "");
+        SystemMessageTranscript.ImportMetadata(update, JsonSerializer.SerializeToElement(new
+        {
+            toolsRemoved = new[] { new { name = "tool_a" } },
+            toolsAdded = new[] { ToolDeclarationJson.Create(toolB) }
+        }));
+        var transcript = JsonSerializer.SerializeToElement(new[]
+        {
+            new { afterMessageCount = 0, message = JsonSerializer.SerializeToElement(initial, AIJsonUtilities.DefaultOptions) },
+            new { afterMessageCount = 2, message = JsonSerializer.SerializeToElement(update, AIJsonUtilities.DefaultOptions) }
+        });
+        var options = new ChatOptions { Instructions = "stale prompt", Tools = [toolB] };
+        options.AdditionalProperties = new() { ["pisharp.toolTranscript"] = transcript };
+
+        var (payload, beta) = await Capture([], true, true, streaming: true, invoke: async (client, token) =>
+        {
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            adapter.AddContextWithSystemHandler((eventData, _, _) =>
+            {
+                eventData.Messages[0].Contents.OfType<TextContent>().Single().Text = "User A edited";
+                eventData.Messages.RemoveAt(1);
+                eventData.Messages[1].Contents.OfType<TextContent>().Single().Text = "User C edited";
+                eventData.SystemInstructions = "fresh prompt";
+                return ValueTask.CompletedTask;
+            });
+            adapter.Close();
+            var runtimeContext = new PiSharpExtensionContext(
+                new PiSharpExtensionContextConfiguration(Path.GetTempPath(), "test", false, true,
+                    new TestExtensionUi()), static () => null, static () => [], static () => true);
+            var dispatcher = new NativeExtensionEventDispatcher(registration, runtimeContext, _ => { });
+            var routed = new RoutedChatClient(new MutableChatClient(client), _ => { },
+                contextMutationDispatcher: dispatcher);
+            await foreach (var _ in routed.GetStreamingResponseAsync(messages, options, token)) { }
+        });
+
+        Assert.Contains("inline-tools-2026-09-15", beta);
+        Assert.Equal("fresh prompt", payload.GetProperty("system")[0].GetProperty("text").GetString());
+        Assert.DoesNotContain("stale prompt", payload.GetRawText(), StringComparison.Ordinal);
+        Assert.Equal(["tool_a", "__pi_deferred_placeholder__"], payload.GetProperty("tools").EnumerateArray()
+            .Select(tool => tool.GetProperty("name").GetString()));
+        var projectedMessages = payload.GetProperty("messages").EnumerateArray().ToArray();
+        Assert.Equal(["user", "system", "user"], projectedMessages
+            .Select(message => message.GetProperty("role").GetString()));
+        Assert.Equal("User A edited", projectedMessages[0].GetProperty("content")[0].GetProperty("text").GetString());
+        Assert.Equal("User C edited", projectedMessages[2].GetProperty("content")[0].GetProperty("text").GetString());
+        var updateBlocks = projectedMessages[1].GetProperty("content").EnumerateArray().ToArray();
+        Assert.Equal(["tool_removal", "tool_addition"], updateBlocks
+            .Select(block => block.GetProperty("type").GetString()));
+        Assert.Equal("tool_a", updateBlocks[0].GetProperty("tool").GetProperty("name").GetString());
+        Assert.Equal("tool_b", updateBlocks[1].GetProperty("tool").GetProperty("definition").GetProperty("name").GetString());
+        Assert.Equal(originalMessages, JsonSerializer.Serialize(messages, AIJsonUtilities.DefaultOptions));
+        Assert.Equal("stale prompt", options.Instructions);
+        Assert.Same(toolB, Assert.Single(options.Tools!));
+    }
+
+    [Fact]
     public async Task NativeToolUpdatesKeepInitialDefinitionsAndDefineLaterToolsByValue()
     {
         var session = Import("""
@@ -351,5 +520,16 @@ public sealed class AnthropicInlineToolTests
             Assert.Equal("ok", (await client.GetResponseAsync(messages, cancellationToken: deadline.Token)).Text);
         await server.WaitAsync(deadline.Token);
         return (payload, beta);
+    }
+
+    private sealed class TestExtensionUi : IPiSharpExtensionUi
+    {
+        public Task<string?> SelectAsync(string title, IReadOnlyList<string> options,
+            CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+        public Task<bool> ConfirmAsync(string title, string message,
+            CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<string?> InputAsync(string title, string? placeholder = null,
+            CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
+        public void Notify(string message, string type = "info") { }
     }
 }
