@@ -11,7 +11,7 @@ public sealed class TerminalEditor
     private sealed record CompletionCycle(IReadOnlyList<CompletionCandidate> Candidates, int SelectedIndex,
         string BufferText, int Cursor)
     {
-        public bool Matches(EditorBuffer buffer) => BufferText == buffer.Text && Cursor == buffer.Cursor;
+        public bool Matches(EditorBufferSnapshot snapshot) => BufferText == snapshot.Text && Cursor == snapshot.Cursor;
     }
 
     private readonly EditorBuffer _buffer;
@@ -63,7 +63,8 @@ public sealed class TerminalEditor
     private int _renderedRows;
     private int _cursorRow;
 
-    public string Draft => _buffer.Text;
+    public string Draft => WithEditorState(() => _buffer.CaptureSnapshot().Text);
+    internal EditorBufferSnapshot CaptureDraftState() => WithEditorState(_buffer.CaptureSnapshot);
     public string Hotkeys => _keymap.FormatHotkeys();
     internal string? GetDisplayKeys(string action) => _keymap.GetDisplayKeys(action);
     internal bool MatchesKeybinding(string action, ConsoleKeyInfo key) => _keymap.Matches(action, key);
@@ -94,7 +95,8 @@ public sealed class TerminalEditor
         {
             screen.SetToolResultsExpanded(_toolResultsExpanded);
             screen.SetToolExpandKeyLabel(_keymap.GetDisplayKeys("app.tools.expand"));
-            screen.SetEditor(_buffer.Text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd);
+            var snapshot = WithEditorState(_buffer.CaptureSnapshot);
+            screen.SetEditor(snapshot.Text, snapshot.Cursor, snapshot.SelectionStart, snapshot.SelectionEnd);
         }
     }
 
@@ -114,8 +116,14 @@ public sealed class TerminalEditor
     internal void SetExtensionAutocompleteProvider(Func<string, int, CancellationToken,
         Task<IReadOnlyList<NativeExtensions.PiSharpExtensionAutocompleteSuggestion>>>? provider)
     {
-        CancelCompletionRequest();
-        _extensionAutocompleteProvider = provider;
+        var pendingRequest = WithEditorState(() =>
+        {
+            _completionCycle = null;
+            var pending = Interlocked.Exchange(ref _completionRequest, null);
+            _extensionAutocompleteProvider = provider;
+            return pending;
+        });
+        CancelCompletionRequest(pendingRequest);
     }
 
     internal void SetExtensionModalActionHandlers(Func<string, Task>? dispatchApplicationAction,
@@ -196,11 +204,11 @@ public sealed class TerminalEditor
                     text = input.ReadAvailableText(next, out var following);
                     if (following is not null) input.PushBack(following);
                 }
-                _buffer.InsertText(text);
+                WithEditorState(() => _buffer.InsertText(text));
             }
             else if (next.Key is { } key)
             {
-                _ = _buffer.Handle(key);
+                WithEditorState(() => _buffer.Handle(key));
             }
             Render();
         }
@@ -208,23 +216,30 @@ public sealed class TerminalEditor
 
     internal object BeginExtensionEdit(string? prefill)
     {
-        var state = _buffer.CaptureExtensionEditState();
-        _completionCycle = null;
-        _buffer.BeginExtensionEdit(prefill);
+        var state = WithEditorState(() =>
+        {
+            _completionCycle = null;
+            var captured = _buffer.CaptureExtensionEditState();
+            _buffer.BeginExtensionEdit(prefill);
+            return captured;
+        });
         Render();
         return state;
     }
 
     internal void EndExtensionEdit(object state)
     {
-        _buffer.RestoreExtensionEditState(state);
-        _completionCycle = null;
+        WithEditorState(() =>
+        {
+            _buffer.RestoreExtensionEditState(state);
+            _completionCycle = null;
+        });
         Render();
     }
 
     internal bool HandleExtensionEditKey(ConsoleKeyInfo key)
     {
-        var action = _buffer.Handle(key);
+        var action = WithEditorState(() => _buffer.Handle(key));
         if (action == EditorAction.Render) Render();
         return action != EditorAction.None;
     }
@@ -419,25 +434,40 @@ public sealed class TerminalEditor
     /// <summary>Seed the next editable prompt after a session fork; never submits it automatically.</summary>
     public void Prefill(string text)
     {
-        CancelCompletionRequest();
-        _completionCycle = null;
-        _buffer.SetText(text);
+        var pendingRequest = WithEditorState(() =>
+        {
+            _completionCycle = null;
+            var pending = Interlocked.Exchange(ref _completionRequest, null);
+            _buffer.SetText(text);
+            return pending;
+        });
+        CancelCompletionRequest(pendingRequest);
     }
 
     public void InsertTextAtCursor(string text)
     {
-        CancelCompletionRequest();
-        _completionCycle = null;
-        _buffer.InsertText(text);
+        var pendingRequest = WithEditorState(() =>
+        {
+            _completionCycle = null;
+            var pending = Interlocked.Exchange(ref _completionRequest, null);
+            _buffer.InsertText(text);
+            return pending;
+        });
+        CancelCompletionRequest(pendingRequest);
         Render();
     }
 
     internal void SetDraft(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        CancelCompletionRequest();
-        _completionCycle = null;
-        _buffer.SetText(text);
+        var pendingRequest = WithEditorState(() =>
+        {
+            _completionCycle = null;
+            var pending = Interlocked.Exchange(ref _completionRequest, null);
+            _buffer.SetText(text);
+            return pending;
+        });
+        CancelCompletionRequest(pendingRequest);
         Render();
     }
 
@@ -446,11 +476,16 @@ public sealed class TerminalEditor
     /// <summary>Return queued messages to the editor without discarding a draft typed during the run.</summary>
     public void RestorePending(IEnumerable<string> messages)
     {
-        CancelCompletionRequest();
-        _completionCycle = null;
-        var restored = messages.Where(value => !string.IsNullOrWhiteSpace(value)).ToList();
-        if (!string.IsNullOrWhiteSpace(_buffer.Text)) restored.Add(_buffer.Text);
-        _buffer.SetText(string.Join("\n\n", restored));
+        var pendingRequest = WithEditorState(() =>
+        {
+            _completionCycle = null;
+            var pending = Interlocked.Exchange(ref _completionRequest, null);
+            var restored = messages.Where(value => !string.IsNullOrWhiteSpace(value)).ToList();
+            if (!string.IsNullOrWhiteSpace(_buffer.Text)) restored.Add(_buffer.Text);
+            _buffer.SetText(string.Join("\n\n", restored));
+            return pending;
+        });
+        CancelCompletionRequest(pendingRequest);
     }
 
     /// <summary>Read active-run controls while provider output streams. Enter steers, Alt+Enter
@@ -497,7 +532,7 @@ public sealed class TerminalEditor
             _keymap.Matches("tui.input.tab", possibleCompletionKey);
         if (!isCompletionKey)
         {
-            _completionCycle = null;
+            WithEditorState(() => { _completionCycle = null; });
             CancelCompletionRequest();
         }
         if (next.IsEndOfStream) return false;
@@ -508,12 +543,12 @@ public sealed class TerminalEditor
             var result = _screen?.HandleMouse(mouse) ?? default;
             if (result.ClearEditorSelection)
             {
-                _buffer.ClearSelection();
+                WithEditorState(_buffer.ClearSelection);
                 Render();
             }
             if (result.EditorCursorOffset is { } cursor)
             {
-                _buffer.SetCursor(cursor);
+                WithEditorState(() => _buffer.SetCursor(cursor));
                 Render();
             }
             if (result.Copy && dispatchApplicationAction is not null)
@@ -545,7 +580,7 @@ public sealed class TerminalEditor
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
             {
-                _completionCycle = null;
+                WithEditorState(() => { _completionCycle = null; });
                 Console.Error.WriteLine($"Completion unavailable: {error.Message}");
             }
             return true;
@@ -619,21 +654,32 @@ public sealed class TerminalEditor
                 inputKey.Key == ConsoleKey.Enter && inputKey.Modifiers.HasFlag(ConsoleModifiers.Alt) &&
                 !_keymap.Matches("app.message.followUp", inputKey))
             {
-                _ = _buffer.Handle(inputKey);
+                WithEditorState(() => _buffer.Handle(inputKey));
                 return true;
             }
             var followUp = _keymap.Matches("app.message.followUp", inputKey);
             if (followUp || _keymap.Matches("tui.input.submit", inputKey))
             {
-                if (!_buffer.TrySubmit(out var text)) return true;
-                _buffer.Clear();
+                var text = string.Empty;
+                var submitted = WithEditorState(() =>
+                {
+                    if (!_buffer.TrySubmit(out var value)) return false;
+                    text = value;
+                    _buffer.Clear();
+                    return true;
+                });
+                if (!submitted) return true;
                 if (!await queue(text, followUp, cancellationToken)) RestorePending([text]);
                 return true;
             }
         }
         if (HandleExtensionEditorInput(next)) return true;
         if (next.Key is null && next.Text is null) return true;
-        _ = next.Text is not null ? _buffer.InsertText(next.Text) : _buffer.Handle(next.Key!.Value);
+        WithEditorState(() =>
+        {
+            if (next.Text is not null) _buffer.InsertText(next.Text);
+            else _buffer.Handle(next.Key!.Value);
+        });
         return true;
     }
 
@@ -651,7 +697,7 @@ public sealed class TerminalEditor
         Func<ExtensionShortcutInfo, CancellationToken, Task>? dispatchExtensionShortcut = null)
     {
         ArgumentNullException.ThrowIfNull(dispatchApplicationAction);
-        _completionCycle = null;
+        WithEditorState(() => { _completionCycle = null; });
         using var inputLoop = EnterInputLoop();
         using var mode = TerminalMode.Enter(_screen);
         var input = EnsureInput();
@@ -670,7 +716,7 @@ public sealed class TerminalEditor
                 _keymap.Matches("tui.input.tab", possibleCompletionKey);
             if (!isCompletionKey)
             {
-                _completionCycle = null;
+                WithEditorState(() => { _completionCycle = null; });
                 CancelCompletionRequest();
             }
             if (next.Mouse is { } mouse)
@@ -678,7 +724,7 @@ public sealed class TerminalEditor
                 var result = _screen?.HandleMouse(mouse) ?? default;
                 if (result.EditorCursorOffset is { } cursor)
                 {
-                    _buffer.SetCursor(cursor);
+                    WithEditorState(() => _buffer.SetCursor(cursor));
                     Render();
                 }
                 if (result.Copy)
@@ -729,13 +775,21 @@ public sealed class TerminalEditor
                 continue;
             }
             if (allowEmptySubmit && next.Key is { } submitKey &&
-                _keymap.Matches("tui.input.submit", submitKey) && string.IsNullOrWhiteSpace(_buffer.Text))
+                _keymap.Matches("tui.input.submit", submitKey))
             {
-                var submitted = _buffer.Text;
-                ClearLine();
-                if (_screen is not { IsActive: true }) Console.WriteLine($"{Prompt}{submitted}");
-                _buffer.Clear();
-                return submitted;
+                var submitted = WithEditorState(() =>
+                {
+                    if (!string.IsNullOrWhiteSpace(_buffer.Text)) return null;
+                    var value = _buffer.Text;
+                    _buffer.Clear();
+                    return value;
+                });
+                if (submitted is not null)
+                {
+                    ClearLine();
+                    if (_screen is not { IsActive: true }) Console.WriteLine($"{Prompt}{submitted}");
+                    return submitted;
+                }
             }
             if (HandleExtensionEditorInput(next))
             {
@@ -751,7 +805,7 @@ public sealed class TerminalEditor
                 }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
                 {
-                    _completionCycle = null;
+                    WithEditorState(() => { _completionCycle = null; });
                     ClearLine();
                     Console.WriteLine($"\nCompletion unavailable: {error.Message}");
                 }
@@ -775,7 +829,7 @@ public sealed class TerminalEditor
                 {
                     text = input.ReadAvailableText(next, out following);
                 }
-                action = _buffer.InsertText(text);
+                action = WithEditorState(() => _buffer.InsertText(text));
                 if (!next.IsExtensionRewrite && following?.Key is { } bufferedSubmitKey &&
                     _keymap.Matches("tui.input.submit", bufferedSubmitKey))
                 {
@@ -789,7 +843,7 @@ public sealed class TerminalEditor
                     continue;
                 }
             }
-            else action = _buffer.Handle(next.Key!.Value);
+            else action = WithEditorState(() => _buffer.Handle(next.Key!.Value));
             switch (action)
             {
                 case EditorAction.Exit:
@@ -800,11 +854,15 @@ public sealed class TerminalEditor
                     Render();
                     break;
                 case EditorAction.Submit:
-                    var submitted = _buffer.Text;
+                    var submitted = WithEditorState(() =>
+                    {
+                        var value = _buffer.Text;
+                        _buffer.Clear();
+                        return value;
+                    });
                     ClearLine();
                     if (_screen is not { IsActive: true } && !submitted.StartsWith("/", StringComparison.Ordinal))
                         Console.WriteLine($"{Prompt}{new string(submitted.Replace('\n', '↵').Select(c => char.IsControl(c) ? ' ' : c).ToArray())}");
-                    _buffer.Clear();
                     return submitted;
                 case EditorAction.Render: Render(); break;
             }
@@ -827,8 +885,9 @@ public sealed class TerminalEditor
             await dispatchExtensionShortcut(extensionShortcut, cancellationToken);
             return true;
         }
+        var hasCompletionCycle = WithEditorState(() => _completionCycle is not null);
         if (_keymap.MatchesEditorAction(key) &&
-            !(_keymap.Matches("app.thinking.cycle", key) && _completionCycle is null)) return false;
+            !(_keymap.Matches("app.thinking.cycle", key) && !hasCompletionCycle)) return false;
         var action = _keymap.MatchIdleApplicationAction(key);
         if (action is null) return false;
         beforeDispatch?.Invoke();
@@ -850,80 +909,113 @@ public sealed class TerminalEditor
 
     private async Task CompleteInputAsync(ConsoleKeyInfo key, CancellationToken cancellationToken)
     {
-        CompletionCycle cycle;
-        if (_completionCycle is { } previous && previous.Matches(_buffer))
+        var previousCycleApplied = WithEditorState(() =>
         {
-            var direction = key.Modifiers.HasFlag(ConsoleModifiers.Shift) ? -1 : 1;
-            var selectedIndex = (previous.SelectedIndex + direction + previous.Candidates.Count) % previous.Candidates.Count;
-            cycle = previous with { SelectedIndex = selectedIndex };
-        }
-        else
-        {
-            CancelCompletionRequest();
-            var request = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            _completionRequest = request;
-            try
+            var snapshot = _buffer.CaptureSnapshot();
+            if (_completionCycle is not { } previous || !previous.Matches(snapshot))
             {
-                var originalText = _buffer.Text;
-                var originalCursor = _buffer.Cursor;
+                _completionCycle = null;
+                return false;
+            }
+
+            var direction = key.Modifiers.HasFlag(ConsoleModifiers.Shift) ? -1 : 1;
+            var selectedIndex = (previous.SelectedIndex + direction + previous.Candidates.Count) %
+                previous.Candidates.Count;
+            ApplyCompletionCycleUnsafe(previous with { SelectedIndex = selectedIndex });
+            return true;
+        });
+        if (previousCycleApplied) return;
+
+        CancelCompletionRequest();
+        var request = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var requestToken = request.Token;
+        try
+        {
+            var (snapshot, candidates, extensionProvider) = WithEditorState(() =>
+            {
+                _completionRequest = request;
+                var current = _buffer.CaptureSnapshot();
                 var descriptions = _completion.GetSlashCommandSuggestions(_buffer)
                     .ToDictionary(suggestion => suggestion.Command, suggestion => suggestion.Description,
                         StringComparer.OrdinalIgnoreCase);
-                var candidates = _completion.GetCompletions(_buffer)
+                var nativeCandidates = _completion.GetCompletions(_buffer)
                     .Select(value => new CompletionCandidate(value, value, Native: true,
                         descriptions.GetValueOrDefault(value))).ToList();
-                if (_extensionAutocompleteProvider is not null)
+                return (current, nativeCandidates, _extensionAutocompleteProvider);
+            });
+
+            IReadOnlyList<NativeExtensions.PiSharpExtensionAutocompleteSuggestion> extensions = [];
+            if (extensionProvider is not null)
+                extensions = await extensionProvider(snapshot.Text, snapshot.Cursor, requestToken)
+                    .ConfigureAwait(false);
+            requestToken.ThrowIfCancellationRequested();
+
+            WithEditorState(() =>
+            {
+                var current = _buffer.CaptureSnapshot();
+                if (requestToken.IsCancellationRequested || current.Version != snapshot.Version)
                 {
-                    var extensions = await _extensionAutocompleteProvider(originalText, originalCursor, request.Token)
-                        .ConfigureAwait(false);
-                    request.Token.ThrowIfCancellationRequested();
-                    if (!string.Equals(_buffer.Text, originalText, StringComparison.Ordinal) ||
-                        _buffer.Cursor != originalCursor)
-                    {
-                        _completionCycle = null;
-                        return;
-                    }
-                    var seen = new HashSet<string>(candidates.Select(candidate => candidate.ReplacementText),
-                        StringComparer.Ordinal);
-                    foreach (var suggestion in extensions)
-                    {
-                        if (string.IsNullOrEmpty(suggestion.ReplacementText) ||
-                            string.IsNullOrEmpty(suggestion.DisplayText) || !seen.Add(suggestion.ReplacementText)) continue;
-                        candidates.Add(new(suggestion.DisplayText, suggestion.ReplacementText, Native: false,
-                            suggestion.Description));
-                        if (candidates.Count == 100) break;
-                    }
+                    _completionCycle = null;
+                    return;
                 }
+
+                var seen = new HashSet<string>(candidates.Select(candidate => candidate.ReplacementText),
+                    StringComparer.Ordinal);
+                foreach (var suggestion in extensions)
+                {
+                    if (string.IsNullOrEmpty(suggestion.ReplacementText) ||
+                        string.IsNullOrEmpty(suggestion.DisplayText) || !seen.Add(suggestion.ReplacementText)) continue;
+                    candidates.Add(new(suggestion.DisplayText, suggestion.ReplacementText, Native: false,
+                        suggestion.Description));
+                    if (candidates.Count == 100) break;
+                }
+
                 if (candidates.Count == 0)
                 {
                     _completionCycle = null;
                     return;
                 }
-                cycle = new(candidates, key.Modifiers.HasFlag(ConsoleModifiers.Shift) ? candidates.Count - 1 : 0,
-                    originalText, originalCursor);
-            }
-            finally
-            {
-                Interlocked.CompareExchange(ref _completionRequest, null, request);
-                request.Dispose();
-            }
-        }
 
+                var selectedIndex = key.Modifiers.HasFlag(ConsoleModifiers.Shift) ? candidates.Count - 1 : 0;
+                ApplyCompletionCycleUnsafe(new(candidates, selectedIndex, snapshot.Text, snapshot.Cursor));
+            });
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // An editor update or package removal cancels this request. The input owner is free to continue.
+        }
+        finally
+        {
+            Interlocked.CompareExchange(ref _completionRequest, null, request);
+            request.Dispose();
+        }
+    }
+
+    private void ApplyCompletionCycleUnsafe(CompletionCycle cycle)
+    {
         var selected = cycle.Candidates[cycle.SelectedIndex];
         if (selected.Native)
+        {
             _completion.ApplySelected(_buffer, selected.ReplacementText);
+        }
         else
         {
-            var start = _buffer.Cursor;
-            while (start > 0 && !char.IsWhiteSpace(_buffer.Text[start - 1])) start--;
-            _buffer.Replace(start, _buffer.Cursor - start, selected.ReplacementText);
+            var snapshot = _buffer.CaptureSnapshot();
+            var start = snapshot.Cursor;
+            while (start > 0 && !char.IsWhiteSpace(snapshot.Text[start - 1])) start--;
+            _buffer.Replace(start, snapshot.Cursor - start, selected.ReplacementText);
         }
-        _completionCycle = cycle with { BufferText = _buffer.Text, Cursor = _buffer.Cursor };
+        var applied = _buffer.CaptureSnapshot();
+        _completionCycle = cycle with { BufferText = applied.Text, Cursor = applied.Cursor };
     }
 
     private void CancelCompletionRequest()
     {
-        var request = Interlocked.Exchange(ref _completionRequest, null);
+        CancelCompletionRequest(Interlocked.Exchange(ref _completionRequest, null));
+    }
+
+    private void CancelCompletionRequest(CancellationTokenSource? request)
+    {
         if (request is null) return;
         try { request.Cancel(); }
         catch (Exception error)
@@ -932,6 +1024,16 @@ public sealed class TerminalEditor
             catch (Exception) { }
         }
         finally { request.Dispose(); }
+    }
+
+    private T WithEditorState<T>(Func<T> action)
+    {
+        lock (_buffer.SyncRoot) return action();
+    }
+
+    private void WithEditorState(Action action)
+    {
+        lock (_buffer.SyncRoot) action();
     }
 
     private void ClearLine()
@@ -968,23 +1070,31 @@ public sealed class TerminalEditor
     {
         if (_screen is { IsActive: true })
         {
-            var text = _buffer.Text;
-            var suggestions = _completion.GetSlashCommandSuggestions(_buffer);
-            if (_completionCycle is { } completionCycle && completionCycle.Matches(_buffer))
-                suggestions = completionCycle.Candidates.Select((candidate, index) =>
-                    new EditorCompletionSuggestion(
-                        $"{(index == completionCycle.SelectedIndex ? "❯ " : "  ")}{candidate.DisplayText}",
-                        candidate.Description)).ToArray();
-            if (suggestions.Count > 0 && text.StartsWith("/", StringComparison.Ordinal) &&
+            var (snapshot, suggestions) = WithEditorState(() =>
+            {
+                var current = _buffer.CaptureSnapshot();
+                IReadOnlyList<EditorCompletionSuggestion> currentSuggestions =
+                    _completion.GetSlashCommandSuggestions(_buffer);
+                if (_completionCycle is { } completionCycle && completionCycle.Matches(current))
+                    currentSuggestions = completionCycle.Candidates.Select((candidate, index) =>
+                        new EditorCompletionSuggestion(
+                            $"{(index == completionCycle.SelectedIndex ? "❯ " : "  ")}{candidate.DisplayText}",
+                            candidate.Description)).ToArray();
+                return (current, currentSuggestions);
+            });
+            if (suggestions.Count > 0 && snapshot.Text.StartsWith("/", StringComparison.Ordinal) &&
                 !(_lastRenderedEditorText?.StartsWith("/", StringComparison.Ordinal) ?? false))
-                _screen.SetEditor(text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd, [], immediate: true);
-            _screen.SetEditor(text, _buffer.Cursor, _buffer.SelectionStart, _buffer.SelectionEnd, suggestions);
-            _lastRenderedEditorText = text;
+                _screen.SetEditor(snapshot.Text, snapshot.Cursor, snapshot.SelectionStart, snapshot.SelectionEnd,
+                    [], immediate: true);
+            _screen.SetEditor(snapshot.Text, snapshot.Cursor, snapshot.SelectionStart, snapshot.SelectionEnd,
+                suggestions);
+            _lastRenderedEditorText = snapshot.Text;
             return;
         }
         var width = TerminalScreen.ReadColumns();
         var height = TerminalScreen.ReadRows();
-        var frame = EditorViewport.Layout(_buffer.Text, _buffer.Cursor, width, Math.Max(1, height / 3));
+        var editor = WithEditorState(_buffer.CaptureSnapshot);
+        var frame = EditorViewport.Layout(editor.Text, editor.Cursor, width, Math.Max(1, height / 3));
         ClearLine();
         for (var row = 0; row < frame.Rows.Count; row++)
         {

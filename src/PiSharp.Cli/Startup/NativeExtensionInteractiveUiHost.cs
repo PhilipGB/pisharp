@@ -5,9 +5,12 @@ using NativeExtensions = PiSharp.Extensions.Abstractions;
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Provides Pi-shaped extension dialogs before the main interactive screen is created.</summary>
-internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, string mode, TextWriter output, TextWriter error)
-    : IProjectTrustExtensionUi, IPiSharpExtensionUiPackageFactory
+internal sealed class NativeExtensionInteractiveUiHost : IProjectTrustExtensionUi, IPiSharpExtensionUiPackageFactory
 {
+    private readonly bool hasUserInterface;
+    private readonly string mode;
+    private readonly TextWriter output;
+    private readonly TextWriter error;
     private readonly object _gate = new();
     private readonly Dictionary<(Guid Owner, string Key), (long Order, string Text)> _statuses = [];
     private readonly Dictionary<(Guid Owner, string Key), WidgetEntry> _widgets = [];
@@ -15,28 +18,36 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
     private readonly Dictionary<Guid, (long Order, ComponentEntry Component)> _footers = [];
     private readonly Dictionary<Guid, (long Order, ComponentEntry Component)> _editors = [];
     private readonly Dictionary<Guid, (long Order, string Title)> _titles = [];
-    private readonly Dictionary<Guid, PresentationContribution> _presentationContributions = [];
-    private readonly NativeExtensionTerminalInputRouter _inputRouter = new(error);
-    private readonly List<AutocompleteEntry> _autocompleteProviders = [];
+    private readonly NativeExtensionPresentationState _presentationState = new();
+    private readonly NativeExtensionTerminalInputRouter _inputRouter;
+    private readonly NativeExtensionAutocompleteCoordinator _autocomplete = new();
     private readonly List<(Guid Owner, string Message, string Type)> _pendingRpcNotifications = [];
     private readonly List<(Guid Owner, string Text)> _pendingRpcEditorUpdates = [];
     private RpcExtensionUiTransport? _rpcUi;
     private bool _rpcUiHasStarted;
-    private NativeExtensionCustomComponentRequest? _activeCustom;
+    private readonly NativeExtensionCustomComponentHost _customComponents;
     private Action<string, string>? _interactiveNotificationHandler;
     private TerminalScreen? _interactiveScreen;
     private TerminalEditor? _interactiveEditor;
     private TerminalPresentation? _terminalPresentation;
     private long _interactiveBindingId;
     private long _nextOwnerOrder;
-    private long _nextAutocompleteOrder;
     private long _nextContributionOrder;
     private long _presentationVersion;
     private int _presentationRefreshQueued;
     private Timer? _presentationTimer;
-    private Timer? _workingTimer;
-    private int _workingFrameIndex;
     private bool CanShowDialog => hasUserInterface && mode == "interactive";
+
+    public NativeExtensionInteractiveUiHost(bool hasUserInterface, string mode, TextWriter output, TextWriter error)
+    {
+        this.hasUserInterface = hasUserInterface;
+        this.mode = mode;
+        this.output = output;
+        this.error = error;
+        _inputRouter = new(error);
+        _customComponents = new(_gate, GetInteractiveScreen, GetInteractiveEditor,
+            () => CanShowDialog, QueuePresentationRefresh, ReportCustomInputFailure);
+    }
 
     internal void BindRpcUiTransport(RpcExtensionUiTransport transport)
     {
@@ -96,13 +107,12 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
             _terminalPresentation = presentation;
             bindingId = ++_interactiveBindingId;
         }
+        _presentationState.BindScreen(GetInteractiveScreen());
         screen.SetExtensionUiContextChangedHandler(HandleScreenContextChanged);
         editor?.SetExtensionInputInterceptor(InterceptTerminalInput);
         editor?.SetExtensionEditorInputHandler(HandleEditorInput);
         editor?.SetExtensionAutocompleteProvider(GetAutocompleteSuggestionsAsync);
         UpdateTerminalTitle();
-        UpdateWorkingPresentation();
-        UpdateHiddenThinkingLabel();
         RefreshPresentation();
         return new ScreenBinding(this, screen, editor, bindingId);
     }
@@ -366,160 +376,27 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
     }
 
     internal void SetWorkingMessage(Guid owner, string? message)
-    {
-        var contributionOrder = Interlocked.Increment(ref _nextContributionOrder);
-        lock (_gate)
-        {
-            var current = _presentationContributions.GetValueOrDefault(owner) ?? new();
-            _presentationContributions[owner] = current with
-            {
-                WorkingMessageOrder = contributionOrder,
-                WorkingMessage = string.IsNullOrWhiteSpace(message) ? null : NormalizeOneLine(message)
-            };
-        }
-        UpdateWorkingPresentation();
-    }
+        => _presentationState.SetWorkingMessage(owner, message);
 
     internal void SetWorkingVisible(Guid owner, bool visible)
-    {
-        var contributionOrder = Interlocked.Increment(ref _nextContributionOrder);
-        lock (_gate)
-        {
-            var current = _presentationContributions.GetValueOrDefault(owner) ?? new();
-            _presentationContributions[owner] = current with
-            {
-                WorkingVisibleOrder = contributionOrder,
-                WorkingVisible = visible
-            };
-        }
-        UpdateWorkingPresentation();
-    }
+        => _presentationState.SetWorkingVisible(owner, visible);
 
     internal void SetWorkingIndicator(Guid owner,
         NativeExtensions.PiSharpExtensionWorkingIndicatorOptions? options)
-    {
-        var contributionOrder = Interlocked.Increment(ref _nextContributionOrder);
-        if (options is not null)
-        {
-            if (options.Frames is null || options.Frames.Count > 32)
-                throw new ArgumentException("Working indicator must define at most 32 frames.", nameof(options));
-            var interval = options.Interval ?? TimeSpan.FromMilliseconds(80);
-            if (interval < TimeSpan.FromMilliseconds(50) || interval > TimeSpan.FromSeconds(5))
-                throw new ArgumentOutOfRangeException(nameof(options), "Working indicator interval must be between 50 ms and 5 s.");
-            options = new(options.Frames.Select(frame =>
-            {
-                if (frame is null) throw new ArgumentException("Working indicator frames cannot be null.", nameof(options));
-                if (frame.Length == 0) return string.Empty;
-                if (string.IsNullOrWhiteSpace(frame)) throw new ArgumentException("Working indicator frames cannot be whitespace.", nameof(options));
-                var safe = NormalizeOneLine(frame);
-                return safe.Length > 16 ? safe[..16] : safe;
-            }).ToArray(), interval);
-        }
-        lock (_gate)
-        {
-            var current = _presentationContributions.GetValueOrDefault(owner) ?? new();
-            _presentationContributions[owner] = current with
-            {
-                WorkingIndicatorOrder = contributionOrder,
-                WorkingIndicator = options
-            };
-            _workingFrameIndex = 0;
-        }
-        UpdateWorkingPresentation();
-    }
+        => _presentationState.SetWorkingIndicator(owner, options);
 
     internal void SetHiddenThinkingLabel(Guid owner, string? label)
-    {
-        var contributionOrder = Interlocked.Increment(ref _nextContributionOrder);
-        lock (_gate)
-        {
-            var current = _presentationContributions.GetValueOrDefault(owner) ?? new();
-            _presentationContributions[owner] = current with
-            {
-                HiddenThinkingLabelOrder = contributionOrder,
-                HiddenThinkingLabel = string.IsNullOrWhiteSpace(label) ? null : NormalizeOneLine(label)
-            };
-        }
-        UpdateHiddenThinkingLabel();
-    }
-
-    private void UpdateWorkingPresentation()
-    {
-        TerminalScreen? screen;
-        PresentationContribution[] contributions;
-        lock (_gate)
-        {
-            screen = _interactiveScreen;
-            contributions = _presentationContributions.Values.ToArray();
-        }
-        var message = contributions.Where(item => item.WorkingMessage is not null)
-            .MaxBy(item => item.WorkingMessageOrder)?.WorkingMessage;
-        var visibility = contributions.Where(item => item.WorkingVisible is not null)
-            .MaxBy(item => item.WorkingVisibleOrder)?.WorkingVisible;
-        var indicator = contributions.Where(item => item.WorkingIndicator is not null)
-            .MaxBy(item => item.WorkingIndicatorOrder)?.WorkingIndicator;
-        var frame = indicator is null ? "⠋" : indicator.Frames.Count == 0 ? string.Empty :
-            indicator.Frames.ElementAtOrDefault(_workingFrameIndex) ?? string.Empty;
-        lock (_gate)
-        {
-            if (screen is { HasActiveWorkingStatus: true } && visibility != false && indicator is { Frames.Count: > 1 })
-            {
-                _workingTimer ??= new Timer(static state => ((NativeExtensionInteractiveUiHost)state!).AdvanceWorkingFrame(),
-                    this, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-                _workingTimer.Change(indicator.Interval ?? TimeSpan.FromMilliseconds(80),
-                    indicator.Interval ?? TimeSpan.FromMilliseconds(80));
-            }
-            else
-            {
-                _workingTimer?.Dispose();
-                _workingTimer = null;
-            }
-        }
-        if (screen is not null)
-        {
-            lock (_gate)
-                if (ReferenceEquals(_interactiveScreen, screen))
-                    screen.SetExtensionWorkingPresentation(message, visibility, frame);
-        }
-    }
-
-    private void AdvanceWorkingFrame()
-    {
-        TerminalScreen? screen;
-        string frame;
-        lock (_gate)
-        {
-            var indicator = _presentationContributions.Values.Where(item => item.WorkingIndicator is not null)
-                .MaxBy(item => item.WorkingIndicatorOrder)?.WorkingIndicator;
-            if (indicator is not { Frames.Count: > 1 }) return;
-            _workingFrameIndex = (_workingFrameIndex + 1) % indicator.Frames.Count;
-            frame = indicator.Frames[_workingFrameIndex];
-            screen = _interactiveScreen;
-            if (screen is not null) screen.SetWorkingFrame(frame);
-        }
-    }
+        => _presentationState.SetHiddenThinkingLabel(owner, label);
 
     private void HandleScreenContextChanged()
     {
-        UpdateWorkingPresentation();
+        _presentationState.BindScreen(GetInteractiveScreen());
         RefreshPresentation();
     }
 
-    private void UpdateHiddenThinkingLabel()
+    private TerminalScreen? GetInteractiveScreen()
     {
-        TerminalScreen? screen;
-        string? label;
-        lock (_gate)
-        {
-            screen = _interactiveScreen;
-            label = _presentationContributions.Values.Where(item => item.HiddenThinkingLabel is not null)
-                .MaxBy(item => item.HiddenThinkingLabelOrder)?.HiddenThinkingLabel;
-        }
-        if (screen is not null)
-        {
-            lock (_gate)
-                if (ReferenceEquals(_interactiveScreen, screen)) screen.SetHiddenThinkingLabel(label);
-        }
+        lock (_gate) return _interactiveScreen;
     }
 
     internal void SetTitle(Guid owner, string title)
@@ -625,7 +502,9 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
             }
             return;
         }
-        lock (_gate) _interactiveEditor?.SetDraft(text);
+        TerminalEditor? editor;
+        lock (_gate) editor = _interactiveEditor;
+        editor?.SetDraft(text);
     }
 
     internal void PasteToEditor(string text)
@@ -639,12 +518,16 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
             SetEditorText(owner, text);
             return;
         }
-        lock (_gate) _interactiveEditor?.InsertTextAtCursor(text);
+        TerminalEditor? editor;
+        lock (_gate) editor = _interactiveEditor;
+        editor?.InsertTextAtCursor(text);
     }
 
     internal string GetEditorText()
     {
-        lock (_gate) return _interactiveEditor?.Draft ?? string.Empty;
+        TerminalEditor? editor;
+        lock (_gate) editor = _interactiveEditor;
+        return editor?.Draft ?? string.Empty;
     }
 
     internal async Task<string?> EditAsync(Guid ownerId, string title, string? prefill,
@@ -662,7 +545,7 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
         TerminalEditor? editor;
         lock (_gate)
         {
-            if (_activeCustom is not null) return null;
+            if (_customComponents.Active is not null) return null;
             editor = _interactiveEditor;
         }
         if (!CanShowDialog || editor is null || !editor.IsScreenActive)
@@ -720,58 +603,13 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
     {
         ArgumentNullException.ThrowIfNull(provider);
         if (mode == "rpc") return EmptyRegistration.Instance;
-        var entry = new AutocompleteEntry(owner, order,
-            Interlocked.Increment(ref _nextAutocompleteOrder), provider);
-        lock (_gate) _autocompleteProviders.Add(entry);
-        return new AutocompleteRegistration(this, entry);
+        return _autocomplete.Add(owner, order, provider, exception =>
+            TryWriteError($"Extension autocomplete provider cancellation failed for {owner:N}: {exception.Message}"));
     }
 
-    private async Task<IReadOnlyList<NativeExtensions.PiSharpExtensionAutocompleteSuggestion>>
-        GetAutocompleteSuggestionsAsync(string text, int cursor, CancellationToken cancellationToken)
-    {
-        AutocompleteEntry[] providers;
-        lock (_gate) providers = _autocompleteProviders.OrderBy(provider => provider.Order)
-            .ThenBy(provider => provider.RegistrationOrder).ToArray();
-        var start = cursor;
-        while (start > 0 && !char.IsWhiteSpace(text[start - 1])) start--;
-        var query = text[start..cursor];
-        var results = new List<NativeExtensions.PiSharpExtensionAutocompleteSuggestion>();
-        foreach (var provider in providers)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                provider.LifetimeToken);
-            if (!provider.IsActive) continue;
-            try
-            {
-                var supplied = await provider.Provider(new(text, cursor, query, linked.Token), linked.Token)
-                    .ConfigureAwait(false);
-                linked.Token.ThrowIfCancellationRequested();
-                foreach (var suggestion in (supplied ?? []).Take(100))
-                {
-                    if (suggestion is null) continue;
-                    var replacement = TerminalSafeText.Normalize(suggestion.ReplacementText ?? string.Empty);
-                    var display = TerminalSafeText.Normalize(suggestion.DisplayText ?? string.Empty);
-                    if (replacement.Length == 0 || display.Length == 0) continue;
-                    var description = suggestion.Description is null ? null : TerminalSafeText.Normalize(
-                        suggestion.Description[..Math.Min(suggestion.Description.Length, 1024)]);
-                    results.Add(new(display[..Math.Min(display.Length, 512)],
-                        replacement[..Math.Min(replacement.Length, 4096)], description));
-                    if (results.Count == 100) return results;
-                }
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (OperationCanceledException) when (!provider.IsActive) { }
-            catch (Exception exception)
-            {
-                ReportAutocompleteFailure(provider.OwnerId, exception);
-            }
-        }
-        return results;
-    }
+    private Task<IReadOnlyList<NativeExtensions.PiSharpExtensionAutocompleteSuggestion>>
+        GetAutocompleteSuggestionsAsync(string text, int cursor, CancellationToken cancellationToken) =>
+        _autocomplete.GetSuggestionsAsync(text, cursor, cancellationToken, ReportAutocompleteFailure);
 
     private bool HandleEditorInput(TerminalInputEvent input)
     {
@@ -825,22 +663,6 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
 
     private void ReportAutocompleteFailure(Guid owner, Exception exception) =>
         TryWriteError($"Extension autocomplete provider failed for {owner:N}: {exception.Message}");
-
-    private void RemoveAutocompleteProvider(AutocompleteEntry entry)
-    {
-        lock (_gate) _autocompleteProviders.Remove(entry);
-        DisposeAutocompleteProvider(entry);
-    }
-
-    private void DisposeAutocompleteProvider(AutocompleteEntry entry)
-    {
-        try { entry.Dispose(); }
-        catch (Exception exception)
-        {
-            TryWriteError($"Extension autocomplete provider cancellation failed for {entry.OwnerId:N}: " +
-                exception.Message);
-        }
-    }
 
     internal NativeExtensions.PiSharpExtensionUiTheme GetCurrentTheme()
     {
@@ -969,70 +791,11 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
         }
     }
 
-    internal async Task<NativeExtensions.PiSharpExtensionUiCompletion<T>> ShowCustomAsync<T>(Guid ownerId,
+    internal Task<NativeExtensions.PiSharpExtensionUiCompletion<T>> ShowCustomAsync<T>(Guid ownerId,
         Func<Action<T>, NativeExtensions.IPiSharpExtensionUiComponent> factory,
         NativeExtensions.PiSharpExtensionUiCustomOptions? options, CancellationToken cancellationToken,
         CancellationToken packageLifetime)
-    {
-        ArgumentNullException.ThrowIfNull(factory);
-        cancellationToken.ThrowIfCancellationRequested();
-        if (!CanShowDialog)
-            return NativeExtensions.PiSharpExtensionUiCompletion<T>.Cancelled;
-
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, packageLifetime);
-        var request = new NativeExtensionCustomComponentRequest<T>(ownerId, options ?? new(), FinishCustom,
-            ReportCustomInputFailure);
-        var component = factory(request.Complete);
-        ArgumentNullException.ThrowIfNull(component);
-        request.Attach(component);
-        if (request.IsCompleted) return await request.Completion.ConfigureAwait(false);
-
-        NativeExtensionCustomComponentRequest? replaced;
-        bool hasInteractiveScreen;
-        lock (_gate)
-        {
-            hasInteractiveScreen = _interactiveScreen is { IsActive: true } && !linked.IsCancellationRequested;
-            if (hasInteractiveScreen)
-            {
-                replaced = _activeCustom;
-                _activeCustom = request;
-            }
-            else replaced = null;
-        }
-        if (!hasInteractiveScreen)
-        {
-            request.Cancel();
-            linked.Token.ThrowIfCancellationRequested();
-            return await request.Completion.ConfigureAwait(false);
-        }
-        replaced?.Cancel();
-        request.AttachRedraw(QueuePresentationRefresh);
-        RefreshPresentation();
-        using var cancellation = linked.Token.Register(static state =>
-            ((NativeExtensionCustomComponentRequest)state!).Cancel(), request);
-        try
-        {
-            TerminalEditor? editor;
-            lock (_gate) editor = _interactiveEditor;
-            if (editor?.ShouldRunExtensionModalInputPump == true)
-                await editor.RunExtensionModalInputPumpAsync(() => !request.IsCompleted, linked.Token)
-                    .ConfigureAwait(false);
-            return await request.Completion.WaitAsync(linked.Token).ConfigureAwait(false);
-        }
-        finally { request.Cancel(); }
-    }
-
-    private void FinishCustom(NativeExtensionCustomComponentRequest request)
-    {
-        bool wasActive;
-        lock (_gate)
-        {
-            wasActive = ReferenceEquals(_activeCustom, request);
-            if (wasActive) _activeCustom = null;
-        }
-        request.DisposeComponent();
-        if (wasActive) RefreshPresentation();
-    }
+        => _customComponents.ShowAsync(ownerId, factory, options, cancellationToken, packageLifetime);
 
     private void ReportCustomInputFailure(string message)
     {
@@ -1049,32 +812,12 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
     {
         ArgumentNullException.ThrowIfNull(input);
         if (input.IsEndOfStream)
-        {
-            NativeExtensionCustomComponentRequest? active;
-            lock (_gate) active = _activeCustom;
-            if (active is null) return new(false, input);
-            active.Cancel();
-            return new(true, input);
-        }
+            return new(_customComponents.CancelOnEndOfStream(), input);
         if (input.IsControl) return new(false, input);
 
-        NativeExtensionCustomComponentRequest? custom;
         TerminalEditor? editor;
-        lock (_gate)
-        {
-            custom = _activeCustom;
-            editor = _interactiveEditor;
-        }
-        if (reserved)
-        {
-            if (custom is not null && input.Key?.Key == ConsoleKey.Escape)
-            {
-                custom.Cancel();
-                return new(true, input);
-            }
-            custom?.Cancel();
-            return new(false, input);
-        }
+        lock (_gate) editor = _interactiveEditor;
+        if (reserved) return new(_customComponents.HandleReservedInput(input), input);
 
         var failed = false;
         var interception = input.IsExtensionRewrite
@@ -1092,27 +835,17 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
         var routed = interception.Input;
         if (editor?.IsReservedExtensionInput(routed) == true)
         {
-            custom?.Cancel();
+            _customComponents.CancelActive();
             return interception;
         }
-        if (custom is not null)
-        {
-            if (routed.Key?.Key == ConsoleKey.Escape)
-            {
-                custom.Cancel();
-                return interception with { Consumed = true };
-            }
-            var hostAction = routed.Key is { } key && editor?.IsHostActionKey(key) == true;
-            if (!hostAction && custom.HandleInput(routed)) return interception with { Consumed = true };
-        }
+        if (_customComponents.InterceptRoutedInput(routed, editor))
+            return interception with { Consumed = true };
         return interception;
     }
 
     internal void RemoveOwner(Guid owner)
     {
         List<ComponentEntry> removed = [];
-        AutocompleteEntry[] removedProviders;
-        NativeExtensionCustomComponentRequest? custom = null;
         lock (_gate)
         {
             var statusKeys = _statuses.Keys.Where(key => key.Owner == owner).Select(key => key.Key).Distinct().ToArray();
@@ -1127,23 +860,19 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
             if (_headers.Remove(owner, out var header)) removed.Add(header.Component);
             if (_footers.Remove(owner, out var footer)) removed.Add(footer.Component);
             _titles.Remove(owner);
-            _presentationContributions.Remove(owner);
             if (_editors.Remove(owner, out var editorComponent)) removed.Add(editorComponent.Component);
-            removedProviders = _autocompleteProviders.Where(provider => provider.OwnerId == owner).ToArray();
-            foreach (var provider in removedProviders) _autocompleteProviders.Remove(provider);
-            if (_activeCustom?.OwnerId == owner) custom = _activeCustom;
             _pendingRpcNotifications.RemoveAll(item => item.Owner == owner);
             _pendingRpcEditorUpdates.RemoveAll(item => item.Owner == owner);
             foreach (var key in statusKeys) EmitRpcStatusUnsafe(key);
             foreach (var key in widgetKeys) EmitRpcWidgetUnsafe(key);
         }
         _inputRouter.RemoveOwner(owner);
-        foreach (var provider in removedProviders) DisposeAutocompleteProvider(provider);
+        _presentationState.RemoveOwner(owner);
+        _autocomplete.RemoveOwner(owner, exception =>
+            TryWriteError($"Extension autocomplete provider cancellation failed for {owner:N}: {exception.Message}"));
         foreach (var component in removed) component.Dispose();
-        custom?.Cancel();
+        _customComponents.RemoveOwner(owner);
         UpdateTerminalTitle();
-        UpdateWorkingPresentation();
-        UpdateHiddenThinkingLabel();
         RefreshPresentation();
     }
 
@@ -1189,7 +918,6 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
             KeyValuePair<(Guid Owner, string Key), WidgetEntry>[] widgets;
             KeyValuePair<Guid, (long Order, ComponentEntry Component)>[] headers;
             KeyValuePair<Guid, (long Order, ComponentEntry Component)>[] footers;
-            NativeExtensionCustomComponentRequest? custom;
             lock (_gate)
             {
                 screen = _interactiveScreen;
@@ -1199,8 +927,8 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
                 widgets = _widgets.OrderBy(pair => pair.Value.Order).ThenBy(pair => pair.Key.Key, StringComparer.Ordinal).ToArray();
                 headers = _headers.OrderBy(pair => pair.Value.Order).ToArray();
                 footers = _footers.OrderBy(pair => pair.Value.Order).ToArray();
-                custom = _activeCustom;
             }
+            var custom = _customComponents.Active;
 
             if (screen is not null)
             {
@@ -1304,37 +1032,6 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
         return screen;
     }
 
-    private sealed class AutocompleteEntry(Guid ownerId, long order, long registrationOrder,
-        NativeExtensions.PiSharpExtensionAutocompleteProvider provider) : IDisposable
-    {
-        private readonly CancellationTokenSource _lifetime = new();
-        private int _active = 1;
-
-        public Guid OwnerId { get; } = ownerId;
-        public long Order { get; } = order;
-        public long RegistrationOrder { get; } = registrationOrder;
-        public NativeExtensions.PiSharpExtensionAutocompleteProvider Provider { get; } = provider;
-        public CancellationToken LifetimeToken => _lifetime.Token;
-        public bool IsActive => Volatile.Read(ref _active) != 0;
-
-        public void Dispose()
-        {
-            if (Interlocked.Exchange(ref _active, 0) == 0) return;
-            _lifetime.Cancel();
-        }
-    }
-
-    private sealed class AutocompleteRegistration(NativeExtensionInteractiveUiHost owner, AutocompleteEntry entry) : IDisposable
-    {
-        private int _active = 1;
-
-        public void Dispose()
-        {
-            if (Interlocked.Exchange(ref _active, 0) == 0) return;
-            owner.RemoveAutocompleteProvider(entry);
-        }
-    }
-
     private sealed class EmptyRegistration : IDisposable
     {
         internal static EmptyRegistration Instance { get; } = new();
@@ -1349,7 +1046,6 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
         public void Dispose()
         {
             if (Interlocked.Exchange(ref _active, 0) == 0) return;
-            NativeExtensionCustomComponentRequest? custom;
             bool isCurrent;
             bool screenIsBound;
             lock (owner._gate)
@@ -1362,9 +1058,7 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
                     owner._interactiveEditor = null;
                     owner._terminalPresentation = null;
                     owner._interactiveNotificationHandler = null;
-                    custom = owner._activeCustom;
                 }
-                else custom = null;
             }
             if (isCurrent)
             {
@@ -1373,7 +1067,8 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
                 editor?.SetExtensionAutocompleteProvider(null);
                 editor?.SetExtensionModalActionHandlers(null, null);
                 owner.StopPresentationRefresh();
-                custom?.Cancel();
+                owner._customComponents.CancelActive();
+                owner._presentationState.BindScreen(null);
             }
             if (isCurrent || !screenIsBound)
             {
@@ -1385,7 +1080,6 @@ internal sealed class NativeExtensionInteractiveUiHost(bool hasUserInterface, st
                 screen.SetExtensionWorkingPresentation(null, null, "⠋");
                 screen.SetHiddenThinkingLabel(null);
             }
-            if (isCurrent) owner.UpdateWorkingPresentation();
         }
     }
 }

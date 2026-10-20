@@ -871,9 +871,10 @@ public sealed class NativeExtensionUiTests
         Assert.InRange(rendersWhileInstalled, 2, 32);
 
         package.ClearWidget("self-redraw");
+        var rendersAfterRemoval = widget.RenderCount;
         await Task.Delay(TimeSpan.FromMilliseconds(100));
 
-        Assert.Equal(rendersWhileInstalled, widget.RenderCount);
+        Assert.Equal(rendersAfterRemoval, widget.RenderCount);
     }
 
     [Fact]
@@ -1142,7 +1143,7 @@ public sealed class NativeExtensionUiTests
         using var output = new SynchronizedStringWriter();
         using var error = new SynchronizedStringWriter();
         using var screen = new TerminalScreen(output, error, () => 60, () => 18);
-        var editor = new TerminalEditor();
+        var editor = new TerminalEditor(commands: () => ["/thinking"]);
         editor.AttachScreen(screen);
         editor.Prefill("cancel-me");
         var ui = new ProjectTrustStartupUi(true, "interactive", output, error);
@@ -1152,6 +1153,7 @@ public sealed class NativeExtensionUiTests
         package.SetWidget("lifecycle", ["package cleanup survives cancellation errors"]);
         var providerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseProvider = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var providerFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var cancellationCallbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var providerCancellationObserved = false;
         using var providerRegistration = package.AddAutocompleteProvider(async (request, cancellationToken) =>
@@ -1164,7 +1166,8 @@ public sealed class NativeExtensionUiTests
             providerStarted.TrySetResult();
             await releaseProvider.Task;
             providerCancellationObserved = cancellationToken.IsCancellationRequested;
-            return Array.Empty<PiSharpExtensionAutocompleteSuggestion>();
+            try { throw new InvalidOperationException("late autocomplete provider failure"); }
+            finally { providerFinished.TrySetResult(); }
         });
         Assert.True(SpinWait.SpinUntil(() => output.ToString().Contains(
             "package cleanup survives cancellation errors", StringComparison.Ordinal), TimeSpan.FromSeconds(2)));
@@ -1178,15 +1181,106 @@ public sealed class NativeExtensionUiTests
             output.GetStringBuilder().Clear();
             package.Dispose();
             callbackWasInvoked = cancellationCallbackInvoked.Task.IsCompleted;
+            await completion.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.Equal("cancel-me", editor.Draft);
+
+            await editor.HandleActiveInputAsync(new(null, "x"), (_, _, _) => Task.FromResult(true),
+                () => [], () => { });
+            Assert.Equal("cancel-mex", editor.Draft);
         }
         finally { releaseProvider.TrySetResult(); }
-        await completion.WaitAsync(TimeSpan.FromSeconds(2));
+        await providerFinished.Task.WaitAsync(TimeSpan.FromSeconds(2));
 
         Assert.True(callbackWasInvoked);
         Assert.True(providerCancellationObserved);
         Assert.Contains("autocomplete provider cancellation failed", error.ToString(), StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("package cleanup survives", output.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain("should disappear", output.ToString(), StringComparison.Ordinal);
+
+        editor.Prefill("/thi");
+        await editor.HandleActiveInputAsync(tab, (_, _, _) => Task.FromResult(true), () => [], () => { });
+        Assert.Equal("/thinking", editor.Draft);
+    }
+
+    [Fact]
+    public async Task ConcurrentExtensionDraftPasteAndKeyboardEditsKeepEditorStateSerializable()
+    {
+        using var output = new SynchronizedStringWriter();
+        using var error = new SynchronizedStringWriter();
+        using var screen = new TerminalScreen(output, error, () => 60, () => 18);
+        var editor = new TerminalEditor();
+        editor.AttachScreen(screen);
+        editor.Prefill("seed");
+        var ui = new ProjectTrustStartupUi(true, "interactive", output, error);
+        using var binding = ui.BindInteractiveScreen(screen, editor);
+        using var package = ((IPiSharpExtensionUiPackageFactory)ui).CreatePackageScope("editor-race.dll");
+        using var start = new Barrier(3);
+
+        var setDraft = Task.Run(() =>
+        {
+            Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(2)));
+            package.SetEditorText("draft");
+        });
+        var paste = Task.Run(() =>
+        {
+            Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(2)));
+            package.PasteToEditor("!");
+        });
+        var keyboard = Task.Run(async () =>
+        {
+            Assert.True(start.SignalAndWait(TimeSpan.FromSeconds(2)));
+            await editor.HandleActiveInputAsync(new(null, "x"), (_, _, _) => Task.FromResult(true),
+                () => [], () => { });
+        });
+
+        await Task.WhenAll(setDraft, paste, keyboard).WaitAsync(TimeSpan.FromSeconds(5));
+
+        var validFinalTexts = new[] { "draft", "draft!", "draftx", "draft!x", "draftx!" };
+        var current = editor.CaptureDraftState();
+        Assert.Contains(current.Text, validFinalTexts);
+        Assert.Equal(current.Text.Length, current.Cursor);
+        Assert.Null(current.SelectionStart);
+        Assert.Null(current.SelectionEnd);
+
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('-', ConsoleKey.OemMinus, false, false, true), null),
+            (_, _, _) => Task.FromResult(true), () => [], () => { });
+        var undone = editor.CaptureDraftState();
+        Assert.Contains(undone.Text, new[] { "draft", "draft!", "draftx", "seed!x", "seedx!" });
+        Assert.Equal(undone.Text.Length, undone.Cursor);
+        Assert.Null(undone.SelectionStart);
+        Assert.Null(undone.SelectionEnd);
+
+        package.SetEditorText("select me");
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('\0', ConsoleKey.LeftArrow, shift: true, alt: false, control: false), null),
+            (_, _, _) => Task.FromResult(true), () => [], () => { });
+        var selected = editor.CaptureDraftState();
+        Assert.Equal("select me", selected.Text);
+        Assert.Equal(8, selected.Cursor);
+        Assert.Equal(8, selected.SelectionStart);
+        Assert.Equal(9, selected.SelectionEnd);
+
+        package.PasteToEditor("!");
+        var pasted = editor.CaptureDraftState();
+        Assert.Equal("select m!", pasted.Text);
+        Assert.Equal(pasted.Text.Length, pasted.Cursor);
+        Assert.Null(pasted.SelectionStart);
+        Assert.Null(pasted.SelectionEnd);
+        await editor.HandleActiveInputAsync(new(null, "x"), (_, _, _) => Task.FromResult(true),
+            () => [], () => { });
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('-', ConsoleKey.OemMinus, false, false, true), null),
+            (_, _, _) => Task.FromResult(true), () => [], () => { });
+        Assert.Equal("select m!", editor.Draft);
+        await editor.HandleActiveInputAsync(
+            new(new ConsoleKeyInfo('-', ConsoleKey.OemMinus, false, false, true), null),
+            (_, _, _) => Task.FromResult(true), () => [], () => { });
+        var restoredSelection = editor.CaptureDraftState();
+        Assert.Equal("select me", restoredSelection.Text);
+        Assert.Equal(8, restoredSelection.Cursor);
+        Assert.Equal(8, restoredSelection.SelectionStart);
+        Assert.Equal(9, restoredSelection.SelectionEnd);
     }
 
     [Fact]
