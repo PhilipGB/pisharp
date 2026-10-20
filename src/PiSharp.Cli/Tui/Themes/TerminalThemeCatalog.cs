@@ -59,13 +59,27 @@ internal sealed class TerminalThemeCatalog
 
     public IReadOnlyList<string> GetAvailableNames()
     {
-        var names = new HashSet<string>(s_builtinNames, StringComparer.Ordinal);
+        return GetAllThemes().Select(theme => theme.Name).ToArray();
+    }
+
+    public IReadOnlyList<(string Name, string? Path)> GetAllThemes()
+    {
+        var themes = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["system"] = null
+        };
         foreach (var path in ThemeFiles())
         {
-            try { names.Add(ReadTheme(path).Name); }
+            try
+            {
+                var name = ReadTheme(path).Name;
+                themes.TryAdd(name, path);
+            }
             catch (Exception error) when (IsThemeLoadError(error)) { }
         }
-        return ["system", .. names.Order(StringComparer.Ordinal)];
+        foreach (var name in s_builtinNames) themes.TryAdd(name, null);
+        return themes.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => (pair.Key, pair.Value)).ToArray();
     }
 
     public TerminalTheme Load(string name)

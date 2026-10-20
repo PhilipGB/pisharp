@@ -1,6 +1,7 @@
 using System.Runtime.Loader;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
+using NativeExtensions = PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Mcp;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
@@ -83,6 +84,9 @@ public sealed partial class ExtensionRegistration
     private readonly object _mcpGate = new();
     private readonly Dictionary<string, ExtensionMcpServerRegistration> _mcpServers = new(StringComparer.Ordinal);
     private readonly VirtualModelRegistry _virtualModels = new();
+    private readonly object _uiScopeGate = new();
+    private readonly Dictionary<string, IPiSharpExtensionUiPackageScope> _uiScopes = new(
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
     private ResourceSourceInfo? _currentSourceInfo;
     public IReadOnlyCollection<AIFunction> Tools { get { lock (_toolGate) return _tools.Values.ToArray(); } }
     public IReadOnlyCollection<PiSharpToolRegistration> ToolDefinitions
@@ -469,6 +473,68 @@ public sealed partial class ExtensionRegistration
 
     internal ResourceSourceInfo? CurrentSourceInfo => _currentSourceInfo;
 
+    internal NativeExtensions.IPiSharpExtensionUiRegistration? CurrentUiRegistration
+    {
+        get
+        {
+            var sourcePath = _currentSourceInfo?.Path;
+            if (sourcePath is null) return null;
+            lock (_uiScopeGate)
+                return _uiScopes.TryGetValue(sourcePath, out var scope) ? scope : null;
+        }
+    }
+
+    internal NativeExtensions.IPiSharpExtensionUi? GetPackageUi(string? sourcePath)
+    {
+        if (sourcePath is null) return null;
+        lock (_uiScopeGate)
+            return _uiScopes.TryGetValue(sourcePath, out var scope) ? scope : null;
+    }
+
+    internal void SetPackageUiScope(string sourcePath, IPiSharpExtensionUiPackageScope scope)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
+        ArgumentNullException.ThrowIfNull(scope);
+        lock (_uiScopeGate)
+            if (!_uiScopes.TryAdd(sourcePath, scope))
+                throw new InvalidOperationException($"A UI scope is already registered for extension source '{sourcePath}'.");
+    }
+
+    internal void DisposePackageUiScope(string sourcePath)
+    {
+        IPiSharpExtensionUiPackageScope? scope;
+        lock (_uiScopeGate)
+        {
+            if (!_uiScopes.Remove(sourcePath, out scope)) return;
+        }
+        scope.Dispose();
+    }
+
+    internal void DisposePackageUiScopes()
+    {
+        IPiSharpExtensionUiPackageScope[] scopes;
+        lock (_uiScopeGate)
+        {
+            scopes = _uiScopes.Values.ToArray();
+            _uiScopes.Clear();
+        }
+        List<Exception>? errors = null;
+        foreach (var scope in scopes)
+        {
+            try { scope.Dispose(); }
+            catch (Exception error) { (errors ??= []).Add(error); }
+        }
+        if (errors is { Count: 1 }) throw errors[0];
+        if (errors is { Count: > 1 }) throw new AggregateException(errors);
+    }
+
+    internal NativeExtensions.IPiSharpExtensionUi CreateCallbackUi(string? sourcePath,
+        NativeExtensions.IPiSharpExtensionUi fallback)
+    {
+        ArgumentNullException.ThrowIfNull(fallback);
+        return new NativeExtensionUiCallbackScope(GetPackageUi(sourcePath) ?? fallback);
+    }
+
     public void SetToolDefaultActive(string name, bool active)
     {
         IReadOnlyCollection<PiSharpToolRegistration> changed;
@@ -713,7 +779,8 @@ public sealed partial class ExtensionCatalog : IDisposable
         ExtensionCatalog? preloaded = null,
         IReadOnlyList<ResourcePackageSource>? userPackages = null, IReadOnlyList<ResourcePackageSource>? projectPackages = null,
         IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots = null,
-        IReadOnlyList<NativeExtensionPackageRoot>? nativeExtensionPackageRoots = null)
+        IReadOnlyList<NativeExtensionPackageRoot>? nativeExtensionPackageRoots = null,
+        IPiSharpExtensionUiPackageFactory? uiPackageFactory = null)
     {
         var catalog = preloaded ?? new ExtensionCatalog();
         try
@@ -825,12 +892,21 @@ public sealed partial class ExtensionCatalog : IDisposable
                     var handle = loadedNative.Handle!;
                     var restore = catalog.Registration.CreateConfigurationCheckpoint();
                     catalog.Registration.SetCurrentSourceInfo(sourceInfo);
+                    IPiSharpExtensionUiPackageScope? uiScope = null;
+                    var uiScopeRegistered = false;
                     try
                     {
+                        uiScope = uiPackageFactory?.CreatePackageScope(sourceInfo.Path);
+                        if (uiScope is not null)
+                        {
+                            catalog.Registration.SetPackageUiScope(sourceInfo.Path, uiScope);
+                            uiScopeRegistered = true;
+                        }
                         handle.InitializeProcessExecutor(cwd);
                         foreach (var extension in handle.Extensions)
                         {
-                            var builder = new NativeExtensionRegistrationAdapter(catalog.Registration, handle.ProcessExecutor);
+                            var builder = new NativeExtensionRegistrationAdapter(catalog.Registration,
+                                handle.ProcessExecutor, uiScope);
                             try { extension.Configure(builder); }
                             finally { builder.Close(); }
                         }
@@ -842,6 +918,24 @@ public sealed partial class ExtensionCatalog : IDisposable
                     catch (Exception configureError)
                     {
                         restore();
+                        if (uiScopeRegistered)
+                        {
+                            try { catalog.Registration.DisposePackageUiScope(sourceInfo.Path); }
+                            catch (Exception disposeError)
+                            {
+                                catalog._warnings.Add(new(path,
+                                    $"Native extension package {handle.Manifest.Id} UI cleanup failed after Configure: {disposeError.Message}"));
+                            }
+                        }
+                        else if (uiScope is not null)
+                        {
+                            try { uiScope.Dispose(); }
+                            catch (Exception disposeError)
+                            {
+                                catalog._warnings.Add(new(path,
+                                    $"Native extension package {handle.Manifest.Id} UI cleanup failed after Configure: {disposeError.Message}"));
+                            }
+                        }
                         handle.Unload();
                         catalog._warnings.Add(new(path,
                             $"Native extension package {handle.Manifest.Id} failed during Configure: {configureError.Message}"));
@@ -972,6 +1066,8 @@ public sealed partial class ExtensionCatalog : IDisposable
                 try { connection.DisposeAsync().AsTask().GetAwaiter().GetResult(); }
                 catch (Exception error) { (errors ??= []).Add(error); }
             }
+            try { Registration.DisposePackageUiScopes(); }
+            catch (Exception error) { (errors ??= []).Add(error); }
         }
         finally
         {

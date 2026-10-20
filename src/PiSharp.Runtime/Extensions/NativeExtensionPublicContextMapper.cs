@@ -13,7 +13,7 @@ internal static class NativeExtensionPublicContextMapper
         {
             Mode = context.Mode,
             HasUserInterface = context.HasUserInterface,
-            Ui = context.Ui,
+            Ui = context.CreateCallbackUi(sourcePath),
             IsIdle = context.IsIdle,
             IsProjectTrusted = context.IsProjectTrusted,
             HasPendingMessages = context.HasPendingMessages,

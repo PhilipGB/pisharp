@@ -54,6 +54,24 @@ public sealed class PiSharpExtensionUiTests
     }
 
     [Fact]
+    public async Task PreCancelledTimeoutDialogsPropagateCancellationBeforeImmediateTimeout()
+    {
+        var recordingUi = new RecordingUi();
+        IPiSharpExtensionUi ui = recordingUi;
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+        var options = new PiSharpExtensionUiDialogOptions(TimeSpan.Zero);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            ui.SelectWithOptionsAsync("Choose", ["one"], options, cancellation.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            ui.ConfirmWithOptionsAsync("Confirm", "Continue?", options, cancellation.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            ui.InputWithOptionsAsync("Value", dialogOptions: options, cancellationToken: cancellation.Token));
+        Assert.Empty(recordingUi.Calls);
+    }
+
+    [Fact]
     public async Task CommandContextExposesLiveControlsAndRevokesThemAfterDispose()
     {
         var activeTools = new List<string> { "read" };

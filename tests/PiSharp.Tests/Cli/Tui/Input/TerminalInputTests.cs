@@ -9,7 +9,6 @@ public sealed class TerminalInputTests
     [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\a")]
     [InlineData("\u001b[?61;1;21;22c")]
     [InlineData("\u001b[?997;2n")]
-    [InlineData("\u001b[99~")]
     public void BlockingReadSkipsProtocolTrafficAndReturnsTheNextUserInput(string protocol)
     {
         var input = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(protocol + "X")));
@@ -34,11 +33,34 @@ public sealed class TerminalInputTests
     [InlineData("\u001b]11;#282a36\a")]
     [InlineData("\u001b[?62;22c")]
     [InlineData("\u001b[?997;1n")]
-    [InlineData("\u001b[99~")]
     public void PollingConsumesProtocolTrafficWithoutReportingUserInputOrBlocking(string protocol)
     {
         var input = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(protocol)));
         Assert.False(input.TryRead(0, out _));
+    }
+
+    [Theory]
+    [InlineData("\u001b]10;rgb:aaaa/bbbb/cccc\a")]
+    [InlineData("\u001b[?61;1;21;22c")]
+    public void ExtensionReplacementFiltersTerminalProtocolReplies(string protocol)
+    {
+        var events = TerminalInput.ParseExtensionReplacement(protocol);
+
+        Assert.Empty(events);
+    }
+
+    [Theory]
+    [InlineData("x")]
+    [InlineData("😀")]
+    [InlineData("\u001b[1;5D")]
+    [InlineData("\u001b[<0;4;2M")]
+    [InlineData("\u001b[99~")]
+    [InlineData("\u001b[200~draft\u001b[201~")]
+    public void ParsedEventsRetainOriginalTerminalData(string rawData)
+    {
+        var value = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes(rawData))).Read();
+
+        Assert.Equal(rawData, value.RawData);
     }
 
     [Theory]
@@ -127,6 +149,9 @@ public sealed class TerminalInputTests
         Assert.True(newline?.Modifiers.HasFlag(ConsoleModifiers.Alt));
         // ESC Z is Alt+Z, whereas CSI Z means Shift+Tab.
         Assert.True(reader.Read().Key?.Modifiers.HasFlag(ConsoleModifiers.Alt));
+        var unknownKey = reader.Read();
+        Assert.Equal("\u001b[99~", unknownKey.RawData);
+        Assert.Null(unknownKey.Key);
         Assert.Equal("😀", reader.Read().Text);
         Assert.Equal(ConsoleKey.Escape, new TerminalInput(new MemoryStream([27])).Read().Key?.Key);
         Assert.Null(reader.Read().Key);
@@ -192,7 +217,9 @@ public sealed class TerminalInputTests
     public void KittyKeyReleaseIsIgnoredAndPressesRemainReadable()
     {
         var release = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b[97;1:3u")));
-        Assert.False(release.TryRead(0, out _));
+        Assert.True(release.TryRead(0, out var releaseEvent));
+        Assert.Null(releaseEvent.Key);
+        Assert.Equal("\u001b[97;1:3u", releaseEvent.RawData);
 
         var press = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b[97;1u")));
         Assert.True(press.TryRead(0, out var key));

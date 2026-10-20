@@ -14,6 +14,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     private string _liveAssistantSource = "";
     private string _liveThinking = "";
     private string _liveThinkingSource = "";
+    private string _hiddenThinkingLabel = "Thinking...";
     private bool _thinkingBlocksHidden;
     private bool _hasConversationContent;
 
@@ -77,6 +78,17 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         if (_thinkingBlocksHidden == hidden) return false;
         _thinkingBlocksHidden = hidden;
         transcript.SetThinkingBlocksHidden(hidden, getTheme());
+        _liveThinking = _liveThinkingSource.Length == 0 ? "" :
+            RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
+        return true;
+    }
+
+    public bool SetHiddenThinkingLabel(string? label)
+    {
+        var safe = string.IsNullOrWhiteSpace(label) ? "Thinking..." : TerminalSafeText.Normalize(label);
+        if (string.Equals(_hiddenThinkingLabel, safe, StringComparison.Ordinal)) return false;
+        _hiddenThinkingLabel = safe;
+        transcript.SetHiddenThinkingLabel(safe, getTheme());
         _liveThinking = _liveThinkingSource.Length == 0 ? "" :
             RenderThinking(getTheme(), _liveThinkingSource, _thinkingBlocksHidden);
         return true;
@@ -224,7 +236,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
     {
         string RenderVisible(TerminalTheme theme) => RenderThinking(theme, text, hidden: false);
         string RenderHidden(TerminalTheme theme) => RenderThinking(theme, text, hidden: true);
-        transcript.AppendThinkingBlock(text, "Thinking...", RenderVisible, RenderHidden, getTheme(),
+        transcript.AppendThinkingBlock(text, _hiddenThinkingLabel, RenderVisible, RenderHidden, getTheme(),
             _thinkingBlocksHidden);
         _hasConversationContent = true;
     }
@@ -280,7 +292,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         return output.ToString();
     }
 
-    private static string RenderThinking(TerminalTheme theme, string text, bool hidden) =>
-        Environment.NewLine + " " + theme.Style("thinkingText", hidden ? "Thinking..." : text, italic: true) +
+    private string RenderThinking(TerminalTheme theme, string text, bool hidden) =>
+        Environment.NewLine + " " + theme.Style("thinkingText", hidden ? _hiddenThinkingLabel : text, italic: true) +
         Environment.NewLine;
 }

@@ -13,6 +13,7 @@ public sealed class TerminalInput
     private readonly bool _standardInput;
     private readonly Queue<byte> _retainedBytes = new();
     private readonly Queue<TerminalInputEvent> _retainedEvents = new();
+    private List<byte>? _currentRawInput;
     private List<byte>? _replyBytes;
     private long? _protocolDeadline;
     private int _protocolBytesRemaining;
@@ -43,6 +44,7 @@ public sealed class TerminalInput
         if (value >= 0)
         {
             _replyBytes?.Add((byte)value);
+            _currentRawInput?.Add((byte)value);
             if (_protocolDeadline is not null) _protocolBytesRemaining--;
         }
         return value;
@@ -121,6 +123,36 @@ public sealed class TerminalInput
         return false;
     }
 
+    internal static IReadOnlyList<TerminalInputEvent> ParseExtensionReplacement(string replacement)
+    {
+        if (replacement.Length == 0) return [];
+        var bounded = new StringBuilder(Math.Min(replacement.Length, 4096));
+        var byteCount = 0;
+        foreach (var rune in replacement.EnumerateRunes())
+        {
+            if (byteCount + rune.Utf8SequenceLength > 4096) break;
+            bounded.Append(rune.ToString());
+            byteCount += rune.Utf8SequenceLength;
+        }
+        replacement = bounded.ToString();
+        if (!replacement.EnumerateRunes().Any(Rune.IsControl))
+            return [new TerminalInputEvent(null, replacement)
+            {
+                RawData = replacement,
+                IsExtensionRewrite = true
+            }];
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(replacement));
+        var parser = new TerminalInput(stream);
+        var events = new List<TerminalInputEvent>();
+        while (parser.TryRead(0, out var input))
+        {
+            if (input.IsEndOfStream) break;
+            events.Add(input with { IsExtensionRewrite = true });
+        }
+        return events;
+    }
+
     internal void PushBack(TerminalInputEvent value)
     {
         var following = _retainedEvents.ToArray();
@@ -158,10 +190,17 @@ public sealed class TerminalInput
 
     private TerminalInputEvent ReadNext()
     {
-        var first = ReadByte();
-        if (first < 0) return TerminalInputEvent.EndOfStream;
-        if (first == 27) return Escape();
-        return ByteToEvent(first);
+        var rawInput = new List<byte>(8);
+        var previousRawInput = _currentRawInput;
+        _currentRawInput = rawInput;
+        try
+        {
+            var first = ReadByte();
+            if (first < 0) return TerminalInputEvent.EndOfStream;
+            var value = first == 27 ? Escape() : ByteToEvent(first);
+            return value with { RawData = Encoding.UTF8.GetString(rawInput.ToArray()) };
+        }
+        finally { _currentRawInput = previousRawInput; }
     }
 
     private TerminalInputEvent Escape()
@@ -184,18 +223,19 @@ public sealed class TerminalInput
             {
                 if (int.TryParse(code.AsSpan(1, code.Length - 2), NumberStyles.None, CultureInfo.InvariantCulture, out var flags))
                     TerminalKeyboardFlagsReceived?.Invoke(flags);
-                return new(null, null);
+                return ProtocolControl();
             }
             if (code.StartsWith('?') && code.EndsWith('c'))
             {
                 TerminalDeviceAttributesReceived?.Invoke();
-                return new(null, null);
+                return ProtocolControl();
             }
             if (code is "?997;1n" or "?997;2n")
             {
                 TerminalColorSchemeReceived?.Invoke(code == "?997;2n" ? "light" : "dark");
-                return new(null, null);
+                return ProtocolControl();
             }
+            if (code == "0n") return ProtocolControl();
             if (code == "200~") return Paste();
             if (TryDecodeSgrMouse(code, out var mouse)) return new(null, null, mouse);
             if (TryDecodeKittyKey(code, out var kittyKey)) return kittyKey;
@@ -368,14 +408,14 @@ public sealed class TerminalInput
             {
                 if (escape && payload.Length > 0 && payload[^1] == '\u001b') payload.Length--;
                 if (TerminalColorResponse.TryParse(payload.ToString(), out var color)) TerminalColorReceived?.Invoke(color);
-                return new(null, null);
+                return ProtocolControl();
             }
             payload.Append((char)value);
             escape = value == 27;
         }
         if (Available(0)) throw new InvalidDataException("Terminal OSC reply exceeds 4096 bytes.");
         // A truncated reply is not user input; discard it rather than terminating the editor.
-        return new(null, null);
+        return ProtocolControl();
     }
 
     private TerminalInputEvent Paste()
@@ -390,7 +430,10 @@ public sealed class TerminalInput
             if (value == end[matched])
             {
                 if (++matched == end.Length)
-                    return new(null, Encoding.UTF8.GetString(bytes.ToArray()).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n'));
+                    return new(null, Encoding.UTF8.GetString(bytes.ToArray()).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n'))
+                    {
+                        IsPaste = true
+                    };
                 continue;
             }
             if (matched > 0)
@@ -500,6 +543,8 @@ public sealed class TerminalInput
     private static TerminalInputEvent Key(ConsoleKey key, char character = '\0', bool shift = false, bool alt = false, bool control = false) =>
         new(new ConsoleKeyInfo(character, key, shift, alt, control), null);
 
+    private static TerminalInputEvent ProtocolControl() => new(null, null) { IsProtocolControl = true };
+
     [StructLayout(LayoutKind.Sequential)]
     private struct PollFd { public int FileDescriptor; public short Events; public short ReturnedEvents; }
 
@@ -514,7 +559,13 @@ public sealed record TerminalInputEvent(ConsoleKeyInfo? Key, string? Text, Termi
     bool IsEndOfStream = false)
 {
     public static TerminalInputEvent EndOfStream { get; } = new(null, null, IsEndOfStream: true);
-    internal bool IsControl => !IsEndOfStream && Key is null && Text is null && Mouse is null;
+    /// <summary>Original UTF-8 terminal data used to decode this event, when read from a terminal stream.</summary>
+    public string? RawData { get; init; }
+    internal bool IsPaste { get; init; }
+    internal bool IsExtensionRewrite { get; init; }
+    internal bool IsProtocolControl { get; init; }
+    internal bool IsControl => !IsEndOfStream && (IsProtocolControl ||
+        Key is null && Text is null && Mouse is null && RawData is null);
 }
 
 /// <summary>SGR mouse report coordinates are one-based terminal columns and rows.</summary>

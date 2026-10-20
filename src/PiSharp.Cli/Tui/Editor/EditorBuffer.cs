@@ -3,14 +3,21 @@ using System.Text;
 
 namespace PiSharp.Cli.Tui;
 
+internal readonly record struct EditorBufferSnapshot(string Text, int Cursor, int? SelectionStart,
+    int? SelectionEnd, long Version);
+
 /// <summary>Testable editor state, independent of console rendering and model execution.</summary>
 public sealed class EditorBuffer
 {
     private sealed record Snapshot(string Text, int Cursor, int? SelectionAnchor);
+    private sealed record ExtensionEditState(string Text, int Cursor, Snapshot[] Undo, string[] History,
+        int HistoryIndex, string Draft, int DraftCursor, int? SelectionAnchor, int? PreferredColumn,
+        bool CoalesceTypedWord, LastEditAction LastEditAction, string? LastYankedText, string[] KillRing);
     private enum LastEditAction { None, Kill, Yank }
     private enum KillDirection { Backward, Forward }
 
     private readonly List<string> _history = [];
+    private readonly object _gate = new();
     private readonly List<Snapshot> _undo = [];
     private readonly EditorKeymap _keymap;
     private readonly EditorKillRing _killRing = new();
@@ -23,172 +30,294 @@ public sealed class EditorBuffer
     private bool _coalesceTypedWord;
     private LastEditAction _lastEditAction;
     private string? _lastYankedText;
+    private long _version;
 
     public EditorBuffer(EditorKeymap? keymap = null) => _keymap = keymap ?? new EditorKeymap();
 
-    public string Text => _text;
-    public int Cursor { get; private set; }
-    public int? SelectionStart => _selectionAnchor is { } anchor && anchor != Cursor ? Math.Min(anchor, Cursor) : null;
-    public int? SelectionEnd => _selectionAnchor is { } anchor && anchor != Cursor ? Math.Max(anchor, Cursor) : null;
-    public string? SelectedText => SelectionStart is { } start && SelectionEnd is { } end ? _text[start..end] : null;
-    public IReadOnlyList<string> History => _history;
+    public string Text { get { lock (_gate) return _text; } }
+    public int Cursor
+    {
+        get { lock (_gate) return _cursor; }
+        private set { lock (_gate) _cursor = value; }
+    }
+    private int _cursor;
+    public int? SelectionStart
+    {
+        get
+        {
+            lock (_gate)
+                return _selectionAnchor is { } anchor && anchor != Cursor ? Math.Min(anchor, Cursor) : null;
+        }
+    }
+    public int? SelectionEnd
+    {
+        get
+        {
+            lock (_gate)
+                return _selectionAnchor is { } anchor && anchor != Cursor ? Math.Max(anchor, Cursor) : null;
+        }
+    }
+    public string? SelectedText
+    {
+        get
+        {
+            lock (_gate)
+            {
+                var start = _selectionAnchor is { } anchor && anchor != Cursor ? Math.Min(anchor, Cursor) : (int?)null;
+                var end = _selectionAnchor is { } selectionAnchor && selectionAnchor != Cursor
+                    ? Math.Max(selectionAnchor, Cursor) : (int?)null;
+                return start is { } first && end is { } last ? _text[first..last] : null;
+            }
+        }
+    }
+    public IReadOnlyList<string> History { get { lock (_gate) return _history.ToArray(); } }
+    internal object SyncRoot => _gate;
+
+    internal EditorBufferSnapshot CaptureSnapshot()
+    {
+        lock (_gate)
+            return new(_text, Cursor,
+                _selectionAnchor is { } anchor && anchor != Cursor ? Math.Min(anchor, Cursor) : null,
+                _selectionAnchor is { } selectionAnchor && selectionAnchor != Cursor
+                    ? Math.Max(selectionAnchor, Cursor) : null, _version);
+    }
+
+    internal object CaptureExtensionEditState()
+    {
+        lock (_gate)
+            return new ExtensionEditState(_text, Cursor, [.. _undo],
+                [.. _history], _historyIndex, _draft, _draftCursor, _selectionAnchor, _preferredColumn,
+                _coalesceTypedWord, _lastEditAction, _lastYankedText, _killRing.Capture());
+    }
+
+    internal void BeginExtensionEdit(string? text)
+    {
+        lock (_gate)
+        {
+            _version++;
+            _text = text ?? string.Empty;
+            Cursor = _text.Length;
+            _historyIndex = _history.Count;
+            _draft = _text;
+            _draftCursor = Cursor;
+            _undo.Clear();
+            ClearSelection();
+            _preferredColumn = null;
+            _coalesceTypedWord = false;
+            BreakKillYankChain();
+        }
+    }
+
+    internal void RestoreExtensionEditState(object capturedState)
+    {
+        ArgumentNullException.ThrowIfNull(capturedState);
+        lock (_gate)
+        {
+            _version++;
+            if (capturedState is not ExtensionEditState state)
+                throw new ArgumentException("The editor state was not captured by this editor.", nameof(capturedState));
+            _text = state.Text;
+            Cursor = state.Cursor;
+            _undo.Clear();
+            _undo.AddRange(state.Undo);
+            _history.Clear();
+            _history.AddRange(state.History);
+            _historyIndex = state.HistoryIndex;
+            _draft = state.Draft;
+            _draftCursor = state.DraftCursor;
+            _selectionAnchor = state.SelectionAnchor;
+            _preferredColumn = state.PreferredColumn;
+            _coalesceTypedWord = state.CoalesceTypedWord;
+            _lastEditAction = state.LastEditAction;
+            _lastYankedText = state.LastYankedText;
+            _killRing.Restore(state.KillRing);
+        }
+    }
 
     public EditorAction Handle(ConsoleKeyInfo key)
     {
-        var control = key.Modifiers.HasFlag(ConsoleModifiers.Control);
-        var alt = key.Modifiers.HasFlag(ConsoleModifiers.Alt);
-        var vertical = _keymap.Matches("tui.editor.cursorUp", key) || _keymap.Matches("tui.editor.cursorDown", key) ||
-            _keymap.Matches("tui.editor.selectUp", key) || _keymap.Matches("tui.editor.selectDown", key);
-        var kill = _keymap.Matches("tui.editor.deleteWordBackward", key) ||
-            _keymap.Matches("tui.editor.deleteWordForward", key) ||
-            _keymap.Matches("tui.editor.deleteToLineStart", key) ||
-            _keymap.Matches("tui.editor.deleteToLineEnd", key);
-        var yank = _keymap.Matches("tui.editor.yank", key) || _keymap.Matches("tui.editor.yankPop", key);
-        if (!kill && !yank) BreakKillYankChain();
-        var printable = !control && !alt && !char.IsControl(key.KeyChar);
-        if (!printable) _coalesceTypedWord = false;
-        if (!vertical) _preferredColumn = null;
-
-        if (_keymap.Matches("tui.input.newLine", key) || key.Key == ConsoleKey.Enter && alt)
+        lock (_gate)
         {
-            InsertTyped("\n");
+            _version++;
+            var control = key.Modifiers.HasFlag(ConsoleModifiers.Control);
+            var alt = key.Modifiers.HasFlag(ConsoleModifiers.Alt);
+            var vertical = _keymap.Matches("tui.editor.cursorUp", key) || _keymap.Matches("tui.editor.cursorDown", key) ||
+                _keymap.Matches("tui.editor.selectUp", key) || _keymap.Matches("tui.editor.selectDown", key);
+            var kill = _keymap.Matches("tui.editor.deleteWordBackward", key) ||
+                _keymap.Matches("tui.editor.deleteWordForward", key) ||
+                _keymap.Matches("tui.editor.deleteToLineStart", key) ||
+                _keymap.Matches("tui.editor.deleteToLineEnd", key);
+            var yank = _keymap.Matches("tui.editor.yank", key) || _keymap.Matches("tui.editor.yankPop", key);
+            if (!kill && !yank) BreakKillYankChain();
+            var printable = !control && !alt && !char.IsControl(key.KeyChar);
+            if (!printable) _coalesceTypedWord = false;
+            if (!vertical) _preferredColumn = null;
+
+            if (_keymap.Matches("tui.input.newLine", key) || key.Key == ConsoleKey.Enter && alt)
+            {
+                InsertTyped("\n");
+                return EditorAction.Render;
+            }
+            if (_keymap.Matches("tui.input.submit", key))
+                return TrySubmit(out _) ? EditorAction.Submit : EditorAction.None;
+            if (_keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key))
+            {
+                Clear();
+                return EditorAction.Cancel;
+            }
+            if (_keymap.Matches("app.exit", key) && _text.Length == 0) return EditorAction.Exit;
+            if (_keymap.Matches("tui.editor.undo", key)) return Undo();
+            if (_keymap.Matches("tui.editor.yank", key)) return Yank();
+            if (_keymap.Matches("tui.editor.yankPop", key)) return YankPop();
+            if (_keymap.Matches("tui.editor.historyPrevious", key)) return NavigateHistory(-1);
+            if (_keymap.Matches("tui.editor.historyNext", key)) return NavigateHistory(1);
+            if (_keymap.Matches("tui.editor.selectUp", key)) return MoveVertical(-1, extendSelection: true);
+            if (_keymap.Matches("tui.editor.selectDown", key)) return MoveVertical(1, extendSelection: true);
+            if (_keymap.Matches("tui.editor.cursorUp", key)) return MoveVertical(-1);
+            if (_keymap.Matches("tui.editor.cursorDown", key)) return MoveVertical(1);
+
+            if (_keymap.Matches("tui.editor.selectLeft", key)) return ExtendSelection(PreviousBoundary(Cursor));
+            if (_keymap.Matches("tui.editor.selectRight", key)) return ExtendSelection(NextBoundary(Cursor));
+            if (_keymap.Matches("tui.editor.selectWordLeft", key)) return ExtendSelection(MoveWordLeft(Cursor));
+            if (_keymap.Matches("tui.editor.selectWordRight", key)) return ExtendSelection(MoveWordRight(Cursor));
+            if (_keymap.Matches("tui.editor.selectLineStart", key)) return ExtendSelection(LineStart(Cursor));
+            if (_keymap.Matches("tui.editor.selectLineEnd", key)) return ExtendSelection(LineEnd(Cursor));
+
+            if (_keymap.Matches("tui.editor.cursorLeft", key)) MoveCursor(SelectionStart ?? PreviousBoundary(Cursor));
+            else if (_keymap.Matches("tui.editor.cursorRight", key)) MoveCursor(SelectionEnd ?? NextBoundary(Cursor));
+            else if (_keymap.Matches("tui.editor.cursorWordLeft", key)) MoveCursor(SelectionStart ?? MoveWordLeft(Cursor));
+            else if (_keymap.Matches("tui.editor.cursorWordRight", key)) MoveCursor(SelectionEnd ?? MoveWordRight(Cursor));
+            else if (_keymap.Matches("tui.editor.cursorLineStart", key)) MoveCursor(LineStart(Cursor));
+            else if (_keymap.Matches("tui.editor.cursorLineEnd", key)) MoveCursor(LineEnd(Cursor));
+            else if (_keymap.Matches("tui.editor.deleteCharBackward", key))
+                DeleteRange(SelectionStart ?? PreviousBoundary(Cursor), SelectionEnd ?? Cursor);
+            else if (_keymap.Matches("tui.editor.deleteCharForward", key))
+                DeleteRange(SelectionStart ?? Cursor, SelectionEnd ?? NextBoundary(Cursor));
+            else if (_keymap.Matches("tui.editor.deleteWordBackward", key))
+                DeleteWordBackward();
+            else if (_keymap.Matches("tui.editor.deleteWordForward", key))
+                DeleteWordForward();
+            else if (_keymap.Matches("tui.editor.deleteToLineStart", key))
+                DeleteToLineStart();
+            else if (_keymap.Matches("tui.editor.deleteToLineEnd", key))
+                DeleteToLineEnd();
+            else if (_keymap.Matches("tui.input.tab", key))
+                InsertAtomic("    ");
+            else if (printable)
+                InsertTyped(key.KeyChar.ToString());
+            else
+                return EditorAction.None;
+
             return EditorAction.Render;
         }
-        if (_keymap.Matches("tui.input.submit", key))
-            return TrySubmit(out _) ? EditorAction.Submit : EditorAction.None;
-        if (_keymap.Matches("app.interrupt", key) || _keymap.Matches("app.clear", key))
-        {
-            Clear();
-            return EditorAction.Cancel;
-        }
-        if (_keymap.Matches("app.exit", key) && _text.Length == 0) return EditorAction.Exit;
-        if (_keymap.Matches("tui.editor.undo", key)) return Undo();
-        if (_keymap.Matches("tui.editor.yank", key)) return Yank();
-        if (_keymap.Matches("tui.editor.yankPop", key)) return YankPop();
-        if (_keymap.Matches("tui.editor.historyPrevious", key)) return NavigateHistory(-1);
-        if (_keymap.Matches("tui.editor.historyNext", key)) return NavigateHistory(1);
-        if (_keymap.Matches("tui.editor.selectUp", key)) return MoveVertical(-1, extendSelection: true);
-        if (_keymap.Matches("tui.editor.selectDown", key)) return MoveVertical(1, extendSelection: true);
-        if (_keymap.Matches("tui.editor.cursorUp", key)) return MoveVertical(-1);
-        if (_keymap.Matches("tui.editor.cursorDown", key)) return MoveVertical(1);
-
-        if (_keymap.Matches("tui.editor.selectLeft", key)) return ExtendSelection(PreviousBoundary(Cursor));
-        if (_keymap.Matches("tui.editor.selectRight", key)) return ExtendSelection(NextBoundary(Cursor));
-        if (_keymap.Matches("tui.editor.selectWordLeft", key)) return ExtendSelection(MoveWordLeft(Cursor));
-        if (_keymap.Matches("tui.editor.selectWordRight", key)) return ExtendSelection(MoveWordRight(Cursor));
-        if (_keymap.Matches("tui.editor.selectLineStart", key)) return ExtendSelection(LineStart(Cursor));
-        if (_keymap.Matches("tui.editor.selectLineEnd", key)) return ExtendSelection(LineEnd(Cursor));
-
-        if (_keymap.Matches("tui.editor.cursorLeft", key)) MoveCursor(SelectionStart ?? PreviousBoundary(Cursor));
-        else if (_keymap.Matches("tui.editor.cursorRight", key)) MoveCursor(SelectionEnd ?? NextBoundary(Cursor));
-        else if (_keymap.Matches("tui.editor.cursorWordLeft", key)) MoveCursor(SelectionStart ?? MoveWordLeft(Cursor));
-        else if (_keymap.Matches("tui.editor.cursorWordRight", key)) MoveCursor(SelectionEnd ?? MoveWordRight(Cursor));
-        else if (_keymap.Matches("tui.editor.cursorLineStart", key)) MoveCursor(LineStart(Cursor));
-        else if (_keymap.Matches("tui.editor.cursorLineEnd", key)) MoveCursor(LineEnd(Cursor));
-        else if (_keymap.Matches("tui.editor.deleteCharBackward", key))
-            DeleteRange(SelectionStart ?? PreviousBoundary(Cursor), SelectionEnd ?? Cursor);
-        else if (_keymap.Matches("tui.editor.deleteCharForward", key))
-            DeleteRange(SelectionStart ?? Cursor, SelectionEnd ?? NextBoundary(Cursor));
-        else if (_keymap.Matches("tui.editor.deleteWordBackward", key))
-            DeleteWordBackward();
-        else if (_keymap.Matches("tui.editor.deleteWordForward", key))
-            DeleteWordForward();
-        else if (_keymap.Matches("tui.editor.deleteToLineStart", key))
-            DeleteToLineStart();
-        else if (_keymap.Matches("tui.editor.deleteToLineEnd", key))
-            DeleteToLineEnd();
-        else if (_keymap.Matches("tui.input.tab", key))
-            InsertAtomic("    ");
-        else if (printable)
-            InsertTyped(key.KeyChar.ToString());
-        else
-            return EditorAction.None;
-
-        return EditorAction.Render;
     }
 
     public EditorAction InsertText(string text)
     {
-        var safe = new string(text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n')
-            .Where(c => c is '\n' or '\t' || !char.IsControl(c)).ToArray());
-        if (safe.Length == 0) return EditorAction.None;
-        InsertAtomic(safe);
-        BreakKillYankChain();
-        return EditorAction.Render;
+        lock (_gate)
+        {
+            _version++;
+            var safe = new string(text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n')
+                .Where(c => c is '\n' or '\t' || !char.IsControl(c)).ToArray());
+            if (safe.Length == 0) return EditorAction.None;
+            InsertAtomic(safe);
+            BreakKillYankChain();
+            return EditorAction.Render;
+        }
     }
 
     public bool TrySubmit(out string text)
     {
-        text = _text;
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        AddHistory(text);
-        _historyIndex = _history.Count;
-        _undo.Clear();
-        _coalesceTypedWord = false;
-        _preferredColumn = null;
-        ClearSelection();
-        BreakKillYankChain();
-        return true;
+        lock (_gate)
+        {
+            _version++;
+            text = _text;
+            if (string.IsNullOrWhiteSpace(text)) return false;
+            AddHistory(text);
+            _historyIndex = _history.Count;
+            _undo.Clear();
+            _coalesceTypedWord = false;
+            _preferredColumn = null;
+            ClearSelection();
+            BreakKillYankChain();
+            return true;
+        }
     }
 
     public void Clear()
     {
-        _text = "";
-        Cursor = 0;
-        _historyIndex = _history.Count;
-        _draft = "";
-        _draftCursor = 0;
-        _undo.Clear();
-        _coalesceTypedWord = false;
-        _preferredColumn = null;
-        ClearSelection();
-        BreakKillYankChain();
+        lock (_gate)
+        {
+            _version++;
+            _text = "";
+            Cursor = 0;
+            _historyIndex = _history.Count;
+            _draft = "";
+            _draftCursor = 0;
+            _undo.Clear();
+            _coalesceTypedWord = false;
+            _preferredColumn = null;
+            ClearSelection();
+            BreakKillYankChain();
+        }
     }
 
     public void Replace(int start, int length, string replacement)
     {
-        ArgumentNullException.ThrowIfNull(replacement);
-        if (start < 0 || length < 0 || start + length > _text.Length || start + length > Cursor)
-            throw new ArgumentOutOfRangeException(nameof(start));
-        if (length == 0 && replacement.Length == 0) return;
-        PushUndoSnapshot();
-        _text = _text.Remove(start, length).Insert(start, replacement);
-        Cursor = start + replacement.Length;
-        ClearSelection();
-        ExitHistoryBrowsing();
-        RememberDraft();
-        _coalesceTypedWord = false;
-        _preferredColumn = null;
-        BreakKillYankChain();
+        lock (_gate)
+        {
+            _version++;
+            ArgumentNullException.ThrowIfNull(replacement);
+            if (start < 0 || length < 0 || start + length > _text.Length || start + length > Cursor)
+                throw new ArgumentOutOfRangeException(nameof(start));
+            if (length == 0 && replacement.Length == 0) return;
+            PushUndoSnapshot();
+            _text = _text.Remove(start, length).Insert(start, replacement);
+            Cursor = start + replacement.Length;
+            ClearSelection();
+            ExitHistoryBrowsing();
+            RememberDraft();
+            _coalesceTypedWord = false;
+            _preferredColumn = null;
+            BreakKillYankChain();
+        }
     }
 
     public void SetText(string text, int? cursor = null)
     {
-        ArgumentNullException.ThrowIfNull(text);
-        var nextCursor = Math.Clamp(cursor ?? text.Length, 0, text.Length);
-        if (!string.Equals(_text, text, StringComparison.Ordinal)) PushUndoSnapshot();
-        _text = text;
-        Cursor = nextCursor;
-        ClearSelection();
-        ExitHistoryBrowsing();
-        RememberDraft();
-        _coalesceTypedWord = false;
-        _preferredColumn = null;
-        BreakKillYankChain();
+        lock (_gate)
+        {
+            _version++;
+            ArgumentNullException.ThrowIfNull(text);
+            var nextCursor = Math.Clamp(cursor ?? text.Length, 0, text.Length);
+            if (!string.Equals(_text, text, StringComparison.Ordinal)) PushUndoSnapshot();
+            _text = text;
+            Cursor = nextCursor;
+            ClearSelection();
+            ExitHistoryBrowsing();
+            RememberDraft();
+            _coalesceTypedWord = false;
+            _preferredColumn = null;
+            BreakKillYankChain();
+        }
     }
 
     public void SetCursor(int cursor)
     {
-        if (cursor < 0 || cursor > _text.Length ||
-            cursor != _text.Length && !StringInfo.ParseCombiningCharacters(_text).Contains(cursor))
-            throw new ArgumentOutOfRangeException(nameof(cursor), "Cursor must be at a grapheme boundary in the editor text.");
-        Cursor = cursor;
-        ClearSelection();
-        ExitHistoryBrowsing();
-        RememberDraft();
-        _coalesceTypedWord = false;
-        _preferredColumn = null;
-        BreakKillYankChain();
+        lock (_gate)
+        {
+            _version++;
+            if (cursor < 0 || cursor > _text.Length ||
+                cursor != _text.Length && !StringInfo.ParseCombiningCharacters(_text).Contains(cursor))
+                throw new ArgumentOutOfRangeException(nameof(cursor), "Cursor must be at a grapheme boundary in the editor text.");
+            Cursor = cursor;
+            ClearSelection();
+            ExitHistoryBrowsing();
+            RememberDraft();
+            _coalesceTypedWord = false;
+            _preferredColumn = null;
+            BreakKillYankChain();
+        }
     }
 
     private void AddHistory(string text)
@@ -492,7 +621,14 @@ public sealed class EditorBuffer
 
     private void ExitHistoryBrowsing() => _historyIndex = _history.Count;
 
-    public void ClearSelection() => _selectionAnchor = null;
+    public void ClearSelection()
+    {
+        lock (_gate)
+        {
+            _version++;
+            _selectionAnchor = null;
+        }
+    }
 
     private EditorAction ExtendSelection(int cursor)
     {

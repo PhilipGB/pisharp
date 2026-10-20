@@ -36,12 +36,14 @@ internal static class ProjectStartupPreparation
         ProjectRuntimeConfiguration projectConfiguration;
         var hasProjectTrustUi = cli.Mode == "interactive" && !cli.Print &&
             !Console.IsInputRedirected && !Console.IsOutputRedirected;
+        var hasExtensionUi = hasProjectTrustUi;
         var projectTrustMode = cli.Print ? "print" : cli.Mode;
-        var projectTrustUi = new ProjectTrustStartupUi(hasProjectTrustUi, projectTrustMode, Console.Out, Console.Error);
+        var projectTrustUi = new ProjectTrustStartupUi(hasExtensionUi, projectTrustMode, Console.Out, Console.Error);
         try
         {
             projectConfiguration = await ProjectRuntimeConfiguration.LoadAsync(currentDirectory, agentDirectory, cli,
-                trustStore, hasProjectTrustUi, standardInput, Console.Error, extensionUi: projectTrustUi);
+                trustStore, hasProjectTrustUi, standardInput, Console.Error, extensionUi: projectTrustUi,
+                hasUserInterface: hasExtensionUi);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException or ArgumentException)
         {

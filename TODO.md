@@ -1,22 +1,100 @@
 # PiSharp capability parity
 
-## Active milestone — Native Extension Two-Stage Context Mutation — 2026-10-19
+## Active milestone — Complete Native Extension Interactive UI — 2026-10-20
 
-PR #18 merged as `3be359066d6d3bef815a2acefcc0a117bac12666`; branch
-`milestone/native-extension-context-mutation` starts at that actual merge.
-The Pi pin remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This increment
-adds ordered native `context` and `context_with_system` callbacks at the final
-route-aware provider boundary, with detached message edits, host-owned tool
-configuration, request-only prompt changes, source-attributed error isolation,
-and retry/compaction behavior. The review correction preserves Anthropic
-system/tool revision history across structural context edits and verifies the
-final physical request projection. Local validation passes 2,505 .NET tests,
-format, warning-as-error build, architecture, Node, Python, documentation, and
-MCP baseline checks. Fresh exact-head Linux CI is recorded in the PR #19
-description and remains the final publication gate. See the
-[context mutation receipt](docs/parity/fixtures/native-extension-context-mutation-2026-10-19.md).
-PR #19 must stay a draft and must not be merged. Broad
-extension parity remains `in_progress`; no next milestone is started.
+PR #19 is verified merged at `b4cfac1ca83b38215311d8441069286cca0dc4e6`;
+the reviewed head `c26ef860978da0117b49f491de36d05dbe9b41b6` passed push CI
+`39346174499` and PR CI `39346177476`. PR #20 is on
+`milestone/native-extension-interactive-ui`, based on that merge. The pinned Pi
+revision is unchanged at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+The implementation adds package-owned interactive UI registrations and
+terminal hosting for widgets, statuses, components, editor input, autocomplete,
+themes, working presentation, and parsed terminal input. The final full .NET
+suite passes 2,566/2,566, the focused UI/input/PTY/RPC/compositor selection
+passes 260/260, and the shortcut-aligned compiled-package PTY journey passes
+10/10. New regressions cover concurrent streaming/UI updates and the tiny
+overlay fallback; listener teardown passed 20/20 repetitions. The source-pinned
+differential reaches every checkpoint and matches stable startup, widget, and
+input-update viewports, while full terminal parity remains incomplete: 22,411
+state differences, 14,009 render differences, raw output diverging at byte 2,
+and a quit/restore presentation difference. Architecture 7/7, Node 24/24,
+Python 51/51, warnings-as-errors build, format verification, and MCP
+conformance pass; MCP retains only its classified baseline failures.
+Documentation path validation passed 149 files/576 references. Publish PR #20
+as a draft and record exact-head push/PR CI run IDs in its description; keep it
+unmerged. Global extension parity stays `in_progress`.
+
+### Progress log (UTC)
+
+- 05:03 — `TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore`
+  passed 2,553/2,553 with zero skips. The default home TMPDIR had caused two
+  resource-display expectation failures; the isolated temp root matches the
+  tests' intended absolute-path environment. A pending listener lock-order fix
+  was found in final review and is being validated separately before the last
+  full run.
+- 05:22 — The input-router deactivation/wait split now passes its deterministic
+  concurrent package-removal regression 1/1. The pinned terminal comparison
+  reaches each scripted checkpoint without scenario errors; its named startup,
+  widget, and input-update viewports match, but full terminal state/render and
+  raw output comparisons do not. Final build, formatting, focused/full tests,
+  and documentation checks will be rerun on the reviewed source.
+- 05:48 — Aligned the pinned Pi and compiled C# fixture on `Ctrl+Shift+Z` after
+  finding that the earlier shortcut conflicted with a built-in search key.
+  Same-Pi calibration passed all seven frames; the paired report now records
+  22,411 state and 14,009 render differences, exact HTTP matches, and the
+  remaining quit/restore screen difference.
+- 06:18 — Added and passed deterministic tests for concurrent assistant stream
+  and extension presentation updates plus the 4×2 overlay fallback. The
+  expanded 164-test focused selection and final format check pass; the
+  full-suite rerun has not yet returned its summary.
+- 06:22 — The final full .NET suite passed 2,557/2,557 with no skips or
+  failures. The compiled-package PTY journey passed ten times on the aligned
+  shortcut fixture; final docs-path validation and publication remain.
+- 06:23 — Documentation path validation passed 149 files and 576 references
+  after the receipt and execution ledger were updated; exact-head CI and PR
+  publication remain outstanding.
+- 06:54 — The RPC transport now registers event writes under a shutdown gate,
+  tracks them with a completion placeholder, avoids invoking output under the
+  gate, and makes concurrent disposal callers await the same flush. Its
+  blocking-writer regression passes. The focused selection passes 165/165.
+  A later full run exposed the existing Mistral cancellation fixture's 30 ms
+  header deadline expiring before the loopback server received the request;
+  the timeout was raised to 3 s without changing the caller-cancellation
+  assertion. The isolated test passes and the final full suite passes
+  2,558/2,558. Format and warnings-as-errors build pass on final source.
+- 07:24 — The final architecture selection passes 7/7. Documentation path
+  validation passes 149 documents / 576 references after the publication-note
+  edits; the JSON ledger parses and `git diff --check` is clean. Reviewed the
+  public contracts, package revocation, component lifecycle, input ordering and
+  RPC shutdown path, and drafted the PR description with the exact-head CI
+  section reserved for the final workflow IDs.
+- 08:23 — The latest full .NET suite passed 2,566/2,566 with zero skips. This
+  includes the factory/screen-shutdown, factory/package-removal, and current
+  editor-binding lifecycle regressions. The focused UI/input/PTY/RPC/compositor
+  selection is now 260/260. Python terminal tests pass 51/51; MCP conformance
+  has no new regressions against the classified baseline. Refreshed docs paths
+  validate 149 files / 576 references, the ledger parses, and `git diff --check`
+  is clean.
+- 08:43 — Final review found that the editor could batch decoded characters
+  after the first input event, bypassing extension listeners for later
+  characters. The editor now processes individual events whenever the extension
+  input hook is bound. The compiled-package PTY fixture proves an adjacent
+  pass-through/consume pair; its focused run passes after keeping the new y
+  consumer scoped to that pair. Final full-suite verification is running.
+- 08:53 — The final full .NET suite passed 2,566/2,566 with zero failures or
+  skips after the buffered-character routing fix. The compiled-package PTY
+  journey passed 10/10 repetitions with the new adjacent-character case.
+  Format verification and the warnings-as-errors build also pass on that source.
+- 08:55 — Node terminal tests passed 24/24 and Python terminal tests passed
+  51/51 on the final input-routing source. MCP conformance has no new baseline
+  regressions; the exact CI MCP build passes with warnings as errors. Refreshed
+  documentation and ledger checks are being repeated before staging.
+
+## Previous milestone — Native Extension Two-Stage Context Mutation — 2026-10-19
+
+PR #19 merged at `b4cfac1ca83b38215311d8441069286cca0dc4e6`; its implementation
+and review correction are recorded in the [context mutation receipt](docs/parity/fixtures/native-extension-context-mutation-2026-10-19.md).
 
 ## Previous milestone — Native Extension Message Lifecycle Hooks — 2026-10-19
 

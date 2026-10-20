@@ -11,6 +11,7 @@ public sealed partial record PiSharpExtensionContext : IDisposable
     /// <summary>Ends the lifecycle callback scope and revokes retained live operations.</summary>
     public void Dispose()
     {
+        if (Ui is IDisposable uiLifetime) uiLifetime.Dispose();
         Capabilities?.Dispose();
         Session?.Dispose();
     }
@@ -28,6 +29,7 @@ public sealed partial class PiSharpExtensionCommandContext : IDisposable
     public void Dispose()
     {
         DisposeControlContext();
+        if (Ui is IDisposable uiLifetime) uiLifetime.Dispose();
         Capabilities?.Dispose();
         Session?.Dispose();
         SettingsAndFlags?.Dispose();

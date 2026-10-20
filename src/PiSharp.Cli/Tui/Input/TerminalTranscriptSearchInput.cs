@@ -13,11 +13,15 @@ internal sealed class TerminalTranscriptSearchInput(EditorBuffer buffer, EditorK
 
     public void Start()
     {
-        if (getScreen() is not { IsActive: true }) return;
-        _savedFooter = getScreen()!.FooterText;
-        _savedDraft = buffer.Text;
-        _savedCursor = buffer.Cursor;
-        buffer.SetText(_lastSearchQuery);
+        if (getScreen() is not { IsActive: true } screen) return;
+        _savedFooter = screen.FooterText;
+        lock (buffer.SyncRoot)
+        {
+            var snapshot = buffer.CaptureSnapshot();
+            _savedDraft = snapshot.Text;
+            _savedCursor = snapshot.Cursor;
+            buffer.SetText(_lastSearchQuery);
+        }
         _searchingTranscript = true;
         Update();
     }
@@ -57,7 +61,7 @@ internal sealed class TerminalTranscriptSearchInput(EditorBuffer buffer, EditorK
     public void Update(int direction = 0)
     {
         if (getScreen() is not { IsActive: true } screen) return;
-        var query = buffer.Text;
+        var query = buffer.CaptureSnapshot().Text;
         var state = screen.SearchTranscript(query, direction);
         var count = state.HasMoreMatches ? $"{state.MatchCount}+" : state.MatchCount.ToString();
         var status = query.Length == 0 ? "type to search" : state.MatchCount == 0 ? "no matches" : $"{state.SelectedMatch}/{count}";
@@ -66,9 +70,12 @@ internal sealed class TerminalTranscriptSearchInput(EditorBuffer buffer, EditorK
 
     public void Close()
     {
-        _lastSearchQuery = buffer.Text;
-        _searchingTranscript = false;
-        buffer.SetText(_savedDraft, _savedCursor);
+        lock (buffer.SyncRoot)
+        {
+            _lastSearchQuery = buffer.Text;
+            _searchingTranscript = false;
+            buffer.SetText(_savedDraft, _savedCursor);
+        }
         getScreen()?.ClearTranscriptSearch();
         if (_savedFooter.Length > 0) getScreen()?.SetFooter(_savedFooter);
     }

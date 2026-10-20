@@ -11963,7 +11963,7 @@
   },
   "native_extension_context_mutation_milestone": {
     "date": "2026-10-19",
-    "status": "active",
+    "status": "complete",
     "branch": "milestone/native-extension-context-mutation",
     "base_main": "3be359066d6d3bef815a2acefcc0a117bac12666",
     "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -11981,7 +11981,8 @@
       "documentation_paths": "148 documents, 568 references; passed",
       "mcp_conformance": "No regressions; the same eight classified baseline failures remain"
     },
-    "publication": "PR #19 remains draft; fresh exact-head push and PR Linux CI results are recorded in its description. Do not merge.",
+    "publication": "PR #19 merged and verified on origin/main at b4cfac1ca83b38215311d8441069286cca0dc4e6. Reviewed head c26ef860978da0117b49f491de36d05dbe9b41b6 passed exact-head push CI 39346174499 and PR CI 39346177476.",
+    "verified_merge": "b4cfac1ca83b38215311d8441069286cca0dc4e6",
     "review_correction": {
       "reviewed_head": "3cc4df1368aea3a74712b0799b78885dca0134d8",
       "finding": "Structural native context edits collapsed the request-local Anthropic transcript and erased authoritative historical system/tool revisions; serialized-content matching also confused edited or duplicate messages when rebasing boundaries.",
@@ -11993,6 +11994,43 @@
         "Lineage tests cover first-stage edits/removal, duplicate content, insertion, reordering and replacement messages."
       ]
     },
+    "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No broad parity promotion."
+  },
+  "native_extension_interactive_ui_milestone": {
+    "date": "2026-10-20",
+    "status": "active",
+    "branch": "milestone/native-extension-interactive-ui",
+    "base_main": "b4cfac1ca83b38215311d8441069286cca0dc4e6",
+    "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "receipt": "docs/parity/fixtures/native-extension-interactive-ui-2026-10-20.md",
+    "implementation": "Additive public C# UI contracts and package-owned registration scope, connected to the existing terminal screen, editor, parser, dialogs, theme catalog and rendering scheduler. Includes persistent status/widget/header/footer/title/working presentation, focused and overlay components, editor and autocomplete operations, theme and tool-expansion controls, decoded terminal input interception and removal/reload revocation.",
+    "focused_tests": "The corrected input-router removal/self-unsubscribe regression passes 20/20 repetitions. The final focused TUI/input/PTY/RPC/compositor selection passes 260/260, including RPC transport disposal, autocomplete cancellation, screen-binding teardown, undersized-overlay fallback and 200 concurrent assistant-stream/UI updates. Factory/screen-shutdown and factory/package-removal races plus stale same-screen binding disposal are covered; the same-screen binding and package-removal factory regressions pass 20 consecutive runs each. The compiled-package PTY journey passes 10/10 after aligning the Pi and C# shortcut fixtures, including adjacent buffered-character pass-through/consume handling; the final full .NET suite passes 2,566/2,566 with zero skips.",
+    "known_differences": [
+      "The C# raw-input callback receives parser-decoded events with original input text, after protocol filtering; Pi calls raw listeners before its key parser.",
+      "Callbacks run after terminal parsing and protocol filtering, so they cannot replace a partial sequence or inspect parser state. Bounded replacement text is passed through the existing parser and can produce complete key sequences.",
+      "Custom component factories and render/input callbacks are synchronous C# contracts rather than asynchronous TypeScript factories.",
+      "Advanced visual registrations do not render in RPC, print, JSON or direct Runtime modes; existing RPC dialogs and notifications remain separate."
+    ],
+    "terminal_differential": {
+      "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "pisharp_base": "b4cfac1ca83b38215311d8441069286cca0dc4e6",
+      "calibration": "Same-Pi 120x40 dark fullscreen run matched all 7 compared render frames with zero differences.",
+      "paired_run": "No scenario errors and HTTP requests match exactly. Startup, widget, and input-update checkpoints match trimmed viewport text, every nonblank cell's full style, active screen and cursor. Empty cells have different serialized representations. The complete comparison does not match: 22,411 state differences, 14,009 render differences across 7 transitions, and raw terminal output first differs at byte 2. At quit/restore, Pi leaves its extension dashboard visible while PiSharp clears the extension presentation.",
+      "artifacts": "artifacts/parity/native-extension-interactive-ui-2026-10-20-final-aligned-calibration and artifacts/parity/native-extension-interactive-ui-2026-10-20-final-aligned-comparison (ignored local evidence)",
+      "acceptance": "Extension-owned stable viewports are verified; full terminal parity is not established."
+    },
+    "local_verification": {
+      "dotnet_tests": "2,566/2,566 passed with TMPDIR=/tmp, zero failed and zero skipped.",
+      "focused_tests": "The final TUI/input/PTY/RPC/compositor selection passed 260/260, including the blocking-writer RPC transport disposal regression and factory/screen/package lifecycle races. The compiled-package NativeExtensionInteractiveUiPtyTests journey passed 10/10 after shortcut-fixture alignment and now verifies adjacent buffered-character pass-through/consume handling; router removal/self-unsubscribe and current editor-binding/package factory regressions passed 20/20 repetitions.",
+      "build_format": "Final warnings-as-errors solution build passed with zero warnings and errors; format verification passed.",
+      "architecture": "7/7 passed on the final source.",
+      "node": "24/24 passed after shortcut-fixture alignment.",
+      "python": "51/51 passed after shortcut-fixture alignment.",
+      "documentation": "Path validation passed 149 documentation files and 576 references after the final receipt and ledger updates.",
+      "mcp": "No new regressions against baseline; known failures remain classified in elicitation defaults (6), auth/basic-cimd (1), and auth/scope-retry-limit (1)."
+    },
+    "publication": "Publish as a draft PR against main, record exact-head push and PR CI run IDs in its description, and leave PR #20 unmerged.",
+    "validation_state": "The final full .NET suite (2,566/2,566), warnings-as-errors build, format check, 260 focused checks, ten compiled-package PTY runs, architecture, Node, Python, MCP, same-Pi calibration and documentation path validation (149 files/576 references) passed. Exact-head publication and CI evidence will be recorded in the PR description after publication.",
     "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No broad parity promotion."
   }
 }

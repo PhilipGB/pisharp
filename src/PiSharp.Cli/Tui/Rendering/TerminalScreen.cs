@@ -2,6 +2,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.AI;
+using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Cli.Tui;
@@ -40,7 +41,23 @@ public sealed class TerminalScreen : IDisposable
     private int? _editorSelectionStart;
     private int? _editorSelectionEnd;
     private IReadOnlyList<EditorCompletionSuggestion> _editorSuggestions = [];
+    private IReadOnlyList<(string Key, string Text)> _extensionStatuses = [];
+    private IReadOnlyList<PiSharpExtensionUiLine> _extensionHeader = [];
+    private IReadOnlyList<PiSharpExtensionUiLine> _extensionWidgetsAbove = [];
+    private IReadOnlyList<PiSharpExtensionUiLine> _extensionWidgetsBelow = [];
+    private IReadOnlyList<PiSharpExtensionUiLine>? _extensionEditorReplacement;
+    private IReadOnlyList<PiSharpExtensionUiLine> _extensionFooter = [];
+    private IReadOnlyList<PiSharpExtensionUiLine>? _extensionCustomOverlay;
+    private PiSharpExtensionUiOverlayOptions? _extensionCustomOverlayOptions;
+    private IReadOnlyList<PiSharpExtensionUiLine>? _extensionCustomPanel;
+    private Action? _extensionUiContextChanged;
+    private int _extensionUiContextChangeQueued;
     private string? _workingStatus;
+    private string _workingFrame = "⠋";
+    private bool _workingVisible = true;
+    private string? _extensionWorkingMessage;
+    private bool? _extensionWorkingVisible;
+    private string _extensionTitle = "";
     private int _scrollOffset;
     private int _lastImagePruneRevision = -1;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
@@ -149,6 +166,15 @@ public sealed class TerminalScreen : IDisposable
     public TextWriter Output => _out;
     public TextWriter Error => _error;
     public bool IsActive => _active;
+
+    internal bool HasActiveWorkingStatus
+    {
+        get
+        {
+            lock (_gate) return _active && _workingVisible && _extensionWorkingVisible != false &&
+                _workingStatus is not null;
+        }
+    }
     internal int TerminalWidth => Columns();
     internal int TerminalHeight => Rows();
     internal int TranscriptScrollOffset { get { lock (_gate) return _scrollOffset; } }
@@ -337,6 +363,15 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal void SetHiddenThinkingLabel(string? label)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            if (_conversationPresentation.SetHiddenThinkingLabel(label?.Replace('\n', ' '))) _render.Request();
+        }
+    }
+
     internal bool ThinkingBlocksHidden { get { lock (_gate) return _conversationPresentation.ThinkingBlocksHidden; } }
 
     internal void CommitAssistantText(string markdown)
@@ -445,6 +480,7 @@ public sealed class TerminalScreen : IDisposable
             _theme = theme.WithTerminalColors(_terminalColors.Foreground, _terminalColors.Background);
             _conversationPresentation.ReRender();
             _render.Request();
+            QueueExtensionUiContextChanged();
         }
     }
 
@@ -630,13 +666,190 @@ public sealed class TerminalScreen : IDisposable
         get { lock (_gate) return _footer; }
     }
 
-    internal void SetWorkingStatus(string? status, bool render = true)
+    internal void SetExtensionStatuses(IReadOnlyList<(string Key, string Text)> statuses)
+    {
+        ArgumentNullException.ThrowIfNull(statuses);
+        var safe = statuses.Where(item => !string.IsNullOrWhiteSpace(item.Key) &&
+                !string.IsNullOrWhiteSpace(item.Text))
+            .Select(item => (NormalizeExtensionStatus(item.Key), NormalizeExtensionStatus(item.Text)))
+            .ToArray();
+        lock (_gate)
+        {
+            if (!_active) return;
+            _extensionStatuses = safe;
+            _render.Request();
+        }
+    }
+
+    internal void SetExtensionPresentation(IReadOnlyList<(string Key, string Text)> statuses,
+        IReadOnlyList<PiSharpExtensionUiLine> header,
+        IReadOnlyList<PiSharpExtensionUiLine> aboveEditor,
+        IReadOnlyList<PiSharpExtensionUiLine> belowEditor,
+        IReadOnlyList<PiSharpExtensionUiLine> footer,
+        IReadOnlyList<PiSharpExtensionUiLine>? editorReplacement = null)
+    {
+        ArgumentNullException.ThrowIfNull(statuses);
+        ArgumentNullException.ThrowIfNull(header);
+        ArgumentNullException.ThrowIfNull(aboveEditor);
+        ArgumentNullException.ThrowIfNull(belowEditor);
+        ArgumentNullException.ThrowIfNull(footer);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _extensionStatuses = statuses.Where(item => !string.IsNullOrWhiteSpace(item.Key) &&
+                    !string.IsNullOrWhiteSpace(item.Text))
+                .Select(item => (NormalizeExtensionStatus(item.Key), NormalizeExtensionStatus(item.Text))).ToArray();
+            _extensionHeader = NormalizeExtensionLines(header);
+            _extensionWidgetsAbove = NormalizeExtensionLines(aboveEditor);
+            _extensionWidgetsBelow = NormalizeExtensionLines(belowEditor);
+            _extensionEditorReplacement = editorReplacement is null ? null : NormalizeExtensionLines(editorReplacement);
+            _extensionFooter = NormalizeExtensionLines(footer);
+            _render.Request(immediate: true);
+        }
+    }
+
+    internal void SetExtensionCustomOverlay(IReadOnlyList<PiSharpExtensionUiLine>? lines,
+        PiSharpExtensionUiOverlayOptions? options)
     {
         lock (_gate)
         {
             if (!_active) return;
-            _workingStatus = string.IsNullOrWhiteSpace(status) ? null : TerminalSafeText.Normalize(status);
+            _extensionCustomOverlay = lines is null ? null : NormalizeExtensionLines(lines);
+            _extensionCustomOverlayOptions = options;
+            _render.Request(immediate: true);
+        }
+    }
+
+    internal void SetExtensionCustomPanel(IReadOnlyList<PiSharpExtensionUiLine>? lines)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _extensionCustomPanel = lines is null ? null : NormalizeExtensionLines(lines);
+            _render.Request(immediate: true);
+        }
+    }
+
+    internal void SetExtensionUiContextChangedHandler(Action? handler)
+    {
+        lock (_gate) _extensionUiContextChanged = handler;
+    }
+
+    internal PiSharpExtensionUiRenderContext CreateExtensionUiRenderContext(
+        IReadOnlyDictionary<string, string> statuses)
+    {
+        ArgumentNullException.ThrowIfNull(statuses);
+        lock (_gate)
+        {
+            return new(Columns(), Rows(), new(_theme.Name, CreateExtensionUiThemeStyles(_theme)),
+                new Dictionary<string, string>(statuses, StringComparer.Ordinal));
+        }
+    }
+
+    internal static IReadOnlyDictionary<string, PiSharpExtensionUiThemeStyle> CreateExtensionUiThemeStyles(
+        TerminalTheme theme)
+    {
+        ArgumentNullException.ThrowIfNull(theme);
+        var styles = new Dictionary<string, PiSharpExtensionUiThemeStyle>(StringComparer.Ordinal);
+        foreach (var token in s_extensionThemeForegroundTokens)
+            styles[token] = new(ToHex(theme.GetConcreteColor(token)), null,
+                Bold: token is "accent" or "toolTitle");
+        foreach (var token in s_extensionThemeBackgroundTokens)
+            styles[token] = new(null, ToHex(theme.GetConcreteColor(token)));
+        return styles;
+    }
+
+    private static readonly string[] s_extensionThemeForegroundTokens =
+    ["accent", "border", "success", "error", "warning", "muted", "dim", "text", "thinkingText",
+        "toolTitle", "toolOutput", "mdHeading", "mdLink", "mdCode", "mdQuote", "thinkingOff"];
+    private static readonly string[] s_extensionThemeBackgroundTokens =
+    ["selectedBg", "searchMatchBg", "userMessageBg", "customMessageBg", "toolPendingBg", "toolSuccessBg", "toolErrorBg"];
+
+    private static string ToHex(TerminalTheme.Rgb color) => $"#{color.R:x2}{color.G:x2}{color.B:x2}";
+
+    private static IReadOnlyList<PiSharpExtensionUiLine> NormalizeExtensionLines(
+        IReadOnlyList<PiSharpExtensionUiLine> lines) => lines.Take(200)
+        .Select(line => new PiSharpExtensionUiLine(TerminalSafeText.Normalize(line.Text ?? string.Empty),
+            line.Style is { Length: <= 32 } style && style.All(character => char.IsAsciiLetterOrDigit(character) || character == '_')
+                ? style : null)).ToArray();
+
+    private static string NormalizeExtensionStatus(string value) =>
+        TerminalSafeText.Normalize(value).Replace('\n', ' ');
+
+    private void QueueExtensionUiContextChanged()
+    {
+        if (_extensionUiContextChanged is null || Interlocked.Exchange(ref _extensionUiContextChangeQueued, 1) != 0)
+            return;
+        ThreadPool.QueueUserWorkItem(static state =>
+        {
+            var screen = (TerminalScreen)state!;
+            Interlocked.Exchange(ref screen._extensionUiContextChangeQueued, 0);
+            try { screen._extensionUiContextChanged?.Invoke(); }
+            catch (Exception error) { Console.Error.WriteLine($"Extension UI redraw callback failed: {error.Message}"); }
+        }, this);
+    }
+
+    internal void SetWorkingStatus(string? status, bool render = true)
+    {
+        var safeStatus = string.IsNullOrWhiteSpace(status) ? null :
+            TerminalSafeText.Normalize(status).Replace('\n', ' ');
+        bool changed;
+        lock (_gate)
+        {
+            if (!_active) return;
+            changed = _workingStatus != safeStatus;
+            _workingStatus = safeStatus;
             if (render) _render.Request();
+        }
+        if (changed) QueueExtensionUiContextChanged();
+    }
+
+    internal void SetWorkingVisible(bool visible)
+    {
+        lock (_gate)
+        {
+            if (!_active || _workingVisible == visible) return;
+            _workingVisible = visible;
+            _render.Request();
+        }
+    }
+
+    internal void SetWorkingFrame(string frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _workingFrame = TerminalSafeText.Normalize(frame).Replace('\n', ' ');
+            _render.Request();
+        }
+    }
+
+    internal void SetExtensionWorkingPresentation(string? message, bool? visible, string frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        lock (_gate)
+        {
+            if (!_active) return;
+            _extensionWorkingMessage = string.IsNullOrWhiteSpace(message) ? null :
+                TerminalSafeText.Normalize(message).Replace('\n', ' ');
+            _extensionWorkingVisible = visible;
+            _workingFrame = TerminalSafeText.Normalize(frame).Replace('\n', ' ');
+            _render.Request();
+        }
+    }
+
+    internal void SetExtensionTitle(string title)
+    {
+        ArgumentNullException.ThrowIfNull(title);
+        var safe = TerminalSafeText.Normalize(title).Replace('\n', ' ');
+        if (safe.Length > 256) safe = safe[..256];
+        lock (_gate)
+        {
+            if (!_active) return;
+            _extensionTitle = safe;
+            _originalOut.Write("\u001b]0;" + safe + "\u0007");
+            _originalOut.Flush();
         }
     }
 
@@ -779,6 +992,7 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             var columns = Columns();
             var rows = Rows();
+            if (columns != _lastColumns || rows != _lastRows) QueueExtensionUiContextChanged();
             if (_lastColumns != 0 && columns != _lastColumns)
             {
                 _conversationPresentation.ReRenderMarkdown();
@@ -1155,6 +1369,7 @@ public sealed class TerminalScreen : IDisposable
                 }
 
                 Attempt(() => _originalOut.Write((_useAlternateScreen ? "\u001b[?2026h" : "") + _images.CleanupControlSequence()));
+                if (_extensionTitle.Length > 0) Attempt(() => _originalOut.Write("\u001b]0;\u0007"));
                 if (_useAlternateScreen)
                 {
                     Attempt(() => _originalOut.Write(TerminalMouseMode.Disable));
@@ -1255,6 +1470,7 @@ public sealed class TerminalScreen : IDisposable
     {
         var columns = Columns();
         var rows = Rows();
+        if (columns != _lastColumns || rows != _lastRows) QueueExtensionUiContextChanged();
         if (_lastColumns != 0 && _lastColumns != columns)
             _transcript.ReRenderThemedSegments(_theme);
         if (_startupPanelActive)
@@ -1294,9 +1510,15 @@ public sealed class TerminalScreen : IDisposable
             _editorPanel, _panelCursorRow, _panelCursorColumn, _panelCursorVisible, _panelBottomMargin,
             _notifications.Status, _notifications.StatusKind, _notifications.StatusIsExtension,
             _startupHeader?.Invoke(_theme, columns, _startupExpanded),
-            _startupContent?.Invoke(_theme, columns, _startupExpanded), _editorSuggestions, _workingStatus,
+            _startupContent?.Invoke(_theme, columns, _startupExpanded), _editorSuggestions,
+            !_workingVisible || _extensionWorkingVisible == false || _workingStatus is null
+                ? null : _extensionWorkingMessage ?? _workingStatus,
             _notifications.CopyStatus, _notifications.CopyStatusKind,
-            _editorPaddingX, _outputPad, _autocompleteMaxVisible, _showHardwareCursor);
+            _editorPaddingX, _outputPad, _autocompleteMaxVisible, _showHardwareCursor, _extensionStatuses,
+            _extensionHeader, _extensionWidgetsAbove, _extensionWidgetsBelow, _extensionFooter,
+            _workingVisible && _extensionWorkingVisible != false ? _workingFrame : null,
+            _extensionCustomOverlay, _extensionCustomOverlayOptions,
+            _extensionCustomPanel ?? _extensionEditorReplacement);
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;

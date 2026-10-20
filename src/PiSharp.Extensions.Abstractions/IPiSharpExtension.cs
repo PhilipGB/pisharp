@@ -12,6 +12,10 @@ public interface IPiSharpExtension
 /// <summary>Registers the capabilities supported by the current PiSharp extension API version.</summary>
 public partial interface IPiSharpExtensionBuilder
 {
+    /// <summary>Gets a package-owned UI registration capability valid until the package is removed or reloaded.</summary>
+    IPiSharpExtensionUiRegistration Ui => throw new NotSupportedException(
+        "This extension host does not provide persistent UI registrations.");
+
     /// <summary>Registers a command. The argument is the text following the command name.</summary>
     void AddCommand(string name, Func<string, CancellationToken, Task<string>> handler,
         string? description = null);

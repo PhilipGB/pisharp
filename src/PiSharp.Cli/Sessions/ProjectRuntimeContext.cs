@@ -80,7 +80,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                 bootstrapExtensions = ExtensionCatalog.Load(agentDirectory, cwd, projectTrusted: false,
                     discover: !arguments.NoExtensions, additionalPaths: cliExtensions,
                     userPaths: userExtensions, builtins: [], userPackages: baseSettings.Packages,
-                    managedPackageRoots: managedPackageRoots);
+                    managedPackageRoots: managedPackageRoots,
+                    uiPackageFactory: extensionUi as IPiSharpExtensionUiPackageFactory);
             }
 
             var trusted = trustedOverride ?? await trustStore.ResolveAsync(cwd, arguments.ProjectTrustOverride,
@@ -228,7 +229,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 userPackages: configuration.BaseUserSettings.Packages,
                 projectPackages: configuration.ProjectSettings?.Packages,
                 managedPackageRoots: configuration.ManagedPackageRoots,
-                nativeExtensionPackageRoots: configuration.NativeExtensionPackageRoots);
+                nativeExtensionPackageRoots: configuration.NativeExtensionPackageRoots,
+                uiPackageFactory: configuration.ExtensionUi as IPiSharpExtensionUiPackageFactory);
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);
             var effectiveMcpServers = McpRuntime.SelectEffectiveServers(mcp.Servers,
                 extensions.Registration.McpServers);
@@ -372,7 +374,11 @@ internal sealed class ProjectRuntimeContext : IDisposable
             initialActiveToolNames: initialNames,
             extensionLifecycleHandlers: Extensions.Registration.RegisteredLifecycleHandlers,
             extensionContextConfiguration: new PiSharpExtensionContextConfiguration(WorkingDirectory,
-                Configuration.ExtensionMode, Configuration.HasUserInterface, Trusted, Configuration.ExtensionUi),
+                Configuration.ExtensionMode, Configuration.HasUserInterface, Trusted, Configuration.ExtensionUi)
+            {
+                CreateCallbackUi = sourcePath => Extensions.Registration.CreateCallbackUi(sourcePath,
+                    Configuration.ExtensionUi)
+            },
             beforeAgentStartHandlers: Extensions.Registration.BeforeAgentStartHandlers,
             getAdditionalSystemInstructions: () => McpRuntime.RenderServerContext(EffectiveMcpServers, McpManager),
             getSkillInstructions: (activeToolNames, declaredToolNames) => Resources.SystemInstructions(

@@ -5,6 +5,7 @@ using System.Threading.Channels;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
 using PiSharp.Cli.Protocols;
+using PiSharp.Cli.Tui;
 using PiSharp.Extensions.Abstractions;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Extensions;
@@ -60,7 +61,7 @@ public sealed class RpcModeTests
                 beforeAgentStartHandlers: registration.BeforeAgentStartHandlers), session);
             var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
                 extensions: registration, getProjectTrusted: () => true,
-                extensionUi: extensionUi).ServeAsync();
+                extensionUi: extensionUi, extensionHasUserInterface: false).ServeAsync();
 
             channel.Writer.TryWrite("{\"id\":\"native-user\",\"type\":\"prompt\",\"message\":\"/send-user\"}");
             await WaitForAsync(output, "\"id\":\"native-user\",\"type\":\"response\",\"command\":\"prompt\"");
@@ -76,7 +77,9 @@ public sealed class RpcModeTests
             Assert.False(commandContext.HasPendingMessages);
             Assert.Equal("rpc", commandContext.Mode);
             Assert.False(commandContext.HasUserInterface);
-            Assert.Same(extensionUi, commandContext.Ui);
+            Assert.NotSame(extensionUi, commandContext.Ui);
+            await Assert.ThrowsAsync<ObjectDisposedException>(() =>
+                commandContext.Ui.SelectAsync("Expired", ["one"]));
             Assert.Equal(["select:Choose", "confirm:Confirm", "input:Value", "notify:warning:rpc notification"],
                 extensionUi.Calls);
             Assert.Equal([PiSharp.Extensions.Abstractions.PiSharpTurnMessageType.User,
@@ -161,6 +164,267 @@ public sealed class RpcModeTests
             if (serving is not null) await serving.WaitAsync(TimeSpan.FromSeconds(5));
             Directory.Delete(cwd, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task RpcExtensionUiRoundTripsDialogsAndEmitsPersistentPresentationEvents()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-extension-ui-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        using var error = new StringWriter();
+        IPiSharpExtensionUiPackageScope? packageUi = null;
+        Task? serving = null;
+        try
+        {
+            var startupUi = new ProjectTrustStartupUi(true, "rpc", output, error);
+            using (var rolledBackUi = startupUi.CreatePackageScope("rolled-back-rpc-ui"))
+            {
+                rolledBackUi.SetStatus("stale", "should not be emitted");
+                rolledBackUi.SetWidget("stale", ["should not be emitted"]);
+                rolledBackUi.SetEditorText("stale draft");
+                rolledBackUi.Notify("stale notification");
+            }
+            var ui = startupUi.CreatePackageScope("rpc-ui-fixture");
+            packageUi = ui;
+            ui.SetStatus("ready", "Ready");
+            ui.SetWidget("dashboard", ["ready"], PiSharpExtensionWidgetPlacement.BelowEditor);
+            ui.SetTitle("Extension dashboard");
+            ui.SetEditorText("draft before modal");
+
+            var registration = new ExtensionRegistration();
+            var adapter = new NativeExtensionRegistrationAdapter(registration);
+            adapter.AddCommand("drive-ui", async (_, cancellationToken) =>
+            {
+                var selected = await ui.SelectWithOptionsAsync("Choose", ["alpha", "beta"],
+                    new(TimeSpan.FromSeconds(12)), cancellationToken);
+                var confirmed = await ui.ConfirmAsync("Confirm", "Continue?", cancellationToken);
+                var text = await ui.InputAsync("Name", "Your name", cancellationToken);
+                var edited = await ui.EditAsync("Edit message", "starting text", cancellationToken);
+                Assert.Equal(string.Empty, ui.GetEditorText());
+                ui.SetEditorText("updated draft");
+                ui.PasteToEditor("pasted text");
+                ui.Notify("RPC UI journey completed", "warning");
+                ui.SetStatus("ready", "Done");
+                ui.SetWidget("dashboard", (IReadOnlyList<string>?)null);
+                return $"{selected}:{confirmed}:{text}:{edited}";
+            });
+            adapter.Close();
+
+            var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)),
+                new ConversationSession(cwd, "rpc-ui-fixture", null));
+            serving = new RpcMode(new CommandReader(channel.Reader), output, run,
+                extensions: registration, extensionUi: startupUi, extensionHasUserInterface: true).ServeAsync();
+
+            await WaitForAsync(output, "\"method\":\"setStatus\"");
+            await WaitForAsync(output, "\"method\":\"setWidget\"");
+            await WaitForAsync(output, "\"method\":\"setTitle\"");
+            await WaitForAsync(output, "\"method\":\"set_editor_text\"");
+            Assert.DoesNotContain(output.Lines(), line => line.Contains("should not be emitted", StringComparison.Ordinal) ||
+                line.Contains("stale draft", StringComparison.Ordinal) ||
+                line.Contains("stale notification", StringComparison.Ordinal));
+            var initialStatus = FindRpcUiRequest(output, "setStatus");
+            Assert.Equal("Ready", initialStatus.GetProperty("statusText").GetString());
+            var initialWidget = FindRpcUiRequest(output, "setWidget");
+            Assert.Equal("dashboard", initialWidget.GetProperty("widgetKey").GetString());
+            Assert.Equal("belowEditor", initialWidget.GetProperty("widgetPlacement").GetString());
+
+            channel.Writer.TryWrite("{\"id\":\"drive-ui\",\"type\":\"prompt\",\"message\":\"/drive-ui\"}");
+            var select = await WaitForRpcUiRequestAsync(output, "select");
+            Assert.Equal(12000, select.GetProperty("timeout").GetInt32());
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                type = "extension_ui_response",
+                id = select.GetProperty("id").GetString(),
+                value = "beta"
+            }));
+
+            var confirm = await WaitForRpcUiRequestAsync(output, "confirm");
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                type = "extension_ui_response",
+                id = confirm.GetProperty("id").GetString(),
+                confirmed = true
+            }));
+
+            var input = await WaitForRpcUiRequestAsync(output, "input");
+            Assert.Equal("Your name", input.GetProperty("placeholder").GetString());
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                type = "extension_ui_response",
+                id = input.GetProperty("id").GetString(),
+                value = "Ada"
+            }));
+
+            var editor = await WaitForRpcUiRequestAsync(output, "editor");
+            Assert.Equal("starting text", editor.GetProperty("prefill").GetString());
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                type = "extension_ui_response",
+                id = editor.GetProperty("id").GetString(),
+                value = "line one\nline two"
+            }));
+
+            await WaitForAsync(output, "\"statusText\":\"Done\"");
+            await WaitForAsync(output, "\"method\":\"notify\"");
+            await WaitForAsync(output, "\"text\":\"pasted text\"");
+            await WaitForAsync(output, "\"id\":\"drive-ui\"");
+            Assert.Contains(output.Lines(), line => line.Contains("\"text\":\"updated draft\"", StringComparison.Ordinal));
+            Assert.Contains(output.Lines(), line => line.Contains("line one\\nline two", StringComparison.Ordinal));
+            Assert.Contains(output.Lines(), line => line.Contains("\"method\":\"setWidget\",\"widgetKey\":\"dashboard\"", StringComparison.Ordinal) &&
+                !line.Contains("\"widgetLines\"", StringComparison.Ordinal));
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            if (serving is not null) await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            packageUi?.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RpcExtensionUiCorrelatesConcurrentRequestsAndHonorsTimeoutAndCancellation()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-ui-correlation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        using var error = new StringWriter();
+        var startupUi = new ProjectTrustStartupUi(true, "rpc", output, error);
+        using var packageUi = startupUi.CreatePackageScope("rpc-ui-correlation");
+        using var revocableUi = startupUi.CreatePackageScope("rpc-ui-revocation");
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)),
+            new ConversationSession(cwd, "rpc-ui-correlation", null));
+        var serving = new RpcMode(new CommandReader(channel.Reader), output, run,
+            extensionUi: startupUi, extensionHasUserInterface: true).ServeAsync();
+        try
+        {
+            var selectTask = packageUi.SelectAsync("Concurrent select", ["selected"]);
+            var inputTask = packageUi.InputAsync("Concurrent input");
+            var select = await WaitForRpcUiRequestAsync(output, "select", "Concurrent select");
+            var input = await WaitForRpcUiRequestAsync(output, "input", "Concurrent input");
+            Assert.NotEqual(select.GetProperty("id").GetString(), input.GetProperty("id").GetString());
+
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                type = "extension_ui_response",
+                id = input.GetProperty("id").GetString(),
+                value = "input first"
+            }));
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                type = "extension_ui_response",
+                id = select.GetProperty("id").GetString(),
+                value = "selected"
+            }));
+            Assert.Equal("input first", await inputTask.WaitAsync(TimeSpan.FromSeconds(2)));
+            Assert.Equal("selected", await selectTask.WaitAsync(TimeSpan.FromSeconds(2)));
+
+            var timeoutTask = packageUi.InputWithOptionsAsync("Timed input", dialogOptions:
+                new(TimeSpan.FromMilliseconds(40)));
+            var timeoutRequest = await WaitForRpcUiRequestAsync(output, "input", "Timed input");
+            Assert.Equal(40, timeoutRequest.GetProperty("timeout").GetInt32());
+            Assert.Null(await timeoutTask.WaitAsync(TimeSpan.FromSeconds(2)));
+
+            using var cancellation = new CancellationTokenSource();
+            var cancelledTask = packageUi.ConfirmAsync("Cancelled confirm", "Wait", cancellation.Token);
+            var cancelledRequest = await WaitForRpcUiRequestAsync(output, "confirm", "Cancelled confirm");
+            await cancellation.CancelAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelledTask);
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                type = "extension_ui_response",
+                id = cancelledRequest.GetProperty("id").GetString(),
+                confirmed = true
+            }));
+            channel.Writer.TryWrite("{\"type\":\"extension_ui_response\",\"id\":\"unknown-request\",\"value\":\"ignored\"}");
+
+            var removedDialogTask = revocableUi.SelectWithOptionsAsync("Removed select", ["one"],
+                new(TimeSpan.FromSeconds(10)));
+            _ = await WaitForRpcUiRequestAsync(output, "select", "Removed select");
+            revocableUi.Dispose();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => removedDialogTask.WaitAsync(
+                TimeSpan.FromSeconds(2)));
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        Assert.DoesNotContain(output.Lines(), line => line.Contains("\"type\":\"response\"", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task RpcShutdownCancelsPendingExtensionDialogAndFlushesStartupUiEvents()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-rpc-ui-shutdown-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        var channel = Channel.CreateUnbounded<string>();
+        using var output = new LockedWriter();
+        using var error = new StringWriter();
+        var startupUi = new ProjectTrustStartupUi(true, "rpc", output, error);
+        using var packageUi = startupUi.CreatePackageScope("rpc-ui-shutdown");
+        packageUi.SetStatus("startup", "ready");
+        var run = await ConversationRun.OpenAsync(new PiAgent(new StubClient(), new CodingTools(cwd)),
+            new ConversationSession(cwd, "rpc-ui-shutdown", null));
+        string? shutdownDialogResult = "not called";
+        var mode = new RpcMode(new CommandReader(channel.Reader), output, run,
+            extensionUi: startupUi, extensionHasUserInterface: true);
+        mode.AfterServeBeforeUiShutdown = async _ =>
+        {
+            shutdownDialogResult = await packageUi.SelectAsync("Shutdown callback select", ["one"]);
+            packageUi.Notify("shutdown callback notification");
+        };
+        var serving = mode.ServeAsync();
+
+        try
+        {
+            await WaitForAsync(output, "\"method\":\"setStatus\"");
+            var pendingDialog = packageUi.SelectAsync("Shutdown select", ["one"]);
+            _ = await WaitForRpcUiRequestAsync(output, "select", "Shutdown select");
+
+            channel.Writer.TryComplete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pendingDialog);
+            Assert.Null(shutdownDialogResult);
+            Assert.Contains(output.Lines(), line => line.Contains("\"method\":\"notify\"", StringComparison.Ordinal) &&
+                line.Contains("shutdown callback notification", StringComparison.Ordinal));
+            Assert.DoesNotContain(output.Lines(), line =>
+                line.Contains("\"type\":\"response\"", StringComparison.Ordinal));
+        }
+        finally
+        {
+            channel.Writer.TryComplete();
+            if (!serving.IsCompleted) await serving.WaitAsync(TimeSpan.FromSeconds(5));
+            packageUi.Dispose();
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    private static async Task<JsonElement> WaitForRpcUiRequestAsync(LockedWriter output, string method,
+        string? title = null)
+    {
+        await WaitForAsync(output, $"\"method\":\"{method}\"");
+        if (title is not null) await WaitForAsync(output, $"\"title\":\"{title}\"");
+        return FindRpcUiRequest(output, method, title);
+    }
+
+    private static JsonElement FindRpcUiRequest(LockedWriter output, string method, string? title = null)
+    {
+        foreach (var line in output.Lines())
+        {
+            using var document = JsonDocument.Parse(line);
+            var root = document.RootElement;
+            if (root.TryGetProperty("type", out var type) && type.GetString() == "extension_ui_request" &&
+                root.TryGetProperty("method", out var requestMethod) && requestMethod.GetString() == method &&
+                (title is null || root.TryGetProperty("title", out var requestTitle) && requestTitle.GetString() == title))
+                return root.Clone();
+        }
+        throw new Xunit.Sdk.XunitException($"RPC UI request '{method}' was not written.");
     }
 
     [Fact]

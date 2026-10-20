@@ -18,6 +18,7 @@ public sealed partial class ExtensionCatalog
             else
             {
                 _loadedExtensions.RemoveAt(index);
+                Registration.DisposePackageUiScope(previous.Path);
                 if (_nativePackageHandles[index] is { } package) package.Unload();
                 else _contexts[index].Unload();
                 _contexts.RemoveAt(index);

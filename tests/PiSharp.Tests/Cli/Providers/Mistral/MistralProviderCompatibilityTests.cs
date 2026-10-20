@@ -512,7 +512,7 @@ public sealed class MistralProviderCompatibilityTests
         var selection = new ModelSelection(new ProviderProfile("mistral", "Mistral", new Uri($"http://127.0.0.1:{port}/v1"),
             true, false, null, null, [model], Api: "mistral-conversations"), model, "fixture-key", true, "fixture");
         await using var updates = ProviderChatClientFactory.Create(selection,
-            new ProviderRetrySettings(TimeoutMs: 30), httpIdleTimeoutMs: 1000)
+            new ProviderRetrySettings(TimeoutMs: 3000), httpIdleTimeoutMs: 1000)
             .GetStreamingResponseAsync([new ChatMessage(ChatRole.User, "hello")], cancellationToken: cancellation.Token)
             .GetAsyncEnumerator(cancellation.Token);
 

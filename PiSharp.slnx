@@ -8,6 +8,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/PiSharp.Tests/PiSharp.Tests.csproj" />
     <Project Path="tests/fixtures/NativeExtensionFixture/NativeExtensionFixture.csproj" />
+    <Project Path="tests/fixtures/NativeExtensionInteractiveUiFixture/NativeExtensionInteractiveUiFixture.csproj" />
     <Project Path="tests/fixtures/NativeExtensionPrivateDependency/NativeExtensionPrivateDependency.csproj" />
     <Project Path="tests/fixtures/NativeExtensionPrivateDependencyV2/NativeExtensionPrivateDependencyV2.csproj" />
     <Project Path="tests/fixtures/NativeExtensionFixtureV2/NativeExtensionFixtureV2.csproj" />
