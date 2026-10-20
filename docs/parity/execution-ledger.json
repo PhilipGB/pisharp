@@ -11969,19 +11969,30 @@
     "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "receipt": "docs/parity/fixtures/native-extension-context-mutation-2026-10-19.md",
     "implementation": "Additive compiled extension context and context_with_system callbacks at the route-aware provider boundary; detached mutable messages, hidden system restoration, separately editable system instructions, read-only tool names and host-owned executable tools.",
-    "focused_tests": "16/16 passed, zero failed/skipped: 12 context mutation cases and four historical/compiled API compatibility cases, including replacement, removal and collectible load-context checks.",
+    "focused_tests": "Review-correction selection: 23/23 dispatcher, transcript and Anthropic physical-projection tests; Anthropic provider group: 51/51. The initial focused extension/API suite passed 16/16, including historical and compiled-package compatibility.",
     "local_verification": {
       "restore": "passed with NuGetAudit=false because the shared home NuGet HTTP cache is read-only",
       "format": "passed",
       "build": "passed with zero warnings and errors",
-      "dotnet_tests": "2,497 passed, 0 failed, 0 skipped",
+      "dotnet_tests": "2,505 passed, 0 failed, 0 skipped",
       "architecture": "7/7 passed",
       "node_terminal": "24/24 passed",
       "python_terminal": "50/50 passed",
       "documentation_paths": "148 documents, 568 references; passed",
       "mcp_conformance": "No regressions; the same eight classified baseline failures remain"
     },
-    "publication": "PR #19 draft and exact-head CI pending. Do not merge.",
+    "publication": "PR #19 remains draft; fresh exact-head push and PR Linux CI results are recorded in its description. Do not merge.",
+    "review_correction": {
+      "reviewed_head": "3cc4df1368aea3a74712b0799b78885dca0134d8",
+      "finding": "Structural native context edits collapsed the request-local Anthropic transcript and erased authoritative historical system/tool revisions; serialized-content matching also confused edited or duplicate messages when rebasing boundaries.",
+      "correction": "Carry original message-index lineage through both native stages. Rebase existing transcript revisions only for structural message changes, preserve timeline on ordinary content/instruction edits, and project Anthropic updates at message boundaries while retaining tool-result ordering. Explicit full-context system removal clears prompt text in provider projection.",
+      "regressions": [
+        "Dispatcher regression reproduced the old boundary 2 versus expected boundary 1 after removing an intervening message while editing retained message content.",
+        "Anthropic physical-request regression verifies the A-to-B tool update remains between retained users after the same structural edit and instruction change.",
+        "Anthropic physical-adapter regression verifies full system removal does not restore prompt text and still projects the retained tool revision.",
+        "Lineage tests cover first-stage edits/removal, duplicate content, insertion, reordering and replacement messages."
+      ]
+    },
     "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No broad parity promotion."
   }
 }

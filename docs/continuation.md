@@ -8,9 +8,13 @@ The Pi pin remains `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. This increment
 adds ordered native `context` and `context_with_system` callbacks at the final
 route-aware provider boundary, with detached message edits, host-owned tool
 configuration, request-only prompt changes, source-attributed error isolation,
-and retry/compaction behavior. Focused Runtime tests and a package compiled
-against the current public API are in place; full required validation and PR #19
-publication remain; see the [context mutation receipt](parity/fixtures/native-extension-context-mutation-2026-10-19.md).
+and retry/compaction behavior. The review correction preserves Anthropic
+system/tool revision history across structural context edits and verifies the
+final physical request projection. Local validation passes 2,505 .NET tests,
+format, warning-as-error build, architecture, Node, Python, documentation, and
+MCP baseline checks. Fresh exact-head Linux CI is recorded in the PR #19
+description and remains the final publication gate. See the
+[context mutation receipt](parity/fixtures/native-extension-context-mutation-2026-10-19.md).
 PR #19 must stay a draft and must not be merged. Broad
 extension parity remains `in_progress`; no next milestone is started.
 

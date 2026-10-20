@@ -16,6 +16,7 @@ internal sealed partial class NativeExtensionEventDispatcher
         CancellationToken cancellationToken)
     {
         var current = messages.ToList();
+        var currentLineage = Enumerable.Range(0, current.Count).Select(index => (int?)index).ToList();
         var messagesChanged = false;
         var messageStructureChanged = false;
         foreach (var handler in registration.ContextHandlers)
@@ -23,10 +24,16 @@ internal sealed partial class NativeExtensionEventDispatcher
             cancellationToken.ThrowIfCancellationRequested();
             List<ChatMessage> working;
             ChatMessage[] visible;
+            int?[] visibleLineage;
+            int?[] workingLineage;
             try
             {
                 working = PiSharpContextTransformPipeline.CloneMessagesForNativeContext(current).ToList();
-                visible = working.Where(message => message.Role != ChatRole.System).ToArray();
+                workingLineage = currentLineage.ToArray();
+                var visibleIndices = Enumerable.Range(0, working.Count)
+                    .Where(index => working[index].Role != ChatRole.System).ToArray();
+                visible = visibleIndices.Select(index => working[index]).ToArray();
+                visibleLineage = visibleIndices.Select(index => workingLineage[index]).ToArray();
             }
             catch (Exception error)
             {
@@ -49,6 +56,7 @@ internal sealed partial class NativeExtensionEventDispatcher
                     var detachedVisible = PiSharpContextTransformPipeline.CloneMessagesForNativeContext(visible);
                     var priorSystems = working.Where(message => message.Role == ChatRole.System).ToArray();
                     current = MergeByOriginalPositions(working, detachedVisible, priorSystems);
+                    currentLineage = workingLineage.ToList();
                 }
                 catch (Exception error)
                 {
@@ -64,7 +72,11 @@ internal sealed partial class NativeExtensionEventDispatcher
                 if (listChanged)
                 {
                     var restoredSystem = SystemMessageTranscript.ReplayForContext(working);
+                    var replacementLineage = MapLineage(visible, visibleLineage, eventData.Messages);
                     current = restoredSystem is null ? replacement.ToList() : [restoredSystem, .. replacement];
+                    currentLineage = restoredSystem is null
+                        ? replacementLineage
+                        : [null, .. replacementLineage];
                     messagesChanged = true;
                     messageStructureChanged |= HasMessageStructureChanged(visible, eventData.Messages);
                 }
@@ -73,12 +85,14 @@ internal sealed partial class NativeExtensionEventDispatcher
                     current = MergeByOriginalPositions(working,
                         PiSharpContextTransformPipeline.CloneMessagesForNativeContext(visible),
                         working.Where(message => message.Role == ChatRole.System).ToArray());
+                    currentLineage = workingLineage.ToList();
                 }
             }
             catch (Exception error)
             {
                 Report(error, handler.SourceInfo, "context", null);
                 current = handlerBaseline.ToList();
+                currentLineage = workingLineage.ToList();
             }
         }
 
@@ -94,6 +108,7 @@ internal sealed partial class NativeExtensionEventDispatcher
             }
             var beforeCallback = PiSharpContextTransformPipeline.CloneMessagesForNativeContext(working);
             var beforeReferences = working.ToArray();
+            var beforeLineage = currentLineage.ToArray();
             var initialInstructions = systemInstructions;
             var initiallyLedWithSystem = working.FirstOrDefault()?.Role == ChatRole.System;
             var eventData = new NativeExtensions.PiSharpContextWithSystemEvent(working,
@@ -106,7 +121,9 @@ internal sealed partial class NativeExtensionEventDispatcher
                 // valid in-place changes after a throw, as the upstream event runner does.
                 try
                 {
+                    var nextLineage = MapLineage(beforeReferences, beforeLineage, working);
                     current = ValidateAndClone(working);
+                    currentLineage = nextLineage;
                     systemInstructions = eventData.SystemInstructions;
                     messageStructureChanged |= HasMessageStructureChanged(beforeReferences, working);
                     if (!SameMessages(beforeCallback, current) || !string.Equals(initialInstructions,
@@ -125,7 +142,9 @@ internal sealed partial class NativeExtensionEventDispatcher
 
             try
             {
+                var nextLineage = MapLineage(beforeReferences, beforeLineage, eventData.Messages);
                 current = ValidateAndClone(eventData.Messages);
+                currentLineage = nextLineage;
                 systemInstructions = eventData.SystemInstructions;
                 messageStructureChanged |= HasMessageStructureChanged(beforeReferences, eventData.Messages);
                 if (!SameMessages(beforeCallback, current) || !string.Equals(initialInstructions,
@@ -138,10 +157,11 @@ internal sealed partial class NativeExtensionEventDispatcher
             {
                 Report(error, handler.SourceInfo, "context_with_system", null);
                 current = beforeCallback.ToList();
+                currentLineage = beforeLineage.ToList();
             }
         }
 
-        return new(current, systemInstructions, messagesChanged, messageStructureChanged);
+        return new(current, currentLineage.ToArray(), systemInstructions, messagesChanged, messageStructureChanged);
     }
 
     private async Task<bool> InvokeContextHandlerAsync(
@@ -236,6 +256,31 @@ internal sealed partial class NativeExtensionEventDispatcher
         return false;
     }
 
+    private static List<int?> MapLineage(IReadOnlyList<ChatMessage> before, IReadOnlyList<int?> beforeLineage,
+        IList<ChatMessage>? after)
+    {
+        if (after is null) return [];
+
+        var sourceIndices = new Dictionary<ChatMessage, int>(ReferenceEqualityComparer.Instance);
+        var ambiguousSources = new HashSet<ChatMessage>(ReferenceEqualityComparer.Instance);
+        for (var index = 0; index < before.Count; index++)
+            if (!sourceIndices.TryAdd(before[index], index)) ambiguousSources.Add(before[index]);
+
+        var afterCounts = new Dictionary<ChatMessage, int>(ReferenceEqualityComparer.Instance);
+        foreach (var message in after)
+            afterCounts[message] = afterCounts.GetValueOrDefault(message) + 1;
+
+        var result = new List<int?>(after.Count);
+        foreach (var message in after)
+        {
+            result.Add(afterCounts[message] == 1 && !ambiguousSources.Contains(message) &&
+                sourceIndices.TryGetValue(message, out var sourceIndex)
+                    ? beforeLineage[sourceIndex]
+                    : null);
+        }
+        return result;
+    }
+
     private static bool SameMessages(IReadOnlyList<ChatMessage> left, IReadOnlyList<ChatMessage> right)
     {
         if (left.Count != right.Count) return false;
@@ -285,4 +330,5 @@ internal sealed partial class NativeExtensionEventDispatcher
 }
 
 internal sealed record NativeContextMutationResult(IReadOnlyList<ChatMessage> Messages,
-    string? SystemInstructions, bool MessagesChanged, bool MessageStructureChanged);
+    IReadOnlyList<int?> MessageLineage, string? SystemInstructions, bool MessagesChanged,
+    bool MessageStructureChanged);

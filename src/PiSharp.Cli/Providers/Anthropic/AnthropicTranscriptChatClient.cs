@@ -12,7 +12,7 @@ using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli;
 
-internal sealed record AnthropicSystemUpdate(int BeforeAssistant, JsonObject Message);
+internal sealed record AnthropicSystemUpdate(int BeforeMessage, JsonObject Message);
 
 internal sealed class AnthropicTranscriptRequest
 {
@@ -167,11 +167,15 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
         var systemText = systemSupport ? initial is null ? "" : SystemMessageTranscript.Text(initial)
             : SystemMessageTranscript.CurrentText(messages);
         var updates = new List<AnthropicSystemUpdate>();
-        var assistantCount = 0;
+        var messageBoundary = 0;
         foreach (var message in initial is null ? messages : messages.Skip(1))
         {
-            if (message.Role == ChatRole.Assistant) assistantCount++;
-            if (message.Role != ChatRole.System || !systemSupport) continue;
+            if (message.Role != ChatRole.System)
+            {
+                messageBoundary++;
+                continue;
+            }
+            if (!systemSupport) continue;
             var blocks = new JsonArray();
             var text = SystemMessageTranscript.Text(message, update: true);
             if (text.Length > 0) blocks.Add(new JsonObject { ["type"] = "text", ["text"] = text });
@@ -184,7 +188,7 @@ internal sealed class AnthropicTranscriptChatClient(IChatClient inner, ModelDesc
                 foreach (var tool in added)
                     blocks.Add(new JsonObject { ["type"] = "tool_addition", ["tool"] = new JsonObject { ["type"] = "tool_definition", ["definition"] = toolDefinitions.Create(tool) } });
             }
-            if (blocks.Count > 0) updates.Add(new(assistantCount, new JsonObject { ["role"] = "system", ["content"] = blocks }));
+            if (blocks.Count > 0) updates.Add(new(messageBoundary, new JsonObject { ["role"] = "system", ["content"] = blocks }));
         }
         var thinkingBudgets = ThinkingBudgetPolicy.Read(options?.AdditionalProperties);
         var requestOptions = options?.Clone() ?? new ChatOptions();

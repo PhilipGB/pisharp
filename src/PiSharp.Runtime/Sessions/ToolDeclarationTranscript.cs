@@ -25,7 +25,7 @@ internal sealed class ToolDeclarationTranscript
     }));
 
     internal static JsonElement? ApplyContextMutation(JsonElement transcript,
-        IReadOnlyList<ChatMessage> sourceMessages, IReadOnlyList<ChatMessage> updatedMessages,
+        int sourceMessageCount, IReadOnlyList<int?> messageLineage,
         string? instructions, bool instructionsChanged, bool messageStructureChanged, bool removeSystemContext)
     {
         var revisions = transcript.ValueKind == JsonValueKind.Array
@@ -38,7 +38,7 @@ internal sealed class ToolDeclarationTranscript
 
         if (messageStructureChanged)
         {
-            var mapBoundary = CreateBoundaryMapper(sourceMessages, updatedMessages);
+            var mapBoundary = CreateBoundaryMapper(sourceMessageCount, messageLineage);
             for (var index = 0; index < revisions.Count; index++)
                 revisions[index] = (mapBoundary(revisions[index].AfterMessageCount), revisions[index].Message);
         }
@@ -70,48 +70,30 @@ internal sealed class ToolDeclarationTranscript
         }));
     }
 
-    private static Func<int, int> CreateBoundaryMapper(IReadOnlyList<ChatMessage> sourceMessages,
-        IReadOnlyList<ChatMessage> updatedMessages)
+    private static Func<int, int> CreateBoundaryMapper(int sourceMessageCount,
+        IReadOnlyList<int?> messageLineage)
     {
-        try
-        {
-            var source = sourceMessages.Select(MessageSignature).ToArray();
-            var updated = updatedMessages.Select(MessageSignature).ToArray();
-            var positions = new Dictionary<string, Queue<int>>(StringComparer.Ordinal);
-            for (var index = 0; index < updated.Length; index++)
-            {
-                if (!positions.TryGetValue(updated[index], out var queue)) positions[updated[index]] = queue = new();
-                queue.Enqueue(index);
-            }
+        var sourceOccurrences = new Dictionary<int, int>();
+        foreach (var sourceIndex in messageLineage.OfType<int>())
+            sourceOccurrences[sourceIndex] = sourceOccurrences.GetValueOrDefault(sourceIndex) + 1;
+        var ambiguousSources = sourceOccurrences.Where(pair => pair.Value != 1)
+            .Select(pair => pair.Key).ToHashSet();
+        var sourceCount = Math.Max(0, sourceMessageCount);
 
-            var sourceToUpdated = new int?[source.Length];
-            var lastUpdated = -1;
-            foreach (var (signature, sourceIndex) in source.Select((signature, index) => (signature, index)))
-            {
-                if (!positions.TryGetValue(signature, out var queue)) continue;
-                while (queue.Count > 0 && queue.Peek() <= lastUpdated) queue.Dequeue();
-                if (queue.Count == 0) continue;
-                lastUpdated = queue.Dequeue();
-                sourceToUpdated[sourceIndex] = lastUpdated;
-            }
-
-            return boundary =>
-            {
-                if (boundary <= 0) return 0;
-                if (boundary >= sourceToUpdated.Length) return updated.Length;
-                for (var index = boundary; index < sourceToUpdated.Length; index++)
-                    if (sourceToUpdated[index] is { } mapped) return mapped;
-                return updated.Length;
-            };
-        }
-        catch (Exception)
+        return boundary =>
         {
-            return boundary => Math.Clamp(boundary, 0, updatedMessages.Count);
-        }
+            var sourceBoundary = Math.Clamp(boundary, 0, sourceCount);
+            var lastPrefixPosition = -1;
+            for (var position = 0; position < messageLineage.Count; position++)
+                if (messageLineage[position] is { } sourceIndex && sourceIndex >= 0 &&
+                    sourceIndex < sourceBoundary && sourceIndex < sourceCount && !ambiguousSources.Contains(sourceIndex))
+                    lastPrefixPosition = position;
+
+            // New or replaced messages have no lineage. Keep the revision immediately after
+            // the last retained source-prefix message, before any unowned messages that follow it.
+            return Math.Clamp(lastPrefixPosition + 1, 0, messageLineage.Count);
+        };
     }
-
-    private static string MessageSignature(ChatMessage message) =>
-        JsonSerializer.Serialize(message, AIJsonUtilities.DefaultOptions);
 
     internal JsonElement Project(IReadOnlyList<ChatMessage> messages, ChatOptions options)
     {

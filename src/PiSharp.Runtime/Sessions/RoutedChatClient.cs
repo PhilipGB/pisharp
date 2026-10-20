@@ -184,7 +184,8 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
             (instructionsChanged || result.MessageStructureChanged || removedSystemContext))
         {
             updated.AdditionalProperties = updated.AdditionalProperties.Clone();
-            var updatedTranscript = ToolDeclarationTranscript.ApplyContextMutation(transcript, messages, result.Messages,
+            var updatedTranscript = ToolDeclarationTranscript.ApplyContextMutation(transcript, messages.Count,
+                result.MessageLineage,
                 result.SystemInstructions, instructionsChanged, result.MessageStructureChanged, removedSystemContext);
             if (updatedTranscript is { } transcriptElement)
                 updated.AdditionalProperties["pisharp.toolTranscript"] = transcriptElement;

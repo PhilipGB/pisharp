@@ -78,6 +78,158 @@ public sealed class NativeExtensionContextMutationTests
     }
 
     [Fact]
+    public async Task StructuralContextEditKeepsRevisionBoundaryWhenRetainedMessageContentChanges()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        adapter.AddContextWithSystemHandler((eventData, _, _) =>
+        {
+            Assert.Equal([ChatRole.User, ChatRole.Assistant, ChatRole.User],
+                eventData.Messages.Select(message => message.Role));
+            eventData.Messages[0].Contents.OfType<TextContent>().Single().Text = "User A edited";
+            eventData.Messages.RemoveAt(1);
+            eventData.Messages[1].Contents.OfType<TextContent>().Single().Text = "User C edited";
+            eventData.SystemInstructions = "fresh instructions";
+            return ValueTask.CompletedTask;
+        });
+        adapter.Close();
+
+        var toolA = AIFunctionFactory.Create(() => "A", name: "tool_a", description: "tool A");
+        var toolB = AIFunctionFactory.Create(() => "B", name: "tool_b", description: "tool B");
+        var initial = new ChatMessage(ChatRole.System, "stale instructions");
+        SystemMessageTranscript.ImportMetadata(initial, JsonSerializer.SerializeToElement(new
+        {
+            toolsAdded = new[] { ToolDeclarationJson.Create(toolA) }
+        }));
+        var update = new ChatMessage(ChatRole.System, "");
+        SystemMessageTranscript.ImportMetadata(update, JsonSerializer.SerializeToElement(new
+        {
+            toolsRemoved = new[] { new { name = "tool_a" } },
+            toolsAdded = new[] { ToolDeclarationJson.Create(toolB) }
+        }));
+        var transcript = JsonSerializer.SerializeToElement(new[]
+        {
+            new { afterMessageCount = 0, message = JsonSerializer.SerializeToElement(initial, AIJsonUtilities.DefaultOptions) },
+            new { afterMessageCount = 2, message = JsonSerializer.SerializeToElement(update, AIJsonUtilities.DefaultOptions) }
+        });
+        ChatMessage[] input =
+        [
+            new(ChatRole.User, "User A"),
+            new(ChatRole.Assistant, "Assistant B"),
+            new(ChatRole.User, "User C")
+        ];
+        var dispatcher = new NativeExtensionEventDispatcher(registration, CreateContext(), _ => { });
+
+        var result = await dispatcher.DispatchContextMutationsAsync(input, "stale instructions", [toolB],
+            CancellationToken.None);
+        var projected = ToolDeclarationTranscript.ApplyContextMutation(transcript, input.Length, result.MessageLineage,
+            result.SystemInstructions, instructionsChanged: true,
+            messageStructureChanged: result.MessageStructureChanged, removeSystemContext: false);
+
+        var revisions = Assert.IsType<JsonElement>(projected).EnumerateArray().ToArray();
+        Assert.Equal([0, 1], revisions.Select(revision => revision.GetProperty("afterMessageCount").GetInt32()));
+        Assert.Equal("User A", input[0].Text);
+        Assert.Equal("Assistant B", input[1].Text);
+        Assert.Equal("User C", input[2].Text);
+        Assert.Equal("User A edited", result.Messages[0].Text);
+        Assert.Equal("User C edited", result.Messages[1].Text);
+    }
+
+    [Fact]
+    public async Task FirstContextStageTracksRetainedMessageIdentityAcrossContentEditsAndRemoval()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        adapter.AddContextHandler((eventData, _, _) =>
+        {
+            eventData.Messages[0].Contents.OfType<TextContent>().Single().Text = "User A edited";
+            eventData.Messages.RemoveAt(1);
+            eventData.Messages[1].Contents.OfType<TextContent>().Single().Text = "User C edited";
+            return ValueTask.CompletedTask;
+        });
+        adapter.Close();
+        ChatMessage[] input =
+        [
+            new(ChatRole.User, "User A"),
+            new(ChatRole.Assistant, "Assistant B"),
+            new(ChatRole.User, "User C")
+        ];
+        var dispatcher = new NativeExtensionEventDispatcher(registration, CreateContext(), _ => { });
+
+        var result = await dispatcher.DispatchContextMutationsAsync(input, "prompt", [], CancellationToken.None);
+
+        Assert.Equal([0, 2], result.MessageLineage);
+        Assert.Equal([ChatRole.User, ChatRole.User], result.Messages.Select(message => message.Role));
+        Assert.Equal("User A", input[0].Text);
+        Assert.Equal("Assistant B", input[1].Text);
+        Assert.Equal("User C", input[2].Text);
+    }
+
+    [Fact]
+    public async Task DuplicateContentDoesNotConfuseLineageWhenTheRetainedMessageIsEdited()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        adapter.AddContextWithSystemHandler((eventData, _, _) =>
+        {
+            eventData.Messages.RemoveAt(0);
+            eventData.Messages[0].Contents.OfType<TextContent>().Single().Text = "second duplicate edited";
+            return ValueTask.CompletedTask;
+        });
+        adapter.Close();
+        ChatMessage[] input =
+        [
+            new(ChatRole.User, "duplicate"),
+            new(ChatRole.User, "duplicate"),
+            new(ChatRole.User, "tail")
+        ];
+        var firstRevision = new ChatMessage(ChatRole.System, "prompt");
+        var secondRevision = new ChatMessage(ChatRole.System, "tool update");
+        var transcript = JsonSerializer.SerializeToElement(new[]
+        {
+            new { afterMessageCount = 0, message = JsonSerializer.SerializeToElement(firstRevision, AIJsonUtilities.DefaultOptions) },
+            new { afterMessageCount = 1, message = JsonSerializer.SerializeToElement(secondRevision, AIJsonUtilities.DefaultOptions) }
+        });
+        var dispatcher = new NativeExtensionEventDispatcher(registration, CreateContext(), _ => { });
+
+        var result = await dispatcher.DispatchContextMutationsAsync(input, "prompt", [], CancellationToken.None);
+        var projected = ToolDeclarationTranscript.ApplyContextMutation(transcript, input.Length,
+            result.MessageLineage, "prompt", instructionsChanged: false,
+            messageStructureChanged: result.MessageStructureChanged, removeSystemContext: false);
+
+        Assert.Equal([1, 2], result.MessageLineage);
+        var revisions = Assert.IsType<JsonElement>(projected).EnumerateArray().ToArray();
+        Assert.Equal([0, 0], revisions.Select(revision => revision.GetProperty("afterMessageCount").GetInt32()));
+        Assert.Equal("second duplicate edited", result.Messages[0].Text);
+        Assert.Equal("tail", result.Messages[1].Text);
+    }
+
+    [Fact]
+    public async Task InsertedReorderedAndReplacementMessagesHaveOnlyKnownLineage()
+    {
+        var registration = new ExtensionRegistration();
+        var adapter = new NativeExtensionRegistrationAdapter(registration);
+        ChatMessage? inserted = null;
+        adapter.AddContextWithSystemHandler((eventData, _, _) =>
+        {
+            inserted = new ChatMessage(ChatRole.User, "new message");
+            eventData.Messages = [eventData.Messages[2], eventData.Messages[0], inserted];
+            return ValueTask.CompletedTask;
+        });
+        adapter.Close();
+        ChatMessage[] input =
+        [new(ChatRole.User, "A"), new(ChatRole.User, "B"), new(ChatRole.User, "C")];
+        var dispatcher = new NativeExtensionEventDispatcher(registration, CreateContext(), _ => { });
+
+        var result = await dispatcher.DispatchContextMutationsAsync(input, "prompt", [], CancellationToken.None);
+
+        Assert.Equal([2, 0, null], result.MessageLineage);
+        Assert.True(result.MessageStructureChanged);
+        Assert.Equal(["C", "A", "new message"], result.Messages.Select(message => message.Text));
+        Assert.NotSame(inserted, result.Messages[2]);
+    }
+
+    [Fact]
     public async Task InvalidHandlerOutputRollsBackAndLaterHandlersContinueWithSourceDiagnostics()
     {
         var registration = new ExtensionRegistration();

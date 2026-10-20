@@ -37,13 +37,39 @@ prompt. Current tool functions remain host-owned.
 
 The stages run after existing legacy transforms and route-specific context
 preparation, immediately before model image filtering and the physical provider
-client. Changed request projections update the request-local Anthropic tool
-transcript so removed or replaced prompt text is not rebuilt from stale saved
-state. The persistent tool transcript and canonical conversation history are
-not mutated. The request-local dispatcher result is reused for equivalent
-physical retries and recalculated for changed context after overflow
-compaction. Package source ownership participates in extension ordering,
-configuration rollback, replacement and removal.
+client. Changed requests update the request-local Anthropic transcript while
+preserving its system and tool revision history. Prompt edits update the initial
+revision; message boundaries are rebased only for structural message edits,
+using retained message identity rather than serialized content. New, replaced,
+or ambiguous duplicate message objects have no source lineage. The persistent
+tool transcript and canonical conversation history are not mutated. The
+request-local dispatcher result is reused for equivalent physical retries and
+recalculated for changed context after overflow compaction. Package source
+ownership participates in extension ordering, configuration rollback,
+replacement and removal.
+
+## Review correction — 2026-10-20
+
+The original projection collapsed the Anthropic system/tool transcript whenever
+the native callback changed the message list. That erased earlier tool
+declaration revisions even when the callback only edited instructions or
+retained message content. The dispatcher now carries each retained message's
+original request index across both callback stages, including the hidden-system
+stage. Structural edits rebase each existing revision to the position after the
+last retained message from its original prefix; ordinary content and
+instruction edits leave revision positions intact. The Anthropic adapter inserts
+system/tool updates at those message boundaries and keeps updates after matching
+tool results and before the next assistant turn.
+
+The physical-boundary regression starts with tool A, removes A and adds B at a
+mid-conversation revision, then edits instructions and removes a message while
+editing two retained messages. It verifies the actual Anthropic request keeps
+the A-to-B update between the retained users, uses the fresh prompt, and leaves
+the caller's messages and executable tool options unchanged. The physical full
+system-removal regression also verifies cleared prompt text is absent from the
+Anthropic request while the tool revision remains projected. Dispatcher tests
+cover lineage through stage-one removal/content edits, duplicate message text,
+insertions, reordering and replacement objects.
 
 Each callback receives a fresh detached message snapshot. Opaque content and
 metadata that cannot be cloned safely invalidate that handler's result rather
@@ -65,15 +91,17 @@ transcript synchronization, and canonical history isolation. The
 installed and loaded, then executed through `ExtensionCatalog` and `PiAgent`.
 The historical compiled API fixtures remain part of the same focused run.
 
-The focused extension suite passes 16/16 tests, including the current
-compiled-package fixture and historical API compatibility checks. Local
-verification passes the full .NET suite (2,497/2,497, zero skips), the
+The original focused extension suite passed 16/16 tests, including the current
+compiled-package fixture and historical API compatibility checks. The review
+correction selection passes 23/23 dispatcher, transcript, and physical
+Anthropic tests; the Anthropic provider test group passes 51/51. Local
+verification passes the full .NET suite (2,505/2,505, zero skips), the
 warnings-as-errors build, formatting, architecture (7/7), Node (24/24), Python
 (50/50), and documentation path validation (148 documents, 568 references).
 MCP conformance reports no regressions; the same eight classified baseline
-failures remain. Restore passed with `NuGetAudit=false` because the shared home
-NuGet HTTP cache is read-only. Draft PR #19 and exact-head Linux CI remain
-pending.
+failures remain. Fresh exact-head push and PR Linux CI results are tracked in
+the PR description. Restore passed with `NuGetAudit=false` because the shared
+home NuGet HTTP cache is read-only.
 
 ## Scope and limitations
 

@@ -84,9 +84,9 @@ public sealed class ToolDeclarationHistoryTests
             new { afterMessageCount = 2, message = JsonSerializer.SerializeToElement(update, AIJsonUtilities.DefaultOptions) }
         });
         ChatMessage[] sourceMessages = [new(ChatRole.User, "one"), new(ChatRole.Assistant, "two"), new(ChatRole.User, "three")];
-        ChatMessage[] updatedMessages = [sourceMessages[0], sourceMessages[2]];
+        int?[] messageLineage = [0, 2];
 
-        var result = ToolDeclarationTranscript.ApplyContextMutation(transcript, sourceMessages, updatedMessages,
+        var result = ToolDeclarationTranscript.ApplyContextMutation(transcript, sourceMessages.Length, messageLineage,
             "edited prompt", instructionsChanged: true, messageStructureChanged: true, removeSystemContext: false);
 
         var revisions = Assert.IsType<JsonElement>(result).EnumerateArray().ToArray();
