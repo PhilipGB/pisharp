@@ -387,8 +387,9 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
             capturedImages.Append(Environment.NewLine).Append(fallback);
         }
         string Expanded(TerminalTheme theme) => Environment.NewLine + RenderToolPanel(
-            Environment.NewLine + EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, theme)) +
-            Environment.NewLine, theme, panel.BackgroundToken) + activeImages + Environment.NewLine;
+            Environment.NewLine + EnsureTrailingNewline(
+                TerminalToolPresentation.Render(expanded, theme)), theme, panel.BackgroundToken) +
+            activeImages + (activeImages.Length > 0 ? Environment.NewLine : "");
         string Collapsed(TerminalTheme theme) => Environment.NewLine + RenderToolPanel(
             Environment.NewLine + EnsureTrailingNewline(TerminalToolPresentation.Render(collapsed, theme)) +
             Environment.NewLine, theme, panel.BackgroundToken) + capturedImages + Environment.NewLine;

@@ -844,6 +844,52 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void ExpandedShortToolKeepsPromptAndPiSpacingAroundFollowUpAndStatus()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 80, () => 24);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        transcript.Render(new("prompt_accepted", Text: "Run the fixture tool."));
+        transcript.Render(new AgentLifecycleEvent("tool_execution_started", Tool: "bash", OperationId: "bash-1")
+        {
+            ToolArguments = new Dictionary<string, object?>
+            {
+                ["command"] = "printf 'tool-line-one\\n'; sleep 0.3; printf 'tool-line-two\\ntool-line-three\\n'"
+            }
+        });
+        transcript.Render(new("tool_execution_finished", Tool: "bash", OperationId: "bash-1",
+            Text: "tool-line-one\ntool-line-two\ntool-line-three\n")
+        { DurationMs = 300 });
+        transcript.Render(new("model_text_delta", Text: "Tool lifecycle complete."));
+        transcript.FinishTurn();
+
+        screen.SetToolResultsExpanded(true);
+        screen.AppendThemedStatusLine("Tool output: expanded");
+        var visible = Regex.Replace(TerminalOutputFrameReader.Read(output.ToString(), rows: 24, columns: 80)[^1].Screen,
+            "\\u001b\\[[0-?]*[ -/]*[@-~]", "");
+        screen.Dispose();
+
+        var rows = visible.Split('\n');
+        var promptRow = RowContaining(rows, "Run the fixture tool.");
+        var commandRow = RowContaining(rows, "$ printf");
+        var outputRow = RowContaining(rows, " tool-line-one");
+        var durationRow = RowContaining(rows, "Took 0.3s");
+        var followUpRow = RowContaining(rows, "Tool lifecycle complete.");
+        var statusRow = RowContaining(rows, "Tool output: expanded");
+
+        Assert.Equal(promptRow + 4, commandRow);
+        Assert.Equal(commandRow + 3, outputRow);
+        Assert.Equal(commandRow + 7, durationRow);
+        Assert.Equal(commandRow + 10, followUpRow);
+        Assert.Equal(commandRow + 12, statusRow);
+        Assert.Empty(error.ToString());
+
+        static int RowContaining(string[] rows, string text) =>
+            Array.FindIndex(rows, row => row.Contains(text, StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task ActiveToolResultsCollapseAfterTenLinesAndExpandWithCtrlO()
     {
         using var output = new StringWriter();

@@ -482,12 +482,13 @@ public sealed class TerminalScreen : IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         var safe = TerminalSafeText.Normalize(message);
-        string Render(TerminalTheme theme) => Environment.NewLine + theme.Style("dim", safe) + Environment.NewLine;
+        string Render(TerminalTheme theme) => Environment.NewLine + Environment.NewLine +
+            theme.Style("dim", safe);
         lock (_gate)
         {
             if (!_active) return;
             _transcript.AppendThemedStatus(Render(_theme), Render,
-                Environment.NewLine + " " + safe + Environment.NewLine);
+                Environment.NewLine + Environment.NewLine + " " + safe);
             _render.Request();
         }
     }
