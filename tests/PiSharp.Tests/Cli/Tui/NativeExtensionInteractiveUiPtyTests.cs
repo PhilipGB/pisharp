@@ -227,13 +227,15 @@ public sealed class NativeExtensionInteractiveUiPtyTests
                 "extension dashboard panel", timeout.Token, process, errorTask);
             await process.StandardInput.WriteAsync("accepted\r");
             await process.StandardInput.FlushAsync();
-            await WaitForOutputWithDiagnosticsAsync(screen,
-                "native-ui-panel:accepted:theme=True/light/3/light:editor=True:tools=True", 0,
-                "dashboard command response", timeout.Token,
-                process, errorTask);
-            await screen.WaitForFrameAsync(frame => frame.Contains("native-ui accepted: accepted", StringComparison.Ordinal) &&
-                frame.Contains("native-ui-widget:1:accepted", StringComparison.Ordinal) &&
-                frame.Contains("native-ui-theme:light", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            var dashboardResponse = "native-ui-panel:accepted:theme=True/light/3/light:editor=True:tools=True";
+            // The dashboard response wraps at 80 columns, so terminal controls interrupt its raw byte sequence.
+            await WaitForFrameWithDiagnosticsAsync(screen,
+                frame => string.Concat(frame.Where(character => !char.IsWhiteSpace(character)))
+                        .Contains(dashboardResponse, StringComparison.Ordinal) &&
+                    frame.Contains("native-ui accepted: accepted", StringComparison.Ordinal) &&
+                    frame.Contains("native-ui-widget:1:accepted", StringComparison.Ordinal) &&
+                    frame.Contains("native-ui-theme:light", StringComparison.Ordinal),
+                "dashboard command response and presentation state", timeout.Token, process, errorTask);
 
             await process.StandardInput.WriteAsync("\u0015/ui-modal\r");
             await process.StandardInput.FlushAsync();
@@ -297,8 +299,10 @@ public sealed class NativeExtensionInteractiveUiPtyTests
 
             await process.StandardInput.WriteAsync("\u0015run native tool\r");
             await process.StandardInput.FlushAsync();
-            await screen.WaitForFrameAsync(frame => frame.Contains("NATIVE_UI_AGENT_OK", StringComparison.Ordinal))
-                .WaitAsync(timeout.Token);
+            await WaitForFrameWithDiagnosticsAsync(screen,
+                frame => frame.Contains("NATIVE_UI_AGENT_OK", StringComparison.Ordinal) &&
+                    !frame.Contains("Native UI dashboard", StringComparison.Ordinal),
+                "agent response after the run returns to idle", timeout.Token, process, errorTask);
             await server.WaitAsync(timeout.Token);
             Assert.Contains("native_ui_echo", requests[0]);
             Assert.Contains("native-ui-tool:pty", requests[1]);

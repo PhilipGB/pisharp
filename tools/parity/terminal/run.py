@@ -19,7 +19,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pi_reference import verify_pi_checkout
 
-from compare import compare_products
+from compare import compare_products, osc52_clipboard_writes
 from fixture_http import FixtureServer
 from pty_process import RenderFrameSequence, RenderFrameStore, TerminalProcess
 from thread_limits import apply_test_thread_limit, thread_limit_environment
@@ -123,6 +123,17 @@ def expand_environment(values, agent, router_url):
     return {name: value.replace('{router}', router_url).replace('{agent}', str(agent))
             if isinstance(value, str) else value
             for name, value in values.items()}
+
+
+def record_clipboard_checkpoint(action, raw):
+    writes = osc52_clipboard_writes(raw)
+    if action.get('expectClipboardWrite') and not writes:
+        raise RuntimeError(f"Action {action['id']} expected an OSC 52 clipboard write but captured none")
+    expected_texts = action.get('expectClipboardTexts')
+    if expected_texts is not None and [write['text'] for write in writes] != expected_texts:
+        raise RuntimeError(f"Action {action['id']} clipboard text was "
+                           f"{[write['text'] for write in writes]!r}, expected {expected_texts!r}")
+    return dict(id=action['id'], writes=writes)
 
 
 def contains_render_frame_sequence(value):
@@ -315,6 +326,7 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
             assertion_frames.append(frame)
 
     http_by_frame = []
+    clipboard_by_frame = []
     prior_raw = bytearray()
     prior_render_frames = []
     request_start = len(server.requests)
@@ -345,12 +357,14 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                     action.get('restartEnvironment', {}), agent, server.url))
                 working_directory = prepare_workspace(scenario)
                 terminal = start_terminal_process(command, working_directory, restart_environment, options)
+                mark = 0
                 control_mark = len(terminal.trace.events)
                 frame = terminal.settle(action.get('expect'), timeout=action.get('timeout', 20),
                                         render_match=action.get('renderMatch', False))
                 record_frame(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
                                   controlPending=terminal.trace.pending.hex()))
                 http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
+                clipboard_by_frame.append(record_clipboard_checkpoint(action, terminal.raw[mark:]))
                 continue
             mark, control_mark = len(terminal.raw), len(terminal.trace.events)
             if 'send' in action:
@@ -400,10 +414,12 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
             record_frame(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
                               controlPending=terminal.trace.pending.hex()))
             http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
+            clipboard_by_frame.append(record_clipboard_checkpoint(action, terminal.raw[mark:]))
         prior_raw.extend(terminal.raw)
         return dict(frames=frames, assertionFrames=assertion_frames,
                     renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
-                    httpByFrame=http_by_frame, raw=base64.b64encode(prior_raw).decode(),
+                    httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
+                    raw=base64.b64encode(prior_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
         record_frame(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:],
@@ -412,7 +428,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
         combined_raw = prior_raw + terminal.raw
         return dict(frames=frames, assertionFrames=assertion_frames,
                     renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
-                    httpByFrame=http_by_frame, raw=base64.b64encode(combined_raw).decode(),
+                    httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
+                    raw=base64.b64encode(combined_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=str(error))
     finally:
         terminal.close()
@@ -444,8 +461,9 @@ def main():
                   pisharpSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   fixture=scenario['id'], calibration=args.calibrate,
                   concurrentHttpGroups=scenario.get('concurrentHttpGroups', []),
-                  normalization=('Named checkpoints and stable synchronized render states are compared exactly, collapsing '
-                                 'adjacent identical states, hidden cursor coordinates, transient loader glyphs, and in-flight '
+                  normalization=('Named checkpoints and render streams are compared exactly. Render streams align identical '
+                                 'snapshots in order and report every changed or unmatched frame, collapsing adjacent identical '
+                                 'states, hidden cursor coordinates, transient loader glyphs, and in-flight '
                                  'Working-indicator frames. Empty cells with the same width and style use one canonical glyph so '
                                  'xterm backends that serialize a blank as an empty string or a space compare visually; colors, '
                                  'attributes, width, cursor, and modes remain exact. Same-Pi calibration shows fast scripted responses can finish before '
@@ -532,9 +550,12 @@ def main():
             report['cases'].append(dict(id=case_id, match=difference_count == 0, differences=difference_count,
                                         firstDifferences=delta[:50], scenarioErrors=errors,
                                         terminalMatch=comparison['terminalMatch'], rawMatch=comparison['rawMatch'],
+                                        clipboardMatch=comparison['clipboardMatch'],
+                                        clipboardDifferences=comparison['clipboardDifferences'],
                                         rawDifference=comparison['rawDifference'],
                                         comparedRenderFrameCount=comparison['comparedRenderFrameCount'],
                                         renderDifferences=comparison['renderDifferenceCount'],
+                                        renderAlignment=comparison['renderAlignment'],
                                         httpMatch=comparison['httpMatch'],
                                         rawHttpMatch=comparison['rawHttpMatch'],
                                         rawHttpDifferenceCount=comparison['rawHttpDifferenceCount'],

@@ -51,6 +51,8 @@
       "id": "selection-drag",
       "send": "\u001b[<0;2;8M\u001b[<32;28;8M\u001b[<0;28;8m",
       "expect": "Copied!",
+      "expectClipboardWrite": true,
+      "expectClipboardTexts": ["Log section 09: Mouse selec"],
       "allowStaticFrame": true,
       "renderMatch": true
     },

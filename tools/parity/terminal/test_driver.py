@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import patch
 
 from compare import (ControlTrace, canonical_render_frames, canonicalize_tool_call_arguments_in_requests,
-                     compare_products, differences, normalize_terminal_state)
+                     compare_products, differences, normalize_terminal_state, osc52_clipboard_writes)
 from fixture_http import FixtureServer
 from pty_process import RenderFrameSequence, RenderFrameStore, TerminalProcess
 from run import commands, environment, expand_environment, prepare_workspace, stage_native_extension_package, write_json_stream, write_scenario_files
@@ -49,6 +49,9 @@ class DriverTests(unittest.TestCase):
             },
             'terminal-mouse-selection': {'selection-drag', 'wheel-up', 'wheel-down', 'exit'},
             'terminal-image-fallback': {'read-image', 'expand-image-result', 'exit'},
+            'terminal-restoration-existing-main-buffer': {
+                'native-ui-startup', 'native-ui-widget', 'native-ui-input-update', 'native-ui-quit',
+            },
             'native-extension-interactive-ui': {
                 'native-ui-startup', 'native-ui-widget', 'native-ui-input-update', 'native-ui-quit',
             },
@@ -63,6 +66,10 @@ class DriverTests(unittest.TestCase):
 
                 self.assertTrue(expected_checkpoints <= actions)
                 self.assertTrue(expected_checkpoints <= checkpoints)
+                if fixture_id == 'terminal-mouse-selection':
+                    selection = next(action for action in fixture['actions'] if action['id'] == 'selection-drag')
+                    self.assertTrue(selection.get('expectClipboardWrite'))
+                    self.assertEqual(['Log section 09: Mouse selec'], selection.get('expectClipboardTexts'))
                 if fixture_id == 'terminal-long-transcript':
                     cursor_action = next(action for action in fixture['actions']
                                          if action['id'] == 'search-cursor-left')
@@ -165,6 +172,23 @@ class DriverTests(unittest.TestCase):
                          canonicalize_tool_call_arguments_in_requests(formatted))
         self.assertNotEqual(canonicalize_tool_call_arguments_in_requests(compact),
                             canonicalize_tool_call_arguments_in_requests(changed))
+
+    def test_osc52_clipboard_evidence_decodes_selection_text_and_compares_exactly(self):
+        raw = b'prefix\x1b]52;c;TG9nIHNlY3Rpb24gMDc=\x07middle\x1b]52;c;Y29weSB0ZXh0\x1b\\'
+        expected = [
+            dict(payloadBase64='TG9nIHNlY3Rpb24gMDc=', text='Log section 07'),
+            dict(payloadBase64='Y29weSB0ZXh0', text='copy text'),
+        ]
+        self.assertEqual(expected, osc52_clipboard_writes(raw))
+
+        left = dict(frames=[], renders=[], raw='', http=[], clipboardByFrame=[
+            dict(id='selection-drag', writes=expected)])
+        right = dict(frames=[], renders=[], raw='', http=[], clipboardByFrame=[
+            dict(id='selection-drag', writes=[expected[0]])])
+        comparison = compare_products(left, right)
+        self.assertFalse(comparison['clipboardMatch'])
+        self.assertIn('$.clipboardByFrame[0].writes.length',
+                      {item['path'] for item in comparison['clipboardDifferences']})
 
     def test_emulator_shutdown_drains_a_snapshot_larger_than_the_pipe(self):
         terminal = TerminalProcess([sys.executable, '-c', 'import time; time.sleep(30)'],
@@ -682,7 +706,29 @@ class DriverTests(unittest.TestCase):
         self.assertFalse(result['match'])
         self.assertFalse(result['terminalMatch'])
         self.assertEqual(3, result['comparedRenderFrameCount'])
-        self.assertIn('$.renders[1].viewport[0].text', {item['path'] for item in result['renderDifferences']})
+        self.assertEqual(1, result['renderDifferenceCount'])
+        self.assertEqual([dict(pi=0, pisharp=0), dict(pi=2, pisharp=1)],
+                         result['renderAlignment']['exactMatches'])
+        self.assertEqual([1], result['renderAlignment']['piOnlyRenderFrames'])
+        self.assertEqual([], result['renderAlignment']['pisharpOnlyRenderFrames'])
+        self.assertIn('$.renders.pi[1]', {item['path'] for item in result['renderDifferences']})
+
+    def test_render_sequence_alignment_retains_style_differences_between_exact_states(self):
+        first = dict(viewport=[dict(text='same', style='normal')])
+        pi_middle = dict(viewport=[dict(text='selected', style='inverse')])
+        pisharp_middle = dict(viewport=[dict(text='selected', style='normal')])
+        last = dict(viewport=[dict(text='done', style='normal')])
+
+        result = compare_products(
+            dict(frames=[], renders=[first, pi_middle, last], raw='', http=[]),
+            dict(frames=[], renders=[first, pisharp_middle, last], raw='', http=[]))
+
+        self.assertFalse(result['terminalMatch'])
+        self.assertEqual([dict(pi=0, pisharp=0), dict(pi=2, pisharp=2)],
+                         result['renderAlignment']['exactMatches'])
+        self.assertEqual(1, result['renderDifferenceCount'])
+        self.assertIn('$.renders[1].viewport[0].style',
+                      {item['path'] for item in result['renderDifferences']})
 
     def test_working_indicator_render_is_calibrated_noise_but_settled_frames_stay_exact(self):
         def state(status, footer):
