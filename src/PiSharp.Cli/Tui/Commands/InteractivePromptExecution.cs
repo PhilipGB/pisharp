@@ -8,7 +8,8 @@ using NativeCustomMessage = PiSharp.Extensions.Abstractions.PiSharpCustomMessage
 namespace PiSharp.Cli.Tui;
 
 internal sealed class InteractivePromptExecution(TerminalEditor? editor, TerminalScreen? screen,
-    Func<TextWriter> getError, Func<ResourceCatalog> getResources, Func<ConversationRun> getRun, Func<string> getFooter,
+    Func<TextWriter> getError, Func<ResourceCatalog> getResources, Func<ConversationRun> getRun,
+    Func<bool, long?, string> getFooter,
     Func<ModelSelection> getModelSelection, Func<UserSettings> getUserSettings,
     Func<string, bool, CancellationToken, Task> executeBash, Func<string, Task> handleAction,
     Func<PiSharp.Runtime.Extensions.ExtensionShortcutInfo, CancellationToken, Task>? handleExtensionShortcut,
@@ -59,9 +60,13 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
 
             if (update.Type is "prompt_accepted" or "agent_attempt_started")
             {
-                screen?.SetFooter(getFooter(), render: false);
+                screen?.SetFooter(getFooter(false, null), render: false);
                 screen?.SetWorkingStatus("Working", render: false);
             }
+            else if (update.Type == "assistant_turn_started")
+                screen?.SetFooter(getFooter(true, null));
+            else if (update.Type == "usage" && update.TotalTokens is { } totalTokens)
+                screen?.SetFooter(getFooter(false, totalTokens), render: false);
             if (update.Type == "prompt_accepted" && editor is not null && !_monitorStarted)
             {
                 transcript.Render(update);
@@ -70,10 +75,6 @@ internal sealed class InteractivePromptExecution(TerminalEditor? editor, Termina
                     () => getRun().ClearPendingPrompts().InDeliveryOrder, cancellation.Cancel, _monitorStop.Token,
                     handleAction, handleExtensionShortcut);
                 return;
-            }
-            if (update.Type == "assistant_turn_started")
-            {
-                screen?.SetFooter(getFooter(), render: false);
             }
             transcript.Render(update);
             Environment.ExitCode = Math.Max(Environment.ExitCode, transcript.ExitCode);

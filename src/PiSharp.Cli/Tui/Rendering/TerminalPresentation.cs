@@ -213,10 +213,12 @@ internal sealed class TerminalPresentation : IDisposable
         Action<string>? completed = _terminalScreen is null ? null : _terminalScreen.ClearMcpAuthorizationNotification;
         context.SetMcpAuthorizationUrlPresenter(presenter, completed, _editor?.McpAuthorizationCallbackInput);
     }
-    public string IdleFooter(int? providerCount = null, int? width = null) => TerminalModelStatus.FormatIdleFooter(_modelBinding.Selection.Model, _modelBinding.Thinking, _conversationBinding.Conversation,
+    public string IdleFooter(int? providerCount = null, int? width = null, bool includeEstimateWhenNoMessages = false,
+        long? providerContextTokens = null) => TerminalModelStatus.FormatIdleFooter(_modelBinding.Selection.Model,
+        _modelBinding.Thinking, _conversationBinding.Conversation,
         _conversationBinding.Run.ContextWindowTokens, _projectBinding.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
         width ?? _terminalScreen?.TerminalWidth ?? 80, providerCount ?? _modelRuntime.AvailableModelProviderCount,
-        _conversationBinding.Run.EstimatedContextTokens);
+        _conversationBinding.Run.EstimatedContextTokens, includeEstimateWhenNoMessages, providerContextTokens);
 
     public void SetIdleFooter(int? providerCount = null, int? width = null, bool render = true)
     {

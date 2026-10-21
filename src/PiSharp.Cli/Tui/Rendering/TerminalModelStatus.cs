@@ -10,14 +10,16 @@ internal static class TerminalModelStatus
 {
     public static string FormatIdleFooter(ModelDescriptor model, string thinking, ConversationSession session,
         int? contextWindow, bool autoCompactionEnabled, int width, int availableProviderCount = 1,
-        int? estimatedContextTokens = null)
+        int? estimatedContextTokens = null, bool includeEstimateWhenNoMessages = false,
+        long? providerContextTokens = null)
     {
         var window = contextWindow ?? model.ContextLength;
         var latest = estimatedContextTokens is null ? session.LatestContextUsageTokens() : null;
         var afterCompaction = session.Tree.ActivePath().Any(entry => entry.Type == "compaction");
         var messages = session.ActiveMessages();
-        long? used = messages.Count == 0 ? 0 : estimatedContextTokens ?? latest ??
-            (afterCompaction ? null : SessionStatistics.Calculate(session).EstimatedContextTokens);
+        long? used = providerContextTokens ?? (messages.Count == 0 && !includeEstimateWhenNoMessages ? 0 :
+            estimatedContextTokens ?? latest ??
+            (afterCompaction ? null : SessionStatistics.Calculate(session).EstimatedContextTokens));
         var context = used is long count && window is > 0
             ? $"{(count * 100d / window.Value).ToString("F1", CultureInfo.InvariantCulture)}%/{FormatTokens(window.Value)}"
             : $"?/{FormatTokens(window ?? 0)}";

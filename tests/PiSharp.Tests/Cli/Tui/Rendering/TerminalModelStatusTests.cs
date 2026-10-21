@@ -74,6 +74,27 @@ public sealed class TerminalModelStatusTests
         Assert.StartsWith("↑10 ↓3 1.1%/8.2k (auto)", footer);
     }
 
+    [Fact]
+    public void ActiveTurnFooterShowsPromptEstimateBeforeMessagesArePersisted()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        var model = new ModelDescriptor("fixture-model", null, 8192, null,
+            Provider: "fixture", Reasoning: false, Api: "openai-completions");
+
+        var idle = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
+            autoCompactionEnabled: true, width: 100, estimatedContextTokens: 630);
+        var active = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
+            autoCompactionEnabled: true, width: 100, estimatedContextTokens: 630,
+            includeEstimateWhenNoMessages: true);
+        var reported = TerminalModelStatus.FormatIdleFooter(model, "off", session, 8192,
+            autoCompactionEnabled: true, width: 100, estimatedContextTokens: 630,
+            providerContextTokens: 13);
+
+        Assert.StartsWith("0.0%/8.2k (auto)", idle);
+        Assert.StartsWith("7.7%/8.2k (auto)", active);
+        Assert.StartsWith("0.2%/8.2k (auto)", reported);
+    }
+
     private static ChatMessage Response(string model, string thinking, string? stopReason = null) => new(ChatRole.Assistant, "answer")
     {
         AdditionalProperties = new()

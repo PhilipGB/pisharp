@@ -19,7 +19,7 @@
       {
         "id": "call-terminal-tool",
         "name": "bash",
-        "arguments": { "command": "printf 'tool-line-one\\n'; sleep 0.3; printf 'tool-line-two\\ntool-line-three\\n'" }
+        "arguments": { "command": "x=tool-line; printf '%s-one\\n' \"$x\"; sleep 0.3; printf '%s-two\\n%s-three\\n' \"$x\" \"$x\"" }
       }
     ]],
     "chatResponseContentByRequest": ["fixture tool call", "Tool lifecycle complete."]

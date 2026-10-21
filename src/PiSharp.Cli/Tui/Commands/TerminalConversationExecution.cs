@@ -77,7 +77,10 @@ internal sealed class TerminalConversationExecution
         using var runCancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var execution = new InteractivePromptExecution(_presentation.Editor, _presentation.Screen, () => Console.Error,
-            () => _projectBinding.Resources, () => _conversationBinding.Run, () => _presentation.IdleFooter(),
+            () => _projectBinding.Resources, () => _conversationBinding.Run,
+            (includeEstimateWhenNoMessages, providerContextTokens) => _presentation.IdleFooter(
+                includeEstimateWhenNoMessages: includeEstimateWhenNoMessages,
+                providerContextTokens: providerContextTokens),
             () => _modelBinding.Selection, () => _projectBinding.Settings, ExecuteInteractiveBashAsync,
             handleApplicationAction ?? (_ => Task.CompletedTask), handleExtensionShortcut, tryExecuteExtensionCommand);
         _presentation.Screen?.Activate();
