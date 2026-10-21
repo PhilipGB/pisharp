@@ -6,6 +6,21 @@ namespace PiSharp.Tests;
 public sealed class TerminalTextLayoutTests
 {
     [Fact]
+    public void ClipWithEllipsisMatchesThePinnedFooterPathTruncation()
+    {
+        Assert.Equal("/workspac...", TerminalTranscriptViewport.ClipWithEllipsis("/workspace/long/path", 12));
+        Assert.Equal("path", TerminalTranscriptViewport.ClipWithEllipsis("path", 12));
+        Assert.Equal("..", TerminalTranscriptViewport.ClipWithEllipsis("long", 2));
+    }
+
+    [Fact]
+    public void SgrStateHonorsAttributeAndColorResetsIndependently()
+    {
+        Assert.False(TerminalTextLayout.HasActiveSgrAtEnd("\u001b[4mtext\u001b[24m\u001b[39m"));
+        Assert.True(TerminalTextLayout.HasActiveSgrAtEnd("\u001b[1;4;38;2;1;2;3mtext\u001b[22;24m"));
+    }
+
+    [Fact]
     public void WidthIgnoresAnsiAndMeasuresWideAndJoinedGraphemesInCells()
     {
         const string family = "👩‍👩‍👧‍👦";
@@ -82,6 +97,8 @@ public sealed class TerminalTextLayoutTests
 
         var first = TerminalTextLayout.Wrap(green + "foo" + foregroundReset + " bar", 4);
         Assert.Equal(2, first.Count);
+        Assert.Equal(green + "foo" + foregroundReset + " " + "\u001b[0m", first[0]);
+        Assert.Equal("foo ", StripTerminalSequences(first[0]));
         Assert.StartsWith(green + foregroundReset, first[1]);
         Assert.Equal("bar", StripTerminalSequences(first[1]));
 
@@ -98,6 +115,42 @@ public sealed class TerminalTextLayoutTests
         Assert.Equal("Another " + magenta + "alpha" + foregroundReset + selectionOn + " line" + selectionOff +
             " with " + magenta + "beta" + foregroundReset + " later.",
             TerminalTextLayout.HighlightCells(searchLine, 13, 18));
+    }
+
+    [Fact]
+    public void StyledSoftWrapPaddingUsesTheStyleAfterInlineResetSequences()
+    {
+        const string bold = "\u001b[1m";
+        const string underline = "\u001b[4m";
+        const string underlineReset = "\u001b[24m";
+        const string foregroundReset = "\u001b[39m";
+        const string linkColor = "\u001b[38;2;105;173;208m";
+        const string urlColor = "\u001b[38;2;157;165;169m";
+        const string reset = "\u001b[0m";
+        var text = bold + "bold " + underline + linkColor + "link" + underlineReset + foregroundReset +
+            bold + urlColor + " " + "url";
+
+        var wrapped = TerminalTextLayout.Create(text, width: 12);
+        var padded = TerminalScreenCompositor.PadTranscriptRow(wrapped.Rows[0], transcriptWidth: 12,
+            outputPadding: 0);
+
+        Assert.Equal(2, wrapped.RowCount);
+        Assert.Equal(bold + "bold " + underline + linkColor + "link" + underlineReset + foregroundReset +
+            bold + urlColor + " " + "  " + reset, padded);
+    }
+
+    [Fact]
+    public void StyledSoftWrapPaddingKeepsTheCommandStyleAcrossTheLineFill()
+    {
+        const string bold = "\u001b[1m";
+        const string foreground = "\u001b[38;2;222;224;225m";
+        const string reset = "\u001b[0m";
+        var wrapped = TerminalTextLayout.Create(bold + foreground + "$ command next", width: 12);
+        var padded = TerminalScreenCompositor.PadTranscriptRow(wrapped.Rows[0], transcriptWidth: 12,
+            outputPadding: 0);
+
+        Assert.Equal(2, wrapped.RowCount);
+        Assert.Equal(bold + foreground + "$ command " + "  " + reset, padded);
     }
 
     [Fact]
@@ -161,6 +214,42 @@ public sealed class TerminalTextLayoutTests
         Assert.Equal(text.IndexOf('b'), result.SelectedTextStart);
         Assert.Equal(1, layout.VisualRowAt(result.SelectedTextStart));
         Assert.Equal(layout.RowCount, TerminalTextLayout.Create(result.HighlightedText, 1).RowCount);
+    }
+
+    [Fact]
+    public void TranscriptSearchUsesThemeColorsAndRestoresThePreviousStyle()
+    {
+        const string text = "\u001b[1mbefore match after\u001b[0m";
+        var search = new TranscriptSearchController();
+        search.SetQuery("match", 0);
+        var theme = TerminalTheme.Default;
+
+        var result = search.Highlight(text, theme);
+
+        Assert.Contains(theme.Fg("searchMatchText") + theme.Bg("searchMatchBg") + "\u001b[1m\u001b[7m",
+            result.HighlightedText);
+        Assert.Contains("\u001b[0m\u001b[1m after", result.HighlightedText);
+    }
+
+    [Fact]
+    public void StyledCellSlicePreservesTheCellForegroundAndBackground()
+    {
+        const string row = "left\u001b[38;2;72;72;82m\u001b[48;2;33;33;41m│\u001b[0mright";
+
+        var slice = TerminalTextLayout.SliceStyledCells(row, 4, 5);
+
+        Assert.Equal("\u001b[38;2;72;72;82m\u001b[48;2;33;33;41m│\u001b[0m", slice);
+    }
+
+    [Fact]
+    public void ApplyingBackgroundPreservesForegroundAndDoesNotLeakPastTheRenderedLine()
+    {
+        const string background = "\u001b[48;2;33;33;41m";
+        const string foreground = "\u001b[38;2;72;72;82m";
+        var row = TerminalTextLayout.ApplyBackground(foreground + "text\u001b[0m", background);
+
+        Assert.Equal(background + foreground + background + "text\u001b[0m", row);
+        Assert.EndsWith("\u001b[0m", row);
     }
 
     [Fact]

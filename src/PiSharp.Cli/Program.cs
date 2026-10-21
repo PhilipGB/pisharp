@@ -243,3 +243,10 @@ else
 
 await ExtensionSessionLifecycleHost.NotifyShutdownAsync(conversationBinding.Run,
     PiSharp.Extensions.Abstractions.PiSharpExtensionSessionShutdownReason.Quit);
+
+if (!print && projectBinding.Arguments.Mode == "interactive" &&
+    TerminalSessionResumeCommand.Format(conversationBinding.Conversation, conversationBinding.Path,
+        projectBinding.Store, outputIsTerminal: !Console.IsOutputRedirected) is { } resumeCommand)
+{
+    Console.Out.WriteLine($"\u001b[2mTo resume this session:\u001b[0m {resumeCommand}");
+}

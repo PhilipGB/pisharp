@@ -134,7 +134,7 @@ internal sealed class NativeExtensionPresentationState
             }
 
             if (screen is not null && ReferenceEquals(_screen, screen))
-                screen.SetExtensionWorkingPresentation(message, visibility, frame);
+                screen.SetExtensionWorkingPresentation(message, visibility, frame, indicator is not null);
         }
     }
 

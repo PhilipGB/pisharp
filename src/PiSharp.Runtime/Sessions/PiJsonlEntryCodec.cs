@@ -169,6 +169,41 @@ internal static class PiJsonlEntryCodec
             ? entry.Clone() : null;
     }
 
+    internal static UsageRecord? ImportedUsage(ConversationNode node)
+    {
+        if (node.Type != "chat" || OriginalEntry(node) is not { } entry ||
+            StringProperty(entry, "type") != "message" || !TryProperty(entry, "message", out var message) ||
+            StringProperty(message, "role") != "assistant" || !TryProperty(message, "usage", out var usage) ||
+            usage.ValueKind != JsonValueKind.Object)
+            return null;
+
+        if (!TryReadUsageCount(usage, "input", out var input) ||
+            !TryReadUsageCount(usage, "output", out var output) ||
+            !TryReadUsageCount(usage, "cacheRead", out var cacheRead) ||
+            !TryReadUsageCount(usage, "cacheWrite", out var cacheWrite) ||
+            !TryReadUsageCount(usage, "totalTokens", out var total))
+            return null;
+        if (total == 0) total = input + output;
+
+        decimal? cost = null;
+        if (TryProperty(usage, "cost", out var costObject) && costObject.ValueKind == JsonValueKind.Object &&
+            TryProperty(costObject, "total", out var totalCost))
+        {
+            if (!totalCost.TryGetDecimal(out var value) || value < 0) return null;
+            cost = value;
+        }
+
+        return new UsageRecord(StringProperty(message, "model") ?? "unknown", "model", input, output,
+            cacheRead, 0, total, cost, cacheWrite);
+    }
+
+    private static bool TryReadUsageCount(JsonElement usage, string name, out long count)
+    {
+        count = 0;
+        if (!TryProperty(usage, name, out var value)) return true;
+        return value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out count) && count >= 0;
+    }
+
     internal static ChatMessage? ImportedContextMessage(ConversationNode node)
     {
         if (node.Type == "branch_summary" && OriginalEntry(node) is { } summaryEntry &&

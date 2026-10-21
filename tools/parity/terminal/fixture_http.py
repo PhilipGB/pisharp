@@ -16,9 +16,14 @@ class FixtureServer:
         self.huggingface = huggingface or {}
         gate_names = [name for key, name in self.behavior.items()
                       if key.endswith('Gate') and isinstance(name, str)]
-        gate_names.extend(name for key in ('chatRequestGates', 'chatResponseGates',
-                                           'chatResponseContentGates', 'chatResponseFinishGates')
-                          for name in self.behavior.get(key, []) if isinstance(name, str))
+        for key in ('chatRequestGates', 'chatResponseGates', 'chatResponseContentGates',
+                    'chatResponseFinishGates', 'chatResponseChunkGatesByRequest',
+                    'chatResponseChunkReadyGatesByRequest'):
+            for value in self.behavior.get(key, []):
+                if isinstance(value, str):
+                    gate_names.append(value)
+                elif isinstance(value, list):
+                    gate_names.extend(name for name in value if isinstance(name, str))
         gate_names.extend(name for key, models in self.behavior.items()
                           if key.endswith('GateByModel') and isinstance(models, dict)
                           for name in models.values() if isinstance(name, str))
@@ -277,6 +282,12 @@ class FixtureServer:
                     configured_reasoning = outer.behavior.get('chatResponseReasoningByRequest', [])
                     reasoning = (configured_reasoning[request_index]
                                  if request_index < len(configured_reasoning) else None)
+                    configured_chunks = outer.behavior.get('chatResponseChunksByRequest', [])
+                    content_chunks = (configured_chunks[request_index]
+                                      if request_index < len(configured_chunks) else [reply])
+                    configured_tool_calls = outer.behavior.get('chatToolCallsByRequest', [])
+                    tool_calls = (configured_tool_calls[request_index]
+                                  if request_index < len(configured_tool_calls) else None)
                     outer.signal_gate(request_gate)
                     if response_gate is not None:
                         outer.wait_for_gate(response_gate)
@@ -292,18 +303,42 @@ class FixtureServer:
                                                model=model, choices=[dict(index=0,
                                                    delta=dict(role='assistant', reasoning_content=reasoning),
                                                    finish_reason=None)]))
-                        chunks.extend([
-                            dict(id='fixture-response', object='chat.completion.chunk', created=1,
-                                 model=model, choices=[dict(index=0,
-                                     delta=dict(role='assistant', content=reply), finish_reason=None)]),
-                            dict(id='fixture-response', object='chat.completion.chunk', created=1,
-                                 model=model, choices=[dict(index=0, delta={}, finish_reason='stop')]),
-                        ])
+                        if tool_calls:
+                            calls = []
+                            for index, call in enumerate(tool_calls):
+                                function = call.get('function', call)
+                                arguments = function.get('arguments', {})
+                                if not isinstance(arguments, str):
+                                    arguments = json.dumps(arguments, separators=(',', ':'))
+                                calls.append(dict(index=index, id=call.get('id', f'call-fixture-{index}'),
+                                                  type='function', function=dict(
+                                                      name=function['name'], arguments=arguments)))
+                            chunks.append(dict(id='fixture-response', object='chat.completion.chunk', created=1,
+                                               model=model, choices=[dict(index=0,
+                                                   delta=dict(role='assistant', tool_calls=calls),
+                                                   finish_reason=None)]))
+                        else:
+                            for content in content_chunks:
+                                chunks.append(dict(id='fixture-response', object='chat.completion.chunk', created=1,
+                                                   model=model, choices=[dict(index=0,
+                                                       delta=dict(role='assistant', content=content),
+                                                       finish_reason=None)]))
+                        finish_reason = 'tool_calls' if tool_calls else 'stop'
+                        chunks.append(dict(id='fixture-response', object='chat.completion.chunk', created=1,
+                                           model=model, choices=[dict(index=0, delta={},
+                                               finish_reason=finish_reason)]))
                         if body.get('stream_options', {}).get('include_usage'):
                             chunks.append(dict(id='fixture-response', object='chat.completion.chunk', created=1,
                                                model=model, choices=[],
                                                usage=dict(prompt_tokens=10, completion_tokens=3, total_tokens=13)))
                         try:
+                            content_chunk_index = 0
+                            chunk_gates = outer.behavior.get('chatResponseChunkGatesByRequest', [])
+                            chunk_gates = (chunk_gates[request_index]
+                                           if request_index < len(chunk_gates) else [])
+                            ready_gates = outer.behavior.get('chatResponseChunkReadyGatesByRequest', [])
+                            ready_gates = (ready_gates[request_index]
+                                           if request_index < len(ready_gates) else [])
                             for chunk in chunks:
                                 choices = chunk.get('choices', [])
                                 has_content = any(choice.get('delta', {}).get('content')
@@ -312,19 +347,36 @@ class FixtureServer:
                                                  for choice in choices)
                                 if has_content and content_gate is not None:
                                     outer.wait_for_gate(content_gate)
+                                if has_content and content_chunk_index < len(chunk_gates):
+                                    outer.wait_for_gate(chunk_gates[content_chunk_index])
                                 if has_finish and finish_gate is not None:
                                     outer.wait_for_gate(finish_gate)
                                 self.wfile.write(('data: ' + json.dumps(chunk) + '\n\n').encode())
                                 self.wfile.flush()
+                                if has_content:
+                                    if content_chunk_index < len(ready_gates):
+                                        outer.signal_gate(ready_gates[content_chunk_index])
+                                    content_chunk_index += 1
                             self.wfile.write(b'data: [DONE]\n\n')
                             self.wfile.flush()
                         except (BrokenPipeError, ConnectionResetError):
                             pass
                         return
+                    message = dict(role='assistant', content=reply)
+                    if tool_calls:
+                        message['content'] = None
+                        message['tool_calls'] = []
+                        for index, call in enumerate(tool_calls):
+                            function = call.get('function', call)
+                            arguments = function.get('arguments', {})
+                            if not isinstance(arguments, str):
+                                arguments = json.dumps(arguments, separators=(',', ':'))
+                            message['tool_calls'].append(dict(
+                                id=call.get('id', f'call-fixture-{index}'), type='function',
+                                function=dict(name=function['name'], arguments=arguments)))
                     self.send_json(dict(id='fixture-response', object='chat.completion', created=1, model=model,
-                                        choices=[dict(index=0,
-                                            message=dict(role='assistant', content=reply),
-                                            finish_reason='stop')],
+                                        choices=[dict(index=0, message=message,
+                                            finish_reason='tool_calls' if tool_calls else 'stop')],
                                         usage=dict(prompt_tokens=10, completion_tokens=3, total_tokens=13)))
                     return
                 self.send_error(404)

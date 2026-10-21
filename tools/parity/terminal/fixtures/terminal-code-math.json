@@ -1,0 +1,202 @@
+{
+  "id": "terminal-code-math",
+  "settings": {
+    "quietStartup": true
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "code-math-request"
+    ],
+    "chatResponseChunksByRequest": [
+      [
+        "# Code and math\n\nInline: $\\mathbb{C}^3 \\to \\mathbb{C}^3$ and $F_1 = \\frac{1}{4x^2}$.\n\n",
+        "```csharp\npublic sealed class Widget {\n    public int Count => 2;\n}\n```\n\n",
+        "```javascript\nconst total = 3;\nconsole.log(\"ready\", total);\n```\n\n",
+        "```python\ndef add(value):\n    return value + 1\n```\n\n```json\n{\"active\": true, \"name\": \"pi\"}\n```\n\n",
+        "```bash\nif echo \"ready\"; then\n  echo 2\nfi\n```\n\n```unknown\nplain fallback\n```\n\n",
+        "$$\n\\frac{x^2+1}{x-1}\n$$\n\n",
+        "| Formula | Value |\n| --- | ---: |\n| $x^2$ | 4 |\n\n",
+        "End of code and math fixture.\n"
+      ]
+    ],
+    "chatResponseChunkGatesByRequest": [
+      [
+        null,
+        "code-math-release-csharp",
+        "code-math-release-javascript",
+        "code-math-release-python-json",
+        "code-math-release-bash-fallback",
+        "code-math-release-block-math",
+        "code-math-release-table",
+        "code-math-release-end"
+      ]
+    ],
+    "chatResponseChunkReadyGatesByRequest": [
+      [
+        "code-math-sent-inline",
+        "code-math-sent-csharp",
+        "code-math-sent-javascript",
+        "code-math-sent-python-json",
+        "code-math-sent-bash-fallback",
+        "code-math-sent-block-math",
+        "code-math-sent-table",
+        "code-math-sent-end"
+      ]
+    ],
+    "chatResponseFinishGates": [
+      "code-math-finish"
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 100,
+      "rows": 30
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "paste-code-math-prompt",
+      "send": "\u001b[200~Show code and math.\u001b[201~",
+      "expect": "Show code and math.",
+      "renderMatch": true
+    },
+    {
+      "id": "render-inline-math",
+      "send": "\r",
+      "waitGatesAfter": [
+        "code-math-request",
+        "code-math-sent-inline"
+      ],
+      "expect": "Inline:",
+      "renderMatch": true,
+      "allowStaticFrame": true
+    },
+    {
+      "id": "render-csharp",
+      "releaseGates": [
+        "code-math-release-csharp"
+      ],
+      "waitGatesAfter": [
+        "code-math-sent-csharp"
+      ],
+      "expect": "Widget",
+      "renderMatch": true,
+      "allowStaticFrame": true
+    },
+    {
+      "id": "render-javascript",
+      "releaseGates": [
+        "code-math-release-javascript"
+      ],
+      "waitGatesAfter": [
+        "code-math-sent-javascript"
+      ],
+      "expect": "console.log",
+      "renderMatch": true,
+      "allowStaticFrame": true
+    },
+    {
+      "id": "render-python-json",
+      "releaseGates": [
+        "code-math-release-python-json"
+      ],
+      "waitGatesAfter": [
+        "code-math-sent-python-json"
+      ],
+      "expect": "active",
+      "renderMatch": true,
+      "allowStaticFrame": true
+    },
+    {
+      "id": "render-bash-fallback",
+      "releaseGates": [
+        "code-math-release-bash-fallback"
+      ],
+      "waitGatesAfter": [
+        "code-math-sent-bash-fallback"
+      ],
+      "expect": "plain fallback",
+      "renderMatch": true,
+      "allowStaticFrame": true
+    },
+    {
+      "id": "render-block-math",
+      "releaseGates": [
+        "code-math-release-block-math"
+      ],
+      "waitGatesAfter": [
+        "code-math-sent-block-math"
+      ],
+      "expect": "x²+1",
+      "renderMatch": true,
+      "allowStaticFrame": true
+    },
+    {
+      "id": "render-math-table",
+      "releaseGates": [
+        "code-math-release-table"
+      ],
+      "waitGatesAfter": [
+        "code-math-sent-table"
+      ],
+      "expect": "Formula",
+      "renderMatch": true,
+      "allowStaticFrame": true
+    },
+    {
+      "id": "render-code-math",
+      "releaseGates": [
+        "code-math-release-end"
+      ],
+      "waitGatesAfter": [
+        "code-math-sent-end"
+      ],
+      "expect": "End of code and math fixture",
+      "renderMatch": true,
+      "allowStaticFrame": true
+    },
+    {
+      "id": "commit-code-math",
+      "releaseGates": [
+        "code-math-finish"
+      ],
+      "expect": [
+        "End of code and math fixture",
+        "↑10 ↓3"
+      ],
+      "renderMatch": true
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "startup",
+    "render-inline-math",
+    "render-csharp",
+    "render-javascript",
+    "render-python-json",
+    "render-bash-fallback",
+    "render-block-math",
+    "render-math-table",
+    "render-code-math",
+    "commit-code-math",
+    "exit"
+  ],
+  "modelContextWindow": 81920
+}

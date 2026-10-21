@@ -94,7 +94,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
     IReadOnlyDictionary<string, int>? ThinkingBudgets = null, bool? AutoResizeImages = null,
     bool? ShowHardwareCursor = null, int? EditorPaddingX = null, int? OutputPad = null,
     int? AutocompleteMaxVisible = null, bool? ClearOnShrink = null, bool? ShowTerminalProgress = null,
-    IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null)
+    IReadOnlyList<NativeExtensionPackageSource>? NativeExtensions = null,
+    FullscreenWheelScrollSetting? FullscreenWheelScrollLines = null, string? TuiMode = null)
 {
     public const int DefaultHttpIdleTimeoutMs = 300_000;
     public const string DefaultMarkdownCodeBlockIndent = "  ";
@@ -143,6 +144,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         string? terminalTrueColor = null;
         string? shellCommandPrefix = null;
         string? sessionShareDestination = null;
+        string? tuiMode = null;
+        FullscreenWheelScrollSetting? fullscreenWheelScrollLines = null;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in document.RootElement.EnumerateObject())
         {
@@ -181,6 +184,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             if (property.Name == "showHardwareCursor")
             {
                 showHardwareCursor = ParseBoolean(property.Value, property.Name);
+                continue;
+            }
+            if (property.Name == "fullscreenWheelScrollLines")
+            {
+                fullscreenWheelScrollLines = FullscreenWheelScrollSetting.Parse(property.Value);
                 continue;
             }
             if (property.Name is "editorPaddingX" or "outputPad" or "autocompleteMaxVisible")
@@ -380,6 +388,11 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
                     if (!ThinkingLevels.IsValid(thinking))
                         throw new InvalidDataException("settings.json defaultThinkingLevel is invalid.");
                     break;
+                case "tuiMode":
+                    if (value is not ("regular" or "fullscreen"))
+                        throw new InvalidDataException("settings.json tuiMode must be 'regular' or 'fullscreen'.");
+                    tuiMode = value;
+                    break;
                 case "steeringMode":
                     if (!PromptDeliveryModes.TryParseSettingValue(value, out var parsedSteeringMode))
                         throw new InvalidDataException("settings.json steeringMode must be all or one-at-a-time.");
@@ -398,7 +411,8 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             modelThinkingLevels, httpProxy, httpIdleTimeoutMs, markdownCodeBlockIndent, terminalTrueColor,
             enableSkillCommands, extensions, skills, prompts, themes, shellCommandPrefix, sessionShareDestination, packages,
             npmCommand, thinkingBudgets, autoResizeImages, showHardwareCursor, editorPaddingX, outputPad,
-            autocompleteMaxVisible, clearOnShrink, showTerminalProgress, nativeExtensions);
+            autocompleteMaxVisible, clearOnShrink, showTerminalProgress, nativeExtensions, fullscreenWheelScrollLines,
+            tuiMode);
     }
 
     public static string GetSettingsPath(string agentDirectory, Func<string, string?> environment) =>
@@ -448,7 +462,9 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
         project.AutocompleteMaxVisible ?? AutocompleteMaxVisible,
         project.ClearOnShrink ?? ClearOnShrink,
         project.ShowTerminalProgress ?? ShowTerminalProgress,
-        project.NativeExtensions ?? NativeExtensions);
+        project.NativeExtensions ?? NativeExtensions,
+        project.FullscreenWheelScrollLines ?? FullscreenWheelScrollLines,
+        TuiMode);
 
     public string? GetModelThinkingLevel(string provider, string modelId) =>
         ModelThinkingLevels?.GetValueOrDefault($"{provider}/{modelId}");

@@ -13,7 +13,8 @@ import urllib.request
 import unittest
 from unittest.mock import patch
 
-from compare import ControlTrace, canonical_render_frames, compare_products, differences
+from compare import (ControlTrace, canonical_render_frames, canonicalize_tool_call_arguments_in_requests,
+                     compare_products, differences, normalize_terminal_state)
 from fixture_http import FixtureServer
 from pty_process import RenderFrameSequence, RenderFrameStore, TerminalProcess
 from run import commands, environment, expand_environment, prepare_workspace, stage_native_extension_package, write_json_stream, write_scenario_files
@@ -23,12 +24,147 @@ apply_test_thread_limit()
 
 
 class DriverTests(unittest.TestCase):
+    def test_required_terminal_matrix_has_named_stable_checkpoints(self):
+        required = {
+            'startup-verbose': {'startup', 'quit'},
+            'transcript-markdown-resume': {'transcript', 'resize', 'quit'},
+            'terminal-streaming-markdown': {
+                'stream-first-boundary', 'complete-inline-boundaries', 'commit-answer', 'exit',
+            },
+            'terminal-code-math': {
+                'render-inline-math', 'render-csharp', 'render-javascript', 'render-python-json',
+                'render-bash-fallback', 'render-block-math', 'render-math-table',
+                'render-code-math', 'commit-code-math', 'exit',
+            },
+            'terminal-tool-lifecycle': {
+                'tool-call-start', 'tool-output-in-flight', 'tool-result-and-follow-up', 'expand-tool-result',
+            },
+            'terminal-long-transcript': {
+                'page-up', 'search-open', 'search-query', 'search-cursor-left', 'scroll-to-bottom', 'exit',
+            },
+            'terminal-resize-during-stream': {'resize-during-stream', 'commit-answer', 'exit'},
+            'terminal-small-overlay': {'model-picker-open', 'model-picker-dismiss', 'quit'},
+            'startup-editor': {
+                'type-h', 'type-d', 'cursor-left', 'paste', 'clear', 'resize', 'quit',
+            },
+            'terminal-mouse-selection': {'selection-drag', 'wheel-up', 'wheel-down', 'exit'},
+            'terminal-image-fallback': {'read-image', 'expand-image-result', 'exit'},
+            'native-extension-interactive-ui': {
+                'native-ui-startup', 'native-ui-widget', 'native-ui-input-update', 'native-ui-quit',
+            },
+        }
+        fixture_directory = Path(__file__).parent / 'fixtures'
+
+        for fixture_id, expected_checkpoints in required.items():
+            with self.subTest(fixture=fixture_id):
+                fixture = json.loads((fixture_directory / f'{fixture_id}.json').read_text())
+                actions = {action['id'] for action in fixture['actions']}
+                checkpoints = set(fixture.get('assertionFrames', []))
+
+                self.assertTrue(expected_checkpoints <= actions)
+                self.assertTrue(expected_checkpoints <= checkpoints)
+                if fixture_id == 'terminal-long-transcript':
+                    cursor_action = next(action for action in fixture['actions']
+                                         if action['id'] == 'search-cursor-left')
+                    self.assertTrue(cursor_action.get('expectCursorChange'))
+
+    def test_settle_waits_for_an_expected_hidden_cursor_change(self):
+        class ScriptedTerminal:
+            def __init__(self):
+                self.frames = [
+                    dict(viewport=[dict(cells=[dict(chars='READY')])],
+                         cursor=dict(x=10, y=2), modes=dict(private={'2026': False})),
+                    dict(viewport=[dict(cells=[dict(chars='READY')])],
+                         cursor=dict(x=9, y=2), modes=dict(private={'2026': False})),
+                ]
+                self.current = self.frames.pop(0)
+                self._new_render_frames = []
+                self.raw = bytearray(b'rendered')
+                self.closed = False
+                self.last_output = time.monotonic() - 1
+
+            def pump(self, timeout=0):
+                if self.frames:
+                    self.current = self.frames.pop(0)
+                self._new_render_frames = [self.current]
+                self.last_output = time.monotonic() - 1
+
+            def snapshot(self):
+                return self.current
+
+        terminal = ScriptedTerminal()
+        frame = TerminalProcess.settle(terminal, contains='READY', render_match=True,
+                                       cursor_before=dict(x=10, y=2))
+
+        self.assertEqual(dict(x=9, y=2), frame['cursor'])
+
     def test_current_pin_launches_the_normal_coding_agent_cli_with_fixture_argument_overrides(self):
         for scenario in ({}, {'arguments': {'pi': ['--no-session']}}, {'mockHuggingFace': True}):
             command = commands(Path('/current-pi'), Path('/pisharp.dll'), scenario)['pi']
             self.assertIn('/current-pi/packages/coding-agent/src/cli.ts', command)
+            self.assertEqual(0 if scenario.get('arguments', {}).get('pi') else 1,
+                             command.count('--no-context-files'))
             self.assertNotIn('/current-pi/packages/coding-agent/src/experimental/cli.ts', command)
             self.assertIn('file:///current-pi/packages/coding-agent/src/experimental/source-resolver.ts', command)
+
+            pisharp_command = commands(Path('/current-pi'), Path('/pisharp.dll'), scenario)['pisharp']
+            self.assertEqual(1, pisharp_command.count('--no-context-files'))
+
+    def test_product_argument_overrides_preserve_each_cli_executable_prefix(self):
+        result = commands(Path('/current-pi'), Path('/pisharp.dll'), {
+            'arguments': {
+                'pi': ['--session', '{agent}/fixtures/transcript.jsonl'],
+                'pisharp': ['--session', '{agent}/fixtures/transcript.jsonl', '--no-context-files'],
+            },
+        })
+
+        self.assertEqual('node', result['pi'][0])
+        self.assertEqual('/current-pi/packages/coding-agent/src/cli.ts', result['pi'][3])
+        self.assertEqual(['--session', '{agent}/fixtures/transcript.jsonl'], result['pi'][-2:])
+        self.assertEqual(['dotnet', '/pisharp.dll'], result['pisharp'][:2])
+        self.assertEqual(['--session', '{agent}/fixtures/transcript.jsonl', '--no-context-files'],
+                         result['pisharp'][-3:])
+
+    def test_terminal_prelude_is_written_before_both_real_cli_processes(self):
+        result = commands(Path('/current-pi'), Path('/pisharp.dll'),
+                          {'terminalPrelude': 'existing shell history\n'})
+        for product in ('pi', 'pisharp'):
+            self.assertEqual('sh', result[product][0])
+            self.assertEqual('printf %s "$1"; shift; exec "$@"', result[product][2])
+            self.assertEqual('existing shell history\n', result[product][4])
+            self.assertIn('/current-pi/packages/coding-agent/src/cli.ts' if product == 'pi'
+                          else '/pisharp.dll', result[product])
+
+    def test_scenario_files_can_write_validated_base64_assets(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_scenario_files({'fixture.bin': {'$base64': 'AAECAw=='}}, root)
+            self.assertEqual(bytes((0, 1, 2, 3)), (root / 'fixture.bin').read_bytes())
+
+            with self.assertRaises(ValueError):
+                write_scenario_files({'invalid.bin': {'$base64': 'not base64!'}}, root)
+
+    def test_fixture_files_expand_the_selected_workspace_path(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            workspace = root / 'workspace'
+            agent = root / 'agent'
+            with patch('run.WORKSPACE', workspace):
+                write_scenario_files({'fixtures/long.jsonl': '{"cwd":"{workspace}"}'}, agent)
+            self.assertEqual(f'{{"cwd":"{workspace}"}}', (agent / 'fixtures/long.jsonl').read_text())
+
+    def test_http_comparison_normalizes_tool_argument_json_without_hiding_value_changes(self):
+        compact = [{'body': {'messages': [{'role': 'assistant', 'tool_calls': [{'function': {
+            'arguments': '{"path":"fixture-image.png"}'}}]}]}}]
+        formatted = [{'body': {'messages': [{'role': 'assistant', 'tool_calls': [{'function': {
+            'arguments': '{\n  "path": "fixture-image.png"\n}'}}]}]}}]
+        changed = [{'body': {'messages': [{'role': 'assistant', 'tool_calls': [{'function': {
+            'arguments': '{"path":"other-image.png"}'}}]}]}}]
+
+        self.assertEqual(canonicalize_tool_call_arguments_in_requests(compact),
+                         canonicalize_tool_call_arguments_in_requests(formatted))
+        self.assertNotEqual(canonicalize_tool_call_arguments_in_requests(compact),
+                            canonicalize_tool_call_arguments_in_requests(changed))
 
     def test_emulator_shutdown_drains_a_snapshot_larger_than_the_pipe(self):
         terminal = TerminalProcess([sys.executable, '-c', 'import time; time.sleep(30)'],
@@ -284,6 +420,53 @@ class DriverTests(unittest.TestCase):
             self.assertEqual('private reasoning', reasoning['choices'][0]['delta']['reasoning_content'])
             self.assertEqual('fixture answer', answer['choices'][0]['delta']['content'])
             self.assertEqual('stop', finished['choices'][0]['finish_reason'])
+            self.assertEqual('data: [DONE]', done)
+        finally:
+            if stream is not None:
+                stream.close()
+            server.close()
+
+    def test_fixture_server_streams_gated_content_chunks_in_declared_order(self):
+        server = FixtureServer(behavior=dict(
+            chatResponseChunksByRequest=[['first partial', 'second partial']],
+            chatResponseChunkGatesByRequest=[[None, 'release-second-chunk']],
+            chatResponseChunkReadyGatesByRequest=[['first-chunk-sent', 'second-chunk-sent']]))
+        stream = None
+        try:
+            request = urllib.request.Request(
+                server.url + '/v1/chat/completions', data=json.dumps(dict(stream=True)).encode(),
+                headers={'Content-Type': 'application/json'}, method='POST')
+            stream = urllib.request.urlopen(request, timeout=2)
+            self.assertTrue(server.wait_for_gate('first-chunk-sent', timeout=1))
+            first = self.read_sse_event(stream)
+            self.assertEqual('first partial', first['choices'][0]['delta']['content'])
+            self.assertFalse(server.wait_for_gate('second-chunk-sent', timeout=0.05))
+            server.release_gate('release-second-chunk')
+            second = self.read_sse_event(stream)
+            self.assertEqual('second partial', second['choices'][0]['delta']['content'])
+            self.assertTrue(server.wait_for_gate('second-chunk-sent', timeout=1))
+        finally:
+            if stream is not None:
+                stream.close()
+            server.close()
+
+    def test_fixture_server_streams_openai_tool_calls_for_agent_continuation(self):
+        server = FixtureServer(behavior=dict(chatToolCallsByRequest=[[
+            dict(id='call-fixture-tool', name='bash', arguments={'command': 'printf tool-output'})]]))
+        stream = None
+        try:
+            request = urllib.request.Request(
+                server.url + '/v1/chat/completions', data=json.dumps(dict(stream=True)).encode(),
+                headers={'Content-Type': 'application/json'}, method='POST')
+            stream = urllib.request.urlopen(request, timeout=2)
+            call = self.read_sse_event(stream)
+            finish = self.read_sse_event(stream)
+            separator = stream.readline().decode().strip()
+            done = stream.readline().decode().strip() if not separator else separator
+            delta = call['choices'][0]['delta']['tool_calls'][0]
+            self.assertEqual('bash', delta['function']['name'])
+            self.assertEqual('{"command":"printf tool-output"}', delta['function']['arguments'])
+            self.assertEqual('tool_calls', finish['choices'][0]['finish_reason'])
             self.assertEqual('data: [DONE]', done)
         finally:
             if stream is not None:
@@ -843,6 +1026,18 @@ class DriverTests(unittest.TestCase):
                           '$.cursor.x', '$.modes.bracketedPasteMode'}, {item['path'] for item in differences(original, changed)})
         self.assertEqual([], list(differences(original, copy.deepcopy(original))))
 
+    def test_terminal_comparison_normalizes_empty_cell_glyphs_but_keeps_style_and_width_differences(self):
+        def state(chars, foreground=1, width=1):
+            return dict(rows=1, viewport=[dict(cells=[dict(chars=chars, width=width,
+                foreground=dict(mode='rgb', value=foreground))])], buffers={})
+
+        self.assertEqual(normalize_terminal_state(state('')),
+                         normalize_terminal_state(state(' ')))
+        self.assertNotEqual(normalize_terminal_state(state('', foreground=1)),
+                            normalize_terminal_state(state(' ', foreground=2)))
+        self.assertNotEqual(normalize_terminal_state(state('', width=1)),
+                            normalize_terminal_state(state(' ', width=2)))
+
     def test_real_pty_input_resize_and_cursor_round_trip(self):
         child = '''import os, signal, tty
 from shutil import get_terminal_size
@@ -898,6 +1093,25 @@ while True:
 
         self.assertIs(complete, frame)
         self.assertEqual(1, len(snapshots))
+
+    def test_allow_static_frame_captures_gate_ready_screen_without_new_output(self):
+        terminal = object.__new__(TerminalProcess)
+        terminal.render_frames = []
+        terminal._new_render_frames = []
+        terminal.raw = bytearray()
+        terminal.last_output = time.monotonic()
+        terminal.closed = False
+        terminal.process = None
+        frame = dict(viewport=[dict(cells=[dict(chars='prompt accepted')])],
+                     modes=dict(synchronizedOutput=False, private={'2026': False}))
+        pump_timeouts = []
+        terminal.pump = lambda timeout=0.05: pump_timeouts.append(timeout)
+        terminal.snapshot = lambda: frame
+
+        captured = terminal.settle('prompt accepted', allow_static_frame=True)
+
+        self.assertIs(frame, captured)
+        self.assertEqual([0], pump_timeouts)
 
     def test_settle_waits_until_a_transient_message_disappears(self):
         child = '''import os, time

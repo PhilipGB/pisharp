@@ -11,6 +11,12 @@ namespace PiSharp.Cli.Tui;
 
 internal static class InteractiveMode
 {
+    /// <summary>Stops terminal rendering before extension UI components and callbacks are released.</summary>
+    private sealed class TerminalShutdownLease(TerminalPresentation presentation) : IDisposable
+    {
+        public void Dispose() => presentation.Dispose();
+    }
+
     public static async Task RunAsync(string agentDirectory, PreparedProjectStartup startup,
         ActiveProjectRuntime projectBinding, ActiveModelRuntime modelBinding, ActiveConversationRuntime conversationBinding,
         ProviderModelRuntime modelRuntime, ModelRuntimeController modelRuntimeController, ConversationModelTransitions modelTransitions,
@@ -21,6 +27,7 @@ internal static class InteractiveMode
         var terminalScreen = presentation.Screen;
         using var extensionUiBinding = projectBinding.Configuration.ExtensionUi is ProjectTrustStartupUi packageUi &&
             terminalScreen is not null ? packageUi.BindInteractiveScreen(terminalScreen, editor, presentation) : null;
+        using var terminalShutdown = new TerminalShutdownLease(presentation);
         if (projectBinding.Configuration.ExtensionUi is ProjectTrustStartupUi extensionUi && terminalScreen is not null)
             extensionUi.SetInteractiveNotificationHandler((message, type) => terminalScreen.AppendThemedStatusLine(
                 type == "info" ? message : $"{type}: {message}"));
@@ -69,7 +76,7 @@ internal static class InteractiveMode
         Task AdoptProjectSession(ProjectSessionRuntime replacement) => projectTransitions.AdoptAsync(replacement,
             presentation.ConfigureMcpAuthorizationUrlPresenter, RefreshProjectUi, () =>
             {
-                terminalScreen?.SetFooter(presentation.IdleFooter());
+                presentation.SetIdleFooter();
                 presentation.LoadSessionTranscript();
             });
         IReadOnlyList<PiSharpExtensionCommandInfo> GetExtensionCommands()
@@ -297,11 +304,11 @@ internal static class InteractiveMode
                                 break;
                             case "/login":
                                 await terminalProviderLogin!.ShowAsync(argument);
-                                terminalScreen?.SetFooter(presentation.IdleFooter());
+                                presentation.SetIdleFooter();
                                 break;
                             case "/llama":
                                 await terminalLlamaManager!.ShowAsync(argument);
-                                terminalScreen?.SetFooter(presentation.IdleFooter());
+                                presentation.SetIdleFooter();
                                 break;
                             case "/logout":
                                 await terminalProviderCommands.LogoutAsync(argument, modelTransitions.ReplaceAsync);
@@ -372,7 +379,7 @@ internal static class InteractiveMode
                     }
                 }
                 catch (Exception e) { Console.Error.WriteLine($"Session error: {e.Message}"); Environment.ExitCode = 1; }
-                terminalScreen?.SetFooter(presentation.IdleFooter());
+                presentation.SetIdleFooter();
                 continue;
             }
             await RunAsync(line);

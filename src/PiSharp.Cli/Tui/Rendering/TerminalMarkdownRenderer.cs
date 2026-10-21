@@ -16,6 +16,13 @@ internal static class TerminalMarkdownRenderer
             baseForegroundToken);
     }
 
+    public static string RenderStreaming(string markdown, int availableWidth = 80, TerminalTheme? theme = null,
+        string? codeBlockIndent = null, string? baseForegroundToken = null)
+    {
+        ArgumentNullException.ThrowIfNull(markdown);
+        return Render(PreserveIncompleteLinks(markdown), availableWidth, theme, codeBlockIndent, baseForegroundToken);
+    }
+
     public static string Render(MarkdownDocument document, string source, int availableWidth = 80,
         TerminalTheme? theme = null, string? codeBlockIndent = null, string? baseForegroundToken = null)
     {
@@ -46,14 +53,17 @@ internal static class TerminalMarkdownRenderer
         switch (block)
         {
             case MathBlock math:
-                return TerminalMarkdownInlineRenderer.Visible(TerminalMarkdownSource.Slice(math, source));
+                var rawMath = TerminalMarkdownSource.Slice(math, source).Trim();
+                var mathSource = StripMathDelimiters(rawMath);
+                return string.Join('\n', (TerminalLatexRenderer.Render(mathSource, display: true) ?? rawMath)
+                    .Split('\n').Select(TerminalMarkdownInlineRenderer.Visible));
             case FencedCodeBlock fenced:
                 return RenderCodeBlock(fenced, Language(fenced.Info?.ToString() ?? ""), theme, codeBlockIndent);
             case CodeBlock code:
                 return RenderCodeBlock(code, null, theme, codeBlockIndent);
             case HeadingBlock heading:
                 return TerminalMarkdownInlineRenderer.Render(heading.Inline?.FirstChild, styled: true, theme: theme,
-                    baseStyle: "\u001b[1m" + theme.Fg("mdHeading"));
+                    baseStyle: "\u001b[1m" + (heading.Level == 1 ? "\u001b[4m" : "") + theme.Fg("mdHeading"));
             case ParagraphBlock paragraph:
                 return TerminalMarkdownInlineRenderer.Render(paragraph.Inline?.FirstChild, styled: true, theme,
                     baseStyle: baseForegroundToken is null ? null : theme.Fg(baseForegroundToken));
@@ -90,7 +100,7 @@ internal static class TerminalMarkdownRenderer
         {
             var order = item.Order > 0 ? item.Order : fallbackOrder;
             fallbackOrder = order + 1;
-            var marker = list.IsOrdered ? $"{order}{list.OrderedDelimiter}" : "•";
+            var marker = list.IsOrdered ? $"{order}{list.OrderedDelimiter}" : "-";
             var content = RenderBlocks(item, source, Math.Max(1, width - TerminalTextLayout.Width(marker) - 1), "\n",
                 theme, codeBlockIndent, baseForegroundToken);
             if (content.Length == 0)
@@ -101,7 +111,7 @@ internal static class TerminalMarkdownRenderer
 
             var lines = content.Split('\n');
             var continuation = new string(' ', TerminalTextLayout.Width(marker) + 1);
-            output.Add(theme.Style("mdListBullet", marker) + " " + lines[0]);
+            output.Add(theme.Style("mdListBullet", marker + " ") + lines[0]);
             for (var index = 1; index < lines.Length; index++) output.Add(continuation + lines[index]);
         }
         return string.Join('\n', output);
@@ -120,13 +130,14 @@ internal static class TerminalMarkdownRenderer
     private static string RenderCodeBlock(CodeBlock block, string? language, TerminalTheme theme, string codeBlockIndent)
     {
         var output = new List<string>();
-        if (!string.IsNullOrEmpty(language)) output.Add(theme.Style("mdCodeBlockBorder", $"  [{TerminalMarkdownInlineRenderer.Visible(language)}]", dim: true));
+        output.Add(theme.Style("mdCodeBlockBorder", $"```{TerminalMarkdownInlineRenderer.Visible(language ?? "")}"));
         var text = block.Lines.ToString().Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
         var lines = text.Split('\n');
         if (text.EndsWith('\n') && lines.Length > 1) lines = lines[..^1];
         foreach (var line in lines)
-            output.Add(theme.Style("mdCodeBlockBorder", "  │") + codeBlockIndent +
-                theme.Style("mdCodeBlock", TerminalMarkdownInlineRenderer.Visible(line)));
+            output.Add(codeBlockIndent + TerminalSyntaxHighlighter.Highlight(
+                TerminalMarkdownInlineRenderer.Visible(line), language, theme));
+        output.Add(theme.Style("mdCodeBlockBorder", "```"));
         return string.Join('\n', output);
     }
 
@@ -141,5 +152,113 @@ internal static class TerminalMarkdownRenderer
     {
         if (text.Length == 0) return prefix.TrimEnd();
         return string.Join('\n', text.Split('\n').Select(line => line.Length == 0 ? prefix.TrimEnd() : prefix + line));
+    }
+
+    private static string StripMathDelimiters(string source)
+    {
+        if (source.StartsWith("$$", StringComparison.Ordinal) && source.EndsWith("$$", StringComparison.Ordinal) && source.Length >= 4)
+            return source[2..^2].Trim();
+        if (source.StartsWith("\\[", StringComparison.Ordinal) && source.EndsWith("\\]", StringComparison.Ordinal) && source.Length >= 4)
+            return source[2..^2].Trim();
+        return source;
+    }
+
+    private static string PreserveIncompleteLinks(string source)
+    {
+        var openBrackets = new Stack<int>();
+        var escapedOpeners = new HashSet<int>();
+        var inlineCodeTicks = 0;
+        var fencedCodeCharacter = '\0';
+        var fencedCodeLength = 0;
+        var lineStart = 0;
+        while (lineStart < source.Length)
+        {
+            var lineEnd = source.IndexOf('\n', lineStart);
+            if (lineEnd < 0) lineEnd = source.Length;
+            var first = lineStart;
+            while (first < lineEnd && source[first] == ' ') first++;
+            var fenceLength = CountRun(source, first, lineEnd, '`');
+            var fenceCharacter = '`';
+            if (fenceLength < 3)
+            {
+                fenceCharacter = '~';
+                fenceLength = CountRun(source, first, lineEnd, '~');
+            }
+            if (fenceLength >= 3 && (fencedCodeCharacter == '\0' ||
+                fencedCodeCharacter == fenceCharacter && fenceLength >= fencedCodeLength))
+            {
+                if (fencedCodeCharacter == '\0')
+                {
+                    fencedCodeCharacter = fenceCharacter;
+                    fencedCodeLength = fenceLength;
+                }
+                else
+                {
+                    fencedCodeCharacter = '\0';
+                    fencedCodeLength = 0;
+                }
+                lineStart = lineEnd + 1;
+                continue;
+            }
+
+            if (fencedCodeCharacter == '\0')
+            {
+                for (var index = lineStart; index < lineEnd; index++)
+                {
+                    var current = source[index];
+                    if (current == '\\')
+                    {
+                        index++;
+                        continue;
+                    }
+                    if (current == '`')
+                    {
+                        var ticks = CountRun(source, index, lineEnd, '`');
+                        if (inlineCodeTicks == 0) inlineCodeTicks = ticks;
+                        else if (inlineCodeTicks == ticks) inlineCodeTicks = 0;
+                        index += ticks - 1;
+                        continue;
+                    }
+                    if (inlineCodeTicks > 0) continue;
+                    if (current == '[') openBrackets.Push(index);
+                    else if (current == ']' && openBrackets.TryPop(out var opener))
+                    {
+                        if (index + 1 < lineEnd && source[index + 1] == '(' &&
+                            !HasClosingLinkDestination(source, index + 2, lineEnd))
+                            escapedOpeners.Add(opener);
+                    }
+                }
+            }
+            lineStart = lineEnd + 1;
+        }
+
+        foreach (var opener in openBrackets) escapedOpeners.Add(opener);
+        if (escapedOpeners.Count == 0) return source;
+        var result = new StringBuilder(source.Length + escapedOpeners.Count * 5);
+        for (var index = 0; index < source.Length; index++)
+        {
+            if (escapedOpeners.Contains(index)) result.Append("&#91;");
+            else result.Append(source[index]);
+        }
+        return result.ToString();
+    }
+
+    private static int CountRun(string source, int start, int end, char value)
+    {
+        var index = start;
+        while (index < end && source[index] == value) index++;
+        return index - start;
+    }
+
+    private static bool HasClosingLinkDestination(string source, int start, int end)
+    {
+        var depth = 1;
+        for (var index = start; index < end; index++)
+        {
+            if (source[index] == '\\') { index++; continue; }
+            if (source[index] == '(') depth++;
+            else if (source[index] == ')' && --depth == 0) return true;
+        }
+        return false;
     }
 }

@@ -173,8 +173,13 @@ public sealed class TerminalInputTests
         Assert.Equal((5, 3), (motion.Column, motion.Row));
 
         Assert.True(reader.Read().Mouse!.Value.IsRelease);
-        Assert.Equal(5, reader.Read().Mouse!.Value.WheelScrollDelta);
-        Assert.Equal(0, reader.Read().Mouse!.Value.WheelScrollDelta); // horizontal wheel
+        var altWheel = reader.Read().Mouse!.Value;
+        Assert.Equal(-1, altWheel.WheelDirection);
+        Assert.Equal(5, altWheel.WheelScrollMultiplier);
+        Assert.Equal(5, altWheel.WheelScrollDelta);
+        var horizontalWheel = reader.Read().Mouse!.Value;
+        Assert.Equal(0, horizontalWheel.WheelDirection);
+        Assert.Equal(0, horizontalWheel.WheelScrollDelta);
     }
 
     [Fact]
@@ -251,6 +256,15 @@ public sealed class TerminalInputTests
              Environment.GetEnvironmentVariable("WSL_INTEROP") is not null);
         if (!windowsBindings)
             Assert.Equal("app.model.cycleBackward", new EditorKeymap().MatchIdleApplicationAction(controlShiftP));
+    }
+
+    [Fact]
+    public void DecodesKittyFunctionalPageKeys()
+    {
+        var reader = new TerminalInput(new MemoryStream(Encoding.UTF8.GetBytes("\u001b[57421u\u001b[57422u")));
+
+        Assert.Equal(ConsoleKey.PageUp, reader.Read().Key?.Key);
+        Assert.Equal(ConsoleKey.PageDown, reader.Read().Key?.Key);
     }
 
     [Fact]

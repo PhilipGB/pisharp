@@ -131,6 +131,27 @@ public sealed class TerminalSelectionListTests
     }
 
     [Fact]
+    public void ModelPickerStylesWrappedContinuationAndLeavesFinalPaddingUnstyled()
+    {
+        const int width = 44;
+        const string hint = "Only showing models from configured providers. Use /login to add providers.";
+        var list = new TerminalSelectionList<string>("Select model",
+            [new TerminalSelectionOption<string>("model", "model", "model")]);
+        var theme = TerminalTheme.Default;
+
+        var lines = list.RenderModelPicker(width, theme, hint, "Refreshing model catalogs…",
+            refreshSuccess: false, model => model, out _, out _);
+        var wrappedHint = TerminalTextLayout.Wrap(hint, width)
+            .Select(TerminalTextLayout.StripFormatting).ToArray();
+        var expected = theme.Style("warning", wrappedHint[0] +
+            new string(' ', width - TerminalTextLayout.Width(wrappedHint[0])));
+
+        Assert.Equal(expected, lines[2]);
+        Assert.Equal(theme.Style("warning", wrappedHint[1]) +
+            new string(' ', width - TerminalTextLayout.Width(wrappedHint[1])), lines[3]);
+    }
+
+    [Fact]
     public void OverlayHostSelectsFromStreamAndSanitizesUntrustedLabels()
     {
         using var output = new StringWriter();

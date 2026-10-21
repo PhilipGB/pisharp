@@ -27,7 +27,7 @@ public sealed class TerminalSettingsPickerTests
         }, ids.Skip(10).Take(8));
         Assert.Equal(new[]
         {
-            "defaultThinkingLevel", "httpProxy", "terminal.trueColor", "externalEditor",
+            "fullscreenWheelScrollLines", "defaultThinkingLevel", "httpProxy", "terminal.trueColor", "externalEditor",
             "retry.provider.timeoutMs", "retry.provider.maxRetries",
             "retry.provider.maxRetryDelayMs", "markdown.codeBlockIndent"
         }, ids.Skip(18));
@@ -55,7 +55,7 @@ public sealed class TerminalSettingsPickerTests
         Assert.Equal(10, settingRows.Length);
         Assert.Equal(firstValue, secondValue);
         Assert.Contains(plainRows, row => row.Contains("Automatically compact context", StringComparison.Ordinal));
-        Assert.Contains(plainRows, row => row.Contains("1/26", StringComparison.Ordinal));
+        Assert.Contains(plainRows, row => row.Contains("1/27", StringComparison.Ordinal));
         Assert.Contains(plainRows, row => row.Contains("Type to filter", StringComparison.Ordinal));
         Assert.DoesNotContain(plainRows, row => row.Contains("Search:", StringComparison.Ordinal));
         Assert.All(rendered, row => Assert.True(TerminalTextLayout.Width(row) <= width));

@@ -103,6 +103,33 @@ public sealed class InteractiveTranscriptTests
     }
 
     [Fact]
+    public void LoadHistoryDoesNotGiveWhitespaceOnlyAssistantTextAContinuationSpacer()
+    {
+        using var baselineOutput = new StringWriter();
+        using var baselineError = new StringWriter();
+        using var baselineScreen = new TerminalScreen(baselineOutput, baselineError, () => 80, () => 20);
+        var baseline = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        baseline.Append(new ChatMessage(ChatRole.User, "first user"));
+        new InteractiveTranscript(baselineScreen.Output, baselineScreen.Error, screen: baselineScreen)
+            .LoadHistory(baseline);
+        baselineScreen.AppendUserMessage("next user");
+
+        using var whitespaceOutput = new StringWriter();
+        using var whitespaceError = new StringWriter();
+        using var whitespaceScreen = new TerminalScreen(whitespaceOutput, whitespaceError, () => 80, () => 20);
+        var withWhitespace = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        withWhitespace.Append(new ChatMessage(ChatRole.User, "first user"));
+        withWhitespace.Append(new ChatMessage(ChatRole.Assistant, " \n\t "));
+        new InteractiveTranscript(whitespaceScreen.Output, whitespaceScreen.Error, screen: whitespaceScreen)
+            .LoadHistory(withWhitespace);
+        whitespaceScreen.AppendUserMessage("next user");
+
+        var baselineFrame = TerminalOutputFrameReader.Read(baselineOutput.ToString(), rows: 20, columns: 80)[^1].Screen;
+        var whitespaceFrame = TerminalOutputFrameReader.Read(whitespaceOutput.ToString(), rows: 20, columns: 80)[^1].Screen;
+        Assert.Equal(baselineFrame, whitespaceFrame);
+    }
+
+    [Fact]
     public void HiddenCustomMessagesStayInContextButAreNotRenderedLiveOrFromHistory()
     {
         using var output = new StringWriter();
@@ -282,7 +309,7 @@ public sealed class InteractiveTranscriptTests
             ToolArguments = new Dictionary<string, object?> { ["path"] = "notes.txt", ["content"] = "private file content" }
         });
 
-        Assert.Contains("→ bash · command: git status[2J --short (call-1)", status.ToString());
+        Assert.Contains("$ git status[2J\n--short", status.ToString());
         Assert.Contains("→ write · path: notes.txt", status.ToString());
         Assert.DoesNotContain("private", status.ToString());
         Assert.DoesNotContain('\u001b', status.ToString());
@@ -347,6 +374,26 @@ public sealed class InteractiveTranscriptTests
         Assert.Contains("← permission denied", status.ToString());
         Assert.DoesNotContain("do not show", status.ToString());
         Assert.DoesNotContain('\u001b', status.ToString());
+    }
+
+    [Fact]
+    public void ReadToolUsesPiCallPresentationAndHidesSuccessfulCollapsedResult()
+    {
+        using var output = new StringWriter();
+        using var status = new StringWriter();
+        var transcript = new InteractiveTranscript(output, status);
+
+        transcript.Render(new AgentLifecycleEvent("tool_execution_started", Tool: "read", OperationId: "read-1")
+        {
+            ToolArguments = new Dictionary<string, object?> { ["path"] = "fixture.txt" }
+        });
+        transcript.Render(new("tool_execution_finished", Tool: "read", OperationId: "read-1",
+            Text: "file contents", IsError: false));
+
+        Assert.Contains("read fixture.txt", status.ToString());
+        Assert.DoesNotContain("→", status.ToString());
+        Assert.DoesNotContain("path:", status.ToString());
+        Assert.DoesNotContain("file contents", status.ToString());
     }
 
     [Fact]
@@ -426,9 +473,9 @@ public sealed class InteractiveTranscriptTests
         Assert.Contains("removed", visible);
         Assert.Contains("foo_bar", visible);
         Assert.Contains("│ quoted", visible);
-        Assert.Contains("• item", visible);
-        Assert.Contains("• [ ] pending", visible);
-        Assert.Contains("• [x] complete", visible);
+        Assert.Contains("- item", visible);
+        Assert.Contains("- [ ] pending", visible);
+        Assert.Contains("- [x] complete", visible);
         Assert.Matches("\\u001b\\[9mremoved\\u001b\\[(?:29|0)m", output.ToString());
         var tableStart = visible.LastIndexOf("┌─", StringComparison.Ordinal);
         var tableEnd = visible.LastIndexOf("└─", StringComparison.Ordinal);
@@ -437,7 +484,7 @@ public sealed class InteractiveTranscriptTests
         Assert.Contains("Count", table);
         Assert.Contains("Widget", table);
         Assert.Contains("var answer = 42;", visible);
-        Assert.DoesNotContain("```", visible);
+        Assert.Contains("```csharp", visible);
     }
 
     [Fact]
@@ -458,6 +505,24 @@ public sealed class InteractiveTranscriptTests
     }
 
     [Fact]
+    public void FinishingScreenAssistantDoesNotAddAnExtraTranscriptRow()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        var markdown = string.Join("\n\n", Enumerable.Range(1, 30).Select(index => $"Response paragraph {index}"));
+
+        transcript.Render(new("model_text_delta", Text: markdown));
+        var streaming = TerminalOutputFrameReader.Read(output.ToString(), rows: 24, columns: 80)[^1].Screen;
+
+        transcript.FinishTurn();
+        var committed = TerminalOutputFrameReader.Read(output.ToString(), rows: 24, columns: 80)[^1].Screen;
+
+        Assert.Equal(streaming, committed);
+    }
+
+    [Fact]
     public void ActiveScreenWrapsGfmTableCellsToAvailableWidth()
     {
         using var output = new StringWriter();
@@ -466,9 +531,7 @@ public sealed class InteractiveTranscriptTests
         var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
         transcript.Render(new("model_text_delta", Text: "| Name | Description |\n| --- | --- |\n| `A|B` | thisisaverylongunbrokentablecellvalue |\n| Escaped | left\\|right |\n| Trailing | ends\\|"));
         transcript.FinishTurn();
-        screen.Dispose();
-
-        var visible = StripSgr(output.ToString());
+        var visible = TerminalOutputFrameReader.Read(output.ToString(), rows: 30, columns: 40)[^1].Screen;
         var tableStart = visible.LastIndexOf("┌─", StringComparison.Ordinal);
         var tableEnd = visible.LastIndexOf("└─", StringComparison.Ordinal);
         Assert.True(tableStart >= 0 && tableEnd > tableStart);
@@ -495,9 +558,8 @@ public sealed class InteractiveTranscriptTests
         var markdown = $"| Name | Description |\n| --- | --- |\n| CJK | 界e\u0301{family}unbrokenvalue |";
         transcript.Render(new("model_text_delta", Text: markdown));
         transcript.FinishTurn();
-        screen.Dispose();
-
-        var visible = StripSgr(output.ToString());
+        var frame = TerminalOutputFrameReader.Read(output.ToString(), rows: 30, columns: 20)[^1];
+        var visible = frame.Screen;
         var tableStart = visible.LastIndexOf("┌─", StringComparison.Ordinal);
         var tableEnd = visible.LastIndexOf("└─", StringComparison.Ordinal);
         Assert.True(tableStart >= 0 && tableEnd > tableStart);
@@ -507,10 +569,16 @@ public sealed class InteractiveTranscriptTests
         Assert.NotEmpty(tableLines);
         Assert.All(tableLines, line => Assert.True(TerminalTextLayout.Width(line) <= 20,
             $"Table row exceeded the terminal width in cells: {line}"));
-        var tableContent = new string(visible[tableStart..tableEnd].Where(char.IsLetterOrDigit).ToArray());
-        Assert.Contains("界e\u0301", visible);
-        Assert.Contains(family, visible);
-        Assert.Contains("unbrokenvalue", tableContent);
+        var terminalText = TerminalTextLayout.StripFormatting(output.ToString());
+        var renderedRow = terminalText.LastIndexOf("│ CJK │", StringComparison.Ordinal);
+        Assert.True(renderedRow >= 0, terminalText);
+        if (renderedRow < 0) return;
+        var renderedEnd = terminalText.IndexOf("└─", renderedRow, StringComparison.Ordinal);
+        Assert.True(renderedRow >= 0 && renderedEnd > renderedRow);
+        var renderedCellContent = new string(terminalText[renderedRow..renderedEnd]
+            .Where(character => !char.IsWhiteSpace(character) && character is not '│' and not '┌' and not '└' and not '─')
+            .ToArray());
+        Assert.Contains("CJK界e\u0301" + family + "unbrokenvalue", renderedCellContent, StringComparison.Ordinal);
     }
 
     [Fact]

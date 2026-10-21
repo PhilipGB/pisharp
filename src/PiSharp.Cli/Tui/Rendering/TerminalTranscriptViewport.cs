@@ -38,6 +38,13 @@ internal static class TerminalTranscriptViewport
         return Math.Clamp(totalRows - Math.Min(totalRows, startRow + viewportHeight), 0, MaximumScrollOffset);
     }
 
+    public static int ScrollOffsetToReveal(int totalRows, int selectedRow, int viewportHeight)
+    {
+        var startRow = Math.Clamp(selectedRow - Math.Max(0, viewportHeight / 3), 0,
+            Math.Max(0, totalRows - viewportHeight));
+        return Math.Clamp(totalRows - Math.Min(totalRows, startRow + viewportHeight), 0, MaximumScrollOffset);
+    }
+
     public static int ScrollOffsetForFirstRow(int totalRows, int firstRow, int viewportHeight)
     {
         var startRow = Math.Clamp(firstRow, 0, Math.Max(0, totalRows - viewportHeight));
@@ -64,5 +71,15 @@ internal static class TerminalTranscriptViewport
             offset += element.Length;
         }
         return result.ToString();
+    }
+
+    public static string ClipWithEllipsis(string value, int width)
+    {
+        if (width <= 0) return string.Empty;
+        if (TerminalTextLayout.Width(value) <= width) return Clip(value, width);
+
+        const string ellipsis = "...";
+        if (width <= ellipsis.Length) return Clip(ellipsis, width);
+        return Clip(value, width - ellipsis.Length) + ellipsis;
     }
 }

@@ -2,13 +2,14 @@
 import base64
 import codecs
 import copy
+import json
 import re
 from itertools import zip_longest
 
 SPINNER_FRAMES = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 HTTP_DOCUMENTATION_PATH_NORMALIZATION = (
-    'Only generated Main documentation, Additional docs, and Examples package-root lines in system messages are '
-    'canonicalized; raw request bodies remain captured.')
+    'Generated system-message package-root documentation lines and JSON-encoded OpenAI tool-call arguments are '
+    'canonicalized structurally; raw request bodies remain captured.')
 MAX_RENDER_DIFFERENCES = 100
 
 
@@ -53,6 +54,30 @@ def canonicalize_documentation_paths_in_requests(requests):
             content = message.get('content')
             if isinstance(content, (str, list)):
                 message['content'] = normalize_documentation_install_paths(content)
+    return result
+
+
+def canonicalize_tool_call_arguments_in_requests(requests):
+    """Compare valid JSON tool arguments structurally while retaining raw request evidence."""
+    result = copy.deepcopy(requests)
+    for request in result:
+        body = request.get('body')
+        messages = body.get('messages') if isinstance(body, dict) else None
+        if not isinstance(messages, list):
+            continue
+        for message in messages:
+            calls = message.get('tool_calls') if isinstance(message, dict) else None
+            if not isinstance(calls, list):
+                continue
+            for call in calls:
+                function = call.get('function') if isinstance(call, dict) else None
+                arguments = function.get('arguments') if isinstance(function, dict) else None
+                if not isinstance(arguments, str):
+                    continue
+                try:
+                    function['arguments'] = json.loads(arguments)
+                except (json.JSONDecodeError, TypeError):
+                    continue
     return result
 
 
@@ -142,8 +167,10 @@ def compare_products(left, right, concurrent_http_groups=()):
     raw_left_http = canonicalize_concurrent_requests(left.get('http', []), concurrent_http_groups)
     raw_right_http = canonicalize_concurrent_requests(right.get('http', []), concurrent_http_groups)
     raw_http_differences = list(differences(raw_left_http, raw_right_http, '$.http'))
-    left_http = canonicalize_documentation_paths_in_requests(raw_left_http)
-    right_http = canonicalize_documentation_paths_in_requests(raw_right_http)
+    left_http = canonicalize_tool_call_arguments_in_requests(
+        canonicalize_documentation_paths_in_requests(raw_left_http))
+    right_http = canonicalize_tool_call_arguments_in_requests(
+        canonicalize_documentation_paths_in_requests(raw_right_http))
     http_differences = list(differences(left_http, right_http, '$.http'))
     result_differences = list(state_differences)
     result_differences.extend(render_differences)
@@ -201,9 +228,24 @@ def normalize_terminal_state(state):
     rows = normalized.get('rows')
     if isinstance(rows, int) and rows > 0:
         for buffer in normalized.get('buffers', {}).values():
+            normalize_empty_cell_characters(buffer.get('lines', []))
             normalize_loader_spinner(buffer.get('lines', []), rows)
+        normalize_empty_cell_characters(normalized.get('viewport', []))
         normalize_loader_spinner(normalized.get('viewport', []), rows)
     return normalized
+
+
+def normalize_empty_cell_characters(lines):
+    """Ignore only the equivalent empty-cell glyph serialization; preserve all cell styles."""
+    if not isinstance(lines, list):
+        return
+    for line in lines:
+        if not isinstance(line, dict) or not isinstance(line.get('cells'), list):
+            continue
+        for cell in line['cells']:
+            if (isinstance(cell, dict) and cell.get('width', 1) == 1 and
+                    cell.get('chars') in ('', ' ')):
+                cell['chars'] = '<empty-cell>'
 
 
 def normalize_loader_spinner(lines, rows):

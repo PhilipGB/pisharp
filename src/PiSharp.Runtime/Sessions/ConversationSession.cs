@@ -471,11 +471,24 @@ public sealed class ConversationSession
         Tree.Append("usage", JsonSerializer.SerializeToElement(usage));
     }
 
-    public IReadOnlyList<UsageRecord> ActiveUsage() => Tree.ActivePath()
-        .Where(node => node.Type == "usage")
-        .Select(node => node.Payload.Deserialize<UsageRecord>() ??
-            throw new InvalidDataException($"Invalid usage record at {node.Id}."))
-        .ToArray();
+    public IReadOnlyList<UsageRecord> ActiveUsage()
+    {
+        var usage = new List<UsageRecord>();
+        foreach (var node in Tree.ActivePath())
+        {
+            if (node.Type == "usage")
+            {
+                usage.Add(node.Payload.Deserialize<UsageRecord>() ??
+                    throw new InvalidDataException($"Invalid usage record at {node.Id}."));
+            }
+            else if (PiJsonlEntryCodec.ImportedUsage(node) is { } importedUsage)
+            {
+                usage.Add(importedUsage);
+            }
+        }
+
+        return usage;
+    }
 
     /// <summary>Record an in-flight-only summary so later budget checks never mistake its lower provider usage for raw context.</summary>
     public void MarkInFlightProjection() => Tree.Append("context_projection", JsonSerializer.SerializeToElement(new { }));

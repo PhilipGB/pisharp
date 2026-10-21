@@ -49,7 +49,7 @@ internal sealed class TerminalApplicationActions(TerminalSettingsCommands settin
         {
             Console.Error.WriteLine($"Shortcut action failed: {error.Message}");
         }
-        finally { presentation.Screen?.SetFooter(presentation.IdleFooter()); }
+        finally { presentation.SetIdleFooter(); }
     }
 
 }

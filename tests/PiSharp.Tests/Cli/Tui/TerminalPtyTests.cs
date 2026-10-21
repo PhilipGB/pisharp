@@ -268,9 +268,9 @@ public sealed class TerminalPtyTests
             Assert.Contains("Saved trust decision: trusted. Restart PiSharp for this to take effect.", capturedOutput);
             Assert.Contains("This project is not trusted.", capturedOutput);
             Assert.Contains("restart PiSharp.", capturedOutput);
-            Assert.Contains("PiSharp can explain its own features and look up its docs. Ask how to use or extend PiSharp.", capturedOutput);
+            Assert.Contains("PiSharp can explain its own features and look up its docs. Ask it how to use or extend PiSharp.", capturedOutput);
             Assert.DoesNotContain("Use /hotkeys for shortcut help and / for commands.", capturedOutput);
-            Assert.True(capturedOutput.IndexOf("PiSharp can explain its own features and look up its docs. Ask how to use or extend PiSharp.", StringComparison.Ordinal) <
+            Assert.True(capturedOutput.IndexOf("PiSharp can explain its own features and look up its docs. Ask it how to use or extend PiSharp.", StringComparison.Ordinal) <
                 capturedOutput.LastIndexOf("This project is not trusted.", StringComparison.Ordinal));
             Assert.DoesNotContain("Agent error:", capturedOutput);
             Assert.DoesNotContain("Exception:", await stderr);
@@ -1485,7 +1485,7 @@ public sealed class TerminalPtyTests
             var initial = await screen.WaitForFrameAsync(frame =>
                 frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
                 frame.Contains("Auto-compact", StringComparison.Ordinal) &&
-                frame.Contains("(1/26)", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+                frame.Contains("(1/27)", StringComparison.Ordinal)).WaitAsync(timeout.Token);
             var sharedOrder = new[]
             {
                 "Auto-compact", "Auto-resize images", "Block images", "Skill commands",
@@ -2612,6 +2612,7 @@ public sealed class TerminalPtyTests
 
             await SendAsync("/thinking xhigh\r");
             await WaitForOutputAsync("Session error: Thinking level 'xhigh' is not supported");
+            var invalidThinkingFrame = screen.LastFrame;
             await SendAsync("/thinking\r");
             await screen.WaitForFrameAsync(frame => frame.Contains("Thinking Level", StringComparison.Ordinal) &&
                 frame.Split('\n').Any(line => line.Contains('>') && line.Contains("medium", StringComparison.Ordinal)))
@@ -2625,7 +2626,9 @@ public sealed class TerminalPtyTests
             await process.WaitForExitAsync(timeout.Token);
 
             Assert.Equal(1, process.ExitCode);
-            Assert.Contains("Available levels: off, minimal, low, medium, high", await stdout, StringComparison.Ordinal);
+            _ = await stdout;
+            Assert.Contains("Available levels: off,", invalidThinkingFrame, StringComparison.Ordinal);
+            Assert.Contains("minimal, low, medium, high.", invalidThinkingFrame, StringComparison.Ordinal);
             Assert.DoesNotContain("Unhandled exception", await stderr);
         }
         finally

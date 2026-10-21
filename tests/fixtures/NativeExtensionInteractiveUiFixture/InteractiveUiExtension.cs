@@ -8,6 +8,13 @@ public sealed class InteractiveUiExtension : IPiSharpExtension
     public void Configure(IPiSharpExtensionBuilder builder)
     {
         var ui = builder.Ui;
+        if (string.Equals(Environment.GetEnvironmentVariable("PISHARP_PARITY_STATIC_WORKING_INDICATOR"),
+                "1", StringComparison.Ordinal))
+        {
+            ui.SetWorkingIndicator(new(["⠋"]));
+            return;
+        }
+
         var dashboard = new DashboardState();
         ui.SetStatus("dashboard", "native-ui:ready");
         ui.SetWidget("dashboard", new DashboardWidget(dashboard));

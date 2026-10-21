@@ -29,14 +29,16 @@ internal sealed class TranscriptSelectionController
         _firstVisualRow = firstVisualRow;
     }
 
-    public (bool Changed, bool Copy) HandleMouse(TerminalMouseEvent mouse, int transcriptScreenStart, int transcriptHeight)
+    public (bool Changed, bool Copy) HandleMouse(TerminalMouseEvent mouse, int transcriptScreenStart,
+        int transcriptHeight, int transcriptCellOffset)
     {
         if (mouse.IsWheel) return default;
 
         if (!mouse.IsRelease && !mouse.IsMotion)
         {
             if ((mouse.Button & 3) != 0) return default;
-            if (!TryGetPoint(mouse, transcriptScreenStart, transcriptHeight, clampToTranscript: false, out var point)) return default;
+            if (!TryGetPoint(mouse, transcriptScreenStart, transcriptHeight, transcriptCellOffset,
+                clampToTranscript: false, out var point)) return default;
             _anchor = _focus = point;
             _dragging = true;
             _hasSelection = false;
@@ -46,7 +48,8 @@ internal sealed class TranscriptSelectionController
 
         if (mouse.IsMotion)
         {
-            if (!_dragging || !TryGetPoint(mouse, transcriptScreenStart, transcriptHeight, clampToTranscript: true, out var moved)) return default;
+            if (!_dragging || !TryGetPoint(mouse, transcriptScreenStart, transcriptHeight, transcriptCellOffset,
+                clampToTranscript: true, out var moved)) return default;
             if (_focus == moved) return default;
             _focus = moved;
             _hasSelection = _anchor != moved;
@@ -54,7 +57,8 @@ internal sealed class TranscriptSelectionController
         }
 
         if (!_dragging) return default;
-        if (TryGetPoint(mouse, transcriptScreenStart, transcriptHeight, clampToTranscript: true, out var released)) _focus = released;
+        if (TryGetPoint(mouse, transcriptScreenStart, transcriptHeight, transcriptCellOffset,
+            clampToTranscript: true, out var released)) _focus = released;
         _dragging = false;
         _hasSelection = _anchor != _focus;
         SelectedText = _hasSelection ? BuildSelection() : null;
@@ -79,7 +83,7 @@ internal sealed class TranscriptSelectionController
     }
 
     private bool TryGetPoint(TerminalMouseEvent mouse, int transcriptScreenStart, int transcriptHeight,
-        bool clampToTranscript, out Point point)
+        int transcriptCellOffset, bool clampToTranscript, out Point point)
     {
         point = default;
         if (_visibleRows.Count == 0 || transcriptHeight <= 0) return false;
@@ -87,7 +91,8 @@ internal sealed class TranscriptSelectionController
         if (!clampToTranscript && (screenRow < transcriptScreenStart || screenRow >= transcriptScreenStart + transcriptHeight))
             return false;
         var localRow = Math.Clamp(screenRow - transcriptScreenStart, 0, Math.Min(transcriptHeight, _visibleRows.Count) - 1);
-        var cells = TerminalTextLayout.CellRangeAt(_visibleRows[localRow], mouse.Column - 1);
+        var cells = TerminalTextLayout.CellRangeAt(_visibleRows[localRow],
+            Math.Max(0, mouse.Column - 1 - transcriptCellOffset));
         point = new(_firstVisualRow + localRow, cells.Start, cells.End);
         return true;
     }

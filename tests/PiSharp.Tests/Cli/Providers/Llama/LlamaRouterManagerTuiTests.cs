@@ -711,25 +711,27 @@ public sealed class LlamaRouterManagerTuiTests
                 }
 
                 var resizeMark = terminal.Mark;
-                var resized = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor,
+                var resized = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor &&
+                    frame.Contains("↓ Jump to latest message", StringComparison.Ordinal),
                     resizeMark, rows: 18, columns: 60);
                 Assert.Equal(anchor, FirstStreamRow(resized));
-                var initialScrollRows = ScrolledRows(resized);
-                Assert.NotNull(initialScrollRows);
+                Assert.Contains("↓ Jump to latest message", resized, StringComparison.Ordinal);
 
                 var continuedMark = terminal.Mark;
                 server.ReleaseLongChatStream();
                 await server.LongChatSecondPaused.Task.WaitAsync(TimeSpan.FromSeconds(15));
                 var continued = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor &&
-                    ScrolledRows(frame) is { } currentScrollRows && currentScrollRows > initialScrollRows,
+                    frame.Contains("↓ Jump to latest message", StringComparison.Ordinal) &&
+                    !frame.Contains("STREAM_ROW_44", StringComparison.Ordinal),
                     continuedMark, rows: 18, columns: 60);
                 Assert.Equal(anchor, FirstStreamRow(continued));
-                Assert.True(ScrolledRows(continued) > initialScrollRows);
+                Assert.Contains("↓ Jump to latest message", continued, StringComparison.Ordinal);
 
                 var latestMark = terminal.Mark;
-                await terminal.SendRawAsync("\u001b[F");
+                await terminal.SendRawAsync("\u001b[57424;5u");
                 var latest = await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_44", StringComparison.Ordinal) &&
-                    !frame.Contains("↑", StringComparison.Ordinal), latestMark, rows: 18, columns: 60);
+                    !frame.Contains("↓ Jump to latest message", StringComparison.Ordinal), latestMark,
+                    rows: 18, columns: 60);
                 Assert.NotEqual(anchor, FirstStreamRow(latest));
 
                 server.ReleaseLongChatSecondPause();
@@ -771,12 +773,6 @@ public sealed class LlamaRouterManagerTuiTests
     {
         var match = Regex.Match(frame, "STREAM_ROW_\\d+");
         return match.Success ? match.Value : null;
-    }
-
-    private static int? ScrolledRows(string frame)
-    {
-        var match = Regex.Match(frame, "↑ (?<rows>\\d+) rows");
-        return match.Success && int.TryParse(match.Groups["rows"].Value, out var rows) ? rows : null;
     }
 
     [Fact]

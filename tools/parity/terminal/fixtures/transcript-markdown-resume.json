@@ -73,5 +73,10 @@
   },
   "terminal": {
     "keyboardProtocol": "kitty"
-  }
+  },
+  "assertionFrames": [
+    "transcript",
+    "resize",
+    "quit"
+  ]
 }

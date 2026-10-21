@@ -22,7 +22,7 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
     {
         if (!ShowHeader) return "";
         var version = typeof(CliArguments).Assembly.GetName().Version?.ToString(3) ?? "unknown";
-        return $" {theme.Style("accent", "▀▀█")} {theme.Style("dim", $"PiSharp v{version}")}";
+        return " " + LogoTop(theme) + " " + theme.Style("dim", $"PiSharp v{version}");
     }
 
     public string Build(TerminalTheme theme, bool expanded)
@@ -35,12 +35,22 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
             else
             {
                 var expandKey = DisplayKey("app.tools.expand", "Ctrl+O");
-                rows.Add($" {theme.Style("accent", "█▀ █")} {theme.Style("dim", $"{DisplayKey("app.interrupt", "Esc")} interrupt · {DisplayKey("app.clear", "Ctrl+C")}/{DisplayKey("app.exit", "Ctrl+D")} clear/exit · / commands · ! bash · {expandKey} more")}");
+                var hints = new[]
+                {
+                    FormatKeyHint(theme, DisplayKey("app.interrupt", "Esc"), "interrupt"),
+                    FormatKeyHint(theme,
+                        $"{DisplayKey("app.clear", "Ctrl+C")}/{DisplayKey("app.exit", "Ctrl+D")}", "clear/exit"),
+                    FormatKeyHint(theme, "/", "commands"),
+                    FormatKeyHint(theme, "!", "bash"),
+                    FormatKeyHint(theme, expandKey, "more")
+                };
+                rows.Add(" " + LogoBottom(theme) + " " +
+                    string.Join(theme.Style("muted", " · "), hints));
                 rows.Add(" " + theme.Style("dim",
                     $"Press {expandKey} to show full startup help{(ShowDetails ? " and loaded resources" : "")}."));
             }
             rows.Add("");
-            rows.Add(" " + theme.Style("dim", "PiSharp can explain its own features and look up its docs. Ask how to use or extend PiSharp."));
+            rows.Add(" " + theme.Style("dim", "PiSharp can explain its own features and look up its docs. Ask it how to use or extend PiSharp."));
             rows.Add("");
         }
         return string.Join('\n', rows);
@@ -158,6 +168,32 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
 
     private string DisplayKey(string action, string fallback) =>
         FormatDisplayKey(getDisplayKeys?.Invoke(action) is { Length: > 0 } key ? key : fallback);
+
+    private static string FormatKeyHint(TerminalTheme theme, string key, string description) =>
+        theme.Style("dim", key) + theme.Style("muted", " " + description);
+
+    private static string LogoTop(TerminalTheme theme) =>
+        Color(theme, new(228, 138, 122), background: false) +
+        Color(theme, new(79, 142, 179), background: true) + "▀" + Reset(theme) +
+        Color(theme, new(228, 138, 122), background: false) + "▀█" + Reset(theme) + " ";
+
+    private static string LogoBottom(TerminalTheme theme) =>
+        Color(theme, new(79, 142, 179), background: false) + "█▀" + Reset(theme) + " " +
+        Color(theme, new(234, 182, 93), background: false) + "█" + Reset(theme);
+
+    private static string Color(TerminalTheme theme, TerminalTheme.Rgb color, bool background)
+    {
+        var slot = background ? 48 : 38;
+        return theme.Mode switch
+        {
+            TerminalColorMode.TrueColor => $"\u001b[{slot};2;{color.R};{color.G};{color.B}m",
+            TerminalColorMode.Ansi256 => $"\u001b[{slot};5;{color.ToAnsi256()}m",
+            _ => ""
+        };
+    }
+
+    private static string Reset(TerminalTheme theme) =>
+        theme.Mode == TerminalColorMode.None ? "" : "\u001b[0m";
 
     private static string FormatDisplayKey(string key) => string.Join("/", key.Split('/')
         .Select(binding => string.Join("+", binding.Split('+').Select(part =>

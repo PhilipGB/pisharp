@@ -13,6 +13,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     Func<string, PiSharpToolRenderer?>? toolRenderer = null, string? workingDirectory = null)
 {
     private readonly Dictionary<string, ShellOutputNormalizer> _liveBash = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, StringBuilder> _liveBashOutput = new(StringComparer.Ordinal);
     private readonly StringBuilder _assistantMarkdown = new();
     private readonly StringBuilder _assistantThinking = new();
     private readonly TerminalToolPresentation _toolPresentation = new(toolRenderer,
@@ -33,9 +34,9 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
         var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
         var nestedCalls = session.ActiveNestedToolCallsByResultCallId();
         var messages = session.ActiveMessages();
+        var assistantTextNeedsTurnSeparator = false;
         screen.ReplaceTranscript(target =>
         {
-            var assistantTextNeedsTurnSeparator = false;
             foreach (var message in messages)
             {
                 if (message.Role == ChatRole.User)
@@ -64,10 +65,10 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                         {
                             thinking.Append(TerminalSafeText.Normalize(reasoning.Text));
                         }
-                        else if (content is TextContent text && text.Text.Length > 0)
+                        else if (content is TextContent text && !string.IsNullOrWhiteSpace(text.Text))
                         {
                             FlushThinking();
-                            target.CommitAssistantText(text.Text);
+                            target.CommitAssistantText(text.Text.Trim());
                             assistantTextNeedsTurnSeparator = true;
                         }
                         else if (content is FunctionCallContent call)
@@ -82,13 +83,14 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                                     ? new Dictionary<string, object?>(arguments, StringComparer.Ordinal) : null
                             };
                             target.AppendToolCall(_toolPresentation.RenderCall(update, expanded: false),
-                                _toolPresentation.RenderCall(update, expanded: true));
+                                _toolPresentation.RenderCall(update, expanded: true), call.CallId);
                             if (call.Exception is not null)
                             {
                                 var failed = new AgentLifecycleEvent("tool_execution_finished", Tool: call.Name,
                                     OperationId: call.CallId, IsError: true, Error: call.Exception.Message);
                                 var views = _toolPresentation.RenderResultViews(failed, isError: true);
-                                target.AppendToolResult(views.Collapsed, views.Expanded);
+                                target.AppendToolResult(views.Collapsed, views.Expanded, operationId: call.CallId,
+                                    isError: true);
                             }
                         }
                     }
@@ -111,13 +113,15 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                     };
                     var views = _toolPresentation.RenderResultViews(update, failed);
                     if (name == "codemode") target.CompleteToolRow(result.CallId, views.Collapsed, views.Expanded, failed, images);
-                    else target.AppendToolResult(views.Collapsed, views.Expanded, images);
+                    else target.AppendToolResult(views.Collapsed, views.Expanded, images,
+                        suppressUnsupportedImageFallbackWhenCollapsed: name == "read", operationId: result.CallId,
+                        isError: failed);
                     if (nestedCalls.TryGetValue(result.CallId, out var nested))
                         target.AppendToolResult(RenderNestedToolCalls(nested));
                 }
             }
-            if (assistantTextNeedsTurnSeparator) target.Output.WriteLine();
         });
+        screen.MarkHistoryLoaded(assistantTextNeedsTurnSeparator);
     }
 
     public void Render(AgentLifecycleEvent update)
@@ -229,7 +233,7 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
             ExitCode = Math.Max(ExitCode, 1);
         }
         if (!HasAssistantOutput) return;
-        output.WriteLine();
+        if (screen is null) output.WriteLine();
         HasAssistantOutput = false;
     }
 
@@ -285,6 +289,18 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
             if (!_liveBash.TryGetValue(id, out var normalizer))
                 _liveBash.Add(id, normalizer = new ShellOutputNormalizer());
             text = normalizer.Append(text.AsSpan());
+            if (screen is not null)
+            {
+                if (!_liveBashOutput.TryGetValue(id, out var accumulated))
+                    _liveBashOutput.Add(id, accumulated = new StringBuilder());
+                AppendBounded(accumulated, text);
+                var partial = update with { Text = accumulated.ToString() };
+                screen.SetToolTimerRenderer(id, timerText => RenderBashPartial(partial, timerText));
+                var timerText = screen.ProgressToolTimerInOutput(id);
+                var views = RenderBashPartial(partial, timerText);
+                screen.UpdateToolRow(id, views.Collapsed, views.Expanded, isError: false);
+                return;
+            }
         }
         else text = ShellOutputNormalizer.NormalizeComplete(text);
         if (text.Length != 0) status.Write(Safe(text));
@@ -292,9 +308,19 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     private void FinishTool(AgentLifecycleEvent update)
     {
-        if (update.Tool == "bash" && update.OperationId is { } id)
+        if (update.Tool == "bash" && update.OperationId is { } id && screen is not null)
         {
-            if (_liveBash.Remove(id, out var normalizer))
+            var output = update.Text is { Length: > 0 } completeOutput
+                ? ShellOutputNormalizer.NormalizeComplete(completeOutput)
+                : _liveBashOutput.TryGetValue(id, out var accumulated) ? accumulated.ToString() : "";
+            if (_liveBash.Remove(id, out var normalizer) && update.Text is not { Length: > 0 })
+                output += normalizer.Finish();
+            _liveBashOutput.Remove(id);
+            WriteToolResultViews(update with { Text = output });
+        }
+        else if (update.Tool == "bash" && update.OperationId is { } legacyId)
+        {
+            if (_liveBash.Remove(legacyId, out var normalizer))
             {
                 var trailing = normalizer.Finish();
                 if (trailing.Length != 0) status.Write(Safe(trailing));
@@ -340,12 +366,21 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
     private void WriteToolCall(AgentLifecycleEvent update)
     {
         if (!interactive) return;
-        if (update.Tool == "codemode" && (update.OperationId ?? update.ToolCallId) is { } id)
+        if ((update.Tool is "codemode" or "bash") && (update.OperationId ?? update.ToolCallId) is { } id)
             screen?.StartToolTimer(id);
         var collapsed = _toolPresentation.RenderCall(update, expanded: false);
+        var expanded = _toolPresentation.RenderCall(update, expanded: true);
         if (screen is null)
             status.WriteLine(Environment.NewLine + TerminalToolPresentation.Render(collapsed, theme: null));
-        else screen.AppendToolCall(collapsed, _toolPresentation.RenderCall(update, expanded: true));
+        else if (update.Tool == "bash" && (update.OperationId ?? update.ToolCallId) is { Length: > 0 } bashId)
+        {
+            var partial = update with { Text = "" };
+            screen.SetToolTimerRenderer(bashId, timerText => RenderBashPartial(partial, timerText));
+            var timerText = screen.ProgressToolTimerInOutput(bashId);
+            var views = RenderBashPartial(partial, timerText);
+            screen.AppendToolCall(views.Collapsed, views.Expanded, bashId);
+        }
+        else screen.AppendToolCall(collapsed, expanded, update.OperationId ?? update.ToolCallId);
     }
 
     private void WriteToolResult(PiSharpToolRenderView view, IReadOnlyList<Microsoft.Extensions.AI.DataContent>? images)
@@ -356,15 +391,31 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     private void WriteToolResultViews(AgentLifecycleEvent update)
     {
-        var timed = update.Tool == "codemode" && screen is not null && (update.OperationId ?? update.ToolCallId) is not null;
+        var timed = (update.Tool is "codemode" or "bash") && screen is not null &&
+            (update.OperationId ?? update.ToolCallId) is not null;
         var id = update.OperationId ?? update.ToolCallId;
         if (timed) update = update with { DurationMs = screen!.CompleteToolTimer(id!, update.DurationMs) };
         var views = _toolPresentation.RenderResultViews(update, update.IsError == true);
         if (screen is null)
             status.WriteLine(TerminalToolPresentation.Render(views.Collapsed, theme: null));
         else if (timed) screen.CompleteToolRow(id!, views.Collapsed, views.Expanded, update.IsError == true, update.Images);
-        else screen.AppendToolResult(views.Collapsed, views.Expanded, update.Images);
+        else screen.AppendToolResult(views.Collapsed, views.Expanded, update.Images,
+            suppressUnsupportedImageFallbackWhenCollapsed: update.Tool == "read",
+            operationId: id, isError: update.IsError == true);
     }
+
+    private static void AppendBounded(StringBuilder output, string text)
+    {
+        const int maximum = 32_768;
+        if (text.Length == 0 || output.Length >= maximum) return;
+        var remaining = maximum - output.Length;
+        output.Append(text.AsSpan(0, Math.Min(remaining, text.Length)));
+    }
+
+    private (PiSharpToolRenderView Collapsed, PiSharpToolRenderView Expanded) RenderBashPartial(
+        AgentLifecycleEvent partial, string? progressText) =>
+        _toolPresentation.RenderResultViews(partial, isError: false, retainArguments: true,
+            progressText: progressText);
 
     private string Safe(string value) => interactive ? TerminalSafeText.Normalize(value) : value;
 }

@@ -10,6 +10,7 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Owns the active-run screen and composes transcript, status, and editor rows.</summary>
 public sealed class TerminalScreen : IDisposable
 {
+    private const int PageScrollOverlap = 4;
     private const int MaxTranscriptScrollOffset = 60_000;
     private readonly object _gate = new();
     private readonly TextWriter _originalOut;
@@ -17,12 +18,17 @@ public sealed class TerminalScreen : IDisposable
     private readonly Func<int> _getColumns;
     private readonly Func<int> _getRows;
     private readonly TerminalRenderScheduler _render;
+    private readonly FullscreenWheelScrollAccelerator _wheelScroll;
     private readonly TerminalToolTimers _toolTimers;
+    private readonly Dictionary<string,
+        Func<string, (PiSharpToolRenderView Collapsed, PiSharpToolRenderView Expanded)>> _toolTimerRenderers = new(StringComparer.Ordinal);
+    private readonly ITimer _transcriptScrollbarTimer;
+    private readonly ITimer _selectionFlashTimer;
     private readonly TerminalTranscriptBuffer _transcript = new();
     private readonly TerminalConversationPresentation _conversationPresentation;
     private readonly TerminalImageRenderer _images;
-    private readonly TerminalScreenCompositor _compositor;
-    private readonly bool _useAlternateScreen;
+    private TerminalScreenCompositor _compositor;
+    private bool _useAlternateScreen;
     private TerminalTheme _theme;
     private TerminalColorState _terminalColors;
     private TerminalColorQueryController? _terminalColorQuery;
@@ -57,11 +63,18 @@ public sealed class TerminalScreen : IDisposable
     private bool _workingVisible = true;
     private string? _extensionWorkingMessage;
     private bool? _extensionWorkingVisible;
+    private bool _extensionWorkingFrameVerbatim;
     private string _extensionTitle = "";
     private int _scrollOffset;
+    private bool _transientScrollbarVisible;
+    private string _transcriptBottomKeyLabel = "Ctrl+End";
+    private IReadOnlyList<string>? _transcriptSearchPanel;
+    private int? _transcriptSearchCursorColumn;
     private int _lastImagePruneRevision = -1;
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private readonly TerminalScreenNotifications _notifications;
+    private TerminalClipboard? _selectionClipboard;
+    private string? _selectionFlash;
     private Func<TerminalTheme, int, bool, string>? _startupHeader;
     private Func<TerminalTheme, int, bool, string>? _startupContent;
     private bool _startupExpanded;
@@ -80,10 +93,14 @@ public sealed class TerminalScreen : IDisposable
     private bool _activated;
     private bool _suspended;
     private bool _terminalModeShutdownPrepared;
+    private bool _terminalImagesCleaned;
+    private bool _terminalPasteDisabled;
     private volatile bool _active = true;
     private int _deferRender;
     private bool _deferInitialRender;
     private bool _reloadProgressRenderDeferred;
+
+    internal event Action<int>? TerminalWidthChanged;
 
     public TerminalScreen(TextWriter originalOut, TextWriter originalError,
         Func<int>? getColumns = null, Func<int>? getRows = null)
@@ -130,14 +147,20 @@ public sealed class TerminalScreen : IDisposable
         var renderInterval = minimumRenderInterval ?? TimeSpan.Zero;
         if (renderInterval < TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(minimumRenderInterval));
-        _render = new(_gate, timeProvider ?? TimeProvider.System, renderInterval,
+        var clock = timeProvider ?? TimeProvider.System;
+        _render = new(_gate, clock, renderInterval,
             () => _active && !_suspended && _deferRender <= 0 && !_deferInitialRender, RenderFrameLocked);
+        _transcriptScrollbarTimer = clock.CreateTimer(ExpireTransientScrollbar, null,
+            Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        _selectionFlashTimer = clock.CreateTimer(ExpireSelectionFlash, null,
+            Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         _terminalColors = new(theme.TerminalForeground, theme.TerminalBackground);
         _getColumns = getColumns ?? ReadColumns;
         _getRows = getRows ?? ReadRows;
-        _compositor = new(_originalOut, _images);
+        _compositor = new(_originalOut, _images, _useAlternateScreen);
         _conversationPresentation = new(_transcript, _images, Columns, () => _theme);
-        _toolTimers = new(timeProvider ?? TimeProvider.System, RefreshToolTimers);
+        _wheelScroll = new(clock);
+        _toolTimers = new(clock, RefreshToolTimers);
         _notifications = new(_transcript, () => _theme);
         _out = new(this, isError: false);
         _error = new(this, isError: true);
@@ -184,6 +207,35 @@ public sealed class TerminalScreen : IDisposable
     internal string? SelectedText
     {
         get { lock (_gate) return _mouse.SelectedText; }
+    }
+
+    internal void SetSelectionClipboard(TerminalClipboard clipboard)
+    {
+        ArgumentNullException.ThrowIfNull(clipboard);
+        lock (_gate) _selectionClipboard = clipboard;
+    }
+
+    internal async Task<bool> CopySelectionToClipboardAsync(CancellationToken cancellationToken = default)
+    {
+        TerminalClipboard? clipboard;
+        string? selectedText;
+        lock (_gate)
+        {
+            clipboard = _selectionClipboard;
+            selectedText = _mouse.SelectedText;
+        }
+        if (clipboard is null || string.IsNullOrEmpty(selectedText)) return false;
+
+        try
+        {
+            await clipboard.CopyTextAsync(selectedText, cancellationToken).ConfigureAwait(false);
+            SetSelectionFlash("Copied!");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            SetSelectionFlash(error.Message, TimeSpan.FromSeconds(3));
+        }
+        return true;
     }
 
     public void Activate()
@@ -252,6 +304,35 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal void PresentTranscriptOnNormalScreen()
+    {
+        lock (_gate)
+        {
+            if (!_active || !_useAlternateScreen || _suspended) return;
+
+            _render.Flush();
+            AttemptWrite(_images.CleanupControlSequence());
+            _terminalImagesCleaned = true;
+            if (_extensionTitle.Length > 0)
+            {
+                AttemptWrite("\u001b]0;\u0007");
+                _extensionTitle = "";
+            }
+            AttemptWrite(TerminalMouseMode.Disable + "\u001b[?7h");
+            _compositor.LeaveAlternateScreen(_terminalModeShutdownPrepared ? "\u001b[?2004l" : "");
+            _terminalPasteDisabled = _terminalModeShutdownPrepared;
+
+            _useAlternateScreen = false;
+            _compositor = new(_originalOut, _images, useAlternateScreen: false);
+            RenderFrameLocked();
+        }
+
+        void AttemptWrite(string value)
+        {
+            if (value.Length > 0) _originalOut.Write(value);
+        }
+    }
+
     public void SetEditor(string text, int cursor, int? selectionStart = null, int? selectionEnd = null,
         IReadOnlyList<EditorCompletionSuggestion>? suggestions = null, bool immediate = false)
     {
@@ -294,7 +375,10 @@ public sealed class TerminalScreen : IDisposable
             _search.Clear();
             _mouse.Clear();
             _scrollOffset = 0;
+            _transientScrollbarVisible = false;
+            _transcriptScrollbarTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
             _conversationPresentation.Reset();
+            _toolTimerRenderers.Clear();
             _overlay = null;
             _deferRender++;
             try { appendHistory(this); }
@@ -303,6 +387,15 @@ public sealed class TerminalScreen : IDisposable
                 _deferRender--;
                 _render.Request();
             }
+        }
+    }
+
+    internal void MarkHistoryLoaded(bool endsWithAssistantContent)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _conversationPresentation.MarkHistoryLoaded(endsWithAssistantContent);
         }
     }
 
@@ -389,7 +482,7 @@ public sealed class TerminalScreen : IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         var safe = TerminalSafeText.Normalize(message);
-        string Render(TerminalTheme theme) => Environment.NewLine + " " + theme.Style("dim", safe) + Environment.NewLine;
+        string Render(TerminalTheme theme) => Environment.NewLine + theme.Style("dim", safe) + Environment.NewLine;
         lock (_gate)
         {
             if (!_active) return;
@@ -435,7 +528,7 @@ public sealed class TerminalScreen : IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
         var safe = TerminalSafeText.Normalize(message);
-        string Render(TerminalTheme theme) => Environment.NewLine + " " + theme.Style("dim", safe) + Environment.NewLine;
+        string Render(TerminalTheme theme) => Environment.NewLine + theme.Style("dim", safe) + Environment.NewLine;
         lock (_gate)
         {
             if (!_active) return;
@@ -519,6 +612,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active) return;
             _outputPad = Math.Clamp(padding, 0, 1);
+            _conversationPresentation.SetOutputPadding(_outputPad);
             _render.Request();
         }
     }
@@ -551,6 +645,11 @@ public sealed class TerminalScreen : IDisposable
             if (_showTerminalProgress && !enabled) WriteTerminalProgressControl("\u001b]9;4;0\u0007");
             _showTerminalProgress = enabled;
         }
+    }
+
+    internal void SetFullscreenWheelScrollLines(FullscreenWheelScrollSetting setting)
+    {
+        lock (_gate) _wheelScroll.SetSetting(setting);
     }
 
     internal void ReportTerminalProgress(double? ratio)
@@ -825,7 +924,8 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal void SetExtensionWorkingPresentation(string? message, bool? visible, string frame)
+    internal void SetExtensionWorkingPresentation(string? message, bool? visible, string frame,
+        bool frameVerbatim = false)
     {
         ArgumentNullException.ThrowIfNull(frame);
         lock (_gate)
@@ -834,6 +934,7 @@ public sealed class TerminalScreen : IDisposable
             _extensionWorkingMessage = string.IsNullOrWhiteSpace(message) ? null :
                 TerminalSafeText.Normalize(message).Replace('\n', ' ');
             _extensionWorkingVisible = visible;
+            _extensionWorkingFrameVerbatim = frameVerbatim;
             _workingFrame = TerminalSafeText.Normalize(frame).Replace('\n', ' ');
             _render.Request();
         }
@@ -993,10 +1094,6 @@ public sealed class TerminalScreen : IDisposable
             var columns = Columns();
             var rows = Rows();
             if (columns != _lastColumns || rows != _lastRows) QueueExtensionUiContextChanged();
-            if (_lastColumns != 0 && columns != _lastColumns)
-            {
-                _conversationPresentation.ReRenderMarkdown();
-            }
             if (columns != _lastColumns || rows != _lastRows) _render.Request(immediate: true);
         }
     }
@@ -1006,7 +1103,8 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
-            var pageRows = Math.Max(1, _lastRows * 2 / 3 - 2);
+            var transcriptHeight = _lastTranscriptHeight > 0 ? _lastTranscriptHeight : _lastRows;
+            var pageRows = Math.Max(1, transcriptHeight - PageScrollOverlap);
             SetScrollOffsetLocked(_scrollOffset + (up ? pageRows : -pageRows));
         }
     }
@@ -1026,6 +1124,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active || _scrollOffset == 0) return;
             _scrollOffset = 0;
+            ShowTransientScrollbarLocked();
             _render.Request();
         }
     }
@@ -1037,7 +1136,9 @@ public sealed class TerminalScreen : IDisposable
             if (!_active || _suspended) return default;
             if (mouse.IsWheel)
             {
-                var delta = mouse.WheelScrollDelta;
+                var direction = mouse.WheelDirection;
+                var delta = direction == 0 ? 0 : -direction *
+                    _wheelScroll.Next(direction) * mouse.WheelScrollMultiplier;
                 if (delta != 0) SetScrollOffsetLocked(_scrollOffset + delta);
                 return new(delta != 0);
             }
@@ -1055,6 +1156,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active) return default;
             _search.SetQuery(query, direction);
+            _ = _search.Highlight(GetTranscriptTextLocked(Columns()), _theme);
             _render.Request();
             return _search.State;
         }
@@ -1087,6 +1189,29 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (_conversationPresentation.SetToolExpandKeyLabel(safe)) _render.Request();
+        }
+    }
+
+    internal void SetTranscriptBottomKeyLabel(string? keyLabel)
+    {
+        var safe = TerminalSafeText.Normalize(string.IsNullOrWhiteSpace(keyLabel) ? "" : keyLabel);
+        lock (_gate)
+        {
+            if (_transcriptBottomKeyLabel == safe) return;
+            _transcriptBottomKeyLabel = safe;
+            _render.Request();
+        }
+    }
+
+    internal void SetTranscriptSearchPanel(IReadOnlyList<string>? lines, int? cursorColumn = null)
+    {
+        var safe = lines?.ToArray();
+        lock (_gate)
+        {
+            if (!_active) return;
+            _transcriptSearchPanel = safe;
+            _transcriptSearchCursorColumn = safe is null ? null : cursorColumn;
+            _render.Request(immediate: safe is not null);
         }
     }
 
@@ -1176,25 +1301,26 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal void AppendToolCall(PiSharpToolRenderView view)
+    internal void AppendToolCall(PiSharpToolRenderView view, string? operationId = null)
     {
         ArgumentNullException.ThrowIfNull(view);
         lock (_gate)
         {
             if (!_active) return;
-            _conversationPresentation.AppendToolCall(view);
+            _conversationPresentation.AppendToolCall(view, operationId);
             _render.Request();
         }
     }
 
-    internal void AppendToolCall(PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded)
+    internal void AppendToolCall(PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
+        string? operationId = null)
     {
         ArgumentNullException.ThrowIfNull(collapsed);
         ArgumentNullException.ThrowIfNull(expanded);
         lock (_gate)
         {
             if (!_active) return;
-            _conversationPresentation.AppendToolCall(collapsed, expanded);
+            _conversationPresentation.AppendToolCall(collapsed, expanded, operationId);
             _render.Request();
         }
     }
@@ -1217,9 +1343,28 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
+    internal string? ProgressToolTimerInOutput(string id)
+    {
+        lock (_gate)
+            return _active ? _toolTimers.Progress(id, isError: false, attachedToOutput: true) : null;
+    }
+
     internal double? CompleteToolTimer(string id, double? durationMs)
     {
-        lock (_gate) return _toolTimers.Complete(id, durationMs);
+        lock (_gate)
+        {
+            _toolTimerRenderers.Remove(id);
+            return _toolTimers.Complete(id, durationMs);
+        }
+    }
+
+    internal void SetToolTimerRenderer(string id,
+        Func<string, (PiSharpToolRenderView Collapsed, PiSharpToolRenderView Expanded)> render)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentNullException.ThrowIfNull(render);
+        lock (_gate)
+            if (_active) _toolTimerRenderers[id] = render;
     }
 
     internal void CompleteToolRow(string id, PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
@@ -1229,20 +1374,55 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active) return;
             _conversationPresentation.SetToolResult(id, collapsed, expanded, isError, finished: true, images);
+            _toolTimerRenderers.Remove(id);
+            _render.Request();
+        }
+    }
+
+    internal void UpdateToolRow(string id, PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
+        bool isError, IReadOnlyList<DataContent>? images = null)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _conversationPresentation.SetToolResult(id, collapsed, expanded, isError, finished: false, images);
             _render.Request();
         }
     }
 
     internal void ClearToolTimers()
     {
+        List<(string Id, double Duration, Func<string,
+            (PiSharpToolRenderView Collapsed, PiSharpToolRenderView Expanded)>? Render)> rows;
         lock (_gate)
         {
-            var rows = _toolTimers.Cancel();
-            if (!_active || rows.Count == 0) return;
-            foreach (var (id, duration) in rows)
+            var cancelled = _toolTimers.Cancel();
+            if (!_active || cancelled.Count == 0) return;
+            rows = cancelled.Select(row =>
             {
-                var view = PiSharpToolRenderView.FromText("Took " + ToolDurationText.Format(duration), PiSharpToolTextStyle.Muted);
-                _conversationPresentation.SetToolResult(id, view, view, isError: true, finished: true);
+                _toolTimerRenderers.Remove(row.Id, out var render);
+                return (Id: row.Id, Duration: row.DurationMs, Render: render);
+            }).ToList();
+        }
+
+        var rendered = rows.Select(row =>
+        {
+            var text = "Took " + ToolDurationText.Format(row.Duration);
+            return (row.Id, Text: text, Views: row.Render?.Invoke(text));
+        }).ToArray();
+        lock (_gate)
+        {
+            if (!_active) return;
+            foreach (var row in rendered)
+            {
+                if (row.Views is { } views)
+                    _conversationPresentation.SetToolResult(row.Id, views.Collapsed, views.Expanded,
+                        isError: true, finished: true);
+                else
+                {
+                    var view = PiSharpToolRenderView.FromText(row.Text, PiSharpToolTextStyle.Muted);
+                    _conversationPresentation.SetToolResult(row.Id, view, view, isError: true, finished: true);
+                }
             }
             _render.Request();
         }
@@ -1250,12 +1430,33 @@ public sealed class TerminalScreen : IDisposable
 
     private void RefreshToolTimers()
     {
+        List<(string Id, string Text,
+            Func<string, (PiSharpToolRenderView Collapsed, PiSharpToolRenderView Expanded)> Render)> renderers = [];
         lock (_gate)
         {
             if (!_active) return;
             var rows = _toolTimers.Rows();
             if (rows.Count == 0) return;
-            foreach (var (id, text) in rows) SetElapsedRow(id, text);
+            foreach (var (id, text, attachedToOutput) in rows)
+            {
+                if (attachedToOutput && _toolTimerRenderers.TryGetValue(id, out var render))
+                    renderers.Add((id, text, render));
+                else if (!attachedToOutput) SetElapsedRow(id, text);
+            }
+            if (renderers.Count == 0) _render.Request();
+        }
+
+        var rendered = renderers.Select(row => (row.Id, row.Render,
+            Views: row.Render(row.Text))).ToArray();
+        lock (_gate)
+        {
+            if (!_active) return;
+            foreach (var row in rendered)
+            {
+                if (!_toolTimerRenderers.TryGetValue(row.Id, out var current) || current != row.Render) continue;
+                _conversationPresentation.SetToolResult(row.Id, row.Views.Collapsed, row.Views.Expanded,
+                    isError: false, finished: false);
+            }
             _render.Request();
         }
     }
@@ -1267,14 +1468,16 @@ public sealed class TerminalScreen : IDisposable
     }
 
     internal void AppendToolResult(PiSharpToolRenderView collapsed, PiSharpToolRenderView expanded,
-        IReadOnlyList<DataContent>? images = null)
+        IReadOnlyList<DataContent>? images = null, bool suppressUnsupportedImageFallbackWhenCollapsed = false,
+        string? operationId = null, bool isError = false)
     {
         ArgumentNullException.ThrowIfNull(collapsed);
         ArgumentNullException.ThrowIfNull(expanded);
         lock (_gate)
         {
             if (!_active) return;
-            if (_conversationPresentation.AppendToolResult(collapsed, expanded, images)) _render.Request();
+            if (_conversationPresentation.AppendToolResult(collapsed, expanded, images,
+                    suppressUnsupportedImageFallbackWhenCollapsed, operationId, isError)) _render.Request();
         }
     }
 
@@ -1305,7 +1508,45 @@ public sealed class TerminalScreen : IDisposable
     private void SetScrollOffsetLocked(int value)
     {
         _scrollOffset = Math.Clamp(value, 0, MaxTranscriptScrollOffset);
+        ShowTransientScrollbarLocked();
         _render.Request();
+    }
+
+    private void ShowTransientScrollbarLocked()
+    {
+        _transientScrollbarVisible = true;
+        _transcriptScrollbarTimer.Change(TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
+    }
+
+    private void ExpireTransientScrollbar(object? state)
+    {
+        lock (_gate)
+        {
+            if (!_active || !_transientScrollbarVisible) return;
+            _transientScrollbarVisible = false;
+            if (_scrollOffset == 0) _render.Request();
+        }
+    }
+
+    private void SetSelectionFlash(string message, TimeSpan? duration = null)
+    {
+        lock (_gate)
+        {
+            if (!_active) return;
+            _selectionFlash = TerminalSafeText.Normalize(message);
+            _selectionFlashTimer.Change(duration ?? TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
+            _render.Request(immediate: true);
+        }
+    }
+
+    private void ExpireSelectionFlash(object? state)
+    {
+        lock (_gate)
+        {
+            if (!_active || _selectionFlash is null) return;
+            _selectionFlash = null;
+            _render.Request();
+        }
     }
 
     internal void WriteControl(string value)
@@ -1337,9 +1578,7 @@ public sealed class TerminalScreen : IDisposable
         Attempt(() => _terminalColorQuery?.Dispose());
         Attempt(_protocolInput.Dispose);
 
-        IReadOnlyList<TerminalTranscriptBuffer.CapturedChunk> captured = [];
         var truncated = false;
-        IReadOnlyList<string>? documentRows = null;
         var terminalModeShutdownPrepared = false;
         var wasActive = false;
         lock (_gate)
@@ -1353,6 +1592,8 @@ public sealed class TerminalScreen : IDisposable
                 wasActive = true;
                 Attempt(_render.Flush);
                 Attempt(_render.Dispose);
+                Attempt(_transcriptScrollbarTimer.Dispose);
+                Attempt(_selectionFlashTimer.Dispose);
                 Attempt(_toolTimers.Dispose);
                 _active = false;
                 terminalModeShutdownPrepared = _terminalModeShutdownPrepared;
@@ -1368,7 +1609,12 @@ public sealed class TerminalScreen : IDisposable
                     });
                 }
 
-                Attempt(() => _originalOut.Write((_useAlternateScreen ? "\u001b[?2026h" : "") + _images.CleanupControlSequence()));
+                Attempt(() =>
+                {
+                    var cleanup = _terminalImagesCleaned ? "" : _images.CleanupControlSequence();
+                    _terminalImagesCleaned = true;
+                    _originalOut.Write((_useAlternateScreen ? "\u001b[?2026h" : "") + cleanup);
+                });
                 if (_extensionTitle.Length > 0) Attempt(() => _originalOut.Write("\u001b]0;\u0007"));
                 if (_useAlternateScreen)
                 {
@@ -1376,50 +1622,28 @@ public sealed class TerminalScreen : IDisposable
                     Attempt(() => _originalOut.Write("\u001b[?7h\u001b[?2026l"));
                 }
                 Attempt(_originalOut.Flush);
-                Attempt(() => _originalOut.Write("\u001b[?25h"));
+                if (!_useAlternateScreen) Attempt(() => _originalOut.Write("\u001b[?25h"));
                 if (!terminalModeShutdownPrepared) Attempt(() => _originalOut.Write(_keyboardProtocol.End()));
                 Attempt(_originalOut.Flush);
-
-                if (_useAlternateScreen && _conversationPresentation.HasContent)
-                {
-                    try
-                    {
-                        var columns = Columns();
-                        var header = _startupHeader?.Invoke(_theme, columns, _startupExpanded) ?? "";
-                        var startupContent = _startupContent?.Invoke(_theme, columns, _startupExpanded) ?? "";
-                        var transcript = _images.LayoutTranscript(_transcript.GetTextForScrollback(columns, _theme) + _conversationPresentation.LiveText,
-                            columns, Math.Max(1, Rows() - 5));
-                        var headerRows = string.IsNullOrEmpty(header)
-                            ? Array.Empty<string>()
-                            : TerminalTextLayout.Create(header, columns).Rows;
-                        var contentText = (string.IsNullOrEmpty(startupContent) ? "" : startupContent + "\n") + transcript;
-                        var contentRows = TerminalTextLayout.Create(contentText, columns).Rows;
-                        documentRows = headerRows.Concat(contentRows).ToArray();
-                    }
-                    catch (Exception error) { failure ??= error; }
-                }
-
                 Attempt(() =>
                 {
                     if (_useAlternateScreen)
-                        _compositor.LeaveAlternateScreen(terminalModeShutdownPrepared ? "\u001b[?2004l" : "",
-                            restoreDocumentFollows: documentRows is not null);
-                    else if (terminalModeShutdownPrepared)
+                    {
+                        _compositor.LeaveAlternateScreen(
+                            terminalModeShutdownPrepared ? "\u001b[?2004l" : "");
+                        _compositor.RestoreLastFrameToNormalBuffer();
+                    }
+                    else if (terminalModeShutdownPrepared && !_terminalPasteDisabled)
                         _originalOut.Write("\u001b[?2004l");
                 });
 
-                // Repeat the terminal's basic mode resets after the compositor's best-effort exit.
-                // These toggles are idempotent and ensure a failed screen write cannot skip cleanup.
-                if (_useAlternateScreen)
+                if (!_useAlternateScreen)
                 {
-                    Attempt(() => _originalOut.Write("\u001b[?1049l"));
-                    Attempt(() => _originalOut.Write("\u001b[?7h"));
+                    if (terminalModeShutdownPrepared) Attempt(() => _originalOut.Write("\u001b[?2004l"));
+                    Attempt(() => _originalOut.Write("\u001b[?25h"));
+                    Attempt(_originalOut.Flush);
                 }
-                if (terminalModeShutdownPrepared) Attempt(() => _originalOut.Write("\u001b[?2004l"));
-                Attempt(() => _originalOut.Write("\u001b[?25h"));
-                Attempt(_originalOut.Flush);
 
-                captured = _transcript.CaptureScrollbackSnapshot();
                 truncated = _transcript.CaptureTruncated;
             }
         }
@@ -1430,22 +1654,12 @@ public sealed class TerminalScreen : IDisposable
             return;
         }
 
-        if (documentRows is null)
-        {
-            foreach (var chunk in captured)
-            {
-                var writer = chunk.IsError ? _originalError : _originalOut;
-                Attempt(() => writer.Write(chunk.Text));
-                Attempt(writer.Flush);
-            }
-        }
-        if (truncated)
+        if (truncated && !_useAlternateScreen)
         {
             Attempt(() => _originalError.WriteLine("Interactive transcript exceeded the scrollback restore limit; the active screen was still rendered in full."));
             Attempt(_originalError.Flush);
         }
-        if (documentRows is not null) Attempt(() => _compositor.RestoreDocumentToNormalBuffer(documentRows));
-        else if (_useAlternateScreen) Attempt(_compositor.RestoreLastFrameToNormalBuffer);
+        if (!_useAlternateScreen) Attempt(_compositor.LeaveMainScreen);
         Attempt(_images.Clear);
 
         if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
@@ -1453,6 +1667,7 @@ public sealed class TerminalScreen : IDisposable
 
     private int _lastColumns;
     private int _lastRows;
+    private int _lastTranscriptHeight;
     private void Append(string value, bool isError)
     {
         var safe = TerminalSafeText.Normalize(value);
@@ -1472,7 +1687,11 @@ public sealed class TerminalScreen : IDisposable
         var rows = Rows();
         if (columns != _lastColumns || rows != _lastRows) QueueExtensionUiContextChanged();
         if (_lastColumns != 0 && _lastColumns != columns)
+        {
+            _conversationPresentation.ReRenderMarkdown();
             _transcript.ReRenderThemedSegments(_theme);
+            TerminalWidthChanged?.Invoke(columns);
+        }
         if (_startupPanelActive)
         {
             var panel = _editorPanel ?? [];
@@ -1481,7 +1700,10 @@ public sealed class TerminalScreen : IDisposable
                 frameRows[index] = TerminalTranscriptViewport.Clip(panel[index], columns);
             var cursorRow = Math.Clamp(_panelCursorRow ?? 0, 0, Math.Max(0, rows - 1));
             var cursorColumn = Math.Clamp(_panelCursorColumn ?? 1, 1, columns + 1);
-            _compositor.Render(new(frameRows, cursorRow, cursorColumn, 0, columns, rows, _panelCursorVisible));
+            _compositor.Render(new(frameRows, cursorRow, cursorColumn, 0, columns, rows, _panelCursorVisible,
+                RestorationRows: frameRows, TranscriptStartRow: 0, TranscriptHeight: rows,
+                RestorationCursorRow: cursorRow, DocumentCursorRow: cursorRow,
+                DocumentCursorColumn: cursorColumn));
             _lastColumns = columns;
             _lastRows = rows;
             return;
@@ -1518,10 +1740,14 @@ public sealed class TerminalScreen : IDisposable
             _extensionHeader, _extensionWidgetsAbove, _extensionWidgetsBelow, _extensionFooter,
             _workingVisible && _extensionWorkingVisible != false ? _workingFrame : null,
             _extensionCustomOverlay, _extensionCustomOverlayOptions,
-            _extensionCustomPanel ?? _extensionEditorReplacement);
+            _extensionCustomPanel ?? _extensionEditorReplacement, _extensionWorkingFrameVerbatim,
+            _transcriptBottomKeyLabel, _transcriptSearchPanel, _transientScrollbarVisible,
+            _transcriptSearchCursorColumn, _selectionFlash);
+        if (frame.ScrollOffset != _scrollOffset) ShowTransientScrollbarLocked();
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;
         _lastRows = frame.Height;
+        _lastTranscriptHeight = frame.TranscriptHeight;
         _compositor.Render(frame);
     }
 

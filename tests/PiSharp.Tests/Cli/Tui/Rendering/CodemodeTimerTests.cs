@@ -145,6 +145,37 @@ public sealed class CodemodeTimerTests
     }
 
     [Fact]
+    public void BashTimerRefreshesElapsedTextWithoutReplacingQuietOutput()
+    {
+        var clock = new ManualTimeProvider();
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 20,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false, timeProvider: clock);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        transcript.Render(new("tool_execution_started", Tool: "bash", OperationId: "bash-1")
+        {
+            ToolArguments = new Dictionary<string, object?> { ["command"] = "printf 'output line'" }
+        });
+        transcript.Render(new("tool_execution_update", Tool: "bash", OperationId: "bash-1", Text: "output line\n"));
+        Assert.Contains("Elapsed 0.0s", Frame(output));
+
+        clock.Advance(TimeSpan.FromSeconds(2));
+        var progress = Frame(output);
+        Assert.Contains("Elapsed 2.0s", progress);
+        Assert.Contains("$ printf 'output line'", progress);
+        Assert.Contains("output line", progress);
+
+        transcript.Render(new("tool_execution_finished", Tool: "bash", OperationId: "bash-1",
+            Text: "output line\n")
+        { DurationMs = 2500, IsError = false });
+        var completed = Frame(output);
+        Assert.Contains("Took 2.5s", completed);
+        Assert.Contains("output line", completed);
+        Assert.Equal(0, clock.ActiveTimerCount);
+    }
+
+    [Fact]
     public void ReloadedPiToolResultUsesItsRecordedDurationAfterNativePersistence()
     {
         var imported = PiJsonlSessionInterchange.Import("""
