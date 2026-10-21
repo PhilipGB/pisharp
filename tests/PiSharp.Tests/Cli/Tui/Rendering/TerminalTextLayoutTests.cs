@@ -154,6 +154,18 @@ public sealed class TerminalTextLayoutTests
     }
 
     [Fact]
+    public void StyledPaddingBeforeANewlineRetainsItsActiveForeground()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var styledPadding = theme.Style("mdQuoteBorder", "│ ");
+
+        var wrapped = TerminalTextLayout.Create(styledPadding + "\nnext", width: 120);
+
+        Assert.Contains(styledPadding, wrapped.Rows[0]);
+        Assert.Equal(["│ ", "next"], wrapped.Rows.Select(TerminalTextLayout.StripFormatting));
+    }
+
+    [Fact]
     public void WrapHardSplitsOnlyOverlongTokensAndKeepsCjkAndEmojiGraphemes()
     {
         Assert.Equal(["abcd", "efgh", "ij"], TerminalTextLayout.Wrap("abcdefghij", 4)

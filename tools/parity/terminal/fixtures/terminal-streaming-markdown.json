@@ -127,7 +127,8 @@
       "id": "commit-answer",
       "releaseGates": ["stream-md-finish"],
       "renderMatch": true,
-      "expect": ["tail", "↑10 ↓3"]
+      "expect": ["tail", "↑10 ↓3"],
+      "notExpect": "Working"
     },
     { "id": "exit", "send": "\u0003\u0003", "exit": true }
   ],

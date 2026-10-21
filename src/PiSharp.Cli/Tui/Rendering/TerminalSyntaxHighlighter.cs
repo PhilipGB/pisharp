@@ -10,6 +10,10 @@ internal static partial class TerminalSyntaxHighlighter
     {
         "csharp", "cs", "c#", "javascript", "js", "typescript", "ts", "python", "py", "json", "bash", "sh", "shell"
     };
+    private static readonly HashSet<string> s_plaintextLanguages = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "text", "plaintext", "plain", "txt"
+    };
 
     private static readonly HashSet<string> s_keywords = new(StringComparer.Ordinal)
     {
@@ -43,6 +47,7 @@ internal static partial class TerminalSyntaxHighlighter
         ArgumentNullException.ThrowIfNull(code);
         ArgumentNullException.ThrowIfNull(theme);
         var normalized = NormalizeLanguage(language);
+        if (s_plaintextLanguages.Contains(normalized)) return code;
         if (!s_supportedLanguages.Contains(normalized)) return theme.Style("mdCodeBlock", code);
 
         var output = new StringBuilder(code.Length + 64);

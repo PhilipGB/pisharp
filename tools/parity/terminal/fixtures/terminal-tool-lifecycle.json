@@ -4,12 +4,13 @@
   "arguments": {
     "pi": [
       "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
-      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-context-files", "--tools", "bash"
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-context-files", "--tools", "bash",
+      "--system-prompt", "You are a terminal parity fixture."
     ],
     "pisharp": [
       "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
       "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-context-files", "--tools", "bash",
-      "--no-approve"
+      "--no-approve", "--system-prompt", "You are a terminal parity fixture."
     ]
   },
   "fixtureBehavior": {

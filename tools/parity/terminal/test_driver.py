@@ -47,7 +47,7 @@ class DriverTests(unittest.TestCase):
             'startup-editor': {
                 'type-h', 'type-d', 'cursor-left', 'paste', 'clear', 'resize', 'quit',
             },
-            'terminal-mouse-selection': {'selection-drag', 'wheel-up', 'wheel-down', 'exit'},
+            'terminal-mouse-selection': {'response-in-flight', 'selection-drag', 'wheel-up', 'wheel-down', 'exit'},
             'terminal-image-fallback': {'read-image', 'expand-image-result', 'exit'},
             'terminal-restoration-existing-main-buffer': {
                 'native-ui-startup', 'native-ui-widget', 'native-ui-input-update', 'native-ui-quit',
@@ -66,7 +66,15 @@ class DriverTests(unittest.TestCase):
 
                 self.assertTrue(expected_checkpoints <= actions)
                 self.assertTrue(expected_checkpoints <= checkpoints)
+                if fixture_id == 'terminal-streaming-markdown':
+                    exit_action = next(action for action in fixture['actions'] if action['id'] == 'exit')
+                    self.assertEqual('\u0003\u0003', exit_action.get('send'))
+                    self.assertTrue(exit_action.get('exit'))
                 if fixture_id == 'terminal-mouse-selection':
+                    response_action = next(action for action in fixture['actions']
+                                           if action['id'] == 'response-in-flight')
+                    self.assertEqual('0.0%/8.2k', response_action.get('notExpect'))
+                    self.assertTrue(response_action.get('renderMatch'))
                     selection = next(action for action in fixture['actions'] if action['id'] == 'selection-drag')
                     self.assertTrue(selection.get('expectClipboardWrite'))
                     self.assertEqual(['Log section 09: Mouse selec'], selection.get('expectClipboardTexts'))

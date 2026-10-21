@@ -10,14 +10,15 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Renders agent lifecycle events as normal-screen transcript output.</summary>
 public sealed class InteractiveTranscript(TextWriter output, TextWriter status, bool interactive = true,
     bool hideThinking = false, TerminalScreen? screen = null,
-    Func<string, PiSharpToolRenderer?>? toolRenderer = null, string? workingDirectory = null)
+    Func<string, PiSharpToolRenderer?>? toolRenderer = null, string? workingDirectory = null,
+    Func<string, string?>? terminalEnvironment = null)
 {
     private readonly Dictionary<string, ShellOutputNormalizer> _liveBash = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StringBuilder> _liveBashOutput = new(StringComparer.Ordinal);
     private readonly StringBuilder _assistantMarkdown = new();
     private readonly StringBuilder _assistantThinking = new();
     private readonly TerminalToolPresentation _toolPresentation = new(toolRenderer,
-        workingDirectory ?? Environment.CurrentDirectory, () => screen?.ToolResultsExpanded ?? false);
+        workingDirectory ?? Environment.CurrentDirectory, () => screen?.ToolResultsExpanded ?? false, terminalEnvironment);
     private bool _hideThinkingBlock = hideThinking;
     private string? _lastFinishReason;
 
@@ -217,7 +218,8 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
                 break;
             case "turn_interrupted":
                 screen?.ClearToolTimers();
-                status.WriteLine("Interrupted.");
+                if (screen is null) status.WriteLine("Interrupted.");
+                else screen.AppendThemedTranscriptLine("Operation aborted", "error", isError: true);
                 break;
         }
     }

@@ -11,11 +11,34 @@ namespace PiSharp.Tests;
 
 public sealed class LlamaRouterManagerTuiTests
 {
+    private static readonly object s_routerEndpointGate = new();
+
     private static string EditorInputLine(string frame)
     {
         return frame.Split('\n').Select(line => line.Trim())
             .LastOrDefault(line => line.StartsWith('@') ||
                 line.StartsWith('/') && line.Count(character => character == '/') == 1) ?? "";
+    }
+
+    [Fact]
+    public async Task ConcurrentRouterFixturesBindDistinctLoopbackPorts()
+    {
+        var servers = new ConcurrentBag<RouterServer>();
+        try
+        {
+            var started = await Task.WhenAll(Enumerable.Range(0, 12).Select(_ => Task.Run(() =>
+            {
+                var server = new RouterServer();
+                servers.Add(server);
+                return server;
+            })));
+
+            Assert.Equal(started.Length, started.Select(server => server.Origin).Distinct(StringComparer.Ordinal).Count());
+        }
+        finally
+        {
+            await Task.WhenAll(servers.Select(server => server.DisposeAsync().AsTask()));
+        }
     }
 
     [Fact]
@@ -799,7 +822,7 @@ public sealed class LlamaRouterManagerTuiTests
 
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
-            await terminal.WaitFrameAsync(frame => frame.Contains("Interrupted.", StringComparison.Ordinal) &&
+            await terminal.WaitFrameAsync(frame => frame.Contains("Operation aborted", StringComparison.Ordinal) &&
                 !frame.Contains("Working", StringComparison.Ordinal), mark);
             server.ReleaseChatStream();
 
@@ -927,12 +950,15 @@ public sealed class LlamaRouterManagerTuiTests
             _pauseAfterChunk = pauseAfterChunk;
             _pauseAgainAfterChunk = pauseAgainAfterChunk;
             if (sleepingQwen) Statuses["qwen"] = "sleeping";
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            Origin = "http://127.0.0.1:" + ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            _listener.Prefixes.Add(Origin + "/");
-            _listener.Start();
+            lock (s_routerEndpointGate)
+            {
+                using var reservation = new TcpListener(IPAddress.Loopback, 0);
+                reservation.Start();
+                Origin = "http://127.0.0.1:" + ((IPEndPoint)reservation.LocalEndpoint).Port;
+                reservation.Stop();
+                _listener.Prefixes.Add(Origin + "/");
+                _listener.Start();
+            }
             _serve = ServeAsync();
         }
 

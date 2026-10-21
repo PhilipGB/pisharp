@@ -1,0 +1,62 @@
+{
+  "id": "terminal-markdown-structures",
+  "projectFiles": {
+    "static-working-indicator.ts": "export default function (pi) { pi.on(\"session_start\", async (_event, ctx) => { ctx.ui.setWorkingIndicator({ frames: [\"⠋\"] }); }); }\n"
+  },
+  "settings": { "quietStartup": true },
+  "pisharpExtension": true,
+  "pisharpNativeExtensionPackage": {
+    "id": "PiSharp.NativeExtensionInteractiveUiFixture",
+    "version": "1.0.0",
+    "type": "PiSharp.NativeExtensionInteractiveUiFixture.InteractiveUiExtension"
+  },
+  "environment": {
+    "pi": {},
+    "pisharp": { "PISHARP_PARITY_STATIC_WORKING_INDICATOR": "1" }
+  },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-tools", "--no-context-files",
+      "--system-prompt", "You are a terminal parity fixture.", "--extension", "static-working-indicator.ts"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools", "--no-approve",
+      "--no-context-files", "--system-prompt", "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": ["markdown-structure-request"],
+    "chatResponseChunksByRequest": [[
+      "## Structure coverage\n\nParagraph with **bold**, *italic*, ~~strike~~, `inline code`, and an [OSC 8 link](https://fixture.invalid).\n\n- parent item\n  - nested child\n    1. ordered grandchild\n- [ ] unchecked task\n- [x] checked task\n\n> A blockquote with **emphasis**.\n>\n> Second quoted paragraph.\n\n---\n\nEscaped Markdown: \\*literal asterisks\\* and \\_underscores\\_.\n\nRaw HTML fallback: <thinking>raw HTML fallback remains visible</thinking>.\n\n| left | right |\n| --- | ---: |\n| alpha | 1 |\n| beta | 22 |\n\n```unknown-language\nplain fallback token\n```\n\nInline math $x^2 + 1$ and display math:\n\n$$\n\\frac{a}{b}\n$$\n\nEnd of structural Markdown fixture.\n\n```text\nunclosed fence content"
+    ]],
+    "chatResponseChunkGatesByRequest": [[null]],
+    "chatResponseChunkReadyGatesByRequest": [["markdown-structure-content-sent"]],
+    "chatResponseFinishGates": ["markdown-structure-release-finish"]
+  },
+  "dimensions": [{ "columns": 120, "rows": 60 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    {
+      "id": "render-structure-stream",
+      "send": "Render the complete Markdown structure fixture.\r",
+      "waitGatesAfter": ["markdown-structure-request", "markdown-structure-content-sent"],
+      "expect": ["Structure coverage", "nested child", "ordered grandchild", "unchecked task", "checked task", "A blockquote", "raw HTML fallback", "alpha", "plain fallback token", "End of structural Markdown fixture.", "unclosed fence content"],
+      "allowStaticFrame": true,
+      "renderMatch": true
+    },
+    {
+      "id": "finish-structure-stream",
+      "releaseGates": ["markdown-structure-release-finish"],
+      "expect": ["End of structural Markdown fixture.", "↑10 ↓3"],
+      "notExpect": "Working",
+      "renderMatch": true
+    },
+    { "id": "exit", "send": "\u0003\u0003", "exit": true }
+  ],
+  "terminal": { "keyboardProtocol": "kitty" },
+  "assertionFrames": ["startup", "render-structure-stream", "finish-structure-stream", "exit"]
+}

@@ -487,13 +487,16 @@ internal sealed class TerminalTranscriptBuffer
         if (hiddenRows > 0 && segment.KeepLastPreviewLine)
         {
             var footerIndex = visibleRows - 1;
-            while (footerIndex > 0 && TerminalTextLayout.Width(layout.Rows[footerIndex]) == 0) footerIndex--;
+            while (footerIndex > 0 && IsWhitespaceVisualRow(layout.Rows[footerIndex])) footerIndex--;
             var bodyRowCount = Math.Min(ToolPreviewContentRows, footerIndex);
             hiddenRows = Math.Max(0, footerIndex - bodyRowCount);
             var footer = layout.Rows[footerIndex];
             var body = string.Join('\n', layout.Rows.Take(bodyRowCount));
             var notice = hiddenRows > 0 ? "\n" + FormatPreviewHint(hiddenRows, width) : "";
-            segment.CollapsedPreview = body + notice + "\n" + footer + (hasTrailingNewline ? "\n" : "");
+            var trailingRows = layout.Rows.Skip(footerIndex + 1).Take(visibleRows - footerIndex - 1);
+            var trailing = string.Join('\n', trailingRows);
+            segment.CollapsedPreview = body + notice + "\n" + footer +
+                (trailing.Length > 0 ? "\n" + trailing : "") + (hasTrailingNewline ? "\n" : "");
             segment.CollapsedPreviewWidth = width;
             return segment.CollapsedPreview;
         }
@@ -504,6 +507,21 @@ internal sealed class TerminalTranscriptBuffer
         segment.CollapsedPreview = preview;
         segment.CollapsedPreviewWidth = width;
         return preview;
+    }
+
+    private static bool IsWhitespaceVisualRow(string row)
+    {
+        for (var offset = 0; offset < row.Length;)
+        {
+            if (TerminalTextLayout.TryReadEscape(row, offset, out var escapeLength))
+            {
+                offset += escapeLength;
+                continue;
+            }
+            if (!char.IsWhiteSpace(row[offset])) return false;
+            offset++;
+        }
+        return true;
     }
 
     private static string FormatPreviewHint(int hiddenRows, int width)

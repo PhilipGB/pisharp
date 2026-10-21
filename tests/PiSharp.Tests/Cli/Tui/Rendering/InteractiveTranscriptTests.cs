@@ -243,6 +243,24 @@ public sealed class InteractiveTranscriptTests
     }
 
     [Fact]
+    public void InteractiveAbortUsesTheErrorThemeWithoutPrintingAnsiMarkupAsText()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        using var screen = new TerminalScreen(output, error, () => 100, () => 30,
+            new TerminalImageRenderer(), theme, queryTerminalColors: false);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+
+        transcript.Render(new AgentLifecycleEvent("turn_interrupted"));
+
+        var frame = TerminalOutputFrameReader.Read(output.ToString(), rows: 30, columns: 100)[^1].Screen;
+        Assert.Contains("Operation aborted", frame);
+        Assert.DoesNotContain("[38;2;", frame);
+        Assert.Contains(theme.Fg("error") + "Operation aborted", output.ToString());
+    }
+
+    [Fact]
     public void SearchToolDetailsRenderLimitAndByteTruncationSummary()
     {
         using var output = new StringWriter();

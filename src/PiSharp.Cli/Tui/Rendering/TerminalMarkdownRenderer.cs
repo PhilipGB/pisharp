@@ -74,7 +74,7 @@ internal static class TerminalMarkdownRenderer
             case QuoteBlock quote:
                 return RenderQuote(quote, source, width, theme, codeBlockIndent, baseForegroundToken);
             case ThematicBreakBlock:
-                return theme.Style("mdHr", "────────────────────────");
+                return theme.Style("mdHr", new string('─', Math.Min(width, 80)));
             case HtmlBlock html:
                 return PrefixLines(TerminalMarkdownInlineRenderer.Visible(html.Lines.ToString()), "  │ ");
             case ContainerBlock nested:
@@ -111,20 +111,50 @@ internal static class TerminalMarkdownRenderer
 
             var lines = content.Split('\n');
             var continuation = new string(' ', TerminalTextLayout.Width(marker) + 1);
-            output.Add(theme.Style("mdListBullet", marker + " ") + lines[0]);
+            var taskMarker = lines[0].StartsWith("[ ] ", StringComparison.Ordinal) ? "[ ] " :
+                lines[0].StartsWith("[x] ", StringComparison.Ordinal) ? "[x] " : "";
+            output.Add(theme.Style("mdListBullet", marker + " " + taskMarker) + lines[0][taskMarker.Length..]);
             for (var index = 1; index < lines.Length; index++) output.Add(continuation + lines[index]);
         }
+        var nestedIndent = NestedListExtraIndent(list);
+        if (nestedIndent > 0)
+        {
+            var prefix = new string(' ', nestedIndent);
+            for (var index = 0; index < output.Count; index++) output[index] = prefix + output[index];
+        }
         return string.Join('\n', output);
+    }
+
+    private static int NestedListExtraIndent(ListBlock list)
+    {
+        var ancestorMarkerIndents = new List<int>();
+        for (var parent = list.Parent; parent is not null; parent = parent.Parent)
+        {
+            if (parent is not ListItemBlock item || item.Parent is not ListBlock parentList) continue;
+            var order = item.Order > 0 ? item.Order : 1;
+            var marker = parentList.IsOrdered ? $"{order}{parentList.OrderedDelimiter}" : "-";
+            ancestorMarkerIndents.Add(TerminalTextLayout.Width(marker) + 1);
+        }
+        var inheritedIndent = 0;
+        var ancestorExtraIndent = 0;
+        for (var depth = 1; depth <= ancestorMarkerIndents.Count; depth++)
+        {
+            inheritedIndent += ancestorMarkerIndents[ancestorMarkerIndents.Count - depth];
+            var extraIndent = Math.Max(0, depth * 4 - inheritedIndent - ancestorExtraIndent);
+            if (depth == ancestorMarkerIndents.Count) return extraIndent;
+            ancestorExtraIndent += extraIndent;
+        }
+        return 0;
     }
 
     private static string RenderQuote(QuoteBlock quote, string source, int width, TerminalTheme theme, string codeBlockIndent,
         string? baseForegroundToken)
     {
         var text = RenderBlocks(quote, source, Math.Max(1, width - 2), "\n\n", theme, codeBlockIndent,
-            baseForegroundToken);
-        if (text.Length == 0) return theme.Style("mdQuoteBorder", "│");
+            baseForegroundToken: null);
+        if (text.Length == 0) return theme.Style("mdQuoteBorder", "│ ");
         return string.Join('\n', text.Split('\n').Select(line =>
-            theme.Style("mdQuoteBorder", "│") + " " + theme.Style("mdQuote", line)));
+            theme.Style("mdQuoteBorder", "│ ") + theme.Style("mdQuote", line, italic: true)));
     }
 
     private static string RenderCodeBlock(CodeBlock block, string? language, TerminalTheme theme, string codeBlockIndent)

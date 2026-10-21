@@ -285,6 +285,7 @@ public sealed class TerminalScreen : IDisposable
                 ? "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable
                 : "\u001b[?25l"));
             _suspended = false;
+            _compositor.InvalidateRenderedFrame();
             _render.Request(immediate: true);
         }
     }
@@ -489,6 +490,22 @@ public sealed class TerminalScreen : IDisposable
             if (!_active) return;
             _transcript.AppendThemedStatus(Render(_theme), Render,
                 Environment.NewLine + Environment.NewLine + " " + safe);
+            _render.Request();
+        }
+    }
+
+    internal void AppendThemedTranscriptLine(string message, string styleToken, bool isError)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        ArgumentException.ThrowIfNullOrWhiteSpace(styleToken);
+        var safe = TerminalSafeText.Normalize(message);
+        string Render(TerminalTheme theme) => Environment.NewLine + Environment.NewLine +
+            theme.Style(styleToken, safe) + Environment.NewLine;
+        lock (_gate)
+        {
+            if (!_active) return;
+            _transcript.AppendThemed(Render(_theme), isError, isToolResult: false, Render,
+                Environment.NewLine + Environment.NewLine + safe + Environment.NewLine);
             _render.Request();
         }
     }

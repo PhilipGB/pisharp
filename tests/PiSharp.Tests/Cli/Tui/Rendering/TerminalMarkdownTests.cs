@@ -27,12 +27,58 @@ public sealed class TerminalMarkdownTests
         var rendered = StripSgr(TerminalMarkdownRenderer.Render(markdown));
 
         Assert.Contains("1. first", rendered);
-        Assert.Contains("   - nested", rendered);
+        Assert.Contains("    - nested", rendered);
         Assert.Contains("2. bold italic", rendered);
         Assert.Contains("- [ ] pending", rendered);
         Assert.Contains("- [x] complete", rendered);
         Assert.Contains("docs (https://reference.test)", rendered);
         Assert.Contains("https://example.test", rendered);
+    }
+
+    [Fact]
+    public void TaskListMarkerInheritsThePinnedListBulletStyle()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var rendered = TerminalMarkdownRenderer.Render("- [ ] pending\n- [x] complete", theme: theme);
+
+        Assert.Contains(theme.Style("mdListBullet", "- [ ] "), rendered);
+        Assert.Contains(theme.Style("mdListBullet", "- [x] "), rendered);
+    }
+
+    [Fact]
+    public void BlockquoteTextRemainsItalicAroundNestedEmphasis()
+    {
+        var rendered = TerminalMarkdownRenderer.Render("> quote text with **bold emphasis**.");
+
+        AssertStyleAt(rendered, "quote text with ", italic: true);
+        AssertStyleAt(rendered, "bold emphasis", italic: true, bold: true);
+        AssertStyleAt(rendered, ".", italic: true);
+    }
+
+    [Fact]
+    public void EmptyBlockquoteKeepsItsBorderPaddingStyled()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+
+        var rendered = TerminalMarkdownRenderer.Render(">", theme: theme);
+
+        Assert.Contains(theme.Style("mdQuoteBorder", "│ "), rendered);
+    }
+
+    [Fact]
+    public void RendererMatchesPinnedPiNestedListDepthAndHorizontalRuleWidth()
+    {
+        const string markdown = "- parent\n  - nested\n    1. ordered grandchild\n\n---";
+
+        var rendered = StripSgr(TerminalMarkdownRenderer.Render(markdown, availableWidth: 96));
+
+        var nested = Assert.Single(rendered.Split('\n'), line => line.Contains("- nested", StringComparison.Ordinal));
+        var grandchild = Assert.Single(rendered.Split('\n'),
+            line => line.Contains("1. ordered grandchild", StringComparison.Ordinal));
+        Assert.Equal(4, nested.TakeWhile(char.IsWhiteSpace).Count());
+        Assert.Equal(8, grandchild.TakeWhile(char.IsWhiteSpace).Count());
+        Assert.Contains(new string('─', 80), rendered);
+        Assert.DoesNotContain(new string('─', 81), rendered);
     }
 
     [Fact]
@@ -117,6 +163,7 @@ public sealed class TerminalMarkdownTests
         var jsonCode = TerminalSyntaxHighlighter.Highlight("{\"name\": \"pi\", \"active\": true}", "json", theme);
         var bash = TerminalMarkdownRenderer.Render("```bash\nif echo \"ready\"; then # comment\n  echo 2\nfi\n```", theme: theme);
         var unknown = TerminalMarkdownRenderer.Render("```unknown\nplain text\n```", theme: theme);
+        var plaintext = TerminalMarkdownRenderer.Render("```text\nplain text\n```", theme: theme);
 
         Assert.Contains(theme.Fg("syntaxKeyword") + "public", csharp);
         Assert.Contains(theme.Fg("syntaxKeyword") + "sealed", csharp);
@@ -136,6 +183,8 @@ public sealed class TerminalMarkdownTests
         Assert.Contains(theme.Fg("syntaxType") + "echo", bash);
         Assert.Contains(theme.Fg("syntaxComment") + "# comment", bash);
         Assert.Contains(theme.Fg("mdCodeBlock") + "plain text", unknown);
+        Assert.DoesNotContain(theme.Fg("mdCodeBlock") + "plain text", plaintext);
+        Assert.Contains("  plain text", StripSgr(plaintext));
         Assert.DoesNotContain(theme.Fg("syntaxPunctuation"), jsonCode);
     }
 

@@ -987,7 +987,7 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
-    public void ToolImageRendersAsKittyRowsOnlyWhenExpandedAndStaysOutOfCapturedText()
+    public void ToolImageRendersAsKittyRowsWhenCollapsedAndExpandedAndStaysOutOfCapturedText()
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
@@ -1016,9 +1016,9 @@ public sealed class TerminalScreenTests
         screen.Dispose();
 
         Assert.DoesNotContain("Images", serialized);
-        Assert.DoesNotContain("\u001b_Ga=T", collapsed);
-        Assert.Contains("[Image: [image/png] 10x40]", collapsed);
-        Assert.Contains("\u001b_Ga=T", expanded);
+        Assert.Contains("\u001b_Ga=T", collapsed);
+        Assert.DoesNotContain("[Image: [image/png] 10x40]", collapsed);
+        Assert.Contains("\u001b_Ga=p", expanded);
         Assert.DoesNotContain("psimg-", expanded);
         Assert.Contains("\u001b_Ga=p", redrawn);
         Assert.Contains("\u001b_Ga=d,d=a", suspended);

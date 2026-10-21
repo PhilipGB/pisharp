@@ -17,7 +17,11 @@ public enum PiSharpToolTextStyle
 
 /// <summary>A terminal-safe text fragment with a semantic theme style.</summary>
 public sealed record PiSharpToolTextSpan(string Text, PiSharpToolTextStyle Style = PiSharpToolTextStyle.Normal,
-    bool Bold = false, bool Dim = false);
+    bool Bold = false, bool Dim = false)
+{
+    /// <summary>An optional absolute file, HTTP, or HTTPS target for terminals that support OSC 8 links.</summary>
+    public string? HyperlinkTarget { get; init; }
+}
 
 /// <summary>Plain text and semantic styles returned by an extension renderer.</summary>
 public sealed record PiSharpToolRenderView(IReadOnlyList<PiSharpToolTextSpan> Spans)
@@ -51,7 +55,7 @@ public delegate PiSharpToolRenderView? PiSharpToolResultRenderer(
 
 /// <summary>
 /// Optional extension presentation callbacks. Return null to use PiSharp's standard safe view.
-/// Views contain text and semantic styles only; the host owns ANSI output and layout.
+/// Views contain text, semantic styles and optional hyperlink targets; the host owns ANSI output and layout.
 /// </summary>
 public sealed class PiSharpToolRenderer
 {

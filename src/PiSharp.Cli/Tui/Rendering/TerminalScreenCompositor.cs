@@ -41,6 +41,8 @@ internal sealed class TerminalScreenCompositor
 
     public void SetClearOnShrink(bool enabled) => _clearOnShrink = enabled;
 
+    public void InvalidateRenderedFrame() => _previousRows = null;
+
     internal sealed record Frame(IReadOnlyList<string> Rows, int CursorRow, int CursorColumn,
         int ScrollOffset, int Columns, int Height, bool CursorVisible = true, int RestoreStartRow = 0,
         int ContentHeight = 0, IReadOnlyList<string>? RestorationRows = null,
@@ -503,8 +505,8 @@ internal sealed class TerminalScreenCompositor
         var rowWidth = TerminalTextLayout.Width(row);
         var terminalWidth = transcriptWidth + outputPadding * 2;
         if (outputPadding > 0 && rowWidth >= terminalWidth) return row;
-        var hasPanelBackground = row.StartsWith("\u001b[48;", StringComparison.Ordinal);
-        var leadingBackgroundLength = LeadingBackgroundSequenceLength(row);
+        var leadingBackgroundLength = LeadingPanelBackgroundLength(row);
+        var hasPanelBackground = leadingBackgroundLength > 0;
         if (rowWidth == 0 && hasPanelBackground)
             return row[..leadingBackgroundLength] + new string(' ', terminalWidth) + "\u001b[0m";
 
@@ -531,6 +533,16 @@ internal sealed class TerminalScreenCompositor
         return leadingBackgroundLength > 0
             ? row[..leadingBackgroundLength] + leadingPadding + row[leadingBackgroundLength..]
             : leadingPadding + row;
+    }
+
+    private static int LeadingPanelBackgroundLength(string row)
+    {
+        const string reset = "\u001b[0m";
+        var offset = 0;
+        while (row.AsSpan(offset).StartsWith(reset, StringComparison.Ordinal)) offset += reset.Length;
+        if (!row.AsSpan(offset).StartsWith("\u001b[48;", StringComparison.Ordinal)) return 0;
+        var end = row.IndexOf('m', offset);
+        return end < 0 ? 0 : end + 1;
     }
 
     private static int LeadingBackgroundSequenceLength(string row)
@@ -566,13 +578,13 @@ internal sealed class TerminalScreenCompositor
             return;
         }
 
-        var rendered = _images.PrepareFrame(frame.Rows);
-        _output.Write("\u001b[?2026h");
-        if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
         var contentShrank = _clearOnShrink && _previousContentHeight is { } previousContentHeight &&
             frame.ContentHeight < previousContentHeight;
         var fullRedraw = _previousRows is null || _previousColumns != frame.Columns || _previousHeight != frame.Height ||
             contentShrank;
+        var rendered = _images.PrepareFrame(frame.Rows, forcePlacementRedraw: fullRedraw);
+        _output.Write("\u001b[?2026h");
+        if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
         var redrawAllRows = fullRedraw || rendered.Preamble.Length > 0;
         if (fullRedraw) _output.Write("\u001b[2J");
         for (var index = 0; index < frame.Rows.Count; index++)
@@ -612,8 +624,6 @@ internal sealed class TerminalScreenCompositor
     private void RenderMainScreen(Frame frame)
     {
         var sourceRows = frame.DocumentRows ?? frame.RestorationRows ?? frame.Rows;
-        var rendered = _images.PrepareFrame(sourceRows);
-        var rows = rendered.Rows;
         var cursorRow = frame.DocumentCursorRow >= 0
             ? frame.DocumentCursorRow
             : frame.RestorationCursorRow >= 0 ? frame.RestorationCursorRow : frame.CursorRow;
@@ -623,7 +633,10 @@ internal sealed class TerminalScreenCompositor
         var contentShrank = _clearOnShrink && _previousContentHeight is { } previousContentHeight &&
             frame.ContentHeight < previousContentHeight;
         var fullRedraw = _previousRows is null || widthChanged || heightChanged || contentShrank ||
-            rendered.Preamble.Length > 0 || _previousRows is { } previousRows && previousRows.Count > rows.Count;
+            _previousRows is { } previousRows && previousRows.Count > sourceRows.Count;
+        var rendered = _images.PrepareFrame(sourceRows, forcePlacementRedraw: fullRedraw);
+        fullRedraw |= rendered.Preamble.Length > 0;
+        var rows = rendered.Rows;
 
         _output.Write("\u001b[?2026h");
         if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);

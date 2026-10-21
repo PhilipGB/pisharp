@@ -20,10 +20,10 @@ internal sealed class TerminalImageRenderer
     private const int MaximumImageColumns = 60;
     private readonly Dictionary<Guid, ImageEntry> _images = [];
     private readonly HashSet<int> _pendingKittyDeletes = [];
+    private readonly HashSet<KittyImagePlacement> _visibleKittyPlacements = [];
     private readonly TerminalImageProtocol _protocol;
     private int _cachedBytes;
     private long _cachedDecodedBytes;
-    private bool _kittyPlacementsVisible;
 
     public TerminalImageRenderer(Func<string, string?>? environment = null)
     {
@@ -140,12 +140,14 @@ internal sealed class TerminalImageRenderer
     }
 
     /// <summary>Prepares visible rows, emits Kitty placement cleanup, and substitutes only registered markers.</summary>
-    public TerminalImageFrame PrepareFrame(IReadOnlyList<string> rows)
+    public TerminalImageFrame PrepareFrame(IReadOnlyList<string> rows, bool forcePlacementRedraw = false)
     {
         ArgumentNullException.ThrowIfNull(rows);
         var visible = new Dictionary<Guid, HashSet<int>>();
-        foreach (var line in rows)
+        var positions = new Dictionary<Guid, List<KittyImagePlacement>>();
+        for (var screenRow = 0; screenRow < rows.Count; screenRow++)
         {
+            var line = rows[screenRow];
             for (var offset = 0; offset < line.Length;)
             {
                 if (!TryReadMarker(line, offset, out var markerLength, out var id, out var row))
@@ -153,10 +155,14 @@ internal sealed class TerminalImageRenderer
                     offset++;
                     continue;
                 }
-                if (_images.ContainsKey(id))
+                if (_images.TryGetValue(id, out var image))
                 {
                     if (!visible.TryGetValue(id, out var imageRows)) visible.Add(id, imageRows = []);
                     imageRows.Add(row);
+                    if (!positions.TryGetValue(id, out var imagePositions))
+                        positions.Add(id, imagePositions = []);
+                    imagePositions.Add(new(id, screenRow, TerminalTextLayout.Width(line[..offset]), row,
+                        image.Cells.Columns, image.Cells.Rows, line.Remove(offset, markerLength)));
                 }
                 offset += markerLength;
             }
@@ -165,16 +171,22 @@ internal sealed class TerminalImageRenderer
         var complete = visible.Where(pair => _images.TryGetValue(pair.Key, out var image) &&
             pair.Value.Count == image.Cells.Rows && Enumerable.Range(0, image.Cells.Rows).All(pair.Value.Contains))
             .Select(pair => pair.Key).ToHashSet();
-        var hasKittyImage = _protocol == TerminalImageProtocol.Kitty && complete.Count > 0;
+        var nextPlacements = new HashSet<KittyImagePlacement>();
+        if (_protocol == TerminalImageProtocol.Kitty)
+            nextPlacements.UnionWith(positions.Where(pair => complete.Contains(pair.Key))
+                .SelectMany(pair => pair.Value));
+        var placementsChanged = !_visibleKittyPlacements.SetEquals(nextPlacements);
         var preamble = new System.Text.StringBuilder();
         if (_protocol == TerminalImageProtocol.Kitty)
         {
             foreach (var kittyId in _pendingKittyDeletes)
                 preamble.Append($"\u001b_Ga=d,d=I,i={kittyId},q=2\u001b\\");
             _pendingKittyDeletes.Clear();
-            if (_kittyPlacementsVisible || hasKittyImage) preamble.Append(HideKittyPlacements());
+            if (_visibleKittyPlacements.Count > 0 && (placementsChanged || forcePlacementRedraw))
+                preamble.Append(HideKittyPlacements());
         }
-        _kittyPlacementsVisible = hasKittyImage;
+        _visibleKittyPlacements.Clear();
+        _visibleKittyPlacements.UnionWith(nextPlacements);
 
         var renderedRows = new List<string>(rows.Count);
         var fallbackAdded = new HashSet<Guid>();
@@ -239,8 +251,8 @@ internal sealed class TerminalImageRenderer
 
     public string HidePlacements()
     {
-        if (_protocol != TerminalImageProtocol.Kitty || !_kittyPlacementsVisible) return "";
-        _kittyPlacementsVisible = false;
+        if (_protocol != TerminalImageProtocol.Kitty || _visibleKittyPlacements.Count == 0) return "";
+        _visibleKittyPlacements.Clear();
         return HideKittyPlacements();
     }
 
@@ -250,7 +262,7 @@ internal sealed class TerminalImageRenderer
         _pendingKittyDeletes.Clear();
         _cachedBytes = 0;
         _cachedDecodedBytes = 0;
-        _kittyPlacementsVisible = false;
+        _visibleKittyPlacements.Clear();
     }
 
     internal static bool TryReadMarker(string text, int offset, out int length, out Guid id, out int row)
@@ -337,4 +349,7 @@ internal sealed class TerminalImageRenderer
         public TerminalImageCells Cells { get; set; }
         public bool KittyUploaded { get; set; }
     }
+
+    private readonly record struct KittyImagePlacement(Guid ImageId, int ScreenRow, int ScreenColumn, int ImageRow,
+        int ImageColumns, int ImageRows, string AnchorContent);
 }

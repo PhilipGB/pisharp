@@ -9,13 +9,14 @@ namespace PiSharp.Cli.Tui;
 
 /// <summary>Builds bounded themed tool views while keeping extension callbacks outside screen state.</summary>
 internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?>? resolveRenderer,
-    string workingDirectory, Func<bool>? isExpanded = null)
+    string workingDirectory, Func<bool>? isExpanded = null, Func<string, string?>? terminalEnvironment = null)
 {
     private const int MaximumSpans = 1_024;
     private const int MaximumCharacters = 32_768;
     private const int MaximumLines = 256;
     private const int MaximumArgumentBytes = 256 * 1024;
     private const int MaximumRememberedCalls = 1_024;
+    private readonly Func<string, string?> _terminalEnvironment = terminalEnvironment ?? Environment.GetEnvironmentVariable;
     private readonly Dictionary<string, IReadOnlyDictionary<string, object?>> _argumentsByCall = new(StringComparer.Ordinal);
     private readonly Queue<string> _callOrder = new();
 
@@ -129,14 +130,20 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
         return new(spans);
     }
 
-    private static PiSharpToolRenderView RenderReadCall(IReadOnlyDictionary<string, object?> arguments)
+    private PiSharpToolRenderView RenderReadCall(IReadOnlyDictionary<string, object?> arguments)
     {
         var path = GetStringArgument(arguments, "file_path") ?? GetStringArgument(arguments, "path") ?? "";
+        var pathSpan = new PiSharpToolTextSpan(TerminalSafeText.Normalize(path), PiSharpToolTextStyle.Accent)
+        {
+            HyperlinkTarget = TerminalImageCapabilities.SupportsHyperlinks(_terminalEnvironment)
+                ? CreateFileHyperlink(path)
+                : null
+        };
         var spans = new List<PiSharpToolTextSpan>
         {
             new("read", PiSharpToolTextStyle.Title, Bold: true),
             new(" ", PiSharpToolTextStyle.Normal),
-            new(TerminalSafeText.Normalize(path), PiSharpToolTextStyle.Accent)
+            pathSpan
         };
         var offset = GetNumberArgument(arguments, "offset");
         var limit = GetNumberArgument(arguments, "limit");
@@ -147,6 +154,28 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             spans.Add(new(range, PiSharpToolTextStyle.Muted));
         }
         return new(spans);
+    }
+
+    private string? CreateFileHyperlink(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return null;
+        try { return new Uri(Path.GetFullPath(path, workingDirectory)).AbsoluteUri; }
+        catch (Exception error) when (error is ArgumentException or IOException or NotSupportedException or
+            UriFormatException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static string? NormalizeHyperlinkTarget(string? target)
+    {
+        if (string.IsNullOrWhiteSpace(target) || target.Any(char.IsControl) ||
+            !Uri.TryCreate(target, UriKind.Absolute, out var uri) ||
+            !(uri.Scheme.Equals(Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase) ||
+                uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||
+                uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+            return null;
+        return uri.AbsoluteUri;
     }
 
     private static PiSharpToolRenderView RenderBashCall(IReadOnlyDictionary<string, object?> arguments)
@@ -227,10 +256,13 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             if (safe.Length > 0)
             {
                 var token = Token(span.Style);
+                var hyperlink = theme is null ? null : NormalizeHyperlinkTarget(span.HyperlinkTarget);
+                if (hyperlink is not null) output.Append("\u001b]8;;").Append(hyperlink).Append("\u001b\\");
                 output.Append(theme is null || token is null
                     ? safe
                     : theme.Style(token, safe, bold: span.Bold || span.Style == PiSharpToolTextStyle.Title,
                         dim: span.Dim));
+                if (hyperlink is not null) output.Append("\u001b]8;;\u001b\\");
             }
             if (truncated || usedCharacters >= MaximumCharacters || usedLines > MaximumLines) { truncated = true; break; }
         }
@@ -324,7 +356,11 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             if (span is null) continue;
             var text = SafeBoundedText(span.Text, ref usedCharacters, ref usedLines, out var spanTruncated);
             if (text.Length > 0)
-                spans.Add(new(text, Enum.IsDefined(span.Style) ? span.Style : PiSharpToolTextStyle.Normal, span.Bold, span.Dim));
+                spans.Add(new PiSharpToolTextSpan(text,
+                    Enum.IsDefined(span.Style) ? span.Style : PiSharpToolTextStyle.Normal, span.Bold, span.Dim)
+                {
+                    HyperlinkTarget = NormalizeHyperlinkTarget(span.HyperlinkTarget)
+                });
             if (spanTruncated || usedCharacters >= MaximumCharacters || usedLines >= MaximumLines)
             {
                 truncated = true;

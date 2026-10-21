@@ -749,8 +749,7 @@ public sealed class TerminalEditor
             }
             if (next.IsEndOfStream)
             {
-                ClearLine();
-                Console.WriteLine();
+                ExitInputLoop();
                 return null;
             }
             if (HandleIdleTranscriptInput(next)) continue;
@@ -759,8 +758,7 @@ public sealed class TerminalEditor
                 var now = Environment.TickCount64;
                 if (_lastClearAtMilliseconds is { } previous && now - previous < 500)
                 {
-                    ClearLine();
-                    Console.WriteLine();
+                    ExitInputLoop();
                     return null;
                 }
                 _lastClearAtMilliseconds = now;
@@ -864,8 +862,7 @@ public sealed class TerminalEditor
             switch (action)
             {
                 case EditorAction.Exit:
-                    ClearLine();
-                    Console.WriteLine();
+                    ExitInputLoop();
                     return null;
                 case EditorAction.Cancel:
                     Render();
@@ -1097,6 +1094,12 @@ public sealed class TerminalEditor
         Console.Write("\r");
         _renderedRows = 0;
         _cursorRow = 0;
+    }
+
+    private void ExitInputLoop()
+    {
+        ClearLine();
+        if (_screen is not { IsActive: true }) Console.WriteLine();
     }
 
     private sealed class InputLoopLease(Action release) : IDisposable

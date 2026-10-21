@@ -273,6 +273,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         else panel = new(isError ? "toolErrorBg" : "toolSuccessBg");
 
         var activeImageText = new StringBuilder();
+        var collapsedActiveImageText = new StringBuilder();
         var fallbackImages = new List<string>();
         var capturedImageText = new StringBuilder();
         var collapsedFallbackImages = new List<string>();
@@ -284,7 +285,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
                 if (marker is not null)
                 {
                     activeImageText.Append(Environment.NewLine).Append(marker);
-                    collapsedFallbackImages.Add(fallback);
+                    collapsedActiveImageText.Append(Environment.NewLine).Append(marker);
                 }
                 else
                 {
@@ -315,9 +316,11 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         {
             var text = TerminalToolPresentation.Render(collapsed, theme) +
                 RenderImageFallbacks(collapsedFallbackImages, theme);
-            if (text.Length == 0) return "";
+            if (text.Length == 0 && collapsedActiveImageText.Length == 0) return "";
+            if (text.Length == 0) return collapsedActiveImageText + Environment.NewLine;
             var panelText = RenderToolPanel(EnsureTrailingNewline(text), theme, panel.BackgroundToken);
-            return panelText + (collapsedFallbackImages.Count > 0 ? "" : Environment.NewLine);
+            return panelText + (collapsedFallbackImages.Count > 0 ? "" : Environment.NewLine) +
+                collapsedActiveImageText + (collapsedActiveImageText.Length > 0 ? Environment.NewLine : "");
         }
         var rendered = RenderExpanded(getTheme());
         var captured = EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, theme: null) + capturedImageText) +
@@ -341,7 +344,8 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         return panel;
     }
 
-    private static string RenderToolPanel(string text, TerminalTheme theme, string backgroundToken)
+    internal static string RenderToolPanel(string text, TerminalTheme theme, string backgroundToken,
+        bool bottomPadding = false)
     {
         var background = theme.Bg(backgroundToken);
         var output = new StringBuilder(text.Length + 32);
@@ -350,7 +354,10 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         {
             if (text[offset] == '\n')
             {
-                output.Append('\n').Append(background);
+                var isFinalNewline = offset + 1 == text.Length;
+                if (isFinalNewline) output.Append("\u001b[0m");
+                output.Append('\n');
+                if (!isFinalNewline) output.Append(background);
                 offset++;
                 continue;
             }
@@ -363,6 +370,7 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
             output.Append(text[offset++]);
         }
         output.Append("\u001b[0m");
+        if (bottomPadding && text.EndsWith('\n')) output.Append(background).Append(' ').Append("\u001b[0m");
         return output.ToString();
     }
 
@@ -388,11 +396,17 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         }
         string Expanded(TerminalTheme theme) => Environment.NewLine + RenderToolPanel(
             Environment.NewLine + EnsureTrailingNewline(
-                TerminalToolPresentation.Render(expanded, theme)), theme, panel.BackgroundToken) +
+                TerminalToolPresentation.Render(expanded, theme)), theme, panel.BackgroundToken,
+            bottomPadding: true) +
             activeImages + (activeImages.Length > 0 ? Environment.NewLine : "");
-        string Collapsed(TerminalTheme theme) => Environment.NewLine + RenderToolPanel(
-            Environment.NewLine + EnsureTrailingNewline(TerminalToolPresentation.Render(collapsed, theme)) +
-            Environment.NewLine, theme, panel.BackgroundToken) + capturedImages + Environment.NewLine;
+        string Collapsed(TerminalTheme theme)
+        {
+            var panelText = RenderToolPanel(
+                Environment.NewLine + EnsureTrailingNewline(TerminalToolPresentation.Render(collapsed, theme)),
+                theme, panel.BackgroundToken, bottomPadding: true);
+            return Environment.NewLine + panelText + capturedImages +
+                (capturedImages.Length > 0 ? Environment.NewLine : "");
+        }
         transcript.SetToolResult(id, Expanded(getTheme()), Collapsed(getTheme()), Expanded, Collapsed,
             Environment.NewLine + Environment.NewLine +
             EnsureTrailingNewline(TerminalToolPresentation.Render(expanded, null) + capturedImages), isError, finished);

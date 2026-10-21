@@ -238,7 +238,7 @@ internal static class TerminalTextLayout
             if (token.Kind == WrapKind.Newline)
             {
                 var newline = token.Atoms[0];
-                PreserveStyledPadding();
+                PreserveStyledPadding(preserveActiveStyle: HasActiveSgrAtEnd(line.ToString()));
                 AppendControl(newline.Prefix);
                 FinishLine(newline.SourceEnd);
                 ProcessSkippedWhitespace();

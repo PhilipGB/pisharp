@@ -94,8 +94,8 @@ internal static class TerminalMarkdownTableRenderer
             for (var column = 0; column < cells.Length; column++)
             {
                 var text = line < wrapped[column].Count ? wrapped[column][line] : "";
-                text += new string(' ', Math.Max(0, widths[column] - TerminalTextLayout.Width(text)));
-                padded[column] = isHeader ? $"\u001b[1m{text}\u001b[22m" : text;
+                var padding = new string(' ', Math.Max(0, widths[column] - TerminalTextLayout.Width(text)));
+                padded[column] = isHeader ? $"\u001b[1m{text}\u001b[1m{padding}\u001b[22m" : text + padding;
             }
             output.Add($"│ {string.Join(" │ ", padded)} │");
         }
