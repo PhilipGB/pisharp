@@ -148,6 +148,7 @@ internal sealed class TerminalScreenCompositor
             TerminalTextLayout.Create(startupContent, transcriptWidth).RowCount;
         var transcriptSource = startupPrefix + transcriptText;
         var transcriptLayout = TerminalTextLayout.Create(transcriptSource, transcriptWidth);
+        var visibleTranscriptSource = transcriptSource;
         var visibleLayout = transcriptLayout;
         var highlightedSearch = search.Highlight(transcriptText, activeTheme);
         var hasSearchResult = highlightedSearch.MatchCount > 0;
@@ -158,7 +159,8 @@ internal sealed class TerminalScreenCompositor
             var selectedRow = startupContentRows + searchLayout.VisualRowAt(highlightedSearch.SelectedTextStart);
             scrollOffset = TerminalTranscriptViewport.ScrollOffsetToReveal(transcriptLayout.RowCount, selectedRow,
                 Math.Max(1, transcriptViewportHeight));
-            visibleLayout = TerminalTextLayout.Create(startupPrefix + highlightedSearch.HighlightedText, transcriptWidth);
+            visibleTranscriptSource = startupPrefix + highlightedSearch.HighlightedText;
+            visibleLayout = TerminalTextLayout.Create(visibleTranscriptSource, transcriptWidth);
         }
 
         // Pi's follow-end scroll view keeps its absolute scrollTop while new content arrives.
@@ -196,7 +198,10 @@ internal sealed class TerminalScreenCompositor
                 transcriptSource, transcriptLayout.SourceIndexAtVisualRow(visualRow)) ? " " : "";
             rows[transcriptStart + index] = isStartupContent
                 ? PadTranscriptRow(continuationIndent + displayedTranscriptRows[index], columns, outputPadding: 0)
-                : PadTranscriptRow(displayedTranscriptRows[index], transcriptWidth, boundedOutputPadding);
+                : PadTranscriptRow(displayedTranscriptRows[index], transcriptWidth, boundedOutputPadding,
+                    preserveActiveStyleOnPadding: visualRow + 1 < visibleLayout.RowCount &&
+                        IsWrappedLineContinuation(visibleTranscriptSource,
+                            visibleLayout.SourceIndexAtVisualRow(visualRow + 1)));
         }
         if (_useAlternateScreen && (scrollOffset > 0 || transientScrollbarVisible) &&
             transcriptViewportHeight > 0 && columns > 1)
@@ -318,7 +323,10 @@ internal sealed class TerminalScreenCompositor
             : transcriptLayout.Rows.Select((row, index) =>
             {
                 if (index >= startupContentVisualRows)
-                    return PadTranscriptRow(row, transcriptWidth, boundedOutputPadding);
+                    return PadTranscriptRow(row, transcriptWidth, boundedOutputPadding,
+                        preserveActiveStyleOnPadding: index + 1 < transcriptLayout.RowCount &&
+                            IsWrappedLineContinuation(transcriptSource,
+                                transcriptLayout.SourceIndexAtVisualRow(index + 1)));
                 var continuationIndent = IsWrappedLineContinuation(
                     transcriptSource, transcriptLayout.SourceIndexAtVisualRow(index)) ? " " : "";
                 return PadTranscriptRow(continuationIndent + row, columns, outputPadding: 0);
@@ -500,7 +508,8 @@ internal sealed class TerminalScreenCompositor
         return sourceIndex > lineStart + 1;
     }
 
-    internal static string PadTranscriptRow(string row, int transcriptWidth, int outputPadding)
+    internal static string PadTranscriptRow(string row, int transcriptWidth, int outputPadding,
+        bool preserveActiveStyleOnPadding = false)
     {
         var rowWidth = TerminalTextLayout.Width(row);
         var terminalWidth = transcriptWidth + outputPadding * 2;
@@ -522,7 +531,13 @@ internal sealed class TerminalScreenCompositor
         if (hasPanelBackground)
         {
             if (hasTrailingReset) row = row[..^reset.Length];
-            row += reset + row[..leadingBackgroundLength] + new string(' ', trailingPadding) + reset;
+            if (preserveActiveStyleOnPadding || rowWidth >= transcriptWidth)
+            {
+                var cellStyle = TerminalTextLayout.SgrStateAtLastCell(row);
+                row += (cellStyle.Length > 0 ? cellStyle : row[..leadingBackgroundLength]) +
+                    new string(' ', trailingPadding) + reset;
+            }
+            else row += reset + row[..leadingBackgroundLength] + new string(' ', trailingPadding) + reset;
         }
         else
         {
@@ -552,12 +567,13 @@ internal sealed class TerminalScreenCompositor
         return end < 0 ? 0 : end + 1;
     }
 
-    private static bool IsBlankRow(string row)
+    internal static bool IsBlankRow(string row)
     {
         for (var offset = 0; offset < row.Length; offset++)
             if (TerminalImageRenderer.TryReadMarker(row, offset, out _, out _, out _))
                 return false;
 
+        if (TerminalTextLayout.HasBackgroundOnWhitespace(row)) return false;
         return TerminalTextLayout.StripFormatting(row).All(char.IsWhiteSpace);
     }
 

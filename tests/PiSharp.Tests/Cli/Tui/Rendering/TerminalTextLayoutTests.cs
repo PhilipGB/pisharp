@@ -166,6 +166,15 @@ public sealed class TerminalTextLayoutTests
     }
 
     [Fact]
+    public void WhitespaceWithAnActiveBackgroundRemainsVisuallyMeaningful()
+    {
+        Assert.True(TerminalTextLayout.HasBackgroundOnWhitespace("\u001b[48;2;1;2;3m \u001b[0m"));
+        Assert.True(TerminalTextLayout.HasBackgroundOnWhitespace("\u001b[44m \u001b[49m"));
+        Assert.False(TerminalTextLayout.HasBackgroundOnWhitespace("\u001b[38;2;1;2;3m \u001b[0m"));
+        Assert.False(TerminalTextLayout.HasBackgroundOnWhitespace("\u001b[48;2;1;2;3m\u001b[0m "));
+    }
+
+    [Fact]
     public void WrapHardSplitsOnlyOverlongTokensAndKeepsCjkAndEmojiGraphemes()
     {
         Assert.Equal(["abcd", "efgh", "ij"], TerminalTextLayout.Wrap("abcdefghij", 4)

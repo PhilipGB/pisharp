@@ -701,12 +701,49 @@ internal static class TerminalTextLayout
         return active.IsActive;
     }
 
+    internal static bool HasBackgroundOnWhitespace(string text)
+    {
+        var active = new SgrState();
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadEscape(text, offset, out var length, out var kind, out var payload))
+            {
+                if (kind == EscapeKind.Sgr) active.Apply(payload);
+                offset += length;
+                continue;
+            }
+            if (char.IsWhiteSpace(text[offset]) && active.HasBackground) return true;
+            offset++;
+        }
+        return false;
+    }
+
+    internal static string SgrStateAtLastCell(string text)
+    {
+        var active = new SgrState();
+        var lastCellState = "";
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadEscape(text, offset, out var length, out var kind, out var payload))
+            {
+                if (kind == EscapeKind.Sgr) active.Apply(payload);
+                offset += length;
+                continue;
+            }
+            var rune = Rune.GetRuneAt(text, offset);
+            if (!Rune.IsControl(rune)) lastCellState = string.Concat(active.Sequences);
+            offset += rune.Utf16SequenceLength;
+        }
+        return lastCellState;
+    }
+
     private sealed class SgrState
     {
         private readonly Dictionary<string, string> _active = new(StringComparer.Ordinal);
 
         public IEnumerable<string> Sequences => _active.Values;
         public bool IsActive => _active.Count > 0;
+        public bool HasBackground => _active.ContainsKey("background");
 
         public void Apply(string payload)
         {

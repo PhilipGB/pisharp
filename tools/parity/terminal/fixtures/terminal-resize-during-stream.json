@@ -229,7 +229,8 @@
       "expect": [
         "tail",
         "↑10 ↓3"
-      ]
+      ],
+      "notExpect": "Working"
     },
     {
       "id": "exit",

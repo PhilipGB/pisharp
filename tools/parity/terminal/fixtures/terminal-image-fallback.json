@@ -86,7 +86,8 @@
     {
       "id": "read-image",
       "send": "\r",
-      "expect": "Image read complete."
+      "expect": "Image read complete.",
+      "notExpect": "Working"
     },
     {
       "id": "expand-image-result",

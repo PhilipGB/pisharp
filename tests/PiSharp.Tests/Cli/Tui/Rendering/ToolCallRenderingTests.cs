@@ -127,6 +127,47 @@ public sealed class ToolCallRenderingTests
         Assert.StartsWith("\u001b[0m" + theme.Bg("toolSuccessBg"), terminalRow, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void WrappedToolPanelPaddingKeepsTheActiveTextStyleUntilTheRowEnds()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var background = theme.Bg("toolPendingBg");
+        var styledCommand = theme.Style("toolTitle", new string('x', 79), bold: true);
+        var row = TerminalTextLayout.Create(background + styledCommand, width: 78).Rows[0];
+
+        var padded = TerminalScreenCompositor.PadTranscriptRow(row, transcriptWidth: 78, outputPadding: 1,
+            preserveActiveStyleOnPadding: true);
+        var cellStyle = TerminalTextLayout.SgrStateAtLastCell(row);
+        var expected = row[..background.Length] + " " + row[background.Length..^"\u001b[0m".Length] +
+            cellStyle + " \u001b[0m";
+
+        Assert.Equal(expected, padded);
+    }
+
+    [Fact]
+    public void TranscriptCompositorKeepsBlankRowsWithAVisiblePanelBackground()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var row = theme.Bg("toolSuccessBg") + " " + "\u001b[0m";
+
+        Assert.False(TerminalScreenCompositor.IsBlankRow(row));
+        Assert.True(TerminalScreenCompositor.IsBlankRow("\u001b[2m \u001b[0m"));
+    }
+
+    [Fact]
+    public void ToolResultCollapsedPreviewRetainsItsBottomPanelPadding()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var transcript = new TerminalTranscriptBuffer();
+        var presentation = new TerminalConversationPresentation(transcript, new TerminalImageRenderer(_ => null),
+            () => 80, () => theme);
+        var view = PiSharpToolRenderView.FromText("read fixture-image.png");
+
+        Assert.True(presentation.AppendToolResult(view, view, images: null));
+
+        Assert.Contains(theme.Bg("toolSuccessBg") + " \u001b[0m", transcript.GetText(78));
+    }
+
     [Theory]
     [InlineData("kitty", true)]
     [InlineData("xterm", false)]

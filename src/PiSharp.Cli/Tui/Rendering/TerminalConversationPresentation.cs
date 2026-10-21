@@ -307,18 +307,23 @@ internal sealed class TerminalConversationPresentation(TerminalTranscriptBuffer 
         {
             var text = TerminalToolPresentation.Render(expanded, theme) + RenderImageFallbacks(fallbackImages, theme);
             if (activeImageText.Length > 0)
-                return RenderToolPanel(text, theme, panel.BackgroundToken) + activeImageText +
+                return RenderToolPanel(text, theme, panel.BackgroundToken, bottomPadding: true) + activeImageText +
                     Environment.NewLine;
-            return RenderToolPanel(text + Environment.NewLine, theme, panel.BackgroundToken) +
+            return RenderToolPanel(text + Environment.NewLine, theme, panel.BackgroundToken, bottomPadding: true) +
                 (fallbackImages.Count > 0 ? "" : Environment.NewLine);
         }
         string RenderCollapsed(TerminalTheme theme)
         {
             var text = TerminalToolPresentation.Render(collapsed, theme) +
                 RenderImageFallbacks(collapsedFallbackImages, theme);
-            if (text.Length == 0 && collapsedActiveImageText.Length == 0) return "";
-            if (text.Length == 0) return collapsedActiveImageText + Environment.NewLine;
-            var panelText = RenderToolPanel(EnsureTrailingNewline(text), theme, panel.BackgroundToken);
+            if (text.Length == 0)
+            {
+                if (collapsedActiveImageText.Length == 0 && capturedImageText.Length == 0) return "";
+                return RenderToolPanel(" ", theme, panel.BackgroundToken) + collapsedActiveImageText +
+                    (collapsedActiveImageText.Length > 0 ? Environment.NewLine : "");
+            }
+            var panelText = RenderToolPanel(EnsureTrailingNewline(text), theme, panel.BackgroundToken,
+                bottomPadding: true);
             return panelText + (collapsedFallbackImages.Count > 0 ? "" : Environment.NewLine) +
                 collapsedActiveImageText + (collapsedActiveImageText.Length > 0 ? Environment.NewLine : "");
         }

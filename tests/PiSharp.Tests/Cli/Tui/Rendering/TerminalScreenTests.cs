@@ -1031,6 +1031,41 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void ImageToolResultKeepsTheBackgroundPaddingRowWhenCollapsedAndExpanded()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var transcript = new TerminalTranscriptBuffer();
+        var presentation = new TerminalConversationPresentation(transcript,
+            new TerminalImageRenderer(_ => null), () => 80, () => theme);
+        var call = PiSharpToolRenderView.FromText("read fixture-image.png");
+        var collapsed = new PiSharpToolRenderView([]);
+        var expanded = PiSharpToolRenderView.FromText("Read image file [image/png]");
+
+        presentation.AppendToolCall(call, "read-image");
+        Assert.True(presentation.AppendToolResult(collapsed, expanded,
+            [new DataContent(CreateImage(10, 40), "image/png")],
+            suppressUnsupportedImageFallbackWhenCollapsed: true, operationId: "read-image"));
+        AssertPanelBottomPadding(transcript.GetText(78));
+
+        transcript.SetExpanded(true);
+        AssertPanelBottomPadding(transcript.GetText(78));
+
+        static void AssertPanelBottomPadding(string text)
+        {
+            var rows = TerminalTextLayout.Create(text, 78).Rows;
+            var lastContentRow = -1;
+            for (var index = 0; index < rows.Count; index++)
+                if (TerminalTextLayout.StripFormatting(rows[index])
+                    .Any(character => !char.IsWhiteSpace(character))) lastContentRow = index;
+            Assert.InRange(lastContentRow + 1, 0, rows.Count - 1);
+            var padding = rows[lastContentRow + 1];
+            Assert.All(TerminalTextLayout.StripFormatting(padding), character =>
+                Assert.True(char.IsWhiteSpace(character)));
+            Assert.True(TerminalTextLayout.HasBackgroundOnWhitespace(padding));
+        }
+    }
+
+    [Fact]
     public void AcceptedPromptRendersUserTextAndImageInTranscriptWithoutSerializingImage()
     {
         using var output = new StringWriter();

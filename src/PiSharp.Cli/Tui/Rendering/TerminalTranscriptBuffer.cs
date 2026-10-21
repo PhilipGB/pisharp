@@ -511,6 +511,7 @@ internal sealed class TerminalTranscriptBuffer
 
     private static bool IsWhitespaceVisualRow(string row)
     {
+        if (TerminalTextLayout.HasBackgroundOnWhitespace(row)) return false;
         for (var offset = 0; offset < row.Length;)
         {
             if (TerminalTextLayout.TryReadEscape(row, offset, out var escapeLength))
