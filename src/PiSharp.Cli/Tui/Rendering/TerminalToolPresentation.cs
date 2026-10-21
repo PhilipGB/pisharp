@@ -230,7 +230,7 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
                 output.Append(theme is null || token is null
                     ? safe
                     : theme.Style(token, safe, bold: span.Bold || span.Style == PiSharpToolTextStyle.Title,
-                        dim: span.Dim || span.Style == PiSharpToolTextStyle.Muted));
+                        dim: span.Dim));
             }
             if (truncated || usedCharacters >= MaximumCharacters || usedLines > MaximumLines) { truncated = true; break; }
         }

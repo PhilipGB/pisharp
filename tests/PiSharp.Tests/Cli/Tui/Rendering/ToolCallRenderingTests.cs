@@ -76,6 +76,20 @@ public sealed class ToolCallRenderingTests
         Assert.Contains("all six lines shown", VisibleFrame(output.ToString()));
     }
 
+    [Fact]
+    public void MutedToolStyleUsesItsColorWithoutAddingDimUnlessRequested()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var muted = TerminalToolPresentation.Render(
+            PiSharpToolRenderView.FromText("Elapsed 0.0s", PiSharpToolTextStyle.Muted), theme);
+        var explicitlyDimmed = TerminalToolPresentation.Render(new(
+            [new("Elapsed 0.0s", PiSharpToolTextStyle.Muted, Dim: true)]), theme);
+
+        Assert.Contains(theme.Fg("muted"), muted);
+        Assert.DoesNotContain("\u001b[2m", muted);
+        Assert.Contains("\u001b[2m", explicitlyDimmed);
+    }
+
     private static string VisibleFrame(string output)
     {
         var frames = TerminalOutputFrameReader.Read(output, rows: 24, columns: 100);
