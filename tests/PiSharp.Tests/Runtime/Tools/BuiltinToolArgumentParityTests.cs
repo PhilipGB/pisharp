@@ -41,6 +41,63 @@ public sealed class BuiltinToolArgumentParityTests : IDisposable
                 item.GetProperty("arguments").GetRawText(), item.GetProperty("error").GetString()!];
     }
 
+    public static IEnumerable<object[]> ScalarCases()
+    {
+        using var fixture = Fixture("builtin-coding-tool-scalar-validation-2026-10-22.json");
+        foreach (var item in fixture.RootElement.GetProperty("results").EnumerateArray())
+            yield return [item.GetProperty("caseId").GetString()!, item.GetProperty("tool").GetString()!,
+                item.GetProperty("input").GetRawText(), item.GetProperty("validated").GetRawText()];
+    }
+
+    [Theory]
+    [MemberData(nameof(ScalarCases))]
+    public void PrimitiveConversionsMatchThePinnedValidator(string caseId, string tool, string input, string expected)
+    {
+        using var document = JsonDocument.Parse(input);
+        using var expectedDocument = JsonDocument.Parse(expected);
+        var arguments = new AIFunctionArguments(document.RootElement.EnumerateObject()
+            .ToDictionary(property => property.Name, property => (object?)property.Value.Clone()));
+
+        BuiltinToolArguments.PrepareAndValidate(tool, Function(tool).JsonSchema, arguments);
+
+        Assert.True(JsonElement.DeepEquals(expectedDocument.RootElement, JsonSerializer.SerializeToElement(arguments)), caseId);
+    }
+
+    [Theory]
+    [InlineData("{\"path\":12,\"content\":42}", "12", "42")]
+    [InlineData("{\"path\":null,\"content\":false}", "null", "false")]
+    public async Task ConvertedWriteArgumentsUseTheExistingWorkspaceAndMutationPath(string input, string path, string content)
+    {
+        using var document = JsonDocument.Parse(input);
+        var arguments = new AIFunctionArguments(document.RootElement.EnumerateObject()
+            .ToDictionary(property => property.Name, property => (object?)property.Value.Clone()));
+
+        var result = await Function("write").InvokeAsync(arguments);
+
+        Assert.Equal($"Successfully wrote to {path}", result?.ToString());
+        Assert.Equal(content, await File.ReadAllTextAsync(Path.Combine(_root, path)));
+        Assert.Equal("alpha\nbeta\n", await File.ReadAllTextAsync(Path.Combine(_root, "file.txt")));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExistingDotNetEditArgumentRepresentationsRemainCallable(bool anonymous)
+    {
+        object edits = anonymous ? new[] { new { oldText = "alpha", newText = "ALPHA" } } :
+            new[] { new Dictionary<string, string> { ["oldText"] = "alpha", ["newText"] = "ALPHA" } };
+
+        var result = await Function("edit").InvokeAsync(new AIFunctionArguments
+        {
+            ["path"] = "file.txt",
+            ["edits"] = edits
+        });
+
+        Assert.True(ToolResultOutput.TryRead(result, out var text, out _));
+        Assert.Equal("Successfully replaced 1 block(s) in file.txt.", text);
+        Assert.Equal("ALPHA\nbeta\n", await File.ReadAllTextAsync(Path.Combine(_root, "file.txt")));
+    }
+
     [Theory]
     [MemberData(nameof(ValidationCases))]
     public async Task InvalidArgumentsUsePinnedErrorsAndHaveNoSideEffects(string caseId, string tool,

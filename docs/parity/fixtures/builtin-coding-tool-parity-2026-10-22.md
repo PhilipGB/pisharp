@@ -298,12 +298,28 @@ selection passes 77/77. No tests are skipped. The
 sixteen exact errors captured from pinned Pi. The five selected upstream
 regression files pass 116/116.
 
-Shared work remains open: primitive argument conversion must be matched to the
-pinned TypeBox behavior; read and Bash need complete result/truncation metadata;
-head/tail boundaries need broader tests. Preliminary builds retain cached
-NuGet-audit warnings from the environment's readonly default HTTP cache; final
-warning-as-error gates have not been claimed and require a fresh restore using
-the writable cache. No dependency upgrade or audit-policy change is intended.
+Primitive conversion now matches the pinned TypeBox 1.3.27 behavior in
+[93 source-captured vectors](builtin-coding-tool-scalar-validation-2026-10-22.json),
+including finite-number formatting, radix and numeric strings, Boolean case,
+null strings, nested edit values and optional null removal. Twenty-four new
+regressions fail before the conversion correction. Two additional compatibility
+regressions expose, then verify, anonymous/typed .NET edit representations.
+The related expanded selection passes 169/169 with zero skips. Two actual
+converted writes use the existing workspace/mutation path and leave the
+unrelated fixture unchanged. Objects/arrays are still validated against their
+declared shape; the conversions do not bypass filesystem or process ownership.
+
+Reproduce the pure pinned conversion oracle with:
+
+```sh
+node tools/parity/builtin-coding-tool-probe.mjs /tmp/pi-pinned-source docs/parity/fixtures/builtin-coding-tool-scalar-validation-2026-10-22.json artifacts/parity/builtin-coding-tools-2026-10-22/scalar-oracle-reproduction.json --validate-only
+```
+
+Shared work remains open: read and Bash need complete result/truncation metadata,
+and head/tail boundaries need broader tests. A forced restore using the writable
+NuGet HTTP cache passes and clears the earlier cached audit warnings; final
+warning-as-error gates have not yet been claimed. No dependency upgrade or
+audit-policy change was made.
 
 ## Shared integration and safety gates
 

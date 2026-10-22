@@ -172,7 +172,15 @@
       },
       "related_passed": 64,
       "selection_native_hooks_passed": 77,
-      "scalar_conversion": "open"
+      "scalar_conversion": {
+        "pinned_vectors": 93,
+        "passed": 93,
+        "physical_converted_writes": 2,
+        "dotnet_representations": 2,
+        "related_selection_passed": 169,
+        "status": "verified_for_defined_vectors"
+      },
+      "remaining": "Common truncation and read/Bash metadata; full provider and session acceptance still pending."
     },
     "selected_upstream_regressions": {
       "files": 5,

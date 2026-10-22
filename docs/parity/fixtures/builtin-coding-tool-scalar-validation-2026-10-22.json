@@ -1,0 +1,996 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "results": [
+    {
+      "tool": "read",
+      "input": {
+        "path": 12,
+        "offset": "2"
+      },
+      "validated": {
+        "path": "12",
+        "offset": 2
+      },
+      "caseId": "scalar-01-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": true
+      },
+      "validated": {
+        "path": "true"
+      },
+      "caseId": "scalar-02-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": null
+      },
+      "validated": {
+        "path": "null"
+      },
+      "caseId": "scalar-03-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": "0x10"
+      },
+      "validated": {
+        "path": "file",
+        "offset": 16
+      },
+      "caseId": "scalar-04-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": false
+      },
+      "validated": {
+        "path": "file",
+        "offset": 0
+      },
+      "caseId": "scalar-05-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": " 2 "
+      },
+      "validated": {
+        "path": "file",
+        "offset": 2
+      },
+      "caseId": "scalar-06-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": ""
+      },
+      "validated": {
+        "path": "file",
+        "offset": 0
+      },
+      "caseId": "scalar-07-read"
+    },
+    {
+      "tool": "write",
+      "input": {
+        "path": 12,
+        "content": 42
+      },
+      "validated": {
+        "path": "12",
+        "content": "42"
+      },
+      "caseId": "scalar-08-write"
+    },
+    {
+      "tool": "write",
+      "input": {
+        "path": "file",
+        "content": null
+      },
+      "validated": {
+        "path": "file",
+        "content": "null"
+      },
+      "caseId": "scalar-09-write"
+    },
+    {
+      "tool": "write",
+      "input": {
+        "path": "file",
+        "content": false
+      },
+      "validated": {
+        "path": "file",
+        "content": "false"
+      },
+      "caseId": "scalar-10-write"
+    },
+    {
+      "tool": "bash",
+      "input": {
+        "command": null
+      },
+      "validated": {
+        "command": "null"
+      },
+      "caseId": "scalar-11-bash"
+    },
+    {
+      "tool": "bash",
+      "input": {
+        "command": 12,
+        "timeout": "0.1"
+      },
+      "validated": {
+        "command": "12",
+        "timeout": 0.1
+      },
+      "caseId": "scalar-12-bash"
+    },
+    {
+      "tool": "grep",
+      "input": {
+        "pattern": 12,
+        "ignoreCase": "true",
+        "literal": 0,
+        "context": "2",
+        "limit": true
+      },
+      "validated": {
+        "pattern": "12",
+        "ignoreCase": true,
+        "literal": false,
+        "context": 2,
+        "limit": 1
+      },
+      "caseId": "scalar-13-grep"
+    },
+    {
+      "tool": "grep",
+      "input": {
+        "pattern": "needle",
+        "ignoreCase": "TRUE",
+        "literal": "False"
+      },
+      "validated": {
+        "pattern": "needle",
+        "ignoreCase": true,
+        "literal": false
+      },
+      "caseId": "scalar-14-grep"
+    },
+    {
+      "tool": "find",
+      "input": {
+        "pattern": false,
+        "limit": "2"
+      },
+      "validated": {
+        "pattern": "false",
+        "limit": 2
+      },
+      "caseId": "scalar-15-find"
+    },
+    {
+      "tool": "ls",
+      "input": {
+        "path": null,
+        "limit": "0x10"
+      },
+      "validated": {
+        "limit": 16
+      },
+      "caseId": "scalar-16-ls"
+    },
+    {
+      "tool": "edit",
+      "input": {
+        "path": 12,
+        "edits": [
+          {
+            "oldText": 1,
+            "newText": 2
+          }
+        ]
+      },
+      "validated": {
+        "path": "12",
+        "edits": [
+          {
+            "oldText": "1",
+            "newText": "2"
+          }
+        ]
+      },
+      "caseId": "scalar-17-edit"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": 1e-7
+      },
+      "validated": {
+        "path": "1e-7"
+      },
+      "caseId": "scalar-18-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": 0.000001
+      },
+      "validated": {
+        "path": "0.000001"
+      },
+      "caseId": "scalar-19-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": 100000000000000000000
+      },
+      "validated": {
+        "path": "100000000000000000000"
+      },
+      "caseId": "scalar-20-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": 1e+21
+      },
+      "validated": {
+        "path": "1e+21"
+      },
+      "caseId": "scalar-21-read"
+    },
+    {
+      "tool": "read",
+      "input": {
+        "path": 0
+      },
+      "validated": {
+        "path": "0"
+      },
+      "caseId": "scalar-22-read"
+    },
+    {
+      "caseId": "number-format-1",
+      "tool": "read",
+      "input": {
+        "path": 5e-324
+      },
+      "validated": {
+        "path": "5e-324"
+      }
+    },
+    {
+      "caseId": "number-format-2",
+      "tool": "read",
+      "input": {
+        "path": 1.7976931348623157e+308
+      },
+      "validated": {
+        "path": "1.7976931348623157e+308"
+      }
+    },
+    {
+      "caseId": "number-format-3",
+      "tool": "read",
+      "input": {
+        "path": -9007199254740991
+      },
+      "validated": {
+        "path": "-9007199254740991"
+      }
+    },
+    {
+      "caseId": "number-format-4",
+      "tool": "read",
+      "input": {
+        "path": 9007199254740991
+      },
+      "validated": {
+        "path": "9007199254740991"
+      }
+    },
+    {
+      "caseId": "number-format-5",
+      "tool": "read",
+      "input": {
+        "path": 0.1
+      },
+      "validated": {
+        "path": "0.1"
+      }
+    },
+    {
+      "caseId": "number-format-6",
+      "tool": "read",
+      "input": {
+        "path": 1.0000000000000002
+      },
+      "validated": {
+        "path": "1.0000000000000002"
+      }
+    },
+    {
+      "caseId": "number-format-7",
+      "tool": "read",
+      "input": {
+        "path": 99999999999999980000
+      },
+      "validated": {
+        "path": "99999999999999980000"
+      }
+    },
+    {
+      "caseId": "number-format-8",
+      "tool": "read",
+      "input": {
+        "path": 100000000000000020000
+      },
+      "validated": {
+        "path": "100000000000000020000"
+      }
+    },
+    {
+      "caseId": "number-format-9",
+      "tool": "read",
+      "input": {
+        "path": 4.241387119982391e+178
+      },
+      "validated": {
+        "path": "4.241387119982391e+178"
+      }
+    },
+    {
+      "caseId": "number-format-10",
+      "tool": "read",
+      "input": {
+        "path": -1.0009713354520499e+228
+      },
+      "validated": {
+        "path": "-1.0009713354520499e+228"
+      }
+    },
+    {
+      "caseId": "number-format-11",
+      "tool": "read",
+      "input": {
+        "path": 9.744142584968357e-130
+      },
+      "validated": {
+        "path": "9.744142584968357e-130"
+      }
+    },
+    {
+      "caseId": "number-format-12",
+      "tool": "read",
+      "input": {
+        "path": -4.1826922050677235e-152
+      },
+      "validated": {
+        "path": "-4.1826922050677235e-152"
+      }
+    },
+    {
+      "caseId": "number-format-13",
+      "tool": "read",
+      "input": {
+        "path": 3.1266417587175967e+193
+      },
+      "validated": {
+        "path": "3.1266417587175967e+193"
+      }
+    },
+    {
+      "caseId": "number-format-14",
+      "tool": "read",
+      "input": {
+        "path": -2.637060962151736e+52
+      },
+      "validated": {
+        "path": "-2.637060962151736e+52"
+      }
+    },
+    {
+      "caseId": "number-format-15",
+      "tool": "read",
+      "input": {
+        "path": 2.97109940322116e-290
+      },
+      "validated": {
+        "path": "2.97109940322116e-290"
+      }
+    },
+    {
+      "caseId": "number-format-16",
+      "tool": "read",
+      "input": {
+        "path": -9.917174854781478e+224
+      },
+      "validated": {
+        "path": "-9.917174854781478e+224"
+      }
+    },
+    {
+      "caseId": "number-format-17",
+      "tool": "read",
+      "input": {
+        "path": 4.489269910845905e-78
+      },
+      "validated": {
+        "path": "4.489269910845905e-78"
+      }
+    },
+    {
+      "caseId": "number-format-18",
+      "tool": "read",
+      "input": {
+        "path": -6.712247158866375e-148
+      },
+      "validated": {
+        "path": "-6.712247158866375e-148"
+      }
+    },
+    {
+      "caseId": "number-format-19",
+      "tool": "read",
+      "input": {
+        "path": 7.445293546188622e-130
+      },
+      "validated": {
+        "path": "7.445293546188622e-130"
+      }
+    },
+    {
+      "caseId": "number-format-20",
+      "tool": "read",
+      "input": {
+        "path": -2.3057370609603823e-48
+      },
+      "validated": {
+        "path": "-2.3057370609603823e-48"
+      }
+    },
+    {
+      "caseId": "number-format-21",
+      "tool": "read",
+      "input": {
+        "path": 8.524534555617719e-158
+      },
+      "validated": {
+        "path": "8.524534555617719e-158"
+      }
+    },
+    {
+      "caseId": "number-format-22",
+      "tool": "read",
+      "input": {
+        "path": -3.9729326660744846e-12
+      },
+      "validated": {
+        "path": "-3.9729326660744846e-12"
+      }
+    },
+    {
+      "caseId": "number-format-23",
+      "tool": "read",
+      "input": {
+        "path": 8.586131904739886e+254
+      },
+      "validated": {
+        "path": "8.586131904739886e+254"
+      }
+    },
+    {
+      "caseId": "number-format-24",
+      "tool": "read",
+      "input": {
+        "path": -5.099237130489201e+296
+      },
+      "validated": {
+        "path": "-5.099237130489201e+296"
+      }
+    },
+    {
+      "caseId": "number-format-25",
+      "tool": "read",
+      "input": {
+        "path": 6.5283557237125935e+66
+      },
+      "validated": {
+        "path": "6.5283557237125935e+66"
+      }
+    },
+    {
+      "caseId": "number-format-26",
+      "tool": "read",
+      "input": {
+        "path": -5.300407919567078e+36
+      },
+      "validated": {
+        "path": "-5.300407919567078e+36"
+      }
+    },
+    {
+      "caseId": "number-format-27",
+      "tool": "read",
+      "input": {
+        "path": 1.4840418775565922e+110
+      },
+      "validated": {
+        "path": "1.4840418775565922e+110"
+      }
+    },
+    {
+      "caseId": "number-format-28",
+      "tool": "read",
+      "input": {
+        "path": -8.325999190565198e-96
+      },
+      "validated": {
+        "path": "-8.325999190565198e-96"
+      }
+    },
+    {
+      "caseId": "number-format-29",
+      "tool": "read",
+      "input": {
+        "path": 3.7735466146841645e+265
+      },
+      "validated": {
+        "path": "3.7735466146841645e+265"
+      }
+    },
+    {
+      "caseId": "number-format-30",
+      "tool": "read",
+      "input": {
+        "path": -6.027257300447673e-220
+      },
+      "validated": {
+        "path": "-6.027257300447673e-220"
+      }
+    },
+    {
+      "caseId": "number-format-31",
+      "tool": "read",
+      "input": {
+        "path": 3.7312762113288045e+253
+      },
+      "validated": {
+        "path": "3.7312762113288045e+253"
+      }
+    },
+    {
+      "caseId": "number-format-32",
+      "tool": "read",
+      "input": {
+        "path": -9.170719438698142e-72
+      },
+      "validated": {
+        "path": "-9.170719438698142e-72"
+      }
+    },
+    {
+      "caseId": "number-format-33",
+      "tool": "read",
+      "input": {
+        "path": 8.25003249803558e+274
+      },
+      "validated": {
+        "path": "8.25003249803558e+274"
+      }
+    },
+    {
+      "caseId": "number-format-34",
+      "tool": "read",
+      "input": {
+        "path": -8.378765385132283e+236
+      },
+      "validated": {
+        "path": "-8.378765385132283e+236"
+      }
+    },
+    {
+      "caseId": "number-format-35",
+      "tool": "read",
+      "input": {
+        "path": 1.2288262997753918e+286
+      },
+      "validated": {
+        "path": "1.2288262997753918e+286"
+      }
+    },
+    {
+      "caseId": "number-format-36",
+      "tool": "read",
+      "input": {
+        "path": -9.783723927102983e+79
+      },
+      "validated": {
+        "path": "-9.783723927102983e+79"
+      }
+    },
+    {
+      "caseId": "number-format-37",
+      "tool": "read",
+      "input": {
+        "path": 6.286926495376975e-182
+      },
+      "validated": {
+        "path": "6.286926495376975e-182"
+      }
+    },
+    {
+      "caseId": "number-format-38",
+      "tool": "read",
+      "input": {
+        "path": -2.039323195349425e+172
+      },
+      "validated": {
+        "path": "-2.039323195349425e+172"
+      }
+    },
+    {
+      "caseId": "number-format-39",
+      "tool": "read",
+      "input": {
+        "path": 7.490564335603268e-186
+      },
+      "validated": {
+        "path": "7.490564335603268e-186"
+      }
+    },
+    {
+      "caseId": "number-format-40",
+      "tool": "read",
+      "input": {
+        "path": -3.831171407364308e-145
+      },
+      "validated": {
+        "path": "-3.831171407364308e-145"
+      }
+    },
+    {
+      "caseId": "number-format-41",
+      "tool": "read",
+      "input": {
+        "path": 3.37576629826799e-262
+      },
+      "validated": {
+        "path": "3.37576629826799e-262"
+      }
+    },
+    {
+      "caseId": "number-format-42",
+      "tool": "read",
+      "input": {
+        "path": -2.843834448140114e+124
+      },
+      "validated": {
+        "path": "-2.843834448140114e+124"
+      }
+    },
+    {
+      "caseId": "number-format-43",
+      "tool": "read",
+      "input": {
+        "path": 8.909413658548148e+198
+      },
+      "validated": {
+        "path": "8.909413658548148e+198"
+      }
+    },
+    {
+      "caseId": "number-format-44",
+      "tool": "read",
+      "input": {
+        "path": -2.562203591223806e+112
+      },
+      "validated": {
+        "path": "-2.562203591223806e+112"
+      }
+    },
+    {
+      "caseId": "number-format-45",
+      "tool": "read",
+      "input": {
+        "path": 9.061630184296519e+146
+      },
+      "validated": {
+        "path": "9.061630184296519e+146"
+      }
+    },
+    {
+      "caseId": "number-format-46",
+      "tool": "read",
+      "input": {
+        "path": -9.594121805857867e+132
+      },
+      "validated": {
+        "path": "-9.594121805857867e+132"
+      }
+    },
+    {
+      "caseId": "number-format-47",
+      "tool": "read",
+      "input": {
+        "path": 3.520747956354171e-130
+      },
+      "validated": {
+        "path": "3.520747956354171e-130"
+      }
+    },
+    {
+      "caseId": "number-format-48",
+      "tool": "read",
+      "input": {
+        "path": -4.614878722932189e+104
+      },
+      "validated": {
+        "path": "-4.614878722932189e+104"
+      }
+    },
+    {
+      "caseId": "number-format-49",
+      "tool": "read",
+      "input": {
+        "path": 4.58210131386295e-270
+      },
+      "validated": {
+        "path": "4.58210131386295e-270"
+      }
+    },
+    {
+      "caseId": "number-format-50",
+      "tool": "read",
+      "input": {
+        "path": -9.000333126168699e-116
+      },
+      "validated": {
+        "path": "-9.000333126168699e-116"
+      }
+    },
+    {
+      "caseId": "number-format-51",
+      "tool": "read",
+      "input": {
+        "path": 2741898.9245779812
+      },
+      "validated": {
+        "path": "2741898.9245779812"
+      }
+    },
+    {
+      "caseId": "number-format-52",
+      "tool": "read",
+      "input": {
+        "path": -7.066292834933847e+280
+      },
+      "validated": {
+        "path": "-7.066292834933847e+280"
+      }
+    },
+    {
+      "caseId": "number-format-53",
+      "tool": "read",
+      "input": {
+        "path": 7.027423980180174e-150
+      },
+      "validated": {
+        "path": "7.027423980180174e-150"
+      }
+    },
+    {
+      "caseId": "number-format-54",
+      "tool": "read",
+      "input": {
+        "path": -8.747347712051122e+44
+      },
+      "validated": {
+        "path": "-8.747347712051122e+44"
+      }
+    },
+    {
+      "caseId": "number-format-55",
+      "tool": "read",
+      "input": {
+        "path": 9.594812516588717e-58
+      },
+      "validated": {
+        "path": "9.594812516588717e-58"
+      }
+    },
+    {
+      "caseId": "number-format-56",
+      "tool": "read",
+      "input": {
+        "path": -3.496405796613544e-88
+      },
+      "validated": {
+        "path": "-3.496405796613544e-88"
+      }
+    },
+    {
+      "caseId": "number-format-57",
+      "tool": "read",
+      "input": {
+        "path": 6.625659859273583e+50
+      },
+      "validated": {
+        "path": "6.625659859273583e+50"
+      }
+    },
+    {
+      "caseId": "number-format-58",
+      "tool": "read",
+      "input": {
+        "path": -8.686182561796159e+220
+      },
+      "validated": {
+        "path": "-8.686182561796159e+220"
+      }
+    },
+    {
+      "caseId": "number-format-59",
+      "tool": "read",
+      "input": {
+        "path": 5.370519356802106e+276
+      },
+      "validated": {
+        "path": "5.370519356802106e+276"
+      }
+    },
+    {
+      "caseId": "number-format-60",
+      "tool": "read",
+      "input": {
+        "path": -8.293893297668546e-72
+      },
+      "validated": {
+        "path": "-8.293893297668546e-72"
+      }
+    },
+    {
+      "caseId": "number-format-61",
+      "tool": "read",
+      "input": {
+        "path": 7.152844259981066e+58
+      },
+      "validated": {
+        "path": "7.152844259981066e+58"
+      }
+    },
+    {
+      "caseId": "number-format-62",
+      "tool": "read",
+      "input": {
+        "path": -1.503986190073192e-293
+      },
+      "validated": {
+        "path": "-1.503986190073192e-293"
+      }
+    },
+    {
+      "caseId": "number-format-63",
+      "tool": "read",
+      "input": {
+        "path": 7.517720174510032e+294
+      },
+      "validated": {
+        "path": "7.517720174510032e+294"
+      }
+    },
+    {
+      "caseId": "number-format-64",
+      "tool": "read",
+      "input": {
+        "path": -2.5350530981086196e-64
+      },
+      "validated": {
+        "path": "-2.5350530981086196e-64"
+      }
+    },
+    {
+      "caseId": "numeric-string-1",
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": "false"
+      },
+      "validated": {
+        "path": "file",
+        "offset": 0
+      }
+    },
+    {
+      "caseId": "numeric-string-2",
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": "TRUE"
+      },
+      "validated": {
+        "path": "file",
+        "offset": 1
+      }
+    },
+    {
+      "caseId": "numeric-string-3",
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": "0b101"
+      },
+      "validated": {
+        "path": "file",
+        "offset": 5
+      }
+    },
+    {
+      "caseId": "numeric-string-4",
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": "0o10"
+      },
+      "validated": {
+        "path": "file",
+        "offset": 8
+      }
+    },
+    {
+      "caseId": "numeric-string-5",
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": "0xffffffffffffffff"
+      },
+      "validated": {
+        "path": "file",
+        "offset": 18446744073709552000
+      }
+    },
+    {
+      "caseId": "numeric-string-6",
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": "9007199254740991n"
+      },
+      "validated": {
+        "path": "file",
+        "offset": 9007199254740991
+      }
+    },
+    {
+      "caseId": "numeric-string-7",
+      "tool": "read",
+      "input": {
+        "path": "file",
+        "offset": "﻿2 "
+      },
+      "validated": {
+        "path": "file",
+        "offset": 2
+      }
+    }
+  ],
+  "source": "Pinned packages/ai/src/utils/validation.ts and TypeBox 1.3.27 Value.Convert, before filesystem/process execution.",
+  "typeboxVersion": "1.3.27"
+}

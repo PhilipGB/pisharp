@@ -14,6 +14,7 @@ internal static class BuiltinToolArguments
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
+    private static readonly JsonSerializerOptions s_typedJson = new(JsonSerializerDefaults.Web);
 
     public static void PrepareAndValidate(string name, JsonElement schema, AIFunctionArguments arguments)
     {
@@ -24,6 +25,10 @@ internal static class BuiltinToolArguments
             if (!required.Contains(property.Name, StringComparer.Ordinal) &&
                 arguments.TryGetValue(property.Name, out var value) && Kind(value) == JsonValueKind.Null)
                 arguments.Remove(property.Name);
+
+        var converted = (Dictionary<string, object?>)Convert(arguments, schema)!;
+        arguments.Clear();
+        foreach (var pair in converted) arguments[pair.Key] = pair.Value;
 
         var errors = new List<string>();
         Validate(arguments, schema, "", errors);
@@ -65,6 +70,32 @@ internal static class BuiltinToolArguments
 
     private static string[] Required(JsonElement schema) => schema.TryGetProperty("required", out var required)
         ? required.EnumerateArray().Select(item => item.GetString()!).ToArray() : [];
+
+    private static object? Convert(object? value, JsonElement schema)
+    {
+        var type = schema.GetProperty("type").GetString()!;
+        if (value is not (null or JsonElement or string or bool or byte or sbyte or short or ushort or int or uint or
+            long or ulong or float or double or decimal or IDictionary<string, object?> or TextEdit) &&
+            !(type == "array" && value is IList))
+            value = JsonSerializer.SerializeToElement(value, s_typedJson);
+        if (type == "array")
+        {
+            var items = Kind(value) == JsonValueKind.Array ? Items(value!) : [value];
+            return items.Select(item => Convert(item, schema.GetProperty("items"))).ToList();
+        }
+        if (type != "object") return BuiltinScalarConversions.Convert(value, type);
+        if (Kind(value) != JsonValueKind.Object) return value;
+        var properties = value switch
+        {
+            JsonElement json => json.EnumerateObject().ToDictionary(property => property.Name, property => (object?)property.Value),
+            TextEdit edit => new Dictionary<string, object?> { ["oldText"] = edit.OldText, ["newText"] = edit.NewText },
+            _ => ((IDictionary<string, object?>)value!).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal)
+        };
+        foreach (var property in schema.GetProperty("properties").EnumerateObject())
+            if (properties.TryGetValue(property.Name, out var child))
+                properties[property.Name] = Convert(child, property.Value);
+        return properties;
+    }
 
     private static void Validate(object? value, JsonElement schema, string path, List<string> errors)
     {
@@ -126,6 +157,8 @@ internal static class BuiltinToolArguments
     private static JsonValueKind Kind(object? value) => value switch
     {
         null => JsonValueKind.Null,
+        JsonElement json when json.ValueKind == JsonValueKind.Number &&
+            (!json.TryGetDouble(out var number) || !double.IsFinite(number)) => JsonValueKind.Undefined,
         JsonElement json => json.ValueKind,
         string => JsonValueKind.String,
         bool boolean => boolean ? JsonValueKind.True : JsonValueKind.False,

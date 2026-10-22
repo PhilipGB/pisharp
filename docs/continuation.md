@@ -25,8 +25,12 @@ seven fail-first regressions and a 54/84 pinned search subset. The next input
 declaration/validation/edit-preparation correction passes 31 new argument tests,
 64 related checks and 77 tool-selection/native-hook checks. E remains in progress.
 
-Next compare primitive coercions using the captured TypeBox oracle, then finish
-shared truncation/read/Bash metadata before the tool-specific acceptance gates.
+Primitive conversion now matches 93 captured/reproduced TypeBox vectors; two
+converted physical writes and two .NET representation cases pass. The expanded
+related selection passes 169/169. The forced writable-cache restore clears the
+earlier cached NuGet warnings. Next finish shared head/tail truncation and
+read/Bash metadata before the tool-specific acceptance gates. A newly captured
+head/tail vector fixture is pending integration; do not count it as tool parity.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required
 provider, MAF, filesystem, process, image, restart and safety evidence remains
