@@ -647,7 +647,7 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
-    public void ScrolledTranscriptScrollbarUsesViewportHeightForItsScrollRange()
+    public void ScrolledTranscriptKeepsTheJumpHintAfterItsScrollbarHides()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
         var transcript = string.Join('\n', Enumerable.Range(0, 80).Select(index => $"message {index:D2}"));
@@ -655,19 +655,28 @@ public sealed class TerminalScreenCompositorTests
         var frame = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
             scrollOffset: 1, columns: 80, height: 24, new TranscriptSearchController(), new TerminalMouseRouter());
 
-        var trackHeight = frame.TranscriptHeight;
+        Assert.Contains(frame.Rows, row => TerminalTextLayout.StripFormatting(row)
+            .Contains("Jump to latest message", StringComparison.Ordinal));
+        Assert.DoesNotContain(frame.Rows, row => TerminalTextLayout.StripFormatting(row).Contains('┃'));
+        Assert.DoesNotContain(frame.Rows, row => TerminalTextLayout.StripFormatting(row).Contains('│'));
+
+        var visibleFrame = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 1, columns: 80, height: 24, new TranscriptSearchController(), new TerminalMouseRouter(),
+            transientScrollbarVisible: true);
+
+        var trackHeight = visibleFrame.TranscriptHeight;
         var contentHeight = TerminalTextLayout.Create(transcript, 80).RowCount;
         var thumbHeight = Math.Max(Math.Min(2, trackHeight),
             Math.Min(trackHeight, (int)Math.Round((double)trackHeight * trackHeight / contentHeight)));
-        var maximumScrollTop = Math.Max(0, contentHeight - frame.TranscriptHeight);
-        var scrollTop = Math.Max(0, maximumScrollTop - frame.ScrollOffset);
+        var maximumScrollTop = Math.Max(0, contentHeight - visibleFrame.TranscriptHeight);
+        var scrollTop = Math.Max(0, maximumScrollTop - visibleFrame.ScrollOffset);
         var thumbOffset = maximumScrollTop == 0 ? 0 :
             (int)Math.Round((double)scrollTop / maximumScrollTop * (trackHeight - thumbHeight));
-        var thumbRow = frame.TranscriptStartRow + thumbOffset;
+        var thumbRow = visibleFrame.TranscriptStartRow + thumbOffset;
 
-        Assert.EndsWith("┃", TerminalTextLayout.StripFormatting(frame.Rows[thumbRow]));
+        Assert.EndsWith("┃", TerminalTextLayout.StripFormatting(visibleFrame.Rows[thumbRow]));
         if (thumbOffset > 0)
-            Assert.EndsWith("│", TerminalTextLayout.StripFormatting(frame.Rows[thumbRow - 1]));
+            Assert.EndsWith("│", TerminalTextLayout.StripFormatting(visibleFrame.Rows[thumbRow - 1]));
     }
 
     [Fact]
@@ -685,6 +694,58 @@ public sealed class TerminalScreenCompositorTests
             TerminalTextLayout.StripFormatting(row).Contains("unique-search-match", StringComparison.Ordinal));
 
         Assert.Equal(frame.TranscriptHeight / 3, matchRow - frame.TranscriptStartRow);
+    }
+
+    [Fact]
+    public void TranscriptSearchKeepsTheViewportWhenTheSelectedMatchIsAlreadyVisible()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var transcript = string.Join('\n', Enumerable.Range(0, 120)
+            .Select(index => $"transcript row {index:D3}"));
+        const int columns = 80;
+        const int height = 24;
+        const int firstVisibleRow = 76;
+        var initial = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 0, columns, height, new TranscriptSearchController(), new TerminalMouseRouter());
+        var scrollOffset = Math.Max(0, 120 - initial.TranscriptHeight - firstVisibleRow);
+        var beforeSearch = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset, columns, height, new TranscriptSearchController(), new TerminalMouseRouter());
+        var search = new TranscriptSearchController();
+        search.SetQuery("transcript row 080", 0);
+
+        var searched = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            beforeSearch.ScrollOffset, columns, height, search, new TerminalMouseRouter());
+
+        var beforeRow = beforeSearch.Rows.ToList().FindIndex(row =>
+            TerminalTextLayout.StripFormatting(row).Contains("transcript row 080", StringComparison.Ordinal));
+        var searchedRow = searched.Rows.ToList().FindIndex(row =>
+            TerminalTextLayout.StripFormatting(row).Contains("transcript row 080", StringComparison.Ordinal));
+        Assert.True(beforeRow >= 0);
+        Assert.Equal(beforeSearch.ScrollOffset, searched.ScrollOffset);
+        Assert.Equal(beforeRow, searchedRow);
+    }
+
+    [Fact]
+    public void TranscriptSearchRevealsARefinedMatchWhenItWrapsAboveTheViewport()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var transcript = string.Join('\n', Enumerable.Range(1, 30)
+            .Select(index => $"assistant-entry-{index:D2}"));
+        var lastEntryStart = transcript.IndexOf("assistant-entry-30", StringComparison.Ordinal);
+        var search = new TranscriptSearchController();
+        search.SetQuery("assistant-entry-", 0, lastEntryStart);
+
+        var lastMatch = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 80, height: 24, search, new TerminalMouseRouter());
+        var selectedLastMatchStart = search.SelectedTextStart;
+        search.SetQuery("assistant-entry-0", 0, selectedLastMatchStart);
+        var firstMatch = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            lastMatch.ScrollOffset, columns: 80, height: 24, search, new TerminalMouseRouter());
+
+        Assert.Equal(9, search.State.MatchCount);
+        Assert.Contains(firstMatch.Rows, row =>
+            TerminalTextLayout.StripFormatting(row).Contains("assistant-entry-01", StringComparison.Ordinal));
+        Assert.NotEqual(lastMatch.ScrollOffset, firstMatch.ScrollOffset);
     }
 
     [Fact]

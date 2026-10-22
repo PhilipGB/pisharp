@@ -497,6 +497,52 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void TranscriptScrollbarExpiresWhileJumpToLatestHintRemainsVisible()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false, timeProvider: clock);
+        for (var index = 0; index < 30; index++) screen.Output.WriteLine($"message {index:D2}");
+
+        screen.ScrollPage(up: true);
+
+        Assert.Contains("┃", output.ToString());
+        Assert.Contains("Jump to latest message", TerminalTextLayout.StripFormatting(output.ToString()));
+        output.GetStringBuilder().Clear();
+
+        clock.Advance(TimeSpan.FromSeconds(1));
+
+        var expiredFrame = TerminalTextLayout.StripFormatting(output.ToString());
+        Assert.DoesNotContain("┃", expiredFrame);
+        Assert.DoesNotContain("│", expiredFrame);
+        Assert.Contains("Jump to latest message", expiredFrame);
+    }
+
+    [Fact]
+    public void SearchingToAnOffscreenMatchShowsTheTransientScrollbarInTheSameFrame()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 14,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false, timeProvider: clock);
+        for (var index = 0; index < 30; index++) screen.Output.WriteLine($"message {index:D2}");
+
+        screen.ScrollPage(up: true);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        output.GetStringBuilder().Clear();
+
+        screen.SearchTranscript("message 00");
+        screen.SetTranscriptSearchPanel(["Find in transcript"], cursorColumn: 1);
+        var screenText = TerminalOutputFrameReader.Read(output.ToString(), rows: 14, columns: 40)[^1].Screen;
+
+        Assert.Contains("message 00", screenText);
+        Assert.Contains("┃", screenText);
+    }
+
+    [Fact]
     public void IdleEditorRoutesKittyTranscriptKeysToScrollAndSearch()
     {
         using var output = new StringWriter();

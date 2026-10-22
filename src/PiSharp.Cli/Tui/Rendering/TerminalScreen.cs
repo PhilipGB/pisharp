@@ -1173,8 +1173,19 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return default;
-            _search.SetQuery(query, direction);
-            _ = _search.Highlight(GetTranscriptTextLocked(Columns()), _theme);
+            var width = Columns();
+            var text = GetTranscriptTextLocked(width);
+            var layout = TerminalTextLayout.Create(text, width);
+            var viewportHeight = _lastTranscriptHeight > 0 ? _lastTranscriptHeight : Rows();
+            var firstVisibleRow = Math.Max(0, layout.RowCount - viewportHeight - _scrollOffset);
+            var anchorOffset = layout.SourceIndexAtVisualRow(firstVisibleRow);
+            if (_search.SelectedTextStart >= 0)
+            {
+                var selectedRow = layout.VisualRowAt(_search.SelectedTextStart);
+                anchorOffset = layout.SourceIndexAtVisualRow(selectedRow);
+            }
+            _search.SetQuery(query, direction, anchorOffset);
+            _ = _search.Highlight(text, _theme);
             _render.Request();
             return _search.State;
         }
@@ -1542,7 +1553,7 @@ public sealed class TerminalScreen : IDisposable
         {
             if (!_active || !_transientScrollbarVisible) return;
             _transientScrollbarVisible = false;
-            if (_scrollOffset == 0) _render.Request();
+            _render.Request();
         }
     }
 

@@ -83,6 +83,7 @@ internal sealed class TerminalScreenCompositor
         string? transientFlash = null)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
+        var initialScrollOffset = scrollOffset;
         var homeDirectory = Environment.GetEnvironmentVariable("HOME") ??
             Environment.GetEnvironmentVariable("USERPROFILE");
         var workingDirectory = TerminalPathDisplay.FormatForFooter(Environment.CurrentDirectory, homeDirectory);
@@ -156,9 +157,11 @@ internal sealed class TerminalScreenCompositor
         if (search.Query.Length > 0 && highlightedSearch.MatchCount > 0)
         {
             var searchLayout = TerminalTextLayout.Create(transcriptText, transcriptWidth);
-            var selectedRow = startupContentRows + searchLayout.VisualRowAt(highlightedSearch.SelectedTextStart);
-            scrollOffset = TerminalTranscriptViewport.ScrollOffsetToReveal(transcriptLayout.RowCount, selectedRow,
-                Math.Max(1, transcriptViewportHeight));
+            var selectedFirstRow = startupContentRows + searchLayout.VisualRowAt(highlightedSearch.SelectedTextStart);
+            var selectedLastRow = startupContentRows + searchLayout.VisualRowAt(
+                Math.Max(highlightedSearch.SelectedTextStart, highlightedSearch.SelectedTextEnd - 1));
+            scrollOffset = TerminalTranscriptViewport.ScrollOffsetToReveal(transcriptLayout.RowCount,
+                selectedFirstRow, selectedLastRow, Math.Max(1, transcriptViewportHeight), scrollOffset);
             visibleTranscriptSource = startupPrefix + highlightedSearch.HighlightedText;
             visibleLayout = TerminalTextLayout.Create(visibleTranscriptSource, transcriptWidth);
         }
@@ -178,6 +181,7 @@ internal sealed class TerminalScreenCompositor
             transcriptViewportHeight, scrollOffset, out var renderedScrollOffset,
             out var firstVisualRow);
         scrollOffset = renderedScrollOffset;
+        var showScrollbar = transientScrollbarVisible || scrollOffset != initialScrollOffset;
         _previousTranscriptLayout = transcriptLayout;
         _previousTranscriptFirstVisualRow = firstVisualRow;
         _previousTranscriptScrollOffset = scrollOffset;
@@ -203,10 +207,11 @@ internal sealed class TerminalScreenCompositor
                         IsWrappedLineContinuation(visibleTranscriptSource,
                             visibleLayout.SourceIndexAtVisualRow(visualRow + 1)));
         }
-        if (_useAlternateScreen && (scrollOffset > 0 || transientScrollbarVisible) &&
+        if (_useAlternateScreen && (scrollOffset > 0 || showScrollbar) &&
             transcriptViewportHeight > 0 && columns > 1)
             ApplyTranscriptScrollIndicators(rows, transcriptStart, transcriptHeight, transcriptLayout.RowCount,
-                scrollOffset, columns, transcriptBottomKeyLabel, activeTheme, showEndHint: scrollOffset > 0);
+                scrollOffset, columns, transcriptBottomKeyLabel, activeTheme,
+                showScrollbar, showEndHint: scrollOffset > 0);
 
         var aboveStart = transcriptStart + transcriptHeight;
         for (var index = 0; index < aboveWidgetHeight; index++)
@@ -432,9 +437,9 @@ internal sealed class TerminalScreenCompositor
 
     private static void ApplyTranscriptScrollIndicators(string[] rows, int transcriptStart, int transcriptHeight,
         int contentHeight, int scrollOffset, int columns, string bottomKeyLabel, TerminalTheme theme,
-        bool showEndHint)
+        bool showScrollbar, bool showEndHint)
     {
-        var trackColumn = columns - 1;
+        var trackColumn = showScrollbar ? columns - 1 : columns;
         var trackHeight = Math.Max(1, transcriptHeight);
         var thumbHeight = Math.Max(Math.Min(2, trackHeight), Math.Min(trackHeight,
             (int)Math.Round((double)trackHeight * trackHeight / Math.Max(1, contentHeight))));
@@ -443,7 +448,7 @@ internal sealed class TerminalScreenCompositor
         var maximumThumbTop = trackHeight - thumbHeight;
         var thumbOffset = maximumScrollTop == 0 ? 0 :
             (int)Math.Round((double)scrollTop / maximumScrollTop * maximumThumbTop);
-        for (var index = 0; index < trackHeight; index++)
+        for (var index = 0; showScrollbar && index < trackHeight; index++)
         {
             var row = transcriptStart + index;
             if (row < 0 || row >= rows.Length) continue;
@@ -479,7 +484,7 @@ internal sealed class TerminalScreenCompositor
         var background = baseRow[..backgroundLength];
         var indicator = left +
             theme.Style("selectedBg", theme.Style("text", label), background: true) +
-            right + background + theme.Style(indicatorStyle, indicatorGlyph);
+            right + background + (showScrollbar ? theme.Style(indicatorStyle, indicatorGlyph) : "");
         rows[indicatorRow] = indicator;
     }
 

@@ -67,22 +67,148 @@
       "renderMatch": true
     },
     {
+      "id": "scrollbar-settled",
+      "expect": "Jump to latest message",
+      "notExpect": "┃",
+      "allowStaticFrame": true
+    },
+    {
       "id": "search-open",
       "send": "\u001b[102;6u",
       "expect": "Find in transcript",
       "renderMatch": true
     },
     {
+      "id": "search-query-char-01",
+      "send": "a",
+      "expect": "a",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-02",
+      "send": "s",
+      "expect": "as",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-03",
+      "send": "s",
+      "expect": "ass",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-04",
+      "send": "i",
+      "expect": "assi",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-05",
+      "send": "s",
+      "expect": "assis",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-06",
+      "send": "t",
+      "expect": "assist",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-07",
+      "send": "a",
+      "expect": "assista",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-08",
+      "send": "n",
+      "expect": "assistan",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-09",
+      "send": "t",
+      "expect": "assistant",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-10",
+      "send": "-",
+      "expect": "assistant-",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-11",
+      "send": "e",
+      "expect": "assistant-e",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-12",
+      "send": "n",
+      "expect": "assistant-en",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-13",
+      "send": "t",
+      "expect": "assistant-ent",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-14",
+      "send": "r",
+      "expect": "assistant-entr",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-15",
+      "send": "y",
+      "expect": "assistant-entry",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-16",
+      "send": "-",
+      "expect": "assistant-entry-",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
+      "id": "search-query-char-17",
+      "send": "0",
+      "expect": "assistant-entry-0",
+      "expectCursorChange": true,
+      "renderMatch": true
+    },
+    {
       "id": "search-query",
-      "send": "assistant-entry-05",
+      "send": "5",
       "expect": "assistant-entry-05",
+      "expectCursorChange": true,
       "renderMatch": true
     },
     {
       "id": "search-cursor-left",
       "send": "\u001b[57417u",
       "expect": "assistant-entry-05",
-      "renderMatch": true,
+      "notExpect": "┃",
       "expectCursorChange": true
     },
     {
@@ -91,6 +217,12 @@
       "expect": "assistant-entry-05",
       "notExpect": "Shift+Enter",
       "renderMatch": true
+    },
+    {
+      "id": "search-scrollbar-settled",
+      "expect": "assistant-entry-05",
+      "notExpect": "┃",
+      "allowStaticFrame": true
     },
     {
       "id": "scroll-to-bottom",

@@ -38,11 +38,19 @@ internal static class TerminalTranscriptViewport
         return Math.Clamp(totalRows - Math.Min(totalRows, startRow + viewportHeight), 0, MaximumScrollOffset);
     }
 
-    public static int ScrollOffsetToReveal(int totalRows, int selectedRow, int viewportHeight)
+    public static int ScrollOffsetToReveal(int totalRows, int selectedFirstRow, int selectedLastRow,
+        int viewportHeight, int currentScrollOffset)
     {
-        var startRow = Math.Clamp(selectedRow - Math.Max(0, viewportHeight / 3), 0,
+        var maxScrollOffset = Math.Max(0, totalRows - viewportHeight);
+        var current = Math.Clamp(currentScrollOffset, 0, Math.Min(MaximumScrollOffset, maxScrollOffset));
+        var currentFirstRow = Math.Max(0, totalRows - current - viewportHeight);
+        var currentLastRow = Math.Min(totalRows - 1, currentFirstRow + viewportHeight - 1);
+        if (selectedFirstRow >= currentFirstRow && selectedLastRow <= currentLastRow) return current;
+
+        var startRow = Math.Clamp(selectedFirstRow - Math.Max(0, viewportHeight / 3), 0,
             Math.Max(0, totalRows - viewportHeight));
-        return Math.Clamp(totalRows - Math.Min(totalRows, startRow + viewportHeight), 0, MaximumScrollOffset);
+        return Math.Clamp(totalRows - Math.Min(totalRows, startRow + viewportHeight), 0,
+            Math.Min(MaximumScrollOffset, maxScrollOffset));
     }
 
     public static int ScrollOffsetForFirstRow(int totalRows, int firstRow, int viewportHeight)
