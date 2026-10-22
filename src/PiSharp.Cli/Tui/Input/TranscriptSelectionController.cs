@@ -1,7 +1,7 @@
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Tracks a terminal-cell selection over the transcript rows currently visible on screen.</summary>
-internal sealed class TranscriptSelectionController
+internal sealed class TranscriptSelectionController(TimeProvider? timeProvider = null)
 {
     private readonly record struct Point(int Row, int StartCell, int EndCell);
 
@@ -11,6 +11,10 @@ internal sealed class TranscriptSelectionController
     private Point? _focus;
     private bool _dragging;
     private bool _hasSelection;
+    private enum Granularity { Character, Word, Line }
+    private Granularity _granularity;
+    private (Point Start, Point End)? _initialRange;
+    private (long Timestamp, int Count, int Row, int Start, int End)? _lastClick;
 
     public string? SelectedText { get; private set; }
 
@@ -21,6 +25,9 @@ internal sealed class TranscriptSelectionController
         _dragging = false;
         _hasSelection = false;
         SelectedText = null;
+        _initialRange = null;
+        _lastClick = null;
+        _granularity = Granularity.Character;
     }
 
     public void SetVisibleRows(IReadOnlyList<string> rows, int firstVisualRow)
@@ -39,9 +46,21 @@ internal sealed class TranscriptSelectionController
             if ((mouse.Button & 3) != 0) return default;
             if (!TryGetPoint(mouse, transcriptScreenStart, transcriptHeight, transcriptCellOffset,
                 clampToTranscript: false, out var point)) return default;
-            _anchor = _focus = point;
+            var word = WordRange(point);
+            var clock = timeProvider ?? TimeProvider.System;
+            var now = clock.GetTimestamp();
+            var count = word is { } span && _lastClick is { } previous &&
+                clock.GetElapsedTime(previous.Timestamp, now) <= TimeSpan.FromMilliseconds(500) &&
+                previous.Row == point.Row && previous.Start == span.Start.StartCell && previous.End == span.End.StartCell
+                ? previous.Count % 3 + 1 : 1;
+            _lastClick = word is { } clicked
+                ? (now, count, point.Row, clicked.Start.StartCell, clicked.End.StartCell) : null;
+            _granularity = count == 2 ? Granularity.Word : count == 3 ? Granularity.Line : Granularity.Character;
+            _initialRange = count == 2 ? word : count == 3 ? LineRange(point) : null;
+            _anchor = _initialRange?.Start ?? point;
+            _focus = _initialRange?.End ?? point;
             _dragging = true;
-            _hasSelection = false;
+            _hasSelection = _anchor != _focus;
             SelectedText = null;
             return (true, false);
         }
@@ -50,15 +69,18 @@ internal sealed class TranscriptSelectionController
         {
             if (!_dragging || !TryGetPoint(mouse, transcriptScreenStart, transcriptHeight, transcriptCellOffset,
                 clampToTranscript: true, out var moved)) return default;
-            if (_focus == moved) return default;
-            _focus = moved;
-            _hasSelection = _anchor != moved;
+            _lastClick = null;
+            var previousAnchor = _anchor;
+            var previousFocus = _focus;
+            UpdateFocus(moved);
+            if (previousAnchor == _anchor && previousFocus == _focus) return default;
+            _hasSelection = _anchor != _focus;
             return (true, false);
         }
 
         if (!_dragging) return default;
         if (TryGetPoint(mouse, transcriptScreenStart, transcriptHeight, transcriptCellOffset,
-            clampToTranscript: true, out var released)) _focus = released;
+            clampToTranscript: true, out var released)) UpdateFocus(released);
         _dragging = false;
         _hasSelection = _anchor != _focus;
         SelectedText = _hasSelection ? BuildSelection() : null;
@@ -80,6 +102,41 @@ internal sealed class TranscriptSelectionController
                 : _visibleRows[index]);
         }
         return highlighted;
+    }
+
+    private void UpdateFocus(Point point)
+    {
+        if (_granularity == Granularity.Character || _initialRange is not { } initial)
+        {
+            _focus = point;
+            return;
+        }
+        var range = _granularity == Granularity.Word ? WordRange(point) : LineRange(point);
+        if (range is not { } selected) return;
+        if (Compare(selected.Start, initial.Start) < 0)
+        {
+            _anchor = initial.End;
+            _focus = selected.Start;
+        }
+        else
+        {
+            _anchor = initial.Start;
+            _focus = selected.End;
+        }
+    }
+
+    private (Point Start, Point End)? WordRange(Point point)
+    {
+        var localRow = point.Row - _firstVisualRow;
+        if (localRow < 0 || localRow >= _visibleRows.Count ||
+            TerminalWordSelection.RangeAt(_visibleRows[localRow], point.StartCell) is not { } range) return null;
+        return (new(point.Row, range.Start, range.Start), new(point.Row, range.End, range.End));
+    }
+
+    private (Point Start, Point End) LineRange(Point point)
+    {
+        var width = TerminalTextLayout.Width(_visibleRows[point.Row - _firstVisualRow]);
+        return (new(point.Row, 0, 0), new(point.Row, width, width));
     }
 
     private bool TryGetPoint(TerminalMouseEvent mouse, int transcriptScreenStart, int transcriptHeight,
@@ -111,7 +168,7 @@ internal sealed class TranscriptSelectionController
             var row = _visibleRows[index];
             var start = index == firstIndex ? startCell : 0;
             var end = index == lastIndex ? endCell : TerminalTextLayout.Width(row);
-            lines.Add(TerminalTextLayout.SliceCells(row, start, end));
+            lines.Add(TerminalTextLayout.SliceCells(row, start, end).TrimEnd());
         }
         return string.Join('\n', lines);
     }

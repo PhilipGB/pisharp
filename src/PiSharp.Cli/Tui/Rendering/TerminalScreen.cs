@@ -38,7 +38,7 @@ public sealed class TerminalScreen : IDisposable
     private Func<TerminalColorState, TerminalTheme>? _themeResolver;
     private readonly ScreenWriter _out;
     private readonly ScreenWriter _error;
-    private readonly TerminalMouseRouter _mouse = new();
+    private readonly TerminalMouseRouter _mouse;
     private TextWriter? _installedOut;
     private TextWriter? _installedError;
     private string _editorText = "";
@@ -148,6 +148,7 @@ public sealed class TerminalScreen : IDisposable
         if (renderInterval < TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(minimumRenderInterval));
         var clock = timeProvider ?? TimeProvider.System;
+        _mouse = new(clock);
         _render = new(_gate, clock, renderInterval,
             () => _active && !_suspended && _deferRender <= 0 && !_deferInitialRender, RenderFrameLocked);
         _transcriptScrollbarTimer = clock.CreateTimer(ExpireTransientScrollbar, null,

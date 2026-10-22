@@ -4,11 +4,11 @@ internal readonly record struct TerminalMouseResult(bool Changed = false, bool C
     int? EditorCursorOffset = null, bool ClearEditorSelection = false);
 
 /// <summary>Routes terminal mouse gestures to transcript selection or the prompt editor.</summary>
-internal sealed class TerminalMouseRouter
+internal sealed class TerminalMouseRouter(TimeProvider? timeProvider = null)
 {
     private enum Target { None, Transcript, Editor }
 
-    private readonly TranscriptSelectionController _transcript = new();
+    private readonly TranscriptSelectionController _transcript = new(timeProvider);
     private readonly EditorSelectionController _editor = new();
     private Target _selectionTarget;
     private Target _dragTarget;

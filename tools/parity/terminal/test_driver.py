@@ -66,6 +66,7 @@ class DriverTests(unittest.TestCase):
                 'type-h', 'type-d', 'cursor-left', 'paste', 'clear', 'resize', 'quit',
             },
             'terminal-mouse-selection': {'response-in-flight', 'selection-drag', 'wheel-up', 'wheel-down', 'exit'},
+            'terminal-mouse-multiclick': {'double-click-word', 'triple-click-line', 'double-click-drag', 'exit'},
             'terminal-image-fallback': {'read-image', 'expand-image-result', 'exit'},
             'terminal-restoration-existing-main-buffer': {
                 'native-ui-startup', 'native-ui-widget', 'native-ui-input-update', 'native-ui-quit',
@@ -96,6 +97,12 @@ class DriverTests(unittest.TestCase):
                     selection = next(action for action in fixture['actions'] if action['id'] == 'selection-drag')
                     self.assertTrue(selection.get('expectClipboardWrite'))
                     self.assertEqual(['Log section 09: Mouse selec'], selection.get('expectClipboardTexts'))
+                if fixture_id == 'terminal-mouse-multiclick':
+                    for action in fixture['actions']:
+                        if action['id'] in {'double-click-word', 'triple-click-line', 'double-click-drag'}:
+                            self.assertTrue(action.get('expectClipboardWrite'))
+                            self.assertTrue(action.get('expectClipboardTexts'))
+                            self.assertTrue(action.get('renderMatch'))
                 if fixture_id == 'terminal-long-transcript':
                     cursor_action = next(action for action in fixture['actions']
                                          if action['id'] == 'search-cursor-left')

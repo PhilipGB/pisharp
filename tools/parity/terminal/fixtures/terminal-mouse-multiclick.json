@@ -1,0 +1,111 @@
+{
+  "id": "terminal-mouse-multiclick",
+  "settings": {
+    "quietStartup": true
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "mouse-selection-request"
+    ],
+    "chatResponseFinishGates": [
+      "mouse-selection-finish"
+    ],
+    "chatResponseContentByRequest": [
+      "# Mouse selection fixture\n\nLog section 01: Mouse selection target phrase appears on this line.\n\nLog section 02: Mouse selection target phrase appears on this line.\n\nLog section 03: Mouse selection target phrase appears on this line.\n\nLog section 04: Mouse selection target phrase appears on this line.\n\nLog section 05: Mouse selection target phrase appears on this line.\n\nLog section 06: Mouse selection target phrase appears on this line.\n\nLog section 07: Mouse selection target phrase appears on this line.\n\nLog section 08: Mouse selection target phrase appears on this line.\n\nLog section 09: Mouse selection target phrase appears on this line.\n\nLog section 10: Mouse selection target phrase appears on this line.\n\nLog section 11: Mouse selection target phrase appears on this line.\n\nLog section 12: Mouse selection target phrase appears on this line.\n\nLog section 13: Mouse selection target phrase appears on this line.\n\nLog section 14: Mouse selection target phrase appears on this line.\n"
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 80,
+      "rows": 24
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "prompt",
+      "send": "\u001b[200~Show the selection target.\u001b[201~",
+      "expect": "Show the selection target."
+    },
+    {
+      "id": "response-in-flight",
+      "send": "\r",
+      "waitGatesAfter": [
+        "mouse-selection-request"
+      ],
+      "expect": "Working",
+      "notExpect": "0.0%/8.2k",
+      "allowStaticFrame": true,
+      "renderMatch": true
+    },
+    {
+      "id": "response",
+      "releaseGates": [
+        "mouse-selection-finish"
+      ],
+      "expect": "Log section 14",
+      "notExpect": "Working",
+      "renderMatch": true
+    },
+    {
+      "id": "double-click-word",
+      "send": "\u001b[<0;19;8M\u001b[<0;19;8m\u001b[<0;21;8M\u001b[<0;21;8m",
+      "expectClipboardTexts": [
+        "Mouse"
+      ],
+      "expect": "Copied!",
+      "expectClipboardWrite": true,
+      "allowStaticFrame": true,
+      "renderMatch": true
+    },
+    {
+      "id": "triple-click-line",
+      "send": "\u001b[<0;25;8M\u001b[<0;25;8m\u001b[<0;27;8M\u001b[<0;27;8m\u001b[<0;29;8M\u001b[<0;29;8m",
+      "expectClipboardTexts": [
+        "selection",
+        " Log section 09: Mouse selection target phrase appears on this line."
+      ],
+      "expect": "Copied!",
+      "expectClipboardWrite": true,
+      "allowStaticFrame": true,
+      "renderMatch": true
+    },
+    {
+      "id": "double-click-drag",
+      "send": "\u001b[<0;19;8M\u001b[<0;19;8m\u001b[<0;21;8M\u001b[<32;37;8M\u001b[<0;37;8m",
+      "expectClipboardTexts": [
+        "Mouse selection target"
+      ],
+      "expect": "Copied!",
+      "expectClipboardWrite": true,
+      "allowStaticFrame": true,
+      "renderMatch": true
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "startup",
+    "prompt",
+    "response",
+    "double-click-word",
+    "triple-click-line",
+    "double-click-drag",
+    "exit"
+  ]
+}
