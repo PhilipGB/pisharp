@@ -32,6 +32,7 @@ def supervise(command):
         os.tcsetpgrp(0, child)
         os.write(ready_write, b'1')
         os.close(ready_write)
+        suspensions = 0
         while True:
             _, status = os.waitpid(child, os.WUNTRACED)
             if os.WIFEXITED(status):
@@ -45,7 +46,8 @@ def supervise(command):
             required = termios.ICANON | termios.ECHO | termios.ISIG
             if flags & required != original[3] & required:
                 raise RuntimeError('The suspended job did not restore terminal settings.')
-            print('\nsuspended:tty-restored', flush=True)
+            suspensions += 1
+            print(f'\nsuspended:tty-restored:{suspensions}', flush=True)
             if sys.stdin.readline().strip() != 'resume':
                 raise RuntimeError('Expected the supervised resume action.')
             os.tcsetpgrp(0, child)

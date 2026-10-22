@@ -278,6 +278,38 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void FullscreenSuspensionKeepsTheNaturalTranscriptMinimumAndResumeShowsHistory()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24,
+            new TerminalImageRenderer(), theme, queryTerminalColors: false);
+        screen.AppendUserMessage("user history");
+        screen.CommitAssistantText("assistant history");
+        screen.SetEditor("draft to preserve", 17);
+        output.GetStringBuilder().Clear();
+
+        screen.Suspend(restoreDocument: true);
+
+        var suspended = output.ToString();
+        var frame = TerminalOutputFrameReader.Read(suspended, rows: 24, columns: 80)[^1].Screen;
+        Assert.Contains(theme.Bg("userMessageBg"), suspended);
+        Assert.Contains("draft to preserve", frame);
+        Assert.DoesNotContain("user history", frame);
+        Assert.DoesNotContain("assistant history", frame);
+        output.GetStringBuilder().Clear();
+
+        screen.Resume();
+
+        var resumed = TerminalOutputFrameReader.Read(output.ToString(), rows: 24, columns: 80)[^1].Screen;
+        Assert.Contains("user history", resumed);
+        Assert.Contains("assistant history", resumed);
+        Assert.Contains("draft to preserve", resumed);
+        Assert.Empty(error.ToString());
+    }
+
+    [Fact]
     public void AuthorizationOwnershipPreservesNewerSignInAndRequiresAPanelForCopyStatus()
     {
         using var output = new StringWriter();

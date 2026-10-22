@@ -1,6 +1,7 @@
 {
   "id": "terminal-suspend-resume",
   "settings": { "quietStartup": true },
+  "fixtureBehavior": { "chatResponseContentByRequest": ["Transcript before suspension."] },
   "dimensions": [{ "columns": 80, "rows": 24 }],
   "themes": ["dark"],
   "modes": ["fullscreen", "regular"],
@@ -8,10 +9,16 @@
   "actions": [
     { "id": "startup", "expect": "fixture-model" },
     { "id": "draft", "send": "\u001b[200~draft survives suspension\u001b[201~", "expect": "draft survives suspension" },
-    { "id": "suspended", "send": "\u001a", "expect": "suspended:tty-restored" },
+    { "id": "suspended", "send": "\u001a", "expect": "suspended:tty-restored:1" },
     { "id": "resumed", "send": "resume\n", "expect": "draft survives suspension", "notExpect": "suspended:tty-restored" },
     { "id": "edited-after-resume", "send": "x", "expect": "draft survives suspensionx" },
+    { "id": "clear-draft", "send": "\u0015", "expect": "fixture-model", "notExpect": "draft survives suspensionx" },
+    { "id": "produce-history", "send": "Write transcript before suspension.\r", "expect": "Transcript before suspension.", "notExpect": "Working" },
+    { "id": "history-draft", "send": "\u001b[200~history draft\u001b[201~", "expect": "history draft" },
+    { "id": "suspended-with-history", "send": "\u001a", "expect": "suspended:tty-restored:2" },
+    { "id": "resumed-with-history", "send": "resume\n", "expect": "history draft", "notExpect": "suspended:tty-restored" },
+    { "id": "edited-with-history", "send": "y", "expect": "history drafty" },
     { "id": "quit", "send": "\u0003\u0003", "exit": true }
   ],
-  "assertionFrames": ["startup", "draft", "suspended", "resumed", "edited-after-resume", "quit"]
+  "assertionFrames": ["startup", "draft", "suspended", "resumed", "edited-after-resume", "produce-history", "history-draft", "suspended-with-history", "resumed-with-history", "edited-with-history", "quit"]
 }
