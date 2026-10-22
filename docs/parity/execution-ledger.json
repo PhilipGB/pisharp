@@ -34,12 +34,12 @@
       {
         "id": "E",
         "name": "Shared result semantics",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "F",
         "name": "Read",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "G",
@@ -160,7 +160,7 @@
       "pinned_search_total": 84
     },
     "shared_argument_correction": {
-      "status": "in_progress",
+      "status": "verified_defined_shared_contract",
       "fail_first": {
         "failed": 24,
         "passed": 7,
@@ -180,7 +180,7 @@
         "related_selection_passed": 169,
         "status": "verified_for_defined_vectors"
       },
-      "remaining": "Common truncation and read/Bash metadata; full provider and session acceptance still pending."
+      "remaining": "Tool-specific numeric semantics, complete physical provider and session acceptance."
     },
     "selected_upstream_regressions": {
       "files": 5,
@@ -197,7 +197,7 @@
         "passed": 23
       },
       "related_selection_passed": 184,
-      "read_and_bash_metadata_integration": "pending"
+      "read_and_bash_metadata_integration": "verified_for_defined_result_cases"
     },
     "read_result_metadata": {
       "status": "verified_scoped",
@@ -213,6 +213,32 @@
         "skipped": 0
       },
       "scope": "Text result structured content, full truncation metadata, decoded streaming byte counts, MAF lifecycle, provider text projection and native session round trip. Existing image provider/replay tests pass; broader read/image acceptance remains open."
+    },
+    "bash_result_metadata": {
+      "status": "verified_scoped",
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-bash-results-2026-10-22.json",
+      "source_captured_cases": 7,
+      "registered_schema_policy_cases": 7,
+      "regression_before": {
+        "failed": 11,
+        "passed": 3
+      },
+      "related_after": {
+        "passed": 201,
+        "failed": 0,
+        "skipped": 0
+      },
+      "selection_hooks_codemode_passed": 60,
+      "json_rpc_session_before": {
+        "failed": 2,
+        "passed": 20
+      },
+      "json_rpc_session_after": {
+        "passed": 23,
+        "failed": 0,
+        "skipped": 0
+      },
+      "remaining": "Bash live cumulative snapshots and process lifecycle/cancellation acceptance; all-seven physical provider/session workflow and full gates."
     }
   },
   "plan_received": true,

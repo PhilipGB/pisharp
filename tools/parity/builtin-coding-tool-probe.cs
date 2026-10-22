@@ -6,14 +6,14 @@ using PiSharp.Runtime.Tools;
 
 var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true };
 var requests = JsonSerializer.Deserialize<List<ProbeRequest>>(File.ReadAllText(args[0]), jsonOptions)!;
-var declarations = new CodingTools("/tmp").CreateAll().OfType<AIFunction>().ToDictionary(
-    function => function.Name, function => new
+var declarations = new AgentToolCatalog(new CodingTools("/tmp"), null, null, false, false, null, null)
+    .Registrations.ToDictionary(registration => registration.Function.Name, registration => new
     {
-        name = function.Name,
-        description = function.Description,
-        parameters = function.JsonSchema,
-        outputSchema = (object?)null,
-        constrainedSampling = (object?)null
+        name = registration.Function.Name,
+        description = registration.Function.Description,
+        parameters = registration.Function.JsonSchema,
+        outputSchema = registration.OutputSchema,
+        constrainedSampling = registration.ConstrainedSampling
     });
 var results = new List<object>();
 foreach (var request in requests)

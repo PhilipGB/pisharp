@@ -1,9 +1,13 @@
 using System.Globalization;
 using System.Text;
+using PiSharp.Core;
 
 namespace PiSharp.Runtime;
 
-public sealed record ShellOutputResult(string Output, string DisplayOutput, bool Truncated, string? FullOutputPath);
+public sealed record ShellOutputResult(string Output, string DisplayOutput, bool Truncated, string? FullOutputPath)
+{
+    public TextTruncationResult? Truncation { get; init; }
+}
 
 /// <summary>Captures command output with a bounded in-memory tail; spills full output to a private temp file.</summary>
 public sealed class ShellOutputBuffer : IAsyncDisposable
@@ -20,7 +24,7 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
     private long _rawBytes;
     private long _decodedBytes;
     private long _currentLineBytes;
-    private int _newlines;
+    private long _newlines;
     private bool _endsWithNewline;
     private bool _decoderFlushed;
 
@@ -95,20 +99,16 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             if (_full is not null) await _full.FlushAsync();
             var totalLines = TotalLines;
             var truncated = totalLines > MaxLines || _decodedBytes > MaxBytes;
-            string content;
-            string displayOutput;
-            int shownLines, shownBytes;
-            bool partialLastLine;
-            if (truncated)
-                content = SelectTail(_tail.ToString(), out shownLines, out shownBytes, out partialLastLine);
-            else
+            var truncation = TextOutputTruncator.Tail(_tail.ToString()) with
             {
-                content = _tail.ToString();
-                shownLines = totalLines;
-                shownBytes = (int)_decodedBytes;
-                partialLastLine = false;
-            }
-            displayOutput = content;
+                TotalLines = totalLines,
+                TotalBytes = _decodedBytes,
+                Truncated = truncated
+            };
+            if (truncated && truncation.TruncatedBy is null)
+                truncation = truncation with { TruncatedBy = _decodedBytes > MaxBytes ? "bytes" : "lines" };
+            var content = truncation.Content;
+            var displayOutput = content;
             if (truncated)
             {
                 if (_full is null)
@@ -118,20 +118,20 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
                     _prefix.Position = 0;
                     await _prefix.CopyToAsync(spill);
                 }
-                var startLine = totalLines - shownLines + 1;
-                if (partialLastLine)
+                var startLine = totalLines - truncation.OutputLines + 1;
+                if (truncation.LastLinePartial)
                 {
                     var lineBytes = LastLineBytes;
-                    var shown = FormatSize(shownBytes);
+                    var shown = FormatSize(truncation.OutputBytes);
                     displayOutput += $"\n\n[Showing last {shown} of line {totalLines} (line is {FormatSize(lineBytes)}). Full output: {_fullPath}]";
                 }
-                else if (shownLines >= MaxLines && shownBytes <= MaxBytes)
+                else if (truncation.TruncatedBy == "lines")
                     displayOutput += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines}. Full output: {_fullPath}]";
                 else
                     displayOutput += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines} ({FormatSize(MaxBytes)} limit). Full output: {_fullPath}]";
             }
             if (displayOutput.Length == 0) displayOutput = "(no output)";
-            return new(content, displayOutput, truncated, _fullPath);
+            return new(content, displayOutput, truncated, _fullPath) { Truncation = truncation };
         }
         finally { _gate.Release(); }
     }
@@ -166,7 +166,7 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
         finally { _gate.Release(); }
     }
 
-    private int TotalLines => _decodedBytes == 0 ? 0 : _newlines + (_endsWithNewline ? 0 : 1);
+    private long TotalLines => _decodedBytes == 0 ? 0 : _newlines + (_endsWithNewline ? 0 : 1);
     private long LastLineBytes
         => _currentLineBytes;
 
@@ -190,49 +190,6 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             _tail.Remove(0, remove);
         }
         return new string(chars[..count]);
-    }
-
-    private static string SelectTail(string content, out int outputLines, out int outputBytes, out bool partialLastLine)
-    {
-        if (content.EndsWith('\n')) content = content[..^1];
-        if (content.Length == 0)
-        {
-            outputLines = outputBytes = 0;
-            partialLastLine = false;
-            return "";
-        }
-
-        var lines = content.Split('\n');
-        var selected = new List<string>(Math.Min(lines.Length, MaxLines));
-        var bytes = 0;
-        partialLastLine = false;
-        for (var i = lines.Length - 1; i >= 0 && selected.Count < MaxLines; i--)
-        {
-            var lineBytes = Encoding.UTF8.GetByteCount(lines[i]) + (selected.Count > 0 ? 1 : 0);
-            if (bytes + lineBytes > MaxBytes)
-            {
-                if (selected.Count == 0)
-                {
-                    selected.Add(TruncateUtf8FromEnd(lines[i], MaxBytes));
-                    partialLastLine = true;
-                }
-                break;
-            }
-            selected.Insert(0, lines[i]);
-            bytes += lineBytes;
-        }
-        var suffix = string.Join('\n', selected);
-        outputLines = selected.Count;
-        outputBytes = Encoding.UTF8.GetByteCount(suffix);
-        return suffix;
-    }
-
-    private static string TruncateUtf8FromEnd(string value, int maxBytes)
-    {
-        var bytes = Encoding.UTF8.GetBytes(value);
-        var start = Math.Max(0, bytes.Length - maxBytes);
-        while (start < bytes.Length && (bytes[start] & 0xC0) == 0x80) start++;
-        return Encoding.UTF8.GetString(bytes, start, bytes.Length - start);
     }
 
     private static string FormatSize(long bytes)

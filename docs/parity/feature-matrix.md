@@ -12,8 +12,12 @@ and global parity remain `in_progress` pending complete pinned evidence.
 The new corpus has a 211/211 same-Pi control. The initial native baseline is
 23/211; the first shared search-result correction at `f9f3fa56` passes 54/84
 search/list cases. Input declarations now match the seven source schemas, with
-argument preparation/validation regressions; primitive conversion and complete
-tool behavior remain open. These scoped results do not verify a whole tool.
+argument preparation/validation regressions. Primitive conversion matches 93
+pinned vectors; common head/tail truncation matches 140. Read/Bash result metadata,
+registered output schemas, sampling policy and JSON/RPC/session preservation have
+focused passing evidence in the receipt. Checkpoints A–E are complete; F (read)
+is in progress. Complete tool behavior and the mandatory physical integrations
+remain open. These scoped results do not verify a whole tool.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 

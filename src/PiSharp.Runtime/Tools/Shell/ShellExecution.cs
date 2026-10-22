@@ -85,7 +85,8 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
             var structured = captureStructuredOutput ? await output.ReadFullOutputAsync(BashToolOutput.MaximumBytes) : default;
             return new(result.Output, result.DisplayOutput, cancelled ? null : process.ExitCode, cancelled,
                 result.Truncated, result.FullOutputPath, structured.Content, structured.Truncated,
-                Math.Round(Stopwatch.GetElapsedTime(startTime).TotalSeconds, 1, MidpointRounding.AwayFromZero));
+                Math.Round(Stopwatch.GetElapsedTime(startTime).TotalSeconds, 1, MidpointRounding.AwayFromZero))
+            { Truncation = result.Truncation };
         }
         catch (OperationCanceledException) when (started)
         {

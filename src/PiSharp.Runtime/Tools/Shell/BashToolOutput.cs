@@ -12,11 +12,7 @@ internal sealed record BashToolOutput(
     [property: JsonPropertyName("full_output_path"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? FullOutputPath)
 {
     public const int MaximumBytes = 1024 * 1024;
-    public static JsonElement Schema { get; } = JsonSerializer.Deserialize<JsonElement>("""
-        {"type":"object","properties":{"output":{"type":"string"},"truncated":{"type":"boolean"},
-        "exit_code":{"type":"integer"},"wall_time_seconds":{"type":"number"},"full_output_path":{"type":"string"}},
-        "required":["output","truncated","exit_code","wall_time_seconds"],"additionalProperties":false}
-        """);
+    public static JsonElement Schema => CodingToolDeclarations.OutputSchema("bash")!.Value;
 
     public static PiSharpToolResult Project(BashExecutionResult result)
     {
@@ -25,7 +21,7 @@ internal sealed record BashToolOutput(
             code, result.WallTimeSeconds, result.StructuredTruncated ? result.FullOutputPath : null);
         var error = code == 0 ? null : $"Command exited with code {code}";
         return new(error is null ? result.DisplayOutput : result.DisplayOutput + "\n\n" + error,
-            new { truncated = result.Truncated, fullOutputPath = result.FullOutputPath },
+            result.Truncation is { Truncated: true } truncation ? new { truncation, fullOutputPath = result.FullOutputPath } : null,
             JsonSerializer.SerializeToElement(output), IsError: error is not null, Error: error);
     }
 }

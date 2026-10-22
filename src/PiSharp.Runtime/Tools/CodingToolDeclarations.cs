@@ -16,6 +16,12 @@ internal static class CodingToolDeclarations
     public static AIFunction Find(AIFunction implementation) => new BuiltinToolFunction(implementation);
     public static AIFunction Ls(AIFunction implementation) => new BuiltinToolFunction(implementation);
 
+    public static JsonElement? OutputSchema(string name) => Property(name, "outputSchema");
+    public static JsonElement? ConstrainedSampling(string name) => Property(name, "constrainedSampling");
+
+    private static JsonElement? Property(string name, string property) =>
+        s_definitions[name].TryGetProperty(property, out var value) ? value : null;
+
     internal static void PrepareArguments(AIFunction function, AIFunctionArguments arguments)
     {
         if (function is BuiltinToolFunction)

@@ -10,8 +10,8 @@ head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
 passed 2,711 tests and both MCP jobs before the expected-head merge.
 
 Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–D are complete;
-E (shared results) is next; F–T remain pending. Preserve this
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–E are complete;
+F (read) is in progress; G–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
@@ -23,7 +23,8 @@ source differences. The independent oracle has a 211/211 same-Pi control and
 `f9f3fa56` restores ordinary search result text and truncation content, with
 seven fail-first regressions and a 54/84 pinned search subset. The next input
 declaration/validation/edit-preparation correction passes 31 new argument tests,
-64 related checks and 77 tool-selection/native-hook checks. E remains in progress.
+64 related checks and 77 tool-selection/native-hook checks. The common result
+checkpoint is now complete; no whole tool is claimed complete.
 
 Primitive conversion now matches 93 captured/reproduced TypeBox vectors; two
 converted physical writes and two .NET representation cases pass. The expanded
@@ -33,8 +34,14 @@ and 28 mapped head cases (five fail before the correction); the related selectio
 passes 184/184. Read result metadata now has 13 captured pinned cases, 15 failures
 before the correction and 39/39 related passes after it. Text structured output
 and truncation details survive MAF/provider/native restart; the bounded streaming
-reader counts decoded UTF-8 bytes. Next complete Bash metadata and verify output
-schemas before the tool-specific acceptance gates. Do not count component vectors as tool cases.
+reader counts decoded UTF-8 bytes. Bash metadata and schemas now pass seven
+pinned process/artifact cases and seven registered schema/policy cases (11
+failures before correction). Related checks pass 201/201; selection/hooks/Codemode
+pass 60/60. JSON hid structured content via `JsonIgnore`; two wire tests fail
+before the additive correction, then 23/23 wire/session checks pass. The corrected
+native probe passes four selected empty/truncated read cases at clean source
+`35601464`. Next complete read numeric/path/error/image behavior.
+Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required
 provider, MAF, filesystem, process, image, restart and safety evidence remains

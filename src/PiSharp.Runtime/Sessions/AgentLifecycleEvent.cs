@@ -22,7 +22,7 @@ public sealed record AgentLifecycleEvent(string Type, string? Text = null, strin
     [JsonIgnore]
     public IReadOnlyList<DataContent>? Images { get; init; }
 
-    [JsonIgnore]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public JsonElement? StructuredContent { get; init; }
 
     [JsonIgnore]

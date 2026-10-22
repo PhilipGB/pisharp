@@ -348,9 +348,25 @@ regressions pass. The probe now falls back only when projection fails, preservin
 empty results. This diagnostic run is retained; a corrected probe rerun follows.
 The remaining numeric/path/error/resize differences remain product work.
 
-Shared work remains open: Bash needs complete result/truncation metadata, and
-output-schema registration needs verification. Broader read numeric/path/image
-semantics and physical provider acceptance remain open.
+Bash now carries the full tail-truncation record, and untruncated results omit
+details as pinned Pi does. The [seven pinned Bash results](builtin-coding-tool-bash-results-2026-10-22.json)
+verify actual process output, structured-output hashes, exit/error results,
+complete spill-file hashes and private Linux permissions. The registered read/
+Bash output schemas and the four default tools' sampling policies match source.
+These fourteen checks fail 11/14 before correction; the expanded related suite
+passes 201/201. Tool selection, hooks, direct user Bash and Codemode checks pass
+60/60. Public shell-result constructors/deconstruction remain compatible.
+
+Two added MAF/JSON/RPC/session tests find JSON's `JsonIgnore` attribute drops
+structured content. The additive correction emits it when present. The related
+wire suite then passes 23/23, zero skips, including metadata through native
+session reload. The native oracle probe now reads output schema and sampling
+policy from actual registrations, and its four selected empty/truncated read
+cases pass at clean source `35601464`.
+
+Checkpoint E's common contract work is complete. Tool-specific numeric/path/error/
+image behavior, Bash update snapshots and process lifecycle, all-seven integration,
+physical provider acceptance, stress tests and full repository gates remain open.
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or
@@ -378,7 +394,8 @@ not yet been measured and must not be inferred from the eight-hour target.
 Idle or externally interrupted intervals must be excluded or identified.
 
 Stable checkpoints are A–T from the mission. A (verified merge) and B (fresh
-branch), C (initial inventory) and D (harness) are complete. E–T are pending. Completing
+branch), C (initial inventory), D (harness) and E (shared contracts) are complete.
+F (read) is in progress; G–T are pending. Completing
 an inventory or passing local tests does not close the milestone. PR #22 must
 be published as draft and remain unmerged; PR #23 is excluded. Global Pi parity
 remains `in_progress`.

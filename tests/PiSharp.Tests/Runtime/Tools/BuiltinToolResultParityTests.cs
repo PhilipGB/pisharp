@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
+using PiSharp.Cli.Protocols;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
@@ -22,6 +23,7 @@ public sealed class BuiltinToolResultParityTests : IDisposable
     [InlineData("find", "file.txt")]
     [InlineData("ls", "file.txt")]
     [InlineData("read", "needle\n")]
+    [InlineData("bash", "needle\n")]
     public async Task UntruncatedSearchResultRemainsPlainTextAtTheActualFunctionBoundary(string tool, string expected)
     {
         var function = new CodingTools(_root).CreateAll().OfType<AIFunction>().Single(item => item.Name == tool);
@@ -37,6 +39,7 @@ public sealed class BuiltinToolResultParityTests : IDisposable
     [InlineData("find", "file.txt")]
     [InlineData("ls", "file.txt")]
     [InlineData("read", "needle\n")]
+    [InlineData("bash", "needle\n")]
     public async Task PlainSearchResultSurvivesMafContinuationAndCanonicalRestart(string tool, string expected)
     {
         var client = new ToolClient(tool, Arguments(tool));
@@ -116,11 +119,61 @@ public sealed class BuiltinToolResultParityTests : IDisposable
         Assert.Single(restored.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>());
     }
 
+    [Theory]
+    [InlineData("read")]
+    [InlineData("bash")]
+    public async Task TruncationMetadataSurvivesJsonRpcAndNativeSessionBoundaries(string tool)
+    {
+        if (tool == "bash" && !OperatingSystem.IsLinux()) return;
+        await File.WriteAllTextAsync(Path.Combine(_root, "file.txt"), string.Concat(Enumerable.Repeat("x\n", 2001)));
+        var arguments = tool == "read" ? Arguments(tool) : new Dictionary<string, object?> { ["command"] = "seq 1 2001" };
+        var conversation = new ConversationSession(_root, "fixture-model", null);
+        var run = await ConversationRun.OpenAsync(new PiAgent(new ToolClient(tool, arguments), new CodingTools(_root)), conversation);
+        using var output = new StringWriter();
+        var events = new List<AgentLifecycleEvent>();
+        string? fullOutputPath = null;
+        try
+        {
+            Assert.True(await new JsonEventMode(output).RunAsync(run, "inspect the fixture", observeEvent: item =>
+            {
+                events.Add(item);
+                return Task.CompletedTask;
+            }));
+            var finished = Assert.Single(events, item => item.Type == "tool_execution_finished" && item.Tool == tool);
+            var details = JsonSerializer.SerializeToElement(finished.Details, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            if (details.TryGetProperty("fullOutputPath", out var path)) fullOutputPath = path.GetString();
+            Assert.Equal(2001, details.GetProperty("truncation").GetProperty("totalLines").GetInt64());
+            var records = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                var json = Assert.Single(records, record => record.RootElement.GetProperty("data").GetProperty("Type")
+                    .GetString() == "tool_execution_finished").RootElement.GetProperty("data");
+                Assert.True(JsonElement.DeepEquals(details, json.GetProperty("Details")));
+                Assert.True(JsonElement.DeepEquals(finished.StructuredContent!.Value, json.GetProperty("StructuredContent")));
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+            var rpc = new RpcEventProjector().Project(finished, conversation, null, null, true, "openai-responses")
+                .Select(item => JsonSerializer.SerializeToElement(item)).Single(item => item.GetProperty("type").GetString() == "tool_execution_end");
+            Assert.True(JsonElement.DeepEquals(details, rpc.GetProperty("result").GetProperty("details")));
+            Assert.True(JsonElement.DeepEquals(finished.StructuredContent!.Value, rpc.GetProperty("result").GetProperty("structuredContent")));
+
+            var restored = ConversationSession.Parse(conversation.ToJson());
+            var stored = Assert.Single(restored.ActiveMessages().SelectMany(message => message.Contents).OfType<FunctionResultContent>());
+            Assert.True(ToolResultOutput.TryReadContract(stored.Result, out var result));
+            Assert.True(JsonElement.DeepEquals(details, JsonSerializer.SerializeToElement(result.Details,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web))));
+            Assert.True(JsonElement.DeepEquals(finished.StructuredContent!.Value, result.StructuredContent!.Value));
+        }
+        finally { if (fullOutputPath is not null) File.Delete(fullOutputPath); }
+    }
+
     private static Dictionary<string, object?> Arguments(string tool) => tool switch
     {
         "grep" => new() { ["pattern"] = "needle" },
         "find" => new() { ["pattern"] = "*.txt" },
         "read" => new() { ["path"] = "file.txt" },
+        "bash" => new() { ["command"] = "printf 'needle\\n'" },
         _ => []
     };
 

@@ -33,6 +33,27 @@ public sealed class BuiltinToolArgumentParityTests : IDisposable
         Assert.True(JsonElement.DeepEquals(expected.GetProperty("parameters"), function.JsonSchema), function.JsonSchema.ToString());
     }
 
+    [Theory]
+    [InlineData("read")]
+    [InlineData("write")]
+    [InlineData("edit")]
+    [InlineData("bash")]
+    [InlineData("grep")]
+    [InlineData("find")]
+    [InlineData("ls")]
+    public void RegisteredOutputSchemaAndSamplingPolicyMatchThePinnedDefinitions(string name)
+    {
+        using var inventory = Fixture("builtin-coding-tool-inventory-2026-10-22.json");
+        var expected = inventory.RootElement.GetProperty("tools").GetProperty(name).GetProperty("declaration");
+        var catalog = new AgentToolCatalog(new CodingTools(_root), null, null, false, false, null, null);
+        var registration = catalog.Registrations.Single(item => item.Function.Name == name);
+
+        Assert.True(JsonElement.DeepEquals(expected.TryGetProperty("outputSchema", out var schema) ? schema :
+            JsonSerializer.SerializeToElement<object?>(null), JsonSerializer.SerializeToElement(registration.OutputSchema)), name + " outputSchema");
+        Assert.True(JsonElement.DeepEquals(expected.TryGetProperty("constrainedSampling", out var policy) ? policy :
+            JsonSerializer.SerializeToElement<object?>(null), JsonSerializer.SerializeToElement(registration.ConstrainedSampling)), name + " constrainedSampling");
+    }
+
     public static IEnumerable<object[]> ValidationCases()
     {
         using var fixture = Fixture("builtin-coding-tool-validation-2026-10-22.json");

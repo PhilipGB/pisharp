@@ -64,9 +64,10 @@ internal sealed class AgentToolCatalog
         var defaultBuiltinNames = new HashSet<string>(["read", "bash", "edit", "write"], StringComparer.Ordinal);
         _builtinRegistrations = builtin.Select(function => new PiSharpToolRegistration(function,
                 DefaultActive: defaultBuiltinNames.Contains(function.Name),
-                OutputSchema: function.Name == "bash" ? BashToolOutput.Schema : null,
+                OutputSchema: CodingToolDeclarations.OutputSchema(function.Name),
                 PromptSnippet: PiSystemPromptBuilder.BuiltinSnippet(function.Name),
-                PromptGuidelines: PiSystemPromptBuilder.BuiltinGuidelines(function.Name)))
+                PromptGuidelines: PiSystemPromptBuilder.BuiltinGuidelines(function.Name),
+                ConstrainedSampling: CodingToolDeclarations.ConstrainedSampling(function.Name)))
             .ToArray();
         Registrations = _builtinRegistrations.Concat(external).ToArray();
         _toolRegistry = new PiSharpToolRegistry(Registrations);
