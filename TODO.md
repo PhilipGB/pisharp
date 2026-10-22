@@ -1,6 +1,25 @@
 # PiSharp capability parity
 
-## Active milestone — Terminal Rendering and Interaction Parity — 2026-10-22
+## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
+
+PR #21 merged at `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a` after its
+reviewed head and both exact-head workflows were verified. That actual merge
+is present on `origin/main` and is the base of
+`milestone/builtin-coding-tool-parity`. Pi remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+Stable mission checkpoints: **3 complete / 17 remaining** (A–T). A is the
+verified merge prerequisite; B is the fresh branch. C is the completed initial inventory of all seven
+tool definitions and implementations before product changes. D–T cover the
+pinned differential oracle, behavior, integration, safety, validation,
+documentation, draft PR #22 and final-head CI. An inventory is not a parity claim.
+
+See the [tool milestone receipt](docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md)
+and [initial acceptance inventory](docs/parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json).
+Keep the new PR draft and unmerged. Do not start PR #23. Global parity remains
+`in_progress`.
+
+## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 
 PR #20 is verified merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`.
 The implementation branch is `milestone/terminal-rendering-interaction-parity`,
@@ -22,7 +41,8 @@ Build, formatting, Node 24/24, Python 66/66 and MCP baseline checks pass. The fi
 color and nested math regressions. Documentation paths pass 150 documents / 582 references.
 Publication and exact-head push/PR CI evidence are recorded in
 [PR #21](https://github.com/PhilipGB/pisharp/pull/21).
-Keep PR #21 draft and unmerged; do not start PR #22. Broad Pi parity remains
+PR #21 was kept draft/unmerged through review and is now merged as recorded
+above. Broad Pi parity remains
 `in_progress`. See the
 [terminal parity receipt](docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md).
 

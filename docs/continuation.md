@@ -1,6 +1,36 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Terminal Rendering and Interaction Parity — 2026-10-22
+## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
+
+The new mission authorizes PR #21's merge and supersedes the previous
+publication hold. PR #21 is verified closed/merged with actual merge SHA
+`ebfeb24c9dd5e03592c3b388236f22a3a3a3299a`, present on fetched `origin/main`.
+The merge has parents `5e1e5aa8ddc66a8e829a880604060b8483107284` and reviewed
+head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
+passed 2,711 tests and both MCP jobs before the expected-head merge.
+
+Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–C are complete;
+D (differential harness) is next; E–T remain pending. Preserve this
+twenty-checkpoint denominator for progress reports. Tool and differential case
+counts are separate measures and must not be substituted for checkpoint counts.
+
+The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md) and
+[inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) were
+created before product changes. They explicitly list unverified contracts and
+source differences. Next establish the independent pinned-tool oracle, capture
+baseline failures, then correct shared results and all seven tools. Required
+provider, MAF, filesystem, process, image, restart and safety evidence remains
+mandatory after direct function tests pass.
+
+Started at 2026-10-22 17:44:40 UTC; record active engineering duration truthfully,
+excluding interruptions/idle intervals. Raw work is ignored under
+`artifacts/parity/builtin-coding-tools-2026-10-22/`. Never modify/stage/delete
+`test.pdf`; stage intended paths explicitly. Publish new draft PR #22 and
+verify final-head push and PR CI. Do not merge #22 or start #23. Global parity
+remains `in_progress`.
+
+## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 
 PR #20 merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`; that exact
 commit is the base of `milestone/terminal-rendering-interaction-parity`.
@@ -34,7 +64,8 @@ rendered CWD truncation. Those exploratory reports are retained, not accepted.
 
 The implementation, local validation and classified receipt are complete.
 [PR #21](https://github.com/PhilipGB/pisharp/pull/21) records the published head and exact-head
-push/PR CI run IDs and conclusions. PR #21 must remain draft and unmerged. Evidence is in the
+push/PR CI run IDs and conclusions. PR #21 remained draft/unmerged through review;
+the following mission merged it as recorded above. Evidence is in the
 [terminal parity receipt](parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md).
 
 The independent-review correction propagates nested LaTeX failures to source

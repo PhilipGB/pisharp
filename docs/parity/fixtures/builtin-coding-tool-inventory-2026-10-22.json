@@ -1,0 +1,796 @@
+{
+  "schema": 1,
+  "milestone": "Complete Built-in Coding Tool Parity",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "initialPiSharpSha": "ebfeb24c9dd5e03592c3b388236f22a3a3a3299a",
+  "pr21MergeSha": "ebfeb24c9dd5e03592c3b388236f22a3a3a3299a",
+  "branchBaseSha": "ebfeb24c9dd5e03592c3b388236f22a3a3a3299a",
+  "platform": "Linux",
+  "createdBeforeProductChanges": true,
+  "sourceReferencePolicy": "Paths are relative to pinned Pi unless PiSharp implementation paths. Declaration values extracted by importing all seven pinned definitions with upstream source-resolver.ts; no stale dist fallback.",
+  "tools": {
+    "read": {
+      "implementation": [
+        "src/PiSharp.Runtime/Tools/FileReader.cs",
+        "src/PiSharp.Runtime/Tools/StreamingTextReader.cs",
+        "src/PiSharp.Core/ReadTextPlanner.cs",
+        "src/PiSharp.Runtime/Tools/ReadImageProcessor.cs",
+        "src/PiSharp.Runtime/Tools/ReadToolOutput.cs"
+      ],
+      "defaults": {
+        "offset": 1,
+        "limit": null,
+        "maxLines": 2000,
+        "maxBytes": 51200,
+        "autoResizeImages": true,
+        "maxWidth": 2000,
+        "maxHeight": 2000,
+        "maxBase64Bytes": 4718592,
+        "jpegQuality": 80
+      },
+      "normal": "Selected unnumbered text with continuation notices, or note plus image content.",
+      "details": "Optional truncation object; text/image structuredContent as declared.",
+      "cancellation": "Reject Operation aborted before start or while work is observed; no successful final result after abort.",
+      "sideEffects": "None.",
+      "tests": [
+        "ReadTextConformanceTests",
+        "StreamingReadTests",
+        "ReadImageToolTests",
+        "ReadImageProcessorTests"
+      ],
+      "fixtures": [
+        "encoding/newlines",
+        "selection and exact limits",
+        "oversized line/large stream",
+        "paths, links and filesystem errors",
+        "PNG/JPEG/GIF/WebP/BMP/signatures",
+        "EXIF/animation/alpha/model profiles",
+        "provider image content",
+        "cancellation"
+      ],
+      "tool": "read",
+      "pinnedPiSource": "packages/coding-agent/src/core/tools/read.ts",
+      "pinnedPiSourceSha256": "c3c64f7105599455d3066568074796e2ddb143cb210da4981b0eb632aa3d2811",
+      "argumentSchema": {
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path to the file to read (relative or absolute)"
+          },
+          "offset": {
+            "type": "number",
+            "description": "Line number to start reading from (1-indexed)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of lines to read"
+          }
+        }
+      },
+      "declaration": {
+        "name": "read",
+        "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to read (relative or absolute)"
+            },
+            "offset": {
+              "type": "number",
+              "description": "Line number to start reading from (1-indexed)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of lines to read"
+            }
+          }
+        },
+        "outputSchema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "data",
+                "mimeType",
+                "note"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "image"
+                },
+                "data": {
+                  "type": "string"
+                },
+                "mimeType": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "constrainedSampling": {
+          "type": "json_schema",
+          "strict": "prefer"
+        }
+      },
+      "errorResult": "Execution rejects; shared agent tool boundary emits correlated error result. Exact error text/categories are part of acceptance.",
+      "providerVisibleResult": "Text/image content only; structured details are retained separately. Verify physical Responses, Chat Completions and Anthropic boundaries.",
+      "sessionPersistence": "One correlated authoritative tool outcome; retain structured details/images through canonical save/reload, no replay of completed mutations after cancellation.",
+      "classification": {
+        "existing": "Implemented with local tests and older bounded evidence.",
+        "sourceConfirmedDifferences": [
+          "Text read truncation details and structuredContent are not returned.",
+          "Path normalization and numeric argument binding differ.",
+          "Large-file accounting counts raw rather than decoded UTF-8 bytes.",
+          "Cubic rather than Lanczos3; EXIF orientation absent.",
+          "20 MiB input / 32 million decoded pixel bounds need explicit safety classification."
+        ],
+        "implementedButUnverified": "All newly scoped mandatory cases until executed against pin.",
+        "missing": "See source differences; validate against differential oracle before corrections.",
+        "platform": "Linux required; native Windows/macOS unverified.",
+        "intentionalSafetyDeviations": "Provisional candidates only; no strict equivalence claimed for atomic-write/private-mode/image bounds until documented and tested."
+      },
+      "acceptanceStatus": "inventory_only_not_newly_verified"
+    },
+    "write": {
+      "implementation": [
+        "src/PiSharp.Runtime/Tools/FileMutations.cs",
+        "src/PiSharp.Runtime/Tools/FileMutationQueue.cs",
+        "src/PiSharp.Runtime/Tools/AtomicFileWriter.cs"
+      ],
+      "defaults": {},
+      "normal": "Successfully wrote to <input path>",
+      "details": "Absent.",
+      "cancellation": "Queue stays held until in-flight operation settles; abort checks around awaits; reject after observed cancellation.",
+      "sideEffects": "Recursive parent creation and UTF-8 file write; Pi direct writes preserve existing inode and hard links.",
+      "tests": [
+        "CodingToolsTests",
+        "EditToolTests"
+      ],
+      "fixtures": [
+        "new/existing/empty/Unicode/BOM",
+        "nested/path/ancestors",
+        "Linux permissions",
+        "symlinks/hard links/inodes/modes",
+        "same-file and unrelated-file concurrency",
+        "write/edit and write/cancel barriers"
+      ],
+      "tool": "write",
+      "pinnedPiSource": "packages/coding-agent/src/core/tools/write.ts",
+      "pinnedPiSourceSha256": "2ee0a438c24cf83fefd733e349d55a21aa5b633c18934b2c80759fcf14b6f297",
+      "argumentSchema": {
+        "type": "object",
+        "required": [
+          "path",
+          "content"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path to the file to write (relative or absolute)"
+          },
+          "content": {
+            "type": "string",
+            "description": "Content to write to the file"
+          }
+        }
+      },
+      "declaration": {
+        "name": "write",
+        "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "content"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to write (relative or absolute)"
+            },
+            "content": {
+              "type": "string",
+              "description": "Content to write to the file"
+            }
+          }
+        },
+        "constrainedSampling": {
+          "type": "json_schema",
+          "strict": "prefer"
+        }
+      },
+      "errorResult": "Execution rejects; shared agent tool boundary emits correlated error result. Exact error text/categories are part of acceptance.",
+      "providerVisibleResult": "Text/image content only; structured details are retained separately. Verify physical Responses, Chat Completions and Anthropic boundaries.",
+      "sessionPersistence": "One correlated authoritative tool outcome; retain structured details/images through canonical save/reload, no replay of completed mutations after cancellation.",
+      "classification": {
+        "existing": "Implemented with local tests and older bounded evidence.",
+        "sourceConfirmedDifferences": [
+          "Atomic rename replaces inode; private new-file mode differs from umask-based creation.",
+          "Hard-link/ownership/readonly/dangling-link outcomes require physical evidence.",
+          "Path alias serialization for missing descendants requires investigation."
+        ],
+        "implementedButUnverified": "All newly scoped mandatory cases until executed against pin.",
+        "missing": "See source differences; validate against differential oracle before corrections.",
+        "platform": "Linux required; native Windows/macOS unverified.",
+        "intentionalSafetyDeviations": "Provisional candidates only; no strict equivalence claimed for atomic-write/private-mode/image bounds until documented and tested."
+      },
+      "acceptanceStatus": "inventory_only_not_newly_verified"
+    },
+    "edit": {
+      "implementation": [
+        "src/PiSharp.Runtime/Tools/FileMutations.cs",
+        "src/PiSharp.Core/FileEdits.cs",
+        "src/PiSharp.Core/FileEditDiff.cs",
+        "src/PiSharp.Runtime/Tools/EditToolOutput.cs"
+      ],
+      "defaults": {
+        "diffContextLines": 4
+      },
+      "normal": "Successfully replaced N block(s) in <input path>.",
+      "details": "diff, patch, firstChangedLine; not ordinary provider text.",
+      "cancellation": "Shared mutation queue, checks around awaited filesystem work and planning; invalid batches never write.",
+      "sideEffects": "One validated original-snapshot batch writes BOM/line-ending-restored bytes; same atomic writer deviations as write.",
+      "tests": [
+        "EditToolTests",
+        "ToolResultContractTests"
+      ],
+      "fixtures": [
+        "single/batch/insertion/deletion",
+        "empty/ambiguous/missing/overlap/no-change",
+        "nearby/separated hunks",
+        "BOM/CRLF/CR/mixed/Unicode/fuzzy",
+        "patch applicability",
+        "permissions/links",
+        "concurrent edits/write races/cancellation",
+        "lifecycle/provider/session"
+      ],
+      "tool": "edit",
+      "pinnedPiSource": "packages/coding-agent/src/core/tools/edit.ts",
+      "pinnedPiSourceSha256": "31a368c14cf5437ecac157765660001b16063302d9bd746303d6d1b1dcb5625d",
+      "argumentSchema": {
+        "type": "object",
+        "required": [
+          "path",
+          "edits"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path to the file to edit (relative or absolute)"
+          },
+          "edits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "oldText",
+                "newText"
+              ],
+              "properties": {
+                "oldText": {
+                  "type": "string",
+                  "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                },
+                "newText": {
+                  "type": "string",
+                  "description": "Replacement text for this targeted edit."
+                }
+              }
+            },
+            "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+          }
+        }
+      },
+      "declaration": {
+        "name": "edit",
+        "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "edits"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to edit (relative or absolute)"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "oldText",
+                  "newText"
+                ],
+                "properties": {
+                  "oldText": {
+                    "type": "string",
+                    "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                  },
+                  "newText": {
+                    "type": "string",
+                    "description": "Replacement text for this targeted edit."
+                  }
+                }
+              },
+              "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+            }
+          }
+        },
+        "constrainedSampling": {
+          "type": "json_schema",
+          "strict": "prefer"
+        }
+      },
+      "errorResult": "Execution rejects; shared agent tool boundary emits correlated error result. Exact error text/categories are part of acceptance.",
+      "providerVisibleResult": "Text/image content only; structured details are retained separately. Verify physical Responses, Chat Completions and Anthropic boundaries.",
+      "sessionPersistence": "One correlated authoritative tool outcome; retain structured details/images through canonical save/reload, no replay of completed mutations after cancellation.",
+      "classification": {
+        "existing": "Implemented with local tests and older bounded evidence.",
+        "sourceConfirmedDifferences": [
+          "UTF-8 decoding is strict instead of replacement decoding.",
+          "Pi prepares stringified, single-object and legacy edit arguments; native path needs verification.",
+          "Access/directory errors, fuzzy preservation, diff/patch and concurrency need broader differentials."
+        ],
+        "implementedButUnverified": "All newly scoped mandatory cases until executed against pin.",
+        "missing": "See source differences; validate against differential oracle before corrections.",
+        "platform": "Linux required; native Windows/macOS unverified.",
+        "intentionalSafetyDeviations": "Provisional candidates only; no strict equivalence claimed for atomic-write/private-mode/image bounds until documented and tested."
+      },
+      "acceptanceStatus": "inventory_only_not_newly_verified"
+    },
+    "bash": {
+      "implementation": [
+        "src/PiSharp.Runtime/Tools/Shell/ShellExecution.cs",
+        "src/PiSharp.Runtime/Tools/Shell/ShellOutputBuffer.cs",
+        "src/PiSharp.Runtime/Tools/Shell/BashOutputUpdates.cs",
+        "src/PiSharp.Runtime/Tools/Shell/BashToolOutput.cs",
+        "src/PiSharp.Runtime/Tools/ProcessLifetime.cs"
+      ],
+      "defaults": {
+        "timeout": null,
+        "maxLines": 2000,
+        "maxBytes": 51200,
+        "structuredMaxBytes": 1048576,
+        "updateThrottleMs": 100,
+        "postExitIdleGraceMs": 100
+      },
+      "normal": "Combined raw stdout/stderr tail or (no output), optional truncation notice; nonzero exit appends status and isError.",
+      "details": "Optional truncation/fullOutputPath; separate declared structured output.",
+      "cancellation": "Abort/timeout kill process group, settle pumps, stop updates and reject with partial output/status. Direct user Bash returns its own cancellation record.",
+      "sideEffects": "Command-specific disposable workspace effects; private retained full-output artifacts.",
+      "tests": [
+        "BashOperationsTests",
+        "CodingToolsTests",
+        "ToolResultContractTests",
+        "ToolBatchTerminationTests"
+      ],
+      "fixtures": [
+        "stdout/stderr/control/UTF-8",
+        "exit/signal/spawn/shell errors",
+        "cwd/prefix/environment freshness",
+        "byte/line/one-MiB boundaries",
+        "spill bytes and private permissions",
+        "timeout/abort/child/grandchild/stdio",
+        "direct Bash and extension hooks",
+        "agent continuation/session"
+      ],
+      "tool": "bash",
+      "pinnedPiSource": "packages/coding-agent/src/core/tools/bash.ts",
+      "pinnedPiSourceSha256": "de2b54d4f4bfbb844ce6d8077f63d715f7d8e80079dd9689b561e45b6679c81b",
+      "argumentSchema": {
+        "type": "object",
+        "required": [
+          "command"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "Shell command to execute"
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Timeout in seconds (optional, no default timeout)"
+          }
+        }
+      },
+      "declaration": {
+        "name": "bash",
+        "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "command"
+          ],
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "Shell command to execute"
+            },
+            "timeout": {
+              "type": "number",
+              "description": "Timeout in seconds (optional, no default timeout)"
+            }
+          }
+        },
+        "outputSchema": {
+          "type": "object",
+          "required": [
+            "output",
+            "truncated",
+            "exit_code",
+            "wall_time_seconds"
+          ],
+          "properties": {
+            "output": {
+              "type": "string",
+              "description": "Combined stdout and stderr, possibly truncated"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "full_output_path": {
+              "type": "string",
+              "description": "Full output, when truncated"
+            },
+            "exit_code": {
+              "type": "number"
+            },
+            "wall_time_seconds": {
+              "type": "number"
+            }
+          }
+        },
+        "constrainedSampling": {
+          "type": "json_schema",
+          "strict": "prefer"
+        }
+      },
+      "errorResult": "Execution rejects; shared agent tool boundary emits correlated error result. Exact error text/categories are part of acceptance.",
+      "providerVisibleResult": "Text/image content only; structured details are retained separately. Verify physical Responses, Chat Completions and Anthropic boundaries.",
+      "sessionPersistence": "One correlated authoritative tool outcome; retain structured details/images through canonical save/reload, no replay of completed mutations after cancellation.",
+      "classification": {
+        "existing": "Implemented with local tests and older bounded evidence.",
+        "sourceConfirmedDifferences": [
+          "Current details use truncated rather than full optional truncation object.",
+          "Lifecycle updates currently use deltas instead of pinned snapshots.",
+          "Error, signal, incomplete UTF-8, spill and descendant contracts require physical differentials."
+        ],
+        "implementedButUnverified": "All newly scoped mandatory cases until executed against pin.",
+        "missing": "See source differences; validate against differential oracle before corrections.",
+        "platform": "Linux required; native Windows/macOS unverified.",
+        "intentionalSafetyDeviations": "Provisional candidates only; no strict equivalence claimed for atomic-write/private-mode/image bounds until documented and tested."
+      },
+      "acceptanceStatus": "inventory_only_not_newly_verified"
+    },
+    "grep": {
+      "implementation": [
+        "src/PiSharp.Runtime/Tools/SearchTools.cs",
+        "src/PiSharp.Runtime/Tools/SearchInventory.cs",
+        "src/PiSharp.Runtime/Tools/ToolOutputDetails.cs"
+      ],
+      "defaults": {
+        "path": ".",
+        "glob": null,
+        "ignoreCase": false,
+        "literal": false,
+        "context": 0,
+        "limit": 100,
+        "maxBytes": 51200,
+        "maxLineChars": 500
+      },
+      "normal": "rg encounter order; relative-path:line: text and context path-line- text, or No matches found.",
+      "details": "Optional truncation, matchLimitReached and linesTruncated.",
+      "cancellation": "Before-start abort rejects; running rg is stopped and completion rejects on abort.",
+      "sideEffects": "None.",
+      "tests": [
+        "SearchToolsTests",
+        "StructuredSearchToolTests"
+      ],
+      "fixtures": [
+        "regex/literal/case/context",
+        "include and negative globs",
+        "hidden/ignore/nested repositories",
+        "links/binary/invalid UTF-8",
+        "large file/long lines",
+        "match/byte metadata boundaries",
+        "filesystem/regex/process errors",
+        "cancellation/parallel search/provider/session"
+      ],
+      "tool": "grep",
+      "pinnedPiSource": "packages/coding-agent/src/core/tools/grep.ts",
+      "pinnedPiSourceSha256": "88be3d00217d1a1caf8a9e7bb2b8d2e6d96edfa4b790c2cf76c746ab36b8841b",
+      "argumentSchema": {
+        "type": "object",
+        "required": [
+          "pattern"
+        ],
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Search pattern (regex or literal string)"
+          },
+          "path": {
+            "type": "string",
+            "description": "Directory or file to search (default: current directory)"
+          },
+          "glob": {
+            "type": "string",
+            "description": "Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"
+          },
+          "ignoreCase": {
+            "type": "boolean",
+            "description": "Case-insensitive search (default: false)"
+          },
+          "literal": {
+            "type": "boolean",
+            "description": "Treat pattern as literal string instead of regex (default: false)"
+          },
+          "context": {
+            "type": "number",
+            "description": "Number of lines to show before and after each match (default: 0)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of matches to return (default: 100)"
+          }
+        }
+      },
+      "declaration": {
+        "name": "grep",
+        "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Search pattern (regex or literal string)"
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory or file to search (default: current directory)"
+            },
+            "glob": {
+              "type": "string",
+              "description": "Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"
+            },
+            "ignoreCase": {
+              "type": "boolean",
+              "description": "Case-insensitive search (default: false)"
+            },
+            "literal": {
+              "type": "boolean",
+              "description": "Treat pattern as literal string instead of regex (default: false)"
+            },
+            "context": {
+              "type": "number",
+              "description": "Number of lines to show before and after each match (default: 0)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of matches to return (default: 100)"
+            }
+          }
+        }
+      },
+      "errorResult": "Execution rejects; shared agent tool boundary emits correlated error result. Exact error text/categories are part of acceptance.",
+      "providerVisibleResult": "Text/image content only; structured details are retained separately. Verify physical Responses, Chat Completions and Anthropic boundaries.",
+      "sessionPersistence": "One correlated authoritative tool outcome; retain structured details/images through canonical save/reload, no replay of completed mutations after cancellation.",
+      "classification": {
+        "existing": "Implemented with local tests and older bounded evidence.",
+        "sourceConfirmedDifferences": [
+          "Managed .NET regex language differs from ripgrep.",
+          "Inventory, globs, ignore semantics, binary/CR handling and ordering require execution.",
+          "10 MiB per-file and 20,000-path caps can change results."
+        ],
+        "implementedButUnverified": "All newly scoped mandatory cases until executed against pin.",
+        "missing": "See source differences; validate against differential oracle before corrections.",
+        "platform": "Linux required; native Windows/macOS unverified.",
+        "intentionalSafetyDeviations": "Provisional candidates only; no strict equivalence claimed for atomic-write/private-mode/image bounds until documented and tested."
+      },
+      "acceptanceStatus": "inventory_only_not_newly_verified"
+    },
+    "find": {
+      "implementation": [
+        "src/PiSharp.Runtime/Tools/SearchTools.cs",
+        "src/PiSharp.Runtime/Tools/SearchInventory.cs"
+      ],
+      "defaults": {
+        "path": ".",
+        "limit": 1000,
+        "maxBytes": 51200
+      },
+      "normal": "fd encounter order, relative POSIX paths and directory suffix; or No files found matching pattern.",
+      "details": "Optional resultLimitReached and truncation.",
+      "cancellation": "Reject pre-abort; stop child and reject running abort.",
+      "sideEffects": "None.",
+      "tests": [
+        "SearchToolsTests",
+        "StructuredSearchToolTests"
+      ],
+      "fixtures": [
+        "basename/path/recursive/absolute globs",
+        "braces/classes/escapes/case",
+        "hidden/ignore/nested repositories",
+        "directories/symlinks/broken links",
+        "roots/errors",
+        "result/byte boundaries",
+        "late match beyond inventory cap",
+        "cancellation/provider/session"
+      ],
+      "tool": "find",
+      "pinnedPiSource": "packages/coding-agent/src/core/tools/find.ts",
+      "pinnedPiSourceSha256": "b06bcae6821a0e9fda1b63be613a7ce28eb0e66e1d01d16564e59e83f9ce10ea",
+      "argumentSchema": {
+        "type": "object",
+        "required": [
+          "pattern"
+        ],
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"
+          },
+          "path": {
+            "type": "string",
+            "description": "Directory to search in (default: current directory)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of results (default: 1000)"
+          }
+        }
+      },
+      "declaration": {
+        "name": "find",
+        "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory to search in (default: current directory)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of results (default: 1000)"
+            }
+          }
+        }
+      },
+      "errorResult": "Execution rejects; shared agent tool boundary emits correlated error result. Exact error text/categories are part of acceptance.",
+      "providerVisibleResult": "Text/image content only; structured details are retained separately. Verify physical Responses, Chat Completions and Anthropic boundaries.",
+      "sessionPersistence": "One correlated authoritative tool outcome; retain structured details/images through canonical save/reload, no replay of completed mutations after cancellation.",
+      "classification": {
+        "existing": "Implemented with local tests and older bounded evidence.",
+        "sourceConfirmedDifferences": [
+          "Managed glob grammar, case behavior and ordinal sorting differ from fd.",
+          "Inventory/synthesized ancestors and limit clamp require comparison.",
+          "20,000-path cap precedes matching and prevents some otherwise bounded queries."
+        ],
+        "implementedButUnverified": "All newly scoped mandatory cases until executed against pin.",
+        "missing": "See source differences; validate against differential oracle before corrections.",
+        "platform": "Linux required; native Windows/macOS unverified.",
+        "intentionalSafetyDeviations": "Provisional candidates only; no strict equivalence claimed for atomic-write/private-mode/image bounds until documented and tested."
+      },
+      "acceptanceStatus": "inventory_only_not_newly_verified"
+    },
+    "ls": {
+      "implementation": [
+        "src/PiSharp.Runtime/Tools/DirectoryListingTool.cs",
+        "src/PiSharp.Runtime/Tools/ToolOutputDetails.cs"
+      ],
+      "defaults": {
+        "path": ".",
+        "limit": 500,
+        "maxBytes": 51200
+      },
+      "normal": "Lowercased localeCompare ordering, dotfiles, stat-followed directory suffix; unstatable entries skipped; or (empty directory).",
+      "details": "Optional entryLimitReached and truncation.",
+      "cancellation": "Pre-abort/abort during filesystem enumeration rejects; no success history after cancellation.",
+      "sideEffects": "None.",
+      "tests": [
+        "SearchToolsTests",
+        "StructuredSearchToolTests"
+      ],
+      "fixtures": [
+        "default/relative/absolute/empty roots",
+        "case/Unicode ordering",
+        "hidden/directories/symlinks/broken links",
+        "special filesystem entries",
+        "exact entry/byte limits/long filenames",
+        "missing/file/permission errors",
+        "cancellation/provider/session"
+      ],
+      "tool": "ls",
+      "pinnedPiSource": "packages/coding-agent/src/core/tools/ls.ts",
+      "pinnedPiSourceSha256": "3d0a5457e4f5b9e9967c44608b76b060374d047e80d6871ecec4459b612cb6a3",
+      "argumentSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Directory to list (default: current directory)"
+          },
+          "limit": {
+            "type": "number",
+            "description": "Maximum number of entries to return (default: 500)"
+          }
+        }
+      },
+      "declaration": {
+        "name": "ls",
+        "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Directory to list (default: current directory)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of entries to return (default: 500)"
+            }
+          }
+        }
+      },
+      "errorResult": "Execution rejects; shared agent tool boundary emits correlated error result. Exact error text/categories are part of acceptance.",
+      "providerVisibleResult": "Text/image content only; structured details are retained separately. Verify physical Responses, Chat Completions and Anthropic boundaries.",
+      "sessionPersistence": "One correlated authoritative tool outcome; retain structured details/images through canonical save/reload, no replay of completed mutations after cancellation.",
+      "classification": {
+        "existing": "Implemented with local tests and older bounded evidence.",
+        "sourceConfirmedDifferences": [
+          "OrdinalIgnoreCase differs from ICU localeCompare.",
+          "Broken links can be returned rather than skipped.",
+          "Limit detection counts raw names instead of accepted stat results.",
+          "Numeric binding, special files and filesystem errors require execution."
+        ],
+        "implementedButUnverified": "All newly scoped mandatory cases until executed against pin.",
+        "missing": "See source differences; validate against differential oracle before corrections.",
+        "platform": "Linux required; native Windows/macOS unverified.",
+        "intentionalSafetyDeviations": "Provisional candidates only; no strict equivalence claimed for atomic-write/private-mode/image bounds until documented and tested."
+      },
+      "acceptanceStatus": "inventory_only_not_newly_verified"
+    }
+  },
+  "acceptanceGates": {
+    "minimumDistinctCases": 70,
+    "minimumCasesPerTool": 10,
+    "fullMafAllTools": false,
+    "physicalProviderMatrix": false,
+    "canonicalRestart": false,
+    "safetyReliability": false,
+    "fullValidation": false,
+    "publicationAndFinalHeadCi": false
+  }
+}

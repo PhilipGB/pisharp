@@ -1,4 +1,16 @@
-## Active milestone — Terminal Rendering and Interaction Parity — 2026-10-22
+## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
+
+PR #21's actual merge `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a` is verified
+on `origin/main` and is the base of `milestone/builtin-coding-tool-parity`.
+Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+The [initial acceptance inventory](fixtures/builtin-coding-tool-inventory-2026-10-22.json)
+records all seven exact source-extracted declarations and implementation gaps
+before product changes. The [milestone receipt](fixtures/builtin-coding-tool-parity-2026-10-22.md)
+defines the pending filesystem, process, image, provider, session and safety
+gates. This inventory newly verifies no tool behavior. All seven capabilities
+and global parity remain `in_progress` pending executed pinned evidence.
+
+## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 
 PR #20 merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`, the base of
 `milestone/terminal-rendering-interaction-parity`. Pi remains pinned at
