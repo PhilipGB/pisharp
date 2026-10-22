@@ -18,8 +18,17 @@ counts are separate measures and must not be substituted for checkpoint counts.
 The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md) and
 [inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) were
 created before product changes. They explicitly list unverified contracts and
-source differences. Next establish the independent pinned-tool oracle, capture
-baseline failures, then correct shared results and all seven tools. Required
+source differences. The independent oracle has a 211/211 same-Pi control and
+11 passing harness tests. Clean baseline `a9ab1c09` passes 23/211. Product fix
+`f9f3fa56` restores ordinary search result text and truncation content, with
+seven fail-first regressions and a 54/84 pinned search subset. The next input
+declaration/validation/edit-preparation correction passes 31 new argument tests,
+64 related checks and 77 tool-selection/native-hook checks. E remains in progress.
+
+Next compare primitive coercions using the captured TypeBox oracle, then finish
+shared truncation/read/Bash metadata before the tool-specific acceptance gates.
+Do not treat declaration equality as complete callable-schema parity: numeric
+tool semantics still need correction. Required
 provider, MAF, filesystem, process, image, restart and safety evidence remains
 mandatory after direct function tests pass.
 

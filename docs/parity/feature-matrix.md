@@ -8,7 +8,12 @@ records all seven exact source-extracted declarations and implementation gaps
 before product changes. The [milestone receipt](fixtures/builtin-coding-tool-parity-2026-10-22.md)
 defines the pending filesystem, process, image, provider, session and safety
 gates. This inventory newly verifies no tool behavior. All seven capabilities
-and global parity remain `in_progress` pending executed pinned evidence.
+and global parity remain `in_progress` pending complete pinned evidence.
+The new corpus has a 211/211 same-Pi control. The initial native baseline is
+23/211; the first shared search-result correction at `f9f3fa56` passes 54/84
+search/list cases. Input declarations now match the seven source schemas, with
+argument preparation/validation regressions; primitive conversion and complete
+tool behavior remain open. These scoped results do not verify a whole tool.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 

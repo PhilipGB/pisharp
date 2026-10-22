@@ -1,0 +1,3726 @@
+{
+  "schema": 1,
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "baselinePiSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+  "baselineReportSha256": "3c2e60841b29035429fb23476f4f3a3b3bcf9ae05c189381c45d257a5b73162f",
+  "baselineSummary": {
+    "passed": 23,
+    "total": 211,
+    "perTool": {
+      "read": 45,
+      "write": 21,
+      "edit": 33,
+      "bash": 28,
+      "grep": 32,
+      "find": 27,
+      "ls": 25
+    }
+  },
+  "initialCorrections": {
+    "source": "f9f3fa56dff4aa8cf4ef872ef2a713d4af441e4a",
+    "scope": "Search result projection and truncation content only; no search traversal/regex correction yet.",
+    "reportSha256": "88b3aa04a34b08f22cdcffbde29e1fa5f320c87034b5857a7c91cec4b6f1593c",
+    "summary": {
+      "passed": 54,
+      "total": 84,
+      "perTool": {
+        "grep": 32,
+        "find": 27,
+        "ls": 25
+      }
+    }
+  },
+  "cases": [
+    {
+      "caseId": "read-utf8",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "dfa81aba4295ba733510d02911616e5878105b2f56ed58e0d90030f91b0515b3",
+      "piSharpResultSha256": "c80d96e6f6035ce72bf30b693b9505600f33745ddb43947cd1fbd416d68de04a"
+    },
+    {
+      "caseId": "read-bom",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "3480e67c1091b0be8eee00ee2eb3cbf14f38caafd4142549d3a38fa36db6fdbb",
+      "piSharpResultSha256": "de30d8c900739fc53391fae4bb3702a23b3838af4dd46f4919eeeb105956b542"
+    },
+    {
+      "caseId": "read-lf",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "c49e9fe4075d8de06ee5f4473a1f3f4008dc5bf00f55a8002fd14cae1633cff2",
+      "piSharpResultSha256": "3ea25a6c1fcbecab21066cd73984c7e21e827c4edbf880d74f9e7abf662d883d"
+    },
+    {
+      "caseId": "read-crlf",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "9046d9c579d9155f900c421c427edf1a87b8829c2cb81876779ad2fe173dfc43",
+      "piSharpResultSha256": "fe1d8f91fc598973a8858ae939b7da746cb30448d304fe24ae4870a2acf932b3"
+    },
+    {
+      "caseId": "read-cr",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "96a40fc6775ad30175768271bcbf2b021696db88e5d846b90d1f86df635a8771",
+      "piSharpResultSha256": "5a9df1ce3227b4b698d20ea33c5ca7c1889c44093c9109a785389b1f1948084b"
+    },
+    {
+      "caseId": "read-empty",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "304a7950b7a9367b33119f5e85b319b40592471271ff1612868742ce3ca1bb66",
+      "piSharpResultSha256": "bc12aaea3e148de99b817e801fe528f9aea7e8d3370f461346302ba3ad6145a4"
+    },
+    {
+      "caseId": "read-no-newline",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "725d3fa922f86aed0c30e1dcdb63444eddb6879ddda6ff4ef5898dc249ee8a7b",
+      "piSharpResultSha256": "dbb37dd9f1d05c9e6aeb7dc2fb60397c2a38781f7cd8b5f4779e977ec50e5ddf"
+    },
+    {
+      "caseId": "read-offset",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": 2
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "5bafa8bbc43bb7b0d97d3c1ed9e5849494262346b2f198be2ac343c62a9c7039",
+      "piSharpResultSha256": "56d9d4e389cdf15512dc3883f2932b7d8dc45aebeba095173b77e6f69585c43e"
+    },
+    {
+      "caseId": "read-limit",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "limit": 1
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "dfea275e53658f5baf46aaa4c39c13b43e0c68ca3d090c53ec29c3362e652b64",
+      "piSharpResultSha256": "4802be61ec881c170804c74e5a799007c61bd5cd825cd90553388f32882fc9f6"
+    },
+    {
+      "caseId": "read-window",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": 2,
+        "limit": 1
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "c387b972b8d5b983be8008f130f6ad1ef936053eb1b4b74e28ac1bcd3bf95d10",
+      "piSharpResultSha256": "2b7486f12ec376d2aa1a5d698ab1a553525357afac4eb3d5e4a33dcf40abfe8d"
+    },
+    {
+      "caseId": "read-final-empty-line",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": 4
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "69dcea90c1f513c3e91dff38d8d4d959f1054610e941641198b30b70aa3ca57e",
+      "piSharpResultSha256": "d2c1d329462cfa382deb27ee0fe72c2db17f8e55f94953141ff921f0c447c83c"
+    },
+    {
+      "caseId": "read-offset-beyond-end",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": 5
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "5632c9368ad2846443b6e13dee213cee7635b5575317fab951bf1f29a444e37b",
+      "piSharpResultSha256": "1e8622c6267841c89dea6d0fda21bf6b2f71f1690dbfc32e30dd5c2b5d848f77"
+    },
+    {
+      "caseId": "read-offset-zero",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": 0
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "9a4ec5f734030fa90ea9b49366affa2a304efdc60350110c54383b267bfa5b90",
+      "piSharpResultSha256": "ee58b77484df4d7e400608787b0c7dcf27356663dcd87e13614a53530fb12235"
+    },
+    {
+      "caseId": "read-offset-negative",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": -2
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "ef0117a29eda96e0193d4af81b8911648885b8fa2709372901dcc496b9f5a091",
+      "piSharpResultSha256": "56d7b0564de6d7f4f6752a9e99b0e78bf7b9acf3b7f1a30d8f2f4190f4f1dbb4"
+    },
+    {
+      "caseId": "read-limit-zero",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "limit": 0
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "4c8914b7a6b5586ab32fc2e2662b335795e1738be86e82238c0808b70ea2ecfc",
+      "piSharpResultSha256": "6ef7eabcd32d90a78a19ebc70818b13c614fd41730b688e8c31690868c4bb46a"
+    },
+    {
+      "caseId": "read-limit-negative",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "limit": -1
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "1e27c4ccd4cf7411e10d4f8f5a1a99f4e69dbc10fc6a976fae9e28df9e5c1da2",
+      "piSharpResultSha256": "e1234cbb2841c09bce2debefe7cf537f33bd3925471d55a12aeb3de2dc61dd5b"
+    },
+    {
+      "caseId": "read-fractional-offset",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": 1.5
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "5ea019debe14ec095d1763af7421fb1e9cc10ea4605853dde90721a444a33b0a",
+      "piSharpResultSha256": "a8e41bcdb5ed17856753b44c79b5b3bcfdbca48b6ea4622cbbe3fdfa3962c392"
+    },
+    {
+      "caseId": "read-optional-null",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": null,
+        "limit": null
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "9d2f89985ab8dd38bdeb27cda65da9e07ad959a22006bbb3dae9275732e1b125",
+      "piSharpResultSha256": "6cb197cd3ad2408f8292042b368fd30bcbed245b4a4174c0a5204aab108c6f90"
+    },
+    {
+      "caseId": "read-absolute-nested",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "{WORKSPACE}/nested/file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d7940028eb150099f9682a0b08a0c55d92e91e5d088f11f00be3baf2af75ca9e",
+      "piSharpResultSha256": "e6b3db8261e561caa5487a8b804dfd7d13f062e63552918681897175e60c4f88"
+    },
+    {
+      "caseId": "read-at-prefix",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "@nested/file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "903bccf2322d7a7319c46af2e8abb32574fe5ac686db1e3e1242d2c7e3e97cf6",
+      "piSharpResultSha256": "0862d8dec7c143dcdbebaf939c4d1a3b58cd94ead2588fb37c1fe5fac9c70775"
+    },
+    {
+      "caseId": "read-unicode-space-path",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file\u00a0name.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "1ca76b6ec0c835defcf6a0bd91000451a418037102c3f66c6c645cee748dbaf2",
+      "piSharpResultSha256": "1ec58f63dfdd04a906d7309d6a1d6b6fda0ad9cba922bf6aa0becb7e1afc8b44"
+    },
+    {
+      "caseId": "read-missing",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "missing.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "19f5b1be4b6a5c44a28a8d20973c1a9d7225876926d01a0c780de0bc9269bd77",
+      "piSharpResultSha256": "0cd806abb8fa8df5f073aaaaab35476b687d8d20de415eb343320e3cf877e3de"
+    },
+    {
+      "caseId": "read-directory",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "directory"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "c8b5595f3f98715dd2f494a96d77c76485c892920118edf05233bb493f3d6500",
+      "piSharpResultSha256": "3f4c25fb5ec5b569999fafeb2abdd89973c151398c749d22499132eadf52c12c"
+    },
+    {
+      "caseId": "read-permission",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "dc0a4c8608897bf8e0ba124f44f97b26c13f3d7f24c97e785aed028b8a7413b5",
+      "piSharpResultSha256": "93e6bd37a6e6c2ddce1966453dd0205e7dc880c329c487312057fb9d45b5eaf8"
+    },
+    {
+      "caseId": "read-symlink",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "alias"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "6e2ae5badeaaa42c1f9599adc421410063dbef00b1b2d7f600f7e209e05be7e9",
+      "piSharpResultSha256": "7eee53089efe8ed6d60d734d847bc5638f4b02632e2dbdb38d2502147dea1d1a"
+    },
+    {
+      "caseId": "read-exact-lines",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "2aa614a37b2b9d8e18f7a74a8b10df47d6f858ddad12bc3ae28edb992d4e0267",
+      "piSharpResultSha256": "b5b891e0ad3221a1569b5dca41458e3e7e2f76b84accdd84b19872813b104e40"
+    },
+    {
+      "caseId": "read-over-lines",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "2a94cdd352906c8d25f01e30faef804bae9bd72a254af7f1a072647af6ccb950",
+      "piSharpResultSha256": "be677fb635b3495a281b86c4e0851511748be674a57dbb6b649bc41976cf5bdc"
+    },
+    {
+      "caseId": "read-exact-bytes",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "0d8d62f29707c5aa1b10da38cd0f91cdc19f691e4be213acb7ac0043952757e3",
+      "piSharpResultSha256": "c58bc3dd43168fee847b7ae846f92c423728b35f9afec811fc54edb2ea47a032"
+    },
+    {
+      "caseId": "read-oversized-first-line",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "42eac50d7759b20627ee54861bde40203f72524334b923426005b997201961d2",
+      "piSharpResultSha256": "043a4f6a96aaadf75422ac1ab9cbca7cb454dfb6e365fc70fdd1cbb80072d819"
+    },
+    {
+      "caseId": "read-multibyte-line",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "61fad163bab52fb38900492daf8122482aa6389337b51dbd1d5e4900db881358",
+      "piSharpResultSha256": "83dec75dd2fb8d13f17ba342a6325880e2067bd27d9ab8b54f2520d0b36a068f"
+    },
+    {
+      "caseId": "read-byte-before-lines",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "920c9eb63cf96c146da68dd5b248c36742975b3f2cf183ff07712c62e1fc09d2",
+      "piSharpResultSha256": "76d2cb41c339268a391db94a57c153542b71df50afe18be63c972907154990b9"
+    },
+    {
+      "caseId": "read-streaming-window",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "c793dd13cdd5527e97c0adef9cfca764bd93eb264ed40f53a3644eaf625e7731",
+      "piSharpResultSha256": "1ed8572fd0f16f02fe9bba3b999827a11051245d1ad03641e748960a565b5f81"
+    },
+    {
+      "caseId": "read-invalid-utf8",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "0fb78141455f0cb628489b292fa59dc78333da30d5446f85f331b83237f6e551",
+      "piSharpResultSha256": "2ec1c48a08646c7b88f07eabebf02cd9c0711cec347890a61a2cfe7982f6a1e1"
+    },
+    {
+      "caseId": "read-invalid-utf8-stream",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": 70000,
+        "limit": 4
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "ebd51844bb9fa4b678e0387c950d27a033c99d4985e5cbaf97f63db62a822409",
+      "piSharpResultSha256": "8f8985ffab772e36b8380fc36990956f3974d64cb976951cbe618eb2dc2fdd8f"
+    },
+    {
+      "caseId": "read-binary-looking",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "5e5bd2ecead5c6d26b56f72b293943c1aab2383b4d73a104f0eb4ae966b31101",
+      "piSharpResultSha256": "d2d6bf8674c582a2dd2d3d66af3c27dda6710cf8fa482371070396a3a23853c6"
+    },
+    {
+      "caseId": "read-png-magic",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "image.dat"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "4c6345e909839862747b6c43fae1d53559b3e7226a5b41ba05aeb7faac40ac1b",
+      "piSharpResultSha256": "1192562990b0399d62b169e4d1cebd22ae7d46dd9d16b2d363eeffee4ad14d24"
+    },
+    {
+      "caseId": "read-png-alpha",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "image.png"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "fd2752d82886e5e935de5bdff3bfa9e5c2a1588a096a13a207885e1cbbb07268",
+      "piSharpResultSha256": "caf993faf4b4447f60f9c73d98e30bffd1c74066b2d15ec659541dc492940f7c"
+    },
+    {
+      "caseId": "read-png-resize",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "image.png"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/1/data/rgbaSha256",
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "e3080ce05a4ff35f1c8d54b21b70250e8e50869da427cbe6f190e15c7ea0fa99",
+      "piSharpResultSha256": "a8a97f6544031eb3cbdd1e1e821944ac2a693b689e02e548081b9a99f17bdbcb"
+    },
+    {
+      "caseId": "read-corrupt-png",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "image.png"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "66d12755687834d023e03395fb26f6f771f9fb6eff008b3fc136c751a9800cf5",
+      "piSharpResultSha256": "012cb0ad3b272a934ba9677830d86bb1d6c6c7ee40a36b5486c03fcc2f994a22"
+    },
+    {
+      "caseId": "read-jpeg-ls-not-inline",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "image.jls"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a2e519b9844252e1114898b49a8bc6cbac747a09300a278f0b064f73158bf74f",
+      "piSharpResultSha256": "a8db7f2dbf14862670ec997e5dbc56f138d514a32aea4e2e20b91fefa29cb9b0"
+    },
+    {
+      "caseId": "read-invalid-image-extension",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "image.jpg"
+      },
+      "pass": false,
+      "differences": [
+        "/result/structuredContent"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "7cef528c9303b688b600e525c03ef757af202ee5151497f33a7283dbed3993f9",
+      "piSharpResultSha256": "7df2b29a417cb9b54ee6391ecbeecf88f7cd67d0145139b6cfc4c4c178ad7b30"
+    },
+    {
+      "caseId": "read-missing-required",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "8369568560478e40bddcc836b90c007b62f0c5cb9d8c0cd57f0c72a8626f7e9a",
+      "piSharpResultSha256": "11b8c9ea8a34fb5abd8a9776a7eab49b5611a2eb6b9274bde9bcd66f506dde84"
+    },
+    {
+      "caseId": "read-invalid-path-type",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": []
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "5c11df3b85c3c0f138a291022cad49cd8486a84cdcb81ac1deef9153444d8d10",
+      "piSharpResultSha256": "17ad1260b6313494039d7a37c0a43ae06ad6957c4e307f4bb9d434aae9dd22d0"
+    },
+    {
+      "caseId": "read-invalid-offset-type",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "offset": {}
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "4075be01a5283662859b9edc865878db8944b3a1739caec53b76a12880deba8d",
+      "piSharpResultSha256": "fdbd26042e13eb1dfde4195fda8951e8a988b1d665168d6ae6ba0540ba41ae51"
+    },
+    {
+      "caseId": "read-pre-cancelled",
+      "tool": "read",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a5a3214380ebe70b61723f0048b02c65b88846fe3baf6d03dbfa6751dd2b27cb",
+      "piSharpResultSha256": "dffbeb3edae6ef239613822ad499554a6ca99ba370bccf6468a2bddb7ed03724"
+    },
+    {
+      "caseId": "write-new",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": "new file\n"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "2958b787d574e5ca9cc73653ab61d09ce8500f7599f7a1033c5ac3bf83f6a539",
+      "piSharpResultSha256": "2958b787d574e5ca9cc73653ab61d09ce8500f7599f7a1033c5ac3bf83f6a539"
+    },
+    {
+      "caseId": "write-empty",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": ""
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "45d04502d75cc82fe466426c56085631075a4a84b9274e03fd4f778666c65cdd",
+      "piSharpResultSha256": "45d04502d75cc82fe466426c56085631075a4a84b9274e03fd4f778666c65cdd"
+    },
+    {
+      "caseId": "write-unicode",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": "\u65e5\u672c\u8a9e \ud83d\ude00 caf\u00e9\n"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "35cb116790dc2cbab63a05991bc4d28d27dd6a7357ad03e3ed9da221e8b685d7",
+      "piSharpResultSha256": "35cb116790dc2cbab63a05991bc4d28d27dd6a7357ad03e3ed9da221e8b685d7"
+    },
+    {
+      "caseId": "write-bom",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": "\ufefffile\n"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "3b434d14cd543e9c143f8fdb7786af55d63e05a61b75270a7deade50177ff54e",
+      "piSharpResultSha256": "3b434d14cd543e9c143f8fdb7786af55d63e05a61b75270a7deade50177ff54e"
+    },
+    {
+      "caseId": "write-existing",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": "replacement\n"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "b218bc6c5a8271c7652c9aa13295745019aba7fc94c7a2c40745e4a2e5ea2fa9",
+      "piSharpResultSha256": "b218bc6c5a8271c7652c9aa13295745019aba7fc94c7a2c40745e4a2e5ea2fa9"
+    },
+    {
+      "caseId": "write-nested-parents",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "a/b/file.txt",
+        "content": "nested\n"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/a/b/file.txt/mode"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "b76c3333f6d0c21eacff3b02c6aa29955d70890f64fb64c1ca1eb91e80ceb161",
+      "piSharpResultSha256": "b76c3333f6d0c21eacff3b02c6aa29955d70890f64fb64c1ca1eb91e80ceb161"
+    },
+    {
+      "caseId": "write-absolute",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "{WORKSPACE}/file.txt",
+        "content": "absolute\n"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "f3b1e79a0b241f4e11769b48bcaab8c82bc866c54e090326c7bffbdd49e1d37f",
+      "piSharpResultSha256": "f3b1e79a0b241f4e11769b48bcaab8c82bc866c54e090326c7bffbdd49e1d37f"
+    },
+    {
+      "caseId": "write-at-prefix",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "@file.txt",
+        "content": "at path\n"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/@file.txt",
+        "/filesystem/file.txt"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "234f03ce3391136fa335d31875026da46c6286b73fce8159826a8b5fec0cdcc0",
+      "piSharpResultSha256": "234f03ce3391136fa335d31875026da46c6286b73fce8159826a8b5fec0cdcc0"
+    },
+    {
+      "caseId": "write-directory",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "dir",
+        "content": "bad"
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "c108e3c2a9de9bfb1613a08289248388be0519dbfffa84f88b1d4faa0ddf24c2",
+      "piSharpResultSha256": "c108e3c2a9de9bfb1613a08289248388be0519dbfffa84f88b1d4faa0ddf24c2"
+    },
+    {
+      "caseId": "write-file-parent",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "parent/file",
+        "content": "bad"
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "502358cfc537b35ab2c6e633c88f61fb2226fc4dd83c94b8bdcfb76a6f51be6b",
+      "piSharpResultSha256": "502358cfc537b35ab2c6e633c88f61fb2226fc4dd83c94b8bdcfb76a6f51be6b"
+    },
+    {
+      "caseId": "write-file-ancestor",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "parent/child/file",
+        "content": "bad"
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "46ce0c46a67e528acfc5ad5b651705cdb9a41900bf2272a2b8180a74cb829e28",
+      "piSharpResultSha256": "46ce0c46a67e528acfc5ad5b651705cdb9a41900bf2272a2b8180a74cb829e28"
+    },
+    {
+      "caseId": "write-readonly-file",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": "bad"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/base64",
+        "/filesystem/file.txt/inodePreserved",
+        "/filesystem/file.txt/sha256",
+        "/filesystem/file.txt/size",
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "76807dfdcf51caf2c2adbea36d3164401f866b9232f12eed16a285cda937706e",
+      "piSharpResultSha256": "8c119d4252fb3ecc66138508aedaa5af61f1ed110e46a1e8b2ca48b32ea374af"
+    },
+    {
+      "caseId": "write-readonly-directory",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "dir/file",
+        "content": "bad"
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "6898e69571ab4a95b0e051bf5a0f429b36634a31bda7ad0c48472a603f797d99",
+      "piSharpResultSha256": "6898e69571ab4a95b0e051bf5a0f429b36634a31bda7ad0c48472a603f797d99"
+    },
+    {
+      "caseId": "write-symlink",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "alias",
+        "content": "replacement"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/target/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "84bce5ffa39eadf5c97147485a0f1972bb10e64b4b5be7cc234d416b4f3f812b",
+      "piSharpResultSha256": "84bce5ffa39eadf5c97147485a0f1972bb10e64b4b5be7cc234d416b4f3f812b"
+    },
+    {
+      "caseId": "write-dangling-symlink",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "alias",
+        "content": "new target"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/target/mode"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "0ecaca73f3ad75983ec40de87554617812bfd94a61398738f9ba04141e545fd3",
+      "piSharpResultSha256": "0ecaca73f3ad75983ec40de87554617812bfd94a61398738f9ba04141e545fd3"
+    },
+    {
+      "caseId": "write-hardlink",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": "replacement"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/alias/base64",
+        "/filesystem/alias/hardlinkPeers/length",
+        "/filesystem/alias/sha256",
+        "/filesystem/alias/size",
+        "/filesystem/file.txt/hardlinkPeers/length",
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "bfadf690090d293e0744a1314a588ece961b834aef7299184174c93a9a54a1df",
+      "piSharpResultSha256": "bfadf690090d293e0744a1314a588ece961b834aef7299184174c93a9a54a1df"
+    },
+    {
+      "caseId": "write-existing-mode",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": "replacement"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "1eb5467762054c6d33b63caa3057237a7cbfb88ebe3d25212f3be45bff70834b",
+      "piSharpResultSha256": "1eb5467762054c6d33b63caa3057237a7cbfb88ebe3d25212f3be45bff70834b"
+    },
+    {
+      "caseId": "write-missing-content",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "76dbf2b5adf5391b1d48c03856d275a64ee40a33178d6eb78a7718cbbe1eae0b",
+      "piSharpResultSha256": "a5f95e909591d0c50cf7fd5df3b431f5ac83db8e4e9e3cc499517f6b4a55ffe8"
+    },
+    {
+      "caseId": "write-invalid-content-type",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": {}
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "5b3947c3180eabb8ba0315c24395018b07e5a9f5554415caf4368e01b3eadbbd",
+      "piSharpResultSha256": "214a65358b711033b2e0bc1cef01009c7e4be5f1d70c716ae088559abae009d8"
+    },
+    {
+      "caseId": "write-invalid-path-type",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": [],
+        "content": "bad"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "13b2c6f47ac4688c56d76808f60ce9cd15d8a143c9eebfe8df28d075c9dcbe1f",
+      "piSharpResultSha256": "e5e59d04b913d9a1b37e51a564593a0c8d29d22200efbefcda522bc577770bc0"
+    },
+    {
+      "caseId": "write-pre-cancelled",
+      "tool": "write",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "content": "bad"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "3d344b861436c1a2adef62e8410039f0d77f2948c1537d989ad3eba21827e9a7",
+      "piSharpResultSha256": "75798bfed108a48a0e8c4abef789ae927effdd29c344d635d99dbd427bf87bc6"
+    },
+    {
+      "caseId": "edit-single",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "one",
+            "newText": "ONE"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "e346d8a76c40af8927703cb4e1dfb7726e2ced286822c30405a86e4139cb1f8a",
+      "piSharpResultSha256": "e346d8a76c40af8927703cb4e1dfb7726e2ced286822c30405a86e4139cb1f8a"
+    },
+    {
+      "caseId": "edit-batch-original-snapshot",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "foo\n",
+            "newText": "foo bar\n"
+          },
+          {
+            "oldText": "bar\n",
+            "newText": "BAR\n"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "cdc4cf3cfaeac03dd1df76d0aeffed63a262c4402f67a3e94771d2169819affd",
+      "piSharpResultSha256": "cdc4cf3cfaeac03dd1df76d0aeffed63a262c4402f67a3e94771d2169819affd"
+    },
+    {
+      "caseId": "edit-insert",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha\n",
+            "newText": "alpha\ninserted\n"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "1b672a62e298f86fc99dc0cffcff012bd1350bf026d442aa9c00676704830a1a",
+      "piSharpResultSha256": "1b672a62e298f86fc99dc0cffcff012bd1350bf026d442aa9c00676704830a1a"
+    },
+    {
+      "caseId": "edit-delete",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha\n",
+            "newText": ""
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "0d76978b81e582e3808427396774bd9f22b7df1caca66e1260e4e4fc6560ef35",
+      "piSharpResultSha256": "0d76978b81e582e3808427396774bd9f22b7df1caca66e1260e4e4fc6560ef35"
+    },
+    {
+      "caseId": "edit-empty-file",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "missing",
+            "newText": "new"
+          }
+        ]
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "411f93a08146326675e5fa50fca991255746be5a8f247b0466173272cdba0f0b",
+      "piSharpResultSha256": "411f93a08146326675e5fa50fca991255746be5a8f247b0466173272cdba0f0b"
+    },
+    {
+      "caseId": "edit-empty-old-text",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "",
+            "newText": "bad"
+          }
+        ]
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "91bc2870ee127a2ebe586b74c563017423f21d09ad54406028d1cd84ac8564c1",
+      "piSharpResultSha256": "91bc2870ee127a2ebe586b74c563017423f21d09ad54406028d1cd84ac8564c1"
+    },
+    {
+      "caseId": "edit-ambiguous",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "repeat",
+            "newText": "bad"
+          }
+        ]
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "fbe8e93a1a9a4d4f3e4575c5d7e232f5aac6093c932af6982f45b71aadb3e3f5",
+      "piSharpResultSha256": "fbe8e93a1a9a4d4f3e4575c5d7e232f5aac6093c932af6982f45b71aadb3e3f5"
+    },
+    {
+      "caseId": "edit-missing-match",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "missing",
+            "newText": "bad"
+          }
+        ]
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "4cecf63284369ab1124032dafabbf7371915a41e7e3bec7429f2e2b02e235200",
+      "piSharpResultSha256": "4cecf63284369ab1124032dafabbf7371915a41e7e3bec7429f2e2b02e235200"
+    },
+    {
+      "caseId": "edit-invalid-batch-atomic",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "ALPHA"
+          },
+          {
+            "oldText": "missing",
+            "newText": "bad"
+          }
+        ]
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "524fbd78fd7fb0a01ed22a7580901dc91c4ebf818aa35401de0f4352481b2e28",
+      "piSharpResultSha256": "524fbd78fd7fb0a01ed22a7580901dc91c4ebf818aa35401de0f4352481b2e28"
+    },
+    {
+      "caseId": "edit-overlap",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "one\ntwo",
+            "newText": "bad"
+          },
+          {
+            "oldText": "two\nthree",
+            "newText": "bad"
+          }
+        ]
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "36352b76b0b25cb334fb1c35da976e3f09b27497cf312800d2d3669764a2939e",
+      "piSharpResultSha256": "36352b76b0b25cb334fb1c35da976e3f09b27497cf312800d2d3669764a2939e"
+    },
+    {
+      "caseId": "edit-nearby",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "ALPHA"
+          },
+          {
+            "oldText": "beta",
+            "newText": "BETA"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d2b0acf43d9f05e4c38dd8fc9749e456ebffe54a92cd99428d33dca2bd4564fb",
+      "piSharpResultSha256": "d2b0acf43d9f05e4c38dd8fc9749e456ebffe54a92cd99428d33dca2bd4564fb"
+    },
+    {
+      "caseId": "edit-separated-hunks",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "line 2\n",
+            "newText": "LINE 2\n"
+          },
+          {
+            "oldText": "line 29\n",
+            "newText": "LINE 29\n"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "03005182e9a3744eccabcb418156821e21cd7a9ad6ba2a0eb7124823694c00bf",
+      "piSharpResultSha256": "03005182e9a3744eccabcb418156821e21cd7a9ad6ba2a0eb7124823694c00bf"
+    },
+    {
+      "caseId": "edit-crlf",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha\nbeta",
+            "newText": "ALPHA\nBETA"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "3775866c1273529c6571b3f36ca5388857f99cb5ad25ba79eb673fe6035df9af",
+      "piSharpResultSha256": "3775866c1273529c6571b3f36ca5388857f99cb5ad25ba79eb673fe6035df9af"
+    },
+    {
+      "caseId": "edit-bom",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "ALPHA"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "bfb1229fd17e7b9bb42747e22c4afad604f362810f473367fad486bc66369c79",
+      "piSharpResultSha256": "bfb1229fd17e7b9bb42747e22c4afad604f362810f473367fad486bc66369c79"
+    },
+    {
+      "caseId": "edit-unicode",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "caf\u00e9",
+            "newText": "\u30ab\u30d5\u30a7"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "74baf0b1dd985778776dad51d64d95fca90b0d086f5e491f6a6eaf11bef8a009",
+      "piSharpResultSha256": "74baf0b1dd985778776dad51d64d95fca90b0d086f5e491f6a6eaf11bef8a009"
+    },
+    {
+      "caseId": "edit-trailing-whitespace",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha\n",
+            "newText": "ALPHA\n"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a3518ed12aacbd96d1fe6d02519baac060d080741a35e2f0fb9a9b9fa405b7b5",
+      "piSharpResultSha256": "a3518ed12aacbd96d1fe6d02519baac060d080741a35e2f0fb9a9b9fa405b7b5"
+    },
+    {
+      "caseId": "edit-blank-lines",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha\n\n",
+            "newText": "ALPHA\n\n"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "1b16f80f9e54886959af76b46379283c6f87ef9b691a0c18e736c5814d96c433",
+      "piSharpResultSha256": "1b16f80f9e54886959af76b46379283c6f87ef9b691a0c18e736c5814d96c433"
+    },
+    {
+      "caseId": "edit-mixed-endings",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "beta",
+            "newText": "BETA"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "00705a04bb437c70a1b35de2f74a9d6b27f1ab5c68024fa24e131e568eb1582e",
+      "piSharpResultSha256": "00705a04bb437c70a1b35de2f74a9d6b27f1ab5c68024fa24e131e568eb1582e"
+    },
+    {
+      "caseId": "edit-fuzzy-unchanged-lines",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "change \"this\"",
+            "newText": "changed"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "1b6b01ff6c426aa652dada649247c49b005fb2840abd5b1b7fd64ea1b42d8f77",
+      "piSharpResultSha256": "1b6b01ff6c426aa652dada649247c49b005fb2840abd5b1b7fd64ea1b42d8f77"
+    },
+    {
+      "caseId": "edit-no-change",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "unchanged",
+            "newText": "unchanged"
+          }
+        ]
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "ccf214ff2204debf17f16bc92e91777f094c676997b9e1f7205fece4218e0471",
+      "piSharpResultSha256": "ccf214ff2204debf17f16bc92e91777f094c676997b9e1f7205fece4218e0471"
+    },
+    {
+      "caseId": "edit-readonly",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "bad"
+          }
+        ]
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "526e99573c7b7d485253af9e3415e45a6a63389e19be6490669b6d08a33ce42a",
+      "piSharpResultSha256": "526e99573c7b7d485253af9e3415e45a6a63389e19be6490669b6d08a33ce42a"
+    },
+    {
+      "caseId": "edit-symlink",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "alias",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "ALPHA"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "8de3704bd63ba2820d3165cc12eedfa1d4819964d1f2fef3ef71d293b33323a1",
+      "piSharpResultSha256": "8de3704bd63ba2820d3165cc12eedfa1d4819964d1f2fef3ef71d293b33323a1"
+    },
+    {
+      "caseId": "edit-hardlink",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "ALPHA"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/alias/base64",
+        "/filesystem/alias/hardlinkPeers/length",
+        "/filesystem/alias/sha256",
+        "/filesystem/file.txt/hardlinkPeers/length",
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "3afee9453fc6a0a9b4a7b08838546b8055ab31d59c87687ed0544ff7cb56b3a2",
+      "piSharpResultSha256": "3afee9453fc6a0a9b4a7b08838546b8055ab31d59c87687ed0544ff7cb56b3a2"
+    },
+    {
+      "caseId": "edit-invalid-utf8",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "ALPHA"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/base64",
+        "/filesystem/file.txt/sha256",
+        "/filesystem/file.txt/size",
+        "/result/content/0/text",
+        "/result/details",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a8330a247f20fdc446241e87e477b86148acab4a1b9e16efd875b0a694254f10",
+      "piSharpResultSha256": "03f48940627c3ede9aa4709702a3aad09a8eb8744087353d5428a983281da6a5"
+    },
+    {
+      "caseId": "edit-missing-target",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "missing",
+        "edits": [
+          {
+            "oldText": "x",
+            "newText": "y"
+          }
+        ]
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "be9fa3c18790e89b3a92d6f32fdb8619fbab2323cb4e4020210edcdb2631c79e",
+      "piSharpResultSha256": "be9fa3c18790e89b3a92d6f32fdb8619fbab2323cb4e4020210edcdb2631c79e"
+    },
+    {
+      "caseId": "edit-directory",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "dir",
+        "edits": [
+          {
+            "oldText": "x",
+            "newText": "y"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "11fed33f9f6a01377faf917c82bff4905e008c493b79e79d5f0c63b747c7a860",
+      "piSharpResultSha256": "41117853eb9a89cdd5823d2f6d4a07121ceba2e9f9b3bcb1724353130f886342"
+    },
+    {
+      "caseId": "edit-empty-batch",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": []
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "73c373fca306cd3f8eb538c8266705329e47b0d11f5c02bc4c4987387f29b7e1",
+      "piSharpResultSha256": "73c373fca306cd3f8eb538c8266705329e47b0d11f5c02bc4c4987387f29b7e1"
+    },
+    {
+      "caseId": "edit-legacy-input",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "oldText": "alpha",
+        "newText": "ALPHA"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/base64",
+        "/filesystem/file.txt/sha256",
+        "/result/content/0/text",
+        "/result/details",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "6887be3c3c0712b92daf5f6eff6d3b5d55201536009f48151dcaef5a3562c246",
+      "piSharpResultSha256": "5813bd7b7fabfda807d0b122837d0d4879a974dcb4d0e21eab4e24b48a45db8a"
+    },
+    {
+      "caseId": "edit-stringified-edits",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": "[{\"oldText\":\"alpha\",\"newText\":\"ALPHA\"}]"
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/base64",
+        "/filesystem/file.txt/sha256",
+        "/result/content/0/text",
+        "/result/details",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "590c729e3b70fb9029f7b9e097eb7ca7eb828021ca7d4fb45095c3356f0b23ae",
+      "piSharpResultSha256": "1644126de29bf8bc32241ecf5f8f7300891c41b9651361bd9bc4ea62ac990fe0"
+    },
+    {
+      "caseId": "edit-single-object-edits",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": {
+          "oldText": "alpha",
+          "newText": "ALPHA"
+        }
+      },
+      "pass": false,
+      "differences": [
+        "/filesystem/file.txt/base64",
+        "/filesystem/file.txt/sha256",
+        "/result/content/0/text",
+        "/result/details",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "790f08f6289261aa411d78c5749a0e208f4ca60be4d140a43a47c77aadb70af1",
+      "piSharpResultSha256": "286ce61e21ec50df1da145170db28aa4b72e255bb9ce73ee34fb6a89dde3cef0"
+    },
+    {
+      "caseId": "edit-missing-required",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "841d1c05905861f0dec443a65541feb4039d6e485939f00a5b6a4bba662ca76b",
+      "piSharpResultSha256": "af7f6cc73a9eea1d2cba35bcecdd0f10fdac6d20dc13af3c9f3b8b23e6ff9a20"
+    },
+    {
+      "caseId": "edit-invalid-element-type",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          1
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "213e6409a60a56eb3a0d86fb68169a3630c92eb41f89322dad798280ca5eaf8d",
+      "piSharpResultSha256": "4163ddc4314c4ef79d1b49cfbde1ec4a19728a1acdc2e6656a750553923f845f"
+    },
+    {
+      "caseId": "edit-pre-cancelled",
+      "tool": "edit",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "unchanged",
+            "newText": "bad"
+          }
+        ]
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "6692684f3cec6a927a3e926c610324902a3e7aae7ef1b24447a817d38b56353d",
+      "piSharpResultSha256": "b25ae4f6c5ce079f0632ff368a3dc9b3c4ce6119e797e113b71acf7bc07d7a20"
+    },
+    {
+      "caseId": "bash-stdout",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'hello\\n'"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d5bbf288c8df864af462f63ab4aa6e84774478935c2fa529e89d35ca1b5ecc45",
+      "piSharpResultSha256": "e932aacdf285c63f9b8e25f908d1b858ea70bd73761ab7a9c366f105aa91528a"
+    },
+    {
+      "caseId": "bash-no-output",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "true"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final",
+        "/result/updateContract/initial"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "1139c1d788b34b916f78f43b0d87ef506bdc1fc597147df12e33ef14a921332c",
+      "piSharpResultSha256": "f15331f49709d3d707fd1b5803f120d438c89bca7a02b75f50377414ef26b623"
+    },
+    {
+      "caseId": "bash-exit-one",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'before\\n'; exit 1"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "fbb0ca7cf7f9dfb0a4a4263f7a8016824412c8861add95310dd9c5e5fd7f063e",
+      "piSharpResultSha256": "9a876055f9564a7a7c3a16648f7e26aa80c82ac300a3242fbed4794ec7a5039c"
+    },
+    {
+      "caseId": "bash-exit-127",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "exit 127"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final",
+        "/result/updateContract/initial"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "7ad29e317996ea6c3ab79728567f4047fe97e3c3118607b05e2145072dbebd7c",
+      "piSharpResultSha256": "d86dc349382b7cf4ee1d98126ace50ee738065c71b8bb91a7141a30397bac96c"
+    },
+    {
+      "caseId": "bash-stderr",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'error\\n' >&2"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "cd06fa1f9d38c6ca48149dd1240324e3a826d318d717a092c1952b76b82e384e",
+      "piSharpResultSha256": "c1596e1f8eac0ffbd840613b635e6ef66526173a26d7094e692c07a2927d671a"
+    },
+    {
+      "caseId": "bash-combined-ordered",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "{ printf 'out\\n'; printf 'err\\n' >&2; } 2>&1"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "2608aa3ec81fada812bee9a8b98e1870de0155331380112c45f11e784e2fcf89",
+      "piSharpResultSha256": "015217e2c98ac6bca9196a2c841f771c90f22daf02cccadbb3f02644515f158d"
+    },
+    {
+      "caseId": "bash-unicode",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'caf\u00e9 \u65e5\u672c\u8a9e \ud83d\ude00\\n'"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "16d16592658295cc290ca117e460c4d3142334f26572c80d2c0a0975a866c3ae",
+      "piSharpResultSha256": "c9ce9c1f9f364b3b8dedd386edbac4938a2e45d9a7122c38705b60e205a727f9"
+    },
+    {
+      "caseId": "bash-invalid-utf8",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf '\\377\\342\\202'"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "eaf8c1ab416344f91ec93caee83752f38c26b2b68bd98aa5a0d846a29e1007ed",
+      "piSharpResultSha256": "77cba21b2a84bcc21f4dfe4faf51d59836a9d3929054ec2e9407420a7c9d80f2"
+    },
+    {
+      "caseId": "bash-carriage-return",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'first\\rsecond\\r\\n'"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "911d32e264002bd5280cf2390318fc3bfd26cf6310ba69bef132156803c5e7e9",
+      "piSharpResultSha256": "9d09c7dfdd9061bb9b02ab83d291c4d356f192fbfa56aa5fac096bcc8d3e6a6e"
+    },
+    {
+      "caseId": "bash-raw-controls",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf '\\033[31mred\\033[0m\\001\\n'"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d1266c9b8a9040534396bb9f523a554f2cff88ebcb1b6cabb20151980e3dcea8",
+      "piSharpResultSha256": "e92221f79f4cec7f7e7c159ce2cba75554088be443dfec3368d5edc395256f53"
+    },
+    {
+      "caseId": "bash-signal-term",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'before\\n'; kill -TERM $$"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a5183ec85e749f6088a35382c295a1a4cecf3c58116d8c07139ce7c982172feb",
+      "piSharpResultSha256": "0ec7e5ac459384757d433e990bfb865752fd23ce7e37a83bb9825708240214d2"
+    },
+    {
+      "caseId": "bash-signal-kill",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'before\\n'; kill -KILL $$"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "8dc0c1c51397c2d6ad5f17662b03bc15dd7be80980f12e6694c42112021f3153",
+      "piSharpResultSha256": "6d0db249a751e5e76c7e3cff52d81ec431cf74c73224063bcb9e31aff37b1cd3"
+    },
+    {
+      "caseId": "bash-exact-lines",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "seq 1 2000"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/content/0/text",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a7cfb4246b1bfdd0ff5f3da9f82206bb0c3209e0d05d60d5811a9b27dd18ae8b",
+      "piSharpResultSha256": "51de9411f0cebc36a9812d5c9c2b0da9b767e64429d6620d309a68d94240c278"
+    },
+    {
+      "caseId": "bash-over-lines",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "seq 1 2001"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details/truncated",
+        "/result/details/truncation",
+        "/result/updateContract/final/content/0/text",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "c660028b25546a837b370bfd8cb6630d1e7748a337fa424bc11bdbdd20546660",
+      "piSharpResultSha256": "037d710ba3680c90ac727949627aa1d0d90464d4f9021907c5085616b0c61995"
+    },
+    {
+      "caseId": "bash-exact-bytes",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf '%51200s' | tr ' ' x"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/content/0/text",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "081228cb58574efa835afdee923fb71f83da519a3914a589bbec65baf8107c03",
+      "piSharpResultSha256": "cdef3f36b068d6a27831c164387f30029e8d3f3b49fd8f783a57f73b78fc43e4"
+    },
+    {
+      "caseId": "bash-oversized-line",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf '%100000s' | tr ' ' x"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details/truncated",
+        "/result/details/truncation",
+        "/result/updateContract/final/content/0/text",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "54edc97880b3967097034de5b31fae4d79be4f7df6310864ff5474e926e85808",
+      "piSharpResultSha256": "49871cf57eb3f221d44e5f833c1a724452011a2513470ea6f313d24ee4252618"
+    },
+    {
+      "caseId": "bash-structured-over-one-mib",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "seq 1 220000"
+      },
+      "pass": false,
+      "differences": [
+        "/result/details/truncated",
+        "/result/details/truncation",
+        "/result/updateContract/final/content/0/text",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "2ea2ae38d51ebebd86c4706978ed14bfaf8cc0fe7bc7ecff53b0e1b32a5f6471",
+      "piSharpResultSha256": "f98a63b2c5240df014f429e6708ea9311132f78f33462f7b9727eddb2e1b1b5e"
+    },
+    {
+      "caseId": "bash-stale-session-environment",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf '%s|%s|%s|%s|%s' \"${PI_SESSION_ID-unset}\" \"${PI_SESSION_FILE-unset}\" \"${PI_PROVIDER-unset}\" \"${PI_MODEL-unset}\" \"${PI_REASONING_LEVEL-unset}\""
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "f12edfbb8000da0337e4e681771cfd347bcc88641d0d5b6bfd9354aaf3f4e825",
+      "piSharpResultSha256": "6b181337e94494ae69b5951deec2a99e31bca4b0fbfab27aa3abb0a1b46699ec"
+    },
+    {
+      "caseId": "bash-prefix",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf '%s\\n' \"$TOOL_PARITY_PREFIX\""
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "e769f7163de2daa4bf8f26ce108e03c85168c28b5d89580c5f372c63b755dfa5",
+      "piSharpResultSha256": "3cca91defab8482958397e13902ecc57c2cfcc6df2e762eef012e4849947ae57"
+    },
+    {
+      "caseId": "bash-configured-shell",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf '%s' \"${BASH_VERSION-not-bash}\""
+      },
+      "pass": false,
+      "differences": [
+        "/result/details",
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a95d3979985e53d0117f78e5d3645bd92ca71dd64366c0c8d6e6e3c915d1197c",
+      "piSharpResultSha256": "0bd69009853b50c09a17f01aac153187516e177c7ddc631bed1c356f7f18a82f"
+    },
+    {
+      "caseId": "bash-missing-shell",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "true"
+      },
+      "pass": false,
+      "differences": [
+        "/result/updateContract/final",
+        "/result/updateContract/initial"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "55c9b9f5ab5eee10463172f6fd23754e2920a4efff2a4d979f3e0f3947d73b14",
+      "piSharpResultSha256": "f3b1644bb68ee886a08f7b7a071611e4768aea9202ed8e6d870e539ba37098a4"
+    },
+    {
+      "caseId": "bash-timeout",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'started\\n'; while :; do :; done",
+        "timeout": 0.2
+      },
+      "pass": false,
+      "differences": [
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "589db5d0b99ed55743260ad0fc01864a1a4dd9fea6c6b0c22c65583dd2a45b73",
+      "piSharpResultSha256": "0358c92c76d351d70bc1900b3552212ca693d9533dd8fcf499e4f0d77b204024"
+    },
+    {
+      "caseId": "bash-abort-on-output",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'READY\\n'; while :; do :; done"
+      },
+      "pass": false,
+      "differences": [
+        "/result/updateContract/final/details",
+        "/result/updateContract/initial/content/length"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "85869d502df072bae7744f9f20930c98233029dee549de2df11a9a8101bdac2e",
+      "piSharpResultSha256": "5ace7db6ab008851daf3fa254c96a07ac4251ac3c5f8b624f1151a9cb69fe16d"
+    },
+    {
+      "caseId": "bash-timeout-zero",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "true",
+        "timeout": 0
+      },
+      "pass": false,
+      "differences": [
+        "/result/updateContract/final",
+        "/result/updateContract/initial"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d62b11a70f2ed933afb8575919640d818ffe0e4237aa2d492370b92b49c5341a",
+      "piSharpResultSha256": "6fb8056efe855bc938724bff990e7ee0fd82fc0ac53a27df5a6f388498ef9e79"
+    },
+    {
+      "caseId": "bash-timeout-too-large",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "true",
+        "timeout": 2147484
+      },
+      "pass": false,
+      "differences": [
+        "/result/updateContract/final",
+        "/result/updateContract/initial"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "fc664d5b77a29d486f0600a1bf1506c5b66789ab0902becbbca124c44eefe1dd",
+      "piSharpResultSha256": "130b00ab75034f0a882bf8c970bb490e208e7f49472b714535963e791e12c625"
+    },
+    {
+      "caseId": "bash-missing-required",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "18a0b3b82f4cee42a8153452455887853b0da319916b3fe48f17c8a5c70b9fea",
+      "piSharpResultSha256": "600bb5eefff027ecd04d74abf2dda15d3cc61d0ece119415ce56d63696f5b0f1"
+    },
+    {
+      "caseId": "bash-invalid-command-type",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": []
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "073411750a99d5a569ebcd63b914cee1b2606b3ba5c4a351e69126d701af1a14",
+      "piSharpResultSha256": "2a9482c14ffa57abab140b5723bb2a8b1d34c396e26ce0f57b98ab85e473523a"
+    },
+    {
+      "caseId": "bash-pre-cancelled",
+      "tool": "bash",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "command": "printf 'bad' > mutation"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/updateContract/final",
+        "/result/updateContract/initial"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "2a0bdf5300dabe8c126f74a4ac31db82c968f26e8e3314df6ffa62a5407fdfe4",
+      "piSharpResultSha256": "fda707d07f6b48d21d99fc6f31a58ec847d4cff5b6b9dc987c2d142ae55a615a"
+    },
+    {
+      "caseId": "grep-literal",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "a.b",
+        "literal": true
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "7af9fa065ee8da0ba714a39bbfeb2a13613611729600128a2bdc1a062a43611f",
+      "piSharpResultSha256": "9b0dec6fac53ac01d186b82f8e2140de562193d80546cdcb4e90ce8a7e8828a5"
+    },
+    {
+      "caseId": "grep-regex",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "^a.b$"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "0f37dc58b69183a3a16983ebdc2fa580301940fd241968fd0dc9184f8391bb5a",
+      "piSharpResultSha256": "fc48fbf1c74a2a91850c090e6a112a7cb88b0545a5d551e5903a961db40bb27a"
+    },
+    {
+      "caseId": "grep-case-sensitive",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "3e93ae96abe71fc06197ae5e4e289e5e1f9f47f8194ee7a6a7893dffab070bb5",
+      "piSharpResultSha256": "3e145b471e97408d7a7dd1c2a22783ef2ef50c1b522fa9bd04bc6e2d6f9f4dcd"
+    },
+    {
+      "caseId": "grep-ignore-case",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "ignoreCase": true
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "0d84abe48443bd3cc861d018acfcde53aeeb4518145de9ef33dd08368427d690",
+      "piSharpResultSha256": "3883253b3d30ee782e99c673ed505b665feaf7f5117fb6dc359205895b67ef2c"
+    },
+    {
+      "caseId": "grep-context",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "context": 1
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "fcc7d65329a11306a465e2dbced64a21869922623fb6a6edd6d2318a64c561ec",
+      "piSharpResultSha256": "a4143ace3f97c6adbe2caafe326aa15c4d3df69e6f8f58e1e37c9c678c91694b"
+    },
+    {
+      "caseId": "grep-overlapping-context",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "context": 1
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "8cca7d46f3063d143e289f6aacd2e444522dd4d271c7066c29cb4198d1800d79",
+      "piSharpResultSha256": "e64cfffb79b8092c110673d44971f334235a5b8b1a5a788fda45f7d9ad2cbac2"
+    },
+    {
+      "caseId": "grep-single-file",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "ee1870ebcb347b8de0801ebc35458ed0ba0fdb7061ff8f9bce09ba8a8e13573b",
+      "piSharpResultSha256": "d3320bac2720d4abc7d244e22a6a2d90ddb2b5066b98af426fc0be5320cab38d"
+    },
+    {
+      "caseId": "grep-glob-include",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "glob": "*.cs"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "c78e7db7d9e48e155b607a35789b5efe1e2afb34869514ecd71728dac881e025",
+      "piSharpResultSha256": "88194c68e7213a01f3dbb5f60845d8c98bf65ebddf1d776e32c1b4776bdb78ae"
+    },
+    {
+      "caseId": "grep-glob-exclude",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "glob": "!*.md"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "734e96b96501461f31e5095ddc4906bd6d708974db925a1cf7509270e39e6506",
+      "piSharpResultSha256": "95c16f57bfdf7bb4e02ba3ecd4c93983bc97d7266a32f63b0256b775ef6d2244"
+    },
+    {
+      "caseId": "grep-hidden",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "effbd7443b9be15a9c934d4c02c7492901f9d32975d147fdaa5eed58afc96d6c",
+      "piSharpResultSha256": "9384e0fd6be4191547d5ccf65ab1b227826fe1e8b97c78391791335a28fc82b1"
+    },
+    {
+      "caseId": "grep-binary",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "6f48895ab2f3139baa622fcbfe8ea821c308b8d23b041d2b25a7c820cf5441fb",
+      "piSharpResultSha256": "d9933355368f6d3d1db7dbe2f9005b2ec7fc293553e33da158165ed81d3f8020"
+    },
+    {
+      "caseId": "grep-invalid-utf8",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "ba7c4786c4260b8a9294e3b57e150b869de2a6202223ea5384ac46dcbc148f36",
+      "piSharpResultSha256": "a1da4f56321a397cd755c91d8ddc130e94f43bad33e89cd178631e0a2b77bb77"
+    },
+    {
+      "caseId": "grep-cr-only",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "fcaea3c266ad3ea1b4ff79a8ae9c285319194ad27cb16af45834e68b9a644e62",
+      "piSharpResultSha256": "aec245872caaa653704e6e0a3c8a50565206267e542484334d3bc4044aeced1b"
+    },
+    {
+      "caseId": "grep-long-line",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "64466c18957f84b5acc665b125ed2ad3c43190a7adbcf6da9b3a25c1216f2418",
+      "piSharpResultSha256": "64466c18957f84b5acc665b125ed2ad3c43190a7adbcf6da9b3a25c1216f2418"
+    },
+    {
+      "caseId": "grep-negative-context",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "context": -1
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "c0a1aa00e06db01e67f5d228eb7ee2302bd29bc091a1e9827c0c0d8d5cb62628",
+      "piSharpResultSha256": "fcfdaceba8d473867669d8be43f096be1738d1b085d99d6d8a145149bb11aa54"
+    },
+    {
+      "caseId": "grep-no-match",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "absent"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "8a9142bfa7aeb8fec491ab09696c76fcf38a052514aaf626f15daa696042b996",
+      "piSharpResultSha256": "a1dd8aa7fee5c8972a4f33a007f7577c3563693e6bd275ea807f7ea73d00b9e9"
+    },
+    {
+      "caseId": "grep-match-limit",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "limit": 1
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "d9a0a0a4531b7711474cf6fcae2ee8be2fbb9827ea3d25d75c53d3d00eefc26b",
+      "piSharpResultSha256": "d9a0a0a4531b7711474cf6fcae2ee8be2fbb9827ea3d25d75c53d3d00eefc26b"
+    },
+    {
+      "caseId": "grep-zero-limit",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "limit": 0
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "7379ee3e842b53594e674817428d43d4ad5ed9c171b3d7e1d690b20d9577b615",
+      "piSharpResultSha256": "7379ee3e842b53594e674817428d43d4ad5ed9c171b3d7e1d690b20d9577b615"
+    },
+    {
+      "caseId": "grep-unsupported-lookaround",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "(?=needle)"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "aa0db7361b9ea9e0cb5a76c13b3b16a2fd55a2f30bbfea064f6fb1c24ef6aa93",
+      "piSharpResultSha256": "848a1eeb8094a50458f150b23824755bf8b3c593116e4b93c5880d8dfda60a98"
+    },
+    {
+      "caseId": "grep-invalid-regex",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "("
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "422b92870da96566921539e3e9419e24e7189612e3c50515bdc4f19026733b4f",
+      "piSharpResultSha256": "31e90e05a44c77d58d37a9dc1bd7b6ac75463ea964cf2a55e423cfc1fa5717a9"
+    },
+    {
+      "caseId": "grep-flag-like-pattern",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "-needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "05ab77ecc3ad802497e66da6d5305ce462ac2fc5e06f5aed1fe8f1c2d3f902cd",
+      "piSharpResultSha256": "96c17a7336b9c834b3162ab0927bb66ed619c2b5d12e28cb25ad7ebcd6a04d04"
+    },
+    {
+      "caseId": "grep-large-file",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "late-needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "47948292bcb650a8e04a11274b86f972998f189aa59e7e3ce77af7a89011d883",
+      "piSharpResultSha256": "9116c347ab71b094620ffe08a713dd1e266f103e85a9f92dd226f4f4967ff663"
+    },
+    {
+      "caseId": "grep-byte-limit",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "limit": 500
+      },
+      "pass": false,
+      "differences": [
+        "/result/details/truncation/content"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a04e663c2a788c72f0a2d7678d745f0a25b6c460a59f8cc13769e37dc941ab03",
+      "piSharpResultSha256": "b03d3b0ba3a001270d26544ab94950b5c017afe536615fa3d38057b32a7ff944"
+    },
+    {
+      "caseId": "grep-gitignore",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "aa1d60491a474140be7e4f570f2575a1c0b39e3bf5822c72808e1478ce05c27e",
+      "piSharpResultSha256": "9f886bea55da82aa4f4bf612efe1ec6ac49b5989881436e533764ea0e8e102b5"
+    },
+    {
+      "caseId": "grep-ignore-outside-repo",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "f93f0a8c8e85fb60ba26497ee847ee9e479ea9b98102412e52789c092b39e09d",
+      "piSharpResultSha256": "612e77f9a8178881edee6f4e2a6644e587107497e27c1af728cc7c0d63ccae8e"
+    },
+    {
+      "caseId": "grep-nested-repositories",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "59242b4bbfaa767e202055b48651b32482dbeac6475b658fb4d5723a22d7e46b",
+      "piSharpResultSha256": "ca50fcf2d00f28694ac3eb3c6a23ef838a013b6f51d5cd11456c88aa6270a6c0"
+    },
+    {
+      "caseId": "grep-symlink-file",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "1a133eee8962e7ecd2c91afde3ae75a096d9887126a04a378f561ea8bdbbb3ea",
+      "piSharpResultSha256": "0ab156a29a41e908c7fb1a11f97f2ed1ac562a01812e00fa1f46d7827ec33488"
+    },
+    {
+      "caseId": "grep-missing-root",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle",
+        "path": "missing"
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "1c98ca7cb80a0cb135c8db37fd89a70d0d0b14cca5b96cdfc8bc419d32e03fcb",
+      "piSharpResultSha256": "1c98ca7cb80a0cb135c8db37fd89a70d0d0b14cca5b96cdfc8bc419d32e03fcb"
+    },
+    {
+      "caseId": "grep-permission",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "5c093ec384c6dfc6376bd6575fcc0591bd4e51ca85e229b9f0398fc46ea383d5",
+      "piSharpResultSha256": "5c093ec384c6dfc6376bd6575fcc0591bd4e51ca85e229b9f0398fc46ea383d5"
+    },
+    {
+      "caseId": "grep-missing-required",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "8f7c29ff08e8e46bee55412ff8688faf988c854bf329c2064ec1adf5dc8ad6f5",
+      "piSharpResultSha256": "5b49210a1e1de1665df6c3e9a01c7ec57a25d5f92775d52ba6418fa45fc3a9bb"
+    },
+    {
+      "caseId": "grep-invalid-pattern-type",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": []
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "3e28bbb3d6f193b735feca58ba11eea1b965e9e35f85ad865e8de207310f03be",
+      "piSharpResultSha256": "4d131c37524c87f3ee0f3588a7acd7d61ea4e1659b752090c277b427fce05fac"
+    },
+    {
+      "caseId": "grep-pre-cancelled",
+      "tool": "grep",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "needle"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "eb44a7e6fe7aebf36ead0b15ee70828fa07dd05d539e7d8a6a17a205b0a3028c",
+      "piSharpResultSha256": "4740818bf313c7e9f11f5516c9f51b3df06ad0fcc9cd1b3896a9e0d2adb868a9"
+    },
+    {
+      "caseId": "find-gitignore",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "148b214ee26c5fc84c2cf00e6a5e4656c6b25c36022deef454f118494c558bef",
+      "piSharpResultSha256": "7a143c16ab31bef836a16c404caac5787fd3f5487b1f664a1965d21f5aea267c"
+    },
+    {
+      "caseId": "find-ignore-outside-repo",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "6f15abf120de431c10a3c1215812b1bcd60afb5ba9c444d5b749d060e4bf531b",
+      "piSharpResultSha256": "f44128a5af8e337eee65772063b9c630f259c8d21a3ac2275ecd2a20f1648164"
+    },
+    {
+      "caseId": "find-nested-repositories",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "8b8ba815c4fd9adc117ff6051e0e8b26ea7617747fb89b635ddf8c980ad36e28",
+      "piSharpResultSha256": "b42a6c8d0f9ea0ed7a76977302e22bd94690890c8a7fe9195ea7aaf480e9a97a"
+    },
+    {
+      "caseId": "find-symlink-file",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d2862bf9e237a6ee8788339109114809cfc00a03892bd5a2579880a5b2e89e93",
+      "piSharpResultSha256": "c089b841018d931019b9b2fbff25b9650ca209a857fa750c67de13ff7f540360"
+    },
+    {
+      "caseId": "find-missing-root",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt",
+        "path": "missing"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "fb9469192b00904ee37cd0a654f236e58b8a3672d15cbfa155aab7de08d73224",
+      "piSharpResultSha256": "ee58bbed821caf3926befc4c2f8c049dc7be73bce5e4598f32f6834babd0a9ae"
+    },
+    {
+      "caseId": "find-permission",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "1c197f0b43e2cab46695f3b44e51f24c215686e84f5f2501eb829c64b5862626",
+      "piSharpResultSha256": "0cf1c0bd72d5efda7e4e92501b12a30b70081bf70a38c2cadb80bc1be950c92c"
+    },
+    {
+      "caseId": "find-missing-required",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "359928dfede0adc8dade06865217dfa78d6d9b82f8eb312fec902c439e446a34",
+      "piSharpResultSha256": "aac24d99789e6c60deedbefdcc248ee4b690b4d6443a7050bcf1a8eb89e6cb8c"
+    },
+    {
+      "caseId": "find-invalid-pattern-type",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": []
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "2f6e8a93d1efa529537cfb2760cbecadbcbcf795f23711bb899ae2fa9b49318a",
+      "piSharpResultSha256": "c2bf5a7fc373890fc20c921e7e446778a6fd3563a4107b972c5fca28010dce4f"
+    },
+    {
+      "caseId": "find-pre-cancelled",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "51a00cac675865c3be860003567563d12dda7c7623ad95b1ac8e7153060d67ce",
+      "piSharpResultSha256": "658f3da71cebd30a3ce25437edaa9c6e0cd87d25da30f50182f73f94361b151e"
+    },
+    {
+      "caseId": "find-basename",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.cs"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "c687296896aa49846ff1cb345257fc42a3d69131035f150276f29b7a78cac4f8",
+      "piSharpResultSha256": "77c32cebdb9324d3095687538bd8ef40fe4ec2f2d63ccaabc4d9bfdc52d2a87d"
+    },
+    {
+      "caseId": "find-recursive",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "src/**/*.cs"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "06bdafb193cd7e094d71131a79ec93cae0b57057cb1f3122c0e99432f1ac0fe3",
+      "piSharpResultSha256": "0e7a9e21abd5a9ce530819644373494946097810a9828086d8cdb981cf9848e2"
+    },
+    {
+      "caseId": "find-brace",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "**/*.{cs,md}"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a87992d451db8d83a01a4167e9da9f5f2ca023c6726ebae65c320a90230db359",
+      "piSharpResultSha256": "fdcd6c8021ee520db3a32f25865cde7ff13df958d3815985cd05e823ae946ede"
+    },
+    {
+      "caseId": "find-character-class",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "[a-z]*"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "30bdeb49c4e4bbd7be0d45300a6cc4d0aa170d2a262a60f42103a9d83833c2e7",
+      "piSharpResultSha256": "8f9898a8e066555d706fccec013871cf062ecb9ae0211b523b419a8435cb1612"
+    },
+    {
+      "caseId": "find-escaped-space",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "file\\ name.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "78aec9aa23ae6fef4837f6145218172482cbabdec1469c7dc33bb29235de7f8b",
+      "piSharpResultSha256": "ec52d7f9951f96cfc0d7b0df85ea8685ea709279dd7198f4a04e054512741c28"
+    },
+    {
+      "caseId": "find-escaped-class",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "literal\\[1\\].txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "90020684772d137fbe88f6e3235a2e7f0954190526122c2096d9e7a45b3e304b",
+      "piSharpResultSha256": "8874e4de96182dd3a07e3b0464ae763def05f6de0e7dbb33ee6aeb4c533448b2"
+    },
+    {
+      "caseId": "find-dotfile",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": ".gitignore"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "e5cb6bb74054bbc6ce942c29f65f40aa4c937298d360ddb369f3a1b52259b02e",
+      "piSharpResultSha256": "d84e2017285a7ca04e4052081ce8888115fa402059e8d6275fc777b5db25a0cb"
+    },
+    {
+      "caseId": "find-smart-case",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.CS"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "b7ee09289de584e45d9d6761797e300f68cd4189e51d54bd0e788e13d4b3e15d",
+      "piSharpResultSha256": "cd5ea0d95d70e106e54421747ff9ea4b8510bed7a61b91375030945412e65d89"
+    },
+    {
+      "caseId": "find-invalid-glob",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "["
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a5c7216f56ca3d1e5b03f88f01b53108955fdb3fb78b1dfc7980663811a10b61",
+      "piSharpResultSha256": "0371444c28921bd9f08e8b0d8eddfbda8b31d69e1f08c45a3b44d42215b794fd"
+    },
+    {
+      "caseId": "find-flag-like-pattern",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "--foo"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "f4b639c3337dec13fb2fa127fd780bf4e6db467f10b0900a0e4ba307f9735079",
+      "piSharpResultSha256": "cd68138401f3e399c70fd2d1fb4b3711460ebe99309b25a2dbe0b6270b27781a"
+    },
+    {
+      "caseId": "find-no-match",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.absent"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "4415686927ffb5b3e2ed341b000a2401e24a5f08034a01c97699e49f93df7984",
+      "piSharpResultSha256": "6a2e35f068a151bce5052bacfcb44994d98c701e5b58418bb5b3bff38c65a21e"
+    },
+    {
+      "caseId": "find-absolute-root",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.cs",
+        "path": "{WORKSPACE}/src"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "77d51b75b02f8e9d10ffe84b00101e9a78630d2576a6c9290ce1b475f11a5a85",
+      "piSharpResultSha256": "4f9322dde5f0f69269a05024998f19c0bdd96e5659e5ffb2c503e81a5f38f95a"
+    },
+    {
+      "caseId": "find-directory-result",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "src"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "79e5b5c9d4bd1e865c600cea65898d7727b61f1098bf3a7dc535e6977bb45646",
+      "piSharpResultSha256": "850883ec986bed2f39b63fae9fe37a0ca014e6fac66f4c21024f92a023c8eaff"
+    },
+    {
+      "caseId": "find-broken-link",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "85e4544e8a347306f77f601b1da6cdc1f91105312e75ee98e23dd26c8bf01e6d",
+      "piSharpResultSha256": "ad00e39f2ea920b0cad8e2a013dadb9331ac1b3c597eed2cb1902af94f4002c5"
+    },
+    {
+      "caseId": "find-file-root",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*",
+        "path": "file.txt"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "da145f9d8a79b7381a321fa1e1f94fc933ab5b0b6b3a51b39f81ba2ec2c05cc8",
+      "piSharpResultSha256": "03f7594c068dfac3544153eeea13b50084a7fab8391ed78c94f3080b3c1ba723"
+    },
+    {
+      "caseId": "find-result-limit",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt",
+        "limit": 1
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "e852cc91f94222437a656924e606e8811cb8fa959d7765cd0d9ea106fb8fef11",
+      "piSharpResultSha256": "e852cc91f94222437a656924e606e8811cb8fa959d7765cd0d9ea106fb8fef11"
+    },
+    {
+      "caseId": "find-zero-limit",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "*.txt",
+        "limit": 0
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/details/resultLimitReached"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a341e9f9c4cbf47fa411fdaebe265003aa7a2919e5a167e7074b473852ad4561",
+      "piSharpResultSha256": "3028180002fecb54a8cc2731a58c09a777b5485672d7e878f6a274f97228906b"
+    },
+    {
+      "caseId": "find-late-match-beyond-inventory",
+      "tool": "find",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "pattern": "wanted.txt",
+        "limit": 1
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/details",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "68b0a47b11f47c6aba58cde96d7fef7b12c407d4b5cd55514175360b248257e6",
+      "piSharpResultSha256": "5b00478d69fee9deac22ef003acb8807bb07af81c09f3ac4c993bf7cc6ad8299"
+    },
+    {
+      "caseId": "ls-default",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d351701f25fdd249066f36210139d1444b4b735302ba6b8fabb4f24dd4cce46e",
+      "piSharpResultSha256": "9fdadbb7fce3caaa110a0151349bfb6372dc97635017f76731f242c5cb5c023d"
+    },
+    {
+      "caseId": "ls-empty",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "80682b0c87bfdc06d7a381e4db6a601b7d7ee26d852399cf758deb67f23687de",
+      "piSharpResultSha256": "313e25946d9d987f7856a671af2d3aa1e204e08202e377bb348bc9e37df0f54b"
+    },
+    {
+      "caseId": "ls-dotfiles",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "438de1a4f934eab652462515fed0deb8f72877a8db68f2e41a94dc4695ca5380",
+      "piSharpResultSha256": "d1a2daf94d1d0b8743da16babe97db547ecf175c3d8a4ae99bc5b5be20c12ac7"
+    },
+    {
+      "caseId": "ls-case-order",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "408c5f15625243b3af31ff18b98aeb7b57f80a062977ab49317d6bea29afeab6",
+      "piSharpResultSha256": "4bf7ac39ed4b6496c569fcdea52fb3b60ab9adb20f139caa5c8f920989ba24c0"
+    },
+    {
+      "caseId": "ls-unicode-order",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "ef626716e6433ba14be56352e4ccb4a6204c244dd3b5019e88ac5cf5d8a4a438",
+      "piSharpResultSha256": "a0358d3db7eb91d2398c1a6a3e5821a01277d5de0c257c7bc754772c0995e188"
+    },
+    {
+      "caseId": "ls-punctuation-order",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "9efc900a5208e8e85b36bd1fc6d7d512b9575787163cc624cc9260ba88aee050",
+      "piSharpResultSha256": "daee119676a3678e9fbd384402ce04ebbef95e046f7007da256ab78c07f2df4e"
+    },
+    {
+      "caseId": "ls-exact-limit",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "limit": 2
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d8484f28d02df24ea152c2a68f97e8597a8d5143c97eb727eca8e0b9db321655",
+      "piSharpResultSha256": "965f94825a739706f77193c0825769aaf89c04c7b8967503e711f7d3157a6b6d"
+    },
+    {
+      "caseId": "ls-over-limit",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "limit": 1
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "264f4eee8816edcf63ba1a73e0b168441ff82399e2c7bc52dadbae5cfedc5d2a",
+      "piSharpResultSha256": "264f4eee8816edcf63ba1a73e0b168441ff82399e2c7bc52dadbae5cfedc5d2a"
+    },
+    {
+      "caseId": "ls-zero-limit",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "limit": 0
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "33afdd45ac54e0d8603a4a8cddf1dda52350a93cc9a2002b8193670e5ad608d7",
+      "piSharpResultSha256": "c096e0a91dde884819c81528c2ac72c3caa43a4987ed6d18b72b0cc708d0e6e5"
+    },
+    {
+      "caseId": "ls-negative-limit",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "limit": -1
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d1051fc61e4a6969e04e8e108d1af924e62c5a30c61f2d9d0e9ca69930398b8f",
+      "piSharpResultSha256": "517ef966ed7c0c93c4f007a09b5f1690ae214d90faca0491d53a7377a008dbbc"
+    },
+    {
+      "caseId": "ls-fractional-limit",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "limit": 1.5
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/details",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "5a9b8eee98c8a8f535a89b815773958f788e1a7319005eb4a7488df05686a82b",
+      "piSharpResultSha256": "62dde1607f1dc9f6e34037b66c11c14b8025e4ca7d371b1f51696a09cbecb3d5"
+    },
+    {
+      "caseId": "ls-directories",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "17098656ad15d33a08f71f790cc887872adfb6f84ef40dbe0f5af245963bbf5e",
+      "piSharpResultSha256": "320aabc6eebddda382b910ff84e7dd82715b8c7d602213875518abec700d8dca"
+    },
+    {
+      "caseId": "ls-relative-root",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "sub"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "f2677d10aad951b0166dc5c27729e5d00fec15d1f2becdd928fa9f7b44551b4a",
+      "piSharpResultSha256": "a069da22ecf3ed8ca7ddacdcf9aacf72d9f9e0ef6bc1ad3c5b25d951350afacd"
+    },
+    {
+      "caseId": "ls-absolute-root",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "{WORKSPACE}/sub"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "6feb7fcd9dd54db86d7bd597ff5a0ec8d0d1d5d1fcd2c0ab79d9b2da32836d19",
+      "piSharpResultSha256": "3d459f92bc7f98bde3fe973f23951f54593798b266c77c40235d61825408e942"
+    },
+    {
+      "caseId": "ls-symlink-directory",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "46d2c2f5e35a2df4b9455e2cd591fcc38acc9643acc4e911db1928a4a1804aec",
+      "piSharpResultSha256": "c711e842169f0e2904d3bf3f7bb8d8f5a43a78dc804fe786b599b59760bf0f5d"
+    },
+    {
+      "caseId": "ls-broken-symlink",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "30afa52b8f97d386dfabcf00ad94f0afe1cb4c867f4a4233cdf6759f76b9047d",
+      "piSharpResultSha256": "e6e68f612501c16b701b85a8e3ecb93a1119c77f90ad4423c96c8596a5bb5517"
+    },
+    {
+      "caseId": "ls-broken-link-limit",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "limit": 1
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text",
+        "/result/details"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "ee86c431c414aa93aa366dd3d589c34817381764207e6f567106ab36cbfdb40e",
+      "piSharpResultSha256": "c71c6e2149ef5a00b66ed6e7dcf079213824ee30fed64389c2139d1f1b28d52a"
+    },
+    {
+      "caseId": "ls-missing",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "missing"
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "6b3aba39c5f03e5090e5356dab16df0e465921600790293bd1501bcb00982952",
+      "piSharpResultSha256": "6b3aba39c5f03e5090e5356dab16df0e465921600790293bd1501bcb00982952"
+    },
+    {
+      "caseId": "ls-file-target",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "file"
+      },
+      "pass": true,
+      "differences": [],
+      "classification": "exact_with_documented_normalization",
+      "piResultSha256": "29007f9b432eef91e7fe1df6e369e3112e2c61c2f54220826506d211f97e4a42",
+      "piSharpResultSha256": "29007f9b432eef91e7fe1df6e369e3112e2c61c2f54220826506d211f97e4a42"
+    },
+    {
+      "caseId": "ls-permission",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": "secret"
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "05bb7daccc658ded024b92edc2a0c0be6431d4cdf2cc64088e89f8ce46eade6d",
+      "piSharpResultSha256": "3dfb9815cf0b1f5f49b121676b38a61b80e45542a0c2c7735211c039c9abc5af"
+    },
+    {
+      "caseId": "ls-invalid-path-type",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "path": []
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "cdf22f97c829eaa5270da996c81a1508b1b461bc28736839e17116fcd7e65393",
+      "piSharpResultSha256": "8233e0f89f62ec151f65fe358ffec6b7febed12ce1b20c4b99f228300e163b23"
+    },
+    {
+      "caseId": "ls-invalid-limit-type",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {
+        "limit": {}
+      },
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "a0e9716da191bfdf59dc4c3b34d647d06be5375a91c5053c05547b82fb7cfd10",
+      "piSharpResultSha256": "a8b9f22f9c0ff00cb47ac14f2b3494ad7b017da3840fe707c897085389523417"
+    },
+    {
+      "caseId": "ls-special-fifo",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "18e8d37a54256a1c295c01f9dc634d58dc429f4c0707e796f2a825d82349421b",
+      "piSharpResultSha256": "6d335ac37e0a4c885090716ae124f977f960695f508fbace34ef82283f906105"
+    },
+    {
+      "caseId": "ls-byte-limit",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/details/truncation/content"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "439e9f0387c075760e516e1efc4d84c5f32bfba95f9cb92c9ad0604c8bee99b3",
+      "piSharpResultSha256": "ccf967beefbd3ade46d2c1a39b84f1da919bbf515fe4e8f490abd63ee169c597"
+    },
+    {
+      "caseId": "ls-pre-cancelled",
+      "tool": "ls",
+      "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "input": {},
+      "pass": false,
+      "differences": [
+        "/result/content/0/text"
+      ],
+      "classification": "unresolved",
+      "piResultSha256": "d00e02d6e30ffdf6c809aef57d0e885aae1c3a483a27f0bb817fd6a528b85713",
+      "piSharpResultSha256": "30f5cd3b2c2677be6c991a15a94bc50cdadb73c95c7f7c339ea209ef7a239694"
+    }
+  ],
+  "rawReports": {
+    "baseline": "artifacts/parity/builtin-coding-tools-2026-10-22/baseline-clean-harness/report.json",
+    "partial": "artifacts/parity/builtin-coding-tools-2026-10-22/shared-result-projection/report.json"
+  },
+  "acceptance": "Baseline and first correction only; mandatory tool behavior and integration remain open."
+}

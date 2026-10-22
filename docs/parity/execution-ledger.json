@@ -34,7 +34,7 @@
       {
         "id": "E",
         "name": "Shared result semantics",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "F",
@@ -145,6 +145,40 @@
       "grep": 32,
       "find": 27,
       "ls": 25
+    },
+    "baseline_differential": {
+      "source": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "passed": 23,
+      "total": 211,
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-baseline-2026-10-22.json"
+    },
+    "shared_result_projection": {
+      "source": "f9f3fa56",
+      "new_fail_first_tests": 7,
+      "related_tests_passed": 14,
+      "pinned_search_passed": 54,
+      "pinned_search_total": 84
+    },
+    "shared_argument_correction": {
+      "status": "in_progress",
+      "fail_first": {
+        "failed": 24,
+        "passed": 7,
+        "total": 31
+      },
+      "after": {
+        "passed": 31,
+        "total": 31
+      },
+      "related_passed": 64,
+      "selection_native_hooks_passed": 77,
+      "scalar_conversion": "open"
+    },
+    "selected_upstream_regressions": {
+      "files": 5,
+      "passed": 116,
+      "failed": 0,
+      "skipped": 0
     }
   },
   "plan_received": true,

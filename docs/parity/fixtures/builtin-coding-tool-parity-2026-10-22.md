@@ -269,6 +269,42 @@ The initial harness does not yet cover every mandatory image, concurrency,
 provider and session scenario. Reaching 211 cases does not satisfy the mission
 without those remaining behaviors and integrations.
 
+## Shared-contract corrections in progress
+
+The clean committed-harness baseline at `a9ab1c091d003396024685baca44d588bb0f1d31`
+passes 23/211 comparisons. Its remaining 188 cases retain their differing
+contract paths; this is not a claim of 188 independent implementation defects.
+The [compact baseline](builtin-coding-tool-baseline-2026-10-22.json) preserves
+all case IDs, arguments, outcomes, source pins and hashes, with reproducible raw
+reports under the artifact root.
+
+Product correction `f9f3fa56` preserves a null `Details` discriminator through
+MAF serialization, restoring plain untruncated grep/find/ls text at execution,
+provider continuation and canonical restart. It also preserves the pinned
+truncation `content` field without changing the public truncation constructor.
+Seven new tests fail on the old implementation and pass after the correction;
+the related result selection passes 14/14. Its clean-source search differential
+passes 54/84 (grep 32, find 27, ls 25), with traversal/regex/ordering/validation
+differences still open.
+
+The next correction embeds all seven source-extracted declarations, prepares
+Pi's stringified/single-object/legacy edit forms, removes optional nulls and
+projects validation failures before typed binding. Preparation also precedes
+native tool hooks, with a second validation after hook mutation. The initial
+argument suite fails 24/31 before this correction, then passes 31/31. Related
+coding/edit/result tests pass 64/64; the tool-selection/native-hook/result
+selection passes 77/77. No tests are skipped. The
+[validation oracle](builtin-coding-tool-validation-2026-10-22.json) records
+sixteen exact errors captured from pinned Pi. The five selected upstream
+regression files pass 116/116.
+
+Shared work remains open: primitive argument conversion must be matched to the
+pinned TypeBox behavior; read and Bash need complete result/truncation metadata;
+head/tail boundaries need broader tests. Preliminary builds retain cached
+NuGet-audit warnings from the environment's readonly default HTTP cache; final
+warning-as-error gates have not been claimed and require a fresh restore using
+the writable cache. No dependency upgrade or audit-policy change is intended.
+
 ## Shared integration and safety gates
 
 Keep the existing registry, MAF `ChatClientAgent` invocation, durable outcome

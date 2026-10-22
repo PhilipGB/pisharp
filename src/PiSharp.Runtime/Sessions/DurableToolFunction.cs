@@ -117,6 +117,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         {
             if (!isCallable)
                 throw new InvalidOperationException($"Tool '{Name}' is not active or callable in this session.");
+            CodingToolDeclarations.PrepareArguments(inner, invocationArguments);
             await (toolHooks?.BeforeAsync(new PiSharpToolCallContext(Name, toolCallId, parentToolCallId,
                 invocationArguments, reachesTools, toolNamespace), cancellationToken) ?? ValueTask.CompletedTask);
             displayArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);

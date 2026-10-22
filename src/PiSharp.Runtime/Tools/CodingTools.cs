@@ -55,9 +55,9 @@ public sealed class CodingTools
             CodingToolDeclarations.Bash(AIFunctionFactory.Create(BashForTool, name: "bash")),
             CodingToolDeclarations.Edit(AIFunctionFactory.Create(EditForTool, name: "edit")),
             CodingToolDeclarations.Write(AIFunctionFactory.Create(Write, name: "write")),
-            AIFunctionFactory.Create(search.GrepForTool, name: "grep"),
-            AIFunctionFactory.Create(search.FindForTool, name: "find"),
-            AIFunctionFactory.Create(listing.ListForTool, name: "ls")
+            CodingToolDeclarations.Grep(AIFunctionFactory.Create(search.GrepForTool, name: "grep")),
+            CodingToolDeclarations.Find(AIFunctionFactory.Create(search.FindForTool, name: "find")),
+            CodingToolDeclarations.Ls(AIFunctionFactory.Create(listing.ListForTool, name: "ls"))
         ]);
     }
 
