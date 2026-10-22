@@ -315,8 +315,21 @@ Reproduce the pure pinned conversion oracle with:
 node tools/parity/builtin-coding-tool-probe.mjs /tmp/pi-pinned-source docs/parity/fixtures/builtin-coding-tool-scalar-validation-2026-10-22.json artifacts/parity/builtin-coding-tools-2026-10-22/scalar-oracle-reproduction.json --validate-only
 ```
 
-Shared work remains open: read and Bash need complete result/truncation metadata,
-and head/tail boundaries need broader tests. A forced restore using the writable
+The pure shared text utility now matches
+[140 captured head/tail results](builtin-coding-tool-truncation-2026-10-22.json).
+Five of 28 existing head-projection regressions fail before the correction;
+all 28 now match the complete metadata. Related tests pass 184/184, zero skips.
+The utility counts a terminal newline correctly, keeps complete head lines,
+selects valid UTF-8 tail boundaries and preserves the oracle's limit-priority
+rules. Core remains free of filesystem/process/provider dependencies. Search's
+existing public truncation constructor is preserved.
+
+Reproduce the pinned truncation results with the same probe and
+`--truncate-only`, using the truncation fixture as input. These component
+vectors are separate from the distinct seven-tool corpus counts.
+
+Shared work remains open: read and Bash need complete result/truncation metadata.
+A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or
 audit-policy change was made.

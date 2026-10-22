@@ -187,6 +187,17 @@
       "passed": 116,
       "failed": 0,
       "skipped": 0
+    },
+    "shared_truncation": {
+      "pinned_vectors": 140,
+      "passed": 140,
+      "mapped_head_cases": 28,
+      "before": {
+        "failed": 5,
+        "passed": 23
+      },
+      "related_selection_passed": 184,
+      "read_and_bash_metadata_integration": "pending"
     }
   },
   "plan_received": true,

@@ -21,6 +21,15 @@ const declarations = Object.fromEntries(Object.entries(factories).map(([name, fa
     outputSchema: tool.outputSchema ?? null, constrainedSampling: tool.constrainedSampling ?? null }];
 }));
 
+if (mode === '--truncate-only') {
+  const { truncateHead, truncateTail } = await load('packages/coding-agent/src/core/tools/truncate.ts');
+  const fixture = JSON.parse(readFileSync(inputFile, 'utf8'));
+  const results = fixture.cases.map(row => ({ caseId: row.caseId,
+    result: (row.mode === 'head' ? truncateHead : truncateTail)(row.content, row.options) }));
+  writeFileSync(outputFile, JSON.stringify({ results }, null, 2) + '\n');
+  process.exit(0);
+}
+
 if (mode === '--validate-only') {
   const fixture = JSON.parse(readFileSync(inputFile, 'utf8'));
   const results = [];
