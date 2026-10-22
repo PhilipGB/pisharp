@@ -19,7 +19,10 @@ public sealed record ToolTruncationDetails(
     bool LastLinePartial,
     bool FirstLineExceedsLimit,
     long MaxLines,
-    int MaxBytes);
+    int MaxBytes)
+{
+    public string Content { get; init; } = "";
+}
 
 public sealed record GrepToolDetails(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ToolTruncationDetails? Truncation = null,
@@ -34,7 +37,9 @@ public sealed record LsToolDetails(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ToolTruncationDetails? Truncation = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? EntryLimitReached = null);
 
-internal sealed record SearchToolOutput(string Text, object? Details = null) : IStructuredToolOutput
+// Text/Details identifies the persisted result; MAF must retain Details even when it is null.
+internal sealed record SearchToolOutput(string Text,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)] object? Details = null) : IStructuredToolOutput
 {
     public object? EventDetails => Details;
     public override string ToString() => Text;
@@ -66,6 +71,6 @@ internal static class ToolOutputTruncator
         }
         var result = string.Join('\n', output);
         return (result, new ToolTruncationDetails(true, "bytes", totalLines, totalBytes, output.Count,
-            Encoding.UTF8.GetByteCount(result), false, false, UnlimitedLineLimit, maxBytes));
+            Encoding.UTF8.GetByteCount(result), false, false, UnlimitedLineLimit, maxBytes) { Content = result });
     }
 }
