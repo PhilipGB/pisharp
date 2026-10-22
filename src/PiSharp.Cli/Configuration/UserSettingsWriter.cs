@@ -267,6 +267,8 @@ internal static class UserSettingsWriter
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var editorPadding) && editorPadding is >= 0 and <= 3,
             "outputPad" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var outputPadding) && outputPadding is 0 or 1,
+            "fullscreenWheelScrollLines" => value is null or "auto" ||
+                int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var wheelLines) && wheelLines is >= 1 and <= 100,
             "autocompleteMaxVisible" => value is null ||
                 int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var autocompleteMaximum) && autocompleteMaximum is >= 3 and <= 20,
             "retry.provider.maxRetries" => value is null ||
@@ -279,6 +281,7 @@ internal static class UserSettingsWriter
             "thinkingBudgets.minimal" or "thinkingBudgets.low" or "thinkingBudgets.medium" or "thinkingBudgets.high" =>
                 value is null || int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var thinkingBudget) && thinkingBudget >= 0,
             "terminal.trueColor" => value is null or "auto" or "true" or "false",
+            "tuiMode" when userScope => value is null or "regular" or "fullscreen",
             "sessionShareDestination" => value is null or "auto" or "gist" or "radius",
             "markdown.codeBlockIndent" => true,
             "httpIdleTimeoutMs" => value is null || string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase) ||
@@ -324,6 +327,8 @@ internal static class UserSettingsWriter
             JsonValue.Create(value == "true"),
         "editorPaddingX" or "outputPad" or "autocompleteMaxVisible" =>
             JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
+        "fullscreenWheelScrollLines" when value == "auto" => JsonValue.Create(value),
+        "fullscreenWheelScrollLines" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "terminal.trueColor" when value is "true" or "false" => JsonValue.Create(value == "true"),
         "retry.provider.maxRetries" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "retry.provider.maxRetryDelayMs" => JsonValue.Create(double.Parse(value!, NumberStyles.Float, CultureInfo.InvariantCulture)),

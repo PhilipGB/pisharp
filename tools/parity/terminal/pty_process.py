@@ -17,7 +17,7 @@ import termios
 from threading import Thread
 import time
 
-from compare import ControlTrace
+from compare import ControlTrace, osc52_clipboard_writes
 from thread_limits import apply_test_thread_limit
 
 apply_test_thread_limit()
@@ -96,6 +96,8 @@ class RenderFrameSequence:
 
 class TerminalProcess:
     def __init__(self, command, cwd, environment, options, spool_render_frames=False):
+        if options.get('jobControl') and sys.platform != 'linux':
+            raise ValueError('The supervised job-control profile requires Linux /proc process ownership.')
         self.render_frames = RenderFrameStore() if spool_render_frames else []
         self._new_render_frames = []
         self.emulator = subprocess.Popen(['node', str(Path(__file__).with_name('emulator.mjs'))],
@@ -103,6 +105,9 @@ class TerminalProcess:
         self.ask(dict(op='start', options=options))
         self.master, slave = pty.openpty()
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', options['rows'], options['columns'], 0, 0))
+        self.job_control = bool(options.get('jobControl'))
+        if self.job_control:
+            command = [sys.executable, str(Path(__file__).with_name('job_control.py')), *command]
         self.process = subprocess.Popen([sys.executable, __file__, '--exec-pty', *command],
                                         stdin=slave, stdout=slave, stderr=slave, cwd=cwd,
                                         env=environment, start_new_session=True)
@@ -162,22 +167,53 @@ class TerminalProcess:
     def snapshot(self):
         return self.ask(dict(op='snapshot'))['frame']
 
-    def settle(self, contains=None, absent=None, timeout=20, quiet_ms=200, after=0, render_match=False):
+    def settle(self, contains=None, absent=None, timeout=20, quiet_ms=200, after=0, render_match=False,
+               allow_static_frame=False, cursor_before=None, clipboard_texts=None, clipboard_after=0):
         deadline = time.monotonic() + timeout
         expected = (contains,) if isinstance(contains, str) else tuple(contains or ())
         expected_matched = False
         absent_matched = absent is None
         output_advanced = False
+        cursor_matched = cursor_before is None
+        static_pump_timeout = 0
+
+        def clipboard_matched():
+            return clipboard_texts is None or [entry['text'] for entry in
+                osc52_clipboard_writes(self.raw[clipboard_after:])] == clipboard_texts
+
+        def cursor_changed(frame):
+            nonlocal cursor_matched
+            if cursor_before is None:
+                cursor_matched = True
+                return cursor_matched
+            cursor = frame.get('cursor', {})
+            cursor_matched = (cursor.get('x'), cursor.get('y')) != (
+                cursor_before.get('x'), cursor_before.get('y'))
+            return cursor_matched
+
         while time.monotonic() < deadline:
-            self.pump()
+            self.pump(timeout=static_pump_timeout if allow_static_frame else 0.05)
             new_render_frames = self._new_render_frames
             self._new_render_frames = []
+            if allow_static_frame and not render_match:
+                frame = self.snapshot()
+                text = '\n'.join(''.join(cell['chars'] for cell in line['cells'] if cell)
+                                 for line in frame['viewport'])
+                expected_matched = all(item in text for item in expected)
+                absent_matched = absent is None or absent not in text
+                modes = frame.get('modes', {})
+                synchronized_output = modes.get('synchronizedOutput', False) or modes.get('private', {}).get('2026', False)
+                if (expected_matched and absent_matched and cursor_changed(frame) and
+                        not synchronized_output and clipboard_matched()):
+                    return frame
+                static_pump_timeout = 0.01
             if render_match:
                 for frame in new_render_frames:
                     text = '\n'.join(''.join(cell['chars'] for cell in line['cells'] if cell)
                                       for line in frame['viewport'])
-                    if (all(item in text for item in expected) and (absent is None or absent not in text) and
-                            (len(self.raw) > after or self.closed)):
+                    if (clipboard_texts is None and all(item in text for item in expected) and
+                            (absent is None or absent not in text) and
+                            cursor_changed(frame) and (len(self.raw) > after or self.closed)):
                         return frame
             if time.monotonic() - self.last_output < quiet_ms / 1000:
                 continue
@@ -189,22 +225,45 @@ class TerminalProcess:
             modes = frame.get('modes', {})
             synchronized_output = modes.get('synchronizedOutput', False) or modes.get('private', {}).get('2026', False)
             if (expected_matched and absent_matched and output_advanced and
-                    (not render_match or not synchronized_output)):
+                    cursor_changed(frame) and (not render_match or not synchronized_output) and clipboard_matched()):
                 return frame
             if self.closed:
                 raise RuntimeError(f'Terminal exited {self.process.poll()} before {contains!r}.\n{text}')
         raise TimeoutError(
             f'Terminal did not settle at {contains!r} '
             f'(expected={expected_matched}, absent={absent_matched}, output={output_advanced}, '
-            f'renderMatch={render_match}).\n{text if "text" in locals() else ""}')
+            f'renderMatch={render_match}, cursorChanged={cursor_matched}).\n'
+            f'{text if "text" in locals() else ""}')
 
     def close(self):
         if self.process.poll() is None:
-            os.killpg(self.process.pid, signal.SIGTERM)
+            groups = {self.process.pid}
+            if self.job_control:
+                children = Path(f'/proc/{self.process.pid}/task/{self.process.pid}/children')
+                try:
+                    for child in children.read_text().split():
+                        try:
+                            if os.getsid(int(child)) == self.process.pid:
+                                groups.add(os.getpgid(int(child)))
+                        except ProcessLookupError:
+                            pass
+                except FileNotFoundError:
+                    pass
+            for group in groups:
+                try:
+                    if self.job_control:
+                        os.killpg(group, signal.SIGCONT)
+                    os.killpg(group, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
             try:
                 self.process.wait(timeout=3)
             except subprocess.TimeoutExpired:
-                os.killpg(self.process.pid, signal.SIGKILL)
+                for group in groups:
+                    try:
+                        os.killpg(group, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
                 self.process.wait(timeout=3)
         os.close(self.master)
 

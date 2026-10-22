@@ -31,6 +31,31 @@ public sealed class UserSettingsWriterTests
     }
 
     [Fact]
+    public async Task TuiModeIsValidatedPersistedAndInheritedOnlyFromUserSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-tui-mode-write-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            await UserSettingsWriter.SetAsync(path, "tuiMode", "regular", userScope: true);
+
+            var user = await UserSettings.LoadAsync(root, _ => null);
+            var effective = user.Overlay(new UserSettings(TuiMode: "fullscreen"));
+            Assert.Equal("regular", effective.TuiMode);
+
+            await UserSettingsWriter.SetAsync(path, "tuiMode", "fullscreen", userScope: true);
+            Assert.Equal("fullscreen", (await UserSettings.LoadAsync(root, _ => null)).TuiMode);
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "tuiMode", "windowed", userScope: true));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "tuiMode", "regular", userScope: false));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task UpdatesSupportedValuesAndPreservesOtherSettingsAtomically()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-write-" + Guid.NewGuid().ToString("N"));
@@ -55,6 +80,7 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "enableSkillCommands", "false", userScope: true);
             await UserSettingsWriter.SetAsync(path, "thinkingBudgets.low", "4096", userScope: true);
             await UserSettingsWriter.SetAsync(path, "thinkingBudgets.high", "32768", userScope: true);
+            await UserSettingsWriter.SetAsync(path, "fullscreenWheelScrollLines", "3", userScope: true);
             var settings = await UserSettings.LoadAsync(root, _ => null);
 
             Assert.True(settings.HideThinkingBlock);
@@ -76,6 +102,7 @@ public sealed class UserSettingsWriterTests
             Assert.False(settings.SkillCommandsEnabled);
             Assert.Equal(4096, settings.ThinkingBudgets!["low"]);
             Assert.Equal(32768, settings.ThinkingBudgets["high"]);
+            Assert.Equal(FullscreenWheelScrollSetting.Fixed(3), settings.FullscreenWheelScrollLines);
 
             await UserSettingsWriter.SetAsync(path, "images.blockImages", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "retry.enabled", null, userScope: true);
@@ -90,6 +117,10 @@ public sealed class UserSettingsWriterTests
             await UserSettingsWriter.SetAsync(path, "terminal.trueColor", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "enableSkillCommands", null, userScope: true);
             await UserSettingsWriter.SetAsync(path, "thinkingBudgets.low", null, userScope: true);
+            await UserSettingsWriter.SetAsync(path, "fullscreenWheelScrollLines", "auto", userScope: true);
+            Assert.Equal(FullscreenWheelScrollSetting.Automatic,
+                (await UserSettings.LoadAsync(root, _ => null)).FullscreenWheelScrollLines);
+            await UserSettingsWriter.SetAsync(path, "fullscreenWheelScrollLines", null, userScope: true);
             Assert.Null((await UserSettings.LoadAsync(root, _ => null)).BlockImages);
             var cleared = await UserSettings.LoadAsync(root, _ => null);
             Assert.Null(cleared.Retry);
@@ -98,6 +129,7 @@ public sealed class UserSettingsWriterTests
             Assert.Null(cleared.MarkdownCodeBlockIndent);
             Assert.Null(cleared.TerminalTrueColor);
             Assert.Null(cleared.EnableSkillCommands);
+            Assert.Null(cleared.FullscreenWheelScrollLines);
             Assert.True(cleared.SkillCommandsEnabled);
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "followUpMode", "sometimes", userScope: true));
@@ -117,8 +149,26 @@ public sealed class UserSettingsWriterTests
                 UserSettingsWriter.SetAsync(path, "httpIdleTimeoutMs", "sometimes", userScope: true));
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 UserSettingsWriter.SetAsync(path, "terminal.trueColor", "sometimes", userScope: true));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                UserSettingsWriter.SetAsync(path, "fullscreenWheelScrollLines", "101", userScope: true));
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public void FullscreenWheelSettingParsesPiNumericValuesAndProjectSettingOverridesUserSetting()
+    {
+        using var document = System.Text.Json.JsonDocument.Parse("2.9");
+        Assert.Equal(FullscreenWheelScrollSetting.Fixed(2),
+            FullscreenWheelScrollSetting.Parse(document.RootElement));
+        using var highDocument = System.Text.Json.JsonDocument.Parse("1000");
+        Assert.Equal(FullscreenWheelScrollSetting.Fixed(100),
+            FullscreenWheelScrollSetting.Parse(highDocument.RootElement));
+
+        var user = new UserSettings(FullscreenWheelScrollLines: FullscreenWheelScrollSetting.Fixed(2));
+        var project = new UserSettings(FullscreenWheelScrollLines: FullscreenWheelScrollSetting.Fixed(5));
+
+        Assert.Equal(FullscreenWheelScrollSetting.Fixed(5), user.Overlay(project).FullscreenWheelScrollLines);
     }
 
     [Fact]

@@ -1,0 +1,53 @@
+{
+  "id": "terminal-abort-stream",
+  "settings": { "quietStartup": true },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-tools", "--no-context-files",
+      "--system-prompt", "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-tools", "--no-approve",
+      "--no-context-files", "--system-prompt", "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": ["abort-stream-request"],
+    "chatResponseChunksByRequest": [[
+      "Partial response before abort.\n",
+      "Delayed response after abort must not appear.\n"
+    ]],
+    "chatResponseChunkGatesByRequest": [[null, "abort-stream-release-delayed"]],
+    "chatResponseChunkReadyGatesByRequest": [["abort-stream-first-chunk-sent", "abort-stream-delayed-chunk-sent"]],
+    "chatResponseFinishGates": ["abort-stream-finish"]
+  },
+  "dimensions": [{ "columns": 100, "rows": 30 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    {
+      "id": "start-stream",
+      "send": "Send a response that can be aborted.\r",
+      "waitGatesAfter": ["abort-stream-request", "abort-stream-first-chunk-sent"],
+      "allowStaticFrame": true,
+      "expect": "Partial response before abort."
+    },
+    {
+      "id": "abort-stream",
+      "send": "\u001b",
+      "expect": "Operation aborted",
+      "notExpect": "Delayed response after abort must not appear."
+    },
+    {
+      "id": "release-delayed-response",
+      "releaseGates": ["abort-stream-release-delayed"],
+      "allowStaticFrame": true
+    },
+    { "id": "exit", "send": "\u0003\u0003", "exit": true }
+  ],
+  "terminal": { "keyboardProtocol": "kitty" },
+  "assertionFrames": ["startup", "start-stream", "abort-stream", "exit"]
+}

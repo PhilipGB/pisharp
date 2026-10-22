@@ -1,6 +1,48 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Complete Native Extension Interactive UI — 2026-10-20
+## Active milestone — Terminal Rendering and Interaction Parity — 2026-10-22
+
+PR #20 merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`; that exact
+commit is the base of `milestone/terminal-rendering-interaction-parity`.
+Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+Current product source is `216251fd`.
+
+The source contains terminal restoration, cell/style/wrapping, Markdown,
+syntax/math, tool/image, scrolling/search, editor/mouse, and startup repairs.
+Linux Ctrl+Z now restores the terminal, stops the foreground job, and resumes
+without losing or replaying editor input. Its supervised normal/fullscreen
+PTY comparison matches twenty-two named checkpoints; native CLI tests cover both
+modes, and a Python regression verifies cleanup of a suspended child group.
+The streaming stress test overlaps 200 stream/widget updates with forty resize,
+theme, scroll, modal, and tool-expansion cycles while preserving the draft.
+
+The nineteen-fixture corpus is reviewed: 45/45 calibration, normalized physical
+provider requests and clipboard checks, with zero scenario errors. Its 28
+differing selected states are the explicitly classified identity, resume-hint
+and installation-path estimate differences. The final source additionally
+matches multi-click word/line selection and bounded, independently expiring copy
+feedback; all seven selected multi-click states match exactly.
+
+Build and format checks pass; Node is 24/24, Python 66/66, and MCP retains only
+its eight classified baseline failures. The final full .NET suite passes
+2,711/2,711 with zero failures/skips, including the added input, color and nested math regressions.
+Documentation paths pass 150 documents / 582 references. The canonical fixture workspace must
+remain outside this repository: use the runner defaults under `/tmp`.
+Run-specific roots beneath `artifacts/` picked up repository instructions and
+invalidated earlier request comparisons; long custom roots also changed the
+rendered CWD truncation. Those exploratory reports are retained, not accepted.
+
+The implementation, local validation and classified receipt are complete.
+[PR #21](https://github.com/PhilipGB/pisharp/pull/21) records the published head and exact-head
+push/PR CI run IDs and conclusions. PR #21 must remain draft and unmerged. Evidence is in the
+[terminal parity receipt](parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md).
+
+The independent-review correction propagates nested LaTeX failures to source
+fallback and shares a 64-level recursion budget across groups, arguments and
+environment rows. The new unsupported-math PTY fixture and refreshed code/math
+and structural Markdown cases match all 21 action checkpoints.
+
+## Previous milestone — Complete Native Extension Interactive UI — 2026-10-20
 
 PR #19 was verified merged at `b4cfac1ca83b38215311d8441069286cca0dc4e6`;
 `origin/main` and the active branch base match that SHA. Its reviewed head was
@@ -8,8 +50,9 @@ PR #19 was verified merged at `b4cfac1ca83b38215311d8441069286cca0dc4e6`;
 CI `39346174499` and PR CI `39346177476`. The pinned Pi revision remains
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-The PR #20 implementation is on `milestone/native-extension-interactive-ui`
-from that merge. It adds additive public UI contracts, a
+The PR #20 implementation was on `milestone/native-extension-interactive-ui`
+from that merge and is now merged at
+`5e1e5aa8ddc66a8e829a880604060b8483107284`. It adds additive public UI contracts, a
 package-owned retained capability with removal/reload revocation, terminal
 screen contributions, focused and overlay components, editor/autocomplete and
 theme integration, decoded input interception, and a compiled-package PTY
@@ -24,10 +67,9 @@ reaches all checkpoints and matches
 its startup, widget, and input-update viewports, but full state/render
 comparison differs in 22,411 places (14,009 render differences; raw output
 differs from byte 2). The final warnings-as-errors build, format verification,
-architecture, Node, Python, and MCP checks pass; documentation path validation
-passed 149 files and 576 references. Exact-head push and PR CI results will be
-recorded in the draft PR description after publication; PR #20 remains
-unmerged.
+architecture, Node, Python, and MCP checks passed; documentation path
+validation passed 149 files and 576 references before the merge. PR #20's
+exact-head verification and merge are complete.
 Evidence is recorded in the
 [interactive UI receipt](parity/fixtures/native-extension-interactive-ui-2026-10-20.md).
 Broad extension parity remains `in_progress`.

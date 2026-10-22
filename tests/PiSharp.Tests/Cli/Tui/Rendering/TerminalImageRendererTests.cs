@@ -27,6 +27,20 @@ public sealed class TerminalImageRendererTests
     }
 
     [Fact]
+    public void DetectsOsc8HyperlinksUsingPinnedPiTerminalRules()
+    {
+        Assert.True(TerminalImageCapabilities.SupportsHyperlinks(Env(("TERM_PROGRAM", "kitty"))));
+        Assert.True(TerminalImageCapabilities.SupportsHyperlinks(Env(("WT_SESSION", "1"))));
+        Assert.False(TerminalImageCapabilities.SupportsHyperlinks(Env(("TERM", "screen-256color"))));
+        Assert.False(TerminalImageCapabilities.SupportsHyperlinks(Env(("TERMINAL_EMULATOR", "JetBrains-JediTerm"))));
+        Assert.True(TerminalImageCapabilities.SupportsHyperlinks(Env(("TMUX", "1"), ("PI_HYPERLINKS", "1")),
+            () => false));
+        Assert.False(TerminalImageCapabilities.SupportsHyperlinks(Env(("TMUX", "1"), ("TERM_PROGRAM", "kitty")),
+            () => false));
+        Assert.True(TerminalImageCapabilities.SupportsHyperlinks(Env(("TMUX", "1")), () => true));
+    }
+
+    [Fact]
     public void LayoutUsesTerminalWidthHeightAndAspectPreservingCellRows()
     {
         var renderer = new TerminalImageRenderer(Env(("KITTY_WINDOW_ID", "2")));
@@ -65,22 +79,53 @@ public sealed class TerminalImageRendererTests
     }
 
     [Fact]
-    public void KittyRedrawUsesPlacementOnlyAndPartialViewportUsesTextFallback()
+    public void KittyRedrawReusesUnchangedPlacementAndPartialViewportUsesTextFallback()
     {
         var renderer = new TerminalImageRenderer(Env(("KITTY_WINDOW_ID", "2")));
         var marker = renderer.Register(CreateImage(10, 40), out var fallback)!;
         var rows = renderer.LayoutTranscript(marker, terminalColumns: 22, maximumImageRows: 6).Split('\n');
         var first = renderer.PrepareFrame(rows);
         var redraw = renderer.PrepareFrame(rows);
-        var partial = renderer.PrepareFrame(rows.Take(2).ToArray());
+        var movedRows = rows.Select(line => "prefix" + line).ToArray();
+        var moved = renderer.PrepareFrame(movedRows);
+        var partial = renderer.PrepareFrame(movedRows.Take(2).ToArray());
 
         Assert.Contains("a=T", first.Rows[0]);
-        Assert.Contains("a=d,d=a", redraw.Preamble);
+        Assert.Empty(redraw.Preamble);
         Assert.Contains("a=p", redraw.Rows[0]);
         Assert.DoesNotContain("AAAA", redraw.Rows[0]);
+        Assert.Contains("a=d,d=a", moved.Preamble);
+        Assert.Contains("a=p", moved.Rows[0]);
         Assert.Contains(fallback, partial.Rows[0]);
+        Assert.Contains("a=d,d=a", partial.Preamble);
         Assert.DoesNotContain("\u001b_G", string.Join('\n', partial.Rows));
         Assert.Contains("a=d,d=A", renderer.CleanupControlSequence());
+    }
+
+    [Fact]
+    public void KittyCompositorDoesNotReemitUnchangedImageOnEveryFrame()
+    {
+        using var output = new StringWriter();
+        var renderer = new TerminalImageRenderer(Env(("KITTY_WINDOW_ID", "2")));
+        var marker = renderer.Register(CreateImage(1, 1), out _)!;
+        var rows = renderer.LayoutTranscript(marker, terminalColumns: 22, maximumImageRows: 6).Split('\n');
+        var frame = new TerminalScreenCompositor.Frame(rows, CursorRow: 0, CursorColumn: 1,
+            ScrollOffset: 0, Columns: 22, Height: 6);
+        var compositor = new TerminalScreenCompositor(output, renderer);
+
+        compositor.Render(frame);
+        output.GetStringBuilder().Clear();
+        compositor.Render(frame);
+        output.GetStringBuilder().Clear();
+        compositor.Render(frame);
+
+        Assert.DoesNotContain("\u001b_G", output.ToString());
+
+        _ = renderer.HidePlacements();
+        compositor.InvalidateRenderedFrame();
+        output.GetStringBuilder().Clear();
+        compositor.Render(frame);
+        Assert.Contains("a=p", output.ToString());
     }
 
     [Fact]

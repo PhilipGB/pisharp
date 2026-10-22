@@ -10,10 +10,11 @@ internal sealed class TerminalToolTimers(TimeProvider clock, Action invalidate) 
         if (!_calls.ContainsKey(id)) _calls.Add(id, new(clock.GetUtcNow()));
     }
 
-    internal string? Progress(string id, bool isError)
+    internal string? Progress(string id, bool isError, bool attachedToOutput = false)
     {
         if (!_calls.TryGetValue(id, out var state)) return null;
         state.HasProgress = true;
+        state.AttachedToOutput |= attachedToOutput;
         if (isError)
         {
             state.EndedAt ??= clock.GetUtcNow();
@@ -25,8 +26,9 @@ internal sealed class TerminalToolTimers(TimeProvider clock, Action invalidate) 
         return Text(state);
     }
 
-    internal IReadOnlyList<(string Id, string Text)> Rows() => _calls.Where(pair => pair.Value.HasProgress)
-        .Select(pair => (pair.Key, Text(pair.Value))).ToArray();
+    internal IReadOnlyList<(string Id, string Text, bool AttachedToOutput)> Rows() => _calls
+        .Where(pair => pair.Value.HasProgress)
+        .Select(pair => (pair.Key, Text(pair.Value), pair.Value.AttachedToOutput)).ToArray();
 
     internal IReadOnlyList<(string Id, double DurationMs)> Cancel()
     {
@@ -59,5 +61,6 @@ internal sealed class TerminalToolTimers(TimeProvider clock, Action invalidate) 
         internal DateTimeOffset? EndedAt { get; set; }
         internal ITimer? Interval { get; set; }
         internal bool HasProgress { get; set; }
+        internal bool AttachedToOutput { get; set; }
     }
 }

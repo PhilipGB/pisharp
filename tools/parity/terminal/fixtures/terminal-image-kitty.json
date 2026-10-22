@@ -1,0 +1,117 @@
+{
+  "id": "terminal-image-kitty",
+  "modelInput": [
+    "text",
+    "image"
+  ],
+  "settings": {
+    "quietStartup": true
+  },
+  "projectFiles": {
+    "fixture-image.png": {
+      "$base64": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGPU2HKHgYGBiYGBgYGBAQAUFgG8dhSbBgAAAABJRU5ErkJggg=="
+    }
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files",
+      "--tools",
+      "read"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-context-files",
+      "--tools",
+      "read",
+      "--no-approve"
+    ]
+  },
+  "fixtureBehavior": {
+    "chatToolCallsByRequest": [
+      [
+        {
+          "id": "call-read-image",
+          "name": "read",
+          "arguments": {
+            "path": "fixture-image.png"
+          }
+        }
+      ],
+      []
+    ],
+    "chatResponseContentByRequest": [
+      "",
+      "Image read complete."
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 60
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "ask-for-image",
+      "send": "\u001b[200~Read fixture-image.png and report when done.\u001b[201~",
+      "expect": "report when done"
+    },
+    {
+      "id": "read-image",
+      "send": "\r",
+      "expect": "Image read complete.",
+      "notExpect": "Working"
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "startup",
+    "ask-for-image",
+    "read-image",
+    "exit"
+  ],
+  "environment": {
+    "pi": {
+      "KITTY_WINDOW_ID": "1",
+      "TERM_PROGRAM": "kitty"
+    },
+    "pisharp": {
+      "KITTY_WINDOW_ID": "1",
+      "TERM_PROGRAM": "kitty"
+    }
+  }
+}

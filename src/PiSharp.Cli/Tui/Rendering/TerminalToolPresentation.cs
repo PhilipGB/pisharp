@@ -9,13 +9,14 @@ namespace PiSharp.Cli.Tui;
 
 /// <summary>Builds bounded themed tool views while keeping extension callbacks outside screen state.</summary>
 internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?>? resolveRenderer,
-    string workingDirectory, Func<bool>? isExpanded = null)
+    string workingDirectory, Func<bool>? isExpanded = null, Func<string, string?>? terminalEnvironment = null)
 {
     private const int MaximumSpans = 1_024;
     private const int MaximumCharacters = 32_768;
     private const int MaximumLines = 256;
     private const int MaximumArgumentBytes = 256 * 1024;
     private const int MaximumRememberedCalls = 1_024;
+    private readonly Func<string, string?> _terminalEnvironment = terminalEnvironment ?? Environment.GetEnvironmentVariable;
     private readonly Dictionary<string, IReadOnlyDictionary<string, object?>> _argumentsByCall = new(StringComparer.Ordinal);
     private readonly Queue<string> _callOrder = new();
 
@@ -24,7 +25,7 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
         var tool = update.Tool ?? "tool";
         var arguments = SnapshotArguments(update.ToolArguments);
         var renderer = Resolve(tool);
-        if (renderer?.RenderResult is not null && update.OperationId is { Length: > 0 } operationId)
+        if (update.OperationId is { Length: > 0 } operationId)
             RememberArguments(operationId, arguments);
         if (renderer?.RenderCall is { } custom)
         {
@@ -41,6 +42,11 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             }
             catch (Exception error) when (IsRendererError(error)) { }
         }
+
+        if (renderer is null && tool.Equals("read", StringComparison.OrdinalIgnoreCase))
+            return RenderReadCall(arguments);
+        if (renderer is null && tool.Equals("bash", StringComparison.OrdinalIgnoreCase))
+            return RenderBashCall(arguments);
 
         var summary = ToolCallSummary.Format(update.Tool, arguments);
         var spans = new List<PiSharpToolTextSpan>
@@ -69,15 +75,15 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
         RenderResultCore(update, isError, TakeArguments(update), null);
 
     public (PiSharpToolRenderView Collapsed, PiSharpToolRenderView Expanded) RenderResultViews(
-        AgentLifecycleEvent update, bool isError)
+        AgentLifecycleEvent update, bool isError, bool retainArguments = false, string? progressText = null)
     {
-        var arguments = TakeArguments(update);
-        return (RenderResultCore(update, isError, arguments, false),
-            RenderResultCore(update, isError, arguments, true));
+        var arguments = retainArguments ? GetRememberedArguments(update) : TakeArguments(update);
+        return (RenderResultCore(update, isError, arguments, false, progressText),
+            RenderResultCore(update, isError, arguments, true, progressText));
     }
 
     private PiSharpToolRenderView RenderResultCore(AgentLifecycleEvent update, bool isError,
-        IReadOnlyDictionary<string, object?> arguments, bool? expanded)
+        IReadOnlyDictionary<string, object?> arguments, bool? expanded, string? progressText = null)
     {
         var tool = update.Tool ?? "tool";
         var renderer = Resolve(tool);
@@ -97,6 +103,12 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             catch (Exception error) when (IsRendererError(error)) { }
         }
 
+        var isRead = renderer is null && tool.Equals("read", StringComparison.OrdinalIgnoreCase);
+        if (isRead && expanded == false && !isError) return new([]);
+        if (renderer is null && tool.Equals("bash", StringComparison.OrdinalIgnoreCase))
+            return RenderBashResult(arguments, update, isError, expanded ?? isExpanded?.Invoke() ?? false,
+                progressText);
+
         var text = isError
             ? update.Error ?? update.Text ?? "tool failed"
             : update.Tool == "bash" && update.Text is not null
@@ -104,7 +116,8 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
                 : update.Text ?? "completed";
         var spans = new List<PiSharpToolTextSpan>
         {
-            new("← ", isError ? PiSharpToolTextStyle.Error : PiSharpToolTextStyle.Muted),
+            new(isRead ? "\n" : "← ", isRead ? PiSharpToolTextStyle.Normal :
+                isError ? PiSharpToolTextStyle.Error : PiSharpToolTextStyle.Muted),
             new(TerminalSafeText.Normalize(text), isError ? PiSharpToolTextStyle.Error : PiSharpToolTextStyle.Output)
         };
         if (update.Details is not null && ToolDetailsSummary.TryFormat(update.Details, out var summary))
@@ -115,6 +128,114 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
         if (tool == "codemode" && update.DurationMs is { } duration)
             spans.Add(new("\nTook " + ToolDurationText.Format(duration), PiSharpToolTextStyle.Muted));
         return new(spans);
+    }
+
+    private PiSharpToolRenderView RenderReadCall(IReadOnlyDictionary<string, object?> arguments)
+    {
+        var path = GetStringArgument(arguments, "file_path") ?? GetStringArgument(arguments, "path") ?? "";
+        var pathSpan = new PiSharpToolTextSpan(TerminalSafeText.Normalize(path), PiSharpToolTextStyle.Accent)
+        {
+            HyperlinkTarget = TerminalImageCapabilities.SupportsHyperlinks(_terminalEnvironment)
+                ? CreateFileHyperlink(path)
+                : null
+        };
+        var spans = new List<PiSharpToolTextSpan>
+        {
+            new("read", PiSharpToolTextStyle.Title, Bold: true),
+            new(" ", PiSharpToolTextStyle.Normal),
+            pathSpan
+        };
+        var offset = GetNumberArgument(arguments, "offset");
+        var limit = GetNumberArgument(arguments, "limit");
+        if (offset is not null || limit is not null)
+        {
+            var start = offset ?? 1;
+            var range = limit is { } count ? $":{start}{(start + count - 1 != 0 ? $"-{start + count - 1}" : "")}" : $":{start}";
+            spans.Add(new(range, PiSharpToolTextStyle.Muted));
+        }
+        return new(spans);
+    }
+
+    private string? CreateFileHyperlink(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return null;
+        try { return new Uri(Path.GetFullPath(path, workingDirectory)).AbsoluteUri; }
+        catch (Exception error) when (error is ArgumentException or IOException or NotSupportedException or
+            UriFormatException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static string? NormalizeHyperlinkTarget(string? target)
+    {
+        if (string.IsNullOrWhiteSpace(target) || target.Any(char.IsControl) ||
+            !Uri.TryCreate(target, UriKind.Absolute, out var uri) ||
+            !(uri.Scheme.Equals(Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase) ||
+                uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||
+                uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+            return null;
+        return uri.AbsoluteUri;
+    }
+
+    private static PiSharpToolRenderView RenderBashCall(IReadOnlyDictionary<string, object?> arguments)
+    {
+        var command = GetStringArgument(arguments, "command");
+        var displayedCommand = command is null ? "[invalid arg]" : command.Length == 0 ? "..." : command;
+        return new([new("$ " + TerminalSafeText.Normalize(displayedCommand), PiSharpToolTextStyle.Title, Bold: true)]);
+    }
+
+    private static PiSharpToolRenderView RenderBashResult(IReadOnlyDictionary<string, object?> arguments,
+        AgentLifecycleEvent update, bool isError, bool expanded, string? progressText)
+    {
+        var command = GetStringArgument(arguments, "command");
+        var displayedCommand = command is null ? "[invalid arg]" : command.Length == 0 ? "..." : command;
+        var spans = new List<PiSharpToolTextSpan>
+        {
+            new("$ " + TerminalSafeText.Normalize(displayedCommand), PiSharpToolTextStyle.Title, Bold: true)
+        };
+        var output = update.Text is null ? "" : ShellOutputNormalizer.NormalizeComplete(update.Text).Trim();
+        if (output.Length > 0)
+        {
+            var lines = output.Split('\n');
+            var firstLine = expanded ? 0 : Math.Max(0, lines.Length - 5);
+            if (firstLine > 0)
+                spans.Add(new($"\n\n... ({firstLine} earlier lines, to expand)", PiSharpToolTextStyle.Muted));
+            else spans.Add(new("\n\n", PiSharpToolTextStyle.Normal));
+            for (var index = firstLine; index < lines.Length; index++)
+            {
+                if (index > firstLine) spans.Add(new("\n", PiSharpToolTextStyle.Output));
+                spans.Add(new(TerminalSafeText.Normalize(lines[index]), PiSharpToolTextStyle.Output));
+            }
+        }
+        var timerText = progressText ?? (update.DurationMs is { } duration
+            ? "Took " + ToolDurationText.Format(duration)
+            : null);
+        if (!string.IsNullOrEmpty(timerText))
+            spans.Add(new("\n\n" + TerminalSafeText.Normalize(timerText), PiSharpToolTextStyle.Muted));
+        if (isError && spans.Count == 1)
+            spans.Add(new("\n", PiSharpToolTextStyle.Error));
+        return new(spans);
+    }
+
+    private static string? GetStringArgument(IReadOnlyDictionary<string, object?> arguments, string name)
+    {
+        foreach (var pair in arguments)
+            if (pair.Key.Equals(name, StringComparison.OrdinalIgnoreCase) && pair.Value is string value)
+                return value;
+        return null;
+    }
+
+    private static int? GetNumberArgument(IReadOnlyDictionary<string, object?> arguments, string name)
+    {
+        foreach (var pair in arguments)
+        {
+            if (!pair.Key.Equals(name, StringComparison.OrdinalIgnoreCase)) continue;
+            if (pair.Value is int integer) return integer;
+            if (pair.Value is long longValue && longValue is >= int.MinValue and <= int.MaxValue) return (int)longValue;
+            if (pair.Value is string text && int.TryParse(text, out integer)) return integer;
+        }
+        return null;
     }
 
     public static string Render(PiSharpToolRenderView view, TerminalTheme? theme)
@@ -135,10 +256,13 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             if (safe.Length > 0)
             {
                 var token = Token(span.Style);
+                var hyperlink = theme is null ? null : NormalizeHyperlinkTarget(span.HyperlinkTarget);
+                if (hyperlink is not null) output.Append("\u001b]8;;").Append(hyperlink).Append("\u001b\\");
                 output.Append(theme is null || token is null
                     ? safe
                     : theme.Style(token, safe, bold: span.Bold || span.Style == PiSharpToolTextStyle.Title,
-                        dim: span.Dim || span.Style == PiSharpToolTextStyle.Muted));
+                        dim: span.Dim));
+                if (hyperlink is not null) output.Append("\u001b]8;;\u001b\\");
             }
             if (truncated || usedCharacters >= MaximumCharacters || usedLines > MaximumLines) { truncated = true; break; }
         }
@@ -169,6 +293,13 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
     private IReadOnlyDictionary<string, object?> TakeArguments(AgentLifecycleEvent update)
     {
         if (update.OperationId is { Length: > 0 } operationId && _argumentsByCall.Remove(operationId, out var arguments))
+            return arguments;
+        return SnapshotArguments(update.ToolArguments);
+    }
+
+    private IReadOnlyDictionary<string, object?> GetRememberedArguments(AgentLifecycleEvent update)
+    {
+        if (update.OperationId is { Length: > 0 } operationId && _argumentsByCall.TryGetValue(operationId, out var arguments))
             return arguments;
         return SnapshotArguments(update.ToolArguments);
     }
@@ -225,7 +356,11 @@ internal sealed class TerminalToolPresentation(Func<string, PiSharpToolRenderer?
             if (span is null) continue;
             var text = SafeBoundedText(span.Text, ref usedCharacters, ref usedLines, out var spanTruncated);
             if (text.Length > 0)
-                spans.Add(new(text, Enum.IsDefined(span.Style) ? span.Style : PiSharpToolTextStyle.Normal, span.Bold, span.Dim));
+                spans.Add(new PiSharpToolTextSpan(text,
+                    Enum.IsDefined(span.Style) ? span.Style : PiSharpToolTextStyle.Normal, span.Bold, span.Dim)
+                {
+                    HyperlinkTarget = NormalizeHyperlinkTarget(span.HyperlinkTarget)
+                });
             if (spanTruncated || usedCharacters >= MaximumCharacters || usedLines >= MaximumLines)
             {
                 truncated = true;

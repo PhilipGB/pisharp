@@ -14,21 +14,13 @@ internal static class TerminalMarkdownTableRenderer
         if (rows.Count == 0) return "";
         var headerIndex = rows.FindIndex(row => row.IsHeader);
         if (headerIndex < 0) headerIndex = 0;
-        var sourceHeader = RowCells(rows[headerIndex]);
+        var sourceHeader = RowCells(rows[headerIndex], theme);
         var columnCount = table.ColumnDefinitions?.Count ?? sourceHeader.Length;
         if (columnCount is < 1 or > 16 || rows.Count > 1_001) return TerminalMarkdownSource.Slice(table, source);
 
         var header = Normalize(sourceHeader, columnCount);
         var dataRows = rows.Where((_, index) => index != headerIndex)
-            .Select(row => Normalize(RowCells(row), columnCount)).ToArray();
-        var alignments = Enumerable.Range(0, columnCount).Select(index => table.ColumnDefinitions is null
-            ? TableAlignment.Left
-            : table.ColumnDefinitions[index].Alignment switch
-            {
-                TableColumnAlign.Center => TableAlignment.Center,
-                TableColumnAlign.Right => TableAlignment.Right,
-                _ => TableAlignment.Left
-            }).ToArray();
+            .Select(row => Normalize(RowCells(row, theme), columnCount)).ToArray();
         var allRows = new[] { header }.Concat(dataRows).ToArray();
         var naturalWidths = Enumerable.Range(0, columnCount)
             .Select(column => Math.Max(1, allRows.Max(row => TerminalTextLayout.Width(row[column])))).ToArray();
@@ -65,23 +57,24 @@ internal static class TerminalMarkdownTableRenderer
 
         var output = new List<string>
         {
-            theme.Style("mdCodeBlockBorder", $"┌─{string.Join("─┬─", widths.Select(value => new string('─', value)))}─┐")
+            $"┌─{string.Join("─┬─", widths.Select(value => new string('─', value)))}─┐"
         };
-        output.AddRange(RenderRow(header, widths, alignments, isHeader: true, theme: theme));
-        var separator = theme.Style("mdCodeBlockBorder", $"├─{string.Join("─┼─", widths.Select(value => new string('─', value)))}─┤");
+        output.AddRange(RenderRow(header, widths, isHeader: true));
+        var separator = $"├─{string.Join("─┼─", widths.Select(value => new string('─', value)))}─┤";
         output.Add(separator);
         for (var index = 0; index < dataRows.Length; index++)
         {
-            output.AddRange(RenderRow(dataRows[index], widths, alignments, isHeader: false, theme: theme));
+            output.AddRange(RenderRow(dataRows[index], widths, isHeader: false));
             if (index < dataRows.Length - 1) output.Add(separator);
         }
-        output.Add(theme.Style("mdCodeBlockBorder", $"└─{string.Join("─┴─", widths.Select(value => new string('─', value)))}─┘"));
+        output.Add($"└─{string.Join("─┴─", widths.Select(value => new string('─', value)))}─┘");
         return string.Join('\n', output);
     }
 
-    private static string[] RowCells(TableRow row) => row.OfType<TableCell>()
+    private static string[] RowCells(TableRow row, TerminalTheme theme) => row.OfType<TableCell>()
             .Select(cell => string.Join(' ', cell.OfType<ParagraphBlock>()
-            .Select(paragraph => TerminalMarkdownInlineRenderer.Render(paragraph.Inline?.FirstChild, styled: false))).Trim()).ToArray();
+            .Select(paragraph => TerminalMarkdownInlineRenderer.Render(paragraph.Inline?.FirstChild,
+                styled: true, theme: theme))).Trim()).ToArray();
 
     private static string[] Normalize(string[] cells, int columns)
     {
@@ -90,8 +83,7 @@ internal static class TerminalMarkdownTableRenderer
         return normalized;
     }
 
-    private static IReadOnlyList<string> RenderRow(string[] cells, int[] widths,
-        TableAlignment[] alignments, bool isHeader, TerminalTheme theme)
+    private static IReadOnlyList<string> RenderRow(string[] cells, int[] widths, bool isHeader)
     {
         var wrapped = cells.Select((cell, index) => TerminalTextLayout.Wrap(cell, widths[index])).ToArray();
         var height = wrapped.Max(lines => lines.Count);
@@ -102,18 +94,10 @@ internal static class TerminalMarkdownTableRenderer
             for (var column = 0; column < cells.Length; column++)
             {
                 var text = line < wrapped[column].Count ? wrapped[column][line] : "";
-                var padding = Math.Max(0, widths[column] - TerminalTextLayout.Width(text));
-                var leftPadding = alignments[column] switch
-                {
-                    TableAlignment.Right => padding,
-                    TableAlignment.Center => padding / 2,
-                    _ => 0
-                };
-                var rightPadding = padding - leftPadding;
-                text = new string(' ', leftPadding) + text + new string(' ', rightPadding);
-                padded[column] = isHeader ? $"\u001b[1m{text}\u001b[22m" : text;
+                var padding = new string(' ', Math.Max(0, widths[column] - TerminalTextLayout.Width(text)));
+                padded[column] = isHeader ? $"\u001b[1m{text}\u001b[1m{padding}\u001b[22m" : text + padding;
             }
-            output.Add(theme.Style("mdCodeBlockBorder", $"│ {string.Join(" │ ", padded)} │"));
+            output.Add($"│ {string.Join(" │ ", padded)} │");
         }
         return output;
     }
@@ -131,5 +115,4 @@ internal static class TerminalMarkdownTableRenderer
         return maximum;
     }
 
-    private enum TableAlignment { Left, Center, Right }
 }

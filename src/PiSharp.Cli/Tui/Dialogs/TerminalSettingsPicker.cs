@@ -39,6 +39,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("quietStartup", "Quiet startup", "Disable verbose printing at startup; header keeps only the startup header."),
         new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
         new("theme", "Theme", "Choose the system theme, a named theme, or a light/dark pair."),
+        new("fullscreenWheelScrollLines", "Fullscreen wheel scrolling", "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not."),
         // PiSharp-only settings follow Pi's shared selector settings.
         new("defaultThinkingLevel", "Default thinking level", "Initial thinking level unless overridden by --thinking."),
         new("httpProxy", "HTTP proxy", "User-wide HTTP proxy for PiSharp-managed HTTP clients; takes effect on the next launch.", UserOnly: true),
@@ -158,7 +159,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
             if (current is null)
                 display += projectScope ? " (inherited)" : " (default)";
         }
-        else if (setting.Id is "editorPaddingX" or "outputPad" or "autocompleteMaxVisible")
+        else if (setting.Id is "editorPaddingX" or "outputPad" or "autocompleteMaxVisible" or "fullscreenWheelScrollLines")
         {
             var effective = GetValue(effectiveSettings, setting.Id);
             var configured = current ?? (projectScope ? effective : null);
@@ -167,6 +168,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
                 "editorPaddingX" => "0",
                 "outputPad" => "1",
                 "autocompleteMaxVisible" => "5",
+                "fullscreenWheelScrollLines" => "auto",
                 _ => null
             });
             display = DisplayValue(resolved, setting.Id);
@@ -236,6 +238,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "retry.provider.timeoutMs" => settings.Retry?.Provider?.TimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         "httpIdleTimeoutMs" => settings.HttpIdleTimeoutMs?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         "markdown.codeBlockIndent" => settings.MarkdownCodeBlockIndent,
+        "fullscreenWheelScrollLines" => settings.FullscreenWheelScrollLines?.ToSettingValue(),
         _ => null
     };
 
@@ -354,6 +357,14 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
             if (currentValue is not null) choices.Add(currentValue);
             values.AddRange(choices.OrderBy(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture))
                 .Select(value => (value, (string?)value, value, $"Show up to {value} autocomplete entries.")));
+        }
+        else if (setting.Id == "fullscreenWheelScrollLines")
+        {
+            var choices = new[] { "1", "2", "3", "5", "10" }.ToHashSet(StringComparer.Ordinal);
+            if (currentValue is not null && currentValue != "auto") choices.Add(currentValue);
+            values.Add(("auto", "auto", "Auto", "Accelerate fast wheel spins where the terminal does not."));
+            values.AddRange(choices.OrderBy(value => int.Parse(value, System.Globalization.CultureInfo.InvariantCulture))
+                .Select(value => (value, (string?)value, value, $"Move {value} lines per wheel event.")));
         }
         else if (setting.Id == "theme")
         {

@@ -5,6 +5,23 @@ using PiSharp.Extensions.Abstractions;
 /// <summary>Places modal content over the idle or active terminal compositor.</summary>
 internal static class TerminalOverlayLayout
 {
+    public static void ApplyTranscriptSearch(string[] screenRows, IReadOnlyList<string> panel, int columns)
+    {
+        if (screenRows.Length == 0 || panel.Count == 0 || columns < 3) return;
+        var panelWidth = Math.Min(columns - 2, Math.Max(32, (int)(columns * 0.4)));
+        var left = Math.Max(0, columns - panelWidth - 1);
+        var top = Math.Min(1, Math.Max(0, screenRows.Length - panel.Count));
+        for (var index = 0; index < panel.Count && top + index < screenRows.Length; index++)
+        {
+            var row = top + index;
+            var styledScrollGlyph = TerminalTextLayout.SliceStyledCells(screenRows[row], columns - 1, columns);
+            var beforePanel = TerminalTranscriptViewport.Clip(screenRows[row], left);
+            beforePanel += new string(' ', Math.Max(0, left - TerminalTextLayout.Width(beforePanel)));
+            screenRows[row] = beforePanel + "\u001b[0m" + TerminalTranscriptViewport.Clip(panel[index], panelWidth) +
+                "\u001b[0m" + styledScrollGlyph;
+        }
+    }
+
     public static void Apply(string[] screenRows, IReadOnlyList<string> content, int columns, TerminalTheme? theme = null)
     {
         if (screenRows.Length == 0 || content.Count == 0) return;

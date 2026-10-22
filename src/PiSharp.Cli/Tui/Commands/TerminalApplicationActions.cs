@@ -12,6 +12,9 @@ internal sealed class TerminalApplicationActions(TerminalSettingsCommands settin
         {
             switch (action)
             {
+                case "app.suspend":
+                    await inputActions.SuspendAsync();
+                    break;
                 case "app.thinking.toggle":
                     await settingsCommands.ToggleThinkingAsync();
                     break;
@@ -49,7 +52,7 @@ internal sealed class TerminalApplicationActions(TerminalSettingsCommands settin
         {
             Console.Error.WriteLine($"Shortcut action failed: {error.Message}");
         }
-        finally { presentation.Screen?.SetFooter(presentation.IdleFooter()); }
+        finally { presentation.SetIdleFooter(); }
     }
 
 }

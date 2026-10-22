@@ -9,8 +9,10 @@ internal sealed class TerminalTranscriptBuffer
     private const int MaximumTranscriptSegments = 10_000;
     private const int MaximumCapturedCharacters = 4_000_000;
     private const int ToolPreviewContentRows = 10;
+    private const int MaximumRememberedLiveTools = 1_024;
     private readonly List<CapturedChunkBuilder> _captured = [];
     private readonly List<TranscriptSegment> _segments = [];
+    private readonly Queue<string> _liveToolOrder = [];
     private int _capturedCharacters;
     private int _transcriptCharacters;
     private bool _captureTruncated;
@@ -93,6 +95,25 @@ internal sealed class TerminalTranscriptBuffer
         Revision++;
     }
 
+    internal void AppendLiveTool(string id, string rendered, string collapsed,
+        Func<TerminalTheme, string> expandedRenderer, Func<TerminalTheme, string> collapsedRenderer,
+        string captured)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentNullException.ThrowIfNull(expandedRenderer);
+        ArgumentNullException.ThrowIfNull(collapsedRenderer);
+        if (rendered.Length == 0) return;
+
+        var capture = CaptureReplaceable(captured, isError: true);
+        var segment = new TranscriptSegment(true, new StringBuilder(rendered), collapsed,
+            themeRenderer: expandedRenderer, collapsedRenderer: collapsedRenderer);
+        _segments.Add(segment);
+        TrackLiveTool(id, (segment, capture));
+        _transcriptCharacters += rendered.Length;
+        TrimTranscript();
+        Revision++;
+    }
+
     public void AppendThemedStatus(string rendered, Func<TerminalTheme, string> themeRenderer, string capturedText)
     {
         ArgumentNullException.ThrowIfNull(themeRenderer);
@@ -139,6 +160,7 @@ internal sealed class TerminalTranscriptBuffer
         }
         _transcriptCharacters += rendered.Length - row.Segment.Text.Length;
         row.Segment.Text.Clear().Append(rendered);
+        row.Segment.KeepLastPreviewLine = true;
         row.Segment.CollapsedPreviewSource = collapsed;
         row.Segment.InvalidateCollapsedPreview();
         row.Segment.ThemeRenderer = expandedRenderer;
@@ -149,7 +171,7 @@ internal sealed class TerminalTranscriptBuffer
             ReplaceCapturedThinking(capture, captured);
         }
         if (finished) _liveTools.Remove(id);
-        else _liveTools[id] = row;
+        else TrackLiveTool(id, row);
         TrimTranscript();
         Revision++;
     }
@@ -285,6 +307,7 @@ internal sealed class TerminalTranscriptBuffer
         _captureTruncated = false;
         _latestStatusRenderer = null;
         _latestCapturedStatus = null;
+        _liveToolOrder.Clear();
         Revision++;
     }
 
@@ -357,6 +380,33 @@ internal sealed class TerminalTranscriptBuffer
         else
             _captured.Add(new(isError, new StringBuilder(text)));
         _capturedCharacters += text.Length;
+    }
+
+    private CapturedChunkBuilder? CaptureReplaceable(string text, bool isError)
+    {
+        var remaining = MaximumCapturedCharacters - _capturedCharacters;
+        if (remaining <= 0)
+        {
+            _captureTruncated = true;
+            return null;
+        }
+        if (text.Length > remaining)
+        {
+            text = text[..remaining];
+            _captureTruncated = true;
+        }
+        var chunk = new CapturedChunkBuilder(isError, new StringBuilder(text), isReplaceable: true);
+        _captured.Add(chunk);
+        _capturedCharacters += text.Length;
+        return chunk;
+    }
+
+    private void TrackLiveTool(string id, (TranscriptSegment Segment, CapturedChunkBuilder? Capture) row)
+    {
+        if (!_liveTools.ContainsKey(id)) _liveToolOrder.Enqueue(id);
+        _liveTools[id] = row;
+        while (_liveToolOrder.Count > MaximumRememberedLiveTools)
+            _liveTools.Remove(_liveToolOrder.Dequeue());
     }
 
     private CapturedChunkBuilder? CaptureThinking(string text)
@@ -436,11 +486,18 @@ internal sealed class TerminalTranscriptBuffer
         var hiddenRows = visibleRows - ToolPreviewContentRows;
         if (hiddenRows > 0 && segment.KeepLastPreviewLine)
         {
-            hiddenRows--;
-            var footer = layout.Rows[visibleRows - 1];
-            var body = string.Join('\n', layout.Rows.Take(ToolPreviewContentRows));
+            var footerIndex = visibleRows - 1;
+            // Styled panel padding remains below the footer; it must not replace it.
+            while (footerIndex > 0 && IsWhitespaceVisualRow(layout.Rows[footerIndex])) footerIndex--;
+            var bodyRowCount = Math.Min(ToolPreviewContentRows, footerIndex);
+            hiddenRows = Math.Max(0, footerIndex - bodyRowCount);
+            var footer = layout.Rows[footerIndex];
+            var body = string.Join('\n', layout.Rows.Take(bodyRowCount));
             var notice = hiddenRows > 0 ? "\n" + FormatPreviewHint(hiddenRows, width) : "";
-            segment.CollapsedPreview = body + notice + "\n" + footer + (hasTrailingNewline ? "\n" : "");
+            var trailingRows = layout.Rows.Skip(footerIndex + 1).Take(visibleRows - footerIndex - 1);
+            var trailing = string.Join('\n', trailingRows);
+            segment.CollapsedPreview = body + notice + "\n" + footer +
+                (trailing.Length > 0 ? "\n" + trailing : "") + (hasTrailingNewline ? "\n" : "");
             segment.CollapsedPreviewWidth = width;
             return segment.CollapsedPreview;
         }
@@ -451,6 +508,21 @@ internal sealed class TerminalTranscriptBuffer
         segment.CollapsedPreview = preview;
         segment.CollapsedPreviewWidth = width;
         return preview;
+    }
+
+    private static bool IsWhitespaceVisualRow(string row)
+    {
+        for (var offset = 0; offset < row.Length;)
+        {
+            if (TerminalTextLayout.TryReadEscape(row, offset, out var escapeLength))
+            {
+                offset += escapeLength;
+                continue;
+            }
+            if (!char.IsWhiteSpace(row[offset])) return false;
+            offset++;
+        }
+        return true;
     }
 
     private static string FormatPreviewHint(int hiddenRows, int width)

@@ -31,24 +31,242 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
-    public void RestoreLastFrameWritesCompactViewportToNormalBuffer()
+    public void RegularScreenStreamsTheFullDocumentAndAppendsNewRowsWithoutClearingScrollback()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer(), useAlternateScreen: false);
+        var frame = new TerminalScreenCompositor.Frame(["viewport row"], 0, 1, 0, 20, 4,
+            DocumentRows: ["first row", "second row"], DocumentCursorRow: 1, DocumentCursorColumn: 2);
+
+        compositor.Render(frame);
+
+        var initial = output.ToString();
+        Assert.Contains("first row\r\nsecond row", initial);
+        Assert.DoesNotContain("viewport row", initial);
+        Assert.DoesNotContain("\u001b[2J", initial);
+        output.GetStringBuilder().Clear();
+
+        compositor.Render(frame with
+        {
+            DocumentRows = ["first row", "second row", "third row"],
+            DocumentCursorRow = 2
+        });
+
+        var update = output.ToString();
+        Assert.Contains("\r\n\u001b[2Kthird row", update);
+        Assert.DoesNotContain("\u001b[2J", update);
+    }
+
+    [Fact]
+    public void RegularScreenWidthChangeRedrawsTheDocumentAndClearsObsoleteScrollback()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer(), useAlternateScreen: false);
+        var frame = new TerminalScreenCompositor.Frame([], 0, 1, 0, 20, 4,
+            DocumentRows: ["first row"], DocumentCursorRow: 0, DocumentCursorColumn: 1);
+        compositor.Render(frame);
+        output.GetStringBuilder().Clear();
+
+        compositor.Render(frame with { Columns = 18, DocumentRows = ["reflowed row"] });
+
+        Assert.Contains("\u001b[2J\u001b[H\u001b[3J", output.ToString());
+        Assert.Contains("reflowed row", output.ToString());
+    }
+
+    [Fact]
+    public void RegularScreenExitMovesToTheNextDocumentRowLikePinnedPi()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer(), useAlternateScreen: false);
+        compositor.Render(new TerminalScreenCompositor.Frame([], 0, 1, 0, 20, 4,
+            DocumentRows: ["first row", "last row"], DocumentCursorRow: 0, DocumentCursorColumn: 1));
+        output.GetStringBuilder().Clear();
+
+        compositor.LeaveMainScreen();
+
+        Assert.EndsWith("\r\n\u001b[?25h", output.ToString());
+        Assert.Contains(" \u001b[2B\r\n", output.ToString());
+        Assert.DoesNotContain("\u001b[?7h", output.ToString());
+        Assert.DoesNotContain("\u001b[?2026h", output.ToString());
+    }
+
+    [Fact]
+    public void TranscriptPaddingPreservesFullWidthUserMessageBackgroundRows()
+    {
+        var row = "\u001b[44m" + new string(' ', 40) + "\u001b[0m";
+
+        Assert.Equal(row, TerminalScreenCompositor.PadTranscriptRow(row, transcriptWidth: 38, outputPadding: 1));
+    }
+
+    [Fact]
+    public void TranscriptPaddingFillsBlankToolPanelRowsWithTheirBackground()
+    {
+        const string background = "\u001b[48;2;1;2;3m";
+        var padded = TerminalScreenCompositor.PadTranscriptRow(
+            background + "\u001b[0m", transcriptWidth: 8, outputPadding: 1);
+
+        Assert.Equal(background + new string(' ', 10) + "\u001b[0m", padded);
+    }
+
+    [Fact]
+    public void TranscriptPaddingFillsTheFullWidthOfUnstyledBlankRows()
+    {
+        Assert.Equal(new string(' ', 80),
+            TerminalScreenCompositor.PadTranscriptRow("", transcriptWidth: 78, outputPadding: 1));
+    }
+
+    [Fact]
+    public void TranscriptPaddingResetsInlineUnderlineBeforeTrailingCells()
+    {
+        const string reset = "\u001b[0m";
+        var row = "\u001b[4mlink\u001b[24m\u001b[39m" + reset + reset;
+        var padded = TerminalScreenCompositor.PadTranscriptRow(row, transcriptWidth: 12, outputPadding: 0);
+
+        Assert.Equal(row + new string(' ', 8), padded);
+        Assert.Equal("link" + new string(' ', 8), TerminalTextLayout.StripFormatting(padded));
+    }
+
+    [Fact]
+    public void TranscriptPaddingKeepsToolPanelBackgroundAcrossTrailingCells()
+    {
+        const string background = "\u001b[48;2;1;2;3m";
+        var padded = TerminalScreenCompositor.PadTranscriptRow(
+            background + "result\u001b[0m", transcriptWidth: 8, outputPadding: 1);
+
+        Assert.Equal(background + " result\u001b[0m" + background + "   \u001b[0m", padded);
+    }
+
+    [Fact]
+    public void RestoreLastFrameStreamsTheRegularDocumentBelowTheAlternateScreen()
     {
         using var output = new StringWriter();
         var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer());
         compositor.Render(new TerminalScreenCompositor.Frame(
-            ["transcript", "", "\u001b[2m────\u001b[0m", "   ", "\u001b[7mX\u001b[27m", "cwd", "footer"],
-            4, 1, 0, 10, 7, RestoreStartRow: 2));
+            ["fullscreen viewport"], 0, 1, 0, 10, 7,
+            DocumentRows: ["transcript", "", "\u001b[2m────\u001b[0m", "   ", "\u001b[7mX\u001b[27m", "cwd", "footer"],
+            DocumentCursorRow: 4, DocumentCursorColumn: 1));
         output.GetStringBuilder().Clear();
 
         compositor.RestoreLastFrameToNormalBuffer();
 
         var restored = output.ToString();
-        Assert.Contains("\u001b[?2026h\r\n\r\u001b[2K\u001b[2m────\u001b[0m\r\n\r\u001b[2K   \r\n\r\u001b[2KX", restored);
-        Assert.Contains("\r\u001b[2Kcwd\r\n\r\u001b[2Kfooter", restored);
-        Assert.EndsWith("\u001b[?7h\r\n\r\n\u001b[?25h\u001b[?2026l", restored);
-        Assert.DoesNotContain("\u001b[7m", restored);
-        Assert.DoesNotContain("\u001b[27m", restored);
-        Assert.DoesNotContain("transcript", restored);
+        Assert.StartsWith("\u001b[?2026h\u001b[?7l\r\u001b[2Ktranscript\r\n\r\u001b[2K\r\n\r\u001b[2K\u001b[2m────", restored);
+        Assert.Contains("X", restored);
+        Assert.Contains("\r\n\r\u001b[2K\u001b[2m────\u001b[0m\r\n\r\u001b[2K   \r\n\r\u001b[2K\u001b[7mX", restored);
+        Assert.Contains("cwd\r\n\r\u001b[2Kfooter", restored);
+        Assert.Contains("\u001b[0m\u001b[?7h\u001b[?25h\u001b[?2026l", restored);
+        Assert.EndsWith("\u001b[?25h", restored);
+        Assert.Contains("\u001b[?25l\u001b[2A\u001b[1G\u001b[0m \u001b[3B\r\n\u001b[?25h", restored);
+        Assert.DoesNotContain("fullscreen viewport", restored);
+        Assert.Contains("\u001b[7mX\u001b[27m", restored);
+        Assert.DoesNotContain("\u001b[2J", restored);
+        Assert.DoesNotContain("\u001b[3J", restored);
+    }
+
+    [Fact]
+    public void LeaveAlternateScreenPreservesTheNormalBufferInItsOwnSynchronizedTransition()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer());
+
+        compositor.LeaveAlternateScreen("\u001b[?2004l");
+
+        Assert.Equal("\u001b[?2026h\u001b[?2004l\u001b[?1049l\u001b[?25h\u001b[?2026l", output.ToString());
+    }
+
+    [Fact]
+    public void RestoreLastFrameAdvancesBelowFullWidthFinalRowLikeThePinnedMainScreen()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer());
+        compositor.Render(new TerminalScreenCompositor.Frame(
+            ["header", "editor", new string('x', 10)], 1, 1, 0, 10, 3));
+        output.GetStringBuilder().Clear();
+
+        compositor.RestoreLastFrameToNormalBuffer();
+
+        var restored = output.ToString();
+        Assert.Contains(new string('x', 10), restored);
+        Assert.Contains("\u001b[0m\u001b[?7h\u001b[?25h\u001b[?2026l", restored);
+        Assert.EndsWith("\u001b[?25h", restored);
+    }
+
+    [Fact]
+    public void RestoreLastFrameReconstructsDocumentAndKeepsExtensionDashboardWithoutTransientOverlays()
+    {
+        using var output = new StringWriter();
+        var compositor = new TerminalScreenCompositor(output, new TerminalImageRenderer());
+        var transcript = string.Join('\n', Enumerable.Range(0, 32).Select(index => $"transcript row {index:D2}"));
+        var frame = compositor.Compose("draft", 5, null, null, transcript, "fixture-model",
+            overlay: ["modal overlay"], scrollOffset: 0, columns: 48, height: 18,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            editorPanel: ["focused panel"],
+            extensionHeader: [new("extension header", "accent")],
+            extensionWidgetsAbove: [new("extension widget", "success")],
+            extensionFooter: [new("extension footer", "muted")]);
+        compositor.Render(frame);
+        output.GetStringBuilder().Clear();
+
+        compositor.RestoreLastFrameToNormalBuffer();
+
+        var restored = output.ToString();
+        Assert.DoesNotContain("\u001b[2J", restored);
+        Assert.DoesNotContain("\u001b[3J", restored);
+        Assert.Contains("extension header", restored);
+        Assert.Contains("transcript row 00", restored);
+        Assert.Contains("transcript row 31", restored);
+        Assert.Contains("extension widget", restored);
+        Assert.Contains("draft", restored);
+        Assert.Contains("\u001b[7m", restored);
+        Assert.Contains("extension footer", restored);
+        Assert.DoesNotContain("focused panel", restored);
+        Assert.DoesNotContain("modal overlay", restored);
+        Assert.True(restored.IndexOf("extension header", StringComparison.Ordinal) <
+            restored.IndexOf("transcript row 00", StringComparison.Ordinal));
+        Assert.True(restored.IndexOf("extension widget", StringComparison.Ordinal) <
+            restored.IndexOf("draft", StringComparison.Ordinal));
+        Assert.True(restored.IndexOf("draft", StringComparison.Ordinal) <
+            restored.IndexOf("extension footer", StringComparison.Ordinal));
+        Assert.Equal(1, restored.Split("\u001b[?2026h", StringSplitOptions.None).Length - 1);
+        Assert.Equal(1, restored.Split("\u001b[?2026l", StringSplitOptions.None).Length - 1);
+        Assert.Contains("\u001b[?25h\u001b[?2026l", restored);
+        Assert.EndsWith("\u001b[?25h", restored);
+    }
+
+    [Fact]
+    public void FullDocumentRestorationUsesThePiAboveWidgetSpacerAfterTheTranscript()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var frame = compositor.Compose("", 0, null, null, "answer\n\n\n", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 48, height: 18,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default);
+        var rows = frame.DocumentRows!.Select(TerminalTextLayout.StripFormatting).ToArray();
+        var answerRow = Array.FindIndex(rows, row => row.Trim() == "answer");
+        var editorBorderRow = Array.FindIndex(rows, row => row.Contains('─'));
+
+        Assert.True(answerRow >= 0);
+        Assert.True(editorBorderRow > answerRow);
+        Assert.Equal(2, editorBorderRow - answerRow);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void StartupDocumentKeepsItsBottomSpacerBeforeTheAboveWidgetSpacer(bool useAlternateScreen)
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer(), useAlternateScreen);
+        var frame = compositor.Compose("", 0, null, null, "", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 80, height: 24,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            startupHeader: "brand", startupContent: " startup help\n");
+        var rows = frame.DocumentRows!.Select(TerminalTextLayout.StripFormatting).ToArray();
+        var startupRow = Array.FindIndex(rows, row => row.Contains("startup help", StringComparison.Ordinal));
+        var editorBorderRow = Array.FindIndex(rows, row => row.Contains('─'));
+
+        Assert.True(startupRow >= 0);
+        Assert.Equal(3, editorBorderRow - startupRow);
+        Assert.True(string.IsNullOrWhiteSpace(rows[startupRow + 1]));
+        Assert.True(string.IsNullOrWhiteSpace(rows[startupRow + 2]));
     }
 
     [Fact]
@@ -340,6 +558,40 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void StartupPresentationKeepsItsOwnIndentationWhenTranscriptOutputPaddingChanges()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+
+        var frame = compositor.Compose("", 0, null, null, "history", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 20, height: 12,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            startupHeader: "brand", startupContent: " help", outputPad: 2);
+
+        Assert.StartsWith(" help", frame.Rows[2]);
+        Assert.StartsWith("  history", frame.Rows[3]);
+        Assert.StartsWith(" help", frame.DocumentRows![2]);
+        Assert.StartsWith("  history", frame.DocumentRows[3]);
+    }
+
+    [Fact]
+    public void WrappedStartupPresentationKeepsTheFixedPiHeaderInset()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+
+        var frame = compositor.Compose("", 0, null, null, "", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 20, height: 12,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            startupHeader: "brand", startupContent: " first line wraps after these words");
+
+        var startupRows = frame.Rows.Skip(2).TakeWhile(row =>
+            !string.IsNullOrWhiteSpace(TerminalTextLayout.StripFormatting(row))).ToArray();
+
+        Assert.True(startupRows.Length > 1);
+        Assert.All(startupRows, row => Assert.StartsWith(" ", row));
+        Assert.All(frame.DocumentRows!.Skip(2).Take(startupRows.Length), row => Assert.StartsWith(" ", row));
+    }
+
+    [Fact]
     public void StartupDetailsUseTheScrollableTranscriptBelowTheFixedHeader()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
@@ -369,6 +621,19 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void DocumentRowsKeepTrailingZeroWidthImageMarkers()
+    {
+        const string marker = "\uE000psimg-00000000000000000000000000000000-0\uE001";
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+
+        var frame = compositor.Compose("", 0, null, null, "answer\n" + marker, "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 80, height: 24,
+            new TranscriptSearchController(), new TerminalMouseRouter());
+
+        Assert.Contains(frame.DocumentRows!, row => row.Contains(marker, StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void ScrolledTranscriptKeepsItsVisibleRowsWhileStreamingAndLatestStillFollows()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
@@ -378,14 +643,14 @@ public sealed class TerminalScreenCompositorTests
             scrollOffset: 0, columns: 80, height: 12, new TranscriptSearchController(), new TerminalMouseRouter());
         var scrolled = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
             scrollOffset: 8, columns: 80, height: 12, new TranscriptSearchController(), new TerminalMouseRouter());
-        Assert.Contains("message 15", scrolled.Rows[0]);
+        Assert.Contains("message 16", scrolled.Rows[0]);
 
         transcript += "\nmessage 30\nmessage 31\nmessage 32";
         var streaming = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
             scrollOffset: scrolled.ScrollOffset, columns: 80, height: 12,
             new TranscriptSearchController(), new TerminalMouseRouter());
 
-        Assert.Contains("message 15", streaming.Rows[0]);
+        Assert.Contains("message 16", streaming.Rows[0]);
         Assert.DoesNotContain(streaming.Rows, row => row.Contains("message 30", StringComparison.Ordinal));
 
         var latestCompositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
@@ -399,6 +664,122 @@ public sealed class TerminalScreenCompositorTests
 
         Assert.Contains(latest.Rows, row => row.Contains("message 32", StringComparison.Ordinal));
         Assert.DoesNotContain(latest.Rows, row => row.Contains("message 00", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ScrolledTranscriptKeepsTheJumpHintAfterItsScrollbarHides()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var transcript = string.Join('\n', Enumerable.Range(0, 80).Select(index => $"message {index:D2}"));
+
+        var frame = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 1, columns: 80, height: 24, new TranscriptSearchController(), new TerminalMouseRouter());
+
+        Assert.Contains(frame.Rows, row => TerminalTextLayout.StripFormatting(row)
+            .Contains("Jump to latest message", StringComparison.Ordinal));
+        Assert.DoesNotContain(frame.Rows, row => TerminalTextLayout.StripFormatting(row).Contains('┃'));
+        Assert.DoesNotContain(frame.Rows, row => TerminalTextLayout.StripFormatting(row).Contains('│'));
+
+        var visibleFrame = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 1, columns: 80, height: 24, new TranscriptSearchController(), new TerminalMouseRouter(),
+            transientScrollbarVisible: true);
+
+        var trackHeight = visibleFrame.TranscriptHeight;
+        var contentHeight = TerminalTextLayout.Create(transcript, 80).RowCount;
+        var thumbHeight = Math.Max(Math.Min(2, trackHeight),
+            Math.Min(trackHeight, (int)Math.Round((double)trackHeight * trackHeight / contentHeight)));
+        var maximumScrollTop = Math.Max(0, contentHeight - visibleFrame.TranscriptHeight);
+        var scrollTop = Math.Max(0, maximumScrollTop - visibleFrame.ScrollOffset);
+        var thumbOffset = maximumScrollTop == 0 ? 0 :
+            (int)Math.Round((double)scrollTop / maximumScrollTop * (trackHeight - thumbHeight));
+        var thumbRow = visibleFrame.TranscriptStartRow + thumbOffset;
+
+        Assert.EndsWith("┃", TerminalTextLayout.StripFormatting(visibleFrame.Rows[thumbRow]));
+        if (thumbOffset > 0)
+            Assert.EndsWith("│", TerminalTextLayout.StripFormatting(visibleFrame.Rows[thumbRow - 1]));
+    }
+
+    [Fact]
+    public void TranscriptSearchPositionsTheMatchUsingTheFullscreenScrollableViewport()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var transcript = string.Join('\n', Enumerable.Range(0, 120)
+            .Select(index => index == 80 ? "unique-search-match" : $"transcript row {index:D3}"));
+        var search = new TranscriptSearchController();
+        search.SetQuery("unique-search-match", 0);
+
+        var frame = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 80, height: 24, search, new TerminalMouseRouter());
+        var matchRow = frame.Rows.ToList().FindIndex(row =>
+            TerminalTextLayout.StripFormatting(row).Contains("unique-search-match", StringComparison.Ordinal));
+
+        Assert.Equal(frame.TranscriptHeight / 3, matchRow - frame.TranscriptStartRow);
+    }
+
+    [Fact]
+    public void TranscriptSearchKeepsTheViewportWhenTheSelectedMatchIsAlreadyVisible()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var transcript = string.Join('\n', Enumerable.Range(0, 120)
+            .Select(index => $"transcript row {index:D3}"));
+        const int columns = 80;
+        const int height = 24;
+        const int firstVisibleRow = 76;
+        var initial = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 0, columns, height, new TranscriptSearchController(), new TerminalMouseRouter());
+        var scrollOffset = Math.Max(0, 120 - initial.TranscriptHeight - firstVisibleRow);
+        var beforeSearch = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset, columns, height, new TranscriptSearchController(), new TerminalMouseRouter());
+        var search = new TranscriptSearchController();
+        search.SetQuery("transcript row 080", 0);
+
+        var searched = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            beforeSearch.ScrollOffset, columns, height, search, new TerminalMouseRouter());
+
+        var beforeRow = beforeSearch.Rows.ToList().FindIndex(row =>
+            TerminalTextLayout.StripFormatting(row).Contains("transcript row 080", StringComparison.Ordinal));
+        var searchedRow = searched.Rows.ToList().FindIndex(row =>
+            TerminalTextLayout.StripFormatting(row).Contains("transcript row 080", StringComparison.Ordinal));
+        Assert.True(beforeRow >= 0);
+        Assert.Equal(beforeSearch.ScrollOffset, searched.ScrollOffset);
+        Assert.Equal(beforeRow, searchedRow);
+    }
+
+    [Fact]
+    public void TranscriptSearchRevealsARefinedMatchWhenItWrapsAboveTheViewport()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var transcript = string.Join('\n', Enumerable.Range(1, 30)
+            .Select(index => $"assistant-entry-{index:D2}"));
+        var lastEntryStart = transcript.IndexOf("assistant-entry-30", StringComparison.Ordinal);
+        var search = new TranscriptSearchController();
+        search.SetQuery("assistant-entry-", 0, lastEntryStart);
+
+        var lastMatch = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 80, height: 24, search, new TerminalMouseRouter());
+        var selectedLastMatchStart = search.SelectedTextStart;
+        search.SetQuery("assistant-entry-0", 0, selectedLastMatchStart);
+        var firstMatch = compositor.Compose("", 0, null, null, transcript, "fixture-model", overlay: null,
+            lastMatch.ScrollOffset, columns: 80, height: 24, search, new TerminalMouseRouter());
+
+        Assert.Equal(9, search.State.MatchCount);
+        Assert.Contains(firstMatch.Rows, row =>
+            TerminalTextLayout.StripFormatting(row).Contains("assistant-entry-01", StringComparison.Ordinal));
+        Assert.NotEqual(lastMatch.ScrollOffset, firstMatch.ScrollOffset);
+    }
+
+    [Fact]
+    public void TranscriptSearchPlacesTheTerminalCursorAtTheQueryCaret()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var frame = compositor.Compose("draft", 2, null, null, "transcript", "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 80, height: 24, new TranscriptSearchController(),
+            new TerminalMouseRouter(), transcriptSearchPanel: ["┌─┐", "│ query │", "└─┘"],
+            transcriptSearchCursorColumn: 67);
+
+        Assert.Equal(2, frame.CursorRow);
+        Assert.Equal(68, frame.CursorColumn);
+        Assert.False(frame.CursorVisible);
     }
 
     [Fact]
@@ -457,6 +838,22 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void EmptyAboveWidgetContainerKeepsThePiLeadingSpacer()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer(),
+            useAlternateScreen: false);
+        var frame = compositor.Compose("", 0, null, null, "", "fixture-model", overlay: null,
+            scrollOffset: 0, columns: 80, height: 16, new TranscriptSearchController(), new TerminalMouseRouter());
+
+        Assert.Equal("", frame.Rows[10]);
+        Assert.Contains("─", frame.Rows[11]);
+        Assert.Equal(12, frame.CursorRow);
+        Assert.Equal("", frame.DocumentRows![0]);
+        Assert.Contains("─", frame.DocumentRows[1]);
+        Assert.Equal(2, frame.DocumentCursorRow);
+    }
+
+    [Fact]
     public void StartupExpansionShowsConfiguredHelpAndResourcePaths()
     {
         var presentation = new TerminalStartupPresentation(null, verbose: false,
@@ -496,6 +893,20 @@ public sealed class TerminalScreenCompositorTests
         Assert.Contains("escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more", compact);
         Assert.Contains("Press ctrl+o to show full startup help and loaded resources.", compact);
         Assert.DoesNotContain("Use /hotkeys for shortcut help and / for commands.", compact);
+    }
+
+    [Fact]
+    public void StartupHeaderUsesPinnedLogoColorsAndSeparateKeyHintStyles()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var presentation = new TerminalStartupPresentation(null, verbose: false);
+        var logo = presentation.BuildLogo(theme);
+        var compact = presentation.Build(theme, expanded: false);
+
+        Assert.Contains("\u001b[38;2;228;138;122m\u001b[48;2;79;142;179m▀", logo);
+        Assert.Contains("\u001b[38;2;79;142;179m█▀", compact);
+        Assert.Contains("\u001b[38;2;234;182;93m█", compact);
+        Assert.Contains(theme.Style("dim", "escape") + theme.Style("muted", " interrupt"), compact);
     }
 
     [Fact]
@@ -660,6 +1071,40 @@ public sealed class TerminalScreenCompositorTests
     }
 
     [Fact]
+    public void SelectionFlashOverlaysTheRightSideOfTheFirstRenderedRow()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+
+        var frame = compositor.Compose("", 0, null, null, "transcript", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 40, height: 12,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            transientFlash: "Copied!");
+
+        Assert.EndsWith("\u001b[7m Copied! \u001b[27m", frame.Rows[0]);
+        Assert.Equal(40, TerminalTextLayout.Width(frame.Rows[0]));
+    }
+
+    [Fact]
+    public void SmallModelPickerKeepsWarningColorAcrossWrappedHintPadding()
+    {
+        const int width = 44;
+        const string hint = "Only showing models from configured providers. Use /login to add providers.";
+        var theme = TerminalTheme.Default;
+        var selection = new TerminalSelectionList<string>("Select model",
+            [new TerminalSelectionOption<string>("model", "model", "model")]);
+        var panel = selection.RenderModelPicker(width, theme, hint, "Refreshing model catalogs…",
+            refreshSuccess: false, model => model, out _, out _);
+        var expected = panel[2];
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+
+        var frame = compositor.Compose("", 0, null, null, "", "fixture-model", overlay: null,
+            scrollOffset: 0, columns: width, height: 14, new TranscriptSearchController(),
+            new TerminalMouseRouter(), theme, editorPanel: panel, panelBottomMargin: 2);
+
+        Assert.Equal(expected, frame.Rows[3]);
+    }
+
+    [Fact]
     public void IdleDockMatchesThePiEditorDirectoryAndStatusRows()
     {
         var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
@@ -674,11 +1119,55 @@ public sealed class TerminalScreenCompositorTests
         Assert.Contains('─', frame.Rows[29]);
         Assert.Equal(theme.Style("thinkingOff", new string('─', 100)), frame.Rows[27]);
         Assert.Equal(theme.Style("thinkingOff", new string('─', 100)), frame.Rows[29]);
-        Assert.Contains(Environment.CurrentDirectory, frame.Rows[30]);
+        var homeDirectory = Environment.GetEnvironmentVariable("HOME") ??
+            Environment.GetEnvironmentVariable("USERPROFILE");
+        Assert.Contains(TerminalPathDisplay.FormatForFooter(Environment.CurrentDirectory, homeDirectory), frame.Rows[30]);
         Assert.Contains("0.0%/8.2k (auto)", frame.Rows[31]);
         Assert.Equal(28, frame.CursorRow);
         Assert.Equal(1, frame.CursorColumn);
         Assert.False(frame.CursorVisible);
+    }
+
+    [Fact]
+    public void ExtensionWorkingIndicatorFramesKeepTheirSuppliedForeground()
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer());
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+
+        var custom = compositor.Compose("", 0, null, null, "", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 80, height: 24,
+            new TranscriptSearchController(), new TerminalMouseRouter(), theme,
+            workingStatus: "Working", workingFrame: "◆", workingFrameVerbatim: true);
+        var defaultFrame = compositor.Compose("", 0, null, null, "", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 80, height: 24,
+            new TranscriptSearchController(), new TerminalMouseRouter(), theme,
+            workingStatus: "Working", workingFrame: "◆");
+
+        Assert.Contains(theme.Style("thinkingOff", "── ") + "◆ ", custom.Rows[19]);
+        Assert.DoesNotContain(theme.Fg("thinkingOff") + "◆", custom.Rows[19]);
+        Assert.Contains(theme.Fg("thinkingOff") + "◆", defaultFrame.Rows[19]);
+    }
+
+    [Fact]
+    public void TranscriptPaddingResetsInlineStylesBeforeTrailingCells()
+    {
+        var padded = TerminalScreenCompositor.PadTranscriptRow(
+            "\u001b[1m\u001b[38;2;1;2;3mtext\u001b[22m\u001b[39m\u001b[0m\u001b[0m",
+            transcriptWidth: 8, outputPadding: 1);
+        var resetHeading = TerminalScreenCompositor.PadTranscriptRow(
+            "\u001b[1m\u001b[4m\u001b[38;2;1;2;3mtext\u001b[22m\u001b[24m\u001b[39m\u001b[0m\u001b[0m",
+            transcriptWidth: 8, outputPadding: 0);
+
+        Assert.Equal(" \u001b[1m\u001b[38;2;1;2;3mtext\u001b[22m\u001b[39m\u001b[0m\u001b[0m     ", padded);
+        Assert.Equal("\u001b[1m\u001b[4m\u001b[38;2;1;2;3mtext\u001b[22m\u001b[24m\u001b[39m\u001b[0m\u001b[0m    ", resetHeading);
+    }
+
+    [Fact]
+    public void TranscriptPaddingDoesNotCarryStylesDisabledByIndividualSgrResets()
+    {
+        const string row = "\u001b[1m\u001b[4m\u001b[38;2;1;2;3mtext\u001b[22m\u001b[24m\u001b[39m";
+
+        Assert.Equal(row + "    ", TerminalScreenCompositor.PadTranscriptRow(row, transcriptWidth: 8, outputPadding: 0));
     }
 
     private static int Count(string text, string value)

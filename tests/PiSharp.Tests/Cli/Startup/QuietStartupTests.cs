@@ -88,13 +88,20 @@ public sealed class QuietStartupTests
     }
 
     [Theory]
-    [InlineData("true", false, false, false)]
-    [InlineData("true", true, true, true)]
-    [InlineData("\"header\"", false, true, false)]
-    [InlineData("\"header\"", true, true, true)]
-    [InlineData("false", false, true, true)]
-    [InlineData("false", true, true, true)]
-    public async Task TerminalStartupVisibilityFollowsQuietStartup(string value, bool verbose, bool header, bool details)
+    [InlineData("true", false, false, false, false)]
+    [InlineData("true", true, true, true, false)]
+    [InlineData("\"header\"", false, true, false, false)]
+    [InlineData("\"header\"", true, true, true, false)]
+    [InlineData("false", false, true, true, false)]
+    [InlineData("false", true, true, true, false)]
+    [InlineData("true", false, false, false, true)]
+    [InlineData("true", true, true, true, true)]
+    [InlineData("\"header\"", false, true, false, true)]
+    [InlineData("\"header\"", true, true, true, true)]
+    [InlineData("false", false, true, true, true)]
+    [InlineData("false", true, true, true, true)]
+    public async Task TerminalStartupVisibilityFollowsQuietStartup(string value, bool verbose, bool header, bool details,
+        bool color)
     {
         if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-quiet-pty-" + Guid.NewGuid().ToString("N"));
@@ -127,6 +134,10 @@ public sealed class QuietStartupTests
             };
             start.Environment["PISHARP_AGENT_DIR"] = agent;
             start.Environment["HOME"] = root;
+            start.Environment["TERM"] = "xterm-256color";
+            start.Environment["COLORTERM"] = "truecolor";
+            if (color) start.Environment.Remove("NO_COLOR");
+            else start.Environment["NO_COLOR"] = "1";
             using var process = Process.Start(start)!;
             var output = new TerminalOutputCapture(process);
             var error = process.StandardError.ReadToEndAsync();
@@ -143,7 +154,7 @@ public sealed class QuietStartupTests
             }
             Assert.Equal(0, process.ExitCode);
             Assert.Equal("", await error);
-            var text = await output.Completion;
+            var text = PiSharp.Cli.Tui.TerminalTextLayout.StripFormatting(await output.Completion);
             Assert.Equal(header, text.Contains("▀▀█", StringComparison.Ordinal));
             Assert.Equal(header, text.Contains("PiSharp v", StringComparison.Ordinal));
             Assert.Contains("This project is not trusted", text);

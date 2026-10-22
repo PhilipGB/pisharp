@@ -86,6 +86,7 @@ public sealed class TerminalEditor
         _keymap.Reload();
         RefreshExtensionShortcuts();
         _screen?.SetToolExpandKeyLabel(_keymap.GetDisplayKeys("app.tools.expand"));
+        _screen?.SetTranscriptBottomKeyLabel(_keymap.GetDisplayKeys("tui.altScreen.bottom"));
     }
 
     public void AttachScreen(TerminalScreen? screen)
@@ -95,6 +96,7 @@ public sealed class TerminalEditor
         {
             screen.SetToolResultsExpanded(_toolResultsExpanded);
             screen.SetToolExpandKeyLabel(_keymap.GetDisplayKeys("app.tools.expand"));
+            screen.SetTranscriptBottomKeyLabel(_keymap.GetDisplayKeys("tui.altScreen.bottom"));
             var snapshot = WithEditorState(_buffer.CaptureSnapshot);
             screen.SetEditor(snapshot.Text, snapshot.Cursor, snapshot.SelectionStart, snapshot.SelectionEnd);
         }
@@ -158,7 +160,13 @@ public sealed class TerminalEditor
             if (next.IsEndOfStream) return;
             if (next.Mouse is { } mouse)
             {
-                _ = _screen?.HandleMouse(mouse);
+                var result = _screen?.HandleMouse(mouse) ?? default;
+                if (result.Copy)
+                {
+                    var copied = _screen is not null && await _screen.CopySelectionToClipboardAsync();
+                    if (!copied && _extensionModalDispatchApplicationAction is not null)
+                        await _extensionModalDispatchApplicationAction("app.message.copy");
+                }
                 continue;
             }
             if (next.Key is { } extensionKey && _extensionModalDispatchShortcut is not null &&
@@ -551,8 +559,12 @@ public sealed class TerminalEditor
                 WithEditorState(() => _buffer.SetCursor(cursor));
                 Render();
             }
-            if (result.Copy && dispatchApplicationAction is not null)
-                await DispatchApplicationActionAsync(dispatchApplicationAction, "app.message.copy");
+            if (result.Copy)
+            {
+                var copied = _screen is not null && await _screen.CopySelectionToClipboardAsync();
+                if (!copied && dispatchApplicationAction is not null)
+                    await DispatchApplicationActionAsync(dispatchApplicationAction, "app.message.copy");
+            }
             return true;
         }
         if (next.Key is { } extensionKey && dispatchExtensionShortcut is not null &&
@@ -728,22 +740,25 @@ public sealed class TerminalEditor
                     Render();
                 }
                 if (result.Copy)
-                    await DispatchApplicationActionAsync(dispatchApplicationAction, "app.message.copy");
+                {
+                    var copied = _screen is not null && await _screen.CopySelectionToClipboardAsync();
+                    if (!copied)
+                        await DispatchApplicationActionAsync(dispatchApplicationAction, "app.message.copy");
+                }
                 continue;
             }
             if (next.IsEndOfStream)
             {
-                ClearLine();
-                Console.WriteLine();
+                ExitInputLoop();
                 return null;
             }
+            if (HandleIdleTranscriptInput(next)) continue;
             if (enableApplicationActions && next.Key is { } clearKey && _keymap.Matches("app.clear", clearKey))
             {
                 var now = Environment.TickCount64;
                 if (_lastClearAtMilliseconds is { } previous && now - previous < 500)
                 {
-                    ClearLine();
-                    Console.WriteLine();
+                    ExitInputLoop();
                     return null;
                 }
                 _lastClearAtMilliseconds = now;
@@ -847,8 +862,7 @@ public sealed class TerminalEditor
             switch (action)
             {
                 case EditorAction.Exit:
-                    ClearLine();
-                    Console.WriteLine();
+                    ExitInputLoop();
                     return null;
                 case EditorAction.Cancel:
                     Render();
@@ -867,6 +881,31 @@ public sealed class TerminalEditor
                 case EditorAction.Render: Render(); break;
             }
         }
+    }
+
+    internal bool HandleIdleTranscriptInput(TerminalInputEvent next)
+    {
+        if (_transcriptSearch.IsActive)
+        {
+            _transcriptSearch.HandleInput(next);
+            Render();
+            return true;
+        }
+        if (next.Key is not { } key || _screen is not { IsActive: true } screen) return false;
+        if (_keymap.Matches("tui.altScreen.search", key))
+            _transcriptSearch.Start();
+        else if (_keymap.Matches("tui.altScreen.pageUp", key))
+            screen.ScrollPage(up: true);
+        else if (_keymap.Matches("tui.altScreen.pageDown", key))
+            screen.ScrollPage(up: false);
+        else if (_keymap.Matches("tui.altScreen.top", key))
+            screen.ScrollToTop();
+        else if (_keymap.Matches("tui.altScreen.bottom", key))
+            screen.ScrollToBottom();
+        else
+            return false;
+        Render();
+        return true;
     }
 
     internal Task MonitorMcpAuthorizationAsync(Task operation,
@@ -890,7 +929,7 @@ public sealed class TerminalEditor
             !(_keymap.Matches("app.thinking.cycle", key) && !hasCompletionCycle)) return false;
         var action = _keymap.MatchIdleApplicationAction(key);
         if (action is null) return false;
-        beforeDispatch?.Invoke();
+        if (action != "app.suspend") beforeDispatch?.Invoke();
         if (action == "app.tools.expand")
         {
             ToggleToolResults();
@@ -1057,6 +1096,12 @@ public sealed class TerminalEditor
         _cursorRow = 0;
     }
 
+    private void ExitInputLoop()
+    {
+        ClearLine();
+        if (_screen is not { IsActive: true }) Console.WriteLine();
+    }
+
     private sealed class InputLoopLease(Action release) : IDisposable
     {
         private int _active = 1;
@@ -1072,9 +1117,12 @@ public sealed class TerminalEditor
         {
             var (snapshot, suggestions) = WithEditorState(() =>
             {
-                var current = _buffer.CaptureSnapshot();
+                var searchingTranscript = _transcriptSearch.IsActive;
+                var current = searchingTranscript
+                    ? _transcriptSearch.CaptureEditorSnapshotForDisplay()
+                    : _buffer.CaptureSnapshot();
                 IReadOnlyList<EditorCompletionSuggestion> currentSuggestions =
-                    _completion.GetSlashCommandSuggestions(_buffer);
+                    searchingTranscript ? [] : _completion.GetSlashCommandSuggestions(_buffer);
                 if (_completionCycle is { } completionCycle && completionCycle.Matches(current))
                     currentSuggestions = completionCycle.Candidates.Select((candidate, index) =>
                         new EditorCompletionSuggestion(

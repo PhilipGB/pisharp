@@ -11,11 +11,34 @@ namespace PiSharp.Tests;
 
 public sealed class LlamaRouterManagerTuiTests
 {
+    private static readonly object s_routerEndpointGate = new();
+
     private static string EditorInputLine(string frame)
     {
         return frame.Split('\n').Select(line => line.Trim())
             .LastOrDefault(line => line.StartsWith('@') ||
                 line.StartsWith('/') && line.Count(character => character == '/') == 1) ?? "";
+    }
+
+    [Fact]
+    public async Task ConcurrentRouterFixturesBindDistinctLoopbackPorts()
+    {
+        var servers = new ConcurrentBag<RouterServer>();
+        try
+        {
+            var started = await Task.WhenAll(Enumerable.Range(0, 12).Select(_ => Task.Run(() =>
+            {
+                var server = new RouterServer();
+                servers.Add(server);
+                return server;
+            })));
+
+            Assert.Equal(started.Length, started.Select(server => server.Origin).Distinct(StringComparer.Ordinal).Count());
+        }
+        finally
+        {
+            await Task.WhenAll(servers.Select(server => server.DisposeAsync().AsTask()));
+        }
     }
 
     [Fact]
@@ -711,25 +734,27 @@ public sealed class LlamaRouterManagerTuiTests
                 }
 
                 var resizeMark = terminal.Mark;
-                var resized = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor,
+                var resized = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor &&
+                    frame.Contains("↓ Jump to latest message", StringComparison.Ordinal),
                     resizeMark, rows: 18, columns: 60);
                 Assert.Equal(anchor, FirstStreamRow(resized));
-                var initialScrollRows = ScrolledRows(resized);
-                Assert.NotNull(initialScrollRows);
+                Assert.Contains("↓ Jump to latest message", resized, StringComparison.Ordinal);
 
                 var continuedMark = terminal.Mark;
                 server.ReleaseLongChatStream();
                 await server.LongChatSecondPaused.Task.WaitAsync(TimeSpan.FromSeconds(15));
                 var continued = await terminal.WaitFrameAsync(frame => FirstStreamRow(frame) == anchor &&
-                    ScrolledRows(frame) is { } currentScrollRows && currentScrollRows > initialScrollRows,
+                    frame.Contains("↓ Jump to latest message", StringComparison.Ordinal) &&
+                    !frame.Contains("STREAM_ROW_44", StringComparison.Ordinal),
                     continuedMark, rows: 18, columns: 60);
                 Assert.Equal(anchor, FirstStreamRow(continued));
-                Assert.True(ScrolledRows(continued) > initialScrollRows);
+                Assert.Contains("↓ Jump to latest message", continued, StringComparison.Ordinal);
 
                 var latestMark = terminal.Mark;
-                await terminal.SendRawAsync("\u001b[F");
+                await terminal.SendRawAsync("\u001b[57424;5u");
                 var latest = await terminal.WaitFrameAsync(frame => frame.Contains("STREAM_ROW_44", StringComparison.Ordinal) &&
-                    !frame.Contains("↑", StringComparison.Ordinal), latestMark, rows: 18, columns: 60);
+                    !frame.Contains("↓ Jump to latest message", StringComparison.Ordinal), latestMark,
+                    rows: 18, columns: 60);
                 Assert.NotEqual(anchor, FirstStreamRow(latest));
 
                 server.ReleaseLongChatSecondPause();
@@ -773,12 +798,6 @@ public sealed class LlamaRouterManagerTuiTests
         return match.Success ? match.Value : null;
     }
 
-    private static int? ScrolledRows(string frame)
-    {
-        var match = Regex.Match(frame, "↑ (?<rows>\\d+) rows");
-        return match.Success && int.TryParse(match.Groups["rows"].Value, out var rows) ? rows : null;
-    }
-
     [Fact]
     public async Task CancellingLocalModelStreamAfterVisibleTextSettlesAndAcceptsNextPrompt()
     {
@@ -803,7 +822,7 @@ public sealed class LlamaRouterManagerTuiTests
 
             mark = terminal.Mark;
             await terminal.SendAsync("\u001b");
-            await terminal.WaitFrameAsync(frame => frame.Contains("Interrupted.", StringComparison.Ordinal) &&
+            await terminal.WaitFrameAsync(frame => frame.Contains("Operation aborted", StringComparison.Ordinal) &&
                 !frame.Contains("Working", StringComparison.Ordinal), mark);
             server.ReleaseChatStream();
 
@@ -931,12 +950,15 @@ public sealed class LlamaRouterManagerTuiTests
             _pauseAfterChunk = pauseAfterChunk;
             _pauseAgainAfterChunk = pauseAgainAfterChunk;
             if (sleepingQwen) Statuses["qwen"] = "sleeping";
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            Origin = "http://127.0.0.1:" + ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            _listener.Prefixes.Add(Origin + "/");
-            _listener.Start();
+            lock (s_routerEndpointGate)
+            {
+                using var reservation = new TcpListener(IPAddress.Loopback, 0);
+                reservation.Start();
+                Origin = "http://127.0.0.1:" + ((IPEndPoint)reservation.LocalEndpoint).Port;
+                reservation.Stop();
+                _listener.Prefixes.Add(Origin + "/");
+                _listener.Start();
+            }
             _serve = ServeAsync();
         }
 

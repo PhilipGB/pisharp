@@ -227,13 +227,15 @@ public sealed class NativeExtensionInteractiveUiPtyTests
                 "extension dashboard panel", timeout.Token, process, errorTask);
             await process.StandardInput.WriteAsync("accepted\r");
             await process.StandardInput.FlushAsync();
-            await WaitForOutputWithDiagnosticsAsync(screen,
-                "native-ui-panel:accepted:theme=True/light/3/light:editor=True:tools=True", 0,
-                "dashboard command response", timeout.Token,
-                process, errorTask);
-            await screen.WaitForFrameAsync(frame => frame.Contains("native-ui accepted: accepted", StringComparison.Ordinal) &&
-                frame.Contains("native-ui-widget:1:accepted", StringComparison.Ordinal) &&
-                frame.Contains("native-ui-theme:light", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            var dashboardResponse = "native-ui-panel:accepted:theme=True/light/3/light:editor=True:tools=True";
+            // The dashboard response wraps at 80 columns, so terminal controls interrupt its raw byte sequence.
+            await WaitForFrameWithDiagnosticsAsync(screen,
+                frame => string.Concat(frame.Where(character => !char.IsWhiteSpace(character)))
+                        .Contains(dashboardResponse, StringComparison.Ordinal) &&
+                    frame.Contains("native-ui accepted: accepted", StringComparison.Ordinal) &&
+                    frame.Contains("native-ui-widget:1:accepted", StringComparison.Ordinal) &&
+                    frame.Contains("native-ui-theme:light", StringComparison.Ordinal),
+                "dashboard command response and presentation state", timeout.Token, process, errorTask);
 
             await process.StandardInput.WriteAsync("\u0015/ui-modal\r");
             await process.StandardInput.FlushAsync();
@@ -297,8 +299,10 @@ public sealed class NativeExtensionInteractiveUiPtyTests
 
             await process.StandardInput.WriteAsync("\u0015run native tool\r");
             await process.StandardInput.FlushAsync();
-            await screen.WaitForFrameAsync(frame => frame.Contains("NATIVE_UI_AGENT_OK", StringComparison.Ordinal))
-                .WaitAsync(timeout.Token);
+            await WaitForFrameWithDiagnosticsAsync(screen,
+                frame => frame.Contains("NATIVE_UI_AGENT_OK", StringComparison.Ordinal) &&
+                    !frame.Contains("Native UI dashboard", StringComparison.Ordinal),
+                "agent response after the run returns to idle", timeout.Token, process, errorTask);
             await server.WaitAsync(timeout.Token);
             Assert.Contains("native_ui_echo", requests[0]);
             Assert.Contains("native-ui-tool:pty", requests[1]);
@@ -358,6 +362,15 @@ public sealed class NativeExtensionInteractiveUiPtyTests
             Assert.Contains("\u001b]0;\u0007", capturedOutput, StringComparison.Ordinal);
             Assert.DoesNotContain("Agent error:", capturedOutput, StringComparison.Ordinal);
             Assert.DoesNotContain("Exception:", await errorTask, StringComparison.Ordinal);
+
+            await File.WriteAllTextAsync(Path.Combine(agentDirectory, "settings.json"), JsonSerializer.Serialize(new
+            {
+                nativeExtensions = new[]
+                {
+                    new { id = installedPackage.Id, version = installedPackage.Version, source = installedPackage.Source }
+                }
+            }));
+            await VerifyExitRestoresLoadedExtensionAndShellInputAsync(root, agentDirectory);
         }
         finally
         {
@@ -366,6 +379,67 @@ public sealed class NativeExtensionInteractiveUiPtyTests
             try { Directory.Delete(root, recursive: true); }
             catch (IOException) { }
         }
+    }
+
+    private static async Task VerifyExitRestoresLoadedExtensionAndShellInputAsync(string root, string agentDirectory)
+    {
+        var start = new ProcessStartInfo("/usr/bin/script")
+        {
+            WorkingDirectory = root,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add("-q");
+        start.ArgumentList.Add("-e");
+        start.ArgumentList.Add("-c");
+        start.ArgumentList.Add($"stty rows 24 cols 100; printf 'PTY_PREEXISTING_SCROLLBACK\\n'; dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --provider fixture --model fixture-model --offline --no-session; printf '\\nPISHARP_CLI_RETURNED\\n'; IFS= read -r next_line; printf 'SHELL_INPUT:%s\\n' \"$next_line\"");
+        start.ArgumentList.Add("/dev/null");
+        foreach (var name in start.Environment.Keys.Where(name => name.StartsWith("PISHARP_", StringComparison.Ordinal)).ToArray())
+            start.Environment.Remove(name);
+        start.Environment.Remove("OPENAI_API_KEY");
+        start.Environment.Remove("ANTHROPIC_API_KEY");
+        start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+        start.Environment["PISHARP_SESSION_DIR"] = Path.Combine(root, "shutdown-sessions");
+        start.Environment["PISHARP_FIXTURE_KEY"] = "local-fixture-key";
+
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start the shutdown PTY fixture.");
+        var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
+        var outputTask = screen.StartReading();
+        var errorTask = process.StandardError.ReadToEndAsync();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        await screen.InputReady.WaitAsync(timeout.Token);
+        await WaitForFrameWithDiagnosticsAsync(screen,
+            frame => frame.Contains("native-ui:header", StringComparison.Ordinal) &&
+                frame.Contains("native-ui:footer", StringComparison.Ordinal) &&
+                frame.Contains("native-ui-widget:0:idle", StringComparison.Ordinal),
+            "extension dashboard before terminal shutdown", timeout.Token, process, errorTask);
+
+        var exitStart = screen.CapturedOutput.Length;
+        await process.StandardInput.WriteAsync("/quit\r");
+        await process.StandardInput.FlushAsync();
+        await WaitForOutputWithDiagnosticsAsync(screen, "PISHARP_CLI_RETURNED", exitStart,
+            "CLI return to the shell", timeout.Token, process, errorTask);
+        var exitOutput = screen.CapturedOutput[exitStart..];
+        var restoredFrame = screen.LastFrame;
+        Assert.DoesNotContain("\u001b[2J", exitOutput, StringComparison.Ordinal);
+        Assert.DoesNotContain("\u001b[3J", exitOutput, StringComparison.Ordinal);
+        Assert.Contains("native-ui:header", exitOutput, StringComparison.Ordinal);
+        Assert.Contains("native-ui:footer", exitOutput, StringComparison.Ordinal);
+        Assert.Contains("native-ui-widget:0:idle", exitOutput, StringComparison.Ordinal);
+        Assert.DoesNotContain("native-ui-panel", restoredFrame, StringComparison.Ordinal);
+
+        await process.StandardInput.WriteLineAsync("ordinary-shell-input");
+        await process.StandardInput.FlushAsync();
+        await WaitForOutputWithDiagnosticsAsync(screen, "SHELL_INPUT:ordinary-shell-input", exitStart,
+            "ordinary shell input after CLI shutdown", timeout.Token, process, errorTask);
+        process.StandardInput.Close();
+        await process.WaitForExitAsync(timeout.Token);
+        var capturedOutput = await outputTask;
+        Assert.Equal(0, process.ExitCode);
+        Assert.Contains("PTY_PREEXISTING_SCROLLBACK", capturedOutput, StringComparison.Ordinal);
+        Assert.Contains("SHELL_INPUT:ordinary-shell-input", capturedOutput, StringComparison.Ordinal);
+        Assert.DoesNotContain("Exception:", await errorTask, StringComparison.Ordinal);
     }
 
     private static async Task WaitForOutputAsync(PtyScreenCapture screen, string value, int startIndex,

@@ -34,6 +34,21 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
+    public void OpenAiCompletionsProjectionKeepsNullContentForAssistantToolCalls()
+    {
+        var model = Selection("fixture", "http://127.0.0.1:1234/v1", "openai-completions").Model;
+        var body = """{"messages":[{"role":"assistant","tool_calls":[{"id":"call-1","type":"function","function":{"name":"read","arguments":"{}"}}]}]}"""u8.ToArray();
+
+        var projected = OpenAiCompletionsRequestCompatibilityHandler.ProjectRequest(
+            body, model, supportsStore: false, maxTokensField: "max_completion_tokens");
+        using var request = JsonDocument.Parse(projected);
+        var message = request.RootElement.GetProperty("messages")[0];
+
+        Assert.Equal(JsonValueKind.Null, message.GetProperty("content").ValueKind);
+        Assert.True(message.TryGetProperty("tool_calls", out _));
+    }
+
+    [Fact]
     public void ProtocolSelectionDoesNotTreatEveryProviderAsOpenAiCompletions()
     {
         var official = Selection("openai", "https://api.openai.com/v1");
@@ -661,11 +676,13 @@ public sealed class ProviderChatClientFactoryTests
                     "openai-completions" => "data: {\"id\":\"chatcmpl_wire\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"wire activity\"},\"finish_reason\":null}]}",
                     _ => "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"wire activity\"}}"
                 };
+                var dataStart = partialEvent.IndexOf("data: {", StringComparison.Ordinal) + "data: {".Length;
+                partialEvent = partialEvent.Insert(dataStart, new string(' ', 500));
                 for (var offset = 0; offset < partialEvent.Length; offset += 10)
                 {
                     await writer.WriteAsync(partialEvent.AsMemory(offset, Math.Min(10, partialEvent.Length - offset)), deadline.Token);
                     await writer.FlushAsync(deadline.Token);
-                    await Task.Delay(80, deadline.Token);
+                    await Task.Delay(25, deadline.Token);
                 }
                 await writer.WriteAsync("\n\n");
                 var finalEvents = protocol switch

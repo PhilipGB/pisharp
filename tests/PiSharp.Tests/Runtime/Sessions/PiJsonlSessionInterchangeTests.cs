@@ -222,6 +222,32 @@ public sealed class PiJsonlSessionInterchangeTests
     }
 
     [Fact]
+    public void ImportedAssistantUsageContributesToActiveSessionStatistics()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var jsonl = $$$$$"""
+            {"type":"session","version":3,"id":"usage-session","timestamp":"2024-12-03T14:00:00.000Z","cwd":"{{{{{cwd}}}}}"}
+            {"type":"message","id":"usage-user","parentId":null,"timestamp":"2024-12-03T14:00:01.000Z","message":{"role":"user","content":"prompt"}}
+            {"type":"message","id":"usage-assistant","parentId":"usage-user","timestamp":"2024-12-03T14:00:02.000Z","message":{"role":"assistant","provider":"openai","model":"fixture-model","content":"reply","usage":{"input":10,"output":12,"cacheRead":2,"cacheWrite":3,"totalTokens":24,"cost":{"total":0.0002}}}}
+            """;
+
+        var imported = PiJsonlSessionInterchange.Import(jsonl);
+
+        var usage = Assert.Single(imported.ActiveUsage());
+        Assert.Equal("fixture-model", usage.Model);
+        Assert.Equal("model", usage.Source);
+        Assert.Equal(10, usage.InputTokens);
+        Assert.Equal(12, usage.OutputTokens);
+        Assert.Equal(2, usage.CachedInputTokens);
+        Assert.Equal(3, usage.CachedWriteTokens);
+        Assert.Equal(24, usage.TotalTokens);
+        Assert.Equal(0.0002m, usage.Cost);
+
+        var roundTripped = PiJsonlSessionInterchange.Import(PiJsonlSessionInterchange.Export(imported));
+        Assert.Equal(usage, Assert.Single(roundTripped.ActiveUsage()));
+    }
+
+    [Fact]
     public void LegacyV1AndV2SessionsMigrateToLinkedCurrentEntries()
     {
         var cwd = Path.GetFullPath(Path.GetTempPath());

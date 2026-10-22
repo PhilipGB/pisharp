@@ -1,0 +1,79 @@
+{
+  "id": "terminal-small-overlay",
+  "settings": {
+    "quietStartup": true
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files"
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 44,
+      "rows": 14
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "model-picker-open",
+      "send": "/model\r",
+      "expect": "Only showing models",
+      "renderMatch": true
+    },
+    {
+      "id": "model-picker-dismiss",
+      "send": "\u001b",
+      "expect": "fixture-model",
+      "notExpect": "Only showing models",
+      "renderMatch": true
+    },
+    {
+      "id": "quit",
+      "send": "/quit\r",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "startup",
+    "model-picker-open",
+    "model-picker-dismiss",
+    "quit"
+  ]
+}

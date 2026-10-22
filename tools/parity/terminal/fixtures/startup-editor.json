@@ -26,11 +26,18 @@
       "id": "startup",
       "expect": "fixture-model"
     },
-    {
-      "id": "editor",
-      "send": "hello  world",
-      "expect": "hello  world"
-    },
+    { "id": "type-h", "send": "h", "expect": "h" },
+    { "id": "type-e", "send": "e", "expect": "he" },
+    { "id": "type-l-1", "send": "l", "expect": "hel" },
+    { "id": "type-l-2", "send": "l", "expect": "hell" },
+    { "id": "type-o", "send": "o", "expect": "hello" },
+    { "id": "type-space-1", "send": " ", "expect": "hello " },
+    { "id": "type-space-2", "send": " ", "expect": "hello  " },
+    { "id": "type-w", "send": "w", "expect": "hello  w" },
+    { "id": "type-o-2", "send": "o", "expect": "hello  wo" },
+    { "id": "type-r", "send": "r", "expect": "hello  wor" },
+    { "id": "type-l-3", "send": "l", "expect": "hello  worl" },
+    { "id": "type-d", "send": "d", "expect": "hello  world" },
     {
       "id": "cursor-left",
       "send": "\u001b[D",
@@ -53,13 +60,19 @@
         "rows": 30
       }
     },
-    {
-      "id": "quit",
-      "send": "/quit\r",
-      "exit": true
-    }
+    { "id": "quit", "send": "\u0003\u0003", "exit": true }
   ],
   "terminal": {
     "keyboardProtocol": "kitty"
-  }
+  },
+  "assertionFrames": [
+    "startup",
+    "type-h",
+    "type-d",
+    "cursor-left",
+    "paste",
+    "clear",
+    "resize",
+    "quit"
+  ]
 }

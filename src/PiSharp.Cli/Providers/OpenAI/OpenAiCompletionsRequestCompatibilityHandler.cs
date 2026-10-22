@@ -71,6 +71,12 @@ internal sealed class OpenAiCompletionsRequestCompatibilityHandler : DelegatingH
                 if (message is not JsonObject messageObject) continue;
                 if (HasStringValue(messageObject["role"], "assistant") && messageObject.Remove("name"))
                     changed = true;
+                if (HasStringValue(messageObject["role"], "assistant") &&
+                    messageObject["tool_calls"] is JsonArray && !messageObject.ContainsKey("content"))
+                {
+                    messageObject["content"] = null;
+                    changed = true;
+                }
                 if (mapDeveloperRoleToSystem && HasStringValue(messageObject["role"], "developer"))
                 {
                     messageObject["role"] = "system";

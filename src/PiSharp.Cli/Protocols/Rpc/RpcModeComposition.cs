@@ -52,7 +52,7 @@ internal static class RpcModeComposition
                 presentation.Screen?.SetMarkdownCodeBlockIndent(projectBinding.Settings.MarkdownCodeBlockIndent ?? UserSettings.DefaultMarkdownCodeBlockIndent);
             }, () =>
             {
-                presentation.Screen?.SetFooter(presentation.IdleFooter());
+                presentation.SetIdleFooter();
                 presentation.LoadSessionTranscript();
             });
         Task<bool> SwitchProjectSessionAsync(string reference, CancellationToken token) =>

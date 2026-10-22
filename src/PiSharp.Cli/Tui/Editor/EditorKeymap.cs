@@ -18,7 +18,7 @@ public sealed class EditorKeymap
         "tui.input.submit", "tui.select.confirm", "tui.select.cancel", "tui.input.copy",
         "tui.editor.deleteToLineEnd"
     };
-    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
+    private static readonly string[] IdleApplicationActions = ["app.suspend", "app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
 
     private static readonly IReadOnlyDictionary<string, Definition> s_definitions = new Dictionary<string, Definition>(StringComparer.Ordinal)
     {
@@ -56,6 +56,7 @@ public sealed class EditorKeymap
         ["app.interrupt"] = new("Cancel or abort", ["escape"]),
         ["app.clear"] = new("Clear editor", ["ctrl+c"]),
         ["app.exit"] = new("Exit when editor is empty", ["ctrl+d"]),
+        ["app.suspend"] = new("Suspend to background", OperatingSystem.IsWindows() ? [] : ["ctrl+z"]),
         ["app.model.cycleForward"] = new("Cycle to next model", ["ctrl+p"]),
         ["app.model.cycleBackward"] = new("Cycle to previous model", IsWindowsBindings() ? ["alt+p"] : ["ctrl+shift+p", "alt+p"]),
         ["app.model.select"] = new("Open model selector", ["ctrl+l"]),
@@ -74,8 +75,8 @@ public sealed class EditorKeymap
         ["app.message.dequeue"] = new("Restore queued messages", IsWindowsBindings() ? ["alt+q"] : ["alt+up"]),
         ["tui.altScreen.pageUp"] = new("Scroll transcript up one page", ["pageup"]),
         ["tui.altScreen.pageDown"] = new("Scroll transcript down one page", ["pagedown"]),
-        ["tui.altScreen.top"] = new("Scroll to the start of the transcript", ["home"]),
-        ["tui.altScreen.bottom"] = new("Return to the live transcript", ["end"]),
+        ["tui.altScreen.top"] = new("Scroll to the start of the transcript", ["ctrl+home"]),
+        ["tui.altScreen.bottom"] = new("Return to the live transcript", ["ctrl+end"]),
         ["tui.altScreen.search"] = new("Search the rendered transcript", IsWindowsBindings() ? ["ctrl+f"] : ["ctrl+shift+f", "ctrl+f"]),
         ["tui.altScreen.searchNext"] = new("Select the next transcript search match", ["enter", "ctrl+g"]),
         ["tui.altScreen.searchPrevious"] = new("Select the previous transcript search match", ["shift+enter", "ctrl+shift+g"]),

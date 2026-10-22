@@ -1,6 +1,8 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
+using PiSharp.Cli;
 using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
@@ -110,7 +112,7 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
-    public void TranscriptAndDraftShareAUnicodeAwareScreenAndRestoreSeparateStreams()
+    public void TranscriptAndDraftShareAUnicodeAwareFullscreenFrame()
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
@@ -121,12 +123,14 @@ public sealed class TerminalScreenTests
         screen.SetFooter("running");
         screen.Dispose();
 
-        Assert.Contains("draft 界", output.ToString());
-        Assert.Contains("answer [2J🙂", output.ToString());
-        Assert.Contains("tool status", output.ToString());
-        Assert.Contains("answer [2J🙂\nnext line", output.ToString());
-        Assert.Contains("tool status", error.ToString());
-        Assert.Contains("running", output.ToString());
+        var screenText = TerminalOutputFrameReader.Read(output.ToString(), rows: 9, columns: 32)
+            .Last(frame => frame.Screen.Contains("draft 界", StringComparison.Ordinal)).Screen;
+        Assert.Contains("draft 界", screenText);
+        Assert.Contains("answer [2J🙂", screenText);
+        Assert.Contains("next line", screenText);
+        Assert.Contains("tool status", screenText);
+        Assert.DoesNotContain("tool status", error.ToString());
+        Assert.Contains("running", screenText);
     }
 
     [Fact]
@@ -137,6 +141,8 @@ public sealed class TerminalScreenTests
         var columns = 40;
         var rows = 8;
         var screen = new TerminalScreen(output, error, () => columns, () => rows);
+        var widthChanges = new List<int>();
+        screen.TerminalWidthChanged += widthChanges.Add;
         screen.SetEditor("long draft text that wraps across the input viewport", 17);
         var previousLength = output.GetStringBuilder().Length;
 
@@ -147,6 +153,26 @@ public sealed class TerminalScreenTests
 
         Assert.True(output.GetStringBuilder().Length > previousLength);
         Assert.Contains("long draft text", output.ToString());
+        Assert.Equal([24], widthChanges);
+    }
+
+    [Fact]
+    public void StreamingOutputNotifiesThePresentationWhenTheTerminalWidthChanges()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var columns = 40;
+        var screen = new TerminalScreen(output, error, () => columns, () => 8);
+        var widthChanges = new List<int>();
+        screen.TerminalWidthChanged += widthChanges.Add;
+        screen.SetEditor("streaming", 9);
+
+        columns = 24;
+        screen.Output.Write("next stream chunk");
+
+        screen.Dispose();
+
+        Assert.Equal([24], widthChanges);
     }
 
     [Fact]
@@ -199,6 +225,28 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void ModelPickerScreenKeepsWarningColorAcrossWrappedHintPadding()
+    {
+        const int width = 44;
+        const string hint = "Only showing models from configured providers. Use /login to add providers.";
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => width, () => 14);
+        var selection = new TerminalSelectionList<string>("Select model",
+            [new TerminalSelectionOption<string>("model", "model", "model")]);
+        var panel = selection.RenderModelPicker(width, TerminalTheme.Default, hint, "Refreshing model catalogs…",
+            refreshSuccess: false, model => model, out var cursorRow, out var cursorColumn);
+        output.GetStringBuilder().Clear();
+
+        screen.SetEditorPanel(panel, cursorRow, cursorColumn, cursorVisible: false, bottomMargin: 2);
+
+        var firstHintLine = TerminalTextLayout.StripFormatting(TerminalTextLayout.Wrap(hint, width)[0]);
+        var expected = TerminalTheme.Default.Style("warning",
+            firstHintLine + new string(' ', width - TerminalTextLayout.Width(firstHintLine)));
+        Assert.Contains(expected, output.ToString());
+    }
+
+    [Fact]
     public void SuspendCancelsPendingRenderAndResumeShowsUpdatesMadeWhileSuspended()
     {
         using var output = new StringWriter();
@@ -227,6 +275,38 @@ public sealed class TerminalScreenTests
         clock.Advance(TimeSpan.FromMilliseconds(1));
         Assert.Equal(1, Count(output.ToString(), "\u001b[?2026h"));
         Assert.Contains("resumed draft", output.ToString());
+    }
+
+    [Fact]
+    public void FullscreenSuspensionKeepsTheNaturalTranscriptMinimumAndResumeShowsHistory()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        using var screen = new TerminalScreen(output, error, () => 80, () => 24,
+            new TerminalImageRenderer(), theme, queryTerminalColors: false);
+        screen.AppendUserMessage("user history");
+        screen.CommitAssistantText("assistant history");
+        screen.SetEditor("draft to preserve", 17);
+        output.GetStringBuilder().Clear();
+
+        screen.Suspend(restoreDocument: true);
+
+        var suspended = output.ToString();
+        var frame = TerminalOutputFrameReader.Read(suspended, rows: 24, columns: 80)[^1].Screen;
+        Assert.Contains(theme.Bg("userMessageBg"), suspended);
+        Assert.Contains("draft to preserve", frame);
+        Assert.DoesNotContain("user history", frame);
+        Assert.DoesNotContain("assistant history", frame);
+        output.GetStringBuilder().Clear();
+
+        screen.Resume();
+
+        var resumed = TerminalOutputFrameReader.Read(output.ToString(), rows: 24, columns: 80)[^1].Screen;
+        Assert.Contains("user history", resumed);
+        Assert.Contains("assistant history", resumed);
+        Assert.Contains("draft to preserve", resumed);
+        Assert.Empty(error.ToString());
     }
 
     [Fact]
@@ -400,8 +480,9 @@ public sealed class TerminalScreenTests
         }
 
         Assert.Contains("captured output", output.ToString());
-        Assert.Contains("captured error", error.ToString());
+        Assert.Contains("captured error", output.ToString());
         Assert.Contains("after output", output.ToString());
+        Assert.DoesNotContain("captured error", error.ToString());
         Assert.Contains("after error", error.ToString());
     }
 
@@ -417,13 +498,13 @@ public sealed class TerminalScreenTests
 
         var topStart = output.GetStringBuilder().Length;
         await editor.HandleActiveInputAsync(
-            new(new ConsoleKeyInfo('\0', ConsoleKey.Home, false, false, false), null),
+            new(new ConsoleKeyInfo('\0', ConsoleKey.Home, false, false, true), null),
             (_, _, _) => Task.FromResult(true), () => [], () => { });
         var topFrame = output.ToString()[topStart..];
 
         var bottomStart = output.GetStringBuilder().Length;
         await editor.HandleActiveInputAsync(
-            new(new ConsoleKeyInfo('\0', ConsoleKey.End, false, false, false), null),
+            new(new ConsoleKeyInfo('\0', ConsoleKey.End, false, false, true), null),
             (_, _, _) => Task.FromResult(true), () => [], () => { });
         var bottomFrame = output.ToString()[bottomStart..];
         screen.Dispose();
@@ -435,6 +516,93 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public void PageScrollUsesTheTranscriptViewportAndPiOverlap()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 80, () => 40);
+        for (var index = 0; index < 120; index++) screen.Output.WriteLine($"message {index:D3}");
+
+        screen.ScrollPage(up: true);
+
+        Assert.Equal(30, screen.TranscriptScrollOffset);
+    }
+
+    [Fact]
+    public void TranscriptScrollbarExpiresWhileJumpToLatestHintRemainsVisible()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false, timeProvider: clock);
+        for (var index = 0; index < 30; index++) screen.Output.WriteLine($"message {index:D2}");
+
+        screen.ScrollPage(up: true);
+
+        Assert.Contains("┃", output.ToString());
+        Assert.Contains("Jump to latest message", TerminalTextLayout.StripFormatting(output.ToString()));
+        output.GetStringBuilder().Clear();
+
+        clock.Advance(TimeSpan.FromSeconds(1));
+
+        var expiredFrame = TerminalTextLayout.StripFormatting(output.ToString());
+        Assert.DoesNotContain("┃", expiredFrame);
+        Assert.DoesNotContain("│", expiredFrame);
+        Assert.Contains("Jump to latest message", expiredFrame);
+    }
+
+    [Fact]
+    public void SearchingToAnOffscreenMatchShowsTheTransientScrollbarInTheSameFrame()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 14,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false, timeProvider: clock);
+        for (var index = 0; index < 30; index++) screen.Output.WriteLine($"message {index:D2}");
+
+        screen.ScrollPage(up: true);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        output.GetStringBuilder().Clear();
+
+        screen.SearchTranscript("message 00");
+        screen.SetTranscriptSearchPanel(["Find in transcript"], cursorColumn: 1);
+        var screenText = TerminalOutputFrameReader.Read(output.ToString(), rows: 14, columns: 40)[^1].Screen;
+
+        Assert.Contains("message 00", screenText);
+        Assert.Contains("┃", screenText);
+    }
+
+    [Fact]
+    public void IdleEditorRoutesKittyTranscriptKeysToScrollAndSearch()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var inputBytes = new MemoryStream(Encoding.UTF8.GetBytes("\u001b[57421u\u001b[102;6u"));
+        var screen = new TerminalScreen(output, error, () => 40, () => 9);
+        var editor = new TerminalEditor();
+        editor.AttachScreen(screen);
+        editor.Prefill("draft");
+        for (var index = 0; index < 30; index++) screen.Output.WriteLine($"message {index:D2}");
+        var input = new TerminalInput(inputBytes);
+
+        Assert.True(editor.HandleIdleTranscriptInput(input.Read()));
+        var scrollOffset = screen.TranscriptScrollOffset;
+        Assert.Contains("Jump to latest message · Ctrl+End", output.ToString());
+        Assert.DoesNotContain("live output follows at bottom", screen.FooterText);
+        Assert.True(editor.HandleIdleTranscriptInput(input.Read()));
+        Assert.Contains("Find in transcript", TerminalTextLayout.StripFormatting(output.ToString()));
+        Assert.True(editor.HandleIdleTranscriptInput(new(new ConsoleKeyInfo('\u001b', ConsoleKey.Escape,
+            false, false, false), null)));
+        var restoredDraft = editor.Draft;
+        screen.Dispose();
+
+        Assert.True(scrollOffset > 0);
+        Assert.Equal("draft", restoredDraft);
+    }
+
+    [Fact]
     public async Task ActiveEditorUsesMouseWheelAndCopiesUnicodeTranscriptSelection()
     {
         using var output = new StringWriter();
@@ -443,32 +611,29 @@ public sealed class TerminalScreenTests
         for (var index = 0; index < 30; index++) screen.Output.WriteLine($"message {index:D2}");
         var editor = new TerminalEditor();
         editor.AttachScreen(screen);
+        screen.SetFullscreenWheelScrollLines(FullscreenWheelScrollSetting.Fixed(6));
 
         for (var index = 0; index < 5; index++)
-            await editor.HandleActiveInputAsync(new(null, null, new(72, 1, 1, false)), Queue, Clear, Abort);
-        var wheelFrameStart = output.GetStringBuilder().Length;
-        await editor.HandleActiveInputAsync(new(null, null, new(72, 1, 1, false)), Queue, Clear, Abort);
-        var topFrame = output.ToString()[wheelFrameStart..];
+            await editor.HandleActiveInputAsync(new(null, null, new(64, 1, 1, false)), Queue, Clear, Abort);
+        var topFrame = TerminalOutputFrameReader.Read(output.ToString(), rows: 9, columns: 40)[^1].Screen;
         Assert.Contains("message 00", topFrame);
         Assert.DoesNotContain("message 29", topFrame);
 
         for (var index = 0; index < 5; index++)
-            await editor.HandleActiveInputAsync(new(null, null, new(73, 1, 1, false)), Queue, Clear, Abort);
-        var bottomFrameStart = output.GetStringBuilder().Length;
-        await editor.HandleActiveInputAsync(new(null, null, new(73, 1, 1, false)), Queue, Clear, Abort);
-        var bottomWheelFrame = output.ToString()[bottomFrameStart..];
+            await editor.HandleActiveInputAsync(new(null, null, new(65, 1, 1, false)), Queue, Clear, Abort);
+        var bottomWheelFrame = TerminalOutputFrameReader.Read(output.ToString(), rows: 9, columns: 40)[^1].Screen;
         Assert.Contains("message 29", bottomWheelFrame);
         Assert.DoesNotContain("message 00", bottomWheelFrame);
 
         screen.ScrollToBottom();
-        screen.Output.Write("alpha\nbe界a\nother\nlast");
+        screen.Output.Write("alpha\nbe界a\nother");
         var copiedActions = new List<string>();
         Task Dispatch(string action) { copiedActions.Add(action); return Task.CompletedTask; }
-        await editor.HandleActiveInputAsync(new(null, null, new(0, 1, 1, false)), Queue, Clear, Abort,
+        await editor.HandleActiveInputAsync(new(null, null, new(0, 2, 1, false)), Queue, Clear, Abort,
             dispatchApplicationAction: Dispatch);
-        await editor.HandleActiveInputAsync(new(null, null, new(32, 5, 2, false)), Queue, Clear, Abort,
+        await editor.HandleActiveInputAsync(new(null, null, new(32, 6, 2, false)), Queue, Clear, Abort,
             dispatchApplicationAction: Dispatch);
-        await editor.HandleActiveInputAsync(new(null, null, new(3, 5, 2, true)), Queue, Clear, Abort,
+        await editor.HandleActiveInputAsync(new(null, null, new(3, 6, 2, true)), Queue, Clear, Abort,
             dispatchApplicationAction: Dispatch);
         screen.Dispose();
 
@@ -479,6 +644,82 @@ public sealed class TerminalScreenTests
         static Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
         static IReadOnlyList<string> Clear() => [];
         static void Abort() { }
+    }
+
+    [Fact]
+    public async Task MouseTranscriptSelectionUsesClipboardAndShowsTransientFlash()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var commandRunner = new ClipboardCopyCommandRunner();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9);
+        screen.SetSelectionClipboard(new TerminalClipboard(commandRunner, platform: ClipboardPlatform.MacOS));
+        screen.Output.Write("alpha\nbe界a\nother");
+        var editor = new TerminalEditor();
+        editor.AttachScreen(screen);
+
+        await editor.HandleActiveInputAsync(new(null, null, new(0, 2, 1, false)), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(new(null, null, new(32, 6, 2, false)), Queue, Clear, Abort);
+        await editor.HandleActiveInputAsync(new(null, null, new(3, 6, 2, true)), Queue, Clear, Abort);
+
+        Assert.Equal("alpha\nbe界a", screen.SelectedText);
+        Assert.Equal("alpha\nbe界a", commandRunner.CopiedText);
+        Assert.Contains("\u001b[7m Copied! \u001b[27m", output.ToString());
+        Assert.DoesNotContain("Copied selected text to clipboard", output.ToString());
+
+        static Task<bool> Queue(string text, bool followUp, CancellationToken token) => Task.FromResult(true);
+        static IReadOnlyList<string> Clear() => [];
+        static void Abort() { }
+    }
+
+    [Fact]
+    public async Task RepeatedCopiesStackAndExpireWithoutRetainingTimersAfterScreenShutdown()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false, timeProvider: clock);
+        screen.SetSelectionClipboard(new TerminalClipboard(new ClipboardCopyCommandRunner(), platform: ClipboardPlatform.MacOS));
+        screen.Output.Write("alpha\nbeta");
+
+        await CopyAsync();
+        clock.Advance(TimeSpan.FromMilliseconds(300));
+        await CopyAsync();
+        Assert.Equal(2, FlashCount());
+        clock.Advance(TimeSpan.FromMilliseconds(700));
+        Assert.Equal(1, FlashCount());
+        clock.Advance(TimeSpan.FromMilliseconds(300));
+        Assert.Equal(0, FlashCount());
+        screen.Dispose();
+        Assert.Equal(0, clock.ActiveTimerCount);
+
+        async Task CopyAsync()
+        {
+            screen.HandleMouse(new(0, 2, 1, false));
+            screen.HandleMouse(new(32, 6, 1, false));
+            Assert.True(screen.HandleMouse(new(0, 6, 1, true)).Copy);
+            Assert.True(await screen.CopySelectionToClipboardAsync());
+        }
+
+        int FlashCount() => TerminalOutputFrameReader.Read(output.ToString(), rows: 9, columns: 40)[^1].Screen
+            .Split('\n').Count(row => row.Contains("Copied!", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void FullscreenWheelSettingControlsTranscriptRowsPerEvent()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9);
+        for (var index = 0; index < 30; index++) screen.Output.WriteLine($"message {index:D2}");
+        screen.SetFullscreenWheelScrollLines(FullscreenWheelScrollSetting.Fixed(3));
+
+        screen.HandleMouse(new(64, 1, 1, false));
+
+        var frame = TerminalOutputFrameReader.Read(output.ToString(), rows: 9, columns: 40)[^1].Screen;
+        Assert.Contains("message 25", frame);
+        Assert.DoesNotContain("message 29", frame);
     }
 
     [Fact]
@@ -592,13 +833,38 @@ public sealed class TerminalScreenTests
         var reenabled = text.IndexOf("\u001b[?1049h\u001b[?7l\u001b[?25l" + enable, enabled + 1, StringComparison.Ordinal);
         var disabledForDispose = text.LastIndexOf(disable + "\u001b[?7h", StringComparison.Ordinal);
         var suspendAltExit = text.IndexOf("\u001b[?25h\u001b[?1049l", disabledForSuspend, StringComparison.Ordinal);
-        var disposeAltExit = text.IndexOf("\u001b[?1049l\u001b[?7l", disabledForDispose, StringComparison.Ordinal);
+        var disposeCleanupEnd = text.IndexOf("\u001b[?2026l", disabledForDispose, StringComparison.Ordinal);
+        var disposeRestore = text.IndexOf("\u001b[?2026h", disposeCleanupEnd, StringComparison.Ordinal);
+        var disposeAltExit = text.IndexOf("\u001b[?1049l", disposeRestore, StringComparison.Ordinal);
 
         Assert.True(enabled >= 0 && enabled < disabledForSuspend);
         Assert.True(disabledForSuspend < suspendAltExit && suspendAltExit < reenabled);
-        Assert.True(reenabled < disabledForDispose && disabledForDispose < disposeAltExit);
-        Assert.Contains(TerminalKeyboardMode.Disable + "\u001b[?2026h\u001b[?1049l\u001b[?7l", text);
+        var keyboardDisabled = text.LastIndexOf(TerminalKeyboardMode.Disable, StringComparison.Ordinal);
+        Assert.True(reenabled < disabledForDispose && disabledForDispose < disposeCleanupEnd &&
+            disposeCleanupEnd < keyboardDisabled && keyboardDisabled < disposeRestore &&
+            disposeRestore < disposeAltExit);
         Assert.DoesNotContain("\u001b[?1l", text);
+    }
+
+    [Fact]
+    public void PresentTranscriptOnNormalScreenRendersBeforeLeavingTheMainScreen()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 48, () => 12);
+        screen.Output.Write("ordinary transcript line");
+
+        Assert.True(screen.PrepareTerminalModeShutdown());
+        screen.PresentTranscriptOnNormalScreen();
+        screen.Dispose();
+
+        var text = output.ToString();
+        var alternateExit = text.IndexOf("\u001b[?1049l", StringComparison.Ordinal);
+        var transcript = text.IndexOf("ordinary transcript line", alternateExit, StringComparison.Ordinal);
+        Assert.True(alternateExit >= 0 && transcript > alternateExit);
+        Assert.Equal(1, text.Split("\u001b[?1049l").Length - 1);
+        Assert.Contains("\u001b[?2004l\u001b[?1049l", text);
+        Assert.EndsWith("\u001b[?25h", text);
     }
 
     [Fact]
@@ -634,12 +900,105 @@ public sealed class TerminalScreenTests
         screen.Dispose();
 
         Assert.Contains("1/2", searchFrame);
-        Assert.Contains("\u001b[7;1mneedle", searchFrame);
+        Assert.Contains("\u001b[7mneedle", searchFrame);
         Assert.Contains("2/2", nextFrame);
-        Assert.Contains("\u001b[7;1mneedle", nextFrame);
-        Assert.DoesNotContain("\u001b[7;1mneedle", closeFrame);
+        Assert.Contains("\u001b[7mneedle", nextFrame);
+        Assert.DoesNotContain("\u001b[7mneedle", closeFrame);
         Assert.Equal("draft to keep", editor.Draft);
         Assert.False(aborted);
+    }
+
+    [Fact]
+    public void BashToolUpdatesStayInOnePendingThenSuccessfulPiStylePanel()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var screen = new TerminalScreen(output, error, () => 80, () => 24, new TerminalImageRenderer(),
+            theme, queryTerminalColors: false);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        transcript.Render(new AgentLifecycleEvent("tool_execution_started", Tool: "bash", OperationId: "bash-1")
+        {
+            ToolArguments = new Dictionary<string, object?> { ["command"] = "printf 'tool output'" }
+        });
+        transcript.Render(new("tool_execution_update", Tool: "bash", OperationId: "bash-1", Text: "first line\n"));
+        var partial = CurrentFrame(output);
+
+        transcript.Render(new("tool_execution_finished", Tool: "bash", OperationId: "bash-1",
+            Text: "first line\nsecond line\n")
+        { DurationMs = 100, IsError = false });
+        transcript.Render(new("model_text_delta", Text: "Tool follow-up."));
+        transcript.FinishTurn();
+        var completed = CurrentFrame(output);
+        screen.Dispose();
+
+        Assert.Contains("$ printf 'tool output'", partial);
+        Assert.Contains("first line", partial);
+        Assert.Contains("Elapsed 0.0s", partial);
+        Assert.DoesNotContain("Took", partial);
+        Assert.Contains("$ printf 'tool output'", completed);
+        Assert.Contains("first line", completed);
+        Assert.Contains("second line", completed);
+        Assert.Contains("Took 0.1s", completed);
+        Assert.Equal(1, completed.Split("Took 0.1s", StringSplitOptions.None).Length - 1);
+        var lines = completed.Split('\n');
+        var timingLine = Array.FindIndex(lines, line => line.Contains("Took 0.1s", StringComparison.Ordinal));
+        var followUpLine = Array.FindIndex(lines, line => line.Contains("Tool follow-up.", StringComparison.Ordinal));
+        Assert.True(followUpLine > timingLine + 1);
+        Assert.True(string.IsNullOrWhiteSpace(lines[timingLine + 1]));
+        Assert.DoesNotContain("→ bash", completed);
+        Assert.DoesNotContain("← bash completed", completed);
+        Assert.Contains(theme.Bg("toolPendingBg"), output.ToString());
+        Assert.Contains(theme.Bg("toolSuccessBg"), output.ToString());
+
+        string CurrentFrame(StringWriter writer) =>
+            TerminalOutputFrameReader.Read(writer.ToString(), rows: 24, columns: 80)[^1].Screen;
+    }
+
+    [Fact]
+    public void ExpandedShortToolKeepsPromptAndPiSpacingAroundFollowUpAndStatus()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var screen = new TerminalScreen(output, error, () => 80, () => 24);
+        var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
+        transcript.Render(new("prompt_accepted", Text: "Run the fixture tool."));
+        transcript.Render(new AgentLifecycleEvent("tool_execution_started", Tool: "bash", OperationId: "bash-1")
+        {
+            ToolArguments = new Dictionary<string, object?>
+            {
+                ["command"] = "printf 'tool-line-one\\n'; sleep 0.3; printf 'tool-line-two\\ntool-line-three\\n'"
+            }
+        });
+        transcript.Render(new("tool_execution_finished", Tool: "bash", OperationId: "bash-1",
+            Text: "tool-line-one\ntool-line-two\ntool-line-three\n")
+        { DurationMs = 300 });
+        transcript.Render(new("model_text_delta", Text: "Tool lifecycle complete."));
+        transcript.FinishTurn();
+
+        screen.SetToolResultsExpanded(true);
+        screen.AppendThemedStatusLine("Tool output: expanded");
+        var visible = Regex.Replace(TerminalOutputFrameReader.Read(output.ToString(), rows: 24, columns: 80)[^1].Screen,
+            "\\u001b\\[[0-?]*[ -/]*[@-~]", "");
+        screen.Dispose();
+
+        var rows = visible.Split('\n');
+        var promptRow = RowContaining(rows, "Run the fixture tool.");
+        var commandRow = RowContaining(rows, "$ printf");
+        var outputRow = RowContaining(rows, " tool-line-one");
+        var durationRow = RowContaining(rows, "Took 0.3s");
+        var followUpRow = RowContaining(rows, "Tool lifecycle complete.");
+        var statusRow = RowContaining(rows, "Tool output: expanded");
+
+        Assert.Equal(promptRow + 4, commandRow);
+        Assert.Equal(commandRow + 3, outputRow);
+        Assert.Equal(commandRow + 7, durationRow);
+        Assert.Equal(commandRow + 10, followUpRow);
+        Assert.Equal(commandRow + 12, statusRow);
+        Assert.Empty(error.ToString());
+
+        static int RowContaining(string[] rows, string text) =>
+            Array.FindIndex(rows, row => row.Contains(text, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -670,14 +1029,14 @@ public sealed class TerminalScreenTests
 
         Assert.Contains("line 1", collapsedFrame);
         Assert.Contains("line 10", collapsedFrame);
-        Assert.Contains("2 more visual rows; tool output collapsed", collapsedFrame);
+        Assert.Contains("3 more visual rows; tool output collapsed", collapsedFrame);
         Assert.DoesNotContain("line 11", collapsedFrame);
         Assert.Contains("line 11", expandedFrame);
         Assert.Contains("line 12", expandedFrame);
         Assert.Contains("Tool output: expanded", expandedFrame);
         Assert.Contains("Tool output: collapsed", recollapsedFrame);
         Assert.DoesNotContain("Tool output: expanded", recollapsedScreen);
-        Assert.Contains("line 12", error.ToString());
+        Assert.Empty(error.ToString());
     }
 
     [Fact]
@@ -727,8 +1086,7 @@ public sealed class TerminalScreenTests
             }
 
             screen.Dispose();
-            Assert.Contains(results[0], error.ToString());
-            Assert.Contains(results[1], error.ToString());
+            Assert.Empty(error.ToString());
         }
 
         static string CurrentFrame(StringWriter output, int columns)
@@ -741,7 +1099,7 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
-    public void ToolImageRendersAsKittyRowsOnlyWhenExpandedAndStaysOutOfCapturedText()
+    public void ToolImageRendersAsKittyRowsWhenCollapsedAndExpandedAndStaysOutOfCapturedText()
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
@@ -770,9 +1128,9 @@ public sealed class TerminalScreenTests
         screen.Dispose();
 
         Assert.DoesNotContain("Images", serialized);
-        Assert.DoesNotContain("\u001b_Ga=T", collapsed);
-        Assert.Contains("[Image: [image/png] 10x40]", collapsed);
-        Assert.Contains("\u001b_Ga=T", expanded);
+        Assert.Contains("\u001b_Ga=T", collapsed);
+        Assert.DoesNotContain("[Image: [image/png] 10x40]", collapsed);
+        Assert.Contains("\u001b_Ga=p", expanded);
         Assert.DoesNotContain("psimg-", expanded);
         Assert.Contains("\u001b_Ga=p", redrawn);
         Assert.Contains("\u001b_Ga=d,d=a", suspended);
@@ -780,8 +1138,43 @@ public sealed class TerminalScreenTests
             suspended.IndexOf("\u001b[?25h\u001b[?1049l", StringComparison.Ordinal));
         Assert.Contains("\u001b_Ga=p", resumed);
         Assert.Contains("\u001b_Ga=d,d=A", output.ToString());
-        Assert.Contains("[Image: [image/png] 10x40]", error.ToString());
+        Assert.Empty(error.ToString());
         Assert.DoesNotContain(Convert.ToBase64String(imageBytes), error.ToString());
+    }
+
+    [Fact]
+    public void ImageToolResultKeepsTheBackgroundPaddingRowWhenCollapsedAndExpanded()
+    {
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var transcript = new TerminalTranscriptBuffer();
+        var presentation = new TerminalConversationPresentation(transcript,
+            new TerminalImageRenderer(_ => null), () => 80, () => theme);
+        var call = PiSharpToolRenderView.FromText("read fixture-image.png");
+        var collapsed = new PiSharpToolRenderView([]);
+        var expanded = PiSharpToolRenderView.FromText("Read image file [image/png]");
+
+        presentation.AppendToolCall(call, "read-image");
+        Assert.True(presentation.AppendToolResult(collapsed, expanded,
+            [new DataContent(CreateImage(10, 40), "image/png")],
+            suppressUnsupportedImageFallbackWhenCollapsed: true, operationId: "read-image"));
+        AssertPanelBottomPadding(transcript.GetText(78));
+
+        transcript.SetExpanded(true);
+        AssertPanelBottomPadding(transcript.GetText(78));
+
+        static void AssertPanelBottomPadding(string text)
+        {
+            var rows = TerminalTextLayout.Create(text, 78).Rows;
+            var lastContentRow = -1;
+            for (var index = 0; index < rows.Count; index++)
+                if (TerminalTextLayout.StripFormatting(rows[index])
+                    .Any(character => !char.IsWhiteSpace(character))) lastContentRow = index;
+            Assert.InRange(lastContentRow + 1, 0, rows.Count - 1);
+            var padding = rows[lastContentRow + 1];
+            Assert.All(TerminalTextLayout.StripFormatting(padding), character =>
+                Assert.True(char.IsWhiteSpace(character)));
+            Assert.True(TerminalTextLayout.HasBackgroundOnWhitespace(padding));
+        }
     }
 
     [Fact]
@@ -811,6 +1204,14 @@ public sealed class TerminalScreenTests
         Assert.DoesNotContain("Images", serialized);
         Assert.DoesNotContain(Convert.ToBase64String(imageBytes), serialized);
         Assert.Contains("[Image: [image/png] 12x7]", output.ToString());
+
+        using var fallbackOutput = new StringWriter();
+        using var fallbackError = new StringWriter();
+        using var fallbackScreen = new TerminalScreen(fallbackOutput, fallbackError, () => 80, () => 40,
+            new TerminalImageRenderer(_ => null));
+        new InteractiveTranscript(fallbackScreen.Output, fallbackScreen.Error, screen: fallbackScreen).Render(update);
+        var fallbackViewport = TerminalOutputFrameReader.Read(fallbackOutput.ToString(), rows: 40, columns: 80)[^1].Screen;
+        Assert.Contains("[Image: [image/png] 12x7]", fallbackViewport);
     }
 
     [Fact]
@@ -932,7 +1333,7 @@ public sealed class TerminalScreenTests
         var lastFrame = outputText.LastIndexOf("\u001b[?2026h", StringComparison.Ordinal);
         Assert.True(lastFrame >= 0);
         var visibleFrame = Regex.Replace(outputText[lastFrame..], "\\u001b\\[[0-9;]*m", "");
-        Assert.Contains("  │>>line", visibleFrame);
+        Assert.Contains(" >>line", visibleFrame);
     }
 
     [Fact]
@@ -1054,6 +1455,19 @@ public sealed class TerminalScreenTests
         using var image = SKImage.FromBitmap(bitmap);
         using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
         return encoded.ToArray();
+    }
+
+    private sealed class ClipboardCopyCommandRunner : IClipboardCommandRunner
+    {
+        public string? CopiedText { get; private set; }
+
+        public Task<ClipboardCommandResult?> RunAsync(string command, IReadOnlyList<string> arguments,
+            string? input, int maximumOutputBytes, TimeSpan timeout, CancellationToken cancellationToken = default)
+        {
+            Assert.Equal("pbcopy", command);
+            CopiedText = input;
+            return Task.FromResult<ClipboardCommandResult?>(new(0, []));
+        }
     }
 
 }

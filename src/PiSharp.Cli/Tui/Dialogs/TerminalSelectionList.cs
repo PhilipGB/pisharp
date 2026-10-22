@@ -200,20 +200,26 @@ internal sealed class TerminalSelectionList<T>
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(modelName);
         width = Math.Max(20, width);
-        var lines = new List<string>
+        var lines = new List<string> { Border(), "" };
+        if (_scopedOptions is null)
         {
-            Border(),
-            "",
-            _scopedOptions is null
-                ? theme.Style("warning", hint)
-                : "Scope: " + (IsScoped ? theme.Style("muted", _allLabel ?? "all") :
-                    theme.Style("accent", _allLabel ?? "all")) + " | " +
-                  (IsScoped ? theme.Style("accent", _scopedLabel ?? "scoped") : theme.Style("muted", _scopedLabel ?? "scoped")) +
-                  theme.Style("muted", " · Tab to switch"),
-            "",
-            "> " + _query + "\u001b[7m \u001b[27m",
-            ""
-        };
+            var wrappedHint = TerminalTextLayout.Wrap(hint, width)
+                .Select(TerminalTextLayout.StripFormatting).ToArray();
+            // Wrapped continuation rows fill with the warning style; the final row keeps plain padding.
+            lines.AddRange(wrappedHint.Select((line, index) =>
+            {
+                var paddedContent = index < wrappedHint.Length - 1
+                    ? line + new string(' ', Math.Max(0, width - TerminalTextLayout.Width(line)))
+                    : line;
+                return theme.Style("warning", paddedContent);
+            }));
+        }
+        else
+            lines.Add("Scope: " + (IsScoped ? theme.Style("muted", _allLabel ?? "all") :
+                theme.Style("accent", _allLabel ?? "all")) + " | " +
+              (IsScoped ? theme.Style("accent", _scopedLabel ?? "scoped") : theme.Style("muted", _scopedLabel ?? "scoped")) +
+              theme.Style("muted", " · Tab to switch"));
+        lines.AddRange(["", "> " + _query + "\u001b[7m \u001b[27m", ""]);
         cursorRow = lines.Count - 2;
         cursorColumn = 3 + TerminalTextLayout.Width(_query);
 

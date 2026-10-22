@@ -13,7 +13,8 @@ import urllib.request
 import unittest
 from unittest.mock import patch
 
-from compare import ControlTrace, canonical_render_frames, compare_products, differences
+from compare import (ControlTrace, canonical_render_frames, canonicalize_tool_call_arguments_in_requests,
+                     compare_products, differences, normalize_terminal_state, osc52_clipboard_writes)
 from fixture_http import FixtureServer
 from pty_process import RenderFrameSequence, RenderFrameStore, TerminalProcess
 from run import commands, environment, expand_environment, prepare_workspace, stage_native_extension_package, write_json_stream, write_scenario_files
@@ -23,12 +24,243 @@ apply_test_thread_limit()
 
 
 class DriverTests(unittest.TestCase):
+    def test_clipboard_checkpoint_waits_for_every_expected_write_and_the_settled_frame(self):
+        terminal = object.__new__(TerminalProcess)
+        terminal.raw = bytearray()
+        terminal.closed = False
+        terminal.last_output = 0
+        terminal._new_render_frames = []
+        terminal.current = None
+        terminal.pumps = 0
+        first = dict(viewport=[dict(cells=[dict(chars='Copied!')])], modes={}, generation=1)
+        final = dict(viewport=[dict(cells=[dict(chars='Copied!')])], modes={}, generation=2)
+
+        def pump(timeout=0):
+            terminal.pumps += 1
+            terminal.current = first if terminal.pumps == 1 else final
+            terminal._new_render_frames = [terminal.current]
+            terminal.raw.extend(b'\x1b]52;c;d29yZA==\x07' if terminal.pumps == 1 else
+                                b'\x1b]52;c;bGluZQ==\x07')
+
+        terminal.pump = pump
+        terminal.snapshot = lambda: terminal.current
+        captured = terminal.settle('Copied!', quiet_ms=0, render_match=True,
+                                   clipboard_texts=['word', 'line'])
+        self.assertIs(final, captured)
+        self.assertEqual(2, terminal.pumps)
+
+    @unittest.skipUnless(sys.platform == 'linux', 'Requires Linux process-group supervision')
+    def test_suspended_fixture_cleanup_reaps_the_owned_child_group(self):
+        with tempfile.TemporaryDirectory() as directory:
+            options = dict(columns=80, rows=24, jobControl=True)
+            terminal = TerminalProcess(
+                [sys.executable, '-c', 'import os, signal; os.kill(0, signal.SIGTSTP)'],
+                Path(directory), dict(os.environ), options)
+            try:
+                terminal.settle('suspended:tty-restored', timeout=5)
+                child_file = Path(f'/proc/{terminal.process.pid}/task/{terminal.process.pid}/children')
+                children = [int(value) for value in child_file.read_text().split()]
+                self.assertEqual(1, len(children))
+                self.assertIn('\nState:\tT ', Path(f'/proc/{children[0]}/status').read_text())
+            finally:
+                terminal.close()
+            self.assertFalse(Path(f'/proc/{children[0]}').exists())
+
+    def test_required_terminal_matrix_has_named_stable_checkpoints(self):
+        required = {
+            'startup-verbose': {'startup', 'quit'},
+            'transcript-markdown-resume': {'transcript', 'resize', 'quit'},
+            'terminal-streaming-markdown': {
+                'stream-first-boundary', 'complete-inline-boundaries', 'commit-answer', 'exit',
+            },
+            'terminal-code-math': {
+                'render-inline-math', 'render-csharp', 'render-javascript', 'render-python-json',
+                'render-bash-fallback', 'render-block-math', 'render-math-table',
+                'render-code-math', 'commit-code-math', 'exit',
+            },
+            'terminal-math-fallback': {'startup', 'render-math-fallback', 'commit-math-fallback', 'exit'},
+            'terminal-tool-lifecycle': {
+                'tool-call-start', 'tool-output-in-flight', 'tool-result-and-follow-up', 'expand-tool-result',
+            },
+            'terminal-long-transcript': {
+                'page-up', 'search-open', 'search-query', 'search-cursor-left', 'scroll-to-bottom', 'exit',
+            },
+            'terminal-resize-during-stream': {'resize-during-stream', 'commit-answer', 'exit'},
+            'terminal-small-overlay': {'model-picker-open', 'model-picker-dismiss', 'quit'},
+            'terminal-suspend-resume': {'draft', 'suspended', 'resumed', 'edited-after-resume', 'quit'},
+            'startup-editor': {
+                'type-h', 'type-d', 'cursor-left', 'paste', 'clear', 'resize', 'quit',
+            },
+            'terminal-mouse-selection': {'response-in-flight', 'selection-drag', 'wheel-up', 'wheel-down', 'exit'},
+            'terminal-mouse-multiclick': {'double-click-word', 'triple-click-line', 'double-click-drag', 'exit'},
+            'terminal-image-fallback': {'read-image', 'expand-image-result', 'exit'},
+            'terminal-restoration-existing-main-buffer': {
+                'native-ui-startup', 'native-ui-widget', 'native-ui-input-update', 'native-ui-quit',
+            },
+            'native-extension-interactive-ui': {
+                'native-ui-startup', 'native-ui-widget', 'native-ui-input-update', 'native-ui-quit',
+            },
+        }
+        fixture_directory = Path(__file__).parent / 'fixtures'
+
+        for fixture_id, expected_checkpoints in required.items():
+            with self.subTest(fixture=fixture_id):
+                fixture = json.loads((fixture_directory / f'{fixture_id}.json').read_text())
+                actions = {action['id'] for action in fixture['actions']}
+                checkpoints = set(fixture.get('assertionFrames', []))
+
+                self.assertTrue(expected_checkpoints <= actions)
+                self.assertTrue(expected_checkpoints <= checkpoints)
+                if fixture_id == 'terminal-streaming-markdown':
+                    exit_action = next(action for action in fixture['actions'] if action['id'] == 'exit')
+                    self.assertEqual('\u0003\u0003', exit_action.get('send'))
+                    self.assertTrue(exit_action.get('exit'))
+                if fixture_id == 'terminal-math-fallback':
+                    response = ''.join(fixture['fixtureBehavior']['chatResponseChunksByRequest'][0])
+                    for environment in ['matrix', 'pmatrix', 'aligned']:
+                        self.assertIn('\\begin{' + environment + '}', response)
+                    for action_id in ['render-math-fallback', 'commit-math-fallback']:
+                        action = next(action for action in fixture['actions'] if action['id'] == action_id)
+                        for source in ['\\unknown{y}', '\\unknown{z}', '\\unknown{b}', '\\unknown{q}']:
+                            self.assertIn(source, action['expect'])
+                        self.assertTrue(action.get('renderMatch'))
+                if fixture_id == 'terminal-mouse-selection':
+                    response_action = next(action for action in fixture['actions']
+                                           if action['id'] == 'response-in-flight')
+                    self.assertEqual('0.0%/8.2k', response_action.get('notExpect'))
+                    self.assertTrue(response_action.get('renderMatch'))
+                    selection = next(action for action in fixture['actions'] if action['id'] == 'selection-drag')
+                    self.assertTrue(selection.get('expectClipboardWrite'))
+                    self.assertEqual(['Log section 09: Mouse selec'], selection.get('expectClipboardTexts'))
+                    wheel_up = next(action for action in fixture['actions'] if action['id'] == 'wheel-up')
+                    wheel_down = next(action for action in fixture['actions'] if action['id'] == 'wheel-down')
+                    self.assertEqual('Log section 05', wheel_up.get('expect'))
+                    self.assertEqual('Log section 05', wheel_down.get('notExpect'))
+                if fixture_id == 'terminal-mouse-multiclick':
+                    for action in fixture['actions']:
+                        if action['id'] in {'double-click-word', 'triple-click-line', 'double-click-drag'}:
+                            self.assertTrue(action.get('expectClipboardWrite'))
+                            self.assertTrue(action.get('expectClipboardTexts'))
+                            self.assertTrue(action.get('renderMatch'))
+                if fixture_id == 'terminal-long-transcript':
+                    cursor_action = next(action for action in fixture['actions']
+                                         if action['id'] == 'search-cursor-left')
+                    self.assertTrue(cursor_action.get('expectCursorChange'))
+
+    def test_settle_waits_for_an_expected_hidden_cursor_change(self):
+        class ScriptedTerminal:
+            def __init__(self):
+                self.frames = [
+                    dict(viewport=[dict(cells=[dict(chars='READY')])],
+                         cursor=dict(x=10, y=2), modes=dict(private={'2026': False})),
+                    dict(viewport=[dict(cells=[dict(chars='READY')])],
+                         cursor=dict(x=9, y=2), modes=dict(private={'2026': False})),
+                ]
+                self.current = self.frames.pop(0)
+                self._new_render_frames = []
+                self.raw = bytearray(b'rendered')
+                self.closed = False
+                self.last_output = time.monotonic() - 1
+
+            def pump(self, timeout=0):
+                if self.frames:
+                    self.current = self.frames.pop(0)
+                self._new_render_frames = [self.current]
+                self.last_output = time.monotonic() - 1
+
+            def snapshot(self):
+                return self.current
+
+        terminal = ScriptedTerminal()
+        frame = TerminalProcess.settle(terminal, contains='READY', render_match=True,
+                                       cursor_before=dict(x=10, y=2))
+
+        self.assertEqual(dict(x=9, y=2), frame['cursor'])
+
     def test_current_pin_launches_the_normal_coding_agent_cli_with_fixture_argument_overrides(self):
         for scenario in ({}, {'arguments': {'pi': ['--no-session']}}, {'mockHuggingFace': True}):
             command = commands(Path('/current-pi'), Path('/pisharp.dll'), scenario)['pi']
             self.assertIn('/current-pi/packages/coding-agent/src/cli.ts', command)
+            self.assertEqual(0 if scenario.get('arguments', {}).get('pi') else 1,
+                             command.count('--no-context-files'))
             self.assertNotIn('/current-pi/packages/coding-agent/src/experimental/cli.ts', command)
             self.assertIn('file:///current-pi/packages/coding-agent/src/experimental/source-resolver.ts', command)
+
+            pisharp_command = commands(Path('/current-pi'), Path('/pisharp.dll'), scenario)['pisharp']
+            self.assertEqual(1, pisharp_command.count('--no-context-files'))
+
+    def test_product_argument_overrides_preserve_each_cli_executable_prefix(self):
+        result = commands(Path('/current-pi'), Path('/pisharp.dll'), {
+            'arguments': {
+                'pi': ['--session', '{agent}/fixtures/transcript.jsonl'],
+                'pisharp': ['--session', '{agent}/fixtures/transcript.jsonl', '--no-context-files'],
+            },
+        })
+
+        self.assertEqual('node', result['pi'][0])
+        self.assertEqual('/current-pi/packages/coding-agent/src/cli.ts', result['pi'][3])
+        self.assertEqual(['--session', '{agent}/fixtures/transcript.jsonl'], result['pi'][-2:])
+        self.assertEqual(['dotnet', '/pisharp.dll'], result['pisharp'][:2])
+        self.assertEqual(['--session', '{agent}/fixtures/transcript.jsonl', '--no-context-files'],
+                         result['pisharp'][-3:])
+
+    def test_terminal_prelude_is_written_before_both_real_cli_processes(self):
+        result = commands(Path('/current-pi'), Path('/pisharp.dll'),
+                          {'terminalPrelude': 'existing shell history\n'})
+        for product in ('pi', 'pisharp'):
+            self.assertEqual('sh', result[product][0])
+            self.assertEqual('printf %s "$1"; shift; exec "$@"', result[product][2])
+            self.assertEqual('existing shell history\n', result[product][4])
+            self.assertIn('/current-pi/packages/coding-agent/src/cli.ts' if product == 'pi'
+                          else '/pisharp.dll', result[product])
+
+    def test_scenario_files_can_write_validated_base64_assets(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_scenario_files({'fixture.bin': {'$base64': 'AAECAw=='}}, root)
+            self.assertEqual(bytes((0, 1, 2, 3)), (root / 'fixture.bin').read_bytes())
+
+            with self.assertRaises(ValueError):
+                write_scenario_files({'invalid.bin': {'$base64': 'not base64!'}}, root)
+
+    def test_fixture_files_expand_the_selected_workspace_path(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            workspace = root / 'workspace'
+            agent = root / 'agent'
+            with patch('run.WORKSPACE', workspace):
+                write_scenario_files({'fixtures/long.jsonl': '{"cwd":"{workspace}"}'}, agent)
+            self.assertEqual(f'{{"cwd":"{workspace}"}}', (agent / 'fixtures/long.jsonl').read_text())
+
+    def test_http_comparison_normalizes_tool_argument_json_without_hiding_value_changes(self):
+        compact = [{'body': {'messages': [{'role': 'assistant', 'tool_calls': [{'function': {
+            'arguments': '{"path":"fixture-image.png"}'}}]}]}}]
+        formatted = [{'body': {'messages': [{'role': 'assistant', 'tool_calls': [{'function': {
+            'arguments': '{\n  "path": "fixture-image.png"\n}'}}]}]}}]
+        changed = [{'body': {'messages': [{'role': 'assistant', 'tool_calls': [{'function': {
+            'arguments': '{"path":"other-image.png"}'}}]}]}}]
+
+        self.assertEqual(canonicalize_tool_call_arguments_in_requests(compact),
+                         canonicalize_tool_call_arguments_in_requests(formatted))
+        self.assertNotEqual(canonicalize_tool_call_arguments_in_requests(compact),
+                            canonicalize_tool_call_arguments_in_requests(changed))
+
+    def test_osc52_clipboard_evidence_decodes_selection_text_and_compares_exactly(self):
+        raw = b'prefix\x1b]52;c;TG9nIHNlY3Rpb24gMDc=\x07middle\x1b]52;c;Y29weSB0ZXh0\x1b\\'
+        expected = [
+            dict(payloadBase64='TG9nIHNlY3Rpb24gMDc=', text='Log section 07'),
+            dict(payloadBase64='Y29weSB0ZXh0', text='copy text'),
+        ]
+        self.assertEqual(expected, osc52_clipboard_writes(raw))
+
+        left = dict(frames=[], renders=[], raw='', http=[], clipboardByFrame=[
+            dict(id='selection-drag', writes=expected)])
+        right = dict(frames=[], renders=[], raw='', http=[], clipboardByFrame=[
+            dict(id='selection-drag', writes=[expected[0]])])
+        comparison = compare_products(left, right)
+        self.assertFalse(comparison['clipboardMatch'])
+        self.assertIn('$.clipboardByFrame[0].writes.length',
+                      {item['path'] for item in comparison['clipboardDifferences']})
 
     def test_emulator_shutdown_drains_a_snapshot_larger_than_the_pipe(self):
         terminal = TerminalProcess([sys.executable, '-c', 'import time; time.sleep(30)'],
@@ -290,6 +522,53 @@ class DriverTests(unittest.TestCase):
                 stream.close()
             server.close()
 
+    def test_fixture_server_streams_gated_content_chunks_in_declared_order(self):
+        server = FixtureServer(behavior=dict(
+            chatResponseChunksByRequest=[['first partial', 'second partial']],
+            chatResponseChunkGatesByRequest=[[None, 'release-second-chunk']],
+            chatResponseChunkReadyGatesByRequest=[['first-chunk-sent', 'second-chunk-sent']]))
+        stream = None
+        try:
+            request = urllib.request.Request(
+                server.url + '/v1/chat/completions', data=json.dumps(dict(stream=True)).encode(),
+                headers={'Content-Type': 'application/json'}, method='POST')
+            stream = urllib.request.urlopen(request, timeout=2)
+            self.assertTrue(server.wait_for_gate('first-chunk-sent', timeout=1))
+            first = self.read_sse_event(stream)
+            self.assertEqual('first partial', first['choices'][0]['delta']['content'])
+            self.assertFalse(server.wait_for_gate('second-chunk-sent', timeout=0.05))
+            server.release_gate('release-second-chunk')
+            second = self.read_sse_event(stream)
+            self.assertEqual('second partial', second['choices'][0]['delta']['content'])
+            self.assertTrue(server.wait_for_gate('second-chunk-sent', timeout=1))
+        finally:
+            if stream is not None:
+                stream.close()
+            server.close()
+
+    def test_fixture_server_streams_openai_tool_calls_for_agent_continuation(self):
+        server = FixtureServer(behavior=dict(chatToolCallsByRequest=[[
+            dict(id='call-fixture-tool', name='bash', arguments={'command': 'printf tool-output'})]]))
+        stream = None
+        try:
+            request = urllib.request.Request(
+                server.url + '/v1/chat/completions', data=json.dumps(dict(stream=True)).encode(),
+                headers={'Content-Type': 'application/json'}, method='POST')
+            stream = urllib.request.urlopen(request, timeout=2)
+            call = self.read_sse_event(stream)
+            finish = self.read_sse_event(stream)
+            separator = stream.readline().decode().strip()
+            done = stream.readline().decode().strip() if not separator else separator
+            delta = call['choices'][0]['delta']['tool_calls'][0]
+            self.assertEqual('bash', delta['function']['name'])
+            self.assertEqual('{"command":"printf tool-output"}', delta['function']['arguments'])
+            self.assertEqual('tool_calls', finish['choices'][0]['finish_reason'])
+            self.assertEqual('data: [DONE]', done)
+        finally:
+            if stream is not None:
+                stream.close()
+            server.close()
+
     def test_fixture_server_gates_stream_content_and_finish_separately(self):
         server = FixtureServer(behavior=dict(chatRequestGates=['chat-request'],
                                              chatResponseContentGates=['chat-content'],
@@ -499,7 +778,29 @@ class DriverTests(unittest.TestCase):
         self.assertFalse(result['match'])
         self.assertFalse(result['terminalMatch'])
         self.assertEqual(3, result['comparedRenderFrameCount'])
-        self.assertIn('$.renders[1].viewport[0].text', {item['path'] for item in result['renderDifferences']})
+        self.assertEqual(1, result['renderDifferenceCount'])
+        self.assertEqual([dict(pi=0, pisharp=0), dict(pi=2, pisharp=1)],
+                         result['renderAlignment']['exactMatches'])
+        self.assertEqual([1], result['renderAlignment']['piOnlyRenderFrames'])
+        self.assertEqual([], result['renderAlignment']['pisharpOnlyRenderFrames'])
+        self.assertIn('$.renders.pi[1]', {item['path'] for item in result['renderDifferences']})
+
+    def test_render_sequence_alignment_retains_style_differences_between_exact_states(self):
+        first = dict(viewport=[dict(text='same', style='normal')])
+        pi_middle = dict(viewport=[dict(text='selected', style='inverse')])
+        pisharp_middle = dict(viewport=[dict(text='selected', style='normal')])
+        last = dict(viewport=[dict(text='done', style='normal')])
+
+        result = compare_products(
+            dict(frames=[], renders=[first, pi_middle, last], raw='', http=[]),
+            dict(frames=[], renders=[first, pisharp_middle, last], raw='', http=[]))
+
+        self.assertFalse(result['terminalMatch'])
+        self.assertEqual([dict(pi=0, pisharp=0), dict(pi=2, pisharp=2)],
+                         result['renderAlignment']['exactMatches'])
+        self.assertEqual(1, result['renderDifferenceCount'])
+        self.assertIn('$.renders[1].viewport[0].style',
+                      {item['path'] for item in result['renderDifferences']})
 
     def test_working_indicator_render_is_calibrated_noise_but_settled_frames_stay_exact(self):
         def state(status, footer):
@@ -843,6 +1144,18 @@ class DriverTests(unittest.TestCase):
                           '$.cursor.x', '$.modes.bracketedPasteMode'}, {item['path'] for item in differences(original, changed)})
         self.assertEqual([], list(differences(original, copy.deepcopy(original))))
 
+    def test_terminal_comparison_normalizes_empty_cell_glyphs_but_keeps_style_and_width_differences(self):
+        def state(chars, foreground=1, width=1):
+            return dict(rows=1, viewport=[dict(cells=[dict(chars=chars, width=width,
+                foreground=dict(mode='rgb', value=foreground))])], buffers={})
+
+        self.assertEqual(normalize_terminal_state(state('')),
+                         normalize_terminal_state(state(' ')))
+        self.assertNotEqual(normalize_terminal_state(state('', foreground=1)),
+                            normalize_terminal_state(state(' ', foreground=2)))
+        self.assertNotEqual(normalize_terminal_state(state('', width=1)),
+                            normalize_terminal_state(state(' ', width=2)))
+
     def test_real_pty_input_resize_and_cursor_round_trip(self):
         child = '''import os, signal, tty
 from shutil import get_terminal_size
@@ -898,6 +1211,25 @@ while True:
 
         self.assertIs(complete, frame)
         self.assertEqual(1, len(snapshots))
+
+    def test_allow_static_frame_captures_gate_ready_screen_without_new_output(self):
+        terminal = object.__new__(TerminalProcess)
+        terminal.render_frames = []
+        terminal._new_render_frames = []
+        terminal.raw = bytearray()
+        terminal.last_output = time.monotonic()
+        terminal.closed = False
+        terminal.process = None
+        frame = dict(viewport=[dict(cells=[dict(chars='prompt accepted')])],
+                     modes=dict(synchronizedOutput=False, private={'2026': False}))
+        pump_timeouts = []
+        terminal.pump = lambda timeout=0.05: pump_timeouts.append(timeout)
+        terminal.snapshot = lambda: frame
+
+        captured = terminal.settle('prompt accepted', allow_static_frame=True)
+
+        self.assertIs(frame, captured)
+        self.assertEqual([0], pump_timeouts)
 
     def test_settle_waits_until_a_transient_message_disappears(self):
         child = '''import os, time

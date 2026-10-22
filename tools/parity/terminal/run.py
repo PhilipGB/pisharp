@@ -19,7 +19,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pi_reference import verify_pi_checkout
 
-from compare import compare_products
+from compare import compare_products, osc52_clipboard_writes
 from fixture_http import FixtureServer
 from pty_process import RenderFrameSequence, RenderFrameStore, TerminalProcess
 from thread_limits import apply_test_thread_limit, thread_limit_environment
@@ -38,7 +38,11 @@ def write_scenario_files(files, base):
         if not path.is_relative_to(root):
             raise ValueError(f'Fixture file leaves its owned directory: {name}')
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content if isinstance(content, str) else json.dumps(content))
+        if isinstance(content, dict) and set(content) == {'$base64'} and isinstance(content['$base64'], str):
+            path.write_bytes(base64.b64decode(content['$base64'], validate=True))
+        else:
+            text = content if isinstance(content, str) else json.dumps(content)
+            path.write_text(text.replace('{workspace}', str(WORKSPACE)))
 
 
 def prepare_workspace(scenario, workspace=None):
@@ -69,20 +73,32 @@ def prepare_workspace(scenario, workspace=None):
 
 def commands(pi, pisharp, scenario, pisharp_extension=None):
     common = ['--provider', 'fixture', '--model', 'fixture-model', '--no-session', '--offline',
-              '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools']
+              '--no-extensions', '--no-skills', '--no-prompt-templates', '--no-tools', '--no-context-files']
     resolver = pi / 'packages/coding-agent/src/experimental/source-resolver.ts'
     pi_command = ['node', '--import', resolver.as_uri()]
     if scenario.get('mockHuggingFace'):
         pi_command.extend(['--import', (ROOT / 'tools/parity/terminal/huggingface-preload.mjs').as_uri()])
-    result = dict(pi=[*pi_command, str(pi / 'packages/coding-agent/src/cli.ts'), *common],
-                pisharp=['dotnet', str(pisharp), *common, '--no-approve', '--no-context-files'])
+    pi_prefix = [*pi_command, str(pi / 'packages/coding-agent/src/cli.ts')]
+    pisharp_prefix = ['dotnet', str(pisharp)]
+    result = dict(pi=[*pi_prefix, *common],
+                pisharp=[*pisharp_prefix, *common, '--no-approve'])
     for product, arguments in scenario.get('arguments', {}).items():
-        result[product] = result[product][:-len(common) - (2 if product == 'pisharp' else 0)] + arguments
+        if product not in result:
+            raise ValueError(f'Unknown product in fixture arguments: {product}')
+        prefix = pi_prefix if product == 'pi' else pisharp_prefix
+        result[product] = [*prefix, *arguments]
     if scenario.get('pisharpExtension'):
         if pisharp_extension is None or not pisharp_extension.is_file():
             raise ValueError('This fixture requires an existing --pisharp-extension assembly')
         if not scenario.get('pisharpNativeExtensionPackage'):
             result['pisharp'].extend(['--extension', str(pisharp_extension.resolve())])
+    terminal_prelude = scenario.get('terminalPrelude')
+    if terminal_prelude is not None:
+        if not isinstance(terminal_prelude, str):
+            raise ValueError('terminalPrelude must be a string')
+        for product, command in result.items():
+            result[product] = ['sh', '-c', 'printf %s "$1"; shift; exec "$@"',
+                               'pisharp-terminal-fixture', terminal_prelude, *command]
     return result
 
 
@@ -107,6 +123,17 @@ def expand_environment(values, agent, router_url):
     return {name: value.replace('{router}', router_url).replace('{agent}', str(agent))
             if isinstance(value, str) else value
             for name, value in values.items()}
+
+
+def record_clipboard_checkpoint(action, raw):
+    writes = osc52_clipboard_writes(raw)
+    if action.get('expectClipboardWrite') and not writes:
+        raise RuntimeError(f"Action {action['id']} expected an OSC 52 clipboard write but captured none")
+    expected_texts = action.get('expectClipboardTexts')
+    if expected_texts is not None and [write['text'] for write in writes] != expected_texts:
+        raise RuntimeError(f"Action {action['id']} clipboard text was "
+                           f"{[write['text'] for write in writes]!r}, expected {expected_texts!r}")
+    return dict(id=action['id'], writes=writes)
 
 
 def contains_render_frame_sequence(value):
@@ -269,7 +296,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
     (agent / 'settings.json').write_text(json.dumps(settings))
     model = dict(id='fixture-model', name='Fixture Model', api='openai-completions',
                  reasoning=bool(scenario.get('modelReasoning', False)),
-                 input=['text'], contextWindow=8192, maxTokens=1024,
+                 input=scenario.get('modelInput', ['text']),
+                 contextWindow=scenario.get('modelContextWindow', 8192), maxTokens=1024,
                  cost=dict(input=0, output=0, cacheRead=0, cacheWrite=0))
     (agent / 'models.json').write_text(json.dumps(dict(providers=dict(fixture=dict(baseUrl=server.url + '/v1',
                                                                                  apiKey='fixture-key', api='openai-completions', models=[model])))))
@@ -298,12 +326,14 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
             assertion_frames.append(frame)
 
     http_by_frame = []
+    clipboard_by_frame = []
     prior_raw = bytearray()
     prior_render_frames = []
     request_start = len(server.requests)
     try:
         for action in scenario['actions']:
             request_mark = len(server.requests)
+            cursor_before = terminal.snapshot().get('cursor') if action.get('expectCursorChange') else None
             mark, control_mark = len(terminal.raw), len(terminal.trace.events)
             wait_gates = action.get('waitGates', [])
             if isinstance(wait_gates, str):
@@ -327,12 +357,14 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                     action.get('restartEnvironment', {}), agent, server.url))
                 working_directory = prepare_workspace(scenario)
                 terminal = start_terminal_process(command, working_directory, restart_environment, options)
+                mark = 0
                 control_mark = len(terminal.trace.events)
                 frame = terminal.settle(action.get('expect'), timeout=action.get('timeout', 20),
                                         render_match=action.get('renderMatch', False))
                 record_frame(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
                                   controlPending=terminal.trace.pending.hex()))
                 http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
+                clipboard_by_frame.append(record_clipboard_checkpoint(action, terminal.raw[mark:]))
                 continue
             mark, control_mark = len(terminal.raw), len(terminal.trace.events)
             if 'send' in action:
@@ -368,7 +400,10 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                                         quiet_ms=action.get('quietMs', 200),
                                         absent=action.get('notExpect'),
                                         after=0 if 'resize' in action or action.get('allowStaticFrame') else mark,
-                                        render_match=action.get('renderMatch', False))
+                                        render_match=action.get('renderMatch', False),
+                                        allow_static_frame=action.get('allowStaticFrame', False),
+                                        cursor_before=cursor_before,
+                                        clipboard_texts=action.get('expectClipboardTexts'), clipboard_after=mark)
             expected_model_status = action.get('expectModelStatus')
             if expected_model_status:
                 model = next((value for value in server.models
@@ -380,10 +415,12 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
             record_frame(dict(id=action['id'], state=frame, controls=terminal.trace.events[control_mark:],
                               controlPending=terminal.trace.pending.hex()))
             http_by_frame.append(dict(id=action['id'], requests=server.requests[request_mark:]))
+            clipboard_by_frame.append(record_clipboard_checkpoint(action, terminal.raw[mark:]))
         prior_raw.extend(terminal.raw)
         return dict(frames=frames, assertionFrames=assertion_frames,
                     renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
-                    httpByFrame=http_by_frame, raw=base64.b64encode(prior_raw).decode(),
+                    httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
+                    raw=base64.b64encode(prior_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=None)
     except (TimeoutError, RuntimeError) as error:
         record_frame(dict(id=action['id'], state=terminal.snapshot(), controls=terminal.trace.events[control_mark:],
@@ -392,7 +429,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
         combined_raw = prior_raw + terminal.raw
         return dict(frames=frames, assertionFrames=assertion_frames,
                     renders=RenderFrameSequence(*prior_render_frames, terminal.render_frames),
-                    httpByFrame=http_by_frame, raw=base64.b64encode(combined_raw).decode(),
+                    httpByFrame=http_by_frame, clipboardByFrame=clipboard_by_frame,
+                    raw=base64.b64encode(combined_raw).decode(),
                     http=server.requests[request_start:], command=command, scenarioError=str(error))
     finally:
         terminal.close()
@@ -424,9 +462,12 @@ def main():
                   pisharpSha=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   fixture=scenario['id'], calibration=args.calibrate,
                   concurrentHttpGroups=scenario.get('concurrentHttpGroups', []),
-                  normalization=('Named checkpoints and stable synchronized render states are compared exactly, collapsing '
-                                 'adjacent identical states, hidden cursor coordinates, transient loader glyphs, and in-flight '
-                                 'Working-indicator frames. Same-Pi calibration shows fast scripted responses can finish before '
+                  normalization=('Named checkpoints and render streams are compared exactly. Render streams align identical '
+                                 'snapshots in order and report every changed or unmatched frame, collapsing adjacent identical '
+                                 'states, hidden cursor coordinates, transient loader glyphs, and in-flight '
+                                 'Working-indicator frames. Empty cells with the same width and style use one canonical glyph so '
+                                 'xterm backends that serialize a blank as an empty string or a space compare visually; colors, '
+                                 'attributes, width, cursor, and modes remain exact. Same-Pi calibration shows fast scripted responses can finish before '
                                  'that animated frame is captured, making its presence and partial usage footer PTY-scheduling dependent. '
                                  'Raw bytes remain captured and exact-match status is reported separately. '
                                  'HTTP identity/count/order remain exact except within declared concurrent batches, '
@@ -510,9 +551,12 @@ def main():
             report['cases'].append(dict(id=case_id, match=difference_count == 0, differences=difference_count,
                                         firstDifferences=delta[:50], scenarioErrors=errors,
                                         terminalMatch=comparison['terminalMatch'], rawMatch=comparison['rawMatch'],
+                                        clipboardMatch=comparison['clipboardMatch'],
+                                        clipboardDifferences=comparison['clipboardDifferences'],
                                         rawDifference=comparison['rawDifference'],
                                         comparedRenderFrameCount=comparison['comparedRenderFrameCount'],
                                         renderDifferences=comparison['renderDifferenceCount'],
+                                        renderAlignment=comparison['renderAlignment'],
                                         httpMatch=comparison['httpMatch'],
                                         rawHttpMatch=comparison['rawHttpMatch'],
                                         rawHttpDifferenceCount=comparison['rawHttpDifferenceCount'],

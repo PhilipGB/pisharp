@@ -818,12 +818,21 @@ public sealed class NativeExtensionUiTests
     {
         using var output = new SynchronizedStringWriter();
         using var error = new SynchronizedStringWriter();
-        using var screen = new TerminalScreen(output, error, () => 48, () => 16);
+        var columns = 48;
+        var rows = 16;
+        using var screen = new TerminalScreen(output, error, () => Volatile.Read(ref columns), () => Volatile.Read(ref rows));
+        var editor = new TerminalEditor();
+        editor.AttachScreen(screen);
+        editor.Prefill("draft survives redraw");
         var ui = new ProjectTrustStartupUi(true, "interactive", output, error);
-        using var binding = ui.BindInteractiveScreen(screen);
+        using var binding = ui.BindInteractiveScreen(screen, editor);
         using var package = ((IPiSharpExtensionUiPackageFactory)ui).CreatePackageScope("streaming-ui.dll");
         var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         const int updates = 200;
+        var dark = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
+        var light = TerminalThemeCatalog.LoadBuiltIn("light", TerminalColorMode.TrueColor);
+        screen.AppendToolResult(PiSharpToolRenderView.FromText("collapsed tool result"),
+            PiSharpToolRenderView.FromText(string.Join('\n', Enumerable.Range(0, 24).Select(index => $"tool-row:{index}"))));
 
         var stream = Task.Run(async () =>
         {
@@ -840,9 +849,25 @@ public sealed class NativeExtensionUiTests
                 package.SetWidget("stream", [$"native-ui-stream-update:{index}"]);
             }
         });
+        var layout = Task.Run(async () =>
+        {
+            await start.Task;
+            for (var index = 0; index < 40; index++)
+            {
+                Volatile.Write(ref columns, index % 2 == 0 ? 60 : 48);
+                Volatile.Write(ref rows, index % 2 == 0 ? 20 : 16);
+                screen.RefreshIfResized();
+                screen.SetTheme(index % 2 == 0 ? light : dark);
+                screen.ScrollPage(up: index % 2 == 0);
+                screen.SetToolResultsExpanded(index % 2 == 0);
+                screen.SetOverlay(["temporary modal"]);
+                screen.SetOverlay(null);
+            }
+        });
 
         start.TrySetResult();
-        await Task.WhenAll(stream, presentation).WaitAsync(TimeSpan.FromSeconds(10));
+        await Task.WhenAll(stream, presentation, layout).WaitAsync(TimeSpan.FromSeconds(10));
+        screen.ScrollToBottom();
         Assert.True(SpinWait.SpinUntil(() =>
         {
             var frames = TerminalOutputFrameReader.Read(output.ToString(), rows: 16, columns: 48);
@@ -852,6 +877,8 @@ public sealed class NativeExtensionUiTests
                 current.Contains($"native-ui-stream-update:{updates - 1}", StringComparison.Ordinal) &&
                 current.Contains($"status:{updates - 1}", StringComparison.Ordinal);
         }, TimeSpan.FromSeconds(2)));
+        Assert.Equal("draft survives redraw", editor.Draft);
+        Assert.Empty(error.ToString());
     }
 
     [Fact]

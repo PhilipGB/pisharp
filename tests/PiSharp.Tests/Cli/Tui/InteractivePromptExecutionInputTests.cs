@@ -55,10 +55,11 @@ public sealed class InteractivePromptExecutionInputTests
                 }
             });
             await client.RequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(run.EstimatedContextTokens > 0);
 
             var error = new StringWriter();
             using var execution = new InteractivePromptExecution(null, null, () => error, () => resources,
-                () => run, () => "", () => CreateSelection(authenticated: true), () => new UserSettings(),
+                () => run, (_, _) => "", () => CreateSelection(authenticated: true), () => new UserSettings(),
                 (_, _, _) => Task.CompletedTask, _ => Task.CompletedTask, null, null);
             Assert.True(await execution.QueueActiveInputAsync("steer", followUp: false, CancellationToken.None));
             Assert.True(await execution.QueueActiveInputAsync("follow", followUp: true, CancellationToken.None));
@@ -103,7 +104,7 @@ public sealed class InteractivePromptExecutionInputTests
             new CodingTools(Path.GetTempPath()), liveExtensionRegistration: registration), session);
         var selection = CreateSelection(authenticated: false);
         using var execution = new InteractivePromptExecution(null, null, () => TextWriter.Null,
-            () => throw new InvalidOperationException("Resource resolution should not run."), () => run, () => "",
+            () => throw new InvalidOperationException("Resource resolution should not run."), () => run, (_, _) => "",
             () => selection, () => new UserSettings(), (_, _, _) => Task.CompletedTask,
             _ => Task.CompletedTask, null, null);
         using var cancellation = new CancellationTokenSource();
@@ -136,7 +137,7 @@ public sealed class InteractivePromptExecutionInputTests
                 new CodingTools(root), liveExtensionRegistration: registration), session);
             var selection = CreateSelection(authenticated: true);
             using var execution = new InteractivePromptExecution(null, null, () => TextWriter.Null,
-                () => resources, () => run, () => "", () => selection, () => new UserSettings(),
+                () => resources, () => run, (_, _) => "", () => selection, () => new UserSettings(),
                 (_, _, _) => Task.CompletedTask, _ => Task.CompletedTask, null, null);
             var transcript = new InteractiveTranscript(TextWriter.Null, TextWriter.Null, interactive: false);
 

@@ -96,6 +96,8 @@ internal static class TerminalTextLayout
         var rows = new List<string>();
         var rowStarts = new List<int> { 0 };
         var line = new StringBuilder();
+        // Preserve source SGR order at wrapped line boundaries; reset controls are
+        // replayed after their earlier style sequences to recover the terminal state.
         var activeSgr = new List<string>();
         string? activeHyperlinkOpen = null;
         string? activeHyperlinkClose = null;
@@ -195,9 +197,9 @@ internal static class TerminalTextLayout
             foreach (var atom in token.Atoms) AppendAtom(atom);
         }
 
-        void PreserveStyledPadding()
+        void PreserveStyledPadding(bool preserveActiveStyle = false)
         {
-            if (!pendingWhitespace.Any(token => token.Atoms.Any(atom =>
+            if (!preserveActiveStyle && !pendingWhitespace.Any(token => token.Atoms.Any(atom =>
                     HasExplicitColor(atom.Prefix) || HasExplicitColor(atom.Suffix))))
                 return;
 
@@ -236,11 +238,11 @@ internal static class TerminalTextLayout
             if (token.Kind == WrapKind.Newline)
             {
                 var newline = token.Atoms[0];
-                PreserveStyledPadding();
+                PreserveStyledPadding(preserveActiveStyle: HasActiveSgrAtEnd(line.ToString()));
+                AppendControl(newline.Prefix);
                 FinishLine(newline.SourceEnd);
                 ProcessSkippedWhitespace();
-                ProcessState(newline.Prefix);
-                ProcessState(newline.Suffix);
+                AppendControl(newline.Suffix);
                 StartLine();
                 continue;
             }
@@ -277,6 +279,9 @@ internal static class TerminalTextLayout
             {
                 if (hasContent)
                 {
+                    if (PendingWhitespaceWidth() <= width - used &&
+                        HasActiveSgrAtEnd(line.ToString()))
+                        PreserveStyledPadding(preserveActiveStyle: true);
                     FinishLine(token.SourceStart);
                     ProcessSkippedWhitespace();
                     StartLine();
@@ -501,6 +506,118 @@ internal static class TerminalTextLayout
         return output.ToString();
     }
 
+    internal static string SliceStyledCells(string text, int startCell, int endCell)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        startCell = Math.Max(0, startCell);
+        endCell = Math.Max(startCell, endCell);
+        var output = new StringBuilder();
+        var sgr = new SgrState();
+        string? hyperlinkOpen = null;
+        string? hyperlinkClose = null;
+        var used = 0;
+        var started = false;
+
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TerminalImageRenderer.TryReadMarker(text, offset, out var markerLength, out _, out _))
+            {
+                offset += markerLength;
+                continue;
+            }
+            if (TryReadEscape(text, offset, out var escapeLength, out var kind, out var payload))
+            {
+                var sequence = text.Substring(offset, escapeLength);
+                if (!started)
+                {
+                    if (kind == EscapeKind.Sgr) sgr.Apply(payload);
+                    else if (kind == EscapeKind.Hyperlink)
+                    {
+                        if (HyperlinkTarget(payload).Length == 0)
+                        {
+                            hyperlinkOpen = null;
+                            hyperlinkClose = null;
+                        }
+                        else
+                        {
+                            hyperlinkOpen = sequence;
+                            hyperlinkClose = sequence.EndsWith('\a') ? "\u001b]8;;\a" : "\u001b]8;;\u001b\\";
+                        }
+                    }
+                }
+                else
+                {
+                    output.Append(sequence);
+                    if (kind == EscapeKind.Sgr) sgr.Apply(payload);
+                    else if (kind == EscapeKind.Hyperlink)
+                    {
+                        if (HyperlinkTarget(payload).Length == 0)
+                        {
+                            hyperlinkOpen = null;
+                            hyperlinkClose = null;
+                        }
+                        else
+                        {
+                            hyperlinkOpen = sequence;
+                            hyperlinkClose = sequence.EndsWith('\a') ? "\u001b]8;;\a" : "\u001b]8;;\u001b\\";
+                        }
+                    }
+                }
+                offset += escapeLength;
+                continue;
+            }
+            if (text[offset] is '\r' or '\n') break;
+
+            var element = StringInfo.GetNextTextElement(text, offset);
+            var safe = Sanitize(element);
+            var width = Math.Max(0, TerminalCells.Width(safe));
+            if (width > 0 && used < endCell && used + width > startCell)
+            {
+                if (!started)
+                {
+                    foreach (var sequence in sgr.Sequences) output.Append(sequence);
+                    if (hyperlinkOpen is not null) output.Append(hyperlinkOpen);
+                    started = true;
+                }
+                output.Append(safe);
+            }
+            used += width;
+            offset += element.Length;
+            if (started && used >= endCell) break;
+        }
+
+        if (started)
+        {
+            if (hyperlinkClose is not null) output.Append(hyperlinkClose);
+            if (sgr.IsActive) output.Append(SgrReset);
+        }
+        return output.ToString();
+    }
+
+    internal static string ApplyBackground(string text, string backgroundSequence)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(backgroundSequence);
+        var output = new StringBuilder(text.Length + backgroundSequence.Length * 2);
+        output.Append(backgroundSequence);
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadEscape(text, offset, out var length, out var kind, out var payload))
+            {
+                output.Append(text, offset, length);
+                offset += length;
+                if (kind == EscapeKind.Sgr && Width(text[offset..]) > 0)
+                    output.Append(backgroundSequence);
+                continue;
+            }
+
+            var element = StringInfo.GetNextTextElement(text, offset);
+            output.Append(element);
+            offset += element.Length;
+        }
+        return output.ToString();
+    }
+
     public static string HighlightCells(string text, int startCell, int endCell)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -567,7 +684,160 @@ internal static class TerminalTextLayout
     internal static bool TryReadEscape(string text, int offset, out int length) =>
         TryReadEscape(text, offset, out length, out _, out _);
 
-    private static bool TryReadEscape(string text, int offset, out int length, out EscapeKind kind, out string payload)
+    internal static bool HasActiveSgrAtEnd(string text)
+    {
+        var active = new SgrState();
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (!TryReadEscape(text, offset, out var length, out var kind, out var payload))
+            {
+                offset++;
+                continue;
+            }
+            if (kind == EscapeKind.Sgr)
+                active.Apply(payload);
+            offset += length;
+        }
+        return active.IsActive;
+    }
+
+    internal static bool HasBackgroundOnWhitespace(string text)
+    {
+        var active = new SgrState();
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadEscape(text, offset, out var length, out var kind, out var payload))
+            {
+                if (kind == EscapeKind.Sgr) active.Apply(payload);
+                offset += length;
+                continue;
+            }
+            if (char.IsWhiteSpace(text[offset]) && active.HasBackground) return true;
+            offset++;
+        }
+        return false;
+    }
+
+    internal static string SgrStateAtLastCell(string text)
+    {
+        var active = new SgrState();
+        var lastCellState = "";
+        for (var offset = 0; offset < text.Length;)
+        {
+            if (TryReadEscape(text, offset, out var length, out var kind, out var payload))
+            {
+                if (kind == EscapeKind.Sgr) active.Apply(payload);
+                offset += length;
+                continue;
+            }
+            var rune = Rune.GetRuneAt(text, offset);
+            if (!Rune.IsControl(rune)) lastCellState = string.Concat(active.Sequences);
+            offset += rune.Utf16SequenceLength;
+        }
+        return lastCellState;
+    }
+
+    private sealed class SgrState
+    {
+        private readonly Dictionary<string, string> _active = new(StringComparer.Ordinal);
+
+        public IEnumerable<string> Sequences => _active.Values;
+        public bool IsActive => _active.Count > 0;
+        public bool HasBackground => _active.ContainsKey("background");
+
+        public void Apply(string payload)
+        {
+            var parameters = payload.Split(';');
+            for (var index = 0; index < parameters.Length;)
+            {
+                var parameter = parameters[index];
+                if (parameter.Length == 0 || parameter == "0")
+                {
+                    _active.Clear();
+                    index++;
+                    continue;
+                }
+
+                var colon = parameter.IndexOf(':');
+                var root = colon < 0 ? parameter : parameter[..colon];
+                if (!int.TryParse(root, NumberStyles.None, CultureInfo.InvariantCulture, out var code))
+                {
+                    index++;
+                    continue;
+                }
+
+                var end = index + 1;
+                if (colon < 0 && code is (38 or 48 or 58) && end < parameters.Length &&
+                    int.TryParse(parameters[end], NumberStyles.None, CultureInfo.InvariantCulture, out var colorMode))
+                {
+                    end += colorMode == 2 ? 4 : colorMode == 5 ? 2 : 0;
+                    end = Math.Min(end, parameters.Length);
+                }
+
+                var sgr = "\u001b[" + string.Join(';', parameters, index, end - index) + "m";
+                ApplyCode(code, sgr);
+                index = end;
+            }
+        }
+
+        private void ApplyCode(int code, string sequence)
+        {
+            switch (code)
+            {
+                case 1: Set("bold", sequence); return;
+                case 2: Set("dim", sequence); return;
+                case 3: Set("italic", sequence); return;
+                case 4 or 21: Set("underline", sequence); return;
+                case 5 or 6: Set("blink", sequence); return;
+                case 7: Set("inverse", sequence); return;
+                case 8: Set("conceal", sequence); return;
+                case 9: Set("strike", sequence); return;
+                case 10: Remove("font"); return;
+                case 11 or 12 or 13 or 14 or 15 or 16 or 17 or 18 or 19:
+                    Set("font", sequence); return;
+                case 20: Set("fraktur", sequence); return;
+                case 22: Remove("bold", "dim"); return;
+                case 23: Remove("italic", "fraktur"); return;
+                case 24: Remove("underline"); return;
+                case 25: Remove("blink"); return;
+                case 27: Remove("inverse"); return;
+                case 28: Remove("conceal"); return;
+                case 29: Remove("strike"); return;
+                case 39: Remove("foreground"); return;
+                case 49: Remove("background"); return;
+                case 51 or 52: Set("frame", sequence); return;
+                case 53: Set("overline", sequence); return;
+                case 54: Remove("frame"); return;
+                case 55: Remove("overline"); return;
+                case 58: Set("underline-color", sequence); return;
+                case 59: Remove("underline-color"); return;
+                case 60 or 61 or 62 or 63 or 64: Set("ideogram", sequence); return;
+                case 65: Remove("ideogram"); return;
+                case 73 or 74: Set("script", sequence); return;
+                case 75: Remove("script"); return;
+            }
+
+            if (code is >= 30 and <= 37 or >= 90 and <= 97 or 38)
+                Set("foreground", sequence);
+            else if (code is >= 40 and <= 47 or >= 100 and <= 107 or 48)
+                Set("background", sequence);
+            else
+                Set("other:" + code.ToString(CultureInfo.InvariantCulture), sequence);
+        }
+
+        private void Set(string category, string sequence)
+        {
+            _active.Remove(category);
+            _active.Add(category, sequence);
+        }
+
+        private void Remove(params string[] categories)
+        {
+            foreach (var category in categories) _active.Remove(category);
+        }
+    }
+
+    internal static bool TryReadEscape(string text, int offset, out int length, out EscapeKind kind, out string payload)
     {
         length = 0;
         kind = EscapeKind.Other;
@@ -678,5 +948,5 @@ internal static class TerminalTextLayout
         public WrapKind Kind { get; } = kind;
     }
 
-    private enum EscapeKind { Other, Sgr, Hyperlink }
+    internal enum EscapeKind { Other, Sgr, Hyperlink }
 }

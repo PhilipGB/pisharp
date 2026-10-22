@@ -57,12 +57,29 @@ internal sealed class TerminalPresentation : IDisposable
             Console.WriteLine(initialTerminalTheme.Style("dim",
                 $"Model scope: {string.Join(", ", _modelRuntime.Scope)}{cycleHint}"));
         }
-        _terminalScreen = _editor is null ? null : new TerminalScreen(terminalIO.Output,
-            terminalIO.Error,
-            getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
-            queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
-            followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()), deferInitialRender: true,
-            minimumRenderInterval: TimeSpan.FromMilliseconds(16));
+        var terminalMode = _editor is null ? null : TerminalMode.Enter();
+        TerminalScreen? terminalScreen = null;
+        try
+        {
+            terminalScreen = _editor is null ? null : new TerminalScreen(terminalIO.Output,
+                terminalIO.Error,
+                getColumns: null, getRows: null, imageRenderer: new TerminalImageRenderer(), theme: initialTerminalTheme,
+                queryTerminalColors: !Console.IsInputRedirected && !Console.IsOutputRedirected,
+                followTerminalAppearance: ThemeFollowsTerminalAppearance(ActiveThemeSetting()), deferInitialRender: true,
+                minimumRenderInterval: TimeSpan.FromMilliseconds(16),
+                useAlternateScreen: _projectBinding.Settings.TuiMode != "regular");
+            if (terminalScreen is not null) terminalMode?.AttachScreen(terminalScreen);
+        }
+        catch
+        {
+            try { terminalScreen?.Dispose(); }
+            finally { terminalMode?.Dispose(); }
+            throw;
+        }
+        _terminalMode = terminalMode;
+        _terminalScreen = terminalScreen;
+        if (_terminalScreen is not null)
+            _terminalScreen.TerminalWidthChanged += RefreshIdleFooterForWidth;
         try
         {
             _terminalScreen?.SetThemeResolver(colors => ResolveConfiguredTheme(ActiveThemeSetting(), colors));
@@ -71,10 +88,9 @@ internal sealed class TerminalPresentation : IDisposable
             _hideThinkingBlock = _projectBinding.Settings.HideThinkingBlock == true;
             _terminalScreen?.SetThinkingBlocksHidden(_hideThinkingBlock);
             _terminalScreen?.Activate();
-            _terminalMode = _editor is null ? null : TerminalMode.Enter(_terminalScreen);
             ConfigureMcpAuthorizationUrlPresenter(_projectBinding.Runtime);
             _editor?.AttachScreen(_terminalScreen);
-            _terminalScreen?.SetFooter(IdleFooter(providerCount: 1), render: false);
+            SetIdleFooter(providerCount: 1, render: false);
             _terminalScreen?.RenderInitial();
             _editor?.CompleteInitialTerminalColorQuery();
             LoadSessionTranscript();
@@ -95,8 +111,9 @@ internal sealed class TerminalPresentation : IDisposable
                 if (_terminalScreen is { IsActive: true }) _terminalScreen.WriteControl(value);
                 else Console.Write(value);
             });
-            _terminalScreen?.SetFooter(IdleFooter(providerCount: 1));
-            _terminalScreen?.SetFooter(IdleFooter());
+            _terminalScreen?.SetSelectionClipboard(Clipboard);
+            SetIdleFooter(providerCount: 1);
+            SetIdleFooter();
         }
         catch
         {
@@ -152,12 +169,18 @@ internal sealed class TerminalPresentation : IDisposable
         _terminalScreen?.SetAutocompleteMaxVisible(settings.AutocompleteMaxVisible ?? 5);
         _terminalScreen?.SetClearOnShrink(settings.ClearOnShrink == true);
         _terminalScreen?.SetShowTerminalProgress(settings.ShowTerminalProgress == true);
+        _terminalScreen?.SetFullscreenWheelScrollLines(settings.FullscreenWheelScrollLines ??
+            FullscreenWheelScrollSetting.Automatic);
     }
 
     public void Dispose()
     {
         try { _terminalMode?.Dispose(); }
-        finally { _terminalScreen?.Dispose(); }
+        finally
+        {
+            try { _terminalScreen?.PresentTranscriptOnNormalScreen(); }
+            finally { _terminalScreen?.Dispose(); }
+        }
     }
 
     public string? ActiveThemeSetting() => _extensionThemeOverride ?? _cliThemeOverride ?? _projectBinding.Settings.Theme;
@@ -190,10 +213,23 @@ internal sealed class TerminalPresentation : IDisposable
         Action<string>? completed = _terminalScreen is null ? null : _terminalScreen.ClearMcpAuthorizationNotification;
         context.SetMcpAuthorizationUrlPresenter(presenter, completed, _editor?.McpAuthorizationCallbackInput);
     }
-    public string IdleFooter(int? providerCount = null) => TerminalModelStatus.FormatIdleFooter(_modelBinding.Selection.Model, _modelBinding.Thinking, _conversationBinding.Conversation,
+    public string IdleFooter(int? providerCount = null, int? width = null, bool includeEstimateWhenNoMessages = false,
+        long? providerContextTokens = null) => TerminalModelStatus.FormatIdleFooter(_modelBinding.Selection.Model,
+        _modelBinding.Thinking, _conversationBinding.Conversation,
         _conversationBinding.Run.ContextWindowTokens, _projectBinding.Settings.AutoCompactionEnabled(Environment.GetEnvironmentVariable),
-        _terminalScreen?.TerminalWidth ?? 80, providerCount ?? _modelRuntime.AvailableModelProviderCount,
-        _conversationBinding.Run.EstimatedContextTokens);
+        width ?? _terminalScreen?.TerminalWidth ?? 80, providerCount ?? _modelRuntime.AvailableModelProviderCount,
+        _conversationBinding.Run.EstimatedContextTokens, includeEstimateWhenNoMessages, providerContextTokens);
+
+    public void SetIdleFooter(int? providerCount = null, int? width = null, bool render = true)
+    {
+        var footer = IdleFooter(providerCount, width);
+        _terminalScreen?.SetFooter(footer, render);
+    }
+
+    private void RefreshIdleFooterForWidth(int width)
+    {
+        SetIdleFooter(width: width, render: false);
+    }
     public void RefreshTerminalTheme()
     {
         if (_terminalScreen is null) return;

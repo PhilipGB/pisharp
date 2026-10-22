@@ -472,6 +472,32 @@ public sealed class EditorKeymapTests
     }
 
     [Fact]
+    public async Task SuspendShortcutUsesThePlatformBindingAndPreservesTheEditorDraft()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-suspend-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var editor = new TerminalEditor(agentDirectory: directory);
+            editor.Prefill("keep this draft");
+            string? dispatched = null;
+            var clearedPresentation = false;
+
+            var handled = await editor.HandleApplicationShortcutAsync(Key(ConsoleKey.Z, ConsoleModifiers.Control), action =>
+            {
+                dispatched = action;
+                return Task.CompletedTask;
+            }, () => clearedPresentation = true);
+
+            Assert.Equal(!OperatingSystem.IsWindows(), handled);
+            Assert.Equal(OperatingSystem.IsWindows() ? null : "app.suspend", dispatched);
+            Assert.Equal("keep this draft", editor.Draft);
+            Assert.False(clearedPresentation);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
     public async Task ExternalEditorShortcutCanBeConfiguredAndPreservesTheEditorDraft()
     {
         var directory = Path.Combine(Path.GetTempPath(), "pisharp-keymap-external-editor-" + Guid.NewGuid().ToString("N"));

@@ -1,0 +1,67 @@
+{
+  "id": "terminal-tool-lifecycle",
+  "settings": { "quietStartup": true },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-context-files", "--tools", "bash",
+      "--system-prompt", "You are a terminal parity fixture."
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-context-files", "--tools", "bash",
+      "--no-approve", "--system-prompt", "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": ["tool-call-request"],
+    "chatResponseGates": ["tool-call-response"],
+    "chatToolCallsByRequest": [[
+      {
+        "id": "call-terminal-tool",
+        "name": "bash",
+        "arguments": { "command": "x=tool-line; printf '%s-one\\n' \"$x\"; sleep 0.3; printf '%s-two\\n%s-three\\n' \"$x\" \"$x\"" }
+      }
+    ]],
+    "chatResponseContentByRequest": ["fixture tool call", "Tool lifecycle complete."]
+  },
+  "dimensions": [
+    { "columns": 80, "rows": 24 },
+    { "columns": 120, "rows": 40 }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    {
+      "id": "paste-tool-prompt",
+      "send": "\u001b[200~Run the fixture tool.\u001b[201~",
+      "expect": "Run the fixture tool.",
+      "renderMatch": true
+    },
+    {
+      "id": "tool-call-start",
+      "send": "\r",
+      "waitGatesAfter": ["tool-call-request"],
+      "expect": "Working",
+      "allowStaticFrame": true
+    },
+    {
+      "id": "tool-output-in-flight",
+      "releaseGates": ["tool-call-response"],
+      "expect": "tool-line-one",
+      "notExpect": "Took",
+      "renderMatch": true
+    },
+    {
+      "id": "tool-result-and-follow-up",
+      "expect": "Tool lifecycle complete.",
+      "notExpect": "Working",
+      "renderMatch": true
+    },
+    { "id": "expand-tool-result", "send": "\u000f", "expect": "tool-line-three" },
+    { "id": "exit", "send": "\u0003\u0003", "exit": true }
+  ],
+  "assertionFrames": ["startup", "tool-call-start", "tool-output-in-flight", "tool-result-and-follow-up", "expand-tool-result", "exit"],
+  "terminal": { "keyboardProtocol": "kitty" }
+}

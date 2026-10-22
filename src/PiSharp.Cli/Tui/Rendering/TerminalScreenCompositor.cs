@@ -15,31 +15,46 @@ internal sealed class TerminalScreenCompositor
 {
     private readonly TextWriter _output;
     private readonly TerminalImageRenderer _images;
+    private readonly bool _useAlternateScreen;
     private IReadOnlyList<string>? _previousRows;
     private IReadOnlyList<string>? _previousDocumentRows;
+    private IReadOnlyList<string>? _previousSuspensionRows;
     private int _previousCursorRow;
-    private int _previousRestoreStartRow;
+    private int _previousRestorationCursorRow;
+    private int _previousRestorationCursorColumn;
     private int _previousColumns;
     private int _previousHeight;
     private bool _clearOnShrink;
+    private bool _clearMainScreen;
     private int? _previousContentHeight;
+    private int _regularViewportTop;
     private TerminalTextLayout.LayoutResult? _previousTranscriptLayout;
     private int _previousTranscriptFirstVisualRow;
     private int _previousTranscriptScrollOffset;
 
-    public TerminalScreenCompositor(TextWriter output, TerminalImageRenderer images)
+    public TerminalScreenCompositor(TextWriter output, TerminalImageRenderer images, bool useAlternateScreen = true)
     {
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(images);
         _output = output;
         _images = images;
+        _useAlternateScreen = useAlternateScreen;
     }
 
     public void SetClearOnShrink(bool enabled) => _clearOnShrink = enabled;
 
+    public void InvalidateRenderedFrame(bool clearMainScreen = false)
+    {
+        _previousRows = null;
+        _clearMainScreen |= clearMainScreen && !_useAlternateScreen;
+    }
+
     internal sealed record Frame(IReadOnlyList<string> Rows, int CursorRow, int CursorColumn,
         int ScrollOffset, int Columns, int Height, bool CursorVisible = true, int RestoreStartRow = 0,
-        int ContentHeight = 0);
+        int ContentHeight = 0, IReadOnlyList<string>? RestorationRows = null,
+        int TranscriptStartRow = 0, int TranscriptHeight = 0,
+        int RestorationCursorRow = -1, IReadOnlyList<string>? DocumentRows = null,
+        int DocumentCursorRow = -1, int DocumentCursorColumn = -1, IReadOnlyList<string>? SuspensionRows = null);
 
     public Frame Compose(string editorText, int editorCursor, int? editorSelectionStart, int? editorSelectionEnd,
         string transcriptText, string footer,
@@ -65,14 +80,25 @@ internal sealed class TerminalScreenCompositor
         string? workingFrame = "⠋",
         IReadOnlyList<PiSharpExtensionUiLine>? extensionCustomOverlay = null,
         PiSharpExtensionUiOverlayOptions? extensionCustomOverlayOptions = null,
-        IReadOnlyList<PiSharpExtensionUiLine>? extensionCustomPanel = null)
+        IReadOnlyList<PiSharpExtensionUiLine>? extensionCustomPanel = null,
+        bool workingFrameVerbatim = false,
+        string transcriptBottomKeyLabel = "Ctrl+End",
+        IReadOnlyList<string>? transcriptSearchPanel = null,
+        bool transientScrollbarVisible = false,
+        int? transcriptSearchCursorColumn = null,
+        string? transientFlash = null, IReadOnlyList<string>? transientFlashes = null)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
+        var initialScrollOffset = scrollOffset;
+        var homeDirectory = Environment.GetEnvironmentVariable("HOME") ??
+            Environment.GetEnvironmentVariable("USERPROFILE");
+        var workingDirectory = TerminalPathDisplay.FormatForFooter(Environment.CurrentDirectory, homeDirectory);
         var hasExtensionStatuses = extensionStatuses is { Count: > 0 };
         var baseFooterHeight = height >= 5 ? 2 : height > 2 ? 1 : 0;
         var extensionStatusHeight = hasExtensionStatuses && height > 3 ? 1 : 0;
         var headerRows = LayoutExtensionLines(extensionHeader, columns, activeTheme, maximumRows: height);
-        var aboveRows = LayoutExtensionLines(extensionWidgetsAbove, columns, activeTheme, maximumRows: height);
+        var aboveRows = new[] { "" }.Concat(
+            LayoutExtensionLines(extensionWidgetsAbove, columns, activeTheme, maximumRows: height)).ToArray();
         var belowRows = LayoutExtensionLines(extensionWidgetsBelow, columns, activeTheme, maximumRows: height);
         var extensionFooterRows = LayoutExtensionLines(extensionFooter, columns, activeTheme, maximumRows: height)
             .Take(Math.Max(0, height - baseFooterHeight - extensionStatusHeight - 1)).ToArray();
@@ -84,7 +110,7 @@ internal sealed class TerminalScreenCompositor
         var editorLineLimit = Math.Max(1,
             Math.Min((int)(height * 0.3), height - footerHeight - extensionHeaderHeight - borderHeight - suggestionHeight - 1));
         var widgetCapacity = Math.Max(0, height - footerHeight - extensionHeaderHeight - borderHeight - suggestionHeight - editorLineLimit - 2);
-        var aboveWidgetHeight = Math.Min(aboveRows.Count, widgetCapacity);
+        var aboveWidgetHeight = Math.Min(aboveRows.Length, widgetCapacity);
         var belowWidgetHeight = Math.Min(belowRows.Count, Math.Max(0, widgetCapacity - aboveWidgetHeight));
         var suggestionNameWidth = editorSuggestions is { Count: > 0 }
             ? Math.Clamp(editorSuggestions.Max(suggestion => TerminalTextLayout.Width(
@@ -125,15 +151,25 @@ internal sealed class TerminalScreenCompositor
         var startupPrefix = string.IsNullOrEmpty(startupContent) ? "" : startupContent + "\n";
         var startupContentRows = startupPrefix.Length == 0 ? 0 :
             TerminalTextLayout.Create(startupPrefix, transcriptWidth).RowCount;
-        var transcriptLayout = TerminalTextLayout.Create(startupPrefix + transcriptText, transcriptWidth);
+        var startupContentVisualRows = string.IsNullOrEmpty(startupContent) ? 0 :
+            TerminalTextLayout.Create(startupContent, transcriptWidth).RowCount;
+        var transcriptSource = startupPrefix + transcriptText;
+        var transcriptLayout = TerminalTextLayout.Create(transcriptSource, transcriptWidth);
+        var visibleTranscriptSource = transcriptSource;
         var visibleLayout = transcriptLayout;
-        var highlightedSearch = search.Highlight(transcriptText);
+        var highlightedSearch = search.Highlight(transcriptText, activeTheme);
+        var hasSearchResult = highlightedSearch.MatchCount > 0;
+        var transcriptViewportHeight = transcriptHeight;
         if (search.Query.Length > 0 && highlightedSearch.MatchCount > 0)
         {
             var searchLayout = TerminalTextLayout.Create(transcriptText, transcriptWidth);
-            var selectedRow = startupContentRows + searchLayout.VisualRowAt(highlightedSearch.SelectedTextStart);
-            scrollOffset = TerminalTranscriptViewport.ScrollOffsetToShow(transcriptLayout.RowCount, selectedRow, transcriptHeight);
-            visibleLayout = TerminalTextLayout.Create(startupPrefix + highlightedSearch.HighlightedText, transcriptWidth);
+            var selectedFirstRow = startupContentRows + searchLayout.VisualRowAt(highlightedSearch.SelectedTextStart);
+            var selectedLastRow = startupContentRows + searchLayout.VisualRowAt(
+                Math.Max(highlightedSearch.SelectedTextStart, highlightedSearch.SelectedTextEnd - 1));
+            scrollOffset = TerminalTranscriptViewport.ScrollOffsetToReveal(transcriptLayout.RowCount,
+                selectedFirstRow, selectedLastRow, Math.Max(1, transcriptViewportHeight), scrollOffset);
+            visibleTranscriptSource = startupPrefix + highlightedSearch.HighlightedText;
+            visibleLayout = TerminalTextLayout.Create(visibleTranscriptSource, transcriptWidth);
         }
 
         // Pi's follow-end scroll view keeps its absolute scrollTop while new content arrives.
@@ -147,9 +183,11 @@ internal sealed class TerminalScreenCompositor
             scrollOffset = TerminalTranscriptViewport.ScrollOffsetForFirstRow(
                 transcriptLayout.RowCount, anchoredFirstRow, transcriptHeight);
         }
-
         var transcriptRows = TerminalTranscriptViewport.WrapWindow(visibleLayout,
-            transcriptHeight, scrollOffset, out scrollOffset, out var firstVisualRow);
+            transcriptViewportHeight, scrollOffset, out var renderedScrollOffset,
+            out var firstVisualRow);
+        scrollOffset = renderedScrollOffset;
+        var showScrollbar = transientScrollbarVisible || scrollOffset != initialScrollOffset;
         _previousTranscriptLayout = transcriptLayout;
         _previousTranscriptFirstVisualRow = firstVisualRow;
         _previousTranscriptScrollOffset = scrollOffset;
@@ -159,17 +197,30 @@ internal sealed class TerminalScreenCompositor
         for (var index = 0; index < startupHeight; index++)
             rows[extensionHeaderHeight + index] = TerminalTranscriptViewport.Clip(startupRows[index], columns);
         var transcriptStart = extensionHeaderHeight + startupHeight;
-        mouse.SetTranscript(transcriptRows, firstVisualRow, transcriptStart, transcriptHeight);
+        mouse.SetTranscript(transcriptRows, firstVisualRow, transcriptStart, transcriptViewportHeight,
+            boundedOutputPadding);
         var displayedTranscriptRows = mouse.HighlightTranscript();
         for (var index = 0; index < transcriptRows.Count; index++)
         {
-            var row = displayedTranscriptRows[index];
-            var rowWidth = TerminalTextLayout.Width(row);
-            if (rowWidth > 0 && rowWidth < transcriptWidth) row += new string(' ', transcriptWidth - rowWidth);
-            if (boundedOutputPadding > 0)
-                row = new string(' ', boundedOutputPadding) + row + new string(' ', boundedOutputPadding);
-            rows[transcriptStart + index] = row;
+            var visualRow = firstVisualRow + index;
+            var isStartupContent = visualRow < startupContentVisualRows;
+            var continuationIndent = isStartupContent && IsWrappedLineContinuation(
+                transcriptSource, transcriptLayout.SourceIndexAtVisualRow(visualRow)) ? " " : "";
+            rows[transcriptStart + index] = isStartupContent
+                ? PadTranscriptRow(continuationIndent + displayedTranscriptRows[index], columns, outputPadding: 0)
+                : PadTranscriptRow(displayedTranscriptRows[index], transcriptWidth, boundedOutputPadding,
+                    preserveActiveStyleOnPadding: visualRow + 1 < visibleLayout.RowCount &&
+                        IsWrappedLineContinuation(visibleTranscriptSource,
+                            visibleLayout.SourceIndexAtVisualRow(visualRow + 1)));
+            if (mouse.IsWholeTranscriptLineSelected(index))
+                rows[transcriptStart + index] = TerminalTextLayout.HighlightCells(
+                    rows[transcriptStart + index], 0, columns);
         }
+        if (_useAlternateScreen && (scrollOffset > 0 || showScrollbar) &&
+            transcriptViewportHeight > 0 && columns > 1)
+            ApplyTranscriptScrollIndicators(rows, transcriptStart, transcriptHeight, transcriptLayout.RowCount,
+                scrollOffset, columns, transcriptBottomKeyLabel, activeTheme,
+                showScrollbar, showEndHint: scrollOffset > 0);
 
         var aboveStart = transcriptStart + transcriptHeight;
         for (var index = 0; index < aboveWidgetHeight; index++)
@@ -238,7 +289,8 @@ internal sealed class TerminalScreenCompositor
                 {
                     var tail = new string('─', columns - statusWidth - 4);
                     rows[editorStart] = activeTheme.Style("thinkingOff", "── ") +
-                        activeTheme.Style("thinkingOff", indicator) + (indicator.Length == 0 ? "" : " ") +
+                        (workingFrameVerbatim ? indicator : activeTheme.Style("thinkingOff", indicator)) +
+                        (indicator.Length == 0 ? "" : " ") +
                         activeTheme.Style("thinkingOff", workingStatus) +
                         activeTheme.Style("thinkingOff", $" {tail}");
                 }
@@ -247,13 +299,13 @@ internal sealed class TerminalScreenCompositor
 
         if (footerHeight > 0)
         {
-            var footerText = scrollOffset == 0 ? footer : $"↑ {scrollOffset} rows · live output follows at bottom · {footer}";
+            var footerText = footer;
             if (hasExtensionStatuses && extensionStatusHeight == 0)
                 footerText += "  " + string.Join("  ", extensionStatuses!.Select(item => $"{item.Key}: {item.Text}"));
             rows[^1] = activeTheme.Style("dim", TerminalTranscriptViewport.Clip(footerText, columns));
             if (baseFooterHeight > 1)
                 rows[^2] = activeTheme.Style("dim",
-                    TerminalTranscriptViewport.Clip(Environment.CurrentDirectory, columns));
+                    TerminalTranscriptViewport.ClipWithEllipsis(workingDirectory, columns));
         }
         if (extensionStatusHeight > 0)
         {
@@ -279,18 +331,67 @@ internal sealed class TerminalScreenCompositor
                   new string(' ', Math.Max(0, columns - 1 - TerminalTextLayout.Width(statusText)))
                 : activeTheme.Style(style, TerminalTranscriptViewport.Clip(" " + statusText, columns));
         }
+        var restorationRows = rows.ToArray();
+        var documentTranscriptRows = transcriptSource.Length == 0
+            ? new List<string>()
+            : transcriptLayout.Rows.Select((row, index) =>
+            {
+                if (index >= startupContentVisualRows)
+                    return PadTranscriptRow(row, transcriptWidth, boundedOutputPadding,
+                        preserveActiveStyleOnPadding: index + 1 < transcriptLayout.RowCount &&
+                            IsWrappedLineContinuation(transcriptSource,
+                                transcriptLayout.SourceIndexAtVisualRow(index + 1)));
+                var continuationIndent = IsWrappedLineContinuation(
+                    transcriptSource, transcriptLayout.SourceIndexAtVisualRow(index)) ? " " : "";
+                return PadTranscriptRow(continuationIndent + row, columns, outputPadding: 0);
+            }).ToList();
+        // Pi's unconstrained fullscreen VStack gives the transcript its one-row minimum when stopping for suspension.
+        var firstDocumentRow = restorationRows.Take(transcriptStart).Concat(documentTranscriptRows).FirstOrDefault()
+            ?? new string(' ', columns);
+        var suspensionRows = new[] { firstDocumentRow }
+            .Concat(restorationRows.Skip(transcriptStart + transcriptHeight)).ToArray();
+        while (documentTranscriptRows.Count > startupContentVisualRows && IsBlankRow(documentTranscriptRows[^1]))
+            documentTranscriptRows.RemoveAt(documentTranscriptRows.Count - 1);
+        var documentRows = restorationRows.Take(transcriptStart)
+            .Concat(documentTranscriptRows)
+            .Concat(restorationRows.Skip(transcriptStart + transcriptHeight)).ToArray();
+        var documentCursorRow = editorStart + borderHeight / 2 + editor.CursorRow;
+        if (documentCursorRow >= transcriptStart + transcriptHeight)
+            documentCursorRow += documentTranscriptRows.Count - transcriptHeight;
+        else if (documentCursorRow >= transcriptStart)
+            documentCursorRow = transcriptStart + Math.Clamp(documentCursorRow - transcriptStart,
+                0, Math.Max(0, documentTranscriptRows.Count - 1));
         if (overlay is not null) TerminalOverlayLayout.Apply(rows, overlay, columns, activeTheme);
+        if (transcriptSearchPanel is { Count: > 0 })
+            TerminalOverlayLayout.ApplyTranscriptSearch(rows, transcriptSearchPanel, columns);
+        var frameCursorRow = editorStart + borderHeight / 2 + editor.CursorRow;
+        var frameCursorColumn = editor.CursorColumn + boundedEditorPadding + 1;
+        if (transcriptSearchPanel is { Count: > 0 } && transcriptSearchCursorColumn is { } searchCursorColumn)
+        {
+            var searchPanelTop = Math.Min(1, Math.Max(0, height - transcriptSearchPanel.Count));
+            frameCursorRow = Math.Clamp(searchPanelTop + 1, 0, Math.Max(0, height - 1));
+            frameCursorColumn = Math.Clamp(searchCursorColumn + 1, 1, columns);
+        }
 
         if (editorPanel is { Count: > 0 })
         {
-            var visibleCount = Math.Min(editorPanel.Count, Math.Max(height, 1));
-            var sourceStart = editorPanel.Count - visibleCount;
-            var panelStart = Math.Max(0, height - Math.Clamp(panelBottomMargin, footerHeight, height) - visibleCount);
+            var reservedBottom = Math.Clamp(panelBottomMargin, footerHeight, height);
+            var panelOverflowsAvailableHeight = editorPanel.Count > height - reservedBottom;
+            var visibleCount = panelOverflowsAvailableHeight
+                ? Math.Min(editorPanel.Count, Math.Max(1, height - reservedBottom))
+                : Math.Min(editorPanel.Count, Math.Max(height, 1));
+            var sourceStart = panelOverflowsAvailableHeight ? 0 : editorPanel.Count - visibleCount;
+            var panelStart = panelOverflowsAvailableHeight
+                ? 1
+                : Math.Max(0, height - reservedBottom - visibleCount);
             for (var index = 0; index < visibleCount; index++)
                 rows[panelStart + index] = TerminalTranscriptViewport.Clip(editorPanel[sourceStart + index], columns);
             if (height > 2 && panelBottomMargin > 1)
-                rows[^2] = activeTheme.Style("dim",
-                    TerminalTranscriptViewport.Clip(Environment.CurrentDirectory, columns - 1));
+            {
+                var directoryRow = panelOverflowsAvailableHeight ? rows.Length - 1 : rows.Length - 2;
+                rows[directoryRow] = activeTheme.Style("dim",
+                    TerminalTranscriptViewport.ClipWithEllipsis(workingDirectory, columns - 1));
+            }
             if (authorizationUrlCopyStatus is not null && panelStart > 0)
             {
                 var (style, prefix) = authorizationUrlCopyStatusKind switch
@@ -309,16 +410,102 @@ internal sealed class TerminalScreenCompositor
             var cursorColumn = panelCursorColumn ?? 1;
             var panelFrame = new Frame(rows, Math.Clamp(cursorRow, 0, Math.Max(0, height - 1)),
                 Math.Clamp(cursorColumn, 1, columns + 1), scrollOffset, columns, height, panelCursorVisible,
-                RestoreStartRow: panelStart, ContentHeight: startupHeight + transcriptRows.Count);
-            return ApplyExtensionOverlay(panelFrame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme);
+                RestoreStartRow: panelStart, ContentHeight: startupHeight + transcriptRows.Count,
+                RestorationRows: restorationRows, TranscriptStartRow: transcriptStart,
+                TranscriptHeight: hasSearchResult ? transcriptViewportHeight : transcriptHeight,
+                RestorationCursorRow: editorStart + borderHeight / 2 + editor.CursorRow,
+                DocumentRows: documentRows, DocumentCursorRow: documentCursorRow,
+                DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1,
+                SuspensionRows: suspensionRows);
+            return ApplyTransientFlash(
+                ApplyExtensionOverlay(panelFrame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme),
+                transientFlashes ?? (transientFlash is null ? [] : [transientFlash]));
         }
 
-        var frame = new Frame(rows, editorStart + borderHeight / 2 + editor.CursorRow,
-            editor.CursorColumn + boundedEditorPadding + 1, scrollOffset, columns, height,
+        var frame = new Frame(rows, frameCursorRow,
+            frameCursorColumn, scrollOffset, columns, height,
             CursorVisible: focusedComponentRows is null && showHardwareCursor, RestoreStartRow: editorStart,
-            ContentHeight: startupHeight + transcriptRows.Count);
+            ContentHeight: startupHeight + transcriptRows.Count, RestorationRows: restorationRows,
+            TranscriptStartRow: transcriptStart,
+            TranscriptHeight: hasSearchResult ? transcriptViewportHeight : transcriptHeight,
+            RestorationCursorRow: editorStart + borderHeight / 2 + editor.CursorRow,
+            DocumentRows: documentRows, DocumentCursorRow: documentCursorRow,
+            DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1,
+            SuspensionRows: suspensionRows);
         var presented = ApplyExtensionOverlay(frame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme);
-        return focusedComponentRows is null ? presented : presented with { CursorVisible = false };
+        if (focusedComponentRows is not null) presented = presented with { CursorVisible = false };
+        return ApplyTransientFlash(presented, transientFlashes ?? (transientFlash is null ? [] : [transientFlash]));
+    }
+
+    private static Frame ApplyTransientFlash(Frame frame, IReadOnlyList<string> messages)
+    {
+        if (messages.Count == 0 || frame.Rows.Count == 0 || frame.Columns <= 0) return frame;
+        var rows = frame.Rows.ToArray();
+        var visible = messages.TakeLast(rows.Length).ToArray();
+        for (var index = 0; index < visible.Length; index++)
+        {
+            var text = TerminalTranscriptViewport.Clip($" {visible[index]} ", frame.Columns);
+            var textWidth = TerminalTextLayout.Width(text);
+            if (textWidth == 0) continue;
+            var start = Math.Max(0, frame.Columns - textWidth);
+            var prefix = TerminalTextLayout.SliceStyledCells(rows[index], 0, start);
+            prefix += new string(' ', Math.Max(0, start - TerminalTextLayout.Width(prefix)));
+            rows[index] = prefix + "\u001b[7m" + text + "\u001b[27m";
+        }
+        return frame with { Rows = rows };
+    }
+
+    private static void ApplyTranscriptScrollIndicators(string[] rows, int transcriptStart, int transcriptHeight,
+        int contentHeight, int scrollOffset, int columns, string bottomKeyLabel, TerminalTheme theme,
+        bool showScrollbar, bool showEndHint)
+    {
+        var trackColumn = showScrollbar ? columns - 1 : columns;
+        var trackHeight = Math.Max(1, transcriptHeight);
+        var thumbHeight = Math.Max(Math.Min(2, trackHeight), Math.Min(trackHeight,
+            (int)Math.Round((double)trackHeight * trackHeight / Math.Max(1, contentHeight))));
+        var maximumScrollTop = Math.Max(0, contentHeight - transcriptHeight);
+        var scrollTop = Math.Max(0, maximumScrollTop - scrollOffset);
+        var maximumThumbTop = trackHeight - thumbHeight;
+        var thumbOffset = maximumScrollTop == 0 ? 0 :
+            (int)Math.Round((double)scrollTop / maximumScrollTop * maximumThumbTop);
+        for (var index = 0; showScrollbar && index < trackHeight; index++)
+        {
+            var row = transcriptStart + index;
+            if (row < 0 || row >= rows.Length) continue;
+            var glyph = index >= thumbOffset && index < thumbOffset + thumbHeight ? "┃" : "│";
+            var style = glyph == "┃" ? "scrollbarThumb" : "scrollbarTrack";
+            var rowBackgroundLength = LeadingBackgroundSequenceLength(rows[row]);
+            var rowBackground = rows[row][..rowBackgroundLength];
+            var track = TerminalTranscriptViewport.Clip(rows[row], trackColumn);
+            track += new string(' ', Math.Max(0, trackColumn - TerminalTextLayout.Width(track)));
+            rows[row] = track + rowBackground + theme.Style(style, glyph);
+        }
+
+        if (!showEndHint) return;
+        var label = $" ↓ Jump to latest message{(string.IsNullOrWhiteSpace(bottomKeyLabel) ? "" : $" · {bottomKeyLabel}")} ";
+        label = TerminalTranscriptViewport.Clip(label, trackColumn);
+        var labelWidth = TerminalTextLayout.Width(label);
+        var labelStart = Math.Max(0, (columns - labelWidth) / 2);
+        var indicatorRow = transcriptStart + trackHeight - 1;
+        if (indicatorRow < 0 || indicatorRow >= rows.Length || labelWidth == 0) return;
+        var baseRow = rows[indicatorRow];
+        var left = TerminalTextLayout.SliceStyledCells(baseRow, 0, labelStart);
+        if (TerminalTextLayout.Width(left) < labelStart)
+            left += new string(' ', labelStart - TerminalTextLayout.Width(left));
+        var rightWidth = Math.Max(0, trackColumn - labelStart - labelWidth);
+        var right = TerminalTextLayout.SliceStyledCells(baseRow, labelStart + labelWidth, trackColumn);
+        if (TerminalTextLayout.Width(right) < rightWidth)
+            right += new string(' ', rightWidth - TerminalTextLayout.Width(right));
+        var indicatorIndex = trackHeight - 1;
+        var indicatorIsThumb = indicatorIndex >= thumbOffset && indicatorIndex < thumbOffset + thumbHeight;
+        var indicatorGlyph = indicatorIsThumb ? "┃" : "│";
+        var indicatorStyle = indicatorIsThumb ? "scrollbarThumb" : "scrollbarTrack";
+        var backgroundLength = LeadingBackgroundSequenceLength(baseRow);
+        var background = baseRow[..backgroundLength];
+        var indicator = left +
+            theme.Style("selectedBg", theme.Style("text", label), background: true) +
+            right + background + (showScrollbar ? theme.Style(indicatorStyle, indicatorGlyph) : "");
+        rows[indicatorRow] = indicator;
     }
 
     private static Frame ApplyExtensionOverlay(Frame frame,
@@ -339,6 +526,82 @@ internal sealed class TerminalScreenCompositor
         };
     }
 
+    private static bool IsWrappedLineContinuation(string text, int sourceIndex)
+    {
+        sourceIndex = Math.Clamp(sourceIndex, 0, text.Length);
+        var lineStart = text.LastIndexOf('\n', Math.Max(0, sourceIndex - 1));
+        return sourceIndex > lineStart + 1;
+    }
+
+    internal static string PadTranscriptRow(string row, int transcriptWidth, int outputPadding,
+        bool preserveActiveStyleOnPadding = false)
+    {
+        var rowWidth = TerminalTextLayout.Width(row);
+        var terminalWidth = transcriptWidth + outputPadding * 2;
+        if (outputPadding > 0 && rowWidth >= terminalWidth) return row;
+        var leadingBackgroundLength = LeadingPanelBackgroundLength(row);
+        var hasPanelBackground = leadingBackgroundLength > 0;
+        if (rowWidth == 0 && hasPanelBackground)
+            return row[..leadingBackgroundLength] + new string(' ', terminalWidth) + "\u001b[0m";
+
+        var transcriptPadding = rowWidth < transcriptWidth ? transcriptWidth - rowWidth : 0;
+        var trailingPadding = transcriptPadding + outputPadding;
+        var leadingPadding = outputPadding > 0 ? new string(' ', outputPadding) : "";
+        if (trailingPadding == 0) return leadingPadding + row;
+
+        const string reset = "\u001b[0m";
+        var hasTrailingReset = row.EndsWith(reset, StringComparison.Ordinal);
+        var keepStyleOnPadding = hasTrailingReset &&
+            TerminalTextLayout.HasActiveSgrAtEnd(row[..^reset.Length]);
+        if (hasPanelBackground)
+        {
+            if (hasTrailingReset) row = row[..^reset.Length];
+            if (preserveActiveStyleOnPadding || rowWidth >= transcriptWidth)
+            {
+                var cellStyle = TerminalTextLayout.SgrStateAtLastCell(row);
+                row += (cellStyle.Length > 0 ? cellStyle : row[..leadingBackgroundLength]) +
+                    new string(' ', trailingPadding) + reset;
+            }
+            else row += reset + row[..leadingBackgroundLength] + new string(' ', trailingPadding) + reset;
+        }
+        else
+        {
+            if (keepStyleOnPadding) row = row[..^reset.Length];
+            row += new string(' ', trailingPadding);
+            if (keepStyleOnPadding) row += reset;
+        }
+        return leadingBackgroundLength > 0
+            ? row[..leadingBackgroundLength] + leadingPadding + row[leadingBackgroundLength..]
+            : leadingPadding + row;
+    }
+
+    private static int LeadingPanelBackgroundLength(string row)
+    {
+        const string reset = "\u001b[0m";
+        var offset = 0;
+        while (row.AsSpan(offset).StartsWith(reset, StringComparison.Ordinal)) offset += reset.Length;
+        if (!row.AsSpan(offset).StartsWith("\u001b[48;", StringComparison.Ordinal)) return 0;
+        var end = row.IndexOf('m', offset);
+        return end < 0 ? 0 : end + 1;
+    }
+
+    private static int LeadingBackgroundSequenceLength(string row)
+    {
+        if (!row.StartsWith("\u001b[48;", StringComparison.Ordinal)) return 0;
+        var end = row.IndexOf('m');
+        return end < 0 ? 0 : end + 1;
+    }
+
+    internal static bool IsBlankRow(string row)
+    {
+        for (var offset = 0; offset < row.Length; offset++)
+            if (TerminalImageRenderer.TryReadMarker(row, offset, out _, out _, out _))
+                return false;
+
+        if (TerminalTextLayout.HasBackgroundOnWhitespace(row)) return false;
+        return TerminalTextLayout.StripFormatting(row).All(char.IsWhiteSpace);
+    }
+
     private static string HighlightCursor(string row, EditorViewport.RowMap rowMap, int cursor)
     {
         var cell = rowMap.Cells.FirstOrDefault(span => span.StartOffset == cursor);
@@ -350,13 +613,19 @@ internal sealed class TerminalScreenCompositor
 
     public void Render(Frame frame)
     {
-        var rendered = _images.PrepareFrame(frame.Rows);
-        _output.Write("\u001b[?2026h");
-        if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
+        if (!_useAlternateScreen)
+        {
+            RenderMainScreen(frame);
+            return;
+        }
+
         var contentShrank = _clearOnShrink && _previousContentHeight is { } previousContentHeight &&
             frame.ContentHeight < previousContentHeight;
         var fullRedraw = _previousRows is null || _previousColumns != frame.Columns || _previousHeight != frame.Height ||
             contentShrank;
+        var rendered = _images.PrepareFrame(frame.Rows, forcePlacementRedraw: fullRedraw);
+        _output.Write("\u001b[?2026h");
+        if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
         var redrawAllRows = fullRedraw || rendered.Preamble.Length > 0;
         if (fullRedraw) _output.Write("\u001b[2J");
         for (var index = 0; index < frame.Rows.Count; index++)
@@ -380,80 +649,221 @@ internal sealed class TerminalScreenCompositor
         _output.Write($"\u001b[?25{(frame.CursorVisible ? 'h' : 'l')}\u001b[?2026l");
         _output.Flush();
         _previousRows = rendered.Rows.ToArray();
-        _previousDocumentRows = frame.Rows.ToArray();
+        _previousDocumentRows = (frame.DocumentRows ?? frame.RestorationRows ?? frame.Rows).ToArray();
+        _previousSuspensionRows = frame.SuspensionRows;
         _previousCursorRow = frame.CursorRow;
-        _previousRestoreStartRow = frame.RestoreStartRow;
+        _previousRestorationCursorRow = frame.DocumentCursorRow >= 0
+            ? frame.DocumentCursorRow
+            : frame.RestorationCursorRow >= 0 ? frame.RestorationCursorRow : frame.CursorRow;
+        _previousRestorationCursorColumn = frame.DocumentCursorColumn >= 0
+            ? frame.DocumentCursorColumn
+            : frame.CursorColumn;
         _previousColumns = frame.Columns;
         _previousHeight = frame.Height;
         _previousContentHeight = frame.ContentHeight;
     }
 
-    public void RestoreLastFrameToNormalBuffer()
+    private void RenderMainScreen(Frame frame)
     {
-        var documentRows = _previousDocumentRows is null
-            ? Array.Empty<string>()
-            : _images.PrepareFallbackFrame(_previousDocumentRows);
+        var sourceRows = frame.DocumentRows ?? frame.RestorationRows ?? frame.Rows;
+        var cursorRow = frame.DocumentCursorRow >= 0
+            ? frame.DocumentCursorRow
+            : frame.RestorationCursorRow >= 0 ? frame.RestorationCursorRow : frame.CursorRow;
+        var cursorColumn = frame.DocumentCursorColumn >= 0 ? frame.DocumentCursorColumn : frame.CursorColumn;
+        var widthChanged = _previousColumns != 0 && _previousColumns != frame.Columns;
+        var heightChanged = _previousHeight != 0 && _previousHeight != frame.Height;
+        var contentShrank = _clearOnShrink && _previousContentHeight is { } previousContentHeight &&
+            frame.ContentHeight < previousContentHeight;
+        var fullRedraw = _clearMainScreen || _previousRows is null || widthChanged || heightChanged || contentShrank ||
+            _previousRows is { } previousRows && previousRows.Count > sourceRows.Count;
+        var rendered = _images.PrepareFrame(sourceRows, forcePlacementRedraw: fullRedraw);
+        fullRedraw |= rendered.Preamble.Length > 0;
+        var rows = rendered.Rows;
+
         _output.Write("\u001b[?2026h");
-        var firstRow = Math.Clamp(_previousRestoreStartRow, 0, documentRows.Count);
-        if (firstRow < documentRows.Count)
+        if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
+        if (fullRedraw)
         {
-            // The saved primary-buffer cursor begins one row above Pi's restored document.
-            _output.Write("\r\n");
-            for (var index = firstRow; index < documentRows.Count; index++)
+            if (_clearMainScreen || _previousRows is not null) _output.Write("\u001b[2J\u001b[H\u001b[3J");
+            for (var index = 0; index < rows.Count; index++)
             {
-                if (index > firstRow) _output.Write("\r\n");
-                _output.Write("\r\u001b[2K");
-                var row = index == _previousCursorRow
-                    ? documentRows[index].Replace("\u001b[7m", "", StringComparison.Ordinal)
-                        .Replace("\u001b[27m", "", StringComparison.Ordinal)
-                    : documentRows[index];
-                _output.Write(row);
+                if (index > 0) _output.Write("\r\n");
+                _output.Write(rows[index]);
             }
         }
-        _output.Write("\u001b[0m\u001b[?7h\r\n\r\n\u001b[?25h\u001b[?2026l");
+        else
+        {
+            var firstChanged = -1;
+            var lastChanged = -1;
+            for (var index = 0; index < Math.Min(rows.Count, _previousRows!.Count); index++)
+            {
+                if (string.Equals(_previousRows[index], rows[index], StringComparison.Ordinal)) continue;
+                if (firstChanged < 0) firstChanged = index;
+                lastChanged = index;
+            }
+
+            var appended = rows.Count > _previousRows!.Count;
+            if (appended)
+            {
+                if (firstChanged < 0) firstChanged = _previousRows.Count;
+                lastChanged = rows.Count - 1;
+            }
+
+            var previousViewportTop = _regularViewportTop;
+            var currentCursorRow = _previousCursorRow;
+            if (firstChanged >= 0 && firstChanged < previousViewportTop)
+            {
+                _output.Write("\u001b[2J\u001b[H\u001b[3J");
+                for (var index = 0; index < rows.Count; index++)
+                {
+                    if (index > 0) _output.Write("\r\n");
+                    _output.Write(rows[index]);
+                }
+                fullRedraw = true;
+            }
+            else if (firstChanged >= 0)
+            {
+                var previousViewportBottom = previousViewportTop + frame.Height - 1;
+                var appendedAtEnd = appended && firstChanged == _previousRows.Count;
+                var moveTargetRow = appendedAtEnd ? firstChanged - 1 : firstChanged;
+                if (moveTargetRow > previousViewportBottom)
+                {
+                    var currentScreenRow = Math.Clamp(currentCursorRow - previousViewportTop, 0, frame.Height - 1);
+                    var moveToBottom = frame.Height - 1 - currentScreenRow;
+                    if (moveToBottom > 0) _output.Write($"\u001b[{moveToBottom}B");
+                    var scroll = moveTargetRow - previousViewportBottom;
+                    for (var index = 0; index < scroll; index++) _output.Write("\r\n");
+                    previousViewportTop += scroll;
+                    currentCursorRow = moveTargetRow;
+                }
+
+                var rowDelta = moveTargetRow - currentCursorRow;
+                if (rowDelta > 0) _output.Write($"\u001b[{rowDelta}B");
+                else if (rowDelta < 0) _output.Write($"\u001b[{-rowDelta}A");
+                _output.Write(appendedAtEnd ? "\r\n" : "\r");
+
+                for (var index = firstChanged; index <= lastChanged; index++)
+                {
+                    if (index > firstChanged) _output.Write("\r\n");
+                    _output.Write("\u001b[2K");
+                    _output.Write(rows[index]);
+                }
+
+                var renderedCursorRow = Math.Min(lastChanged, rows.Count - 1);
+                if (_previousRows.Count > rows.Count)
+                {
+                    var extraLines = _previousRows.Count - rows.Count;
+                    for (var index = 0; index < extraLines; index++) _output.Write("\r\n\u001b[2K");
+                    _output.Write($"\u001b[{extraLines}A");
+                }
+                _previousCursorRow = renderedCursorRow;
+                currentCursorRow = renderedCursorRow;
+                _regularViewportTop = Math.Max(previousViewportTop, renderedCursorRow - frame.Height + 1);
+            }
+            else
+            {
+                _regularViewportTop = previousViewportTop;
+            }
+        }
+
+        var viewportTop = _regularViewportTop;
+        if (fullRedraw)
+        {
+            _previousCursorRow = Math.Max(0, rows.Count - 1);
+            _regularViewportTop = Math.Max(0, rows.Count - frame.Height);
+            viewportTop = _regularViewportTop;
+        }
+
+        if (rows.Count > 0)
+        {
+            var currentScreenRow = Math.Clamp(_previousCursorRow - viewportTop, 0, frame.Height - 1);
+            var targetScreenRow = Math.Clamp(cursorRow - viewportTop, 0, frame.Height - 1);
+            var cursorDelta = targetScreenRow - currentScreenRow;
+            if (cursorDelta > 0) _output.Write($"\u001b[{cursorDelta}B");
+            else if (cursorDelta < 0) _output.Write($"\u001b[{-cursorDelta}A");
+            _output.Write($"\r\u001b[{Math.Clamp(cursorColumn, 1, frame.Columns)}G");
+            _previousCursorRow = viewportTop + targetScreenRow;
+        }
+
+        _output.Write($"\u001b[?25{(frame.CursorVisible ? 'h' : 'l')}\u001b[?2026l");
+        _output.Flush();
+        _previousRows = rows.ToArray();
+        _previousDocumentRows = rows.ToArray();
+        _clearMainScreen = false;
+        _previousSuspensionRows = frame.SuspensionRows;
+        _previousRestorationCursorRow = cursorRow;
+        _previousRestorationCursorColumn = cursorColumn;
+        _previousColumns = frame.Columns;
+        _previousHeight = frame.Height;
+        _previousContentHeight = frame.ContentHeight;
+    }
+
+    public void LeaveMainScreen()
+    {
+        if (_previousRows is not { Count: > 0 } rows)
+        {
+            _output.Write("\u001b[?25h");
+            _output.Flush();
+            return;
+        }
+
+        var targetDocumentRow = rows.Count;
+        var viewportBottom = _regularViewportTop + Math.Max(1, _previousHeight) - 1;
+        var currentScreenRow = Math.Clamp(_previousCursorRow - _regularViewportTop, 0, Math.Max(0, _previousHeight - 1));
+        var targetScreenRow = Math.Clamp(targetDocumentRow - _regularViewportTop, 0, Math.Max(0, _previousHeight - 1));
+        _output.Write(" ");
+        if (targetDocumentRow > viewportBottom)
+        {
+            var moveToBottom = Math.Max(0, _previousHeight - 1 - currentScreenRow);
+            if (moveToBottom > 0) _output.Write($"\u001b[{moveToBottom}B");
+            _output.Write("\r\n");
+        }
+        else
+        {
+            var rowDelta = targetScreenRow - currentScreenRow;
+            if (rowDelta > 0) _output.Write($"\u001b[{rowDelta}B");
+            else if (rowDelta < 0) _output.Write($"\u001b[{-rowDelta}A");
+            _output.Write("\r\n");
+        }
+        _output.Write("\u001b[?25h");
         _output.Flush();
     }
 
-    public void RestoreDocumentToNormalBuffer(IReadOnlyList<string> documentRows)
+    public void LeaveAlternateScreen(string terminalModeRestore = "")
     {
-        ArgumentNullException.ThrowIfNull(documentRows);
-        var document = documentRows.ToArray();
-        for (var index = 0; index < document.Length; index++)
-        {
-            var width = TerminalTextLayout.Width(document[index]);
-            if (width is > 0 && width < _previousColumns)
-                document[index] += new string(' ', _previousColumns - width);
-        }
-        var tail = _previousDocumentRows is null
+        _output.Write("\u001b[?2026h" + terminalModeRestore + "\u001b[?1049l\u001b[?25h\u001b[?2026l");
+        _output.Flush();
+    }
+
+    public void RestoreLastFrameToNormalBuffer(bool forSuspension = false)
+    {
+        var sourceRows = forSuspension ? _previousSuspensionRows ?? _previousDocumentRows : _previousDocumentRows;
+        var documentRows = sourceRows is null
             ? Array.Empty<string>()
-            : _previousDocumentRows.Skip(Math.Clamp(_previousRestoreStartRow, 0, _previousDocumentRows.Count)).ToArray();
-        var cursorRow = document.Length + _previousCursorRow - _previousRestoreStartRow;
-        var rows = document.Concat(tail).ToArray();
-        var renderedRows = _images.PrepareFallbackFrame(rows);
-        _output.Write("\u001b[?2026h\u001b[2J\u001b[H\u001b[3J\u001b[?7l");
-        for (var index = 0; index < renderedRows.Count; index++)
+            : _images.PrepareFallbackFrame(sourceRows);
+        _output.Write("\u001b[?2026h\u001b[?7l");
+        for (var index = 0; index < documentRows.Count; index++)
         {
             if (index > 0) _output.Write("\r\n");
-            _output.Write("\r");
-            _output.Write(renderedRows[index]);
+            _output.Write("\r\u001b[2K");
+            _output.Write(documentRows[index]);
         }
-        _output.Write("\u001b[0m\u001b[?7h\u001b[?25h\u001b[?2026l");
+        _output.Write("\u001b[0m\u001b[?7h" + (forSuspension ? "\r\n" : "") + "\u001b[?25h\u001b[?2026l");
         _output.Flush();
-        if (cursorRow >= 0 && cursorRow < renderedRows.Count)
+        if (forSuspension) return;
+
+        if (documentRows.Count > 0)
         {
-            var rowsAboveCursor = Math.Max(0, renderedRows.Count - 1 - cursorRow);
-            if (rowsAboveCursor > 0) _output.Write($"\u001b[{rowsAboveCursor}A");
-            _output.Write("\u001b[1G\u001b[?25l ");
-            _output.Write($"\u001b[{rowsAboveCursor + 1}B\r\n\u001b[?25h");
+            var cursorRow = Math.Clamp(_previousRestorationCursorRow, 0, documentRows.Count - 1);
+            var rowsBelowCursor = documentRows.Count - 1 - cursorRow;
+            var rowsToLeaveDocument = documentRows.Count - cursorRow;
+            _output.Write("\u001b[?25l");
+            if (rowsBelowCursor > 0) _output.Write($"\u001b[{rowsBelowCursor}A");
+            _output.Write($"\u001b[{Math.Max(1, _previousRestorationCursorColumn)}G\u001b[0m ");
+            if (rowsToLeaveDocument > 0) _output.Write($"\u001b[{rowsToLeaveDocument}B");
+            _output.Write("\r\n\u001b[?25h");
             _output.Flush();
         }
-    }
-
-    public void LeaveAlternateScreen(string terminalModeRestore = "", bool restoreDocumentFollows = false)
-    {
-        _output.Write("\u001b[?2026h" + terminalModeRestore + "\u001b[?1049l" +
-            (restoreDocumentFollows ? "" : "\u001b[?7l") + "\u001b[?2026l");
-        _output.Flush();
     }
 
     private static IReadOnlyList<string> LayoutExtensionLines(

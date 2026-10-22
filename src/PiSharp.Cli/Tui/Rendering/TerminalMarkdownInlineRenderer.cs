@@ -41,7 +41,9 @@ internal static class TerminalMarkdownInlineRenderer
                         _ => (new string('$', Math.Max(1, math.DelimiterCount)),
                             new string('$', Math.Max(1, math.DelimiterCount)))
                     };
-                    AppendStyled(output, Visible(opening + math.Content.ToString() + closing), styled ? theme.Fg("mdCode") : "", "\u001b[39m");
+                    var mathSource = math.Content.ToString();
+                    var renderedMath = TerminalLatexRenderer.Render(mathSource);
+                    output.Append(Visible(renderedMath ?? opening + mathSource + closing));
                     break;
                 case TaskList task:
                     output.Append(task.Checked ? "[x]" : "[ ]");
@@ -104,8 +106,7 @@ internal static class TerminalMarkdownInlineRenderer
             output.Append("]");
             if (url.Length > 0)
             {
-                output.Append(" ");
-                AppendStyled(output, $"({url})", styled ? "\u001b[2m" + theme.Fg("mdLinkUrl") : "", "\u001b[22m\u001b[39m");
+                AppendStyled(output, $" ({url})", styled ? theme.Fg("mdLinkUrl") : "", "\u001b[39m");
             }
             return;
         }
@@ -114,8 +115,7 @@ internal static class TerminalMarkdownInlineRenderer
             styled ? "\u001b[4m" + theme.Fg("mdLink") : "", "\u001b[24m\u001b[39m");
         if (url.Length > 0 && !string.Equals(label, url, StringComparison.Ordinal))
         {
-            output.Append(" ");
-            AppendStyled(output, $"({url})", styled ? "\u001b[2m" + theme.Fg("mdLinkUrl") : "", "\u001b[22m\u001b[39m");
+            AppendStyled(output, $" ({url})", styled ? theme.Fg("mdLinkUrl") : "", "\u001b[39m");
         }
     }
 

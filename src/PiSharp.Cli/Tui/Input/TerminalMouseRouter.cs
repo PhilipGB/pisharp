@@ -4,16 +4,17 @@ internal readonly record struct TerminalMouseResult(bool Changed = false, bool C
     int? EditorCursorOffset = null, bool ClearEditorSelection = false);
 
 /// <summary>Routes terminal mouse gestures to transcript selection or the prompt editor.</summary>
-internal sealed class TerminalMouseRouter
+internal sealed class TerminalMouseRouter(TimeProvider? timeProvider = null)
 {
     private enum Target { None, Transcript, Editor }
 
-    private readonly TranscriptSelectionController _transcript = new();
+    private readonly TranscriptSelectionController _transcript = new(timeProvider);
     private readonly EditorSelectionController _editor = new();
     private Target _selectionTarget;
     private Target _dragTarget;
     private int _transcriptScreenStart;
     private int _transcriptHeight;
+    private int _transcriptCellOffset;
     private int _editorScreenStart;
     private int _editorHeight;
     private EditorViewport.Frame? _editorFrame;
@@ -33,14 +34,17 @@ internal sealed class TerminalMouseRouter
         _dragTarget = Target.None;
     }
 
-    public void SetTranscript(IReadOnlyList<string> rows, int firstVisualRow, int screenStart, int height)
+    public void SetTranscript(IReadOnlyList<string> rows, int firstVisualRow, int screenStart, int height,
+        int cellOffset = 0)
     {
-        _transcript.SetVisibleRows(rows, firstVisualRow);
+        _transcript.SetVisibleRows(rows, firstVisualRow, cellOffset);
         _transcriptScreenStart = screenStart;
         _transcriptHeight = height;
+        _transcriptCellOffset = Math.Max(0, cellOffset);
     }
 
     public IReadOnlyList<string> HighlightTranscript() => _transcript.HighlightVisibleRows();
+    public bool IsWholeTranscriptLineSelected(int localRow) => _transcript.IsWholeLineSelected(localRow);
 
     public void SetEditor(string text, EditorViewport.Frame frame, int screenStart,
         int? selectionStart = null, int? selectionEnd = null)
@@ -78,7 +82,8 @@ internal sealed class TerminalMouseRouter
             return new(ended.Changed, ended.Copy, ended.CursorOffset);
         }
 
-        var result = _transcript.HandleMouse(mouse, _transcriptScreenStart, _transcriptHeight);
+        var result = _transcript.HandleMouse(mouse, _transcriptScreenStart, _transcriptHeight,
+            _transcriptCellOffset);
         if (mouse.IsRelease) _dragTarget = Target.None;
         return new(result.Changed, result.Copy);
     }
@@ -100,7 +105,8 @@ internal sealed class TerminalMouseRouter
         {
             _editor.Clear();
             _selectionTarget = _dragTarget = Target.Transcript;
-            var result = _transcript.HandleMouse(mouse, _transcriptScreenStart, _transcriptHeight);
+            var result = _transcript.HandleMouse(mouse, _transcriptScreenStart, _transcriptHeight,
+                _transcriptCellOffset);
             return new(result.Changed, result.Copy);
         }
 

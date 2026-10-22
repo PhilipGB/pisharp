@@ -330,6 +330,16 @@ public sealed class TerminalInput
             57355 => Key(ConsoleKey.PageDown, shift: shift, alt: alt, control: control),
             57356 => Key(ConsoleKey.Home, shift: shift, alt: alt, control: control),
             57357 => Key(ConsoleKey.End, shift: shift, alt: alt, control: control),
+            57417 => Key(ConsoleKey.LeftArrow, shift: shift, alt: alt, control: control),
+            57418 => Key(ConsoleKey.RightArrow, shift: shift, alt: alt, control: control),
+            57419 => Key(ConsoleKey.UpArrow, shift: shift, alt: alt, control: control),
+            57420 => Key(ConsoleKey.DownArrow, shift: shift, alt: alt, control: control),
+            57421 => Key(ConsoleKey.PageUp, shift: shift, alt: alt, control: control),
+            57422 => Key(ConsoleKey.PageDown, shift: shift, alt: alt, control: control),
+            57423 => Key(ConsoleKey.Home, shift: shift, alt: alt, control: control),
+            57424 => Key(ConsoleKey.End, shift: shift, alt: alt, control: control),
+            57425 => Key(ConsoleKey.Insert, shift: shift, alt: alt, control: control),
+            57426 => Key(ConsoleKey.Delete, shift: shift, alt: alt, control: control),
             >= 57364 and <= 57387 => Key((ConsoleKey)((int)ConsoleKey.F1 + codePoint - 57364),
                 shift: shift, alt: alt, control: control),
             >= 32 and < 127 => KittyAsciiKey(codePoint, shift, alt, control),
@@ -574,16 +584,28 @@ public readonly record struct TerminalMouseEvent(int Button, int Column, int Row
     public bool IsMotion => (Button & 32) != 0;
     public bool IsWheel => (Button & 64) != 0;
 
+    /// <summary>Pi's wheel direction: -1 for up, +1 for down, or 0 for horizontal/non-wheel events.</summary>
+    public int WheelDirection
+    {
+        get
+        {
+            if (!IsWheel) return 0;
+            return (Button & 3) switch { 0 => -1, 1 => 1, _ => 0 };
+        }
+    }
+
+    /// <summary>Alt-modified wheel events move five times the configured line count.</summary>
+    public int WheelScrollMultiplier => IsWheel && (Button & 8) != 0 ? 5 : 1;
+
     /// <summary>Positive values move the transcript toward earlier rows; horizontal wheel events are ignored.</summary>
     public int WheelScrollDelta
     {
         get
         {
             if (!IsWheel) return 0;
-            var direction = Button & 3;
-            if (direction is not (0 or 1)) return 0;
-            var lines = (Button & 8) != 0 ? 5 : 1;
-            return direction == 0 ? lines : -lines;
+            var direction = WheelDirection;
+            if (direction == 0) return 0;
+            return -direction * WheelScrollMultiplier;
         }
     }
 }
@@ -619,7 +641,7 @@ internal sealed class TerminalMode : IDisposable
     private static readonly AsyncLocal<int> s_depth = new();
     private static readonly AsyncLocal<TerminalMode?> s_owner = new();
     private readonly string _original;
-    private readonly TerminalScreen? _screen;
+    private TerminalScreen? _screen;
     private readonly bool _ownsMode;
     private readonly TerminalMode? _owner;
     private bool _suspended;
@@ -648,6 +670,16 @@ internal sealed class TerminalMode : IDisposable
         s_owner.Value = owner;
         s_depth.Value = 1;
         return owner;
+    }
+
+    public void AttachScreen(TerminalScreen screen)
+    {
+        ArgumentNullException.ThrowIfNull(screen);
+        if (!_ownsMode || _disposed || _suspended)
+            throw new InvalidOperationException("A terminal screen can only be attached to an active terminal mode.");
+        if (_screen is not null && !ReferenceEquals(_screen, screen))
+            throw new InvalidOperationException("A terminal mode already owns a different screen.");
+        _screen = screen;
     }
 
     public void Dispose()

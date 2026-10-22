@@ -331,7 +331,9 @@ public sealed class ResourceCatalogTests
             var warning = Assert.Single(details, detail => detail.Name == "Skill conflicts");
 
             Assert.Contains(warning.Items, item => item.Contains("invalid characters", StringComparison.Ordinal));
-            Assert.Contains(warning.ExpandedItems!, item => item.Contains(skillPath, StringComparison.Ordinal));
+            var displayPath = TerminalStartupDetails.AbbreviateHome(skillPath,
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            Assert.Contains(warning.ExpandedItems!, item => item.Contains(displayPath, StringComparison.Ordinal));
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -380,8 +382,9 @@ public sealed class ResourceCatalogTests
             Assert.Contains("[Prompts]", lines);
             Assert.Contains("  project", lines);
             Assert.Contains("  user", lines);
-            Assert.Contains("    " + projectSkill, lines);
-            Assert.Contains("    " + userSkill, lines);
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            Assert.Contains("    " + TerminalStartupDetails.AbbreviateHome(projectSkill, home), lines);
+            Assert.Contains("    " + TerminalStartupDetails.AbbreviateHome(userSkill, home), lines);
             Assert.Contains("    /project-prompt", lines);
             Assert.Contains("    /user-prompt", lines);
 

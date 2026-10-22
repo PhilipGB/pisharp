@@ -1,0 +1,136 @@
+{
+  "id": "terminal-streaming-markdown",
+  "pisharpExtension": true,
+  "pisharpNativeExtensionPackage": {
+    "id": "PiSharp.NativeExtensionInteractiveUiFixture",
+    "version": "1.0.0",
+    "type": "PiSharp.NativeExtensionInteractiveUiFixture.InteractiveUiExtension"
+  },
+  "projectFiles": {
+    "static-working-indicator.ts": "export default function (pi) { pi.on(\"session_start\", async (_event, ctx) => { ctx.ui.setWorkingIndicator({ frames: [\"⠋\"] }); }); }\n"
+  },
+  "settings": { "quietStartup": true },
+  "environment": {
+    "pi": {},
+    "pisharp": { "PISHARP_PARITY_STATIC_WORKING_INDICATOR": "1" }
+  },
+  "arguments": {
+    "pi": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-tools", "--no-context-files",
+      "--system-prompt", "You are a terminal parity fixture.",
+      "--extension", "static-working-indicator.ts"
+    ],
+    "pisharp": [
+      "--provider", "fixture", "--model", "fixture-model", "--no-session", "--offline",
+      "--no-skills", "--no-prompt-templates", "--no-tools",
+      "--no-approve", "--no-context-files", "--system-prompt", "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": ["stream-md-request"],
+    "chatResponseChunksByRequest": [[
+      "# Streaming Markdown\n\nPartial **bold and [an unfinished",
+      " link](https://fixture.invalid) with `inline code`**.\n\nUnicode e",
+      "\u0301👩\u200d",
+      "👩‍👧‍👦\n\n| left | right |\n| --- | --- |",
+      "\n| one | two |",
+      "\n\n```javascript\nconst answer = ",
+      "42;\n```\n\nThen math $\\frac{1}{2}$ at the tail.\n"
+    ]],
+    "chatResponseChunkGatesByRequest": [[
+      null, "stream-md-release-inline", "stream-md-release-grapheme", "stream-md-release-table",
+      "stream-md-release-table-row", "stream-md-release-fence", "stream-md-release-close"
+    ]],
+    "chatResponseChunkReadyGatesByRequest": [[
+      "stream-md-first-sent", "stream-md-inline-sent", "stream-md-grapheme-sent", "stream-md-table-sent",
+      "stream-md-table-row-sent", "stream-md-fence-sent", "stream-md-close-sent"
+    ]],
+    "chatResponseFinishGates": ["stream-md-finish"]
+  },
+  "dimensions": [
+    { "columns": 80, "rows": 24 },
+    { "columns": 120, "rows": 40 }
+  ],
+  "themes": ["dark"],
+  "modes": ["fullscreen"],
+  "assertionFrames": [
+    "stream-first-boundary", "complete-inline-boundaries", "split-grapheme-boundary",
+    "incomplete-table-boundary", "complete-table-boundary", "open-code-fence",
+    "close-code-and-math", "commit-answer", "exit"
+  ],
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    {
+      "id": "paste-stream-prompt",
+      "send": "\u001b[200~Stream a Markdown answer.\u001b[201~",
+      "expect": "Stream a Markdown answer.",
+      "renderMatch": true
+    },
+    {
+      "id": "stream-first-boundary",
+      "send": "\r",
+      "waitGatesAfter": ["stream-md-request", "stream-md-first-sent"],
+      "allowStaticFrame": true,
+      "renderMatch": true,
+      "expect": "unfinished"
+    },
+    {
+      "id": "complete-inline-boundaries",
+      "releaseGates": ["stream-md-release-inline"],
+      "waitGatesAfter": ["stream-md-inline-sent"],
+      "allowStaticFrame": true,
+      "renderMatch": true,
+      "expect": "code."
+    },
+    {
+      "id": "split-grapheme-boundary",
+      "releaseGates": ["stream-md-release-grapheme"],
+      "waitGatesAfter": ["stream-md-grapheme-sent"],
+      "allowStaticFrame": true,
+      "renderMatch": true,
+      "expect": "Unicode é👩‍"
+    },
+    {
+      "id": "incomplete-table-boundary",
+      "releaseGates": ["stream-md-release-table"],
+      "waitGatesAfter": ["stream-md-table-sent"],
+      "allowStaticFrame": true,
+      "renderMatch": true,
+      "expect": "left"
+    },
+    {
+      "id": "complete-table-boundary",
+      "releaseGates": ["stream-md-release-table-row"],
+      "waitGatesAfter": ["stream-md-table-row-sent"],
+      "allowStaticFrame": true,
+      "renderMatch": true,
+      "expect": "one"
+    },
+    {
+      "id": "open-code-fence",
+      "releaseGates": ["stream-md-release-fence"],
+      "waitGatesAfter": ["stream-md-fence-sent"],
+      "allowStaticFrame": true,
+      "renderMatch": true,
+      "expect": "const answer"
+    },
+    {
+      "id": "close-code-and-math",
+      "releaseGates": ["stream-md-release-close"],
+      "waitGatesAfter": ["stream-md-close-sent"],
+      "allowStaticFrame": true,
+      "renderMatch": true,
+      "expect": "tail"
+    },
+    {
+      "id": "commit-answer",
+      "releaseGates": ["stream-md-finish"],
+      "renderMatch": true,
+      "expect": ["tail", "↑10 ↓3"],
+      "notExpect": "Working"
+    },
+    { "id": "exit", "send": "\u0003\u0003", "exit": true }
+  ],
+  "terminal": { "keyboardProtocol": "kitty" }
+}
