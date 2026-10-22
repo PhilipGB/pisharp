@@ -6,7 +6,7 @@ namespace PiSharp.Tests;
 public sealed class TerminalSessionResumeCommandTests
 {
     [Fact]
-    public void DefaultSessionDirectoryUsesThePersistedSessionId()
+    public void SessionFileOutsideTheDefaultDirectoryIncludesItsParent()
     {
         var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-resume-cwd-" + Guid.NewGuid().ToString("N"));
         var store = new ConversationStore(workingDirectory);
@@ -15,7 +15,7 @@ public sealed class TerminalSessionResumeCommandTests
 
         var command = TerminalSessionResumeCommand.Format(conversation, path, store, outputIsTerminal: true);
 
-        Assert.Equal($"pisharp --session {conversation.Id}", command);
+        Assert.Equal($"pisharp --session-dir {Path.GetDirectoryName(path)} --session {conversation.Id}", command);
         File.Delete(path);
     }
 
@@ -33,6 +33,23 @@ public sealed class TerminalSessionResumeCommandTests
         Assert.Equal($"pisharp --session-dir '{sessionDirectory}' --session {conversation.Id}", command);
         File.Delete(path);
         Directory.Delete(sessionDirectory);
+    }
+
+    [Fact]
+    public void ExplicitSessionFileUsesItsActualParentInTheResumeCommand()
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "pisharp-resume-cwd-" + Guid.NewGuid().ToString("N"));
+        var store = new ConversationStore(workingDirectory);
+        var sessionDirectory = Path.Combine(workingDirectory, "fixtures");
+        var conversation = new ConversationSession(workingDirectory, "fixture-model", null, "fixture");
+        var path = Persist(sessionDirectory, conversation);
+
+        var command = TerminalSessionResumeCommand.Format(conversation, path, store, outputIsTerminal: true);
+
+        Assert.Equal($"pisharp --session-dir {sessionDirectory} --session {conversation.Id}", command);
+        File.Delete(path);
+        Directory.Delete(sessionDirectory);
+        Directory.Delete(workingDirectory);
     }
 
     [Fact]

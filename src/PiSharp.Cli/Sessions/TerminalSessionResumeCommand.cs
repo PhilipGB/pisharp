@@ -11,12 +11,13 @@ internal static class TerminalSessionResumeCommand
         ArgumentNullException.ThrowIfNull(store);
         if (!outputIsTerminal || sessionPath is null || !File.Exists(sessionPath)) return null;
 
+        var sessionDirectory = Path.GetDirectoryName(Path.GetFullPath(sessionPath)) ?? store.DirectoryPath;
         var command = new List<string> { "pisharp" };
         var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        if (!Path.GetFullPath(store.DirectoryPath).Equals(Path.GetFullPath(store.DefaultDirectoryPath), comparison))
+        if (!Path.GetFullPath(sessionDirectory).Equals(Path.GetFullPath(store.DefaultDirectoryPath), comparison))
         {
             command.Add("--session-dir");
-            command.Add(QuoteIfNeeded(store.DirectoryPath));
+            command.Add(QuoteIfNeeded(sessionDirectory));
         }
         command.Add("--session");
         command.Add(QuoteIfNeeded(conversation.Id));
