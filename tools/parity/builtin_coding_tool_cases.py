@@ -60,6 +60,33 @@ def cases():
     add('read', 'invalid-utf8-stream', {'path': 'file.txt', 'offset': 70000, 'limit': 4},
         {'file.txt': {'base64Repeat': base64.b64encode(b'\xff' * 20 + b'\n').decode(), 'count': 120000}})
     add('read', 'binary-looking', {'path': 'file.txt'}, {'file.txt': binary(b'a\x00b\x01\nlast')})
+    for name, arguments in [
+        ('fractional-limit', {'limit': 1.5}), ('sub-line-limit', {'limit': 0.5}),
+        ('fractional-window', {'offset': 2.5, 'limit': 1.5}),
+        ('fractional-end', {'offset': 4.5}), ('negative-end-before-start', {'offset': 2, 'limit': -1}),
+        ('negative-end-before-file', {'limit': -100}),
+        ('huge-offset', {'offset': 1e100}), ('huge-negative-offset', {'offset': -1e100}),
+        ('huge-limit', {'limit': 1e100}), ('huge-negative-limit', {'limit': -1e100})]:
+        add('read', name, {'path': 'file.txt', **arguments}, {'file.txt': 'one\ntwo\nthree\n'})
+    add('read', 'fractional-oversized-line', {'path': 'file.txt', 'offset': 1.5},
+        {'file.txt': repeated('x', 51201)})
+    for name, arguments in [('zero-window-stream', {'limit': 0}),
+                             ('negative-end-stream', {'limit': -1}),
+                             ('fractional-window-stream', {'offset': 70000.5, 'limit': 2.5})]:
+        add('read', name, {'path': 'file.txt', **arguments}, {'file.txt': repeated('long line 😀\r\n', 170000)})
+    add('read', 'file-url', {'path': 'file://{WORKSPACE}/nested/file.txt'}, {'nested/file.txt': 'URI path\n'})
+    add('read', 'nfd-path', {'path': 'café.txt'}, {'cafe\u0301.txt': 'decomposed filename\n'})
+    add('read', 'curly-quote-path', {'path': "Capture d'écran.txt"}, {"Capture d’écran.txt": 'quote variant\n'})
+    add('read', 'nfd-curly-path', {'path': "écran d'écran.txt"}, {"e\u0301cran d’e\u0301cran.txt": 'combined variant\n'})
+    add('read', 'screenshot-time-space', {'path': 'Capture 10.30 AM.png'}, {'Capture 10.30\u202fAM.png': 'time variant\n'})
+    add('read', 'exact-path-precedence', {'path': 'café.txt'}, {'café.txt': 'exact\n', 'cafe\u0301.txt': 'variant\n'})
+    add('read', 'empty-path', {'path': ''})
+    add('read', 'nul-path', {'path': 'invalid\x00path'})
+    add('read', 'file-parent', {'path': 'file.txt/child'}, {'file.txt': 'parent file\n'})
+    add('read', 'permission-parent', {'path': 'secret/file.txt'}, {'secret/file.txt': 'private\n'}, modes={'secret': 0})
+    add('read', 'dangling-symlink', {'path': 'alias'}, symlinks={'alias': 'missing'})
+    add('read', 'symlink-loop', {'path': 'alias'}, symlinks={'alias': 'alias'})
+    add('read', 'symlink-directory', {'path': 'alias'}, directories={'directory': 0o755}, symlinks={'alias': 'directory'})
     add('read', 'png-magic', {'path': 'image.dat'}, {'image.dat': binary(png(7, 5))})
     add('read', 'png-alpha', {'path': 'image.png'}, {'image.png': binary(png(13, 7, alpha=True))})
     add('read', 'png-resize', {'path': 'image.png'}, {'image.png': binary(png(241, 37))},

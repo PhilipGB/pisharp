@@ -367,6 +367,17 @@ cases pass at clean source `35601464`.
 Checkpoint E's common contract work is complete. Tool-specific numeric/path/error/
 image behavior, Bash update snapshots and process lifecycle, all-seven integration,
 physical provider acceptance, stress tests and full repository gates remain open.
+
+The clean `e1ce40d2` shared-contract run has exact declarations for all seven
+tools and 6/9 complete matches. All three remaining Bash differences concern
+initial/final live updates; final text, details, structured output and spill
+artifacts match. Those lifecycle differences remain open for checkpoint I.
+
+Read investigation adds 27 distinct numeric-window, streaming, path-variant and
+Linux filesystem-error inputs before further product corrections. The corpus
+now contains 238 cases: read 72, write 21, edit 33, Bash 28, grep 32, find 27,
+ls 25. Eleven harness regressions pass; new oracle/control runs follow. This
+input expansion establishes no new product acceptance.
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or
