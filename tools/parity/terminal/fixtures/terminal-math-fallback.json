@@ -1,0 +1,149 @@
+{
+  "id": "terminal-math-fallback",
+  "projectFiles": {
+    "static-working-indicator.ts": "export default function (pi) { pi.on(\"session_start\", async (_event, ctx) => { ctx.ui.setWorkingIndicator({ frames: [\"\u280b\"] }); }); }\n"
+  },
+  "settings": {
+    "quietStartup": true
+  },
+  "pisharpExtension": true,
+  "pisharpNativeExtensionPackage": {
+    "id": "PiSharp.NativeExtensionInteractiveUiFixture",
+    "version": "1.0.0",
+    "type": "PiSharp.NativeExtensionInteractiveUiFixture.InteractiveUiExtension"
+  },
+  "environment": {
+    "pi": {},
+    "pisharp": {
+      "PISHARP_PARITY_STATIC_WORKING_INDICATOR": "1"
+    }
+  },
+  "arguments": {
+    "pi": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture.",
+      "--extension",
+      "static-working-indicator.ts"
+    ],
+    "pisharp": [
+      "--provider",
+      "fixture",
+      "--model",
+      "fixture-model",
+      "--no-session",
+      "--offline",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-tools",
+      "--no-approve",
+      "--no-context-files",
+      "--system-prompt",
+      "You are a terminal parity fixture."
+    ]
+  },
+  "fixtureBehavior": {
+    "chatRequestGates": [
+      "math-fallback-request"
+    ],
+    "chatResponseChunksByRequest": [
+      [
+        "Nested math fallback.\n\nMatrix: $\\begin{matrix}\\unknown{y}\\end{matrix}$.\n\nParenthesized: $\\begin{pmatrix}x & \\unknown{z}\\end{pmatrix}$.\n\nAligned: $\\begin{aligned}a &= \\unknown{b}\\end{aligned}$.\n\nDisplay:\n\n$$\n\\begin{matrix}\\unknown{q}\\end{matrix}\n$$\n\nEnd of nested math fixture."
+      ]
+    ],
+    "chatResponseChunkGatesByRequest": [
+      [
+        null
+      ]
+    ],
+    "chatResponseChunkReadyGatesByRequest": [
+      [
+        "math-fallback-source-sent"
+      ]
+    ],
+    "chatResponseFinishGates": [
+      "math-fallback-finish"
+    ]
+  },
+  "dimensions": [
+    {
+      "columns": 120,
+      "rows": 40
+    }
+  ],
+  "themes": [
+    "dark"
+  ],
+  "modes": [
+    "fullscreen"
+  ],
+  "actions": [
+    {
+      "id": "startup",
+      "expect": "fixture-model"
+    },
+    {
+      "id": "paste-math-fallback-prompt",
+      "send": "\u001b[200~Render nested math fallback.\u001b[201~",
+      "expect": "Render nested math fallback.",
+      "renderMatch": true
+    },
+    {
+      "id": "render-math-fallback",
+      "send": "\r",
+      "waitGatesAfter": [
+        "math-fallback-request",
+        "math-fallback-source-sent"
+      ],
+      "expect": [
+        "\\unknown{y}",
+        "\\unknown{z}",
+        "\\unknown{b}",
+        "\\unknown{q}",
+        "End of nested math fixture."
+      ],
+      "allowStaticFrame": true,
+      "renderMatch": true
+    },
+    {
+      "id": "commit-math-fallback",
+      "releaseGates": [
+        "math-fallback-finish"
+      ],
+      "expect": [
+        "\\unknown{y}",
+        "\\unknown{z}",
+        "\\unknown{b}",
+        "\\unknown{q}",
+        "End of nested math fixture.",
+        "\u219110 \u21933"
+      ],
+      "notExpect": "Working",
+      "renderMatch": true
+    },
+    {
+      "id": "exit",
+      "send": "\u0003\u0003",
+      "exit": true
+    }
+  ],
+  "terminal": {
+    "keyboardProtocol": "kitty"
+  },
+  "assertionFrames": [
+    "startup",
+    "render-math-fallback",
+    "commit-math-fallback",
+    "exit"
+  ]
+}

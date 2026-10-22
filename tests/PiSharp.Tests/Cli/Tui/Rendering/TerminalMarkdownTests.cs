@@ -263,6 +263,81 @@ public sealed class TerminalMarkdownTests
         Assert.Equal(expected, TerminalLatexRenderer.Render(source));
     }
 
+    [Theory]
+    [InlineData("matrix", @"\unknown{y}")]
+    [InlineData("pmatrix", @"\unknown{y}")]
+    [InlineData("bmatrix", @"\unknown{y}")]
+    [InlineData("aligned", @"\unknown{y}")]
+    [InlineData("matrix", @"\frac{y}")]
+    [InlineData("pmatrix", @"\frac{y}")]
+    [InlineData("bmatrix", @"\frac{y}")]
+    [InlineData("aligned", @"\frac{y}")]
+    public void UnsupportedMathInsideEnvironmentsPreservesItsEntireMarkdownSource(string environment, string invalid)
+    {
+        var source = $@"\begin{{{environment}}}x &= 1 \\ {invalid}\end{{{environment}}}";
+
+        Assert.Null(TerminalLatexRenderer.Render(source));
+        Assert.Null(TerminalLatexRenderer.Render(source, display: true));
+        AssertMathSourceFallback(source);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ExcessiveGroupAndCommandNestingPreservesItsEntireMarkdownSource(bool commands)
+    {
+        string Expression(int depth) => commands
+            ? string.Concat(Enumerable.Repeat(@"\sqrt", depth)) + " x"
+            : new string('{', depth) + "x" + new string('}', depth);
+
+        Assert.NotNull(TerminalLatexRenderer.Render(Expression(TerminalLatexRenderer.MaximumNestingDepth - 1)));
+        Assert.Null(TerminalLatexRenderer.Render(Expression(TerminalLatexRenderer.MaximumNestingDepth)));
+
+        var excessive = Expression(10_000);
+        Assert.Null(TerminalLatexRenderer.Render(excessive));
+        Assert.Null(TerminalLatexRenderer.Render(excessive, display: true));
+        AssertMathSourceFallback(excessive);
+        Assert.Equal("x²", TerminalLatexRenderer.Render("x^2"));
+    }
+
+    [Fact]
+    public void EnvironmentRowsShareTheContainingExpressionNestingLimit()
+    {
+        string Expression(int depth) => new string('{', depth) + @"\begin{matrix}x\end{matrix}" +
+            new string('}', depth);
+
+        Assert.Equal("x", TerminalLatexRenderer.Render(Expression(TerminalLatexRenderer.MaximumNestingDepth - 2)));
+        var excessive = Expression(TerminalLatexRenderer.MaximumNestingDepth - 1);
+        Assert.Null(TerminalLatexRenderer.Render(excessive));
+        AssertMathSourceFallback(excessive);
+    }
+
+    [Fact]
+    public void SequentialGroupsAndEnvironmentRowsReleaseTheirNestingBudget()
+    {
+        var groups = string.Concat(Enumerable.Repeat("{x}", 1_000));
+        Assert.Equal(new string('x', 1_000), TerminalLatexRenderer.Render(groups));
+        var rows = string.Join(@"\\", Enumerable.Repeat("{x}", 1_000));
+        var environment = @"\begin{matrix}" + rows + @"\end{matrix}";
+        Assert.Equal(string.Join('\n', Enumerable.Repeat("x", 1_000)), TerminalLatexRenderer.Render(environment));
+    }
+
+    private static void AssertMathSourceFallback(string source)
+    {
+        string[] markdownInputs =
+        [
+            $"Keep ${source}$ visible.",
+            $"Keep \\({source}\\) visible.",
+            $"$$\n{source}\n$$",
+            $"Keep \\[{source}\\] visible."
+        ];
+        foreach (var markdown in markdownInputs)
+        {
+            Assert.Equal(markdown, StripSgr(TerminalMarkdownRenderer.Render(markdown)));
+            Assert.Equal(markdown, StripSgr(TerminalMarkdownRenderer.RenderStreaming(markdown)));
+        }
+    }
+
     private static string StripSgr(string text) => Regex.Replace(text, "\\u001b\\[[0-9;]*m", "");
 
     private static void AssertStyleAt(string text, string target, bool? bold = null, bool? italic = null,

@@ -5,6 +5,8 @@ namespace PiSharp.Cli.Tui;
 /// <summary>Renders the common, terminal-friendly subset of Pi's LaTeX presentation.</summary>
 internal static class TerminalLatexRenderer
 {
+    internal const int MaximumNestingDepth = 64;
+
     private static readonly IReadOnlyDictionary<string, string> Symbols = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["alpha"] = "α",
@@ -434,9 +436,10 @@ internal static class TerminalLatexRenderer
         return string.Join('\n', lines);
     }
 
-    private sealed class Parser(string source, bool display)
+    private sealed class Parser(string source, bool display, int depth = 0)
     {
         private int _position;
+        private int _depth = depth;
         private bool _stackFractions = true;
 
         public bool Supported { get; private set; } = true;
@@ -445,8 +448,21 @@ internal static class TerminalLatexRenderer
 
         private string ParseSequence(bool group = false)
         {
+            if (!EnterNesting()) return "";
+            try
+            {
+                return ParseSequenceCore(group);
+            }
+            finally
+            {
+                _depth--;
+            }
+        }
+
+        private string ParseSequenceCore(bool group)
+        {
             var result = new StringBuilder();
-            while (_position < source.Length)
+            while (Supported && _position < source.Length)
             {
                 var current = source[_position];
                 if (current == '}')
@@ -609,6 +625,7 @@ internal static class TerminalLatexRenderer
 
         private string ParseArgument(bool allowStackedFraction = true)
         {
+            if (!EnterNesting()) return "";
             var previousStackFractions = _stackFractions;
             _stackFractions &= allowStackedFraction;
             try
@@ -618,6 +635,7 @@ internal static class TerminalLatexRenderer
             finally
             {
                 _stackFractions = previousStackFractions;
+                _depth--;
             }
         }
 
@@ -685,9 +703,19 @@ internal static class TerminalLatexRenderer
             }
             var body = source[_position..end];
             _position = end + endToken.Length;
-            var rows = body.Split("\\\\", StringSplitOptions.None)
-                .Select(row => Normalize(new Parser(row, false).Parse()).Replace("&", "", StringComparison.Ordinal))
-                .Where(row => row.Length > 0).ToArray();
+            var rows = new List<string>();
+            foreach (var row in body.Split("\\\\", StringSplitOptions.None))
+            {
+                var nested = new Parser(row, false, _depth);
+                var parsed = nested.Parse();
+                if (!nested.Supported)
+                {
+                    Supported = false;
+                    return "";
+                }
+                var rendered = Normalize(parsed).Replace("&", "", StringComparison.Ordinal);
+                if (rendered.Length > 0) rows.Add(rendered);
+            }
             if (name == "aligned") return string.Join('\n', rows);
             if (name is "matrix" or "pmatrix" or "bmatrix")
             {
@@ -725,6 +753,18 @@ internal static class TerminalLatexRenderer
         private void SkipWhitespace()
         {
             while (_position < source.Length && char.IsWhiteSpace(source[_position])) _position++;
+        }
+
+        private bool EnterNesting()
+        {
+            // Nested environment parsers share the active recursion budget.
+            if (!Supported || _depth >= MaximumNestingDepth)
+            {
+                Supported = false;
+                return false;
+            }
+            _depth++;
+            return true;
         }
 
         private static string FormatScript(string value, bool superscript)

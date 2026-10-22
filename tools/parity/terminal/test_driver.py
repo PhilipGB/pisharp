@@ -78,6 +78,7 @@ class DriverTests(unittest.TestCase):
                 'render-bash-fallback', 'render-block-math', 'render-math-table',
                 'render-code-math', 'commit-code-math', 'exit',
             },
+            'terminal-math-fallback': {'startup', 'render-math-fallback', 'commit-math-fallback', 'exit'},
             'terminal-tool-lifecycle': {
                 'tool-call-start', 'tool-output-in-flight', 'tool-result-and-follow-up', 'expand-tool-result',
             },
@@ -114,6 +115,15 @@ class DriverTests(unittest.TestCase):
                     exit_action = next(action for action in fixture['actions'] if action['id'] == 'exit')
                     self.assertEqual('\u0003\u0003', exit_action.get('send'))
                     self.assertTrue(exit_action.get('exit'))
+                if fixture_id == 'terminal-math-fallback':
+                    response = ''.join(fixture['fixtureBehavior']['chatResponseChunksByRequest'][0])
+                    for environment in ['matrix', 'pmatrix', 'aligned']:
+                        self.assertIn('\\begin{' + environment + '}', response)
+                    for action_id in ['render-math-fallback', 'commit-math-fallback']:
+                        action = next(action for action in fixture['actions'] if action['id'] == action_id)
+                        for source in ['\\unknown{y}', '\\unknown{z}', '\\unknown{b}', '\\unknown{q}']:
+                            self.assertIn(source, action['expect'])
+                        self.assertTrue(action.get('renderMatch'))
                 if fixture_id == 'terminal-mouse-selection':
                     response_action = next(action for action in fixture['actions']
                                            if action['id'] == 'response-in-flight')
