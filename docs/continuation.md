@@ -5,7 +5,7 @@
 PR #20 merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`; that exact
 commit is the base of `milestone/terminal-rendering-interaction-parity`.
 Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
-Current product source is `50b77ab0`.
+Current product source is `216251fd`.
 
 The source contains terminal restoration, cell/style/wrapping, Markdown,
 syntax/math, tool/image, scrolling/search, editor/mouse, and startup repairs.
@@ -16,7 +16,7 @@ modes, and a Python regression verifies cleanup of a suspended child group.
 The streaming stress test overlaps 200 stream/widget updates with forty resize,
 theme, scroll, modal, and tool-expansion cycles while preserving the draft.
 
-The eighteen-fixture corpus is reviewed: 44/44 calibration, normalized physical
+The nineteen-fixture corpus is reviewed: 45/45 calibration, normalized physical
 provider requests and clipboard checks, with zero scenario errors. Its 28
 differing selected states are the explicitly classified identity, resume-hint
 and installation-path estimate differences. The final source additionally
@@ -25,7 +25,7 @@ feedback; all seven selected multi-click states match exactly.
 
 Build and format checks pass; Node is 24/24, Python 66/66, and MCP retains only
 its eight classified baseline failures. The final full .NET suite passes
-2,699/2,699 with zero failures/skips, including the added input and color regressions.
+2,711/2,711 with zero failures/skips, including the added input, color and nested math regressions.
 Documentation paths pass 150 documents / 582 references. The canonical fixture workspace must
 remain outside this repository: use the runner defaults under `/tmp`.
 Run-specific roots beneath `artifacts/` picked up repository instructions and
@@ -36,6 +36,11 @@ The implementation, local validation and classified receipt are complete.
 [PR #21](https://github.com/PhilipGB/pisharp/pull/21) records the published head and exact-head
 push/PR CI run IDs and conclusions. PR #21 must remain draft and unmerged. Evidence is in the
 [terminal parity receipt](parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md).
+
+The independent-review correction propagates nested LaTeX failures to source
+fallback and shares a 64-level recursion budget across groups, arguments and
+environment rows. The new unsupported-math PTY fixture and refreshed code/math
+and structural Markdown cases match all 21 action checkpoints.
 
 ## Previous milestone — Complete Native Extension Interactive UI — 2026-10-20
 

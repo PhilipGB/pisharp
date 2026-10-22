@@ -2,19 +2,24 @@
 
 PR #20 merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`, the base of
 `milestone/terminal-rendering-interaction-parity`. Pi remains pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; product source is `50b77ab0`.
-Eighteen pinned fixtures cover startup/editor, session resume, streaming
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; product source is `216251fd`.
+Nineteen pinned fixtures cover startup/editor, session resume, streaming
 Markdown, code/math, tools, image fallback/Kitty, long transcripts and search,
 resize, overlays, keyboard/paste, mouse/copy, native extension UI, restoration,
 abort, and Linux suspension/resume. The suspend scenario matches twenty-two named
 checkpoints across normal and fullscreen modes. The reviewed effective corpus
-passes calibration, physical provider requests and clipboard checks in 44/44
+passes calibration, physical provider requests and clipboard checks in 45/45
 cases with zero scenario errors. Selected-state differences are explicitly
-classified in the receipt. The final full suite passes 2,699/2,699 with
-zero failures/skips, including the input and color regressions. Documentation, publication
+classified in the receipt. The final full suite passes 2,711/2,711 with
+zero failures/skips, including the input, color and nested math regressions. Documentation, publication
 and exact-head CI evidence are in the
 [terminal parity receipt](fixtures/terminal-rendering-interaction-parity-2026-10-20.md).
 Broad terminal and global Pi parity remain `in_progress`.
+
+The independent-review correction propagates nested LaTeX failures to source
+fallback and shares a 64-level recursion budget across groups, arguments and
+environment rows. The new unsupported-math PTY fixture and refreshed code/math
+and structural Markdown cases match all 21 action checkpoints.
 
 ## Previous milestone — Complete Native Extension Interactive UI — 2026-10-20
 

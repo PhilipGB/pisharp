@@ -5,8 +5,8 @@
 PR #20 is verified merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`.
 The implementation branch is `milestone/terminal-rendering-interaction-parity`,
 based on that merge; Pi remains pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Product source is `50b77ab0`.
-Eighteen deterministic real-PTY fixtures now cover rendering, lifecycle,
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Product source is `216251fd`.
+Nineteen deterministic real-PTY fixtures now cover rendering, lifecycle,
 Markdown/code/math, tools, images, scrolling/search, resize, overlays,
 keyboard/paste, mouse selection/copy, native extension UI, and Linux job-control
 suspension in normal and fullscreen modes. Corrections include terminal
@@ -14,17 +14,22 @@ restoration, styled wrapping, tool spacing, search anchoring, startup spacing,
 and draft-preserving Ctrl+Z/SIGCONT handling. The new suspend scenario matches
 all twenty-two named checkpoints across both modes.
 
-The reviewed corpus has 44/44 calibration, physical provider-request and
+The reviewed corpus has 45/45 calibration, physical provider-request and
 clipboard matches, with zero scenario errors. The 28 differing selected states
 are explicitly classified identity, resume-hint and installation-path estimates.
 Build, formatting, Node 24/24, Python 66/66 and MCP baseline checks pass. The final
-.NET suite passes 2,699/2,699 with zero failures/skips, including multi-click/copy-feedback
-and color regressions. Documentation paths pass 150 documents / 582 references.
+.NET suite passes 2,711/2,711 with zero failures/skips, including multi-click/copy-feedback,
+color and nested math regressions. Documentation paths pass 150 documents / 582 references.
 Publication and exact-head push/PR CI evidence are recorded in
 [PR #21](https://github.com/PhilipGB/pisharp/pull/21).
 Keep PR #21 draft and unmerged; do not start PR #22. Broad Pi parity remains
 `in_progress`. See the
 [terminal parity receipt](docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md).
+
+The independent-review correction propagates nested LaTeX failures to source
+fallback and shares a 64-level recursion budget across groups, arguments and
+environment rows. The new unsupported-math PTY fixture and refreshed code/math
+and structural Markdown cases match all 21 action checkpoints.
 
 ## Previous milestone — Complete Native Extension Interactive UI — 2026-10-20
 

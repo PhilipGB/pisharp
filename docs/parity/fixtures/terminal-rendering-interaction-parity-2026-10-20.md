@@ -16,16 +16,18 @@ errors. All 22 named suspension checkpoints match across both modes.
 The final input audit added multi-click selection and stacked copy feedback at
 `8002968db6b742d6c17b564cb40cabed690b8256`. Both affected mouse scenarios were
 verified at that source pin, with stable controls and exact clipboard payloads.
-The final colored-tool correction is at `50b77ab09a698fe59c2c4566ebb2c55e13302fbe`.
+The colored-tool correction is at `50b77ab09a698fe59c2c4566ebb2c55e13302fbe`.
 Both tool-lifecycle cases were refreshed at that source: 2/2 same-Pi controls,
 14/14 exact action checkpoints, 12/12 selected checkpoints and exact normalized
 requests/restoration. The seven retained render-boundary differences per case
 are unchanged. Other captures retain their original per-case source pins.
+The review correction at `216251fd94d7ffce08ff685530554e5cf0174df0` refreshes
+code/math and structural Markdown and adds unsupported nested-math coverage.
 
-The effective corpus is 18 fixtures / 44 cases: 44/44 calibration, normalized
+The effective corpus is 19 fixtures / 45 cases: 45/45 calibration, normalized
 physical provider request and clipboard checks, with zero scenario errors.
-Across 395 action checkpoints, 366 are exact and 29 have the explicit P3 text
-differences below. The selected acceptance subset is 217/245 exact; its 28
+Across 400 action checkpoints, 371 are exact and 29 have the explicit P3 text
+differences below. The selected acceptance subset is 221/249 exact; its 28
 differences consist of 16 identity states, 11 resume-hint states and one context
 estimate. The additional unselected action difference is the same in-flight
 estimate in the new multi-click scenario. No unexplained P0/P1 or in-scope P2
@@ -172,6 +174,7 @@ Fixtures are committed under `tools/parity/terminal/fixtures/`.
 | transcript-markdown-resume | Same eight profiles; resize to 60×20 | Imported transcript, usage, resize, resume hint |
 | terminal-streaming-markdown | 80×24, 120×40 fullscreen | Split inline constructs, graphemes, tables, code/math, commit/exit |
 | terminal-code-math | 100×30 fullscreen | C#/JS/Python/JSON/Bash, wrapping, tables and math |
+| terminal-math-fallback | 120×40 fullscreen | Unsupported nested commands, inline/display source preservation, committed state and exit |
 | terminal-tool-lifecycle | 80×24, 120×40 fullscreen | Start, in-flight output, completion, expansion, follow-up |
 | terminal-image-fallback | 80×24 fullscreen | Unsupported image presentation and expanded result |
 | terminal-long-transcript | 80×24, 120×40, 44×14 fullscreen | Page scroll, source anchors, search refinement/navigation, exit |
@@ -211,13 +214,13 @@ expected OSC 52 payload before a settled clipboard checkpoint; wheel checkpoints
 wait for actual scrolled content instead of an arrow already present in usage.
 This strengthens synchronization without changing comparison tolerances.
 
-The final mouse reruns supersede the original mouse case and add one case.
-The resulting effective totals are 6,911 checkpoint-field differences and 5,701
-render differences; full normalized state/render comparison matches 2/44. The other baseline
-scenarios do not activate the changed mouse-selection or nonempty copy-feedback
-branches. Their captured source pin remains `b2bcefef`; they are not relabelled
-as captures of the later source. The final full native suite and exact-head CI
-cover the complete later tree.
+The mouse reruns supersede the original mouse case and add multi-click coverage.
+The independent-review correction at `216251fd` refreshes code/math and structural
+Markdown and adds the unsupported-math fixture. Current effective totals are
+6,911 checkpoint-field differences and 5,708 render differences; full normalized
+state/render comparison matches 2/45. Other baseline cases retain their original
+`b2bcefef` source pins. Captures are not relabelled as later source; full native
+validation and exact-head CI separately cover the complete later tree.
 
 | Class | Identified source and assessed impact |
 | --- | --- |
@@ -322,10 +325,57 @@ now explicitly exercise None, ANSI-256 and truecolor themes; all six startup
 modes run in both plain and colored PTYs. No content expectations were removed.
 The warning-as-error build passes with zero warnings/errors, formatting passes,
 and the color-enabled focused selection passes 209/209 with zero failures/skips.
-The final color-enabled `50b77ab0` full suite passes 2,699/2,699 with zero
+The earlier color-enabled `50b77ab0` full suite passed 2,699/2,699 with zero
 failures/skips, including architecture 7/7 and the physical exit, suspend, compiled
 extension and concurrent UI regressions. Its TRX and per-gate audit are retained
 under `artifacts/parity/terminal-rendering-interaction-parity-2026-10-22/validation-50b77ab0/`.
+
+### Independent-review correction — nested math fallback
+
+Review of published head `63935ffacc8edf62ef530fb4321d89460c7d221c` found
+that `ParseEnvironment()` ignored a failed row parser and could display only
+`y` for `\begin{matrix}\unknown{y}\end{matrix}`. Eight focused cases failed
+on that revision, covering unsupported commands and malformed fractions in
+`matrix`, `pmatrix`, `bmatrix` and `aligned`.
+
+Correction `216251fd94d7ffce08ff685530554e5cf0174df0` propagates row failure
+and uses the existing Markdown source fallback. A shared 64-level parser
+recursion budget bounds brace groups, unbraced command arguments and nested
+environment parsers. It is released after each call; sequential groups/rows
+do not exhaust it. The old implementation was not subjected to a crash probe.
+The new regressions safely exercise 10,000-level brace and command inputs,
+exact boundary behavior, nested-parser budget inheritance and sequential reuse.
+All 35 Markdown tests pass, including final/streaming renderers, inline math
+and dollar-delimited display fallback with complete original commands retained.
+Build and formatting pass; Node is 24/24 and Python is 66/66.
+
+The new `terminal-math-fallback` fixture calibrates exactly at the unchanged Pi
+pin, including eight canonical frames. Its paired run matches all five action
+checkpoints (four selected), normalized provider requests, clipboard and settled
+terminal restoration. Unsupported commands remain visible in three inline
+environments and display math. The compact evidence includes their exact visible
+rows and matching normalized-state hashes at both streaming and committed states.
+Existing code/math and structural Markdown cases were also refreshed at the
+corrective source: all 21 action checkpoints across these three cases match.
+Their existing Pi controls retain their original source pins and fixture hashes.
+The full render reports retain seven, seven and nine intermediate/shutdown
+boundary differences respectively; full render-stream identity is not claimed.
+In the new math case, the unmatched Pi frame clears the editor prompt; the
+other six fields are the existing shutdown cursor/control boundary. Both
+settled math states and the final exit remain exact.
+Each refreshed case records its extension assembly hash; the top-level hash
+continues to identify the historical baseline assembly.
+
+The expanded corpus has 45 calibrated cases and exact normalized requests/copy
+comparisons, zero scenario errors, 371/400 exact action states and 221/249 exact
+selected states. The 28 selected P3 states are unchanged. It retains 6,911
+checkpoint-field and 5,708 render differences, with 2/45 exact full reports.
+The final color-enabled full native suite at `216251fd` passes 2,711/2,711
+with zero failures/skips, including architecture 7/7 and the existing physical
+exit, suspend and compiled-extension regressions. The TRX and per-gate audit are
+retained under `artifacts/parity/pr21-latex-review-2026-10-22/validation-216251fd/`.
+Fresh exact-head push/PR CI results are recorded in the PR description before
+the review correction is reported complete.
 
 ## Timing and publication
 

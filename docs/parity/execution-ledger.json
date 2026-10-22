@@ -12039,7 +12039,7 @@
     "branch": "milestone/terminal-rendering-interaction-parity",
     "base_main": "5e1e5aa8ddc66a8e829a880604060b8483107284",
     "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-    "source_head": "50b77ab09a698fe59c2c4566ebb2c55e13302fbe",
+    "source_head": "216251fd94d7ffce08ff685530554e5cf0174df0",
     "receipt": "docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md",
     "source_references": [
       "packages/tui/src/{tui.ts,tui-main-screen.ts,tui-alt-screen.ts,terminal.ts,layout.ts,layout-node.ts,keys.ts,stdin-buffer.ts,wheel-scroll.ts}",
@@ -12066,7 +12066,8 @@
       "terminal-image-kitty",
       "terminal-markdown-structures",
       "terminal-suspend-resume",
-      "terminal-mouse-multiclick"
+      "terminal-mouse-multiclick",
+      "terminal-math-fallback"
     ],
     "implementation": [
       "Restored normal/fullscreen document and extension presentation with cursor, mouse, keyboard and paste-mode cleanup.",
@@ -12078,18 +12079,19 @@
       "Expanded concurrent streaming/extension stress coverage with resize, theme, scrolling, modal and tool expansion operations.",
       "Matched 500 ms word/line multi-click selection, word/line drags and full visual-row margins.",
       "Stacked bounded copy feedback with independent expiry; strengthened exact clipboard and scrolled-content synchronization.",
-      "Preserved the semantic duration footer above styled panel padding; made plain/ANSI-256/truecolor and startup PTY color coverage explicit after exact-head CI feedback."
+      "Preserved the semantic duration footer above styled panel padding; made plain/ANSI-256/truecolor and startup PTY color coverage explicit after exact-head CI feedback.",
+      "Propagated nested environment parser failure to complete math source fallback and bounded group/argument/environment recursion with a shared 64-level budget."
     ],
     "initial_difference": "Original PR #20 fixture: 22411 combined serialized differences including 14009 render differences; raw divergence at byte 2 and a genuine exit discrepancy. Repaired fixture: zero checkpoint differences, exact requests/restored exit, eight retained render-boundary differences, raw divergence at byte 3.",
     "local_verification": {
-      "format": "Passed on final source 50b77ab0.",
-      "warnings_as_errors_build": "Passed on final source 50b77ab0 with TMPDIR=/tmp and DOTNET_PROCESSOR_COUNT=2; zero warnings/errors.",
-      "focused_terminal_tests": "209 color-enabled terminal/startup regressions passed, including explicit None/ANSI-256/truecolor duration cases and plain/color startup PTYs. Earlier selection/flash set 126/126 and native suspend PTY 2/2 also passed.",
-      "full_dotnet_suite": "Final color-enabled 50b77ab0 suite passed 2,699/2,699 with zero failures/skips; final TRX and per-gate audit retained under validation-50b77ab0.",
+      "format": "Passed on corrective product source 216251fd.",
+      "warnings_as_errors_build": "Passed on corrective source 216251fd with TMPDIR=/tmp and DOTNET_PROCESSOR_COUNT=2; zero warnings/errors.",
+      "focused_terminal_tests": "35/35 Markdown tests passed, including all four environment families, unsupported/malformed nested content, final/streaming source fallback, 10,000-level groups/commands, depth boundaries, environment inheritance and sequential budget reuse. Prior selection/flash/color/PTY regressions remain recorded above.",
+      "full_dotnet_suite": "Final color-enabled 216251fd suite passed 2,711/2,711 with zero failures/skips; architecture 7/7. TRX and per-gate audit retained under pr21-latex-review-2026-10-22/validation-216251fd.",
       "node": "24/24 passed.",
       "python": "66/66 passed; zero failures/skips.",
       "mcp": "26 scenarios checked with no regressions; only the eight classified baseline failures remain.",
-      "differential_corpus": "18 fixtures, 44 effective source-pinned cases; 44/44 calibration, normalized physical provider requests and clipboard checks; zero scenario errors. 395 action checkpoints: 366 exact and 29 classified differences. Selected checkpoints: 217/245 exact; 28 classified identity/hint/installation-path estimate states. Full reports retain 6911 checkpoint and 5701 render differences; exact full reports 2/44. Baseline b2bcefef matrix plus affected mouse reruns at 8002968d; see compact evidence and receipt. Both tool-lifecycle cases refreshed at 50b77ab0: stable controls, 14 exact action checkpoints, exact requests and restored exit; aggregate counts unchanged.",
+      "differential_corpus": "19 fixtures / 45 source-pinned cases: 45/45 calibration, normalized physical provider requests and clipboard comparisons, zero scenario errors. 371/400 exact action checkpoints; 221/249 selected exact, with the same 28 classified P3 states. Full reports retain 6911 checkpoint-field and 5708 render differences; 2/45 exact full reports. New unsupported-math and refreshed code/math/structural Markdown cases at 216251fd match all 21 action checkpoints. Historical per-case source pins remain explicit.",
       "documentation": "150 documents / 582 references passed.",
       "architecture": "7/7 passed in the final full suite."
     },
@@ -12110,6 +12112,14 @@
       "result": "Both failed the same seven color-dependent tests: 2682 passed, 7 failed, zero skipped. Local color-enabled reproduction confirmed the failures.",
       "corrective_source": "50b77ab09a698fe59c2c4566ebb2c55e13302fbe",
       "correction": "Preserve duration footer before styled bottom padding; assert decoded startup text, explicitly cover plain/color PTYs and all three theme color modes."
+    },
+    "review_correction": {
+      "reviewed_head": "63935ffacc8edf62ef530fb4321d89460c7d221c",
+      "source_head": "216251fd94d7ffce08ff685530554e5cf0174df0",
+      "confirmed_before_fix": "All eight unsupported/malformed environment regressions failed before the correction.",
+      "fix": "Propagate nested row parser failure; preserve the full mathematical source via the existing Markdown fallback; share and release a 64-level parser recursion budget.",
+      "evidence": "New terminal-math-fallback plus refreshed terminal-code-math and terminal-markdown-structures PTY cases.",
+      "validation": "35 focused Markdown tests and the complete 2,711-test native suite passed, zero failures/skips; build/format/Node/Python/docs pass. Final published-head push/PR CI results are maintained in the PR description."
     }
   }
 }
