@@ -328,7 +328,22 @@ Reproduce the pinned truncation results with the same probe and
 `--truncate-only`, using the truncation fixture as input. These component
 vectors are separate from the distinct seven-tool corpus counts.
 
-Shared work remains open: read and Bash need complete result/truncation metadata.
+Read text now carries structured output and complete truncation details through
+the actual function, MAF lifecycle, provider continuation and native session
+round trip. The [13 pinned read results](builtin-coding-tool-read-results-2026-10-22.json)
+are captured from the independent baseline, including a large invalid-UTF-8
+window. Fifteen regressions fail before the correction; the expanded related
+selection passes 39/39, zero skips, including existing OpenAI image replay.
+Canonical text reads retain their result carrier while provider projection
+remains plain text. The existing image replay representation remains compatible.
+The large-file reader counts decoded bytes and keeps a bounded prefix rather
+than allocating full lines or the full file. A compiler warning caused by
+capturing the delegating function constructor argument is also removed using
+the installed API's `InnerFunction` property.
+
+Shared work remains open: Bash needs complete result/truncation metadata, and
+output-schema registration needs verification. Broader read numeric/path/image
+semantics and physical provider acceptance remain open.
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or

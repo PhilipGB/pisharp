@@ -198,6 +198,21 @@
       },
       "related_selection_passed": 184,
       "read_and_bash_metadata_integration": "pending"
+    },
+    "read_result_metadata": {
+      "status": "verified_scoped",
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-read-results-2026-10-22.json",
+      "source_captured_cases": 13,
+      "regression_before": {
+        "failed": 15,
+        "passed": 7
+      },
+      "related_after": {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scope": "Text result structured content, full truncation metadata, decoded streaming byte counts, MAF lifecycle, provider text projection and native session round trip. Existing image provider/replay tests pass; broader read/image acceptance remains open."
     }
   },
   "plan_received": true,

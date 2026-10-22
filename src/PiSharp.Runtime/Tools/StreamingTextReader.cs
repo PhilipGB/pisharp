@@ -1,83 +1,89 @@
-using System.Globalization;
 using System.Text;
+using PiSharp.Core;
 
 namespace PiSharp.Runtime.Tools;
 
-/// <summary>Large UTF-8 text files: count all lines while retaining only the bounded read window.</summary>
+/// <summary>Counts decoded UTF-8 while retaining only the bounded read window.</summary>
 internal static class StreamingTextReader
 {
     private const int MaxBytes = 50 * 1024;
     private const int MaxLines = 2000;
 
     public static async Task<string> SelectAsync(string absolute, string displayPath, int offset, int? limit,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken) =>
+        (await SelectDetailedAsync(absolute, displayPath, offset, limit, cancellationToken)).Text;
+
+    public static async Task<ReadTextSelection> SelectDetailedAsync(string absolute, string displayPath, int offset,
+        int? limit, CancellationToken cancellationToken)
     {
         await using var stream = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
             64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-        var block = new byte[64 * 1024];
-        var line = new List<byte>(MaxBytes + 1);
-        var captured = new List<byte[]>();
-        long total = 0;
-        long length = 0;
-        long firstLength = 0;
+        // No decoder preamble: Buffer.toString preserves a UTF-8 BOM and replaces malformed bytes.
+        using var reader = new StreamReader(stream, new UTF8Encoding(false), detectEncodingFromByteOrderMarks: false,
+            bufferSize: 32 * 1024, leaveOpen: true);
+        var block = new char[32 * 1024];
+        var prefix = new StringBuilder();
+        long fileLines = 0;
+        long lineBytes = 0;
+        long firstLineBytes = 0;
         long selectedBytes = 0;
-        bool lastEmpty = false;
+        long selectedLines = 0;
+        var lastEmpty = false;
+        var lineStarted = false;
+        var previousHighSurrogate = false;
+
+        bool IsSelected() => fileLines + 1 >= offset && (limit is null || fileLines + 1 - offset < limit.Value);
+        void Append(char value)
+        {
+            // Two extra rows prove line truncation even for a prefix made entirely of empty rows.
+            if (selectedLines < MaxLines + 2 && prefix.Length < MaxBytes + 4) prefix.Append(value);
+        }
+        void StartLine()
+        {
+            if (lineStarted) return;
+            if (selectedLines > 0) Append('\n');
+            lineStarted = true;
+        }
         void FinishLine()
         {
-            total++;
-            if (total >= offset && (limit is null || total - offset < limit.Value))
+            if (IsSelected())
             {
-                if (total == offset) firstLength = length;
-                selectedBytes += length + (total == offset ? 0 : 1);
-                if (captured.Count < MaxLines + 1) captured.Add(line.ToArray());
+                StartLine();
+                if (selectedLines == 0) firstLineBytes = lineBytes;
+                selectedBytes += lineBytes + (selectedLines > 0 ? 1 : 0);
+                selectedLines++;
+                lastEmpty = lineBytes == 0;
             }
-            lastEmpty = length == 0;
-            line.Clear();
-            length = 0;
+            fileLines++;
+            lineBytes = 0;
+            lineStarted = false;
+            previousHighSurrogate = false;
         }
 
         int count;
-        while ((count = await stream.ReadAsync(block, cancellationToken)) > 0)
+        while ((count = await reader.ReadAsync(block.AsMemory(), cancellationToken)) > 0)
         {
-            for (var i = 0; i < count; i++)
+            for (var index = 0; index < count; index++)
             {
-                if (block[i] == '\n') { FinishLine(); continue; }
-                length++;
-                if (total + 1 >= offset && captured.Count < MaxLines + 1 && line.Count <= MaxBytes)
-                    line.Add(block[i]);
+                var character = block[index];
+                if (character == '\n') { FinishLine(); continue; }
+                // Count surrogate pairs across decoder chunks as one four-byte scalar.
+                lineBytes += char.IsLowSurrogate(character) && previousHighSurrogate ? 1 :
+                    character <= 0x7f ? 1 : character <= 0x7ff ? 2 : 3;
+                previousHighSurrogate = char.IsHighSurrogate(character);
+                if (IsSelected()) { StartLine(); Append(character); }
             }
             cancellationToken.ThrowIfCancellationRequested();
         }
-        FinishLine(); // Split('\n') always includes a final line, even after the final newline.
-        if (offset > total) throw new ArgumentOutOfRangeException(nameof(offset), $"Offset {offset} is beyond end of file ({total} lines total)");
-        var selectedCount = Math.Min(limit ?? long.MaxValue, total - offset + 1);
-        var effectiveLines = selectedCount - (selectedCount > 1 && lastEmpty && offset + selectedCount - 1 == total ? 1 : 0);
-        if (effectiveLines <= MaxLines && selectedBytes <= MaxBytes)
+        FinishLine(); // split('\n') includes a final row even after the final newline.
+        if (offset > fileLines)
+            throw new ArgumentOutOfRangeException(nameof(offset), $"Offset {offset} is beyond end of file ({fileLines} lines total)");
+        var truncation = TextOutputTruncator.Head(prefix.ToString()) with
         {
-            var complete = string.Join('\n', captured.Take((int)selectedCount).Select(Decode));
-            if (limit.HasValue && offset + selectedCount - 1 < total)
-                return $"{complete}\n\n[{total - offset - selectedCount + 1} more lines in file. Use offset={offset + selectedCount} to continue.]";
-            return complete;
-        }
-        if (firstLength > MaxBytes)
-            return $"[Line {offset} is {Size(firstLength)}, exceeds 50.0KB limit. Use bash: sed -n '{offset}p' {displayPath} | head -c {MaxBytes}]";
-        var results = new List<string>();
-        var used = 0;
-        var byBytes = false;
-        for (var i = 0; i < Math.Min(effectiveLines, MaxLines); i++)
-        {
-            var candidate = captured[i];
-            var next = candidate.Length + (i == 0 ? 0 : 1);
-            if (used + next > MaxBytes) { byBytes = true; break; }
-            results.Add(Decode(candidate));
-            used += next;
-        }
-        var end = offset + results.Count - 1;
-        return string.Join('\n', results) + $"\n\n[Showing lines {offset}-{end} of {total}{(byBytes ? " (50.0KB limit)" : "")}. Use offset={end + 1} to continue.]";
+            TotalLines = selectedBytes == 0 ? 0 : selectedLines - (lastEmpty ? 1 : 0),
+            TotalBytes = selectedBytes
+        };
+        return ReadTextPlanner.FormatSelection(displayPath, fileLines, offset, limit.HasValue ? selectedLines : null,
+            truncation, firstLineBytes);
     }
-
-    private static string Decode(byte[] bytes) => Encoding.UTF8.GetString(bytes);
-    private static string Size(long bytes) => bytes < 1024 ? $"{bytes}B" : bytes < 1024 * 1024
-        ? $"{(bytes / 1024d).ToString("F1", CultureInfo.InvariantCulture)}KB"
-        : $"{(bytes / (1024d * 1024)).ToString("F1", CultureInfo.InvariantCulture)}MB";
 }

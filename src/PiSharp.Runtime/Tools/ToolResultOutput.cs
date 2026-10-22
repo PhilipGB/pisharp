@@ -13,6 +13,11 @@ internal static class ToolResultOutput
             result = typed;
             return true;
         }
+        if (ReadToolOutput.TryRead(value, out var readOutput))
+        {
+            result = readOutput.ToToolResult();
+            return true;
+        }
         try
         {
             if (value is string serialized)

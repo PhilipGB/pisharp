@@ -30,8 +30,11 @@ converted physical writes and two .NET representation cases pass. The expanded
 related selection passes 169/169. The forced writable-cache restore clears the
 earlier cached NuGet warnings. Shared truncation now matches 140 pinned vectors
 and 28 mapped head cases (five fail before the correction); the related selection
-passes 184/184. Next carry complete metadata through read and Bash before the
-tool-specific acceptance gates. Do not count component vectors as tool cases.
+passes 184/184. Read result metadata now has 13 captured pinned cases, 15 failures
+before the correction and 39/39 related passes after it. Text structured output
+and truncation details survive MAF/provider/native restart; the bounded streaming
+reader counts decoded UTF-8 bytes. Next complete Bash metadata and verify output
+schemas before the tool-specific acceptance gates. Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required
 provider, MAF, filesystem, process, image, restart and safety evidence remains

@@ -34,6 +34,11 @@ internal static class ToolResultMessageProjection
                 {
                     if (content is FunctionResultContent result && ReadToolOutput.TryRead(result.Result, out var output))
                     {
+                        if (!flattenStructuredResults && output.ImageMimeType is null && output.ImageDataBase64 is null)
+                        {
+                            contents.Add(content);
+                            continue;
+                        }
                         replaced = true;
                         var resultText = output.Text;
                         if (output.ImageMimeType is not null || output.ImageDataBase64 is not null)

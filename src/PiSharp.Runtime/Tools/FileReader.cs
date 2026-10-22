@@ -33,12 +33,16 @@ internal sealed class FileReader(string workingDirectory, ModelImageResizeOption
             }
             if (offset < 1 || limit is <= 0) throw new ToolFailureException("offset and limit must be positive.");
             if (length > 2 * 1024 * 1024)
-                return new ReadToolOutput(await StreamingTextReader.SelectAsync(resolved, path, offset, limit, cancellationToken));
+            {
+                var selection = await StreamingTextReader.SelectDetailedAsync(resolved, path, offset, limit, cancellationToken);
+                return new ReadToolOutput(selection.Text, Details: selection.Truncation is { } truncation ? new { truncation } : null);
+            }
             var content = new byte[checked((int)length)];
             stream.Position = 0;
             await stream.ReadExactlyAsync(content, cancellationToken);
             var text = Encoding.UTF8.GetString(content);
-            return new ReadToolOutput(ReadTextPlanner.Select(text, path, offset, limit));
+            var selected = ReadTextPlanner.SelectDetailed(text, path, offset, limit);
+            return new ReadToolOutput(selected.Text, Details: selected.Truncation is { } details ? new { truncation = details } : null);
         }
         catch (ArgumentOutOfRangeException e) { throw new ToolFailureException(e.Message.Split('\n')[0], inner: e); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

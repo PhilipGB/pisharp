@@ -77,7 +77,7 @@ public sealed class CodingTools
         CancellationToken cancellationToken = default)
     {
         var output = await _reader.ReadAsync(path, offset, limit, cancellationToken);
-        return output.ImageDataBase64 is null ? output.Text : output;
+        return output;
     }
 
     [Description("Write content to a file, creating parent directories if necessary. Overwrites existing files.")]
