@@ -45,7 +45,7 @@ foreach (var request in requests)
         var content = new List<object>();
         object? structuredContent = null;
         var isError = false;
-        ToolResultOutput.TryRead(value, out var text, out var details);
+        var projected = ToolResultOutput.TryRead(value, out var text, out var details);
         if (ToolResultOutput.TryReadContract(value, out var contract))
         {
             text = contract.Text;
@@ -58,7 +58,7 @@ foreach (var request in requests)
         {
             content.Add(new { type = "image", data = read.ImageDataBase64, mimeType = read.ImageMimeType });
         }
-        if (text.Length == 0)
+        if (!projected)
             text = value is JsonElement element && element.ValueKind == JsonValueKind.String
                 ? element.GetString()! : value?.ToString() ?? "";
         content.Insert(0, new { type = "text", text });

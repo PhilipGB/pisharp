@@ -341,6 +341,13 @@ than allocating full lines or the full file. A compiler warning caused by
 capturing the delegating function constructor argument is also removed using
 the installed API's `InnerFunction` property.
 
+The first clean-source read rerun (`dc624038`) reports 30/45 matches. Two
+reported empty-read differences are a native probe bug: it replaces an already
+projected empty string with the serialized carrier. Direct pinned empty-read
+regressions pass. The probe now falls back only when projection fails, preserving
+empty results. This diagnostic run is retained; a corrected probe rerun follows.
+The remaining numeric/path/error/resize differences remain product work.
+
 Shared work remains open: Bash needs complete result/truncation metadata, and
 output-schema registration needs verification. Broader read numeric/path/image
 semantics and physical provider acceptance remain open.
