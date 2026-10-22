@@ -122,6 +122,10 @@ class DriverTests(unittest.TestCase):
                     selection = next(action for action in fixture['actions'] if action['id'] == 'selection-drag')
                     self.assertTrue(selection.get('expectClipboardWrite'))
                     self.assertEqual(['Log section 09: Mouse selec'], selection.get('expectClipboardTexts'))
+                    wheel_up = next(action for action in fixture['actions'] if action['id'] == 'wheel-up')
+                    wheel_down = next(action for action in fixture['actions'] if action['id'] == 'wheel-down')
+                    self.assertEqual('Log section 05', wheel_up.get('expect'))
+                    self.assertEqual('Log section 05', wheel_down.get('notExpect'))
                 if fixture_id == 'terminal-mouse-multiclick':
                     for action in fixture['actions']:
                         if action['id'] in {'double-click-word', 'triple-click-line', 'double-click-drag'}:

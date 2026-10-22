@@ -37,13 +37,14 @@ internal sealed class TerminalMouseRouter(TimeProvider? timeProvider = null)
     public void SetTranscript(IReadOnlyList<string> rows, int firstVisualRow, int screenStart, int height,
         int cellOffset = 0)
     {
-        _transcript.SetVisibleRows(rows, firstVisualRow);
+        _transcript.SetVisibleRows(rows, firstVisualRow, cellOffset);
         _transcriptScreenStart = screenStart;
         _transcriptHeight = height;
         _transcriptCellOffset = Math.Max(0, cellOffset);
     }
 
     public IReadOnlyList<string> HighlightTranscript() => _transcript.HighlightVisibleRows();
+    public bool IsWholeTranscriptLineSelected(int localRow) => _transcript.IsWholeLineSelected(localRow);
 
     public void SetEditor(string text, EditorViewport.Frame frame, int screenStart,
         int? selectionStart = null, int? selectionEnd = null)

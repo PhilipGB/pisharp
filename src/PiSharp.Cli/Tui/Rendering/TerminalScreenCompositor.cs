@@ -212,6 +212,9 @@ internal sealed class TerminalScreenCompositor
                     preserveActiveStyleOnPadding: visualRow + 1 < visibleLayout.RowCount &&
                         IsWrappedLineContinuation(visibleTranscriptSource,
                             visibleLayout.SourceIndexAtVisualRow(visualRow + 1)));
+            if (mouse.IsWholeTranscriptLineSelected(index))
+                rows[transcriptStart + index] = TerminalTextLayout.HighlightCells(
+                    rows[transcriptStart + index], 0, columns);
         }
         if (_useAlternateScreen && (scrollOffset > 0 || showScrollbar) &&
             transcriptViewportHeight > 0 && columns > 1)

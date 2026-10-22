@@ -60,7 +60,7 @@
     {
       "id": "wheel-up",
       "send": "\u001b[<64;40;8M",
-      "expect": "↑",
+      "expect": "Log section 05",
       "allowStaticFrame": true,
       "renderMatch": true
     },
@@ -68,6 +68,7 @@
       "id": "wheel-down",
       "send": "\u001b[<65;40;8M",
       "expect": "Log section 14",
+      "notExpect": "Log section 05",
       "allowStaticFrame": true,
       "renderMatch": true
     },

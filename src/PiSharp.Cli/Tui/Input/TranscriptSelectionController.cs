@@ -7,6 +7,7 @@ internal sealed class TranscriptSelectionController(TimeProvider? timeProvider =
 
     private IReadOnlyList<string> _visibleRows = [];
     private int _firstVisualRow;
+    private int _lineMargin;
     private Point? _anchor;
     private Point? _focus;
     private bool _dragging;
@@ -30,11 +31,17 @@ internal sealed class TranscriptSelectionController(TimeProvider? timeProvider =
         _granularity = Granularity.Character;
     }
 
-    public void SetVisibleRows(IReadOnlyList<string> rows, int firstVisualRow)
+    public void SetVisibleRows(IReadOnlyList<string> rows, int firstVisualRow, int lineMargin = 0)
     {
         _visibleRows = rows;
         _firstVisualRow = firstVisualRow;
+        _lineMargin = Math.Max(0, lineMargin);
     }
+
+    public bool IsWholeLineSelected(int localRow) => _hasSelection && _granularity == Granularity.Line &&
+        _anchor is { } anchor && _focus is { } focus &&
+        _firstVisualRow + localRow >= Math.Min(anchor.Row, focus.Row) &&
+        _firstVisualRow + localRow <= Math.Max(anchor.Row, focus.Row);
 
     public (bool Changed, bool Copy) HandleMouse(TerminalMouseEvent mouse, int transcriptScreenStart,
         int transcriptHeight, int transcriptCellOffset)
@@ -168,7 +175,8 @@ internal sealed class TranscriptSelectionController(TimeProvider? timeProvider =
             var row = _visibleRows[index];
             var start = index == firstIndex ? startCell : 0;
             var end = index == lastIndex ? endCell : TerminalTextLayout.Width(row);
-            lines.Add(TerminalTextLayout.SliceCells(row, start, end).TrimEnd());
+            var margin = _granularity == Granularity.Line ? new string(' ', _lineMargin) : "";
+            lines.Add((margin + TerminalTextLayout.SliceCells(row, start, end)).TrimEnd());
         }
         return string.Join('\n', lines);
     }

@@ -51,6 +51,19 @@ public sealed class TranscriptSelectionControllerTests
     }
 
     [Fact]
+    public void TripleClickIncludesTheSelectedVisualLineMarginWithoutTrailingPadding()
+    {
+        var selection = new TranscriptSelectionController(new ManualTimeProvider());
+        selection.SetVisibleRows(["zero alpha beta   "], 0, lineMargin: 1);
+        Click(selection, 6, 1);
+        Click(selection, 8, 1);
+        Click(selection, 10, 1);
+        Assert.Equal(" zero alpha beta", selection.SelectedText);
+        Assert.True(selection.IsWholeLineSelected(0));
+        Assert.False(selection.IsWholeLineSelected(1));
+    }
+
+    [Fact]
     public void WordDragIncludesWholeWordsAcrossRowsAndReversesFromItsOriginalRange()
     {
         var selection = new TranscriptSelectionController(new ManualTimeProvider());
