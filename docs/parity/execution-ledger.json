@@ -12039,7 +12039,7 @@
     "branch": "milestone/terminal-rendering-interaction-parity",
     "base_main": "5e1e5aa8ddc66a8e829a880604060b8483107284",
     "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-    "source_head": "8002968db6b742d6c17b564cb40cabed690b8256",
+    "source_head": "50b77ab09a698fe59c2c4566ebb2c55e13302fbe",
     "receipt": "docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md",
     "source_references": [
       "packages/tui/src/{tui.ts,tui-main-screen.ts,tui-alt-screen.ts,terminal.ts,layout.ts,layout-node.ts,keys.ts,stdin-buffer.ts,wheel-scroll.ts}",
@@ -12077,18 +12077,19 @@
       "Added Linux foreground-job suspension/resumption with draft preservation, physical PTY regressions and supervised child-group cleanup.",
       "Expanded concurrent streaming/extension stress coverage with resize, theme, scrolling, modal and tool expansion operations.",
       "Matched 500 ms word/line multi-click selection, word/line drags and full visual-row margins.",
-      "Stacked bounded copy feedback with independent expiry; strengthened exact clipboard and scrolled-content synchronization."
+      "Stacked bounded copy feedback with independent expiry; strengthened exact clipboard and scrolled-content synchronization.",
+      "Preserved the semantic duration footer above styled panel padding; made plain/ANSI-256/truecolor and startup PTY color coverage explicit after exact-head CI feedback."
     ],
     "initial_difference": "Original PR #20 fixture: 22411 combined serialized differences including 14009 render differences; raw divergence at byte 2 and a genuine exit discrepancy. Repaired fixture: zero checkpoint differences, exact requests/restored exit, eight retained render-boundary differences, raw divergence at byte 3.",
     "local_verification": {
-      "format": "Passed on final source 8002968d.",
-      "warnings_as_errors_build": "Passed on final source 8002968d with TMPDIR=/tmp and DOTNET_PROCESSOR_COUNT=2; zero warnings/errors.",
-      "focused_terminal_tests": "126 selected selection/screen/compositor/flash regressions passed; native suspend PTY cases passed 2/2; combined stream/layout stress passed in full b2bcefef suite.",
-      "full_dotnet_suite": "Final 8002968d suite passed 2,689/2,689 with zero failures/skips; final TRX retained under validation-8002968d.",
+      "format": "Passed on final source 50b77ab0.",
+      "warnings_as_errors_build": "Passed on final source 50b77ab0 with TMPDIR=/tmp and DOTNET_PROCESSOR_COUNT=2; zero warnings/errors.",
+      "focused_terminal_tests": "209 color-enabled terminal/startup regressions passed, including explicit None/ANSI-256/truecolor duration cases and plain/color startup PTYs. Earlier selection/flash set 126/126 and native suspend PTY 2/2 also passed.",
+      "full_dotnet_suite": "Final color-enabled 50b77ab0 suite passed 2,699/2,699 with zero failures/skips; final TRX and per-gate audit retained under validation-50b77ab0.",
       "node": "24/24 passed.",
       "python": "66/66 passed; zero failures/skips.",
       "mcp": "26 scenarios checked with no regressions; only the eight classified baseline failures remain.",
-      "differential_corpus": "18 fixtures, 44 effective source-pinned cases; 44/44 calibration, normalized physical provider requests and clipboard checks; zero scenario errors. 395 action checkpoints: 366 exact and 29 classified differences. Selected checkpoints: 217/245 exact; 28 classified identity/hint/installation-path estimate states. Full reports retain 6911 checkpoint and 5701 render differences; exact full reports 2/44. Baseline b2bcefef matrix plus affected mouse reruns at 8002968d; see compact evidence and receipt.",
+      "differential_corpus": "18 fixtures, 44 effective source-pinned cases; 44/44 calibration, normalized physical provider requests and clipboard checks; zero scenario errors. 395 action checkpoints: 366 exact and 29 classified differences. Selected checkpoints: 217/245 exact; 28 classified identity/hint/installation-path estimate states. Full reports retain 6911 checkpoint and 5701 render differences; exact full reports 2/44. Baseline b2bcefef matrix plus affected mouse reruns at 8002968d; see compact evidence and receipt. Both tool-lifecycle cases refreshed at 50b77ab0: stable controls, 14 exact action checkpoints, exact requests and restored exit; aggregate counts unchanged.",
       "documentation": "150 documents / 582 references passed.",
       "architecture": "7/7 passed in the final full suite."
     },
@@ -12101,6 +12102,14 @@
     },
     "validation_state": "Implementation, source-pinned acceptance, stress, full native validation and receipt are complete. Published-head and exact-head push/PR CI evidence are maintained in the PR description. Global parity remains in_progress.",
     "global_status_policy": "This milestone is scoped to the documented corpus. Do not promote broad Pi terminal or extension parity to complete.",
-    "evidence": "docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-22.json"
+    "evidence": "docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-22.json",
+    "ci_correction": {
+      "initial_head": "381eae7213b398bbd826d81345921b063f343174",
+      "push_run": 39781976293,
+      "pull_request_run": 39781996858,
+      "result": "Both failed the same seven color-dependent tests: 2682 passed, 7 failed, zero skipped. Local color-enabled reproduction confirmed the failures.",
+      "corrective_source": "50b77ab09a698fe59c2c4566ebb2c55e13302fbe",
+      "correction": "Preserve duration footer before styled bottom padding; assert decoded startup text, explicitly cover plain/color PTYs and all three theme color modes."
+    }
   }
 }

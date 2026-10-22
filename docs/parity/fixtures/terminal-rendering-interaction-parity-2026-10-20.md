@@ -16,6 +16,11 @@ errors. All 22 named suspension checkpoints match across both modes.
 The final input audit added multi-click selection and stacked copy feedback at
 `8002968db6b742d6c17b564cb40cabed690b8256`. Both affected mouse scenarios were
 verified at that source pin, with stable controls and exact clipboard payloads.
+The final colored-tool correction is at `50b77ab09a698fe59c2c4566ebb2c55e13302fbe`.
+Both tool-lifecycle cases were refreshed at that source: 2/2 same-Pi controls,
+14/14 exact action checkpoints, 12/12 selected checkpoints and exact normalized
+requests/restoration. The seven retained render-boundary differences per case
+are unchanged. Other captures retain their original per-case source pins.
 
 The effective corpus is 18 fixtures / 44 cases: 44/44 calibration, normalized
 physical provider request and clipboard checks, with zero scenario errors.
@@ -275,7 +280,7 @@ process-memory bounds for every possible input.
 
 Current recorded gates:
 
-- Formatting passed on the final product source `b2bcefef`.
+- Baseline formatting passed on product source `b2bcefef`; final checks are below.
 - Warning-as-error build passed with zero warnings/errors.
 - Node terminal emulator: 24 passed, zero failed/skipped.
 - Python parity: 66 passed, zero failed/skipped, including the delayed second
@@ -291,7 +296,7 @@ Current recorded gates:
   `artifacts/parity/terminal-rendering-interaction-parity-2026-10-22/validation-b2bcefef/`.
   This earlier source is retained separately from the final input validation.
 
-The final `8002968d` full suite passed 2,689/2,689 with zero failures/skips after the
+The preceding `8002968d` full suite passed 2,689/2,689 with zero failures/skips after the
 additional input repairs. Architecture is 7/7; documentation validation passes
 150 documents / 582 references. The final TRX is retained under
 `artifacts/parity/terminal-rendering-interaction-parity-2026-10-22/validation-8002968d/`.
@@ -300,6 +305,27 @@ copy-feedback correction, not reported as passing. An unconstrained build
 invocation ended with internal CLR error `0x80131506`; the established
 `TMPDIR=/tmp DOTNET_PROCESSOR_COUNT=2` invocation then built the complete solution
 with zero warnings/errors. No timeout increase or test skip was used.
+
+### CI color regression and correction
+
+The first publication, `381eae7213b398bbd826d81345921b063f343174`, failed push
+run `39781976293` and PR run `39781996858` with the same seven failures and
+2,682 passes/zero skips in each. All other CI quality steps, including MCP,
+passed. Removing the locally inherited `NO_COLOR` reproduced all seven failures:
+colored tool-panel padding displaced the last semantic line in a collapsed
+preview, and startup assertions searched raw ANSI bytes for a logo split by
+color changes.
+
+Source `50b77ab0` keeps styled padding below the actual duration footer and
+checks startup content after decoding formatting. The two duration regressions
+now explicitly exercise None, ANSI-256 and truecolor themes; all six startup
+modes run in both plain and colored PTYs. No content expectations were removed.
+The warning-as-error build passes with zero warnings/errors, formatting passes,
+and the color-enabled focused selection passes 209/209 with zero failures/skips.
+The final color-enabled `50b77ab0` full suite passes 2,699/2,699 with zero
+failures/skips, including architecture 7/7 and the physical exit, suspend, compiled
+extension and concurrent UI regressions. Its TRX and per-gate audit are retained
+under `artifacts/parity/terminal-rendering-interaction-parity-2026-10-22/validation-50b77ab0/`.
 
 ## Timing and publication
 

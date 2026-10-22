@@ -5,7 +5,7 @@
 PR #20 is verified merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`.
 The implementation branch is `milestone/terminal-rendering-interaction-parity`,
 based on that merge; Pi remains pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Product source is `8002968d`.
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Product source is `50b77ab0`.
 Eighteen deterministic real-PTY fixtures now cover rendering, lifecycle,
 Markdown/code/math, tools, images, scrolling/search, resize, overlays,
 keyboard/paste, mouse selection/copy, native extension UI, and Linux job-control
@@ -18,8 +18,8 @@ The reviewed corpus has 44/44 calibration, physical provider-request and
 clipboard matches, with zero scenario errors. The 28 differing selected states
 are explicitly classified identity, resume-hint and installation-path estimates.
 Build, formatting, Node 24/24, Python 66/66 and MCP baseline checks pass. The final
-.NET suite passes 2,689/2,689 with zero failures/skips, including multi-click/copy-feedback
-regressions. Documentation paths pass 150 documents / 582 references.
+.NET suite passes 2,699/2,699 with zero failures/skips, including multi-click/copy-feedback
+and color regressions. Documentation paths pass 150 documents / 582 references.
 Publication and exact-head push/PR CI evidence are recorded in
 [PR #21](https://github.com/PhilipGB/pisharp/pull/21).
 Keep PR #21 draft and unmerged; do not start PR #22. Broad Pi parity remains

@@ -5,7 +5,7 @@
 PR #20 merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`; that exact
 commit is the base of `milestone/terminal-rendering-interaction-parity`.
 Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
-Current product source is `8002968d`.
+Current product source is `50b77ab0`.
 
 The source contains terminal restoration, cell/style/wrapping, Markdown,
 syntax/math, tool/image, scrolling/search, editor/mouse, and startup repairs.
@@ -25,7 +25,7 @@ feedback; all seven selected multi-click states match exactly.
 
 Build and format checks pass; Node is 24/24, Python 66/66, and MCP retains only
 its eight classified baseline failures. The final full .NET suite passes
-2,689/2,689 with zero failures/skips, including the added input regressions.
+2,699/2,699 with zero failures/skips, including the added input and color regressions.
 Documentation paths pass 150 documents / 582 references. The canonical fixture workspace must
 remain outside this repository: use the runner defaults under `/tmp`.
 Run-specific roots beneath `artifacts/` picked up repository instructions and
