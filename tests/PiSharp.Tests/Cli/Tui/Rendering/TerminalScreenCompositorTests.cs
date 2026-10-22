@@ -249,6 +249,26 @@ public sealed class TerminalScreenCompositorTests
         Assert.Equal(2, editorBorderRow - answerRow);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void StartupDocumentKeepsItsBottomSpacerBeforeTheAboveWidgetSpacer(bool useAlternateScreen)
+    {
+        var compositor = new TerminalScreenCompositor(new StringWriter(), new TerminalImageRenderer(), useAlternateScreen);
+        var frame = compositor.Compose("", 0, null, null, "", "fixture-model",
+            overlay: null, scrollOffset: 0, columns: 80, height: 24,
+            new TranscriptSearchController(), new TerminalMouseRouter(), TerminalTheme.Default,
+            startupHeader: "brand", startupContent: " startup help\n");
+        var rows = frame.DocumentRows!.Select(TerminalTextLayout.StripFormatting).ToArray();
+        var startupRow = Array.FindIndex(rows, row => row.Contains("startup help", StringComparison.Ordinal));
+        var editorBorderRow = Array.FindIndex(rows, row => row.Contains('─'));
+
+        Assert.True(startupRow >= 0);
+        Assert.Equal(3, editorBorderRow - startupRow);
+        Assert.True(string.IsNullOrWhiteSpace(rows[startupRow + 1]));
+        Assert.True(string.IsNullOrWhiteSpace(rows[startupRow + 2]));
+    }
+
     [Fact]
     public void StatusNotificationRemainsVisibleAboveThePanel()
     {

@@ -336,7 +336,7 @@ internal sealed class TerminalScreenCompositor
                     transcriptSource, transcriptLayout.SourceIndexAtVisualRow(index)) ? " " : "";
                 return PadTranscriptRow(continuationIndent + row, columns, outputPadding: 0);
             }).ToList();
-        while (documentTranscriptRows.Count > 0 && IsBlankRow(documentTranscriptRows[^1]))
+        while (documentTranscriptRows.Count > startupContentVisualRows && IsBlankRow(documentTranscriptRows[^1]))
             documentTranscriptRows.RemoveAt(documentTranscriptRows.Count - 1);
         var documentRows = restorationRows.Take(transcriptStart)
             .Concat(documentTranscriptRows)
