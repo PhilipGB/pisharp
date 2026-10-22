@@ -58,6 +58,7 @@
     },
     {
       "id": "double-click-word",
+      "quietMs": 50,
       "send": "\u001b[<0;19;8M\u001b[<0;19;8m\u001b[<0;21;8M\u001b[<0;21;8m",
       "expectClipboardTexts": [
         "Mouse"
@@ -69,6 +70,7 @@
     },
     {
       "id": "triple-click-line",
+      "quietMs": 50,
       "send": "\u001b[<0;25;8M\u001b[<0;25;8m\u001b[<0;27;8M\u001b[<0;27;8m\u001b[<0;29;8M\u001b[<0;29;8m",
       "expectClipboardTexts": [
         "selection",
@@ -81,6 +83,7 @@
     },
     {
       "id": "double-click-drag",
+      "quietMs": 50,
       "send": "\u001b[<0;19;8M\u001b[<0;19;8m\u001b[<0;21;8M\u001b[<32;37;8M\u001b[<0;37;8m",
       "expectClipboardTexts": [
         "Mouse selection target"

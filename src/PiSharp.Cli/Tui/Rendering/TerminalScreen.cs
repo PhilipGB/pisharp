@@ -74,7 +74,7 @@ public sealed class TerminalScreen : IDisposable
     private string _footer = "Enter steers · follow-up queues · Escape aborts";
     private readonly TerminalScreenNotifications _notifications;
     private TerminalClipboard? _selectionClipboard;
-    private string? _selectionFlash;
+    private readonly TerminalSelectionFlashes _selectionFlashes;
     private Func<TerminalTheme, int, bool, string>? _startupHeader;
     private Func<TerminalTheme, int, bool, string>? _startupContent;
     private bool _startupExpanded;
@@ -149,6 +149,7 @@ public sealed class TerminalScreen : IDisposable
             throw new ArgumentOutOfRangeException(nameof(minimumRenderInterval));
         var clock = timeProvider ?? TimeProvider.System;
         _mouse = new(clock);
+        _selectionFlashes = new(clock);
         _render = new(_gate, clock, renderInterval,
             () => _active && !_suspended && _deferRender <= 0 && !_deferInitialRender, RenderFrameLocked);
         _transcriptScrollbarTimer = clock.CreateTimer(ExpireTransientScrollbar, null,
@@ -234,7 +235,7 @@ public sealed class TerminalScreen : IDisposable
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            SetSelectionFlash(error.Message, TimeSpan.FromSeconds(3));
+            SetSelectionFlash(error.Message, TimeSpan.FromSeconds(5));
         }
         return true;
     }
@@ -1569,8 +1570,8 @@ public sealed class TerminalScreen : IDisposable
         lock (_gate)
         {
             if (!_active) return;
-            _selectionFlash = TerminalSafeText.Normalize(message);
-            _selectionFlashTimer.Change(duration ?? TimeSpan.FromSeconds(1), Timeout.InfiniteTimeSpan);
+            _selectionFlashes.Add(message, duration ?? TimeSpan.FromSeconds(1));
+            _selectionFlashTimer.Change(_selectionFlashes.NextExpiry, Timeout.InfiniteTimeSpan);
             _render.Request(immediate: true);
         }
     }
@@ -1579,9 +1580,9 @@ public sealed class TerminalScreen : IDisposable
     {
         lock (_gate)
         {
-            if (!_active || _selectionFlash is null) return;
-            _selectionFlash = null;
-            _render.Request();
+            if (!_active) return;
+            if (_selectionFlashes.Expire()) _render.Request();
+            _selectionFlashTimer.Change(_selectionFlashes.NextExpiry, Timeout.InfiniteTimeSpan);
         }
     }
 
@@ -1630,6 +1631,7 @@ public sealed class TerminalScreen : IDisposable
                 Attempt(_render.Dispose);
                 Attempt(_transcriptScrollbarTimer.Dispose);
                 Attempt(_selectionFlashTimer.Dispose);
+                _selectionFlashes.Clear();
                 Attempt(_toolTimers.Dispose);
                 _active = false;
                 terminalModeShutdownPrepared = _terminalModeShutdownPrepared;
@@ -1778,7 +1780,7 @@ public sealed class TerminalScreen : IDisposable
             _extensionCustomOverlay, _extensionCustomOverlayOptions,
             _extensionCustomPanel ?? _extensionEditorReplacement, _extensionWorkingFrameVerbatim,
             _transcriptBottomKeyLabel, _transcriptSearchPanel, _transientScrollbarVisible,
-            _transcriptSearchCursorColumn, _selectionFlash);
+            _transcriptSearchCursorColumn, transientFlashes: _selectionFlashes.Messages);
         if (frame.ScrollOffset != _scrollOffset) ShowTransientScrollbarLocked();
         _scrollOffset = frame.ScrollOffset;
         _lastColumns = frame.Columns;

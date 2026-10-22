@@ -673,6 +673,40 @@ public sealed class TerminalScreenTests
     }
 
     [Fact]
+    public async Task RepeatedCopiesStackAndExpireWithoutRetainingTimersAfterScreenShutdown()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
+        using var screen = new TerminalScreen(output, error, () => 40, () => 9,
+            new TerminalImageRenderer(), TerminalTheme.Default, queryTerminalColors: false, timeProvider: clock);
+        screen.SetSelectionClipboard(new TerminalClipboard(new ClipboardCopyCommandRunner(), platform: ClipboardPlatform.MacOS));
+        screen.Output.Write("alpha\nbeta");
+
+        await CopyAsync();
+        clock.Advance(TimeSpan.FromMilliseconds(300));
+        await CopyAsync();
+        Assert.Equal(2, FlashCount());
+        clock.Advance(TimeSpan.FromMilliseconds(700));
+        Assert.Equal(1, FlashCount());
+        clock.Advance(TimeSpan.FromMilliseconds(300));
+        Assert.Equal(0, FlashCount());
+        screen.Dispose();
+        Assert.Equal(0, clock.ActiveTimerCount);
+
+        async Task CopyAsync()
+        {
+            screen.HandleMouse(new(0, 2, 1, false));
+            screen.HandleMouse(new(32, 6, 1, false));
+            Assert.True(screen.HandleMouse(new(0, 6, 1, true)).Copy);
+            Assert.True(await screen.CopySelectionToClipboardAsync());
+        }
+
+        int FlashCount() => TerminalOutputFrameReader.Read(output.ToString(), rows: 9, columns: 40)[^1].Screen
+            .Split('\n').Count(row => row.Contains("Copied!", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void FullscreenWheelSettingControlsTranscriptRowsPerEvent()
     {
         using var output = new StringWriter();

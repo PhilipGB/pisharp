@@ -86,7 +86,7 @@ internal sealed class TerminalScreenCompositor
         IReadOnlyList<string>? transcriptSearchPanel = null,
         bool transientScrollbarVisible = false,
         int? transcriptSearchCursorColumn = null,
-        string? transientFlash = null)
+        string? transientFlash = null, IReadOnlyList<string>? transientFlashes = null)
     {
         var activeTheme = theme ?? TerminalTheme.Default;
         var initialScrollOffset = scrollOffset;
@@ -416,7 +416,7 @@ internal sealed class TerminalScreenCompositor
                 SuspensionRows: suspensionRows);
             return ApplyTransientFlash(
                 ApplyExtensionOverlay(panelFrame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme),
-                transientFlash);
+                transientFlashes ?? (transientFlash is null ? [] : [transientFlash]));
         }
 
         var frame = new Frame(rows, frameCursorRow,
@@ -431,20 +431,24 @@ internal sealed class TerminalScreenCompositor
             SuspensionRows: suspensionRows);
         var presented = ApplyExtensionOverlay(frame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme);
         if (focusedComponentRows is not null) presented = presented with { CursorVisible = false };
-        return ApplyTransientFlash(presented, transientFlash);
+        return ApplyTransientFlash(presented, transientFlashes ?? (transientFlash is null ? [] : [transientFlash]));
     }
 
-    private static Frame ApplyTransientFlash(Frame frame, string? message)
+    private static Frame ApplyTransientFlash(Frame frame, IReadOnlyList<string> messages)
     {
-        if (string.IsNullOrEmpty(message) || frame.Rows.Count == 0 || frame.Columns <= 0) return frame;
-        var text = TerminalTranscriptViewport.Clip($" {message} ", frame.Columns);
-        var textWidth = TerminalTextLayout.Width(text);
-        if (textWidth == 0) return frame;
-        var start = Math.Max(0, frame.Columns - textWidth);
+        if (messages.Count == 0 || frame.Rows.Count == 0 || frame.Columns <= 0) return frame;
         var rows = frame.Rows.ToArray();
-        var prefix = TerminalTextLayout.SliceStyledCells(rows[0], 0, start);
-        prefix += new string(' ', Math.Max(0, start - TerminalTextLayout.Width(prefix)));
-        rows[0] = prefix + "\u001b[7m" + text + "\u001b[27m";
+        var visible = messages.TakeLast(rows.Length).ToArray();
+        for (var index = 0; index < visible.Length; index++)
+        {
+            var text = TerminalTranscriptViewport.Clip($" {visible[index]} ", frame.Columns);
+            var textWidth = TerminalTextLayout.Width(text);
+            if (textWidth == 0) continue;
+            var start = Math.Max(0, frame.Columns - textWidth);
+            var prefix = TerminalTextLayout.SliceStyledCells(rows[index], 0, start);
+            prefix += new string(' ', Math.Max(0, start - TerminalTextLayout.Width(prefix)));
+            rows[index] = prefix + "\u001b[7m" + text + "\u001b[27m";
+        }
         return frame with { Rows = rows };
     }
 
