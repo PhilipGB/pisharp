@@ -139,6 +139,7 @@ internal sealed class TerminalStartupPresentation(QuietStartupMode? quietStartup
             ("app.clear", "Ctrl+C", "to clear"),
             (null, $"{clearKey} twice", "to exit"),
             ("app.exit", "Ctrl+D", "to exit (empty)"),
+            ("app.suspend", "Ctrl+Z", "to suspend"),
             ("tui.editor.deleteToLineEnd", "Ctrl+K", "to delete to end"),
             (null,
                 $"{DisplayKey("app.model.cycleForward", "Ctrl+P")}/{DisplayKey("app.model.cycleBackward", "Alt+P")}",

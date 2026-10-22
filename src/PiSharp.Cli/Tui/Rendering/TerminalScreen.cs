@@ -261,17 +261,23 @@ public sealed class TerminalScreen : IDisposable
         }
     }
 
-    internal void Suspend()
+    internal void Suspend(bool restoreDocument = false)
     {
         lock (_gate)
         {
             if (!_active || _suspended) return;
+            if (restoreDocument) _render.Flush();
             _render.Cancel();
             _originalOut.Write(_images.HidePlacements() + (_useAlternateScreen
                     ? TerminalMouseMode.Disable + "\u001b[?7h"
                     : "") + "\u001b[?25h" + (_useAlternateScreen ? "\u001b[?1049l" : "") +
                 _keyboardProtocol.End());
             _originalOut.Flush();
+            if (restoreDocument)
+            {
+                if (_useAlternateScreen) _compositor.RestoreLastFrameToNormalBuffer(forSuspension: true);
+                else _compositor.LeaveMainScreen();
+            }
             _suspended = true;
         }
     }
@@ -285,7 +291,7 @@ public sealed class TerminalScreen : IDisposable
                 ? "\u001b[?1049h\u001b[?7l\u001b[?25l" + TerminalMouseMode.Enable
                 : "\u001b[?25l"));
             _suspended = false;
-            _compositor.InvalidateRenderedFrame();
+            _compositor.InvalidateRenderedFrame(clearMainScreen: !_useAlternateScreen);
             _render.Request(immediate: true);
         }
     }

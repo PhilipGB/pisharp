@@ -24,6 +24,23 @@ apply_test_thread_limit()
 
 
 class DriverTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == 'linux', 'Requires Linux process-group supervision')
+    def test_suspended_fixture_cleanup_reaps_the_owned_child_group(self):
+        with tempfile.TemporaryDirectory() as directory:
+            options = dict(columns=80, rows=24, jobControl=True)
+            terminal = TerminalProcess(
+                [sys.executable, '-c', 'import os, signal; os.kill(0, signal.SIGTSTP)'],
+                Path(directory), dict(os.environ), options)
+            try:
+                terminal.settle('suspended:tty-restored', timeout=5)
+                child_file = Path(f'/proc/{terminal.process.pid}/task/{terminal.process.pid}/children')
+                children = [int(value) for value in child_file.read_text().split()]
+                self.assertEqual(1, len(children))
+                self.assertIn('\nState:\tT ', Path(f'/proc/{children[0]}/status').read_text())
+            finally:
+                terminal.close()
+            self.assertFalse(Path(f'/proc/{children[0]}').exists())
+
     def test_required_terminal_matrix_has_named_stable_checkpoints(self):
         required = {
             'startup-verbose': {'startup', 'quit'},
@@ -44,6 +61,7 @@ class DriverTests(unittest.TestCase):
             },
             'terminal-resize-during-stream': {'resize-during-stream', 'commit-answer', 'exit'},
             'terminal-small-overlay': {'model-picker-open', 'model-picker-dismiss', 'quit'},
+            'terminal-suspend-resume': {'draft', 'suspended', 'resumed', 'edited-after-resume', 'quit'},
             'startup-editor': {
                 'type-h', 'type-d', 'cursor-left', 'paste', 'clear', 'resize', 'quit',
             },

@@ -929,7 +929,7 @@ public sealed class TerminalEditor
             !(_keymap.Matches("app.thinking.cycle", key) && !hasCompletionCycle)) return false;
         var action = _keymap.MatchIdleApplicationAction(key);
         if (action is null) return false;
-        beforeDispatch?.Invoke();
+        if (action != "app.suspend") beforeDispatch?.Invoke();
         if (action == "app.tools.expand")
         {
             ToggleToolResults();

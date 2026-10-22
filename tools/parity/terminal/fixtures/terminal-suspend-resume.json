@@ -1,0 +1,17 @@
+{
+  "id": "terminal-suspend-resume",
+  "settings": { "quietStartup": true },
+  "dimensions": [{ "columns": 80, "rows": 24 }],
+  "themes": ["dark"],
+  "modes": ["fullscreen", "regular"],
+  "terminal": { "keyboardProtocol": "kitty", "jobControl": true },
+  "actions": [
+    { "id": "startup", "expect": "fixture-model" },
+    { "id": "draft", "send": "\u001b[200~draft survives suspension\u001b[201~", "expect": "draft survives suspension" },
+    { "id": "suspended", "send": "\u001a", "expect": "suspended:tty-restored" },
+    { "id": "resumed", "send": "resume\n", "expect": "draft survives suspension", "notExpect": "suspended:tty-restored" },
+    { "id": "edited-after-resume", "send": "x", "expect": "draft survives suspensionx" },
+    { "id": "quit", "send": "\u0003\u0003", "exit": true }
+  ],
+  "assertionFrames": ["startup", "draft", "suspended", "resumed", "edited-after-resume", "quit"]
+}

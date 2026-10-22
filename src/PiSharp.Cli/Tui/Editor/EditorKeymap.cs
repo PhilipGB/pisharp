@@ -18,7 +18,7 @@ public sealed class EditorKeymap
         "tui.input.submit", "tui.select.confirm", "tui.select.cancel", "tui.input.copy",
         "tui.editor.deleteToLineEnd"
     };
-    private static readonly string[] IdleApplicationActions = ["app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
+    private static readonly string[] IdleApplicationActions = ["app.suspend", "app.thinking.cycle", "app.thinking.toggle", "app.model.cycleForward", "app.model.cycleBackward", "app.model.select", "app.tools.expand", "app.editor.external", "app.message.copy", "app.clipboard.pasteImage", "app.settings.open", "app.session.fork", "app.session.resume"];
 
     private static readonly IReadOnlyDictionary<string, Definition> s_definitions = new Dictionary<string, Definition>(StringComparer.Ordinal)
     {
@@ -56,6 +56,7 @@ public sealed class EditorKeymap
         ["app.interrupt"] = new("Cancel or abort", ["escape"]),
         ["app.clear"] = new("Clear editor", ["ctrl+c"]),
         ["app.exit"] = new("Exit when editor is empty", ["ctrl+d"]),
+        ["app.suspend"] = new("Suspend to background", OperatingSystem.IsWindows() ? [] : ["ctrl+z"]),
         ["app.model.cycleForward"] = new("Cycle to next model", ["ctrl+p"]),
         ["app.model.cycleBackward"] = new("Cycle to previous model", IsWindowsBindings() ? ["alt+p"] : ["ctrl+shift+p", "alt+p"]),
         ["app.model.select"] = new("Open model selector", ["ctrl+l"]),

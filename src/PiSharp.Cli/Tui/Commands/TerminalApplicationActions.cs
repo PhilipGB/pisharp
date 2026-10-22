@@ -12,6 +12,9 @@ internal sealed class TerminalApplicationActions(TerminalSettingsCommands settin
         {
             switch (action)
             {
+                case "app.suspend":
+                    await inputActions.SuspendAsync();
+                    break;
                 case "app.thinking.toggle":
                     await settingsCommands.ToggleThinkingAsync();
                     break;

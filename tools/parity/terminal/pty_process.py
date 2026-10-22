@@ -96,6 +96,8 @@ class RenderFrameSequence:
 
 class TerminalProcess:
     def __init__(self, command, cwd, environment, options, spool_render_frames=False):
+        if options.get('jobControl') and sys.platform != 'linux':
+            raise ValueError('The supervised job-control profile requires Linux /proc process ownership.')
         self.render_frames = RenderFrameStore() if spool_render_frames else []
         self._new_render_frames = []
         self.emulator = subprocess.Popen(['node', str(Path(__file__).with_name('emulator.mjs'))],
@@ -103,6 +105,9 @@ class TerminalProcess:
         self.ask(dict(op='start', options=options))
         self.master, slave = pty.openpty()
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack('HHHH', options['rows'], options['columns'], 0, 0))
+        self.job_control = bool(options.get('jobControl'))
+        if self.job_control:
+            command = [sys.executable, str(Path(__file__).with_name('job_control.py')), *command]
         self.process = subprocess.Popen([sys.executable, __file__, '--exec-pty', *command],
                                         stdin=slave, stdout=slave, stderr=slave, cwd=cwd,
                                         env=environment, start_new_session=True)
@@ -226,11 +231,33 @@ class TerminalProcess:
 
     def close(self):
         if self.process.poll() is None:
-            os.killpg(self.process.pid, signal.SIGTERM)
+            groups = {self.process.pid}
+            if self.job_control:
+                children = Path(f'/proc/{self.process.pid}/task/{self.process.pid}/children')
+                try:
+                    for child in children.read_text().split():
+                        try:
+                            if os.getsid(int(child)) == self.process.pid:
+                                groups.add(os.getpgid(int(child)))
+                        except ProcessLookupError:
+                            pass
+                except FileNotFoundError:
+                    pass
+            for group in groups:
+                try:
+                    if self.job_control:
+                        os.killpg(group, signal.SIGCONT)
+                    os.killpg(group, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
             try:
                 self.process.wait(timeout=3)
             except subprocess.TimeoutExpired:
-                os.killpg(self.process.pid, signal.SIGKILL)
+                for group in groups:
+                    try:
+                        os.killpg(group, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
                 self.process.wait(timeout=3)
         os.close(self.master)
 

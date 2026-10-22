@@ -5,6 +5,28 @@ namespace PiSharp.Cli.Tui;
 internal sealed class TerminalInputActions(ActiveProjectRuntime projectBinding, ActiveConversationRuntime conversationBinding,
     TerminalPresentation presentation)
 {
+    public async Task SuspendAsync()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Console.Error.WriteLine("Suspend to background is not supported on Windows");
+            return;
+        }
+
+        using var mode = TerminalMode.Enter(presentation.Screen);
+        mode.Suspend();
+        try
+        {
+            presentation.Screen?.Suspend(restoreDocument: true);
+            await TerminalProcessSuspension.SuspendAsync();
+        }
+        finally
+        {
+            try { mode.Resume(); }
+            finally { presentation.Screen?.Resume(); }
+        }
+    }
+
     public async Task EditExternalAsync()
     {
         var editorCommand = ExternalEditor.ResolveCommand(projectBinding.Settings.ExternalEditor, Environment.GetEnvironmentVariable);

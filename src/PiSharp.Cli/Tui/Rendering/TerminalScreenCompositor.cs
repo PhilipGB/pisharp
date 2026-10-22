@@ -18,12 +18,14 @@ internal sealed class TerminalScreenCompositor
     private readonly bool _useAlternateScreen;
     private IReadOnlyList<string>? _previousRows;
     private IReadOnlyList<string>? _previousDocumentRows;
+    private int _previousEmptyTranscriptRow = -1;
     private int _previousCursorRow;
     private int _previousRestorationCursorRow;
     private int _previousRestorationCursorColumn;
     private int _previousColumns;
     private int _previousHeight;
     private bool _clearOnShrink;
+    private bool _clearMainScreen;
     private int? _previousContentHeight;
     private int _regularViewportTop;
     private TerminalTextLayout.LayoutResult? _previousTranscriptLayout;
@@ -41,14 +43,18 @@ internal sealed class TerminalScreenCompositor
 
     public void SetClearOnShrink(bool enabled) => _clearOnShrink = enabled;
 
-    public void InvalidateRenderedFrame() => _previousRows = null;
+    public void InvalidateRenderedFrame(bool clearMainScreen = false)
+    {
+        _previousRows = null;
+        _clearMainScreen |= clearMainScreen && !_useAlternateScreen;
+    }
 
     internal sealed record Frame(IReadOnlyList<string> Rows, int CursorRow, int CursorColumn,
         int ScrollOffset, int Columns, int Height, bool CursorVisible = true, int RestoreStartRow = 0,
         int ContentHeight = 0, IReadOnlyList<string>? RestorationRows = null,
         int TranscriptStartRow = 0, int TranscriptHeight = 0,
         int RestorationCursorRow = -1, IReadOnlyList<string>? DocumentRows = null,
-        int DocumentCursorRow = -1, int DocumentCursorColumn = -1);
+        int DocumentCursorRow = -1, int DocumentCursorColumn = -1, int EmptyTranscriptRow = -1);
 
     public Frame Compose(string editorText, int editorCursor, int? editorSelectionStart, int? editorSelectionEnd,
         string transcriptText, string footer,
@@ -401,7 +407,8 @@ internal sealed class TerminalScreenCompositor
                 TranscriptHeight: hasSearchResult ? transcriptViewportHeight : transcriptHeight,
                 RestorationCursorRow: editorStart + borderHeight / 2 + editor.CursorRow,
                 DocumentRows: documentRows, DocumentCursorRow: documentCursorRow,
-                DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1);
+                DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1,
+                EmptyTranscriptRow: transcriptSource.Length == 0 ? transcriptStart : -1);
             return ApplyTransientFlash(
                 ApplyExtensionOverlay(panelFrame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme),
                 transientFlash);
@@ -415,7 +422,8 @@ internal sealed class TerminalScreenCompositor
             TranscriptHeight: hasSearchResult ? transcriptViewportHeight : transcriptHeight,
             RestorationCursorRow: editorStart + borderHeight / 2 + editor.CursorRow,
             DocumentRows: documentRows, DocumentCursorRow: documentCursorRow,
-            DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1);
+            DocumentCursorColumn: editor.CursorColumn + boundedEditorPadding + 1,
+            EmptyTranscriptRow: transcriptSource.Length == 0 ? transcriptStart : -1);
         var presented = ApplyExtensionOverlay(frame, extensionCustomOverlay, extensionCustomOverlayOptions, activeTheme);
         if (focusedComponentRows is not null) presented = presented with { CursorVisible = false };
         return ApplyTransientFlash(presented, transientFlash);
@@ -630,6 +638,7 @@ internal sealed class TerminalScreenCompositor
         _output.Flush();
         _previousRows = rendered.Rows.ToArray();
         _previousDocumentRows = (frame.DocumentRows ?? frame.RestorationRows ?? frame.Rows).ToArray();
+        _previousEmptyTranscriptRow = frame.EmptyTranscriptRow;
         _previousCursorRow = frame.CursorRow;
         _previousRestorationCursorRow = frame.DocumentCursorRow >= 0
             ? frame.DocumentCursorRow
@@ -653,7 +662,7 @@ internal sealed class TerminalScreenCompositor
         var heightChanged = _previousHeight != 0 && _previousHeight != frame.Height;
         var contentShrank = _clearOnShrink && _previousContentHeight is { } previousContentHeight &&
             frame.ContentHeight < previousContentHeight;
-        var fullRedraw = _previousRows is null || widthChanged || heightChanged || contentShrank ||
+        var fullRedraw = _clearMainScreen || _previousRows is null || widthChanged || heightChanged || contentShrank ||
             _previousRows is { } previousRows && previousRows.Count > sourceRows.Count;
         var rendered = _images.PrepareFrame(sourceRows, forcePlacementRedraw: fullRedraw);
         fullRedraw |= rendered.Preamble.Length > 0;
@@ -663,7 +672,7 @@ internal sealed class TerminalScreenCompositor
         if (rendered.Preamble.Length > 0) _output.Write(rendered.Preamble);
         if (fullRedraw)
         {
-            if (_previousRows is not null) _output.Write("\u001b[2J\u001b[H\u001b[3J");
+            if (_clearMainScreen || _previousRows is not null) _output.Write("\u001b[2J\u001b[H\u001b[3J");
             for (var index = 0; index < rows.Count; index++)
             {
                 if (index > 0) _output.Write("\r\n");
@@ -768,6 +777,8 @@ internal sealed class TerminalScreenCompositor
         _output.Flush();
         _previousRows = rows.ToArray();
         _previousDocumentRows = rows.ToArray();
+        _clearMainScreen = false;
+        _previousEmptyTranscriptRow = frame.EmptyTranscriptRow;
         _previousRestorationCursorRow = cursorRow;
         _previousRestorationCursorColumn = cursorColumn;
         _previousColumns = frame.Columns;
@@ -812,11 +823,17 @@ internal sealed class TerminalScreenCompositor
         _output.Flush();
     }
 
-    public void RestoreLastFrameToNormalBuffer()
+    public void RestoreLastFrameToNormalBuffer(bool forSuspension = false)
     {
         var documentRows = _previousDocumentRows is null
             ? Array.Empty<string>()
             : _images.PrepareFallbackFrame(_previousDocumentRows);
+        if (forSuspension && _previousEmptyTranscriptRow >= 0)
+        {
+            // Pi's alternate-screen stop renders an empty scroll view as one logical row.
+            var row = Math.Min(_previousEmptyTranscriptRow, documentRows.Count);
+            documentRows = documentRows.Take(row).Concat([""]).Concat(documentRows.Skip(row)).ToArray();
+        }
         _output.Write("\u001b[?2026h\u001b[?7l");
         for (var index = 0; index < documentRows.Count; index++)
         {
@@ -824,8 +841,9 @@ internal sealed class TerminalScreenCompositor
             _output.Write("\r\u001b[2K");
             _output.Write(documentRows[index]);
         }
-        _output.Write("\u001b[0m\u001b[?7h\u001b[?25h\u001b[?2026l");
+        _output.Write("\u001b[0m\u001b[?7h" + (forSuspension ? "\r\n" : "") + "\u001b[?25h\u001b[?2026l");
         _output.Flush();
+        if (forSuspension) return;
 
         if (documentRows.Count > 0)
         {
