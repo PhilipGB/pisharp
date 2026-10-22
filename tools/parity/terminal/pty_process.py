@@ -17,7 +17,7 @@ import termios
 from threading import Thread
 import time
 
-from compare import ControlTrace
+from compare import ControlTrace, osc52_clipboard_writes
 from thread_limits import apply_test_thread_limit
 
 apply_test_thread_limit()
@@ -168,7 +168,7 @@ class TerminalProcess:
         return self.ask(dict(op='snapshot'))['frame']
 
     def settle(self, contains=None, absent=None, timeout=20, quiet_ms=200, after=0, render_match=False,
-               allow_static_frame=False, cursor_before=None):
+               allow_static_frame=False, cursor_before=None, clipboard_texts=None, clipboard_after=0):
         deadline = time.monotonic() + timeout
         expected = (contains,) if isinstance(contains, str) else tuple(contains or ())
         expected_matched = False
@@ -176,6 +176,10 @@ class TerminalProcess:
         output_advanced = False
         cursor_matched = cursor_before is None
         static_pump_timeout = 0
+
+        def clipboard_matched():
+            return clipboard_texts is None or [entry['text'] for entry in
+                osc52_clipboard_writes(self.raw[clipboard_after:])] == clipboard_texts
 
         def cursor_changed(frame):
             nonlocal cursor_matched
@@ -199,14 +203,16 @@ class TerminalProcess:
                 absent_matched = absent is None or absent not in text
                 modes = frame.get('modes', {})
                 synchronized_output = modes.get('synchronizedOutput', False) or modes.get('private', {}).get('2026', False)
-                if expected_matched and absent_matched and cursor_changed(frame) and not synchronized_output:
+                if (expected_matched and absent_matched and cursor_changed(frame) and
+                        not synchronized_output and clipboard_matched()):
                     return frame
                 static_pump_timeout = 0.01
             if render_match:
                 for frame in new_render_frames:
                     text = '\n'.join(''.join(cell['chars'] for cell in line['cells'] if cell)
                                       for line in frame['viewport'])
-                    if (all(item in text for item in expected) and (absent is None or absent not in text) and
+                    if (clipboard_texts is None and all(item in text for item in expected) and
+                            (absent is None or absent not in text) and
                             cursor_changed(frame) and (len(self.raw) > after or self.closed)):
                         return frame
             if time.monotonic() - self.last_output < quiet_ms / 1000:
@@ -219,7 +225,7 @@ class TerminalProcess:
             modes = frame.get('modes', {})
             synchronized_output = modes.get('synchronizedOutput', False) or modes.get('private', {}).get('2026', False)
             if (expected_matched and absent_matched and output_advanced and
-                    cursor_changed(frame) and (not render_match or not synchronized_output)):
+                    cursor_changed(frame) and (not render_match or not synchronized_output) and clipboard_matched()):
                 return frame
             if self.closed:
                 raise RuntimeError(f'Terminal exited {self.process.poll()} before {contains!r}.\n{text}')

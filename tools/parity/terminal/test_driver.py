@@ -24,6 +24,31 @@ apply_test_thread_limit()
 
 
 class DriverTests(unittest.TestCase):
+    def test_clipboard_checkpoint_waits_for_every_expected_write_and_the_settled_frame(self):
+        terminal = object.__new__(TerminalProcess)
+        terminal.raw = bytearray()
+        terminal.closed = False
+        terminal.last_output = 0
+        terminal._new_render_frames = []
+        terminal.current = None
+        terminal.pumps = 0
+        first = dict(viewport=[dict(cells=[dict(chars='Copied!')])], modes={}, generation=1)
+        final = dict(viewport=[dict(cells=[dict(chars='Copied!')])], modes={}, generation=2)
+
+        def pump(timeout=0):
+            terminal.pumps += 1
+            terminal.current = first if terminal.pumps == 1 else final
+            terminal._new_render_frames = [terminal.current]
+            terminal.raw.extend(b'\x1b]52;c;d29yZA==\x07' if terminal.pumps == 1 else
+                                b'\x1b]52;c;bGluZQ==\x07')
+
+        terminal.pump = pump
+        terminal.snapshot = lambda: terminal.current
+        captured = terminal.settle('Copied!', quiet_ms=0, render_match=True,
+                                   clipboard_texts=['word', 'line'])
+        self.assertIs(final, captured)
+        self.assertEqual(2, terminal.pumps)
+
     @unittest.skipUnless(sys.platform == 'linux', 'Requires Linux process-group supervision')
     def test_suspended_fixture_cleanup_reaps_the_owned_child_group(self):
         with tempfile.TemporaryDirectory() as directory:

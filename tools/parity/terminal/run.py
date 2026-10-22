@@ -402,7 +402,8 @@ def run_product(label, command, scenario, dimensions, theme, mode, server, pisha
                                         after=0 if 'resize' in action or action.get('allowStaticFrame') else mark,
                                         render_match=action.get('renderMatch', False),
                                         allow_static_frame=action.get('allowStaticFrame', False),
-                                        cursor_before=cursor_before)
+                                        cursor_before=cursor_before,
+                                        clipboard_texts=action.get('expectClipboardTexts'), clipboard_after=mark)
             expected_model_status = action.get('expectModelStatus')
             if expected_model_status:
                 model = next((value for value in server.models
