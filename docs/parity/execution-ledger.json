@@ -9194,7 +9194,7 @@
       },
       "focused": 47,
       "next": "Resume Resources discovery, remaining YAML/error semantics, collisions/precedence, invocation errors and terminal presentation; all 194 capabilities remain required.",
-    "exact_head_ci": {
+      "exact_head_ci": {
         "run": 38532839354,
         "sha": "d462f4ae865d97bb167558f94df8a68082129e5d",
         "jobs": "both pass"
@@ -11998,7 +11998,7 @@
   },
   "native_extension_interactive_ui_milestone": {
     "date": "2026-10-20",
-    "status": "active",
+    "status": "complete",
     "branch": "milestone/native-extension-interactive-ui",
     "base_main": "b4cfac1ca83b38215311d8441069286cca0dc4e6",
     "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -12029,8 +12029,78 @@
       "documentation": "Path validation passed 149 documentation files and 576 references after the final receipt and ledger updates.",
       "mcp": "No new regressions against baseline; known failures remain classified in elicitation defaults (6), auth/basic-cimd (1), and auth/scope-retry-limit (1)."
     },
-    "publication": "Publish as a draft PR against main, record exact-head push and PR CI run IDs in its description, and leave PR #20 unmerged.",
-    "validation_state": "The final full .NET suite (2,566/2,566), warnings-as-errors build, format check, 260 focused checks, ten compiled-package PTY runs, architecture, Node, Python, MCP, same-Pi calibration and documentation path validation (149 files/576 references) passed. Exact-head publication and CI evidence will be recorded in the PR description after publication.",
+    "publication": "PR #20 merged at 5e1e5aa8ddc66a8e829a880604060b8483107284 after verification of the reviewed head, exact-head push/PR checks, reviews, and mergeability. The post-merge origin/main commit is the PR #21 base.",
+    "validation_state": "PR #20 exact-head verification, merge, and post-merge origin/main verification are complete. The historic validation evidence and known terminal differences are preserved above.",
     "global_status_policy": "feature-extensions-net-api and extension-orchestration-api remain in_progress. No broad parity promotion."
+  },
+  "terminal_rendering_interaction_parity_milestone": {
+    "date": "2026-10-22",
+    "status": "implemented",
+    "branch": "milestone/terminal-rendering-interaction-parity",
+    "base_main": "5e1e5aa8ddc66a8e829a880604060b8483107284",
+    "pi_pin": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "source_head": "8002968db6b742d6c17b564cb40cabed690b8256",
+    "receipt": "docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md",
+    "source_references": [
+      "packages/tui/src/{tui.ts,tui-main-screen.ts,tui-alt-screen.ts,terminal.ts,layout.ts,layout-node.ts,keys.ts,stdin-buffer.ts,wheel-scroll.ts}",
+      "packages/tui/src/components/{markdown.ts,editor.ts,scroll-view.ts,text.ts,image.ts}",
+      "packages/tui/src/{terminal-image.ts,terminal-colors.ts,latex.ts}",
+      "packages/coding-agent/src/modes/interactive/{interactive-mode.ts,tui-renderer.ts,components/,theme/}",
+      "Pinned Pi tool execution and status rendering: packages/coding-agent/src/modes/interactive/components/tool-execution.ts and packages/coding-agent/src/modes/interactive/interactive-mode.ts"
+    ],
+    "fixture_ids": [
+      "startup-editor",
+      "startup-verbose",
+      "transcript-markdown-resume",
+      "terminal-streaming-markdown",
+      "terminal-code-math",
+      "terminal-tool-lifecycle",
+      "terminal-image-fallback",
+      "terminal-long-transcript",
+      "terminal-resize-during-stream",
+      "terminal-small-overlay",
+      "terminal-restoration-existing-main-buffer",
+      "terminal-mouse-selection",
+      "native-extension-interactive-ui",
+      "terminal-abort-stream",
+      "terminal-image-kitty",
+      "terminal-markdown-structures",
+      "terminal-suspend-resume",
+      "terminal-mouse-multiclick"
+    ],
+    "implementation": [
+      "Restored normal/fullscreen document and extension presentation with cursor, mouse, keyboard and paste-mode cleanup.",
+      "Aligned grapheme widths, ANSI/OSC 8 handling, wrapped styles, Markdown structures, supported syntax highlighting and math rendering with pinned Pi.",
+      "Corrected tool expansion spacing, muted styling, image fallback/Kitty presentation and imported usage footers.",
+      "Matched page/wheel scrolling, source anchoring across resize, incremental search selection and transient scrollbar behavior.",
+      "Preserved startup bottom spacing and native session-file directories in resume hints.",
+      "Added Linux foreground-job suspension/resumption with draft preservation, physical PTY regressions and supervised child-group cleanup.",
+      "Expanded concurrent streaming/extension stress coverage with resize, theme, scrolling, modal and tool expansion operations.",
+      "Matched 500 ms word/line multi-click selection, word/line drags and full visual-row margins.",
+      "Stacked bounded copy feedback with independent expiry; strengthened exact clipboard and scrolled-content synchronization."
+    ],
+    "initial_difference": "Original PR #20 fixture: 22411 combined serialized differences including 14009 render differences; raw divergence at byte 2 and a genuine exit discrepancy. Repaired fixture: zero checkpoint differences, exact requests/restored exit, eight retained render-boundary differences, raw divergence at byte 3.",
+    "local_verification": {
+      "format": "Passed on final source 8002968d.",
+      "warnings_as_errors_build": "Passed on final source 8002968d with TMPDIR=/tmp and DOTNET_PROCESSOR_COUNT=2; zero warnings/errors.",
+      "focused_terminal_tests": "126 selected selection/screen/compositor/flash regressions passed; native suspend PTY cases passed 2/2; combined stream/layout stress passed in full b2bcefef suite.",
+      "full_dotnet_suite": "Final 8002968d suite passed 2,689/2,689 with zero failures/skips; final TRX retained under validation-8002968d.",
+      "node": "24/24 passed.",
+      "python": "66/66 passed; zero failures/skips.",
+      "mcp": "26 scenarios checked with no regressions; only the eight classified baseline failures remain.",
+      "differential_corpus": "18 fixtures, 44 effective source-pinned cases; 44/44 calibration, normalized physical provider requests and clipboard checks; zero scenario errors. 395 action checkpoints: 366 exact and 29 classified differences. Selected checkpoints: 217/245 exact; 28 classified identity/hint/installation-path estimate states. Full reports retain 6911 checkpoint and 5701 render differences; exact full reports 2/44. Baseline b2bcefef matrix plus affected mouse reruns at 8002968d; see compact evidence and receipt.",
+      "documentation": "150 documents / 582 references passed.",
+      "architecture": "7/7 passed in the final full suite."
+    },
+    "publication": {
+      "pull_request": 21,
+      "url": "https://github.com/PhilipGB/pisharp/pull/21",
+      "title": "Terminal Rendering and Interaction Parity",
+      "disposition": "draft_unmerged",
+      "verification": "The PR description records the final published head, exact-head push and PR CI run IDs, links and conclusions."
+    },
+    "validation_state": "Implementation, source-pinned acceptance, stress, full native validation and receipt are complete. Published-head and exact-head push/PR CI evidence are maintained in the PR description. Global parity remains in_progress.",
+    "global_status_policy": "This milestone is scoped to the documented corpus. Do not promote broad Pi terminal or extension parity to complete.",
+    "evidence": "docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-22.json"
   }
 }

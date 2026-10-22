@@ -1,11 +1,38 @@
 # PiSharp capability parity
 
-## Active milestone — Complete Native Extension Interactive UI — 2026-10-20
+## Active milestone — Terminal Rendering and Interaction Parity — 2026-10-22
+
+PR #20 is verified merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`.
+The implementation branch is `milestone/terminal-rendering-interaction-parity`,
+based on that merge; Pi remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Product source is `8002968d`.
+Eighteen deterministic real-PTY fixtures now cover rendering, lifecycle,
+Markdown/code/math, tools, images, scrolling/search, resize, overlays,
+keyboard/paste, mouse selection/copy, native extension UI, and Linux job-control
+suspension in normal and fullscreen modes. Corrections include terminal
+restoration, styled wrapping, tool spacing, search anchoring, startup spacing,
+and draft-preserving Ctrl+Z/SIGCONT handling. The new suspend scenario matches
+all twenty-two named checkpoints across both modes.
+
+The reviewed corpus has 44/44 calibration, physical provider-request and
+clipboard matches, with zero scenario errors. The 28 differing selected states
+are explicitly classified identity, resume-hint and installation-path estimates.
+Build, formatting, Node 24/24, Python 66/66 and MCP baseline checks pass. The final
+.NET suite passes 2,689/2,689 with zero failures/skips, including multi-click/copy-feedback
+regressions. Documentation paths pass 150 documents / 582 references.
+Publication and exact-head push/PR CI evidence are recorded in
+[PR #21](https://github.com/PhilipGB/pisharp/pull/21).
+Keep PR #21 draft and unmerged; do not start PR #22. Broad Pi parity remains
+`in_progress`. See the
+[terminal parity receipt](docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md).
+
+## Previous milestone — Complete Native Extension Interactive UI — 2026-10-20
 
 PR #19 is verified merged at `b4cfac1ca83b38215311d8441069286cca0dc4e6`;
 the reviewed head `c26ef860978da0117b49f491de36d05dbe9b41b6` passed push CI
-`39346174499` and PR CI `39346177476`. PR #20 is on
-`milestone/native-extension-interactive-ui`, based on that merge. The pinned Pi
+`39346174499` and PR CI `39346177476`. PR #20 was on
+`milestone/native-extension-interactive-ui`, based on that merge, and is now
+merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`. The pinned Pi
 revision is unchanged at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 The implementation adds package-owned interactive UI registrations and
@@ -21,9 +48,9 @@ state differences, 14,009 render differences, raw output diverging at byte 2,
 and a quit/restore presentation difference. Architecture 7/7, Node 24/24,
 Python 51/51, warnings-as-errors build, format verification, and MCP
 conformance pass; MCP retains only its classified baseline failures.
-Documentation path validation passed 149 files/576 references. Publish PR #20
-as a draft and record exact-head push/PR CI run IDs in its description; keep it
-unmerged. Global extension parity stays `in_progress`.
+Documentation path validation passed 149 files/576 references before PR #20's
+merge. Its exact-head CI and merge are complete. Global extension parity stays
+`in_progress`.
 
 ### Progress log (UTC)
 
