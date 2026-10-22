@@ -29,7 +29,7 @@
       {
         "id": "D",
         "name": "Differential harness",
-        "status": "pending"
+        "status": "complete"
       },
       {
         "id": "E",
@@ -130,7 +130,22 @@
       "active_seconds": null,
       "policy": "Record measured active work, distinguish idle/interrupted time; do not equate eight-hour target with actual duration."
     },
-    "broader_pi_parity": "in_progress"
+    "broader_pi_parity": "in_progress",
+    "harness_acceptance": "docs/parity/fixtures/builtin-coding-tool-harness-2026-10-22.json",
+    "same_pi_control": {
+      "passed": 211,
+      "total": 211,
+      "piSharpUsed": false
+    },
+    "initial_case_inventory": {
+      "read": 45,
+      "write": 21,
+      "edit": 33,
+      "bash": 28,
+      "grep": 32,
+      "find": 27,
+      "ls": 25
+    }
   },
   "plan_received": true,
   "source_note": "Bounded MCP + Codemode workflow milestone on milestone/mcp-codemode-workflows. Final product source 834927bfc984cdc003149b3f15223ecc13f24a2b is based on main 28f223c0c3b52ac9cd79a76c35a26c982999eee2; initial source 9ca5deb4640438893c3bc26a4bf16df3dd7eada7 predates the OAuth callback listener hardening. The listener binds only to the configured loopback authority while origin/path, Host, and remote-address checks remain in place. Configured localhost and 127.0.0.1 regression tests pass. Configured Pi remains pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 13 verified, 148 in progress, 33 not started. Only the explicitly closed MCP OAuth CIMD contract changed status; broader MCP and Codemode parity remains incomplete.",

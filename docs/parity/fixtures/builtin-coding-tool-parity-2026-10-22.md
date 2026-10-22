@@ -234,6 +234,41 @@ PiSharp: `DirectoryListingTool`, `ToolOutputTruncator`.
   sorting, directories/links/broken links/special entries, limits, long filenames,
   errors, cancellation and provider/session round trip.
 
+## Differential harness acceptance
+
+The initial corpus defines 211 distinct cases: read 45, write 21, edit 33, bash
+28, grep 32, find 27, ls 25. These include actual files, Git repositories,
+permissions, symlinks/hard links, FIFO listing, a repository beyond 20,000
+paths, large/invalid-UTF-8 text, image data and real Bash processes.
+Expected outputs come from importing the pinned implementations with upstream's
+source resolver; neither copied PiSharp output nor stale compiled Pi is used.
+Installed search executables are ripgrep 15.2.0 and fdfind 10.3.0.
+
+The same-Pi control passes 211/211 on separately initialized workspaces.
+Eleven harness tests verify that comparisons retain lost lines, ordering,
+wrong bytes, missing metadata, unexpected success, mode/inode/link differences,
+unsafe artifact paths and invalid durations. See the
+[harness receipt](builtin-coding-tool-harness-2026-10-22.json) for raw-report
+hashes, reproduction commands and limitations. Original raw results are retained
+under the ignored artifact root; compact reviewed outcomes will follow repairs.
+
+The native probe uses actual `AIFunction.InvokeAsync` and the shared
+`ToolResultOutput` projector. Initial ordinary grep/find/ls results expose a
+projection defect when their null details field is omitted. All three optional
+declarations also have description/schema differences. Text read omits pinned
+structured content/truncation details; Bash details and initial/final update
+contracts differ. Atomic-write mode/inode differences remain separately visible.
+
+An early Runtime-only probe lacked the CLI's native Skia assets; its three valid
+image captures are not product failure evidence. The corrected probe references
+the CLI composition. Its small PNG/alpha payloads are preserved; resized PNG
+decoded pixels differ, and read structured content is absent. No encoder byte
+identity is imposed on reencoded PNG: its decoded RGBA is compared exactly.
+
+The initial harness does not yet cover every mandatory image, concurrency,
+provider and session scenario. Reaching 211 cases does not satisfy the mission
+without those remaining behaviors and integrations.
+
 ## Shared integration and safety gates
 
 Keep the existing registry, MAF `ChatClientAgent` invocation, durable outcome
@@ -256,7 +291,7 @@ not yet been measured and must not be inferred from the eight-hour target.
 Idle or externally interrupted intervals must be excluded or identified.
 
 Stable checkpoints are A–T from the mission. A (verified merge) and B (fresh
-branch) and C (initial inventory) are complete. D–T are pending. Completing
+branch), C (initial inventory) and D (harness) are complete. E–T are pending. Completing
 an inventory or passing local tests does not close the milestone. PR #22 must
 be published as draft and remain unmerged; PR #23 is excluded. Global Pi parity
 remains `in_progress`.

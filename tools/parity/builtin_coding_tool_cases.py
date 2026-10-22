@@ -1,0 +1,243 @@
+"""Reproducible input descriptions; expected results always come from pinned Pi."""
+import base64
+import struct
+import zlib
+
+
+def png(width, height, alpha=False):
+    def chunk(kind, payload):
+        return struct.pack('>I', len(payload)) + kind + payload + struct.pack('>I', zlib.crc32(kind + payload))
+    rows = bytearray()
+    for y in range(height):
+        rows.append(0)
+        for x in range(width):
+            rows.extend(((x * 37 + y * 11) % 256, (x * 13 + y * 29) % 256, (x + y * 17) % 256))
+            if alpha:
+                rows.append((x * 23 + y * 7) % 256)
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 6 if alpha else 2, 0, 0, 0))
+            + chunk(b'IDAT', zlib.compress(rows)) + chunk(b'IEND', b''))
+
+
+def binary(data):
+    return {'base64': base64.b64encode(data).decode('ascii')}
+
+
+def repeated(text, count):
+    return {'repeat': text, 'count': count}
+
+
+def cases():
+    result = []
+
+    def add(tool, name, arguments, files=None, **setup):
+        result.append({'caseId': f'{tool}-{name}', 'tool': tool, 'arguments': arguments,
+                       'files': files or {}, **setup})
+
+    for name, text in [('utf8', 'café 日本語 😀\nβeta\n'), ('bom', '\ufeffalpha\nbeta'),
+                       ('lf', 'one\ntwo\n'), ('crlf', 'one\r\ntwo\r\n'),
+                       ('cr', 'one\rtwo\r'), ('empty', ''), ('no-newline', 'one\ntwo')]:
+        add('read', name, {'path': 'file.txt'}, {'file.txt': text})
+    for name, args in [('offset', {'offset': 2}), ('limit', {'limit': 1}),
+                       ('window', {'offset': 2, 'limit': 1}), ('final-empty-line', {'offset': 4}),
+                       ('offset-beyond-end', {'offset': 5}), ('offset-zero', {'offset': 0}),
+                       ('offset-negative', {'offset': -2}), ('limit-zero', {'limit': 0}),
+                       ('limit-negative', {'limit': -1}), ('fractional-offset', {'offset': 1.5}),
+                       ('optional-null', {'offset': None, 'limit': None})]:
+        add('read', name, {'path': 'file.txt', **args}, {'file.txt': 'one\ntwo\nthree\n'})
+    add('read', 'absolute-nested', {'path': '{WORKSPACE}/nested/file.txt'}, {'nested/file.txt': 'absolute\n'})
+    add('read', 'at-prefix', {'path': '@nested/file.txt'}, {'nested/file.txt': 'at path\n'})
+    add('read', 'unicode-space-path', {'path': 'file\u00a0name.txt'}, {'file name.txt': 'spaces\n'})
+    add('read', 'missing', {'path': 'missing.txt'})
+    add('read', 'directory', {'path': 'directory'}, directories={'directory': 0o755})
+    add('read', 'permission', {'path': 'file.txt'}, {'file.txt': 'private\n'}, modes={'file.txt': 0})
+    add('read', 'symlink', {'path': 'alias'}, {'target': 'linked\n'}, symlinks={'alias': 'target'})
+    for name, text in [('exact-lines', repeated('x\n', 2000)), ('over-lines', repeated('x\n', 2001)),
+                       ('exact-bytes', repeated('x', 51200)), ('oversized-first-line', repeated('x', 51201)),
+                       ('multibyte-line', repeated('😀', 12801)), ('byte-before-lines', repeated('x' * 300 + '\n', 300)),
+                       ('streaming-window', repeated('long line 😀\r\n', 170000))]:
+        add('read', name, {'path': 'file.txt'}, {'file.txt': text})
+    add('read', 'invalid-utf8', {'path': 'file.txt'}, {'file.txt': binary(b'a\xff\xe2\x82\nlast')})
+    add('read', 'invalid-utf8-stream', {'path': 'file.txt', 'offset': 70000, 'limit': 4},
+        {'file.txt': {'base64Repeat': base64.b64encode(b'\xff' * 20 + b'\n').decode(), 'count': 120000}})
+    add('read', 'binary-looking', {'path': 'file.txt'}, {'file.txt': binary(b'a\x00b\x01\nlast')})
+    add('read', 'png-magic', {'path': 'image.dat'}, {'image.dat': binary(png(7, 5))})
+    add('read', 'png-alpha', {'path': 'image.png'}, {'image.png': binary(png(13, 7, alpha=True))})
+    add('read', 'png-resize', {'path': 'image.png'}, {'image.png': binary(png(241, 37))},
+        options={'resizeOptions': {'maxWidth': 80, 'maxHeight': 80}})
+    add('read', 'corrupt-png', {'path': 'image.png'}, {'image.png': binary(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDRcorrupt')})
+    add('read', 'jpeg-ls-not-inline', {'path': 'image.jls'}, {'image.jls': binary(b'\xff\xd8\xff\xf7\x00\x00')})
+    add('read', 'invalid-image-extension', {'path': 'image.jpg'}, {'image.jpg': 'ordinary source text\n'})
+    add('read', 'missing-required', {}, {'file.txt': 'unchanged'})
+    add('read', 'invalid-path-type', {'path': []})
+    add('read', 'invalid-offset-type', {'path': 'file.txt', 'offset': {}}, {'file.txt': 'unchanged'})
+    add('read', 'pre-cancelled', {'path': 'file.txt'}, {'file.txt': 'unchanged'}, preCancelled=True)
+
+    for name, content in [('new', 'new file\n'), ('empty', ''), ('unicode', '日本語 😀 café\n'), ('bom', '\ufefffile\n')]:
+        add('write', name, {'path': 'file.txt', 'content': content})
+    add('write', 'existing', {'path': 'file.txt', 'content': 'replacement\n'}, {'file.txt': 'original\n'})
+    add('write', 'nested-parents', {'path': 'a/b/file.txt', 'content': 'nested\n'})
+    add('write', 'absolute', {'path': '{WORKSPACE}/file.txt', 'content': 'absolute\n'})
+    add('write', 'at-prefix', {'path': '@file.txt', 'content': 'at path\n'})
+    add('write', 'directory', {'path': 'dir', 'content': 'bad'}, directories={'dir': 0o755})
+    add('write', 'file-parent', {'path': 'parent/file', 'content': 'bad'}, {'parent': 'original'})
+    add('write', 'file-ancestor', {'path': 'parent/child/file', 'content': 'bad'}, {'parent': 'original'})
+    add('write', 'readonly-file', {'path': 'file.txt', 'content': 'bad'}, {'file.txt': 'original'}, modes={'file.txt': 0o444})
+    add('write', 'readonly-directory', {'path': 'dir/file', 'content': 'bad'}, directories={'dir': 0o555})
+    add('write', 'symlink', {'path': 'alias', 'content': 'replacement'}, {'target': 'original'}, symlinks={'alias': 'target'})
+    add('write', 'dangling-symlink', {'path': 'alias', 'content': 'new target'}, symlinks={'alias': 'target'})
+    add('write', 'hardlink', {'path': 'file.txt', 'content': 'replacement'}, {'file.txt': 'original'}, hardlinks={'alias': 'file.txt'})
+    add('write', 'existing-mode', {'path': 'file.txt', 'content': 'replacement'}, {'file.txt': 'original'}, modes={'file.txt': 0o640})
+    add('write', 'missing-content', {'path': 'file.txt'}, {'file.txt': 'original'})
+    add('write', 'invalid-content-type', {'path': 'file.txt', 'content': {}}, {'file.txt': 'original'})
+    add('write', 'invalid-path-type', {'path': [], 'content': 'bad'})
+    add('write', 'pre-cancelled', {'path': 'file.txt', 'content': 'bad'}, {'file.txt': 'original'}, preCancelled=True)
+
+    def edit(name, text, replacements, **setup):
+        add('edit', name, {'path': 'file.txt', 'edits': [{'oldText': a, 'newText': b} for a, b in replacements]},
+            {'file.txt': text}, **setup)
+
+    edit('single', 'one\ntwo\n', [('one', 'ONE')])
+    edit('batch-original-snapshot', 'foo\nbar\nbaz\n', [('foo\n', 'foo bar\n'), ('bar\n', 'BAR\n')])
+    edit('insert', 'alpha\nbeta\n', [('alpha\n', 'alpha\ninserted\n')])
+    edit('delete', 'alpha\nbeta\n', [('alpha\n', '')])
+    edit('empty-file', '', [('missing', 'new')])
+    edit('empty-old-text', 'unchanged', [('', 'bad')])
+    edit('ambiguous', 'repeat repeat', [('repeat', 'bad')])
+    edit('missing-match', 'unchanged', [('missing', 'bad')])
+    edit('invalid-batch-atomic', 'alpha\nbeta\n', [('alpha', 'ALPHA'), ('missing', 'bad')])
+    edit('overlap', 'one\ntwo\nthree\n', [('one\ntwo', 'bad'), ('two\nthree', 'bad')])
+    edit('nearby', 'alpha\nbeta\ngamma\n', [('alpha', 'ALPHA'), ('beta', 'BETA')])
+    edit('separated-hunks', '\n'.join(f'line {n}' for n in range(1, 31)) + '\n', [('line 2\n', 'LINE 2\n'), ('line 29\n', 'LINE 29\n')])
+    edit('crlf', 'alpha\r\nbeta\r\n', [('alpha\nbeta', 'ALPHA\nBETA')])
+    edit('bom', '\ufeffalpha\nbeta\n', [('alpha', 'ALPHA')])
+    edit('unicode', '日本語 café 😀\n', [('café', 'カフェ')])
+    edit('trailing-whitespace', 'alpha  \nbeta\n', [('alpha\n', 'ALPHA\n')])
+    edit('blank-lines', 'alpha\n\nbeta\n', [('alpha\n\n', 'ALPHA\n\n')])
+    edit('mixed-endings', 'alpha\r\nbeta\ngamma\r', [('beta', 'BETA')])
+    edit('fuzzy-unchanged-lines', 'keep “smart”\nchange “this”\nkeep café  \n', [('change "this"', 'changed')])
+    edit('no-change', 'unchanged\n', [('unchanged', 'unchanged')])
+    edit('readonly', 'alpha\n', [('alpha', 'bad')], modes={'file.txt': 0o444})
+    edit('symlink', 'alpha\n', [('alpha', 'ALPHA')], symlinks={'alias': 'file.txt'})
+    result[-1]['arguments']['path'] = 'alias'
+    edit('hardlink', 'alpha\n', [('alpha', 'ALPHA')], hardlinks={'alias': 'file.txt'})
+    edit('invalid-utf8', binary(b'alpha\xff\n'), [('alpha', 'ALPHA')])
+    add('edit', 'missing-target', {'path': 'missing', 'edits': [{'oldText': 'x', 'newText': 'y'}]})
+    add('edit', 'directory', {'path': 'dir', 'edits': [{'oldText': 'x', 'newText': 'y'}]}, directories={'dir': 0o755})
+    add('edit', 'empty-batch', {'path': 'file.txt', 'edits': []}, {'file.txt': 'unchanged'})
+    add('edit', 'legacy-input', {'path': 'file.txt', 'oldText': 'alpha', 'newText': 'ALPHA'}, {'file.txt': 'alpha\n'})
+    add('edit', 'stringified-edits', {'path': 'file.txt', 'edits': '[{"oldText":"alpha","newText":"ALPHA"}]'}, {'file.txt': 'alpha\n'})
+    add('edit', 'single-object-edits', {'path': 'file.txt', 'edits': {'oldText': 'alpha', 'newText': 'ALPHA'}}, {'file.txt': 'alpha\n'})
+    add('edit', 'missing-required', {'path': 'file.txt'}, {'file.txt': 'unchanged'})
+    add('edit', 'invalid-element-type', {'path': 'file.txt', 'edits': [1]}, {'file.txt': 'unchanged'})
+    edit('pre-cancelled', 'unchanged', [('unchanged', 'bad')], preCancelled=True)
+
+    for name, command in [('stdout', "printf 'hello\\n'"), ('no-output', 'true'), ('exit-one', "printf 'before\\n'; exit 1"),
+                           ('exit-127', 'exit 127'), ('stderr', "printf 'error\\n' >&2"),
+                           ('combined-ordered', "{ printf 'out\\n'; printf 'err\\n' >&2; } 2>&1"),
+                           ('unicode', "printf 'café 日本語 😀\\n'"), ('invalid-utf8', "printf '\\377\\342\\202'"),
+                           ('carriage-return', "printf 'first\\rsecond\\r\\n'"),
+                           ('raw-controls', "printf '\\033[31mred\\033[0m\\001\\n'"),
+                           ('signal-term', "printf 'before\\n'; kill -TERM $$"),
+                           ('signal-kill', "printf 'before\\n'; kill -KILL $$"),
+                           ('exact-lines', 'seq 1 2000'), ('over-lines', 'seq 1 2001'),
+                           ('exact-bytes', "printf '%51200s' | tr ' ' x"),
+                           ('oversized-line', "printf '%100000s' | tr ' ' x"),
+                           ('structured-over-one-mib', 'seq 1 220000'),
+                           ('stale-session-environment', "printf '%s|%s|%s|%s|%s' \"${PI_SESSION_ID-unset}\" \"${PI_SESSION_FILE-unset}\" \"${PI_PROVIDER-unset}\" \"${PI_MODEL-unset}\" \"${PI_REASONING_LEVEL-unset}\"")]:
+        add('bash', name, {'command': command})
+    add('bash', 'prefix', {'command': "printf '%s\\n' \"$TOOL_PARITY_PREFIX\""},
+        options={'commandPrefix': 'export TOOL_PARITY_PREFIX=from-prefix'})
+    add('bash', 'configured-shell', {'command': "printf '%s' \"${BASH_VERSION-not-bash}\""}, options={'shellPath': '/bin/sh'})
+    add('bash', 'missing-shell', {'command': 'true'}, options={'shellPath': '{WORKSPACE}/missing-shell'})
+    add('bash', 'timeout', {'command': "printf 'started\\n'; while :; do :; done", 'timeout': 0.2})
+    add('bash', 'abort-on-output', {'command': "printf 'READY\\n'; while :; do :; done"}, cancelOnOutput='READY')
+    add('bash', 'timeout-zero', {'command': 'true', 'timeout': 0})
+    add('bash', 'timeout-too-large', {'command': 'true', 'timeout': 2147484})
+    add('bash', 'missing-required', {})
+    add('bash', 'invalid-command-type', {'command': []})
+    add('bash', 'pre-cancelled', {'command': "printf 'bad' > mutation"}, preCancelled=True)
+
+    for name, args, files in [
+        ('literal', {'pattern': 'a.b', 'literal': True}, {'file.txt': 'a.b\naxb\n'}),
+        ('regex', {'pattern': '^a.b$'}, {'file.txt': 'a.b\naxb\nelse\n'}),
+        ('case-sensitive', {'pattern': 'needle'}, {'file.txt': 'NEEDLE\nneedle\n'}),
+        ('ignore-case', {'pattern': 'needle', 'ignoreCase': True}, {'file.txt': 'NEEDLE\nneedle\n'}),
+        ('context', {'pattern': 'needle', 'context': 1}, {'file.txt': 'before\nneedle\nafter\n'}),
+        ('overlapping-context', {'pattern': 'needle', 'context': 1}, {'file.txt': 'before\nneedle\nneedle\nafter\n'}),
+        ('single-file', {'pattern': 'needle', 'path': 'file.txt'}, {'file.txt': 'needle\n'}),
+        ('glob-include', {'pattern': 'needle', 'glob': '*.cs'}, {'file.cs': 'needle\n', 'file.md': 'needle\n'}),
+        ('glob-exclude', {'pattern': 'needle', 'glob': '!*.md'}, {'file.cs': 'needle\n', 'file.md': 'needle\n'}),
+        ('hidden', {'pattern': 'needle'}, {'.hidden/file': 'needle\n'}),
+        ('binary', {'pattern': 'needle'}, {'file.bin': binary(b'needle\n\x00binary\n')}),
+        ('invalid-utf8', {'pattern': 'needle'}, {'file.txt': binary(b'needle\xff\nnext\n')}),
+        ('cr-only', {'pattern': 'needle'}, {'file.txt': 'before\rneedle\rafter'}),
+        ('long-line', {'pattern': 'needle'}, {'file.txt': 'needle' + '😀' * 400}),
+        ('negative-context', {'pattern': 'needle', 'context': -1}, {'file.txt': 'needle\n'}),
+        ('no-match', {'pattern': 'absent'}, {'file.txt': 'needle\n'}),
+        ('match-limit', {'pattern': 'needle', 'limit': 1}, {'file.txt': 'needle\nneedle\n'}),
+        ('zero-limit', {'pattern': 'needle', 'limit': 0}, {'file.txt': 'needle\nneedle\n'}),
+        ('unsupported-lookaround', {'pattern': '(?=needle)'}, {'file.txt': 'needle\n'}),
+        ('invalid-regex', {'pattern': '('}, {'file.txt': 'needle\n'}),
+        ('flag-like-pattern', {'pattern': '-needle'}, {'file.txt': '-needle\n'}),
+        ('large-file', {'pattern': 'late-needle'}, {'file.txt': {'concat': [repeated('unmatched\n', 1100000), 'late-needle\n']}}),
+        ('byte-limit', {'pattern': 'needle', 'limit': 500}, {'file.txt': repeated('needle ' + 'x' * 450 + '\n', 150)}),
+    ]:
+        add('grep', name, args, files)
+    for tool, pattern in [('grep', 'needle'), ('find', '*.txt')]:
+        arguments = {'pattern': pattern}
+        files = {'visible.txt': 'needle\n', 'ignored.txt': 'needle\n', '.gitignore': 'ignored.txt\n'}
+        add(tool, 'gitignore', arguments, files, gitDirectories=['.'])
+        add(tool, 'ignore-outside-repo', arguments, {'visible.txt': 'needle\n', 'ignored.txt': 'needle\n', '.ignore': 'ignored.txt\n'})
+        add(tool, 'nested-repositories', arguments,
+            {'.gitignore': 'nested/outer-ignored.txt\n', 'nested/outer-ignored.txt': 'needle\n',
+             'nested/visible.txt': 'needle\n', 'nested/.gitignore': 'inner-ignored.txt\n', 'nested/inner-ignored.txt': 'needle\n'},
+            gitDirectories=['.', 'nested'])
+        add(tool, 'symlink-file', arguments, {'target.txt': 'needle\n'}, symlinks={'alias.txt': 'target.txt'})
+        add(tool, 'missing-root', {**arguments, 'path': 'missing'})
+        add(tool, 'permission', arguments, {'secret/file.txt': 'needle\n'}, modes={'secret': 0})
+        add(tool, 'missing-required', {})
+        add(tool, 'invalid-pattern-type', {'pattern': []})
+        add(tool, 'pre-cancelled', arguments, {'file.txt': 'needle\n'}, preCancelled=True)
+    find_files = {'src/a.cs': '', 'src/deep/b.cs': '', 'docs/readme.md': '', 'file name.txt': '',
+                  'literal[1].txt': '', 'Upper.CS': '', '.hidden/file.cs': '', '.gitignore': ''}
+    for name, pattern in [('basename', '*.cs'), ('recursive', 'src/**/*.cs'), ('brace', '**/*.{cs,md}'),
+                          ('character-class', '[a-z]*'), ('escaped-space', 'file\\ name.txt'),
+                          ('escaped-class', 'literal\\[1\\].txt'), ('dotfile', '.gitignore'),
+                          ('smart-case', '*.CS'), ('invalid-glob', '['), ('flag-like-pattern', '--foo'),
+                          ('no-match', '*.absent')]:
+        add('find', name, {'pattern': pattern}, find_files)
+    add('find', 'absolute-root', {'pattern': '*.cs', 'path': '{WORKSPACE}/src'}, find_files)
+    add('find', 'directory-result', {'pattern': 'src'}, find_files)
+    add('find', 'broken-link', {'pattern': '*.txt'}, symlinks={'broken.txt': 'missing.txt'})
+    add('find', 'file-root', {'pattern': '*', 'path': 'file.txt'}, {'file.txt': ''})
+    add('find', 'result-limit', {'pattern': '*.txt', 'limit': 1}, {'one.txt': '', 'two.txt': ''})
+    add('find', 'zero-limit', {'pattern': '*.txt', 'limit': 0}, {'one.txt': '', 'two.txt': ''})
+    add('find', 'late-match-beyond-inventory', {'pattern': 'wanted.txt', 'limit': 1}, {'z/wanted.txt': ''},
+        generatedFiles={'directory': 'a', 'count': 20050, 'text': ''})
+
+    for name, arguments, files in [('default', {}, {'alpha': '', 'beta': ''}),
+                                   ('empty', {}, {}), ('dotfiles', {}, {'.hidden': '', 'visible': ''}),
+                                   ('case-order', {}, {'B': '', 'a': '', 'A': '', 'b': ''}),
+                                   ('unicode-order', {}, {'z': '', 'é': '', 'É': '', 'e': '', 'ä': '', '日本語': ''}),
+                                   ('punctuation-order', {}, {'_a': '', '-a': '', '.a': '', 'a': '', 'a1': ''}),
+                                   ('exact-limit', {'limit': 2}, {'one': '', 'two': ''}),
+                                   ('over-limit', {'limit': 1}, {'one': '', 'two': ''}),
+                                   ('zero-limit', {'limit': 0}, {'one': ''}),
+                                   ('negative-limit', {'limit': -1}, {'one': ''}),
+                                   ('fractional-limit', {'limit': 1.5}, {'one': '', 'two': '', 'three': ''})]:
+        add('ls', name, arguments, files)
+    add('ls', 'directories', {}, {'file': ''}, directories={'dir': 0o755})
+    add('ls', 'relative-root', {'path': 'sub'}, {'sub/file': ''})
+    add('ls', 'absolute-root', {'path': '{WORKSPACE}/sub'}, {'sub/file': ''})
+    add('ls', 'symlink-directory', {}, directories={'dir': 0o755}, symlinks={'alias': 'dir'})
+    add('ls', 'broken-symlink', {}, {'visible': ''}, symlinks={'broken': 'missing'})
+    add('ls', 'broken-link-limit', {'limit': 1}, {'b-valid': ''}, symlinks={'a-broken': 'missing'})
+    add('ls', 'missing', {'path': 'missing'})
+    add('ls', 'file-target', {'path': 'file'}, {'file': ''})
+    add('ls', 'permission', {'path': 'secret'}, directories={'secret': 0})
+    add('ls', 'invalid-path-type', {'path': []})
+    add('ls', 'invalid-limit-type', {'limit': {}})
+    add('ls', 'special-fifo', {}, fifos=['pipe'])
+    add('ls', 'byte-limit', {}, {f'{n:04d}-' + '界' * 70: '' for n in range(300)})
+    add('ls', 'pre-cancelled', {}, {'file': ''}, preCancelled=True)
+    return result
