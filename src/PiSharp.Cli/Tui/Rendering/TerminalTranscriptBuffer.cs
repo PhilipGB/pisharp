@@ -487,6 +487,7 @@ internal sealed class TerminalTranscriptBuffer
         if (hiddenRows > 0 && segment.KeepLastPreviewLine)
         {
             var footerIndex = visibleRows - 1;
+            // Styled panel padding remains below the footer; it must not replace it.
             while (footerIndex > 0 && IsWhitespaceVisualRow(layout.Rows[footerIndex])) footerIndex--;
             var bodyRowCount = Math.Min(ToolPreviewContentRows, footerIndex);
             hiddenRows = Math.Max(0, footerIndex - bodyRowCount);
@@ -511,7 +512,6 @@ internal sealed class TerminalTranscriptBuffer
 
     private static bool IsWhitespaceVisualRow(string row)
     {
-        if (TerminalTextLayout.HasBackgroundOnWhitespace(row)) return false;
         for (var offset = 0; offset < row.Length;)
         {
             if (TerminalTextLayout.TryReadEscape(row, offset, out var escapeLength))

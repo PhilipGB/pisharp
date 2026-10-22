@@ -59,12 +59,17 @@ public sealed class CodemodeTimerTests
         Assert.Empty(timers.Rows());
     }
 
-    [Fact]
-    public void CollapsedLongOutputStillShowsTheRecordedTotal()
+    [Theory]
+    [InlineData("None")]
+    [InlineData("Ansi256")]
+    [InlineData("TrueColor")]
+    public void CollapsedLongOutputStillShowsTheRecordedTotal(string colorMode)
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
-        using var screen = new TerminalScreen(output, error, () => 80, () => 20);
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", Enum.Parse<TerminalColorMode>(colorMode));
+        using var screen = new TerminalScreen(output, error, () => 80, () => 20,
+            new TerminalImageRenderer(), theme, queryTerminalColors: false);
         var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
         transcript.Render(new("tool_execution_started", Tool: "codemode", OperationId: "script"));
         transcript.Render(new("tool_execution_update", Text: "", Tool: "codemode", OperationId: "script"));
@@ -175,8 +180,11 @@ public sealed class CodemodeTimerTests
         Assert.Equal(0, clock.ActiveTimerCount);
     }
 
-    [Fact]
-    public void ReloadedPiToolResultUsesItsRecordedDurationAfterNativePersistence()
+    [Theory]
+    [InlineData("None")]
+    [InlineData("Ansi256")]
+    [InlineData("TrueColor")]
+    public void ReloadedPiToolResultUsesItsRecordedDurationAfterNativePersistence(string colorMode)
     {
         var imported = PiJsonlSessionInterchange.Import("""
             {"type":"session","version":3,"id":"timer","cwd":"/tmp"}
@@ -185,9 +193,11 @@ public sealed class CodemodeTimerTests
             {"type":"message","id":"result","parentId":"call","timestamp":"2026-10-13T18:00:02.000Z","message":{"role":"toolResult","toolCallId":"script","toolName":"codemode","content":[{"type":"text","text":"42"}],"isError":false,"durationMs":5100}}
             """);
         var restored = ConversationSession.Parse(imported.ToJson());
+        var theme = TerminalThemeCatalog.LoadBuiltIn("dark", Enum.Parse<TerminalColorMode>(colorMode));
         using var shortOutput = new StringWriter();
         using var shortError = new StringWriter();
-        using (var shortScreen = new TerminalScreen(shortOutput, shortError, () => 80, () => 20))
+        using (var shortScreen = new TerminalScreen(shortOutput, shortError, () => 80, () => 20,
+            new TerminalImageRenderer(), theme, queryTerminalColors: false))
         {
             new InteractiveTranscript(shortScreen.Output, shortScreen.Error, screen: shortScreen).LoadHistory(restored);
             Assert.Contains("Took 5.1s", Frame(shortOutput));
@@ -201,7 +211,8 @@ public sealed class CodemodeTimerTests
         restored.Append(new ChatMessage(ChatRole.Tool, [longResult]));
         using var output = new StringWriter();
         using var error = new StringWriter();
-        using var screen = new TerminalScreen(output, error, () => 80, () => 20);
+        using var screen = new TerminalScreen(output, error, () => 80, () => 20,
+            new TerminalImageRenderer(), theme, queryTerminalColors: false);
         new InteractiveTranscript(screen.Output, screen.Error, screen: screen).LoadHistory(restored);
         Assert.Contains("Took 12.3s", Frame(output));
         Assert.DoesNotContain("Elapsed", Frame(output));
