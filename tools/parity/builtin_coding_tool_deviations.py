@@ -70,8 +70,11 @@ def assess_search_safety_deviation(case, observations):
     witness = search_exclusion_witness(case['tool'])
     if case != witness['setup']:
         return False
-    for pinned in [witness['observations']['pi'], *witness.get('additionalPinnedObservations', [])]:
-        expected = copy.deepcopy({**witness['observations'], 'pi': pinned})
+    variants = [{**witness['observations'], 'pi': pinned}
+                for pinned in [witness['observations']['pi'], *witness.get('additionalPinnedObservations', [])]]
+    variants.extend(witness.get('additionalObservationPairs', []))
+    for variant in variants:
+        expected = copy.deepcopy(variant)
         for implementation in expected.values():
             for entry in implementation['filesystem'].values():
                 entry['uid'], entry['gid'] = os.geteuid(), os.getegid()

@@ -79,12 +79,12 @@
       {
         "id": "N",
         "name": "Physical provider workflows",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "O",
         "name": "Differential corpus",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "P",
@@ -144,6 +144,11 @@
           "last_active_observation": "2026-10-23T13:57:24Z",
           "resumed_at": "2026-10-23T17:28:07Z",
           "reason": "Pending differential finished at the recorded observation; no engineering is claimed before the resumed goal turn."
+        },
+        {
+          "last_active_observation": "2026-10-23T19:17:23Z",
+          "resumed_at": "2026-10-23T22:23:52Z",
+          "reason": "Previous goal turn ended after completed physical captures; no engineering is claimed before the resumed goal turn."
         }
       ]
     },
@@ -791,7 +796,7 @@
       "comparison_guards_passed": 22
     },
     "physical_providers": {
-      "status": "in_progress",
+      "status": "verified_supported_linux_with_private_creation_exclusion",
       "source": "57a86f51",
       "before_receipt": "docs/parity/fixtures/builtin-coding-tool-provider-before-2026-10-22.json",
       "apis": [
@@ -809,7 +814,7 @@
         "RPC history reports generic tool names and omits edit/search result details"
       ],
       "remaining": [
-        "fresh clean-head physical loops and control"
+        "final corpus and reliability checkpoints O-P"
       ],
       "fail_first": {
         "failed": 9,
@@ -834,7 +839,34 @@
         "private_creation_exclusions": 3,
         "unresolved": 0,
         "source_worktree_dirty": true
+      },
+      "complete_acceptance": {
+        "source": "75e02e64e04db28da6480cccef39a8ad187add76",
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-provider-acceptance-2026-10-22.json",
+        "supported_contract_passed": 3,
+        "strict_filesystem_exclusions": 3,
+        "unresolved": 0,
+        "same_pi_strict_passed": 3
       }
+    },
+    "complete_corpus": {
+      "status": "in_progress",
+      "source": "75e02e64e04db28da6480cccef39a8ad187add76",
+      "source_worktree_dirty": false,
+      "first_run": {
+        "passed": 395,
+        "strict": 385,
+        "jpeg_equivalent": 10,
+        "safety_exclusions": 60,
+        "unresolved": 1,
+        "total": 456
+      },
+      "control_strict_passed": 456,
+      "unresolved_observation": "grep repository privacy case has identical permitted lines/metadata/files but a new native rg emission order. Complete actual source/native pair retained without sorting, still strict=false.",
+      "remaining": [
+        "fresh run after exact full-pair safety-witness registration",
+        "mandatory-case audit and stress P"
+      ]
     }
   },
   "plan_received": true,

@@ -1063,3 +1063,25 @@ passes its supported contract with only the named private-file creation mode
 excluded from strict filesystem equivalence. A same-Pi control also passes;
 its first route assertion was corrected to include the actual Anthropic
 ?beta=true suffix observed on both sides. Fresh clean-head runs remain required.
+
+### Physical provider checkpoint acceptance
+
+Clean `75e02e64` verifies all three [physical provider workflows](builtin-coding-tool-provider-acceptance-2026-10-22.json).
+Each side makes 11 actual HTTP requests, executes nine calls across seven tools,
+then exits/restarts its CLI and retains all nine authoritative outcomes. Full
+declarations, text, errors, history metadata and workspace inventory match.
+The generated file mode remains an explicit failed strict filesystem comparison
+(0644 pinned/0600 native). Strict same-Pi controls pass 3/3. N is complete for
+its supported contract. Progress is 14/20; O full corpus is in progress.
+
+## Complete corpus execution
+
+At clean `75e02e64`, all 456 cases execute: 395 pass (385 strict plus ten
+explicit JPEG codec equivalents), 60 match reviewed safety exclusions, and one
+privacy-exclusion case remains initially unclassified. The strict same-Pi
+control passes 456/456. The unclassified case contains the same three native
+permitted grep lines in a newly observed order; bytes, metadata, ownership and
+filesystem state are unchanged. Its complete actual Pi/native observation pair
+is retained in the existing privacy witness without sorting. This case remains
+strict=false and pass=false; only its safety classification changes. All 27
+comparison guards continue to pass, including rejection of extra leaked lines.
