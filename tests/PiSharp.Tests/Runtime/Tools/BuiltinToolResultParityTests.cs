@@ -19,6 +19,29 @@ public sealed class BuiltinToolResultParityTests : IDisposable
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JsonStringResultsReachProviderAdaptersAsUnquotedText(bool hasStructuredContent)
+    {
+        using var source = SearchProcessProtocolTests.SourceFixture("provider", "before");
+        var expected = source.RootElement.GetProperty("cases")[0].GetProperty("observations").GetProperty("pi")
+            .GetProperty("firstWriteContinuation").EnumerateArray().Single(result => result.GetProperty("callId").GetString() == "workflow_6")
+            .GetProperty("content").GetString()!;
+        var stored = new FunctionResultContent("workflow_6", JsonSerializer.SerializeToElement(expected))
+        { AdditionalProperties = new() { ["retained"] = "value" } };
+        if (hasStructuredContent) stored.AdditionalProperties[ToolResultOutput.StructuredContentProperty] = expected;
+        var canonical = new ChatMessage(ChatRole.Tool, [stored]);
+        var call = new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("workflow_6", "write", new Dictionary<string, object?>())]);
+        var projected = ToolResultMessageProjection.Expand([call, canonical], supportsImages: true, flattenStructuredResults: true);
+        var result = Assert.Single(Assert.Single(projected, message => message.Role == ChatRole.Tool).Contents.OfType<FunctionResultContent>());
+        Assert.Equal(expected, Assert.IsType<string>(result.Result));
+        Assert.Equal("value", result.AdditionalProperties!["retained"]);
+        Assert.False(result.AdditionalProperties.ContainsKey(ToolResultOutput.StructuredContentProperty));
+        Assert.IsType<JsonElement>(stored.Result);
+        Assert.Equal(hasStructuredContent, stored.AdditionalProperties.ContainsKey(ToolResultOutput.StructuredContentProperty));
+    }
+
+    [Theory]
     [InlineData("grep", "file.txt:1: needle")]
     [InlineData("find", "file.txt")]
     [InlineData("ls", "file.txt")]

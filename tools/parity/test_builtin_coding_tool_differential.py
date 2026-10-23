@@ -19,8 +19,82 @@ spec = importlib.util.spec_from_file_location('builtin_tool_differential',
 driver = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(driver)
 
+provider_spec = importlib.util.spec_from_file_location('builtin_provider_differential',
+    Path(__file__).with_name('builtin-coding-tool-provider-differential.py'))
+provider_driver = importlib.util.module_from_spec(provider_spec)
+provider_spec.loader.exec_module(provider_driver)
+
 
 class BuiltinToolDifferentialTests(unittest.TestCase):
+    @staticmethod
+    def provider_observations():
+        root = Path(__file__).resolve().parents[2] / 'docs/parity/fixtures'
+        cases = json.loads((root / 'builtin-coding-tool-provider-results-2026-10-22.json').read_text())['cases']
+        fixture = json.loads((root / 'builtin-coding-tool-agent-workflow-2026-10-22.json').read_text())
+        for case in cases:
+            pinned = case['pinned']
+            entries = {name: 'file' for name in fixture['finalFiles']}
+            for name in fixture['finalFiles']:
+                for parent in Path(name).parents:
+                    if parent != Path('.'):
+                        entries[parent.as_posix()] = 'directory'
+            observation = dict(providerRequests=len(pinned['requests']),
+                requests=[{**request, 'declarations': pinned['declarations']} for request in pinned['requests']],
+                states=[dict(history=dict(messages=[dict(role='assistant', content=pinned['canonicalCalls']),
+                    *pinned['canonicalResults']])) for _ in range(2)],
+                finalFiles=pinned['finalFiles'], toolEvents=pinned['toolEvents'], stderr=['', ''],
+                workspaceEntries=[dict(path=name, kind=kind) for name, kind in sorted(entries.items())])
+            yield case['api'], observation, fixture
+
+    def test_physical_comparison_preserves_strict_private_creation_difference(self):
+        for api, pinned, fixture in self.provider_observations():
+            native = copy.deepcopy(pinned)
+            native['finalFiles']['generated/result.txt']['mode'] = 0o600
+            result = provider_driver.compare_observations(api, pinned, native, fixture)
+            self.assertTrue(result['supportedContractPass'])
+            self.assertFalse(result['strictPass'])
+            self.assertTrue(result['intentionalPrivateCreationExclusion'])
+            self.assertEqual(['finalFiles/generated/result.txt/mode'], result['strictDifferences'])
+            native['finalFiles']['generated/result.txt']['mode'] = 0o777
+            self.assertFalse(provider_driver.compare_observations(api, pinned, native, fixture)['supportedContractPass'])
+
+    def test_physical_comparison_rejects_quoted_or_missing_provider_output(self):
+        for api, pinned, fixture in self.provider_observations():
+            native = copy.deepcopy(pinned)
+            native['requests'][7]['results'][6]['content'] = json.dumps(native['requests'][7]['results'][6]['content'])
+            self.assertFalse(provider_driver.compare_observations(api, pinned, native, fixture)['supportedContractPass'])
+            native = copy.deepcopy(pinned)
+            native['requests'][-1]['results'].pop()
+            self.assertFalse(provider_driver.compare_observations(api, pinned, native, fixture)['supportedContractPass'])
+
+    def test_physical_comparison_rejects_schema_changes_and_wrong_routes(self):
+        for api, pinned, fixture in self.provider_observations():
+            native = copy.deepcopy(pinned)
+            native['requests'][0]['declarations'][0]['parameters']['additionalProperties'] = False
+            self.assertFalse(provider_driver.compare_observations(api, pinned, native, fixture)['supportedContractPass'])
+            native = copy.deepcopy(pinned)
+            native['requests'][0]['path'] += '-wrong'
+            self.assertFalse(provider_driver.compare_observations(api, pinned, native, fixture)['supportedContractPass'])
+
+    def test_physical_comparison_rejects_lost_canonical_details_names_or_call_ids(self):
+        for api, pinned, fixture in self.provider_observations():
+            for field, value in [('details', None), ('toolName', 'tool'), ('toolCallId', 'uncorrelated'), ('isError', True)]:
+                native = copy.deepcopy(pinned)
+                native['states'][1]['history']['messages'][5][field] = value
+                self.assertFalse(provider_driver.compare_observations(api, pinned, native, fixture)['supportedContractPass'])
+
+    def test_physical_comparison_rejects_extra_files_changed_bytes_and_late_updates(self):
+        for api, pinned, fixture in self.provider_observations():
+            native = copy.deepcopy(pinned)
+            native['workspaceEntries'].append(dict(path='unexpected', kind='file'))
+            self.assertFalse(provider_driver.compare_observations(api, pinned, native, fixture)['supportedContractPass'])
+            native = copy.deepcopy(pinned)
+            native['finalFiles']['src/value.txt']['text'] = 'wrong'
+            self.assertFalse(provider_driver.compare_observations(api, pinned, native, fixture)['supportedContractPass'])
+            native = copy.deepcopy(pinned)
+            native['toolEvents'].append(next(event for event in native['toolEvents'] if event['type'] == 'tool_execution_update'))
+            self.assertFalse(provider_driver.compare_observations(api, pinned, native, fixture)['supportedContractPass'])
+
     def test_repository_exclusion_cannot_hide_changed_lines_metadata_or_files(self):
         self.check_repository_exclusion('grep')
 

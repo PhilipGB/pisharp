@@ -789,6 +789,52 @@
       },
       "related_passed": 825,
       "comparison_guards_passed": 22
+    },
+    "physical_providers": {
+      "status": "in_progress",
+      "source": "57a86f51",
+      "before_receipt": "docs/parity/fixtures/builtin-coding-tool-provider-before-2026-10-22.json",
+      "apis": [
+        "openai-responses",
+        "openai-completions",
+        "anthropic-messages"
+      ],
+      "per_product_per_api_requests": 11,
+      "calls_per_workflow": 9,
+      "actual_process_restarts_per_workflow": 1,
+      "confirmed_mismatches": [
+        "Live write confirmations acquire JSON quotes until restart on all three APIs",
+        "Chat declarations retain additionalProperties false for grep/find/ls",
+        "Responses declarations retain adapter object defaults",
+        "RPC history reports generic tool names and omits edit/search result details"
+      ],
+      "remaining": [
+        "fresh clean-head physical loops and control"
+      ],
+      "fail_first": {
+        "failed": 9,
+        "passed": 0
+      },
+      "focused_after": {
+        "passed": 9,
+        "failed": 0
+      },
+      "first_broad_selection": {
+        "passed": 1017,
+        "failed": 1,
+        "total": 1018,
+        "regression": "JSON-string correction changed an extension hook representation. Scope narrowed to correlated built-in results; existing test retained."
+      },
+      "comparison_guards_passed": 27,
+      "extension_and_builtin_scope_passed": 21,
+      "related_final_passed": 1018,
+      "scoped_physical_comparisons": {
+        "supported_contract_passed": 3,
+        "strict_passed": 0,
+        "private_creation_exclusions": 3,
+        "unresolved": 0,
+        "source_worktree_dirty": true
+      }
     }
   },
   "plan_received": true,

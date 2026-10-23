@@ -667,6 +667,8 @@ internal static class PiJsonlEntryCodec
             messageObject["toolName"] = "tool";
             PiSharpToolResult? contract = null;
             if (result is not null && ToolResultOutput.TryReadContract(result, out var parsed)) contract = parsed;
+            if (result is not null && ToolResultOutput.TryRead(result.Result, out _, out var details) && details is not null)
+                messageObject["details"] = JsonSerializer.SerializeToNode(details, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             messageObject["isError"] = result?.Exception is not null || contract?.IsError == true;
             if (contract is not null) messageObject["piSharpToolResult"] = JsonSerializer.SerializeToNode(contract);
             if (contract?.Usage is { } toolUsage) messageObject["usage"] = ProjectToolUsage(toolUsage, contract.Cost);

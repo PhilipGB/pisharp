@@ -1,0 +1,3145 @@
+{
+  "schema": 1,
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpSha": "57a86f5145cdfcb99e815804d3cc0f01263b5096",
+  "dirtyPaths": [
+    " M docs/parity/execution-ledger.json",
+    " M docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md",
+    " M src/PiSharp.Cli/Protocols/Rpc/RpcSessionMessageProjector.cs",
+    " M src/PiSharp.Cli/Providers/OpenAI/OpenAiToolSchemaCompatibilityHandler.cs",
+    " M src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs",
+    " M src/PiSharp.Runtime/Sessions/PiJsonlEntryCodec.cs",
+    " M src/PiSharp.Runtime/Sessions/ToolResultMessageProjection.cs",
+    " M tests/PiSharp.Tests/Cli/Providers/OpenAI/OpenAiToolSchemaCompatibilityTests.cs",
+    " M tests/PiSharp.Tests/Runtime/Tools/BuiltinToolResultParityTests.cs",
+    " M tools/parity/test_builtin_coding_tool_differential.py",
+    "?? docs/parity/fixtures/builtin-coding-tool-provider-before-2026-10-22.json",
+    "?? docs/parity/fixtures/builtin-coding-tool-provider-results-2026-10-22.json",
+    "?? tests/PiSharp.Tests/Cli/Protocols/Rpc/BuiltinRpcResultParityTests.cs",
+    "?? tools/parity/builtin-coding-tool-provider-differential.py"
+  ],
+  "startedAt": "2026-10-23T19:15:03.353040+00:00",
+  "finishedAt": "2026-10-23T19:15:16.314804+00:00",
+  "scope": "Actual physical workflow source fixtures; repeated declarations stored once per API. Provider protocol flags and canonical IDs/results remain exact. Native private creation stays a failed strict comparison.",
+  "cases": [
+    {
+      "api": "openai-responses",
+      "pinned": {
+        "declarations": [
+          {
+            "name": "read",
+            "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to read (relative or absolute)"
+                },
+                "offset": {
+                  "type": "number",
+                  "description": "Line number to start reading from (1-indexed)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of lines to read"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function"
+            }
+          },
+          {
+            "name": "bash",
+            "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "command"
+              ],
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "description": "Shell command to execute"
+                },
+                "timeout": {
+                  "type": "number",
+                  "description": "Timeout in seconds (optional, no default timeout)"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function"
+            }
+          },
+          {
+            "name": "edit",
+            "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "edits"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to edit (relative or absolute)"
+                },
+                "edits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "oldText",
+                      "newText"
+                    ],
+                    "properties": {
+                      "oldText": {
+                        "type": "string",
+                        "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                      },
+                      "newText": {
+                        "type": "string",
+                        "description": "Replacement text for this targeted edit."
+                      }
+                    }
+                  },
+                  "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function"
+            }
+          },
+          {
+            "name": "write",
+            "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "content"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to write (relative or absolute)"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Content to write to the file"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function"
+            }
+          },
+          {
+            "name": "grep",
+            "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "pattern"
+              ],
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "Search pattern (regex or literal string)"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Directory or file to search (default: current directory)"
+                },
+                "glob": {
+                  "type": "string",
+                  "description": "Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"
+                },
+                "ignoreCase": {
+                  "type": "boolean",
+                  "description": "Case-insensitive search (default: false)"
+                },
+                "literal": {
+                  "type": "boolean",
+                  "description": "Treat pattern as literal string instead of regex (default: false)"
+                },
+                "context": {
+                  "type": "number",
+                  "description": "Number of lines to show before and after each match (default: 0)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of matches to return (default: 100)"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function"
+            }
+          },
+          {
+            "name": "find",
+            "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "pattern"
+              ],
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Directory to search in (default: current directory)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of results (default: 1000)"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function"
+            }
+          },
+          {
+            "name": "ls",
+            "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Directory to list (default: current directory)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of entries to return (default: 500)"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function"
+            }
+          }
+        ],
+        "requests": [
+          {
+            "path": "/v1/responses",
+            "results": []
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              }
+            ]
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              }
+            ]
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              }
+            ]
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              }
+            ]
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              }
+            ]
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              }
+            ]
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt"
+              }
+            ]
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt"
+              },
+              {
+                "callId": "workflow_7",
+                "content": "verified\n"
+              }
+            ]
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt"
+              },
+              {
+                "callId": "workflow_7",
+                "content": "verified\n"
+              },
+              {
+                "callId": "workflow_8",
+                "content": "value=new\n"
+              }
+            ]
+          },
+          {
+            "path": "/v1/responses",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt"
+              },
+              {
+                "callId": "workflow_7",
+                "content": "verified\n"
+              },
+              {
+                "callId": "workflow_8",
+                "content": "value=new\n"
+              }
+            ]
+          }
+        ],
+        "canonicalCalls": [
+          {
+            "type": "toolCall",
+            "id": "workflow_0|fc_0",
+            "name": "read",
+            "arguments": {
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_1|fc_1",
+            "name": "find",
+            "arguments": {
+              "pattern": "*.txt",
+              "path": "src"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_2|fc_2",
+            "name": "grep",
+            "arguments": {
+              "pattern": "value",
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_3|fc_3",
+            "name": "ls",
+            "arguments": {
+              "path": "src"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_4|fc_4",
+            "name": "edit",
+            "arguments": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "value=old",
+                  "newText": "value=new"
+                }
+              ]
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_5|fc_5",
+            "name": "edit",
+            "arguments": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "missing text",
+                  "newText": "must not appear"
+                }
+              ]
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_6|fc_6",
+            "name": "write",
+            "arguments": {
+              "path": "generated/result.txt",
+              "content": "created\n"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_7|fc_7",
+            "name": "bash",
+            "arguments": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_8|fc_8",
+            "name": "read",
+            "arguments": {
+              "path": "src/value.txt"
+            }
+          }
+        ],
+        "canonicalResults": [
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_0|fc_0",
+            "toolName": "read",
+            "content": [
+              {
+                "type": "text",
+                "text": "value=old\n"
+              }
+            ],
+            "isError": false,
+            "durationMs": 2,
+            "timestamp": 1792782903984
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_1|fc_1",
+            "toolName": "find",
+            "content": [
+              {
+                "type": "text",
+                "text": "related.txt\nvalue.txt"
+              }
+            ],
+            "isError": false,
+            "durationMs": 12,
+            "timestamp": 1792782904003
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_2|fc_2",
+            "toolName": "grep",
+            "content": [
+              {
+                "type": "text",
+                "text": "value.txt:1: value=old"
+              }
+            ],
+            "isError": false,
+            "durationMs": 6,
+            "timestamp": 1792782904014
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_3|fc_3",
+            "toolName": "ls",
+            "content": [
+              {
+                "type": "text",
+                "text": "related.txt\nvalue.txt"
+              }
+            ],
+            "isError": false,
+            "durationMs": 1,
+            "timestamp": 1792782904021
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_4|fc_4",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully replaced 1 block(s) in src/value.txt."
+              }
+            ],
+            "details": {
+              "diff": "-1 value=old\n+1 value=new",
+              "patch": "--- src/value.txt\n+++ src/value.txt\n@@ -1,1 +1,1 @@\n-value=old\n+value=new\n",
+              "firstChangedLine": 1
+            },
+            "isError": false,
+            "durationMs": 2,
+            "timestamp": 1792782904029
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_5|fc_5",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              }
+            ],
+            "details": {},
+            "isError": true,
+            "durationMs": 0,
+            "timestamp": 1792782904034
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_6|fc_6",
+            "toolName": "write",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to generated/result.txt"
+              }
+            ],
+            "isError": false,
+            "durationMs": 1,
+            "timestamp": 1792782904039
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_7|fc_7",
+            "toolName": "bash",
+            "content": [
+              {
+                "type": "text",
+                "text": "verified\n"
+              }
+            ],
+            "isError": false,
+            "durationMs": 7,
+            "timestamp": 1792782904050
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_8|fc_8",
+            "toolName": "read",
+            "content": [
+              {
+                "type": "text",
+                "text": "value=new\n"
+              }
+            ],
+            "isError": false,
+            "durationMs": 0,
+            "timestamp": 1792782904055
+          }
+        ],
+        "toolEvents": [
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_0|fc_0",
+            "toolName": "read",
+            "args": {
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_0|fc_0",
+            "toolName": "read",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "value=old\n"
+                }
+              ],
+              "structuredContent": "value=old\n"
+            },
+            "isError": false,
+            "durationMs": 2
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_1|fc_1",
+            "toolName": "find",
+            "args": {
+              "pattern": "*.txt",
+              "path": "src"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_1|fc_1",
+            "toolName": "find",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "related.txt\nvalue.txt"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 12
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_2|fc_2",
+            "toolName": "grep",
+            "args": {
+              "pattern": "value",
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_2|fc_2",
+            "toolName": "grep",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "value.txt:1: value=old"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 6
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_3|fc_3",
+            "toolName": "ls",
+            "args": {
+              "path": "src"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_3|fc_3",
+            "toolName": "ls",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "related.txt\nvalue.txt"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 1
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_4|fc_4",
+            "toolName": "edit",
+            "args": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "value=old",
+                  "newText": "value=new"
+                }
+              ]
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_4|fc_4",
+            "toolName": "edit",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Successfully replaced 1 block(s) in src/value.txt."
+                }
+              ],
+              "details": {
+                "diff": "-1 value=old\n+1 value=new",
+                "patch": "--- src/value.txt\n+++ src/value.txt\n@@ -1,1 +1,1 @@\n-value=old\n+value=new\n",
+                "firstChangedLine": 1
+              }
+            },
+            "isError": false,
+            "durationMs": 2
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_5|fc_5",
+            "toolName": "edit",
+            "args": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "missing text",
+                  "newText": "must not appear"
+                }
+              ]
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_5|fc_5",
+            "toolName": "edit",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+                }
+              ],
+              "details": {}
+            },
+            "isError": true,
+            "durationMs": 0
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_6|fc_6",
+            "toolName": "write",
+            "args": {
+              "path": "generated/result.txt",
+              "content": "created\n"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_6|fc_6",
+            "toolName": "write",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Successfully wrote to generated/result.txt"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 1
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_7|fc_7",
+            "toolName": "bash",
+            "args": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            }
+          },
+          {
+            "type": "tool_execution_update",
+            "toolCallId": "workflow_7|fc_7",
+            "toolName": "bash",
+            "args": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            },
+            "partialResult": {
+              "content": []
+            }
+          },
+          {
+            "type": "tool_execution_update",
+            "toolCallId": "workflow_7|fc_7",
+            "toolName": "bash",
+            "args": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            },
+            "partialResult": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "verified\n"
+                }
+              ],
+              "details": {}
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_7|fc_7",
+            "toolName": "bash",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "verified\n"
+                }
+              ],
+              "structuredContent": {
+                "output": "verified\n",
+                "truncated": false,
+                "exit_code": 0,
+                "wall_time_seconds": 0
+              }
+            },
+            "isError": false,
+            "durationMs": 7
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_8|fc_8",
+            "toolName": "read",
+            "args": {
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_8|fc_8",
+            "toolName": "read",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "value=new\n"
+                }
+              ],
+              "structuredContent": "value=new\n"
+            },
+            "isError": false,
+            "durationMs": 0
+          }
+        ],
+        "finalFiles": {
+          "src/value.txt": {
+            "text": "value=new\n",
+            "mode": 420
+          },
+          "src/related.txt": {
+            "text": "related value\n",
+            "mode": 420
+          },
+          "generated/result.txt": {
+            "text": "created\n",
+            "mode": 420
+          }
+        },
+        "workspaceEntries": [
+          {
+            "path": "generated",
+            "kind": "directory"
+          },
+          {
+            "path": "generated/result.txt",
+            "kind": "file"
+          },
+          {
+            "path": "src",
+            "kind": "directory"
+          },
+          {
+            "path": "src/related.txt",
+            "kind": "file"
+          },
+          {
+            "path": "src/value.txt",
+            "kind": "file"
+          }
+        ]
+      },
+      "comparison": {
+        "supportedContractPass": true,
+        "strictPass": false,
+        "intentionalPrivateCreationExclusion": true,
+        "differences": [],
+        "strictDifferences": [
+          "finalFiles/generated/result.txt/mode"
+        ]
+      }
+    },
+    {
+      "api": "openai-completions",
+      "pinned": {
+        "declarations": [
+          {
+            "name": "read",
+            "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to read (relative or absolute)"
+                },
+                "offset": {
+                  "type": "number",
+                  "description": "Line number to start reading from (1-indexed)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of lines to read"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function",
+              "functionFields": {}
+            }
+          },
+          {
+            "name": "bash",
+            "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "command"
+              ],
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "description": "Shell command to execute"
+                },
+                "timeout": {
+                  "type": "number",
+                  "description": "Timeout in seconds (optional, no default timeout)"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function",
+              "functionFields": {}
+            }
+          },
+          {
+            "name": "edit",
+            "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "edits"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to edit (relative or absolute)"
+                },
+                "edits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "oldText",
+                      "newText"
+                    ],
+                    "properties": {
+                      "oldText": {
+                        "type": "string",
+                        "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                      },
+                      "newText": {
+                        "type": "string",
+                        "description": "Replacement text for this targeted edit."
+                      }
+                    }
+                  },
+                  "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function",
+              "functionFields": {}
+            }
+          },
+          {
+            "name": "write",
+            "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "content"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to write (relative or absolute)"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Content to write to the file"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function",
+              "functionFields": {}
+            }
+          },
+          {
+            "name": "grep",
+            "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "pattern"
+              ],
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "Search pattern (regex or literal string)"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Directory or file to search (default: current directory)"
+                },
+                "glob": {
+                  "type": "string",
+                  "description": "Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"
+                },
+                "ignoreCase": {
+                  "type": "boolean",
+                  "description": "Case-insensitive search (default: false)"
+                },
+                "literal": {
+                  "type": "boolean",
+                  "description": "Treat pattern as literal string instead of regex (default: false)"
+                },
+                "context": {
+                  "type": "number",
+                  "description": "Number of lines to show before and after each match (default: 0)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of matches to return (default: 100)"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function",
+              "functionFields": {}
+            }
+          },
+          {
+            "name": "find",
+            "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "pattern"
+              ],
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Directory to search in (default: current directory)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of results (default: 1000)"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function",
+              "functionFields": {}
+            }
+          },
+          {
+            "name": "ls",
+            "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Directory to list (default: current directory)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of entries to return (default: 500)"
+                }
+              }
+            },
+            "protocolFields": {
+              "type": "function",
+              "functionFields": {}
+            }
+          }
+        ],
+        "requests": [
+          {
+            "path": "/v1/chat/completions",
+            "results": []
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              }
+            ]
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              }
+            ]
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              }
+            ]
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              }
+            ]
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              }
+            ]
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              }
+            ]
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt"
+              }
+            ]
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt"
+              },
+              {
+                "callId": "workflow_7",
+                "content": "verified\n"
+              }
+            ]
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt"
+              },
+              {
+                "callId": "workflow_7",
+                "content": "verified\n"
+              },
+              {
+                "callId": "workflow_8",
+                "content": "value=new\n"
+              }
+            ]
+          },
+          {
+            "path": "/v1/chat/completions",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n"
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old"
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt"
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt."
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt"
+              },
+              {
+                "callId": "workflow_7",
+                "content": "verified\n"
+              },
+              {
+                "callId": "workflow_8",
+                "content": "value=new\n"
+              }
+            ]
+          }
+        ],
+        "canonicalCalls": [
+          {
+            "type": "toolCall",
+            "id": "workflow_0",
+            "name": "read",
+            "arguments": {
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_1",
+            "name": "find",
+            "arguments": {
+              "pattern": "*.txt",
+              "path": "src"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_2",
+            "name": "grep",
+            "arguments": {
+              "pattern": "value",
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_3",
+            "name": "ls",
+            "arguments": {
+              "path": "src"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_4",
+            "name": "edit",
+            "arguments": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "value=old",
+                  "newText": "value=new"
+                }
+              ]
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_5",
+            "name": "edit",
+            "arguments": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "missing text",
+                  "newText": "must not appear"
+                }
+              ]
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_6",
+            "name": "write",
+            "arguments": {
+              "path": "generated/result.txt",
+              "content": "created\n"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_7",
+            "name": "bash",
+            "arguments": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_8",
+            "name": "read",
+            "arguments": {
+              "path": "src/value.txt"
+            }
+          }
+        ],
+        "canonicalResults": [
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_0",
+            "toolName": "read",
+            "content": [
+              {
+                "type": "text",
+                "text": "value=old\n"
+              }
+            ],
+            "isError": false,
+            "durationMs": 4,
+            "timestamp": 1792782908592
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_1",
+            "toolName": "find",
+            "content": [
+              {
+                "type": "text",
+                "text": "related.txt\nvalue.txt"
+              }
+            ],
+            "isError": false,
+            "durationMs": 12,
+            "timestamp": 1792782908611
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_2",
+            "toolName": "grep",
+            "content": [
+              {
+                "type": "text",
+                "text": "value.txt:1: value=old"
+              }
+            ],
+            "isError": false,
+            "durationMs": 7,
+            "timestamp": 1792782908625
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_3",
+            "toolName": "ls",
+            "content": [
+              {
+                "type": "text",
+                "text": "related.txt\nvalue.txt"
+              }
+            ],
+            "isError": false,
+            "durationMs": 3,
+            "timestamp": 1792782908635
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_4",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully replaced 1 block(s) in src/value.txt."
+              }
+            ],
+            "details": {
+              "diff": "-1 value=old\n+1 value=new",
+              "patch": "--- src/value.txt\n+++ src/value.txt\n@@ -1,1 +1,1 @@\n-value=old\n+value=new\n",
+              "firstChangedLine": 1
+            },
+            "isError": false,
+            "durationMs": 3,
+            "timestamp": 1792782908649
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_5",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              }
+            ],
+            "details": {},
+            "isError": true,
+            "durationMs": 1,
+            "timestamp": 1792782908655
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_6",
+            "toolName": "write",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to generated/result.txt"
+              }
+            ],
+            "isError": false,
+            "durationMs": 1,
+            "timestamp": 1792782908661
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "content": [
+              {
+                "type": "text",
+                "text": "verified\n"
+              }
+            ],
+            "isError": false,
+            "durationMs": 8,
+            "timestamp": 1792782908674
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_8",
+            "toolName": "read",
+            "content": [
+              {
+                "type": "text",
+                "text": "value=new\n"
+              }
+            ],
+            "isError": false,
+            "durationMs": 0,
+            "timestamp": 1792782908678
+          }
+        ],
+        "toolEvents": [
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_0",
+            "toolName": "read",
+            "args": {
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_0",
+            "toolName": "read",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "value=old\n"
+                }
+              ],
+              "structuredContent": "value=old\n"
+            },
+            "isError": false,
+            "durationMs": 4
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_1",
+            "toolName": "find",
+            "args": {
+              "pattern": "*.txt",
+              "path": "src"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_1",
+            "toolName": "find",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "related.txt\nvalue.txt"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 12
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_2",
+            "toolName": "grep",
+            "args": {
+              "pattern": "value",
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_2",
+            "toolName": "grep",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "value.txt:1: value=old"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 7
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_3",
+            "toolName": "ls",
+            "args": {
+              "path": "src"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_3",
+            "toolName": "ls",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "related.txt\nvalue.txt"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 3
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_4",
+            "toolName": "edit",
+            "args": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "value=old",
+                  "newText": "value=new"
+                }
+              ]
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_4",
+            "toolName": "edit",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Successfully replaced 1 block(s) in src/value.txt."
+                }
+              ],
+              "details": {
+                "diff": "-1 value=old\n+1 value=new",
+                "patch": "--- src/value.txt\n+++ src/value.txt\n@@ -1,1 +1,1 @@\n-value=old\n+value=new\n",
+                "firstChangedLine": 1
+              }
+            },
+            "isError": false,
+            "durationMs": 3
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_5",
+            "toolName": "edit",
+            "args": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "missing text",
+                  "newText": "must not appear"
+                }
+              ]
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_5",
+            "toolName": "edit",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+                }
+              ],
+              "details": {}
+            },
+            "isError": true,
+            "durationMs": 1
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_6",
+            "toolName": "write",
+            "args": {
+              "path": "generated/result.txt",
+              "content": "created\n"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_6",
+            "toolName": "write",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Successfully wrote to generated/result.txt"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 1
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "args": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            }
+          },
+          {
+            "type": "tool_execution_update",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "args": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            },
+            "partialResult": {
+              "content": []
+            }
+          },
+          {
+            "type": "tool_execution_update",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "args": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            },
+            "partialResult": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "verified\n"
+                }
+              ],
+              "details": {}
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "verified\n"
+                }
+              ],
+              "structuredContent": {
+                "output": "verified\n",
+                "truncated": false,
+                "exit_code": 0,
+                "wall_time_seconds": 0
+              }
+            },
+            "isError": false,
+            "durationMs": 8
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_8",
+            "toolName": "read",
+            "args": {
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_8",
+            "toolName": "read",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "value=new\n"
+                }
+              ],
+              "structuredContent": "value=new\n"
+            },
+            "isError": false,
+            "durationMs": 0
+          }
+        ],
+        "finalFiles": {
+          "src/value.txt": {
+            "text": "value=new\n",
+            "mode": 420
+          },
+          "src/related.txt": {
+            "text": "related value\n",
+            "mode": 420
+          },
+          "generated/result.txt": {
+            "text": "created\n",
+            "mode": 420
+          }
+        },
+        "workspaceEntries": [
+          {
+            "path": "generated",
+            "kind": "directory"
+          },
+          {
+            "path": "generated/result.txt",
+            "kind": "file"
+          },
+          {
+            "path": "src",
+            "kind": "directory"
+          },
+          {
+            "path": "src/related.txt",
+            "kind": "file"
+          },
+          {
+            "path": "src/value.txt",
+            "kind": "file"
+          }
+        ]
+      },
+      "comparison": {
+        "supportedContractPass": true,
+        "strictPass": false,
+        "intentionalPrivateCreationExclusion": true,
+        "differences": [],
+        "strictDifferences": [
+          "finalFiles/generated/result.txt/mode"
+        ]
+      }
+    },
+    {
+      "api": "anthropic-messages",
+      "pinned": {
+        "declarations": [
+          {
+            "name": "read",
+            "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to read (relative or absolute)"
+                },
+                "offset": {
+                  "type": "number",
+                  "description": "Line number to start reading from (1-indexed)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of lines to read"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "protocolFields": {
+              "eager_input_streaming": true
+            }
+          },
+          {
+            "name": "bash",
+            "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "description": "Shell command to execute"
+                },
+                "timeout": {
+                  "type": "number",
+                  "description": "Timeout in seconds (optional, no default timeout)"
+                }
+              },
+              "required": [
+                "command"
+              ]
+            },
+            "protocolFields": {
+              "eager_input_streaming": true
+            }
+          },
+          {
+            "name": "edit",
+            "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to edit (relative or absolute)"
+                },
+                "edits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "oldText",
+                      "newText"
+                    ],
+                    "properties": {
+                      "oldText": {
+                        "type": "string",
+                        "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                      },
+                      "newText": {
+                        "type": "string",
+                        "description": "Replacement text for this targeted edit."
+                      }
+                    }
+                  },
+                  "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+                }
+              },
+              "required": [
+                "path",
+                "edits"
+              ]
+            },
+            "protocolFields": {
+              "eager_input_streaming": true
+            }
+          },
+          {
+            "name": "write",
+            "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to write (relative or absolute)"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Content to write to the file"
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ]
+            },
+            "protocolFields": {
+              "eager_input_streaming": true
+            }
+          },
+          {
+            "name": "grep",
+            "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "Search pattern (regex or literal string)"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Directory or file to search (default: current directory)"
+                },
+                "glob": {
+                  "type": "string",
+                  "description": "Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"
+                },
+                "ignoreCase": {
+                  "type": "boolean",
+                  "description": "Case-insensitive search (default: false)"
+                },
+                "literal": {
+                  "type": "boolean",
+                  "description": "Treat pattern as literal string instead of regex (default: false)"
+                },
+                "context": {
+                  "type": "number",
+                  "description": "Number of lines to show before and after each match (default: 0)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of matches to return (default: 100)"
+                }
+              },
+              "required": [
+                "pattern"
+              ]
+            },
+            "protocolFields": {
+              "eager_input_streaming": true
+            }
+          },
+          {
+            "name": "find",
+            "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Directory to search in (default: current directory)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of results (default: 1000)"
+                }
+              },
+              "required": [
+                "pattern"
+              ]
+            },
+            "protocolFields": {
+              "eager_input_streaming": true
+            }
+          },
+          {
+            "name": "ls",
+            "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Directory to list (default: current directory)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of entries to return (default: 500)"
+                }
+              },
+              "required": []
+            },
+            "protocolFields": {
+              "eager_input_streaming": true,
+              "cache_control": {
+                "type": "ephemeral"
+              }
+            }
+          }
+        ],
+        "requests": [
+          {
+            "path": "/v1/messages?beta=true",
+            "results": []
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              }
+            ]
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              }
+            ]
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old",
+                "isError": false
+              }
+            ]
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old",
+                "isError": false
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              }
+            ]
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old",
+                "isError": false
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt.",
+                "isError": false
+              }
+            ]
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old",
+                "isError": false
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt.",
+                "isError": false
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines.",
+                "isError": true
+              }
+            ]
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old",
+                "isError": false
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt.",
+                "isError": false
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines.",
+                "isError": true
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt",
+                "isError": false
+              }
+            ]
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old",
+                "isError": false
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt.",
+                "isError": false
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines.",
+                "isError": true
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_7",
+                "content": "verified\n",
+                "isError": false
+              }
+            ]
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old",
+                "isError": false
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt.",
+                "isError": false
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines.",
+                "isError": true
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_7",
+                "content": "verified\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_8",
+                "content": "value=new\n",
+                "isError": false
+              }
+            ]
+          },
+          {
+            "path": "/v1/messages?beta=true",
+            "results": [
+              {
+                "callId": "workflow_0",
+                "content": "value=old\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_1",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_2",
+                "content": "value.txt:1: value=old",
+                "isError": false
+              },
+              {
+                "callId": "workflow_3",
+                "content": "related.txt\nvalue.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_4",
+                "content": "Successfully replaced 1 block(s) in src/value.txt.",
+                "isError": false
+              },
+              {
+                "callId": "workflow_5",
+                "content": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines.",
+                "isError": true
+              },
+              {
+                "callId": "workflow_6",
+                "content": "Successfully wrote to generated/result.txt",
+                "isError": false
+              },
+              {
+                "callId": "workflow_7",
+                "content": "verified\n",
+                "isError": false
+              },
+              {
+                "callId": "workflow_8",
+                "content": "value=new\n",
+                "isError": false
+              }
+            ]
+          }
+        ],
+        "canonicalCalls": [
+          {
+            "type": "toolCall",
+            "id": "workflow_0",
+            "name": "read",
+            "arguments": {
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_1",
+            "name": "find",
+            "arguments": {
+              "pattern": "*.txt",
+              "path": "src"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_2",
+            "name": "grep",
+            "arguments": {
+              "pattern": "value",
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_3",
+            "name": "ls",
+            "arguments": {
+              "path": "src"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_4",
+            "name": "edit",
+            "arguments": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "value=old",
+                  "newText": "value=new"
+                }
+              ]
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_5",
+            "name": "edit",
+            "arguments": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "missing text",
+                  "newText": "must not appear"
+                }
+              ]
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_6",
+            "name": "write",
+            "arguments": {
+              "path": "generated/result.txt",
+              "content": "created\n"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_7",
+            "name": "bash",
+            "arguments": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "workflow_8",
+            "name": "read",
+            "arguments": {
+              "path": "src/value.txt"
+            }
+          }
+        ],
+        "canonicalResults": [
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_0",
+            "toolName": "read",
+            "content": [
+              {
+                "type": "text",
+                "text": "value=old\n"
+              }
+            ],
+            "isError": false,
+            "durationMs": 1,
+            "timestamp": 1792782912806
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_1",
+            "toolName": "find",
+            "content": [
+              {
+                "type": "text",
+                "text": "related.txt\nvalue.txt"
+              }
+            ],
+            "isError": false,
+            "durationMs": 10,
+            "timestamp": 1792782912822
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_2",
+            "toolName": "grep",
+            "content": [
+              {
+                "type": "text",
+                "text": "value.txt:1: value=old"
+              }
+            ],
+            "isError": false,
+            "durationMs": 6,
+            "timestamp": 1792782912833
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_3",
+            "toolName": "ls",
+            "content": [
+              {
+                "type": "text",
+                "text": "related.txt\nvalue.txt"
+              }
+            ],
+            "isError": false,
+            "durationMs": 1,
+            "timestamp": 1792782912839
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_4",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully replaced 1 block(s) in src/value.txt."
+              }
+            ],
+            "details": {
+              "diff": "-1 value=old\n+1 value=new",
+              "patch": "--- src/value.txt\n+++ src/value.txt\n@@ -1,1 +1,1 @@\n-value=old\n+value=new\n",
+              "firstChangedLine": 1
+            },
+            "isError": false,
+            "durationMs": 2,
+            "timestamp": 1792782912846
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_5",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+              }
+            ],
+            "details": {},
+            "isError": true,
+            "durationMs": 1,
+            "timestamp": 1792782912853
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_6",
+            "toolName": "write",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to generated/result.txt"
+              }
+            ],
+            "isError": false,
+            "durationMs": 0,
+            "timestamp": 1792782912858
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "content": [
+              {
+                "type": "text",
+                "text": "verified\n"
+              }
+            ],
+            "isError": false,
+            "durationMs": 8,
+            "timestamp": 1792782912869
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "workflow_8",
+            "toolName": "read",
+            "content": [
+              {
+                "type": "text",
+                "text": "value=new\n"
+              }
+            ],
+            "isError": false,
+            "durationMs": 0,
+            "timestamp": 1792782912874
+          }
+        ],
+        "toolEvents": [
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_0",
+            "toolName": "read",
+            "args": {
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_0",
+            "toolName": "read",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "value=old\n"
+                }
+              ],
+              "structuredContent": "value=old\n"
+            },
+            "isError": false,
+            "durationMs": 1
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_1",
+            "toolName": "find",
+            "args": {
+              "pattern": "*.txt",
+              "path": "src"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_1",
+            "toolName": "find",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "related.txt\nvalue.txt"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 10
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_2",
+            "toolName": "grep",
+            "args": {
+              "pattern": "value",
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_2",
+            "toolName": "grep",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "value.txt:1: value=old"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 6
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_3",
+            "toolName": "ls",
+            "args": {
+              "path": "src"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_3",
+            "toolName": "ls",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "related.txt\nvalue.txt"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 1
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_4",
+            "toolName": "edit",
+            "args": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "value=old",
+                  "newText": "value=new"
+                }
+              ]
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_4",
+            "toolName": "edit",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Successfully replaced 1 block(s) in src/value.txt."
+                }
+              ],
+              "details": {
+                "diff": "-1 value=old\n+1 value=new",
+                "patch": "--- src/value.txt\n+++ src/value.txt\n@@ -1,1 +1,1 @@\n-value=old\n+value=new\n",
+                "firstChangedLine": 1
+              }
+            },
+            "isError": false,
+            "durationMs": 2
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_5",
+            "toolName": "edit",
+            "args": {
+              "path": "src/value.txt",
+              "edits": [
+                {
+                  "oldText": "missing text",
+                  "newText": "must not appear"
+                }
+              ]
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_5",
+            "toolName": "edit",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+                }
+              ],
+              "details": {}
+            },
+            "isError": true,
+            "durationMs": 1
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_6",
+            "toolName": "write",
+            "args": {
+              "path": "generated/result.txt",
+              "content": "created\n"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_6",
+            "toolName": "write",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Successfully wrote to generated/result.txt"
+                }
+              ]
+            },
+            "isError": false,
+            "durationMs": 0
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "args": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            }
+          },
+          {
+            "type": "tool_execution_update",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "args": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            },
+            "partialResult": {
+              "content": []
+            }
+          },
+          {
+            "type": "tool_execution_update",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "args": {
+              "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+            },
+            "partialResult": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "verified\n"
+                }
+              ],
+              "details": {}
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_7",
+            "toolName": "bash",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "verified\n"
+                }
+              ],
+              "structuredContent": {
+                "output": "verified\n",
+                "truncated": false,
+                "exit_code": 0,
+                "wall_time_seconds": 0
+              }
+            },
+            "isError": false,
+            "durationMs": 8
+          },
+          {
+            "type": "tool_execution_start",
+            "toolCallId": "workflow_8",
+            "toolName": "read",
+            "args": {
+              "path": "src/value.txt"
+            }
+          },
+          {
+            "type": "tool_execution_end",
+            "toolCallId": "workflow_8",
+            "toolName": "read",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "value=new\n"
+                }
+              ],
+              "structuredContent": "value=new\n"
+            },
+            "isError": false,
+            "durationMs": 0
+          }
+        ],
+        "finalFiles": {
+          "src/value.txt": {
+            "text": "value=new\n",
+            "mode": 420
+          },
+          "src/related.txt": {
+            "text": "related value\n",
+            "mode": 420
+          },
+          "generated/result.txt": {
+            "text": "created\n",
+            "mode": 420
+          }
+        },
+        "workspaceEntries": [
+          {
+            "path": "generated",
+            "kind": "directory"
+          },
+          {
+            "path": "generated/result.txt",
+            "kind": "file"
+          },
+          {
+            "path": "src",
+            "kind": "directory"
+          },
+          {
+            "path": "src/related.txt",
+            "kind": "file"
+          },
+          {
+            "path": "src/value.txt",
+            "kind": "file"
+          }
+        ]
+      },
+      "comparison": {
+        "supportedContractPass": true,
+        "strictPass": false,
+        "intentionalPrivateCreationExclusion": true,
+        "differences": [],
+        "strictDifferences": [
+          "finalFiles/generated/result.txt/mode"
+        ]
+      }
+    }
+  ]
+}

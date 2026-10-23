@@ -1020,3 +1020,46 @@ the 15 new workflow/error/exclusion checks, with zero failures/skips. The source
 selection tests pass 37/37 across six files. M is complete for its defined schema,
 selection, MAF lifecycle and canonical persistence contract. Physical HTTP and
 final cross-tool reliability remain N–P gates. Progress is 13/20 complete.
+
+## Physical provider workflow investigation
+
+The [initial physical captures](builtin-coding-tool-provider-before-2026-10-22.json)
+run actual pinned/native RPC CLIs against local HTTP Responses, Chat Completions
+and Anthropic endpoints. Each product completes nine tool calls in ten requests,
+then exits and restarts its CLI; the eleventh request contains the saved nine
+results without replaying tools. Final file bytes match; native's private new
+file mode remains the already named safety exclusion.
+
+These captures reveal defects not covered by the earlier in-process checks:
+live write confirmations acquire JSON quotes before restart, Chat declarations
+retain additionalProperties=false for the three optional tools, Responses
+retains adapter schema defaults, and RPC history uses generic tool names and
+omits result details. The full raw HTTP/RPC captures remain in the ignored
+artifact directory; the compact before receipt retains actual observations.
+N remains open while focused regressions and narrow corrections are completed.
+
+Nine focused regressions fail on the before implementation and pass after the
+provider/history corrections: JSON-string output, Chat/Responses object schema
+defaults, result details in RPC/JSONL and tool-name correlation even with reused
+legacy call IDs. The physical comparison checks full provider declarations
+(including protocol flags), every continuation result, lifecycle order, canonical
+call/result correlation and metadata, restart stability and workspace inventory.
+All 27 comparison guards pass and reject changed schemas, routes, result text,
+IDs, names, details, file bytes/inventory and updates after completion. The private
+new-file mode remains a recorded strict filesystem difference.
+
+The first broader selection passes 1,017/1,018. Its one failure catches a change
+to an extension hook's JSON-string representation. The correction is narrowed
+to results correlated with the seven reserved built-in tool names, preserving
+the existing extension contract and its test. Fresh scoped/broad checks and
+clean-head physical acceptance remain required before N is closed.
+
+The narrowed extension/built-in selection passes 21/21 and the final broad
+provider/RPC/JSONL/tool selection passes 1,018/1,018 with zero failures/skips.
+The [source provider workflow fixtures](builtin-coding-tool-provider-results-2026-10-22.json)
+retain all declarations including protocol flags, every result continuation,
+canonical calls/results and lifecycle events for all three APIs. Each comparison
+passes its supported contract with only the named private-file creation mode
+excluded from strict filesystem equivalence. A same-Pi control also passes;
+its first route assertion was corrected to include the actual Anthropic
+?beta=true suffix observed on both sides. Fresh clean-head runs remain required.

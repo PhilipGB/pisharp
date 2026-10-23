@@ -176,9 +176,9 @@ public static class ProviderChatClientFactory
             else if (selection.Connection.Endpoint is not null) options.Endpoint = selection.Connection.Endpoint;
             if (protocol == "openai-responses")
                 options.Transport = new HttpClientPipelineTransport(
-                    new HttpClient(new ProviderSamplingRequestHandler(samplingContext!,
+                    new HttpClient(new OpenAiToolSchemaCompatibilityHandler(new ProviderSamplingRequestHandler(samplingContext!,
                         ProviderWireHookHandler.CreateWithActivity(selection, protocol,
-                            new HttpClientHandler())), disposeHandler: true));
+                            new HttpClientHandler()))), disposeHandler: true));
             OpenAiToolCallDeltaCapture? toolCallCapture = null;
             MistralChatRequestContext? mistralContext = null;
             AzureOpenAiRequestContext? azureContext = null;

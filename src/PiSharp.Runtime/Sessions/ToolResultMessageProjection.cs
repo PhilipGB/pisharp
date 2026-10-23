@@ -14,12 +14,17 @@ internal static class ToolResultMessageProjection
         bool flattenStructuredResults)
     {
         var expanded = new List<ChatMessage>(messages.Count);
+        var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
         var index = 0;
         while (index < messages.Count)
         {
             if (messages[index].Role != ChatRole.Tool)
             {
-                expanded.Add(messages[index++]);
+                var message = messages[index++];
+                if (message.Role == ChatRole.Assistant)
+                    foreach (var call in message.Contents.OfType<FunctionCallContent>())
+                        toolNames[call.CallId] = call.Name;
+                expanded.Add(message);
                 continue;
             }
 
@@ -32,16 +37,21 @@ internal static class ToolResultMessageProjection
                 var replaced = false;
                 foreach (var content in message.Contents)
                 {
+                    var builtinString = content is FunctionResultContent candidate &&
+                        candidate.Result is System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.String } &&
+                        toolNames.TryGetValue(candidate.CallId, out var toolName) &&
+                        toolName is "read" or "bash" or "edit" or "write" or "grep" or "find" or "ls";
                     if (flattenStructuredResults && content is FunctionResultContent stored &&
-                        stored.AdditionalProperties?.ContainsKey(ToolResultOutput.StructuredContentProperty) == true &&
-                        stored.Result is string or System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.String })
+                        (builtinString || stored.AdditionalProperties?.ContainsKey(ToolResultOutput.StructuredContentProperty) == true &&
+                         stored.Result is string or System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.String }))
                     {
-                        var requestResult = new FunctionResultContent(stored.CallId, stored.Result)
+                        var text = builtinString ? ((System.Text.Json.JsonElement)stored.Result!).GetString() : stored.Result;
+                        var requestResult = new FunctionResultContent(stored.CallId, text)
                         {
                             Exception = stored.Exception,
-                            AdditionalProperties = stored.AdditionalProperties.Clone()
+                            AdditionalProperties = stored.AdditionalProperties?.Clone()
                         };
-                        requestResult.AdditionalProperties.Remove(ToolResultOutput.StructuredContentProperty);
+                        requestResult.AdditionalProperties?.Remove(ToolResultOutput.StructuredContentProperty);
                         contents.Add(requestResult);
                         replaced = true;
                         continue;
