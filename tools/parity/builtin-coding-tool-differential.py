@@ -212,10 +212,10 @@ def normalize_result(result, root, artifact_replacements, image_policy):
     return result
 
 
-def run_probe(command, environment, log_file, timeout=240):
+def run_probe(command, environment, log_file, timeout=240, stdin=None):
     with log_file.open('w') as log:
         subprocess.run(command, env=environment, stdout=log, stderr=subprocess.STDOUT,
-                       check=True, timeout=timeout)
+                       check=True, timeout=timeout, input=stdin)
 
 
 def main():
@@ -281,7 +281,7 @@ def main():
                     roots[implementation, case['caseId']] = root
                     snapshots[implementation, case['caseId']] = identities
                     request = {key: case[key] for key in ['caseId', 'tool', 'arguments', 'options',
-                               'context', 'preCancelled', 'cancelOnOutput'] if key in case}
+                               'context', 'preCancelled', 'cancelOnOutput', 'acknowledgeEmptyUpdate', 'executionCwd'] if key in case}
                     request['workspace'] = str(root)
                     request = replace_values(request, {'{WORKSPACE}': str(root)})
                     inputs[implementation].append(request)
@@ -299,7 +299,7 @@ def main():
                 for implementation, command in commands.items():
                     child_environment = dict(environment, TMPDIR=str(temps[implementation]))
                     futures.append(pool.submit(run_probe, command, child_environment,
-                                               output / f'{implementation}.log'))
+                                               output / f'{implementation}.log', stdin=b'tool-parity-stdin-sentinel\n'))
                 for future in futures:
                     future.result()
             raw = {name: json.loads((output / f'{name}-results.json').read_text()) for name in commands}

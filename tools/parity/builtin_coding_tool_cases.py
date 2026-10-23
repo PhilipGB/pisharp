@@ -311,6 +311,29 @@ def cases():
     add('bash', 'missing-required', {})
     add('bash', 'invalid-command-type', {'command': []})
     add('bash', 'pre-cancelled', {'command': "printf 'bad' > mutation"}, preCancelled=True)
+    add('bash', 'utf8-bom', {'command': "printf '\\357\\273\\277hello\\n'"})
+    add('bash', 'bom-only', {'command': "printf '\\357\\273\\277'"})
+    for label, prefix, suffix in [('split-utf8', '\\342', '\\202\\254'),
+                                  ('split-bom', '\\357\\273', '\\277hello')]:
+        add('bash', label, {'command': f"printf '{prefix}'; read -r signal < ack; printf '{suffix}'", 'timeout': 5},
+            fifos=['ack'], acknowledgeEmptyUpdate=True)
+    add('bash', 'oversized-line-midpoint', {'command': "python3 -c \"import sys;sys.stdout.write('x'*53504)\""})
+    add('bash', 'empty-lines', {'command': "python3 -c \"import sys;sys.stdout.write('\\n'*2200)\""})
+    add('bash', 'stdin-ignored', {'command': 'if read -r line; then printf "read:%s" "$line"; else printf eof; fi'})
+    add('bash', 'heredoc', {'command': "cat <<'END'\nhello 日本語\n$literal\nEND"})
+    add('bash', 'nonexecutable-shell', {'command': 'true'}, {'shell': '#!/bin/sh\nprintf unexpected'},
+        modes={'shell': 0o644}, options={'shellPath': '{WORKSPACE}/shell'})
+    add('bash', 'bad-interpreter-shell', {'command': 'true'},
+        {'shell': '#!/pisharp-fixture-no-such-interpreter\nprintf unexpected'}, modes={'shell': 0o755},
+        options={'shellPath': '{WORKSPACE}/shell'})
+    add('bash', 'directory-shell', {'command': 'true'}, directories={'shell': 0o755},
+        options={'shellPath': '{WORKSPACE}/shell'})
+    add('bash', 'nul-command', {'command': 'printf a\0b'})
+    add('bash', 'oversized-command', {'command': "printf ok #" + 'x' * 140000})
+    add('bash', 'missing-working-directory', {'command': 'true'}, executionCwd='{WORKSPACE}/missing')
+    add('bash', 'file-working-directory', {'command': 'true'}, {'file': 'not a directory'}, executionCwd='{WORKSPACE}/file')
+    add('bash', 'inaccessible-working-directory', {'command': 'true'}, directories={'private': 0},
+        executionCwd='{WORKSPACE}/private')
 
     for name, args, files in [
         ('literal', {'pattern': 'a.b', 'literal': True}, {'file.txt': 'a.b\naxb\n'}),

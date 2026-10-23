@@ -141,7 +141,7 @@ for (const request of JSON.parse(readFileSync(inputFile, 'utf8'))) {
   const updates = [];
   const controller = new AbortController();
   if (request.preCancelled) controller.abort();
-  const tool = factories[request.tool](request.workspace, request.options ?? undefined);
+  const tool = factories[request.tool](request.executionCwd ?? request.workspace, request.options ?? undefined);
   const result = { caseId: request.caseId, content: [], details: null, structuredContent: null,
     isError: false, rejected: false, updates };
   try {
@@ -150,9 +150,11 @@ for (const request of JSON.parse(readFileSync(inputFile, 'utf8'))) {
       type: 'toolCall', arguments: prepared });
     const value = await tool.execute(request.caseId, argumentsValue, controller.signal, update => {
       updates.push({ content: update.content, details: update.details ?? null });
+      if (request.acknowledgeEmptyUpdate && update.content?.some(item => item.text === ''))
+        writeFileSync(path.join(request.workspace, 'ack'), 'go\n');
       if (request.cancelOnOutput && update.content?.some(item => item.text?.includes(request.cancelOnOutput)))
         controller.abort();
-    }, request.context ? { ...request.context, cwd: request.workspace } : undefined);
+    }, request.context ? { ...request.context, cwd: request.executionCwd ?? request.workspace } : undefined);
     result.content = value.content;
     result.details = value.details ?? null;
     result.structuredContent = value.structuredContent ?? null;

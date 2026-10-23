@@ -61,7 +61,7 @@ foreach (var request in requests)
     var updates = new List<object>();
     using var cancellation = new CancellationTokenSource();
     if (request.PreCancelled) cancellation.Cancel();
-    var tools = new CodingTools(request.Workspace, request.Options?.ShellPath,
+    var tools = new CodingTools(request.ExecutionCwd ?? request.Workspace, request.Options?.ShellPath,
         request.Options?.ResizeOptions, request.Options?.CommandPrefix);
     if (request.Context is { } context && context.TryGetProperty("model", out var model))
     {
@@ -81,6 +81,8 @@ foreach (var request in requests)
             {
                 lock (updates)
                     updates.Add(new { content = new[] { new { type = "text", text } }, details = (object?)null });
+                if (request.AcknowledgeEmptyUpdate && text.Length == 0)
+                    File.WriteAllText(Path.Combine(request.Workspace, "ack"), "go\n");
                 if (request.CancelOnOutput is not null && text.Contains(request.CancelOnOutput, StringComparison.Ordinal))
                     cancellation.Cancel();
             })
@@ -124,7 +126,8 @@ foreach (var request in requests)
 
 internal sealed record ProbeRequest(string CaseId, string Tool, string Workspace,
     Dictionary<string, JsonElement> Arguments, bool PreCancelled = false,
-    string? CancelOnOutput = null, ProbeOptions? Options = null, JsonElement? Context = null);
+    string? CancelOnOutput = null, ProbeOptions? Options = null, JsonElement? Context = null,
+    bool AcknowledgeEmptyUpdate = false, string? ExecutionCwd = null);
 
 internal sealed record ProbeOptions(string? ShellPath = null, string? CommandPrefix = null,
     ModelImageResizeOptions? ResizeOptions = null);
