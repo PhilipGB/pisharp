@@ -480,6 +480,25 @@ The image/budget/existing OpenAI wire selection passes 66/66, zero skips.
 Fresh committed-source paired evidence follows; Anthropic and structured-image
 session persistence remain open. CI now installs the already-used Pillow version
 from the explicit image-tool requirements and runs the harness guard tests.
+
+At clean source `20d18a51`, the read corpus passes 115/115 under the documented
+contract: 105 strict comparisons and ten explicitly reported JPEG equivalents.
+All seven full declarations match, including output schema and sampling policy.
+The same-Pi control passes 115/115 strictly, with zero codec exceptions.
+
+Physical image tests now include Anthropic Messages alongside Responses and
+Chat Completions. Three regressions reproduce lost structured-image data after
+native session save/reload. The correction stores structured content in canonical
+result metadata while preserving the existing text/image message representation,
+and removes that annotation from provider requests. Typed result inspection and
+Pi interchange can recover the structured data. The related selection passes
+22/22, including all three seven-request image/reload/text-only/block/profile
+workflows. Two new nullable test warnings are corrected with explicit assertions.
+
+Four model-context inputs now cover non-vision notes, invalid-image fallback,
+explicit vision support and model resize-profile precedence. Their source oracle
+and native context projection are the next acceptance work; this input expansion
+is not a new product claim. Corpus inventory is now 285 (read 119).
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or

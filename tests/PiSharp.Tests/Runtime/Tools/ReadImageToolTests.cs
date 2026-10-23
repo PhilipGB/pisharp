@@ -44,7 +44,8 @@ public sealed class ReadImageToolTests
     [Theory]
     [InlineData("openai-responses")]
     [InlineData("openai-completions")]
-    public async Task ReadToolImageReachesOpenAiProviderAndCanBeReplayedAfterReload(string api)
+    [InlineData("anthropic-messages")]
+    public async Task ReadToolImageReachesProviderAndCanBeReplayedAfterReload(string api)
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-read-image-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -66,7 +67,7 @@ public sealed class ReadImageToolTests
                 for (var index = 0; index < 7; index++)
                 {
                     var request = await listener.GetContextAsync();
-                    var expectedPath = api == "openai-responses" ? "/v1/responses" : "/v1/chat/completions";
+                    var expectedPath = api switch { "openai-responses" => "/v1/responses", "anthropic-messages" => "/v1/messages", _ => "/v1/chat/completions" };
                     Assert.Equal(expectedPath, request.Request.Url?.AbsolutePath);
                     using var reader = new StreamReader(request.Request.InputStream);
                     requests.Add(JsonDocument.Parse(await reader.ReadToEndAsync()));
@@ -77,16 +78,18 @@ public sealed class ReadImageToolTests
                     {
                         await WriteResponsesEventsAsync(writer, index);
                     }
+                    else if (api == "anthropic-messages")
+                        await WriteAnthropicEventsAsync(writer, index);
                     else
                         await WriteCompletionsEventsAsync(writer, index);
-                    await writer.WriteAsync("data: [DONE]\n\n");
+                    if (api != "anthropic-messages") await writer.WriteAsync("data: [DONE]\n\n");
                     await writer.FlushAsync();
                     request.Response.Close();
                 }
             });
 
             using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            var endpoint = $"http://127.0.0.1:{port}/v1";
+            var endpoint = $"http://127.0.0.1:{port}" + (api == "anthropic-messages" ? "" : "/v1");
             var selection = new ModelSelection(
                 new ProviderProfile("fixture", "Fixture", new Uri(endpoint), true, false, "FIXTURE_API_KEY", null, []),
                 new ModelDescriptor("fixture-model", "fixture", null, "fixture", Provider: "fixture", Api: api,
@@ -112,6 +115,15 @@ public sealed class ReadImageToolTests
             var storedText = storedResult.Result is JsonElement storedJson && storedJson.ValueKind == JsonValueKind.String
                 ? storedJson.GetString() : storedResult.Result as string;
             Assert.Equal("Read image file [image/png]", storedText);
+            Assert.NotNull(storedResult.AdditionalProperties);
+            Assert.True(storedResult.AdditionalProperties.TryGetValue("pisharp.structuredContent", out var storedStructured));
+            var structuredImage = JsonSerializer.SerializeToElement(storedStructured);
+            Assert.Equal("image", structuredImage.GetProperty("type").GetString());
+            Assert.Equal("image/png", structuredImage.GetProperty("mimeType").GetString());
+            Assert.Equal(Convert.ToBase64String(image), structuredImage.GetProperty("data").GetString());
+            Assert.Equal(storedText, structuredImage.GetProperty("note").GetString());
+            Assert.True(ToolResultOutput.TryReadContract(storedResult, out var restoredContract));
+            Assert.True(JsonElement.DeepEquals(structuredImage, restoredContract.StructuredContent!.Value));
             Assert.Equal(image, savedMessages.SelectMany(message => message.Contents).OfType<DataContent>().Single().Data.ToArray());
             var resumed = await ConversationRun.OpenAsync(new PiAgent(ProviderChatClientFactory.Create(selection), CreateTools()), loaded);
             var secondTurn = "";
@@ -146,13 +158,37 @@ public sealed class ReadImageToolTests
             Assert.DoesNotContain("input_image", textOnlyBody, StringComparison.Ordinal);
             Assert.DoesNotContain("image_url", textOnlyBody, StringComparison.Ordinal);
             Assert.Contains("Current model does not support images. The image will be omitted from this request.", textOnlyBody, StringComparison.Ordinal);
+            Assert.DoesNotContain("\"type\":\"image\"", textOnlyBody, StringComparison.Ordinal);
             var blockedBody = requests[4].RootElement.GetRawText();
             Assert.DoesNotContain("input_image", blockedBody, StringComparison.Ordinal);
             Assert.DoesNotContain("image_url", blockedBody, StringComparison.Ordinal);
             Assert.Contains("Image reading is disabled.", blockedBody, StringComparison.Ordinal);
+            Assert.DoesNotContain("\"type\":\"image\"", blockedBody, StringComparison.Ordinal);
             AssertResponseContainsImage(requests[6].RootElement, largeImage);
+            foreach (var request in requests)
+                Assert.DoesNotContain("pisharp.structuredContent", request.RootElement.GetRawText(), StringComparison.Ordinal);
         }
         finally { Directory.Delete(root, recursive: true); }
+    }
+
+    private static async Task WriteAnthropicEventsAsync(StreamWriter writer, int index)
+    {
+        await writer.WriteAsync($"event: message_start\ndata: {{\"type\":\"message_start\",\"message\":{{\"id\":\"msg_{index}\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{{\"input_tokens\":4,\"output_tokens\":0}}}}}}\n\n");
+        if (index is 0 or 5)
+        {
+            var callId = index == 0 ? "read_1" : "read_large";
+            var arguments = JsonSerializer.Serialize(new { path = index == 0 ? "artwork.bin" : "large.png", offset = 0, limit = 0 });
+            await writer.WriteAsync($"event: content_block_start\ndata: {JsonSerializer.Serialize(new { type = "content_block_start", index = 0, content_block = new { type = "tool_use", id = callId, name = "read", input = new { } } })}\n\n");
+            await writer.WriteAsync($"event: content_block_delta\ndata: {JsonSerializer.Serialize(new { type = "content_block_delta", index = 0, delta = new { type = "input_json_delta", partial_json = arguments } })}\n\n");
+        }
+        else
+        {
+            await writer.WriteAsync("event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n");
+            await writer.WriteAsync($"event: content_block_delta\ndata: {JsonSerializer.Serialize(new { type = "content_block_delta", index = 0, delta = new { type = "text_delta", text = "seen " + index } })}\n\n");
+        }
+        await writer.WriteAsync("event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n");
+        await writer.WriteAsync($"event: message_delta\ndata: {{\"type\":\"message_delta\",\"delta\":{{\"stop_reason\":\"{(index is 0 or 5 ? "tool_use" : "end_turn")}\",\"stop_sequence\":null}},\"usage\":{{\"output_tokens\":2}}}}\n\n");
+        await writer.WriteAsync("event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n");
     }
 
     private static async Task WriteResponsesEventsAsync(StreamWriter writer, int index)
@@ -249,12 +285,22 @@ public sealed class ReadImageToolTests
                 .Select(part => part.GetProperty("image_url").GetString())
                 .Single(value => value is not null);
         else
-            dataUrl = body.GetProperty("messages").EnumerateArray()
+        {
+            var parts = body.GetProperty("messages").EnumerateArray()
                 .Where(item => item.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
                 .SelectMany(item => item.GetProperty("content").EnumerateArray())
+                .ToArray();
+            if (parts.Any(part => part.TryGetProperty("type", out var type) && type.GetString() == "image"))
+            {
+                var source = parts.Single(part => part.TryGetProperty("type", out var type) && type.GetString() == "image").GetProperty("source");
+                Assert.Equal("base64", source.GetProperty("type").GetString());
+                return "data:" + source.GetProperty("media_type").GetString() + ";base64," + source.GetProperty("data").GetString();
+            }
+            dataUrl = parts
                 .Where(part => part.TryGetProperty("type", out var type) && type.GetString() == "image_url")
                 .Select(part => part.GetProperty("image_url").GetProperty("url").GetString())
                 .Single(value => value is not null);
+        }
         return Assert.IsType<string>(dataUrl);
     }
 

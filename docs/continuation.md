@@ -58,7 +58,12 @@ quantization, sampling and distortion while keeping all strict hashes/difference
 visible. The pre-encoding buffers are byte-exact; other PNGs stay exact. Image,
 budget and existing OpenAI wire checks pass 66/66; eighteen harness guards pass.
 Next verify fresh paired evidence, Anthropic images and canonical structured
-image persistence. F remains in progress.
+image persistence. Clean source `20d18a51` passes all 115 read contracts (105
+strict, ten reported JPEG equivalents); its control is 115/115 strict. Three
+provider regressions then expose missing canonical structured-image data; after
+the metadata/projection correction, 22 related checks pass, including all three
+seven-request image workflows. Four new context inputs cover non-vision notes
+and model profile precedence; verify those next. F remains in progress.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required

@@ -126,6 +126,15 @@ def cases():
     for case in result:
         if case['caseId'] in codec_comparisons:
             case['jpegComparison'] = codec_comparisons[case['caseId']]
+    for label, asset, model in [
+        ('text-only-model', 'png-rgb', {'input': ['text']}),
+        ('text-only-invalid-image', 'png-rgb-truncated', {'input': ['text']}),
+        ('vision-model', 'png-rgb', {'input': ['text', 'image']}),
+        ('model-profile', 'png-rgb', {'input': ['text', 'image'], 'inputLimits': {'images': {
+            'resize': {'maxWidth': 4, 'maxHeight': 3}}}})]:
+        add('read', 'image-' + label, {'path': 'image.dat'}, {'image.dat': {'base64': images[asset]['base64']}},
+            context={'model': model}, imagePolicy='decoded-rgba' if label == 'model-profile' else 'exact-bytes',
+            options={'resizeOptions': {'maxWidth': 8, 'maxHeight': 6}} if label == 'model-profile' else {})
 
     for name, content in [('new', 'new file\n'), ('empty', ''), ('unicode', '日本語 😀 café\n'), ('bom', '\ufefffile\n')]:
         add('write', name, {'path': 'file.txt', 'content': content})

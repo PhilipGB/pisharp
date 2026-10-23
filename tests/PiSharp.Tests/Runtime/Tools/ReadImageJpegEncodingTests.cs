@@ -18,6 +18,7 @@ public sealed class ReadImageJpegEncodingTests
         for (var index = 0; index < pixels.Length; index++) pixels[index] = (byte)((index * 37 + index / 7 * 13) % 256);
         using var pixmap = bitmap.PeekPixels();
         using var encoded = pixmap.Encode(new SKJpegEncoderOptions(quality, SKJpegEncoderDownsample.Downsample444, SKJpegEncoderAlphaOption.Ignore));
+        Assert.NotNull(encoded);
         var original = encoded.ToArray();
 
         var standardized = ReadImageJpegEncoding.Standardize(original, CancellationToken.None);
@@ -37,6 +38,7 @@ public sealed class ReadImageJpegEncodingTests
         using var bitmap = new SKBitmap(new SKImageInfo(1, 1));
         using var pixels = bitmap.PeekPixels();
         using var encoded = pixels.Encode(new SKJpegEncoderOptions(80, SKJpegEncoderDownsample.Downsample444, SKJpegEncoderAlphaOption.Ignore));
+        Assert.NotNull(encoded);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 

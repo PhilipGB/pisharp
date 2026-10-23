@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.AI;
 using PiSharp.Core;
 using PiSharp.Runtime.Extensions;
 
@@ -6,6 +7,21 @@ namespace PiSharp.Runtime.Tools;
 
 internal static class ToolResultOutput
 {
+    internal const string StructuredContentProperty = "pisharp.structuredContent";
+
+    public static bool TryReadContract(FunctionResultContent content, out PiSharpToolResult result)
+    {
+        if (TryReadContract(content.Result, out result)) return true;
+        if (content.AdditionalProperties?.TryGetValue(StructuredContentProperty, out var value) != true || value is null)
+            return false;
+        var structured = value is JsonElement element ? element.Clone() : JsonSerializer.SerializeToElement(value);
+        var text = content.Result is JsonElement { ValueKind: JsonValueKind.String } json ? json.GetString()! :
+            content.Result as string ?? content.Result?.ToString() ?? "";
+        // Native history retains image attachments in their existing message; this carries machine-readable data.
+        result = new(text, StructuredContent: structured);
+        return true;
+    }
+
     public static bool TryReadContract(object? value, out PiSharpToolResult result)
     {
         if (value is PiSharpToolResult typed)

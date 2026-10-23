@@ -309,9 +309,9 @@
       }
     },
     "current_case_inventory": {
-      "total": 281,
+      "total": 285,
       "per_tool": {
-        "read": 115,
+        "read": 119,
         "write": 21,
         "edit": 33,
         "bash": 28,
@@ -353,7 +353,7 @@
         "passed": 17,
         "total": 17
       },
-      "remaining": "Fresh committed-source paired evidence; Anthropic image loopback, canonical structured image persistence, text-only canonical notes and remaining image safety/format hardening.",
+      "remaining": "Model-context notes and profile precedence, native read cancellation during image work, remaining image/safety/format hardening and complete tool workflow integration.",
       "jpeg_codec_envelope": "docs/parity/fixtures/builtin-coding-tool-jpeg-codec-2026-10-22.json",
       "jpeg_budget_correction": "Lossless standard Huffman coding corrects native quality 80 versus pinned quality 40 under the progressive payload cap. Full quantization and sampling are checked.",
       "contract_selection": {
@@ -365,6 +365,32 @@
       "harness_guard_tests": {
         "passed": 18,
         "total": 18
+      },
+      "clean_paired_contract": {
+        "source": "20d18a514c19be5cc2fa2c03a684e92ae007f3ba",
+        "passed": 115,
+        "total": 115,
+        "strict_passed": 105,
+        "jpeg_codec_equivalent": 10,
+        "same_pi_control_strict_passed": 115
+      },
+      "structured_image_persistence": {
+        "before": {
+          "failed": 3,
+          "passed": 0
+        },
+        "after_related": {
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0
+        },
+        "physical_apis": [
+          "openai-responses",
+          "openai-completions",
+          "anthropic-messages"
+        ],
+        "requests_per_api": 7,
+        "scope": "Native save/reload, exact image payload/MIME, text-only/block replay, profile limits, structured metadata retained and excluded from provider wire."
       }
     }
   },

@@ -32,6 +32,20 @@ internal static class ToolResultMessageProjection
                 var replaced = false;
                 foreach (var content in message.Contents)
                 {
+                    if (flattenStructuredResults && content is FunctionResultContent stored &&
+                        stored.AdditionalProperties?.ContainsKey(ToolResultOutput.StructuredContentProperty) == true &&
+                        stored.Result is string or System.Text.Json.JsonElement { ValueKind: System.Text.Json.JsonValueKind.String })
+                    {
+                        var requestResult = new FunctionResultContent(stored.CallId, stored.Result)
+                        {
+                            Exception = stored.Exception,
+                            AdditionalProperties = stored.AdditionalProperties.Clone()
+                        };
+                        requestResult.AdditionalProperties.Remove(ToolResultOutput.StructuredContentProperty);
+                        contents.Add(requestResult);
+                        replaced = true;
+                        continue;
+                    }
                     if (content is FunctionResultContent result && ReadToolOutput.TryRead(result.Result, out var output))
                     {
                         if (!flattenStructuredResults && output.ImageMimeType is null && output.ImageDataBase64 is null)
@@ -50,11 +64,17 @@ internal static class ToolResultMessageProjection
                             else
                                 resultText += "\n[Image content is unavailable.]";
                         }
-                        contents.Add(new FunctionResultContent(result.CallId, resultText)
+                        var readResult = new FunctionResultContent(result.CallId, resultText)
                         {
                             Exception = result.Exception,
                             AdditionalProperties = result.AdditionalProperties?.Clone()
-                        });
+                        };
+                        if (!flattenStructuredResults)
+                        {
+                            readResult.AdditionalProperties ??= new();
+                            readResult.AdditionalProperties[ToolResultOutput.StructuredContentProperty] = output.ToToolResult().StructuredContent!.Value;
+                        }
+                        contents.Add(readResult);
                         continue;
                     }
 
