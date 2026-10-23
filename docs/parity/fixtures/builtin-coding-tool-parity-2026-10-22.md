@@ -707,3 +707,35 @@ remains `in_progress`.
 
 No engineering is claimed between 2026-10-23 09:10:33 UTC and resumption at
 2026-10-23 12:22:16 UTC; exclude that inactive interval from active duration.
+
+## Bash investigation — updates, decoding, spawn failures and descendants
+
+The expanded independent input corpus contains 357 cases, including 44 Bash
+cases. Clean baseline `6c346e4652dddaaffdd01477b8579063d22360e7` passes 2/44
+when the initial and final live-update contracts are compared. Initial empty
+updates, cumulative raw snapshots and truncation details account for most
+failures. Separate confirmed defects include inherited stdin, retained BOMs,
+NUL commands being partially executed, and `setsid` masking executable errors.
+
+The [18 pinned update observations](builtin-coding-tool-bash-updates-2026-10-22.json)
+fail before correction and pass afterwards. The
+[eight pinned spawn failures](builtin-coding-tool-bash-spawn-2026-10-22.json)
+verify actual registered-function rejection and the initial empty update.
+Native JSON, RPC, MAF lifecycle and transcript rendering retain cumulative
+snapshots while direct Bash callbacks retain their presentation deltas.
+The related selection passes 139 checks before virtual-clock expansion, then
+157/157 after deterministic coalescing, spill and decoder lifecycle checks.
+
+Two controlled Linux fixtures create a child and a grandchild that starts a
+separate session. Caller cancellation and AbortBash both return while the
+grandchild is still alive before the correction. Walking descendants before
+killing the process group fixes both regressions and preserves session recovery.
+The [actual pinned process observation](builtin-coding-tool-bash-processes-2026-10-22.json)
+shows that Pi also leaves this detached grandchild sleeping at settlement. The
+native cleanup is an intentional stronger safety behavior. The oracle and native
+regression both explicitly clean up all recorded fixture PIDs after observation.
+No PID values are used as expected output.
+
+Checkpoint I remains in progress. Fresh clean-head paired/control evidence,
+session environment, timeout/signal/shutdown behavior, physical provider loops
+and repeated reliability acceptance are still required.

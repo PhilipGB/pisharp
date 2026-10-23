@@ -77,13 +77,14 @@ foreach (var request in requests)
     {
         Context = new Dictionary<object, object?>
         {
-            [CodingTools.BashOutputContextKey] = (Action<string>)(text =>
+            [CodingTools.BashSnapshotContextKey] = (Action<BashToolUpdate>)(update =>
             {
+                object[] content = update.Text is null ? [] : [new { type = "text", text = update.Text }];
                 lock (updates)
-                    updates.Add(new { content = new[] { new { type = "text", text } }, details = (object?)null });
-                if (request.AcknowledgeEmptyUpdate && text.Length == 0)
+                    updates.Add(new { content, details = update.Details });
+                if (request.AcknowledgeEmptyUpdate && update.Text == "")
                     File.WriteAllText(Path.Combine(request.Workspace, "ack"), "go\n");
-                if (request.CancelOnOutput is not null && text.Contains(request.CancelOnOutput, StringComparison.Ordinal))
+                if (request.CancelOnOutput is not null && update.Text?.Contains(request.CancelOnOutput, StringComparison.Ordinal) == true)
                     cancellation.Cancel();
             })
         }

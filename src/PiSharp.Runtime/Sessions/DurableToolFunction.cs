@@ -87,6 +87,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         IDictionary<object, object?>? argumentContext = null;
         object? previousUpdate = null;
         var hadUpdate = false;
+        object? previousSnapshot = null;
+        var hadSnapshot = false;
         object? previousPiSharpContext = null;
         var hadPiSharpContext = false;
         if (Name == "bash" || loadout is not null)
@@ -105,6 +107,20 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                             ToolCallId = toolCallId,
                             ParentToolCallId = parentToolCallId
                         });
+                });
+                hadSnapshot = argumentContext.TryGetValue(CodingTools.BashSnapshotContextKey, out previousSnapshot);
+                argumentContext[CodingTools.BashSnapshotContextKey] = (Action<BashToolUpdate>)(update =>
+                {
+                    if (toolExecutionContext is not null) toolExecutionContext.ReportBashProgress(update);
+                    else publish(new AgentLifecycleEvent("tool_execution_update", Text: update.Text, Tool: Name,
+                        OperationId: id, Details: update.Details)
+                    {
+                        ToolArguments = displayArguments,
+                        ToolCallId = toolCallId,
+                        ParentToolCallId = parentToolCallId,
+                        OutputIsSnapshot = true,
+                        OutputDelta = update.Delta
+                    });
                 });
             }
             if (loadout is not null)
@@ -136,6 +152,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                 {
                     if (hadUpdate) argumentContext[CodingTools.BashOutputContextKey] = previousUpdate!;
                     else argumentContext.Remove(CodingTools.BashOutputContextKey);
+                    if (hadSnapshot) argumentContext[CodingTools.BashSnapshotContextKey] = previousSnapshot!;
+                    else argumentContext.Remove(CodingTools.BashSnapshotContextKey);
                 }
                 if (loadout is not null)
                 {

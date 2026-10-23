@@ -64,7 +64,7 @@ internal static class CodingToolPaths
         return "/" + string.Join('/', parts);
     }
 
-    private static string Inspect(string value)
+    internal static string Inspect(string value)
     {
         var quote = !value.Contains('\'') ? '\'' : !value.Contains('"') ? '"' :
             !value.Contains('`') && !value.Contains("${", StringComparison.Ordinal) ? '`' : '\'';

@@ -27,6 +27,7 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
     private long _newlines;
     private bool _endsWithNewline;
     private bool _decoderFlushed;
+    private bool _decoderStarted;
 
     /// <param name="normalizeOutput">Strip terminal escapes, binary controls and carriage returns for direct Bash execution.</param>
     public ShellOutputBuffer(bool normalizeOutput = false)
@@ -44,7 +45,8 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             if (_decoderFlushed) throw new InvalidOperationException("Cannot append after the output decoder has been flushed.");
             var chars = new char[Encoding.UTF8.GetMaxCharCount(data.Length)];
             var count = _decoder.GetChars(data.Span, chars, flush: false);
-            var decoded = _normalizer is null ? new string(chars, 0, count) : _normalizer.Append(chars.AsSpan(0, count));
+            var decoded = DecodeStart(new string(chars, 0, count));
+            if (_normalizer is not null) decoded = _normalizer.Append(decoded.AsSpan());
             ReadOnlyMemory<byte> stored = _normalizer is null ? data : Encoding.UTF8.GetBytes(decoded);
 
             if (_full is null && _rawBytes + data.Length > MaxBytes)
@@ -75,8 +77,8 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             _decoderFlushed = true;
             var chars = new char[4];
             var count = _decoder.GetChars(ReadOnlySpan<byte>.Empty, chars, flush: true);
-            var decoded = _normalizer is null ? new string(chars, 0, count) :
-                _normalizer.Append(chars.AsSpan(0, count)) + _normalizer.Finish();
+            var decoded = DecodeStart(new string(chars, 0, count));
+            if (_normalizer is not null) decoded = _normalizer.Append(decoded.AsSpan()) + _normalizer.Finish();
             if (_normalizer is not null && decoded.Length != 0)
             {
                 var stored = Encoding.UTF8.GetBytes(decoded);
@@ -93,6 +95,11 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
     public async Task<ShellOutputResult> FinishWithMetadataAsync()
     {
         await FlushDecoderAsync();
+        return await SnapshotAsync();
+    }
+
+    internal async Task<ShellOutputResult> SnapshotAsync()
+    {
         await _gate.WaitAsync();
         try
         {
@@ -114,9 +121,10 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
                 if (_full is null)
                 {
                     _fullPath = Path.Combine(Path.GetTempPath(), "pi-bash-" + Guid.NewGuid().ToString("N") + ".log");
-                    await using var spill = NewPrivateFile(_fullPath);
+                    _full = NewPrivateFile(_fullPath);
                     _prefix.Position = 0;
-                    await _prefix.CopyToAsync(spill);
+                    await _prefix.CopyToAsync(_full);
+                    await _full.FlushAsync();
                 }
                 var startLine = totalLines - truncation.OutputLines + 1;
                 if (truncation.LastLinePartial)
@@ -142,14 +150,14 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
         try
         {
             if (_full is not null) await _full.FlushAsync();
-            if (_fullPath is null) return (Encoding.UTF8.GetString(_prefix.ToArray()), false);
+            if (_fullPath is null) return (WithoutBom(Encoding.UTF8.GetString(_prefix.ToArray())), false);
             await using var file = new FileStream(_fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
                 8192, FileOptions.Asynchronous);
             if (file.Length <= maxBytes)
             {
                 var bytes = new byte[(int)file.Length];
                 await file.ReadExactlyAsync(bytes);
-                return (Encoding.UTF8.GetString(bytes), false);
+                return (WithoutBom(Encoding.UTF8.GetString(bytes)), false);
             }
             var head = new byte[maxBytes / 2];
             var tail = new byte[maxBytes - head.Length];
@@ -160,13 +168,22 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             var count = Encoding.UTF8.GetDecoder().GetChars(head, chars, flush: false);
             var tailStart = 0;
             while (tailStart < tail.Length && (tail[tailStart] & 0xc0) == 0x80) tailStart++;
-            return (new string(chars, 0, count) + $"\n\n[... {file.Length - maxBytes} bytes omitted ...]\n\n" +
-                Encoding.UTF8.GetString(tail.AsSpan(tailStart)), true);
+            return (WithoutBom(new string(chars, 0, count)) + $"\n\n[... {file.Length - maxBytes} bytes omitted ...]\n\n" +
+                WithoutBom(Encoding.UTF8.GetString(tail.AsSpan(tailStart))), true);
         }
         finally { _gate.Release(); }
     }
 
     private long TotalLines => _decodedBytes == 0 ? 0 : _newlines + (_endsWithNewline ? 0 : 1);
+
+    private string DecodeStart(string decoded)
+    {
+        if (_decoderStarted || decoded.Length == 0) return decoded;
+        _decoderStarted = true;
+        return WithoutBom(decoded);
+    }
+
+    private static string WithoutBom(string text) => text.StartsWith('\uFEFF') ? text[1..] : text;
     private long LastLineBytes
         => _currentLineBytes;
 

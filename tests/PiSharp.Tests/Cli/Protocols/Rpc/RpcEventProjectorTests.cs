@@ -7,6 +7,22 @@ namespace PiSharp.Tests;
 public sealed class RpcEventProjectorTests
 {
     [Fact]
+    public void BashInitialSnapshotHasEmptyContentAndOmitsAbsentDetails()
+    {
+        var projector = new RpcEventProjector();
+        var conversation = new ConversationSession(Path.GetTempPath(), "fixture", null);
+        var projected = Assert.Single(projector.Project(new AgentLifecycleEvent("tool_execution_update", Tool: "bash")
+        {
+            ToolCallId = "bash-call",
+            OutputIsSnapshot = true
+        }, conversation, null, null, runAccepted: true, api: null));
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(projected));
+        var partial = json.RootElement.GetProperty("partialResult");
+        Assert.Empty(partial.GetProperty("content").EnumerateArray());
+        Assert.False(partial.TryGetProperty("details", out _));
+    }
+
+    [Fact]
     public void ProjectsRetryEventsWithPiFieldsAndOmitsAbsentFinalError()
     {
         var projector = new RpcEventProjector();

@@ -102,18 +102,16 @@ internal static class ProcessLifetime
 
     internal static void KillProcessTree(Process process, bool processGroup)
     {
+        // Walk descendants before killing their parent, while detached children are still discoverable.
         try
         {
-            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD())
-            {
-                if (processGroup && kill(-process.Id, 9) == 0) return;
-            }
             if (!process.HasExited) process.Kill(entireProcessTree: true);
         }
-        catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception)
+        catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception) { }
+        if (processGroup && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()))
         {
-            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
-            catch (Exception fallback) when (fallback is InvalidOperationException or System.ComponentModel.Win32Exception) { }
+            try { kill(-process.Id, 9); }
+            catch (InvalidOperationException) { }
         }
     }
 

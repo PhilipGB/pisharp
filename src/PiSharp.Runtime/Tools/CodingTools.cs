@@ -11,6 +11,7 @@ namespace PiSharp.Runtime;
 public sealed class CodingTools
 {
     internal const string BashOutputContextKey = "PiSharp.Runtime.BashOutputUpdate";
+    internal const string BashSnapshotContextKey = "PiSharp.Runtime.BashOutputSnapshot";
     private readonly string _cwd;
     private readonly FileReader _reader;
     private readonly FileMutations _mutations;
@@ -110,8 +111,16 @@ public sealed class CodingTools
         Action<string>? onUpdate = null;
         if (arguments?.Context?.TryGetValue(BashOutputContextKey, out var value) == true)
             onUpdate = value as Action<string>;
+        Action<BashToolUpdate>? onSnapshot = null;
+        if (arguments?.Context?.TryGetValue(BashSnapshotContextKey, out var snapshot) == true)
+            onSnapshot = snapshot as Action<BashToolUpdate>;
+        if (onSnapshot is not null)
+        {
+            onUpdate = null;
+            onSnapshot(new(null, null));
+        }
         var result = await _shell.ExecuteAsync(command, timeout, onUpdate, cancellationToken, returnCancellationResult: false,
-            CurrentBashSessionEnvironment(), captureStructuredOutput: true);
+            CurrentBashSessionEnvironment(), captureStructuredOutput: true, onToolUpdate: onSnapshot);
         return BashToolOutput.Project(result);
     }
 

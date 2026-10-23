@@ -178,6 +178,20 @@ public sealed class PiSharpToolExecutionContext
         _nestedUpdate?.Invoke(text);
     }
 
+    internal void ReportBashProgress(BashToolUpdate update)
+    {
+        _scope.Publish(new AgentLifecycleEvent("tool_execution_update", Text: update.Text, Tool: _toolName,
+            OperationId: _operationId, Details: update.Details)
+        {
+            ToolArguments = _arguments,
+            ToolCallId = ToolCallId,
+            ParentToolCallId = ParentToolCallId,
+            OutputIsSnapshot = true,
+            OutputDelta = update.Delta
+        });
+        if (update.Delta.Length > 0) _nestedUpdate?.Invoke(update.Delta);
+    }
+
     /// <summary>
     /// Invoke a registered callable tool through the normal PiSharp tool wrapper. Validation,
     /// cancellation, durable checkpoints, lifecycle events and loadout guards still apply.

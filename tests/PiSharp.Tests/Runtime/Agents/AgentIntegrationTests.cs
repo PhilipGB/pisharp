@@ -269,6 +269,10 @@ public sealed class AgentIntegrationTests
             Assert.True(startIndex >= 0 && liveIndex > startIndex && finishIndex > liveIndex);
             Assert.Contains("before-release", events[finishIndex].Text);
             Assert.Contains("after-release", events[finishIndex].Text);
+            var snapshots = events.Where(item => item.Type == "tool_execution_update" && item.Tool == "bash").ToArray();
+            Assert.Null(snapshots[0].Text);
+            Assert.All(snapshots, item => Assert.True(item.OutputIsSnapshot));
+            Assert.Equal("before-release\nafter-release\n", snapshots[^1].Text);
         }
         finally
         {

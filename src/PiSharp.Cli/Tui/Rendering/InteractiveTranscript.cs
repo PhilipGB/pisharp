@@ -285,16 +285,22 @@ public sealed class InteractiveTranscript(TextWriter output, TextWriter status, 
 
     private void WriteBashUpdate(AgentLifecycleEvent update)
     {
-        var text = update.Text!;
+        var text = update.OutputIsSnapshot ? update.OutputDelta ?? "" : update.Text!;
         if (update.OperationId is { } id)
         {
-            if (!_liveBash.TryGetValue(id, out var normalizer))
-                _liveBash.Add(id, normalizer = new ShellOutputNormalizer());
-            text = normalizer.Append(text.AsSpan());
+            if (update.OutputIsSnapshot && screen is not null)
+                text = ShellOutputNormalizer.NormalizeComplete(update.Text!);
+            else
+            {
+                if (!_liveBash.TryGetValue(id, out var normalizer))
+                    _liveBash.Add(id, normalizer = new ShellOutputNormalizer());
+                text = normalizer.Append(text.AsSpan());
+            }
             if (screen is not null)
             {
                 if (!_liveBashOutput.TryGetValue(id, out var accumulated))
                     _liveBashOutput.Add(id, accumulated = new StringBuilder());
+                if (update.OutputIsSnapshot) accumulated.Clear();
                 AppendBounded(accumulated, text);
                 var partial = update with { Text = accumulated.ToString() };
                 screen.SetToolTimerRenderer(id, timerText => RenderBashPartial(partial, timerText));

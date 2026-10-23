@@ -317,11 +317,11 @@
       "read": 121,
       "write": 39,
       "edit": 69,
-      "bash": 28,
+      "bash": 44,
       "grep": 32,
       "find": 27,
       "ls": 25,
-      "total": 341
+      "total": 357
     },
     "read_image_contract": {
       "status": "in_progress",
@@ -524,6 +524,31 @@
         "control_strict_passed": 69,
         "receipt": "docs/parity/fixtures/builtin-coding-tool-edit-acceptance-2026-10-22.json"
       }
+    },
+    "bash_contract": {
+      "status": "in_progress",
+      "baseline_source": "6c346e4652dddaaffdd01477b8579063d22360e7",
+      "baseline_strict_passed": 2,
+      "baseline_total": 44,
+      "initial_final_updates_fail_first": 18,
+      "initial_final_updates_after": 18,
+      "spawn_cases_verified": 8,
+      "related_passed_before_coalescing_expansion": 139,
+      "detached_descendant_regression": {
+        "before_failed": 2,
+        "after_passed": 2,
+        "caller_cancellation": true,
+        "abort_bash": true,
+        "pinned_grandchild_at_settlement": "S",
+        "native_requirement": "terminate detached descendants before returning; stronger than pinned process-group-only cleanup",
+        "source_receipt": "docs/parity/fixtures/builtin-coding-tool-bash-processes-2026-10-22.json"
+      },
+      "remaining": [
+        "fresh clean-head paired/control run",
+        "session environment and direct Bash/extension acceptance",
+        "timeout/signal/shutdown process lifetime",
+        "shared M-P integration and reliability"
+      ]
     }
   },
   "plan_received": true,

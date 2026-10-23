@@ -114,13 +114,23 @@ public sealed class JsonEventModeTests
                 .Select(line => JsonDocument.Parse(line)).ToArray();
             try
             {
-                var live = Assert.Single(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_update");
-                Assert.Equal("bash", live.RootElement.GetProperty("data").GetProperty("Tool").GetString());
+                var updates = records.Where(record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_update").ToArray();
+                Assert.Equal(2, updates.Length);
+                Assert.Equal(JsonValueKind.Null, updates[0].RootElement.GetProperty("data").GetProperty("Text").ValueKind);
+                var live = updates[1];
+                foreach (var update in updates)
+                {
+                    var data = update.RootElement.GetProperty("data");
+                    Assert.Equal("bash", data.GetProperty("Tool").GetString());
+                    Assert.Equal(live.RootElement.GetProperty("data").GetProperty("OperationId").GetString(), data.GetProperty("OperationId").GetString());
+                    Assert.False(data.TryGetProperty("OutputIsSnapshot", out _));
+                    Assert.False(data.TryGetProperty("OutputDelta", out _));
+                }
                 Assert.Contains("json-live-output", live.RootElement.GetProperty("data").GetProperty("Text").GetString());
                 var startIndex = Array.FindIndex(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_started");
                 var updateIndex = Array.IndexOf(records, live);
                 var finishIndex = Array.FindIndex(records, record => record.RootElement.GetProperty("data").GetProperty("Type").GetString() == "tool_execution_finished");
-                Assert.True(startIndex < updateIndex && updateIndex < finishIndex);
+                Assert.True(startIndex < Array.IndexOf(records, updates[0]) && Array.IndexOf(records, updates[0]) < updateIndex && updateIndex < finishIndex);
             }
             finally { foreach (var record in records) record.Dispose(); }
         }

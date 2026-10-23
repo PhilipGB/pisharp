@@ -3,6 +3,11 @@
 PR #21's actual merge `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a` is verified
 on `origin/main` and is the base of `milestone/builtin-coding-tool-parity`.
 Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+Bash now has 44 independent cases, with 2/44 strict matches before the update,
+decoding, stdin and spawn corrections. The related selection passes 157 tests,
+including deterministic 100 ms coalescing and detached-grandchild cleanup.
+Fresh clean-head paired evidence and the remaining Bash acceptance are pending.
+
 The [initial acceptance inventory](fixtures/builtin-coding-tool-inventory-2026-10-22.json)
 records all seven exact source-extracted declarations and implementation gaps
 before product changes. The [milestone receipt](fixtures/builtin-coding-tool-parity-2026-10-22.md)

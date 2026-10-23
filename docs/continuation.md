@@ -15,6 +15,18 @@ I (bash) is in progress; J–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
+Bash investigation now has 44 direct pinned cases; clean pre-fix `6c346e46`
+passes 2/44 when initial/final update contracts are included. The correction
+adds cumulative raw snapshots, initial empty content, 100 ms coalescing, live
+truncation metadata, BOM-aware decoding and ignored stdin. Spawn failures and
+NUL arguments reject before shell execution. The expanded related selection
+passes 139 checks before the new virtual-clock checks. Two physical detached-
+grandchild checks fail before process cleanup is corrected, then pass; actual
+pinned Pi leaves its detached grandchild sleeping at tool settlement. Keep the
+stronger cleanup guarantee and document it separately from strict parity.
+Fresh clean-head differential, session environment, timeout/shutdown and shared
+integration/reliability acceptance remain open. I remains in progress.
+
 The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md) and
 [inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) were
 created before product changes. They explicitly list unverified contracts and
