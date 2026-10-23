@@ -74,11 +74,11 @@ public sealed class BuiltinSearchParityTests
             foreach (var property in new[] { "directories", "modes" })
                 if (setup.TryGetProperty(property, out var modes))
                     foreach (var entry in modes.EnumerateObject())
-                {
-                    var path = Path.Combine(root, entry.Name);
-                    File.SetUnixFileMode(path, (UnixFileMode)entry.Value.GetInt32());
-                    protectedPaths.Add(path);
-                }
+                    {
+                        var path = Path.Combine(root, entry.Name);
+                        File.SetUnixFileMode(path, (UnixFileMode)entry.Value.GetInt32());
+                        protectedPaths.Add(path);
+                    }
             var function = new CodingTools(root).CreateAll().OfType<AIFunction>().Single(tool => tool.Name == setup.GetProperty("tool").GetString());
             var arguments = new AIFunctionArguments(setup.GetProperty("arguments").EnumerateObject().ToDictionary(
                 item => item.Name, item => item.Value.ValueKind == JsonValueKind.String

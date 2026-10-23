@@ -946,3 +946,25 @@ strict same-Pi control passes 51/51. Twenty-two mismatches cover Unicode/stable
 case ordering, numeric limits, broken links/stat failures, normalized paths,
 Linux permission messages and pre-cancellation. These actual source observations
 are committed before the implementation correction. The corpus now has 454 cases.
+
+Two additional physical Unicode cases distinguish contextual Greek lowercasing
+and stable ordering of canonically ignorable supplementary scalars. The old
+implementation passes 1/2 and the strict source control passes 2/2. With these
+cases, ls has 53 meaningful cases and the complete corpus has 456.
+
+The correction retains the public constructor and int-limit facade while the
+registered function accepts the source numeric contract. A focused ordering
+component applies JavaScript lowercase semantics before locale comparison, with
+libuv scalar/UTF-8 order breaking ties. Broken/unsearchable entries are skipped
+before consuming the entry limit. Normalized paths, Linux permission errors,
+head truncation and structured details match the pinned observations. Output
+stays bounded while all selected entries contribute to truncation metadata.
+
+The [ls cancellation fixture](builtin-coding-tool-ls-cancellation-2026-10-22.json)
+holds an actual directory snapshot before fulfillment through the upstream
+operations hook. Abort settles before release; an independent listing and later
+continuation succeed, with both files unchanged. Native verifies the same
+barrier and outcomes. The source-backed search/list, ls cancellation and related
+registered-tool selection passes 211/211 with warnings as errors. The previous
+51-case regression selection had 22 failures and 157 passes across all tools.
+Fresh committed-head ls acceptance is still required.

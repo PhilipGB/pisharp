@@ -325,8 +325,8 @@
       "bash": 44,
       "grep": 68,
       "find": 62,
-      "ls": 51,
-      "total": 454
+      "ls": 53,
+      "total": 456
     },
     "read_image_contract": {
       "status": "in_progress",
@@ -737,8 +737,22 @@
         "failed": 22,
         "passed": 157,
         "total": 179,
-        "scope": "Shared grep/find/ls actual-function fixture"
-      }
+        "scope": "51 ls plus existing 128 grep/find source-backed cases"
+      },
+      "additional_unicode_before": {
+        "passed": 1,
+        "total": 2,
+        "control_strict_passed": 2,
+        "source": "ac40d784",
+        "source_worktree_dirty": true
+      },
+      "first_correction_related_passed": 211,
+      "read_cancellation": {
+        "passed": true,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-ls-cancellation-2026-10-22.json",
+        "barrier": "Real names snapshot held before fulfillment; abort settles before release, independent listing and continuation succeed."
+      },
+      "legacy_selection_passed": 40
     }
   },
   "plan_received": true,

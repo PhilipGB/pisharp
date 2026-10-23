@@ -526,6 +526,8 @@ def cases():
         ('small-negative-limit', {'limit': -0.1}, {'one': ''}),
         ('unicode-canonical-order', {}, {'é': '', 'e\u0301': '', 'E': '', 'e': ''}),
         ('unicode-case-fold-order', {}, {'I': '', 'i': '', 'İ': '', 'ı': '', 'ß': '', 'ss': '', 'Σ': '', 'σ': '', 'ς': ''}),
+        ('unicode-contextual-lowercase', {}, {'ΟΣ': '', 'οσ': '', 'ος': '', 'ΟΣ\u0301': '', 'οσ\u0301': '', 'ος\u0301': '', 'ΟΣΑ': '', 'οσα': '', 'ΟΣ1': '', 'οσ1': '', 'ος1': '', 'ªΣ': '', 'ªς': ''}),
+        ('unicode-ignorable-tie-order', {}, {'a\ufe0f': '', 'a\U000e0100': '', 'a': ''}),
         ('numeric-filenames', {}, {'a1': '', 'a10': '', 'a2': '', '01': '', '1': ''}),
         ('control-filenames', {}, {'line\nname': '', 'tab\tname': '', 'carriage\rname': ''}),
         ('backslash-filename', {}, {'back\\slash': '', 'file name': ''}),

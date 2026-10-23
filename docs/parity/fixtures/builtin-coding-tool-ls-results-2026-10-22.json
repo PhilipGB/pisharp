@@ -1904,6 +1904,92 @@
           "final": null
         }
       }
+    },
+    {
+      "caseId": "ls-unicode-contextual-lowercase",
+      "setup": {
+        "caseId": "ls-unicode-contextual-lowercase",
+        "tool": "ls",
+        "arguments": {},
+        "files": {
+          "\u039f\u03a3": "",
+          "\u03bf\u03c3": "",
+          "\u03bf\u03c2": "",
+          "\u039f\u03a3\u0301": "",
+          "\u03bf\u03c3\u0301": "",
+          "\u03bf\u03c2\u0301": "",
+          "\u039f\u03a3\u0391": "",
+          "\u03bf\u03c3\u03b1": "",
+          "\u039f\u03a31": "",
+          "\u03bf\u03c31": "",
+          "\u03bf\u03c21": "",
+          "\u00aa\u03a3": "",
+          "\u00aa\u03c2": ""
+        }
+      },
+      "expectedResult": {
+        "caseId": "ls-unicode-contextual-lowercase",
+        "content": [
+          {
+            "type": "text",
+            "text": "\u00aa\u03a3\n\u00aa\u03c2\n\u03bf\u03c3\n\u039f\u03a3\n\u03bf\u03c2\n\u03bf\u03c3\u0301\n\u039f\u03a3\u0301\n\u03bf\u03c2\u0301\n\u03bf\u03c31\n\u039f\u03a31\n\u03bf\u03c21\n\u039f\u03a3\u0391\n\u03bf\u03c3\u03b1"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      }
+    },
+    {
+      "caseId": "ls-unicode-ignorable-tie-order",
+      "setup": {
+        "caseId": "ls-unicode-ignorable-tie-order",
+        "tool": "ls",
+        "arguments": {},
+        "files": {
+          "a\ufe0f": "",
+          "a\udb40\udd00": "",
+          "a": ""
+        }
+      },
+      "expectedResult": {
+        "caseId": "ls-unicode-ignorable-tie-order",
+        "content": [
+          {
+            "type": "text",
+            "text": "a\na\ufe0f\na\udb40\udd00"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      }
     }
-  ]
+  ],
+  "additionalCapture": {
+    "source": "ac40d78492ee6ecb80a9ed6c860b2ffa472a6c60",
+    "sourceWorktreeDirty": true,
+    "capture": "ls-unicode-before/report.json",
+    "baseline": {
+      "passed": 1,
+      "total": 2,
+      "strictPassed": 1,
+      "jpegCodecEquivalent": 0,
+      "intentionalSafetyDeviations": 0,
+      "unresolved": 1,
+      "perTool": {
+        "ls": 2
+      }
+    }
+  }
 }
