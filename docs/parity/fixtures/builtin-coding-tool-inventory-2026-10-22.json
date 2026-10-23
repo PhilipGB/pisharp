@@ -19,6 +19,15 @@
       "jpeg_equivalent": 10,
       "intentional_safety_exclusions": 2,
       "control_strict_passed": 121
+    },
+    "write": {
+      "source": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-write-acceptance-2026-10-22.json",
+      "status": "supported checkpoint verified with explicit safety exclusions; shared M–P acceptance pending",
+      "strict": 20,
+      "total": 39,
+      "intentional_safety_exclusions": 19,
+      "control_strict_passed": 39
     }
   },
   "tools": {

@@ -606,8 +606,11 @@ cleanup, leaves the original target intact and permits a following write safely.
 The internal optional queue/commit barrier parameters preserve the default
 shared coordinator and public facade. A format analyzer removed an unused xUnit
 data parameter; fixture-ID validation now uses it, and the corrected selection
-passes again. Fresh full write comparison/control and broader M–P acceptance
-remain next. Corpus inventory is 305 (write 39, read 121).
+passes again. The [fresh write receipt](builtin-coding-tool-write-acceptance-2026-10-22.json)
+at clean `a420ce25` confirms 20/39 strict passes and nineteen explicitly excluded
+safety differences, with zero unresolved differences. Its same-Pi control is
+39/39 strict. The supported write checkpoint is complete; broader M–P acceptance
+remains mandatory. Corpus inventory is 305 (write 39, read 121).
 
 ## Shared integration and safety gates
 
@@ -635,7 +638,8 @@ from active engineering duration.
 
 Stable checkpoints are A–T from the mission. A (verified merge) and B (fresh
 branch), C (initial inventory), D (harness) and E (shared contracts) are complete.
-F (supported read) is complete; G (write) is in progress; H–T are pending. Completing
+F (supported read) and G (write with explicit safety exclusions) are complete;
+H (edit) is in progress; I–T are pending. Completing
 an inventory or passing local tests does not close the milestone. PR #22 must
 be published as draft and remain unmerged; PR #23 is excluded. Global Pi parity
 remains `in_progress`.

@@ -1,0 +1,4182 @@
+{
+  "schema": 1,
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+  "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+  "startedAt": "2026-10-23T09:02:14.287167+00:00",
+  "finishedAt": "2026-10-23T09:02:36.263042+00:00",
+  "executables": {
+    "rg": {
+      "path": "/home/philip/.codex-account2/packages/app-server-daemon/releases/0.164.0-x86_64-unknown-linux-musl/codex-path/rg",
+      "version": "ripgrep 15.2.0 (rev e89fff89ac)"
+    },
+    "fdfind": {
+      "path": "/usr/bin/fdfind",
+      "version": "fdfind 10.3.0"
+    },
+    "fd": {
+      "path": null,
+      "version": null
+    },
+    "node": {
+      "path": "/home/philip/.config/nvm/versions/node/v24.21.0/bin/node",
+      "version": "v24.21.0"
+    },
+    "dotnet": {
+      "path": "/usr/bin/dotnet",
+      "version": "10.0.113"
+    }
+  },
+  "comparisonPolicy": {
+    "temporaryRoots": "Each root becomes <workspace> in result strings.",
+    "fullOutputNames": "Random names mapped by references; exact file hashes/sizes/modes/safe-name checks compared.",
+    "duration": "Nonnegative numeric wall_time_seconds retained raw; excluded from value equality.",
+    "images": "Original payloads exact bytes; selected reencoded images compare decoded RGBA dimensions/pixels; raw payloads retained. MIME, notes, structured results and failures remain exact.",
+    "jpegCodecs": "Only named calibrated cases may use the explicit JPEG envelope. Strict hashes/differences remain recorded. Quantization, sampling, fidelity and every non-pixel contract are checked; see setup.jpegComparison.",
+    "safetyExclusions": "Named image allocation limits and reviewed atomic/private-write differences remain failed strict comparisons. Only complete frozen expected observations may be excluded; actual outputs, ownership and filesystem differences are retained. They never increase passed/strictPassed.",
+    "updates": "Raw complete updates retained; initial/final snapshots compared. Timing/chunk count not asserted identical.",
+    "filesystem": "Exact content hashes, short-file bytes, kinds, modes, uid/gid, link targets/peers and inode-preservation flags. No mtime/ctime/absolute inode equality."
+  },
+  "declarationDifferences": {
+    "read": [],
+    "write": [],
+    "edit": [],
+    "bash": [],
+    "grep": [],
+    "find": [],
+    "ls": []
+  },
+  "summary": {
+    "passed": 20,
+    "total": 39,
+    "strictPassed": 20,
+    "jpegCodecEquivalent": 0,
+    "intentionalSafetyDeviations": 19,
+    "unresolved": 0,
+    "perTool": {
+      "write": 39
+    }
+  },
+  "status": "supported write checkpoint verified with explicit safety exclusions; M\u2013P acceptance pending",
+  "inputSource": "tools/parity/builtin_coding_tool_cases.py",
+  "control": {
+    "harnessRepositorySha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+    "startedAt": "2026-10-23T09:02:14.287166+00:00",
+    "finishedAt": "2026-10-23T09:02:15.178358+00:00",
+    "summary": {
+      "passed": 39,
+      "total": 39,
+      "strictPassed": 39,
+      "jpegCodecEquivalent": 0,
+      "intentionalSafetyDeviations": 0,
+      "unresolved": 0,
+      "perTool": {
+        "write": 39
+      }
+    }
+  },
+  "cases": [
+    {
+      "caseId": "write-new",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-new",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 9,
+              "sha256": "0f15384d18789b1ebf3043dc7b6bc27273c8576373fbeb6f3e15854b588141c0",
+              "base64": "bmV3IGZpbGUK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-new",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 9,
+              "sha256": "0f15384d18789b1ebf3043dc7b6bc27273c8576373fbeb6f3e15854b588141c0",
+              "base64": "bmV3IGZpbGUK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": "new file\n"
+      },
+      "setupSourceCaseId": "write-new",
+      "setupSha256": "3a2bffc5716f80c0c6ac9e3f47fadd994096d8b04f0c67085eee4077353e18e7"
+    },
+    {
+      "caseId": "write-empty",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-empty",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-empty",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": ""
+      },
+      "setupSourceCaseId": "write-empty",
+      "setupSha256": "62ce32065e429afa9635685eaa34ca49fa0ce5f2a1c5e840dc04913cf8d5715b"
+    },
+    {
+      "caseId": "write-unicode",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-unicode",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 21,
+              "sha256": "f64bee3a23caed7d95e96eb74546d8a86d34b97258cb21a7ea9f97373d18ec18",
+              "base64": "5pel5pys6KqeIPCfmIAgY2Fmw6kK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-unicode",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 21,
+              "sha256": "f64bee3a23caed7d95e96eb74546d8a86d34b97258cb21a7ea9f97373d18ec18",
+              "base64": "5pel5pys6KqeIPCfmIAgY2Fmw6kK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": "\u65e5\u672c\u8a9e \ud83d\ude00 caf\u00e9\n"
+      },
+      "setupSourceCaseId": "write-unicode",
+      "setupSha256": "7aee16a1b8563afcc0a1c56c32e1e83f58d3cddb51335e40b675a345b5bf1fc7"
+    },
+    {
+      "caseId": "write-bom",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-bom",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 8,
+              "sha256": "a754c251464eddad4f8b268723e2625c77eee53a29ab37b604742d214539563a",
+              "base64": "77u/ZmlsZQo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-bom",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 8,
+              "sha256": "a754c251464eddad4f8b268723e2625c77eee53a29ab37b604742d214539563a",
+              "base64": "77u/ZmlsZQo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": "\ufefffile\n"
+      },
+      "setupSourceCaseId": "write-bom",
+      "setupSha256": "3a8f39e1a7172c960ac8f95eb746d25a8ae49da5da1aaf8ea2bb9b3d308e25d2"
+    },
+    {
+      "caseId": "write-existing",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 12,
+              "sha256": "1d054714357ce5ee01723ed91fcaa69206e221faaf9c1fad64f73be2e5d051da",
+              "base64": "cmVwbGFjZW1lbnQK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 12,
+              "sha256": "1d054714357ce5ee01723ed91fcaa69206e221faaf9c1fad64f73be2e5d051da",
+              "base64": "cmVwbGFjZW1lbnQK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": "replacement\n"
+      },
+      "setupSourceCaseId": "write-existing",
+      "setupSha256": "9b29a56b0204e2b38e24424d58fbea782ab3d73811e7c01a457fa77bed9f64f3"
+    },
+    {
+      "caseId": "write-nested-parents",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-nested-parents",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to a/b/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "a": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "a/b": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "a/b/file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 7,
+              "sha256": "370a8c04b8a65bb4494275eec227f1b694db04c76da6b0b8ae88ed1ab19790a3",
+              "base64": "bmVzdGVkCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-nested-parents",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to a/b/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "a": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "a/b": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "a/b/file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 7,
+              "sha256": "370a8c04b8a65bb4494275eec227f1b694db04c76da6b0b8ae88ed1ab19790a3",
+              "base64": "bmVzdGVkCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/a/b/file.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/a/b/file.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "a/b/file.txt",
+        "content": "nested\n"
+      },
+      "setupSourceCaseId": "write-nested-parents",
+      "setupSha256": "9d4c673a360397ecb1cb5ab2f4723864b87be431f11d55073b8dc05d918c3f91"
+    },
+    {
+      "caseId": "write-absolute",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-absolute",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to <workspace>/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 9,
+              "sha256": "db7525aebe28ce382736a6b5f6b056f6e2f6a7a6682a25277be794e91b409a40",
+              "base64": "YWJzb2x1dGUK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-absolute",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to <workspace>/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 9,
+              "sha256": "db7525aebe28ce382736a6b5f6b056f6e2f6a7a6682a25277be794e91b409a40",
+              "base64": "YWJzb2x1dGUK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "{WORKSPACE}/file.txt",
+        "content": "absolute\n"
+      },
+      "setupSourceCaseId": "write-absolute",
+      "setupSha256": "a80afdc68c96f3bbe4098df2f0d6774e8f04cae6de158980763acf9667154fa9"
+    },
+    {
+      "caseId": "write-at-prefix",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-at-prefix",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to @file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 8,
+              "sha256": "f76256402a07eb3e2943c2670f329282c977e42dd290fbf2a4c4a0b10c3be4df",
+              "base64": "YXQgcGF0aAo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-at-prefix",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to @file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 8,
+              "sha256": "f76256402a07eb3e2943c2670f329282c977e42dd290fbf2a4c4a0b10c3be4df",
+              "base64": "YXQgcGF0aAo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "@file.txt",
+        "content": "at path\n"
+      },
+      "setupSourceCaseId": "write-at-prefix",
+      "setupSha256": "1e016093b4de4a8e32f99c09983bb5f7c28fe17cb22086531d81ed73607967b2"
+    },
+    {
+      "caseId": "write-directory",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-directory",
+            "content": [
+              {
+                "type": "text",
+                "text": "EISDIR: illegal operation on a directory, open '<workspace>/dir'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-directory",
+            "content": [
+              {
+                "type": "text",
+                "text": "EISDIR: illegal operation on a directory, open '<workspace>/dir'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "dir",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-directory",
+      "setupSha256": "815e24bf6facd8fbaa9f8dd4b7d4f96db9691a65a99a437d3abf5084c869bb2e"
+    },
+    {
+      "caseId": "write-file-parent",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-file-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "EEXIST: file already exists, mkdir '<workspace>/parent'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "parent": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-file-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "EEXIST: file already exists, mkdir '<workspace>/parent'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "parent": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "parent/file",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-file-parent",
+      "setupSha256": "fd7cfaa98ed16e8e3d693d0cc192366824fc355f1dc382356dfdc57892435482"
+    },
+    {
+      "caseId": "write-file-ancestor",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-file-ancestor",
+            "content": [
+              {
+                "type": "text",
+                "text": "ENOTDIR: not a directory, mkdir '<workspace>/parent/child'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "parent": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-file-ancestor",
+            "content": [
+              {
+                "type": "text",
+                "text": "ENOTDIR: not a directory, mkdir '<workspace>/parent/child'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "parent": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "parent/child/file",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-file-ancestor",
+      "setupSha256": "254e3b55a7e0c50b2cf3dd96e8b58b64f4ca5dca910b1c9f243a70c6796d7ac5"
+    },
+    {
+      "caseId": "write-readonly-file",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-readonly-file",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, open '<workspace>/file.txt'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 292,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-readonly-file",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, open '<workspace>/file.txt'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 292,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-readonly-file",
+      "setupSha256": "5e903f1c788a3846a7cbe9f50c1548f23f79f730fa589eb2dadaab1876f710b4"
+    },
+    {
+      "caseId": "write-readonly-directory",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-readonly-directory",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, open '<workspace>/dir/file'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir": {
+              "mode": 365,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-readonly-directory",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, open '<workspace>/dir/file'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir": {
+              "mode": 365,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "dir/file",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-readonly-directory",
+      "setupSha256": "c274e41da5afd976c91d54c249aa6b0a6ce94353ec23e9dbe8f0df0b77d44938"
+    },
+    {
+      "caseId": "write-symlink",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/target/inodePreserved"
+      ],
+      "strictDifferences": [
+        "/filesystem/target/inodePreserved"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "alias",
+        "content": "replacement"
+      },
+      "setupSourceCaseId": "write-symlink",
+      "setupSha256": "30a8a99edd8501df92655c5bdb317b5c7dce71dc2dd86f07a46546ff1c6756a5"
+    },
+    {
+      "caseId": "write-dangling-symlink",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-dangling-symlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 10,
+              "sha256": "f5afae78a1c61541200e5730aef358f2f0a636e7e24af28fc6994d4a0f7c712c",
+              "base64": "bmV3IHRhcmdldA==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-dangling-symlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 10,
+              "sha256": "f5afae78a1c61541200e5730aef358f2f0a636e7e24af28fc6994d4a0f7c712c",
+              "base64": "bmV3IHRhcmdldA==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/target/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/target/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "alias",
+        "content": "new target"
+      },
+      "setupSourceCaseId": "write-dangling-symlink",
+      "setupSha256": "6dd12ccad26e4ec0d82e6d1ccb17514509ca8e8923ec5ba6957b932c65825c2a"
+    },
+    {
+      "caseId": "write-hardlink",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-hardlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": [
+                "file.txt"
+              ]
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": [
+                "alias"
+              ]
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-hardlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/alias/base64",
+        "/filesystem/alias/hardlinkPeers/length",
+        "/filesystem/alias/sha256",
+        "/filesystem/alias/size",
+        "/filesystem/file.txt/hardlinkPeers/length",
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictDifferences": [
+        "/filesystem/alias/base64",
+        "/filesystem/alias/hardlinkPeers/length",
+        "/filesystem/alias/sha256",
+        "/filesystem/alias/size",
+        "/filesystem/file.txt/hardlinkPeers/length",
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": "replacement"
+      },
+      "setupSourceCaseId": "write-hardlink",
+      "setupSha256": "ced4ce157c22c0e96e48cc54e71c65111ea879f9ae3019bd4fef28aa356df91a"
+    },
+    {
+      "caseId": "write-existing-mode",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-existing-mode",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 416,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-existing-mode",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 416,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": "replacement"
+      },
+      "setupSourceCaseId": "write-existing-mode",
+      "setupSha256": "5edfcbe45d0027b16c858d627a83c969a60025485795930aa89f94f38b31ae57"
+    },
+    {
+      "caseId": "write-unicode-space-path",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-unicode-space-path",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file\u00a0name.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file name.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 7,
+              "sha256": "e47fbedb2823cf1ae4d4cdb8273635be2024cb870588e259c9b23d76ae49d484",
+              "base64": "c3BhY2VzCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-unicode-space-path",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file\u00a0name.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file name.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 7,
+              "sha256": "e47fbedb2823cf1ae4d4cdb8273635be2024cb870588e259c9b23d76ae49d484",
+              "base64": "c3BhY2VzCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file name.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/file name.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file\u00a0name.txt",
+        "content": "spaces\n"
+      },
+      "setupSourceCaseId": "write-unicode-space-path",
+      "setupSha256": "2f5a06c9ae0550af76ec143f73964d702756db42b123bf7136d0408d18e1b058"
+    },
+    {
+      "caseId": "write-file-url",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-file-url",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file://<workspace>/nested/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "nested": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "nested/file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 4,
+              "sha256": "aa60964b9c8aecc8f147f9f0b4a493278402da3902480d35a2b544845596d184",
+              "base64": "VVJJCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-file-url",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file://<workspace>/nested/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "nested": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "nested/file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 4,
+              "sha256": "aa60964b9c8aecc8f147f9f0b4a493278402da3902480d35a2b544845596d184",
+              "base64": "VVJJCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/nested/file.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/nested/file.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file://{WORKSPACE}/nested/file.txt",
+        "content": "URI\n"
+      },
+      "setupSourceCaseId": "write-file-url",
+      "setupSha256": "fbe93c4f851b96a6ce5f4b560f9234c231bba4a17e57d97039c46e63317b85bb"
+    },
+    {
+      "caseId": "write-relative-normalization",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-relative-normalization",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to ./unused/../file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 11,
+              "sha256": "5279fc33061aa06e246995c8f063a5869c8b31c77b12173e05cb3b5198d451cb",
+              "base64": "bm9ybWFsaXplZAo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-relative-normalization",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to ./unused/../file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 11,
+              "sha256": "5279fc33061aa06e246995c8f063a5869c8b31c77b12173e05cb3b5198d451cb",
+              "base64": "bm9ybWFsaXplZAo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "./unused/../file.txt",
+        "content": "normalized\n"
+      },
+      "setupSourceCaseId": "write-relative-normalization",
+      "setupSha256": "d7e094740839db056e3a60ab552fbd8281facc2c9623dca24b5dfeb525960759"
+    },
+    {
+      "caseId": "write-empty-path",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-empty-path",
+            "content": [
+              {
+                "type": "text",
+                "text": "EISDIR: illegal operation on a directory, open '<workspace>'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-empty-path",
+            "content": [
+              {
+                "type": "text",
+                "text": "EISDIR: illegal operation on a directory, open '<workspace>'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-empty-path",
+      "setupSha256": "35e1d8764c25a3750c4b569d9a10875ab63b2eaa91e544f8ad15d7302fd5a0fc"
+    },
+    {
+      "caseId": "write-nul-path",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-nul-path",
+            "content": [
+              {
+                "type": "text",
+                "text": "The argument 'path' must be a string, Uint8Array, or URL without null bytes. Received '<workspace>/invalid\\x00path'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-nul-path",
+            "content": [
+              {
+                "type": "text",
+                "text": "The argument 'path' must be a string, Uint8Array, or URL without null bytes. Received '<workspace>/invalid\\x00path'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "invalid\u0000path",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-nul-path",
+      "setupSha256": "56f6b73a200a853b3134ee9e18d48edf193987ba740a03d15a7cf10a1aaa4896"
+    },
+    {
+      "caseId": "write-long-name",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-long-name",
+            "content": [
+              {
+                "type": "text",
+                "text": "ENAMETOOLONG: name too long, realpath '<workspace>/\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-long-name",
+            "content": [
+              {
+                "type": "text",
+                "text": "ENAMETOOLONG: name too long, realpath '<workspace>/\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-long-name",
+      "setupSha256": "8623ea77946bb7068e9f5c07d0aaf482e64e41bd5367c97e8ce5f315bf2d68c7"
+    },
+    {
+      "caseId": "write-symlink-loop",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-loop",
+            "content": [
+              {
+                "type": "text",
+                "text": "ELOOP: too many symbolic links encountered, realpath '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "alias"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-loop",
+            "content": [
+              {
+                "type": "text",
+                "text": "ELOOP: too many symbolic links encountered, realpath '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "alias"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "alias",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-symlink-loop",
+      "setupSha256": "c0c557e1b62f36eec3927d2ad659b24fe31535ca1de0810e5de9110f267325b4"
+    },
+    {
+      "caseId": "write-symlink-directory",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-directory",
+            "content": [
+              {
+                "type": "text",
+                "text": "EISDIR: illegal operation on a directory, open '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-directory",
+            "content": [
+              {
+                "type": "text",
+                "text": "EISDIR: illegal operation on a directory, open '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "alias",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-symlink-directory",
+      "setupSha256": "3f5ad65e1506fbeacd960d7efc11bae57aff9b86d8bb0cb0f71c4252919138c5"
+    },
+    {
+      "caseId": "write-symlink-parent-existing",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-parent-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "directory/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-parent-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "directory/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/directory/file/inodePreserved"
+      ],
+      "strictDifferences": [
+        "/filesystem/directory/file/inodePreserved"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "alias/file",
+        "content": "replacement"
+      },
+      "setupSourceCaseId": "write-symlink-parent-existing",
+      "setupSha256": "1742bd5940f240b2d16e424280d235165a2455da19606eee08f8d25f4001e858"
+    },
+    {
+      "caseId": "write-symlink-parent-new",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-parent-new",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "directory/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 3,
+              "sha256": "11507a0e2f5e69d5dfa40a62a1bd7b6ee57e6bcd85c67c9b8431b36fff21c437",
+              "base64": "bmV3",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-parent-new",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "directory/file": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 3,
+              "sha256": "11507a0e2f5e69d5dfa40a62a1bd7b6ee57e6bcd85c67c9b8431b36fff21c437",
+              "base64": "bmV3",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/directory/file/mode"
+      ],
+      "strictDifferences": [
+        "/filesystem/directory/file/mode"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "alias/file",
+        "content": "new"
+      },
+      "setupSourceCaseId": "write-symlink-parent-new",
+      "setupSha256": "3ca00ef3ab3dae50e7526abdb397f5a7e2f22493ea248f9a25051fc176176200"
+    },
+    {
+      "caseId": "write-symlink-missing-target-parent",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-missing-target-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "ENOENT: no such file or directory, open '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "missing/target"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-missing-target-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "ENOENT: no such file or directory, open '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "missing/target"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "alias",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-symlink-missing-target-parent",
+      "setupSha256": "4d231f354982368b17e856da33c6ef5b0f8ccf56aa3c0d92f7c160c5f23e8792"
+    },
+    {
+      "caseId": "write-symlink-readonly-target",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-readonly-target",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, open '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 292,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-readonly-target",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, open '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 292,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "alias",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-symlink-readonly-target",
+      "setupSha256": "a8302c66f70602e32674d39d6b99da9569f033ddfecdcd757746a282b5842449"
+    },
+    {
+      "caseId": "write-symlink-file-parent",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-file-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "EEXIST: file already exists, mkdir '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-file-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "EEXIST: file already exists, mkdir '<workspace>/alias'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "alias/child",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-symlink-file-parent",
+      "setupSha256": "03e8c7ef53786efa23c903c0d6f6303cc83a92c20dfe93156af26211b783bfef"
+    },
+    {
+      "caseId": "write-symlink-loop-parent",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-loop-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "ELOOP: too many symbolic links encountered, realpath '<workspace>/alias/child'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "alias"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-loop-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "ELOOP: too many symbolic links encountered, realpath '<workspace>/alias/child'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "alias"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "alias/child",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-symlink-loop-parent",
+      "setupSha256": "3f5d4f2704cc5a4ff65e9a8d1e2e40c0d0f07dfd4c3c6d4128f14744c33a41a1"
+    },
+    {
+      "caseId": "write-readonly-directory-existing",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-readonly-directory-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to dir/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir": {
+              "mode": 365,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-readonly-directory-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, open '<workspace>/dir/file'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir": {
+              "mode": 365,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/dir/file/base64",
+        "/filesystem/dir/file/sha256",
+        "/filesystem/dir/file/size",
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "strictDifferences": [
+        "/filesystem/dir/file/base64",
+        "/filesystem/dir/file/sha256",
+        "/filesystem/dir/file/size",
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "dir/file",
+        "content": "replacement"
+      },
+      "setupSourceCaseId": "write-readonly-directory-existing",
+      "setupSha256": "3eff3875fbb995b5ba7158225bf62ed9c0726ae907e2775cd08d2e5cb436f956"
+    },
+    {
+      "caseId": "write-readonly-ancestor",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-readonly-ancestor",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, mkdir '<workspace>/secret/nested'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "secret": {
+              "mode": 320,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-readonly-ancestor",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, mkdir '<workspace>/secret/nested'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "secret": {
+              "mode": 320,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "secret/nested/file",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-readonly-ancestor",
+      "setupSha256": "8ec61ef006dfa6525cc1b5acb98af911015a769600188b656e486e0f497c9b67"
+    },
+    {
+      "caseId": "write-write-only-file",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-write-only-file",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 128,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-write-only-file",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 128,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictDifferences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictPass": false,
+      "strictParityExcluded": true,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": "replacement"
+      },
+      "setupSourceCaseId": "write-write-only-file",
+      "setupSha256": "7a4e37e9c8c7d9fec0751d65ab3ea89065d65242f4fa04377cb833c9d303765b"
+    },
+    {
+      "caseId": "write-inaccessible-parent",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-inaccessible-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, realpath '<workspace>/secret/file'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "secret": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "secret/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-inaccessible-parent",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, realpath '<workspace>/secret/file'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "secret": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "secret/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "secret/file",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-inaccessible-parent",
+      "setupSha256": "cda28b3a0b68f2c5cd883b64ef94f76d44f134d8cfe3ce0509312a5675fb67fd"
+    },
+    {
+      "caseId": "write-missing-content",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-missing-content",
+            "content": [
+              {
+                "type": "text",
+                "text": "Validation failed for tool \"write\":\n  - content: must have required properties content\n\nReceived arguments:\n{\n  \"path\": \"file.txt\"\n}"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-missing-content",
+            "content": [
+              {
+                "type": "text",
+                "text": "Validation failed for tool \"write\":\n  - content: must have required properties content\n\nReceived arguments:\n{\n  \"path\": \"file.txt\"\n}"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "file.txt"
+      },
+      "setupSourceCaseId": "write-missing-content",
+      "setupSha256": "52f897ade903727efcf0a5f66ccf2813eb19e3fa7b75ba21b68c2ca0ed5db6e4"
+    },
+    {
+      "caseId": "write-invalid-content-type",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-invalid-content-type",
+            "content": [
+              {
+                "type": "text",
+                "text": "Validation failed for tool \"write\":\n  - content: must be string\n\nReceived arguments:\n{\n  \"path\": \"file.txt\",\n  \"content\": {}\n}"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-invalid-content-type",
+            "content": [
+              {
+                "type": "text",
+                "text": "Validation failed for tool \"write\":\n  - content: must be string\n\nReceived arguments:\n{\n  \"path\": \"file.txt\",\n  \"content\": {}\n}"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": {}
+      },
+      "setupSourceCaseId": "write-invalid-content-type",
+      "setupSha256": "a30f1cdb1e6e61859620ffa74b41693a849fca15c87c9dc79ffc984a8cd2d97c"
+    },
+    {
+      "caseId": "write-invalid-path-type",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-invalid-path-type",
+            "content": [
+              {
+                "type": "text",
+                "text": "Validation failed for tool \"write\":\n  - path: must be string\n\nReceived arguments:\n{\n  \"path\": [],\n  \"content\": \"bad\"\n}"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-invalid-path-type",
+            "content": [
+              {
+                "type": "text",
+                "text": "Validation failed for tool \"write\":\n  - path: must be string\n\nReceived arguments:\n{\n  \"path\": [],\n  \"content\": \"bad\"\n}"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": [],
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-invalid-path-type",
+      "setupSha256": "4076d5e8c61c8e34b2dc15831b5088219c6e284da7893f59024b1e8f0597e759"
+    },
+    {
+      "caseId": "write-pre-cancelled",
+      "tool": "write",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+      "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-pre-cancelled",
+            "content": [
+              {
+                "type": "text",
+                "text": "Operation aborted"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-pre-cancelled",
+            "content": [
+              {
+                "type": "text",
+                "text": "Operation aborted"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [],
+      "strictDifferences": [],
+      "strictPass": true,
+      "strictParityExcluded": false,
+      "pass": true,
+      "classification": "exact_with_documented_normalization",
+      "inputArguments": {
+        "path": "file.txt",
+        "content": "bad"
+      },
+      "setupSourceCaseId": "write-pre-cancelled",
+      "setupSha256": "d8363a15d3d9c15b7ce544802d69a7f2757c55c209f26be9589739703bc4a992"
+    }
+  ]
+}

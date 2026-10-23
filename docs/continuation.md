@@ -10,8 +10,8 @@ head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
 passed 2,711 tests and both MCP jobs before the expected-head merge.
 
 Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–F are complete;
-G (write) is in progress; H–T remain pending. Preserve this
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–G are complete;
+H (edit) is in progress; I–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
@@ -93,7 +93,10 @@ difference is explicit: native settles promptly without releasing an active
 writer. Source queue regressions pass 7/7, related native checks pass 66/66, and
 focused coordination passes 7/7. Prepared temporary files are now private until
 commit (one fail-first regression); final target permissions remain intact.
-Fresh clean-source write comparison/control is next.
+Clean `a420ce25` verifies 20/39 strict write comparisons and the nineteen
+explicit safety exclusions, with zero unresolved differences. Its same-Pi control
+is 39/39 strict. The supported write checkpoint is complete; continue edit
+decoding/permissions/batches and retain broader M–P acceptance gates.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required

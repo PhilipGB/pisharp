@@ -44,12 +44,12 @@
       {
         "id": "G",
         "name": "Write",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "H",
         "name": "Edit",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "I",
@@ -449,7 +449,7 @@
       "related_passed_after": 52,
       "pinned_regressions": "docs/parity/fixtures/builtin-coding-tool-write-regressions-2026-10-22.json",
       "legacy_permission_receipt": "docs/parity/fixtures/builtin-coding-tool-write-permission-2026-10-22.json",
-      "status": "fresh classified write comparison/control pending",
+      "status": "supported checkpoint verified with explicit safety exclusions; M–P acceptance pending",
       "safety_candidates": [
         "private new-file modes",
         "atomic replacement and inode identity",
@@ -468,7 +468,16 @@
       "temporary_privacy_regressions_failed_before": 1,
       "coordination_receipt": "docs/parity/fixtures/builtin-coding-tool-mutation-coordination-2026-10-22.json",
       "cancelled_waiter_timing": "Native settles cancellation promptly; Pi waits for the active operation. Neither executes the cancelled mutation or releases the active writer.",
-      "harness_guards_passed": 20
+      "harness_guards_passed": 20,
+      "complete_acceptance": {
+        "source": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+        "strict_passed": 20,
+        "total": 39,
+        "intentional_safety_deviations": 19,
+        "unresolved": 0,
+        "control_strict_passed": 39,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-write-acceptance-2026-10-22.json"
+      }
     }
   },
   "plan_received": true,
