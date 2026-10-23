@@ -361,6 +361,49 @@ def cases():
         ('byte-limit', {'pattern': 'needle', 'limit': 500}, {'file.txt': repeated('needle ' + 'x' * 450 + '\n', 150)}),
     ]:
         add('grep', name, args, files)
+    for name, args, files in [
+        ('fractional-limit', {'pattern': 'needle', 'limit': 1.5}, {'file.txt': 'needle\nneedle\nneedle\n'}),
+        ('fractional-context', {'pattern': 'needle', 'context': 1.5}, {'file.txt': 'one\ntwo\nneedle\nfour\nfive\n'}),
+        ('exact-match-limit', {'pattern': 'needle', 'limit': 2}, {'file.txt': 'needle\nneedle\n'}),
+        ('single-line-multiple-matches', {'pattern': 'needle', 'limit': 2}, {'file.txt': 'needle needle needle\n'}),
+        ('regex-backreference', {'pattern': r'(word)\s+\1'}, {'file.txt': 'word word\n'}),
+        ('regex-lookbehind', {'pattern': '(?<=pre)needle'}, {'file.txt': 'preneedle\n'}),
+        ('regex-named-capture', {'pattern': '(?P<item>needle)'}, {'file.txt': 'needle\n'}),
+        ('regex-posix-class', {'pattern': '[[:alpha:]]+'}, {'file.txt': 'abc\n123\n日本語\n'}),
+        ('regex-unicode-script', {'pattern': r'\p{Script=Greek}+'}, {'file.txt': 'alpha\nαβγ\n'}),
+        ('regex-newline', {'pattern': 'needle\nnext'}, {'file.txt': 'needle\nnext\n'}),
+        ('regex-linear-time', {'pattern': '^(a+)+$'}, {'file.txt': 'a' * 2000 + '!\n'}),
+        ('glob-braces', {'pattern': 'needle', 'glob': '*.{cs,md}'}, {'file.cs': 'needle\n', 'file.md': 'needle\n', 'file.py': 'needle\n'}),
+        ('glob-recursive', {'pattern': 'needle', 'glob': 'src/**/*.cs'}, {'src/a.cs': 'needle\n', 'src/deep/b.cs': 'needle\n', 'test/c.cs': 'needle\n'}),
+        ('glob-character-class', {'pattern': 'needle', 'glob': '[ab].txt'}, {'a.txt': 'needle\n', 'b.txt': 'needle\n', 'c.txt': 'needle\n'}),
+        ('glob-invalid', {'pattern': 'needle', 'glob': '['}, {'file.txt': 'needle\n'}),
+        ('literal-regex-characters', {'pattern': '[a]+(b)', 'literal': True}, {'file.txt': '[a]+(b)\naab\n'}),
+        ('unicode-case-fold', {'pattern': 'kΣ', 'ignoreCase': True}, {'file.txt': 'Kσ\nKς\nkΣ\n'}),
+        ('bom', {'pattern': 'needle'}, {'file.txt': '\ufeffneedle\n'}),
+        ('bom-context', {'pattern': 'needle', 'context': 1}, {'file.txt': '\ufeffbefore\nneedle\nafter\n'}),
+        ('crlf-context', {'pattern': 'needle', 'context': 1}, {'file.txt': 'before\r\nneedle\r\nafter\r\n'}),
+        ('cr-only-context', {'pattern': 'needle', 'context': 1}, {'file.txt': 'before\rneedle\rafter'}),
+        ('invalid-utf8-context', {'pattern': 'needle', 'context': 1}, {'file.txt': binary(b'before\xff\nneedle\xfe\nafter\n')}),
+        ('binary-before-match', {'pattern': 'needle'}, {'file.bin': binary(b'\0binary\nneedle\n')}),
+        ('filename-unicode', {'pattern': 'needle'}, {'目录/日本語.txt': 'needle\n'}),
+        ('filename-newline', {'pattern': 'needle'}, {'line\nbreak.txt': 'needle\n'}),
+        ('explicit-at-path', {'pattern': 'needle', 'path': '@file.txt'}, {'file.txt': 'needle\n'}),
+        ('file-ancestor', {'pattern': 'needle', 'path': 'file/child'}, {'file': 'needle\n'}),
+        ('huge-single-line', {'pattern': 'needle'}, {'file.txt': {'concat': ['needle', repeated('x', 12 * 1024 * 1024), '\n']}}),
+        ('many-submatches', {'pattern': 'x'}, {'file.txt': repeated('x', 20000)}),
+    ]:
+        add('grep', name, args, files)
+    add('grep', 'rgignore-precedence', {'pattern': 'needle'},
+        {'.ignore': 'ignored.txt\n', '.rgignore': '!ignored.txt\n', 'ignored.txt': 'needle\n', 'visible.txt': 'needle\n'})
+    add('grep', 'nested-ignore-negation', {'pattern': 'needle'},
+        {'.ignore': '*.txt\n', 'nested/.ignore': '!included.txt\n', 'nested/included.txt': 'needle\n', 'nested/ignored.txt': 'needle\n'})
+    add('grep', 'explicit-symlink-root', {'pattern': 'needle', 'path': 'alias'},
+        {'real/file.txt': 'needle\n'}, symlinks={'alias': 'real'})
+    add('grep', 'broken-symlink-root', {'pattern': 'needle', 'path': 'alias'}, symlinks={'alias': 'missing'})
+    add('grep', 'inaccessible-root', {'pattern': 'needle', 'path': 'private'},
+        {'private/file.txt': 'needle\n'}, modes={'private': 0})
+    add('grep', 'late-match-beyond-inventory', {'pattern': 'late-needle'}, {'z/wanted.txt': 'late-needle\n'},
+        generatedFiles={'directory': 'a', 'count': 20050, 'text': ''})
     for tool, pattern in [('grep', 'needle'), ('find', '*.txt')]:
         arguments = {'pattern': pattern}
         files = {'visible.txt': 'needle\n', 'ignored.txt': 'needle\n', '.gitignore': 'ignored.txt\n'}
