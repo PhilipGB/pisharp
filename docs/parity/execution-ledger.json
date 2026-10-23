@@ -409,8 +409,22 @@
           "read-image-input-safety-boundary",
           "read-image-pixel-safety-boundary"
         ],
-        "status": "inputs captured; actual comparison pending"
-      }
+        "status": "explicit allocation safety exclusions; never counted as passing parity",
+        "source": "f33ffd1f",
+        "strict_passed": 0,
+        "total": 2,
+        "intentional_safety_deviations": 2,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-read-safety-2026-10-22.json"
+      },
+      "cancellation": {
+        "regressions_failed_before": 1,
+        "related_passed_after": 149,
+        "pinned_pending_reads": 2,
+        "pinned_receipt": "docs/parity/fixtures/builtin-coding-tool-read-cancellation-2026-10-22.json",
+        "barriers": "Pi: held operations.readFile after physical read. Native: held after actual Skia decode. Distinct stage tests, not added to direct corpus count.",
+        "native_correction": "Cancellable await settles before worker cleanup; worker retains ownership of bounded buffers."
+      },
+      "harness_guards_passed": 19
     }
   },
   "plan_received": true,

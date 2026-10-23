@@ -517,6 +517,36 @@ NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or
 audit-policy change was made.
 
+### Read cancellation and explicit safety boundaries
+
+The [resource receipt](builtin-coding-tool-read-safety-2026-10-22.json) records
+two strict differences at clean `f33ffd1f`. Pinned Pi resizes an otherwise valid
+PNG with over 20 MiB of trailing input and an 8001×4000 image. PiSharp omits
+both with its existing explicit omission notice. Retaining the 20 MiB encoded
+input and 32,000,000 decoded-pixel bounds prevents large input/bitmap allocations
+from untrusted tool content. Those two cases are excluded from strict parity;
+filesystem state is unchanged. The harness keeps `pass=false`, strict differences
+and both outputs, and counts intentional safety deviations separately. The
+exclusion requires complete named source/native results and identical filesystem
+observations; nineteen guard tests prevent broader masking.
+
+A deterministic decoded-image barrier reproduces delayed read cancellation:
+the old await cannot settle before the worker is released. The read now awaits
+worker completion with the caller's cancellation token; the worker owns its
+bounded bitmap/buffer and observes cancellation during cleanup. The regression
+fails first and then the related read selection passes 149/149. The internal
+observation callback exists solely to place the barrier after real Skia decoding;
+it does not replace decoding. No timing sleep is used.
+
+The [pinned cancellation receipt](builtin-coding-tool-read-cancellation-2026-10-22.json)
+records actual Pi rejection of pending physical text/image reads before their
+operation barriers are released. Reproduce with the existing source probe and
+`--read-cancellation-only` using the frozen image asset fixture. These source
+barriers and the native post-decode barrier are distinct stage tests; they are
+not added to the direct differential case count. Both yield `Operation aborted`,
+no updates and unchanged input. Full read comparison/control is next; broader
+MAF cancellation, concurrency and reliability remain acceptance work in M–P.
+
 ## Shared integration and safety gates
 
 Keep the existing registry, MAF `ChatClientAgent` invocation, durable outcome

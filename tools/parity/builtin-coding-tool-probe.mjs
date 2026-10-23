@@ -22,6 +22,58 @@ const declarations = Object.fromEntries(Object.entries(factories).map(([name, fa
     outputSchema: tool.outputSchema ?? null, constrainedSampling: tool.constrainedSampling ?? null }];
 }));
 
+if (mode === '--read-cancellation-only') {
+  const fs = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { detectSupportedImageMimeTypeFromFile } = await load('packages/coding-agent/src/utils/mime.ts');
+  const fixture = JSON.parse(readFileSync(inputFile, 'utf8'));
+  const results = [];
+  for (const kind of ['text', 'image']) {
+    const root = await fs.mkdtemp(path.join(tmpdir(), 'pisharp-pinned-read-abort-'));
+    const input = kind === 'image' ? Buffer.from(fixture.assets['png-rgb'].base64, 'base64') : Buffer.from('unchanged\n');
+    const target = path.join(root, 'fixture');
+    const entered = Promise.withResolvers();
+    const release = Promise.withResolvers();
+    const finished = Promise.withResolvers();
+    let released = false;
+    let readEntered = false;
+    let deadline;
+    try {
+      await fs.writeFile(target, input);
+      const controller = new AbortController();
+      const updates = [];
+      const tool = factories.read(root, { operations: {
+        access: file => fs.access(file), detectImageMimeType: detectSupportedImageMimeTypeFromFile,
+        readFile: async file => {
+          const bytes = await fs.readFile(file);
+          readEntered = true;
+          entered.resolve();
+          await release.promise;
+          finished.resolve();
+          return bytes;
+        }
+      } });
+      const running = tool.execute('read-abort-' + kind, { path: 'fixture' }, controller.signal,
+        update => updates.push(update)).then(value => ({ success: true, value }), error => ({ success: false, error: error.message }));
+      const timeout = new Promise((_, reject) => { deadline = setTimeout(() => reject(new Error('Read cancellation barrier timed out')), 5000); });
+      await Promise.race([entered.promise, timeout]);
+      controller.abort();
+      const outcome = await Promise.race([running, timeout]);
+      results.push({ caseId: 'read-cancel-pending-' + kind, phase: 'Physical read completed; operations.readFile promise held before returning',
+        ...outcome, settledBeforeRelease: !released, updates, inputUnchanged: input.equals(await fs.readFile(target)) });
+    } finally {
+      clearTimeout(deadline);
+      released = true;
+      release.resolve();
+      if (readEntered) await finished.promise;
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  }
+  writeFileSync(outputFile, JSON.stringify({ pinnedPiSha: 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6',
+    source: 'packages/coding-agent/src/core/tools/read.ts', results }, null, 2) + '\n');
+  process.exit(0);
+}
+
 if (mode === '--decode-images-only' || mode === '--sample-images-only') {
   const { loadPhoton } = await load('packages/coding-agent/src/utils/photon.ts');
   const photon = await loadPhoton();

@@ -20,6 +20,7 @@ import xml.sax.saxutils
 
 from builtin_coding_tool_cases import cases
 from builtin_coding_tool_image_comparison import assess_jpeg_codec, only_codec_pixel_differences
+from builtin_coding_tool_deviations import assess_read_safety_deviation
 from pi_reference import verify_pi_checkout
 from terminal.thread_limits import apply_test_thread_limit
 
@@ -323,6 +324,7 @@ def main():
                     codec_comparison = assess_jpeg_codec(raw_results['pi'], raw_results['pisharp'], case['jpegComparison'])
                     if codec_comparison and codec_comparison['accepted']:
                         paths = []
+                safety_excluded = bool(paths) and not args.calibrate and assess_read_safety_deviation(case, observations)
                 if args.calibrate:
                     observations['controlPi'] = observations.pop('pisharp')
                 report_cases.append({'caseId': case_id, 'tool': case['tool'], 'pinnedPiSha': pin,
@@ -331,7 +333,9 @@ def main():
                     'setup': case, 'observations': observations, 'differences': paths,
                     'strictDifferences': strict_paths, 'strictPass': not strict_paths,
                     'codecComparison': codec_comparison,
-                    'pass': not paths, 'classification': 'native_jpeg_codec_equivalent' if codec_comparison and not paths else
+                    'strictParityExcluded': safety_excluded,
+                    'pass': not paths, 'classification': 'intentional_safety_deviation' if safety_excluded else
+                    'native_jpeg_codec_equivalent' if codec_comparison and not paths else
                     'exact_with_documented_normalization' if not paths else 'unresolved'})
             declaration_differences = {}
             for name in raw['pi']['declarations']:
@@ -349,19 +353,22 @@ def main():
                     'duration': 'Nonnegative numeric wall_time_seconds retained raw; excluded from value equality.',
                     'images': 'Original payloads exact bytes; selected reencoded images compare decoded RGBA dimensions/pixels; raw payloads retained. MIME, notes, structured results and failures remain exact.',
                     'jpegCodecs': 'Only named calibrated cases may use the explicit JPEG envelope. Strict hashes/differences remain recorded. Quantization, sampling, fidelity and every non-pixel contract are checked; see setup.jpegComparison.',
+                    'safetyExclusions': 'Two named image allocation limits remain failed strict comparisons, classified separately only when their complete expected results and unchanged filesystem match. They never increase passed/strictPassed.',
                     'updates': 'Raw complete updates retained; initial/final snapshots compared. Timing/chunk count not asserted identical.',
                     'filesystem': 'Exact content hashes, short-file bytes, kinds, modes, uid/gid, link targets/peers and inode-preservation flags. No mtime/ctime/absolute inode equality.'},
                 'declarationDifferences': declaration_differences, 'cases': report_cases,
                 'summary': {'passed': sum(case['pass'] for case in report_cases), 'total': len(report_cases),
                             'strictPassed': sum(case['strictPass'] for case in report_cases),
                             'jpegCodecEquivalent': sum(case['classification'] == 'native_jpeg_codec_equivalent' for case in report_cases),
+                            'intentionalSafetyDeviations': sum(case['strictParityExcluded'] for case in report_cases),
+                            'unresolved': sum(not case['pass'] and not case['strictParityExcluded'] for case in report_cases),
                             'perTool': dict(Counter(case['tool'] for case in report_cases))}}
             (output / 'report.json').write_text(json.dumps(report, indent=2, ensure_ascii=True) + '\n')
             print(json.dumps(report['summary']), flush=True)
             for case in report_cases:
                 if not case['pass']:
                     print(case['caseId'], ', '.join(case['differences'][:8]), flush=True)
-            return 0 if report['summary']['passed'] == report['summary']['total'] and not any(declaration_differences.values()) else 1
+            return 0 if report['summary']['unresolved'] == 0 and not any(declaration_differences.values()) else 1
         finally:
             # Permission fixtures must not prevent disposable-workspace cleanup.
             for directory, children, files in os.walk(work, topdown=True, followlinks=False):

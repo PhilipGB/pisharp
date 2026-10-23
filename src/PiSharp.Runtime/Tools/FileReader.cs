@@ -5,7 +5,8 @@ using PiSharp.Runtime.Providers;
 namespace PiSharp.Runtime.Tools;
 
 /// <summary>Reads bounded text or images using the current model's image limits.</summary>
-internal sealed class FileReader(string workingDirectory, ModelImageResizeOptions? imageResizeOptions)
+internal sealed class FileReader(string workingDirectory, ModelImageResizeOptions? imageResizeOptions,
+    Action? imageDecoded = null)
 {
     private ModelImageResizeOptions? _imageResizeOptions = imageResizeOptions;
     private int _supportsImages = 1;
@@ -34,7 +35,8 @@ internal sealed class FileReader(string workingDirectory, ModelImageResizeOption
                 var bytes = new byte[checked((int)length)];
                 await stream.ReadExactlyAsync(bytes, cancellationToken);
                 var resizeOptions = Volatile.Read(ref _imageResizeOptions);
-                var image = await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken, resizeOptions), cancellationToken);
+                var image = await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken, resizeOptions, imageDecoded), cancellationToken)
+                    .WaitAsync(cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 return WithModelNote(image, supportsImages);
             }

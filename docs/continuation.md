@@ -68,7 +68,11 @@ Two MAF regressions fail before fixing the canonical note; the broader selection
 passes 83/83 afterward. An earlier lifecycle JSON image-byte leak is corrected
 without weakening its existing regression. Current/routed model capability now
 updates read behavior. Clean source `9ebd03b5` passes all four paired context cases. Two resource-boundary
-inputs are captured next for actual safety-deviation measurement. F remains in progress.
+inputs establish two retained allocation-safety differences at `f33ffd1f`; they
+remain failed strict comparisons and are counted separately. A post-decode barrier
+reproduces delayed cancellation; the cancellable worker await fixes it, and 149
+related read checks pass. Two pinned pending-read abort cases are captured without
+inflating the direct corpus count. Complete read comparison/control is next. F remains in progress.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required

@@ -9,6 +9,7 @@ import unittest
 
 from builtin_coding_tool_cases import binary, cases
 from builtin_coding_tool_image_comparison import assess_jpeg_codec, only_codec_pixel_differences
+from builtin_coding_tool_deviations import assess_read_safety_deviation, READ_IMAGE_BOUNDARIES
 
 
 spec = importlib.util.spec_from_file_location('builtin_tool_differential',
@@ -18,6 +19,32 @@ spec.loader.exec_module(driver)
 
 
 class BuiltinToolDifferentialTests(unittest.TestCase):
+    def test_safety_exclusions_require_exact_named_results_and_unchanged_filesystem(self):
+        for case_id, policy in READ_IMAGE_BOUNDARIES.items():
+            case = {'caseId': case_id, 'acceptanceClass': 'intentional-safety-boundary'}
+            shared = {'caseId': case_id, 'details': None, 'isError': False, 'rejected': False,
+                      'updateContract': {'initial': None, 'final': None}}
+            pixels = {key: policy[key] for key in ['width', 'height', 'rgbaSha256']}
+            note = 'Read image file [image/png]\n[Image: original ' + policy['hint'] + ' to map to original image.]'
+            omitted = 'Read image file [image/png]\n[Image omitted: could not be resized below the inline image size limit.]'
+            observations = {
+                'pi': {'result': {**shared, 'content': [{'type': 'text', 'text': note},
+                    {'type': 'image', 'mimeType': 'image/png', 'data': pixels}],
+                    'structuredContent': {'type': 'image', 'mimeType': 'image/png', 'data': pixels, 'note': note}},
+                    'filesystem': {'image.dat': {'sha256': 'unchanged'}}, 'fullOutputArtifacts': []},
+                'pisharp': {'result': {**shared, 'content': [{'type': 'text', 'text': omitted}], 'structuredContent': omitted},
+                    'filesystem': {'image.dat': {'sha256': 'unchanged'}}, 'fullOutputArtifacts': []}}
+            self.assertTrue(assess_read_safety_deviation(case, observations))
+            for key, value in [('details', {'lost': True}), ('isError', True), ('structuredContent', 'wrong'),
+                               ('updateContract', {'initial': 'wrong', 'final': None})]:
+                wrong = copy.deepcopy(observations)
+                wrong['pisharp']['result'][key] = value
+                self.assertFalse(assess_read_safety_deviation(case, wrong))
+            wrong = copy.deepcopy(observations)
+            wrong['pisharp']['filesystem']['image.dat']['sha256'] = 'changed'
+            self.assertFalse(assess_read_safety_deviation(case, wrong))
+            self.assertFalse(assess_read_safety_deviation({**case, 'caseId': 'read-ordinary'}, observations))
+
     @staticmethod
     def codec_fixture(kind):
         fixture = json.loads((Path(__file__).resolve().parents[2] / 'docs/parity/fixtures' /

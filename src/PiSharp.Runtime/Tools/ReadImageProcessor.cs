@@ -10,7 +10,8 @@ internal static class ReadImageProcessor
     internal const int MaxBase64Bytes = 4_718_592;
 
     public static ReadToolOutput Process(byte[] input, string sourceMimeType,
-        CancellationToken cancellationToken = default, ModelImageResizeOptions? resizeOptions = null)
+        CancellationToken cancellationToken = default, ModelImageResizeOptions? resizeOptions = null,
+        Action? imageDecoded = null)
     {
         var normalizedMimeType = NormalizeMimeType(sourceMimeType);
         var convertedFrom = normalizedMimeType is null ? sourceMimeType : null;
@@ -33,6 +34,8 @@ internal static class ReadImageProcessor
                 SKColorType.Rgba8888, SKAlphaType.Unpremul));
             if (codec.GetPixels(decoded.Info, decoded.GetPixels()) != SKCodecResult.Success)
                 return Omitted(sourceMimeType, convertedFrom is not null);
+            imageDecoded?.Invoke();
+            cancellationToken.ThrowIfCancellationRequested();
             using var oriented = ReadImageOrientation.Apply(decoded, input, cancellationToken);
             var original = oriented ?? decoded;
             cancellationToken.ThrowIfCancellationRequested();
