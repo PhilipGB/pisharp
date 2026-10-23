@@ -240,6 +240,49 @@ def cases():
     add('edit', 'missing-required', {'path': 'file.txt'}, {'file.txt': 'unchanged'})
     add('edit', 'invalid-element-type', {'path': 'file.txt', 'edits': [1]}, {'file.txt': 'unchanged'})
     edit('pre-cancelled', 'unchanged', [('unchanged', 'bad')], preCancelled=True)
+    edit('overlapping-occurrences', 'aaa', [('aa', 'X')])
+    edit('non-overlap-duplicate-count', 'aaaaa', [('aa', 'X')])
+    edit('normalized-duplicate-exact', '\u201cx\u201d\n"x"\n', [('\u201cx\u201d', 'bad')])
+    edit('normalized-duplicate-fuzzy', '\u201cx\u201d\n\u201cx\u201d\n', [('"x"', 'bad')])
+    edit('batch-normalized-duplicate', '\u201cx\u201d\n"x"\nbeta\n', [('\u201cx\u201d', 'bad'), ('beta', 'BETA')])
+    edit('all-whitespace-old', 'ab', [(' ', 'X')])
+    edit('empty-normalized-source', ' ', [('\t', 'X')])
+    edit('whitespace-duplicate-count', 'a b', [(' ', 'X')])
+    edit('nfkc-unchanged-lines', 'keep \ufb03\nreplace \ufb03\nkeep \u2460\n', [('replace ffi', 'done')])
+    edit('multiple-fuzzy-one-line', '\u201calpha\u201d then \u201cbeta\u201d\n', [('"alpha"', 'A'), ('"beta"', 'B')])
+    edit('adjacent-boundaries', 'abcDEFghi', [('abc', 'ABC'), ('DEF', 'def')])
+    edit('newline-only-replacement', 'alpha\nbeta\n', [('alpha\n', '\n')])
+    edit('invalid-utf8-before-match', binary(b'\xffalpha\n'), [('alpha', 'ALPHA')])
+    edit('invalid-utf8-bom', binary(b'\xef\xbb\xbfalpha\xff\n'), [('alpha', 'ALPHA')])
+    edit('cr-only', 'alpha\rbeta\r', [('beta', 'BETA')])
+    edit('mixed-leading-lf', 'alpha\nbeta\r\ngamma\r', [('beta', 'BETA')])
+    edit('no-final-newline', 'alpha\nbeta', [('beta', 'BETA')])
+    edit('final-newline-removed', 'alpha\nbeta\n', [('beta\n', 'beta')])
+    edit('whole-delete', 'alpha\n', [('alpha\n', '')])
+    edit('repeat-line-diff', 'a\nb\na\nc\n', [('b\na\n', 'a\nb\n')])
+    for label, path_value in [('at-prefix', '@file.txt'), ('file-url', 'file://{WORKSPACE}/file.txt'),
+                              ('nul-path', 'invalid\0path'), ('long-name', '\u03c0' * 130)]:
+        edit(label, 'alpha\n', [('alpha', 'ALPHA')])
+        result[-1]['arguments']['path'] = path_value
+    for label, mode in [('unreadable-file', 0), ('write-only-file', 0o200), ('existing-mode', 0o640)]:
+        edit(label, 'alpha\n', [('alpha', 'ALPHA')], modes={'file.txt': mode})
+    edit('inaccessible-parent', 'unused', [('alpha', 'ALPHA')])
+    result[-1]['files'] = {'secret/file': 'alpha\n'}
+    result[-1]['modes'] = {'secret': 0o600}
+    result[-1]['arguments']['path'] = 'secret/file'
+    edit('readonly-parent', 'unused', [('alpha', 'ALPHA')])
+    result[-1]['files'] = {'dir/file': 'alpha\n'}
+    result[-1]['modes'] = {'dir': 0o555}
+    result[-1]['arguments']['path'] = 'dir/file'
+    for label, target in [('symlink-loop', 'alias'), ('dangling-symlink', 'missing'),
+                          ('symlink-directory', 'dir'), ('symlink-readonly-target', 'file.txt')]:
+        edit(label, 'alpha\n', [('alpha', 'ALPHA')], symlinks={'alias': target})
+        result[-1]['arguments']['path'] = 'alias'
+        if label == 'symlink-directory':
+            result[-1]['directories'] = {'dir': 0o755}
+        if label == 'symlink-readonly-target':
+            result[-1]['modes'] = {'file.txt': 0o444}
+    add('edit', 'file-parent', {'path': 'file/child', 'edits': [{'oldText': 'x', 'newText': 'y'}]}, {'file': 'original'})
 
     for name, command in [('stdout', "printf 'hello\\n'"), ('no-output', 'true'), ('exit-one', "printf 'before\\n'; exit 1"),
                            ('exit-127', 'exit 127'), ('stderr', "printf 'error\\n' >&2"),
