@@ -46,6 +46,15 @@
       "total": 44,
       "control_strict_passed": 44,
       "shutdown_intentional_safety_exclusions": 3
+    },
+    "grep": {
+      "source": "6b0017d470c9927c366deb4c76fe93e1e9c1e554",
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-acceptance-2026-10-22.json",
+      "status": "supported Linux grep checkpoint verified with one explicit privacy exclusion; shared M-P acceptance pending",
+      "strict": 67,
+      "total": 68,
+      "intentional_safety_exclusions": 1,
+      "control_strict_passed": 68
     }
   },
   "tools": {

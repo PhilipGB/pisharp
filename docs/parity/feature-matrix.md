@@ -10,11 +10,9 @@ Clean `b46aff69` now passes 44/44 with a 44/44 same-Pi control.
 The expanded environment/shutdown/extension selection passes 196 checks.
 Fresh final Bash evidence and shared integration acceptance remain pending.
 
-Grep correction is in progress: the 67-case control passes completely, with
-28 confirmed baseline mismatches. The bounded rg adapter, protocol/argument
-corrections and real FIFO cancellation now have passing focused evidence.
-The repository-local exclusion safety difference is retained explicitly.
-Fresh committed-head comparisons and shared M–P acceptance remain pending.
+Grep acceptance at `6b0017d4` has 67 strict passes, one explicit privacy
+exclusion, zero unresolved cases and a 68/68 same-Pi control. The 427-check
+related selection passes. Shared M–P acceptance remains pending.
 
 The [initial acceptance inventory](fixtures/builtin-coding-tool-inventory-2026-10-22.json)
 records all seven exact source-extracted declarations and implementation gaps
@@ -28,7 +26,7 @@ search/list cases. Input declarations now match the seven source schemas, with
 argument preparation/validation regressions. Primitive conversion matches 93
 pinned vectors; common head/tail truncation matches 140. Read/Bash result metadata,
 registered output schemas, sampling policy and JSON/RPC/session preservation have
-focused passing evidence in the receipt. Checkpoints A–I are complete; J (grep)
+focused passing evidence in the receipt. Checkpoints A–J are complete; K (find)
 is in progress. The [read acceptance](fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json)
 passes 119/121 cases (109 strict, ten JPEG equivalents), with two separately
 excluded allocation safety limits and a 121/121 strict same-Pi control. Read

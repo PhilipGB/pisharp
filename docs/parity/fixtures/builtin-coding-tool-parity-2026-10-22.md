@@ -879,3 +879,12 @@ That second complete actual Pi observation is retained in the named safety
 witness, with its source SHA/report. Its guard accepts only the recorded complete
 source outcomes and exact native observation; line/order comparison elsewhere
 remains exact. All 21 guards pass, including rejection of changed source text.
+
+### Grep checkpoint acceptance
+
+Clean `6b0017d4` passes 67/68 strict cases, with one explicitly excluded
+repository-privacy case and zero unresolved differences. Its same-Pi control
+passes 68/68. The [final grep acceptance](builtin-coding-tool-grep-acceptance-2026-10-22.json)
+records actual source hashes and case classifications. J is complete for the
+defined supported Linux contract; shared M–P acceptance remains open. Progress
+is 10 of 20 checkpoints complete; K (find) is in progress.

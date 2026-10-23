@@ -59,12 +59,12 @@
       {
         "id": "J",
         "name": "Grep",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "K",
         "name": "Find",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "L",
@@ -598,7 +598,7 @@
       "related_passed_after": 196
     },
     "grep_contract": {
-      "status": "in_progress",
+      "status": "supported Linux grep checkpoint verified with one explicit privacy exclusion; shared M-P acceptance pending",
       "baseline_source": "bf9316fa",
       "baseline_strict_passed": 39,
       "baseline_total": 67,
@@ -612,7 +612,6 @@
       "bounded_processing": "Incremental rg JSON projection skips large lines/submatch arrays, keeps 500 displayed characters and bounded head output; existing process lifetime owner handles cancellation.",
       "file_order_evidence": "Eight unrestricted 24-CPU pinned executions produce the native alternate file order; two-CPU oracle profile produces the other observed order. Both full source-observed results retained; differential ordering comparisons remain exact.",
       "remaining": [
-        "fresh committed-head differential/control",
         "shared M-P provider, history and reliability acceptance"
       ],
       "protocol_fixture": "docs/parity/fixtures/builtin-coding-tool-grep-protocol-2026-10-22.json",
@@ -649,7 +648,16 @@
         "maximum_reader_allocated_bytes": 262144,
         "displayed_characters": 500
       },
-      "comparison_guards_passed": 21
+      "comparison_guards_passed": 21,
+      "complete_acceptance": {
+        "source": "6b0017d470c9927c366deb4c76fe93e1e9c1e554",
+        "strict_passed": 67,
+        "total": 68,
+        "intentional_safety_deviations": 1,
+        "unresolved": 0,
+        "control_strict_passed": 68,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-acceptance-2026-10-22.json"
+      }
     }
   },
   "plan_received": true,

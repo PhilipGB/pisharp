@@ -10,8 +10,8 @@ head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
 passed 2,711 tests and both MCP jobs before the expected-head merge.
 
 Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–I are complete;
-J (grep) is in progress; K–T remain pending. Preserve this
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–J are complete;
+K (find) is in progress; L–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
@@ -56,6 +56,13 @@ The 12 MiB reader allocation check stays below 256 KiB; comparison guards are
 21/21. Format and verify current changes, commit the correction and run fresh
 real-rg differentials before completing J. The 13:57:24–17:28:07 UTC
 interruption is recorded as inactive; do not count it toward active duration.
+
+Grep is now accepted at clean `6b0017d4`: 67 strict passes, one explicitly
+excluded privacy case, zero unresolved differences and 68/68 same-Pi controls.
+The privacy witness retains two complete actual pinned ordering observations;
+no sorting or relaxed ordinary comparisons were introduced. The 427-check
+related selection and 21 harness guards pass. Move to K (find), preserving the
+fixed 20-checkpoint denominator; broader M–P acceptance remains open.
 
 The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md) and
 [inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) were

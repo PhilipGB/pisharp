@@ -8,7 +8,7 @@ is present on `origin/main` and is the base of
 `milestone/builtin-coding-tool-parity`. Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-Stable mission checkpoints: **9 complete / 11 remaining** (A–T). A is the
+Stable mission checkpoints: **10 complete / 10 remaining** (A–T). A is the
 verified merge prerequisite; B is the fresh branch. C is the completed initial inventory of all seven
 tool definitions and implementations before product changes. D establishes the independent oracle.
 E completes common declarations/validation, truncation and read/Bash result metadata.
@@ -16,7 +16,8 @@ F verifies the supported read contract (119/121, two explicit safety exclusions)
 G verifies write corrections with 20 strict passes and nineteen retained safety exclusions.
 H verifies edit behavior with 31 strict passes and thirty-eight explicit atomicity exclusions.
 I verifies supported Bash streams, metadata, process cleanup and current session environment.
-J is in progress; J–T cover searches, integration, safety, validation,
+J verifies the supported grep contract (67 strict passes, one privacy exclusion).
+K is in progress; K–T cover find/ls, integration, safety, validation,
 documentation, draft PR #22 and final-head CI. An inventory is not a parity claim.
 
 Bash now has 44 independent cases, with 2/44 strict matches before the update,
@@ -26,11 +27,9 @@ Clean `b46aff69` now passes 44/44 with a 44/44 same-Pi control.
 The expanded environment/shutdown/extension selection passes 196 checks.
 Fresh final Bash evidence and shared integration acceptance remain pending.
 
-Grep correction is in progress: the 67-case control passes completely, with
-28 confirmed baseline mismatches. The bounded rg adapter, protocol/argument
-corrections and real FIFO cancellation now have passing focused evidence.
-The repository-local exclusion safety difference is retained explicitly.
-Fresh committed-head comparisons and shared M–P acceptance remain pending.
+Grep acceptance at `6b0017d4` has 67 strict passes, one explicit privacy
+exclusion, zero unresolved cases and a 68/68 same-Pi control. The 427-check
+related selection passes. Shared M–P acceptance remains pending.
 
 See the [tool milestone receipt](docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md)
 and [initial acceptance inventory](docs/parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json).
