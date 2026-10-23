@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install --yes ripgrep fd-find
       - run: python3 -m pip install --requirement tools/parity/requirements-images.txt
       - run: npm ci --prefix tools/parity/terminal --ignore-scripts --no-audit --no-fund
       - run: npm test --prefix tools/parity/terminal

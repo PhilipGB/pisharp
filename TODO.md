@@ -26,6 +26,12 @@ Clean `b46aff69` now passes 44/44 with a 44/44 same-Pi control.
 The expanded environment/shutdown/extension selection passes 196 checks.
 Fresh final Bash evidence and shared integration acceptance remain pending.
 
+Grep correction is in progress: the 67-case control passes completely, with
+28 confirmed baseline mismatches. The bounded rg adapter, protocol/argument
+corrections and real FIFO cancellation now have passing focused evidence.
+The repository-local exclusion safety difference is retained explicitly.
+Fresh committed-head comparisons and shared M–P acceptance remain pending.
+
 See the [tool milestone receipt](docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md)
 and [initial acceptance inventory](docs/parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json).
 Keep the new PR draft and unmerged. Do not start PR #23. Global parity remains

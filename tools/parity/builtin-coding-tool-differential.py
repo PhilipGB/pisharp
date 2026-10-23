@@ -20,7 +20,7 @@ import xml.sax.saxutils
 
 from builtin_coding_tool_cases import cases
 from builtin_coding_tool_image_comparison import assess_jpeg_codec, only_codec_pixel_differences
-from builtin_coding_tool_deviations import assess_read_safety_deviation, assess_atomic_mutation_deviation
+from builtin_coding_tool_deviations import assess_read_safety_deviation, assess_atomic_mutation_deviation, assess_grep_safety_deviation
 from pi_reference import verify_pi_checkout
 from terminal.thread_limits import apply_test_thread_limit
 
@@ -59,6 +59,9 @@ def setup(root, case):
     for relative in case.get('gitDirectories', []):
         subprocess.run(['git', '-C', str(root / relative), 'init', '-q'], check=True,
                        capture_output=True, timeout=10)
+    for key, value in case.get('gitConfig', {}).items():
+        subprocess.run(['git', '-C', str(root), 'config', '--local', key, value.replace('{WORKSPACE}', str(root))],
+                       check=True, capture_output=True, timeout=10)
     for relative, mode in {**case.get('directories', {}), **case.get('modes', {})}.items():
         (root / relative).chmod(mode)
 
@@ -325,7 +328,8 @@ def main():
                     if codec_comparison and codec_comparison['accepted']:
                         paths = []
                 safety_excluded = bool(paths) and not args.calibrate and (
-                    assess_read_safety_deviation(case, observations) or assess_atomic_mutation_deviation(case, observations))
+                    assess_read_safety_deviation(case, observations) or assess_atomic_mutation_deviation(case, observations)
+                    or assess_grep_safety_deviation(case, observations))
                 if args.calibrate:
                     observations['controlPi'] = observations.pop('pisharp')
                 report_cases.append({'caseId': case_id, 'tool': case['tool'], 'pinnedPiSha': pin,

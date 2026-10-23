@@ -11,7 +11,8 @@ internal static class DirectProcessExecution
     internal const long MaximumOutputBytes = 64 * 1024 * 1024;
 
     internal static async Task<PiSharpExtensionExecResult> ExecuteAsync(string command, IReadOnlyList<string> args,
-        string workingDirectory, TimeSpan? timeout, CancellationToken cancellationToken)
+        string workingDirectory, TimeSpan? timeout, CancellationToken cancellationToken,
+        Func<ReadOnlyMemory<byte>, ValueTask<bool>>? onStandardOutput = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(command);
         ArgumentNullException.ThrowIfNull(args);
@@ -30,8 +31,9 @@ internal static class DirectProcessExecution
         process.StartInfo.RedirectStandardInput = true;
         using var deadline = new CancellationTokenSource();
         using var captureFailure = new CancellationTokenSource();
+        using var outputComplete = new CancellationTokenSource();
         using var operation = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken, deadline.Token, captureFailure.Token);
+            cancellationToken, deadline.Token, captureFailure.Token, outputComplete.Token);
         using var pumpStop = new CancellationTokenSource();
         var stdout = new StringBuilder();
         var stderr = new StringBuilder();
@@ -101,10 +103,21 @@ internal static class DirectProcessExecution
                 while ((count = await stream.ReadAsync(bytes, pumpStop.Token).ConfigureAwait(false)) > 0)
                 {
                     Interlocked.Exchange(ref lastOutput, Stopwatch.GetTimestamp());
+                    if (ReferenceEquals(target, stdout) && onStandardOutput is not null)
+                    {
+                        if (!await onStandardOutput(bytes.AsMemory(0, count)).ConfigureAwait(false))
+                        {
+                            outputComplete.Cancel();
+                            break;
+                        }
+                        continue;
+                    }
                     if (Interlocked.Add(ref capturedBytes, count) > MaximumOutputBytes)
                         throw new IOException($"Process output exceeds the {MaximumOutputBytes}-byte capture limit.");
                     target.Append(chars, 0, decoder.GetChars(bytes, 0, count, chars, 0, flush: false));
                 }
+                if (ReferenceEquals(target, stdout) && onStandardOutput is not null && !outputComplete.IsCancellationRequested &&
+                    !await onStandardOutput(ReadOnlyMemory<byte>.Empty).ConfigureAwait(false)) outputComplete.Cancel();
             }
             catch (Exception error) when (pumpStop.IsCancellationRequested &&
                 error is OperationCanceledException or IOException or ObjectDisposedException)

@@ -404,6 +404,13 @@ def cases():
         {'private/file.txt': 'needle\n'}, modes={'private': 0})
     add('grep', 'late-match-beyond-inventory', {'pattern': 'late-needle'}, {'z/wanted.txt': 'late-needle\n'},
         generatedFiles={'directory': 'a', 'count': 20050, 'text': ''})
+    add('grep', 'repository-local-private-excludes', {'pattern': 'match-value'},
+        {'global-excludes': 'global-untracked.txt\nstaged-global.txt\nglobal-rescued.txt\n',
+         '.ignore': '!global-rescued.txt\n!local-rescued.txt\n',
+         'global-untracked.txt': 'match-value\n', 'staged-global.txt': 'match-value\n',
+         'global-rescued.txt': 'match-value\n', 'local-rescued.txt': 'match-value\n', 'visible.txt': 'match-value\n'},
+        gitDirectories=['.'], gitConfig={'core.excludesFile': '{WORKSPACE}/global-excludes'},
+        acceptanceClass='intentional-repository-exclusion-safety')
     for tool, pattern in [('grep', 'needle'), ('find', '*.txt')]:
         arguments = {'pattern': pattern}
         files = {'visible.txt': 'needle\n', 'ignored.txt': 'needle\n', '.gitignore': 'ignored.txt\n'}

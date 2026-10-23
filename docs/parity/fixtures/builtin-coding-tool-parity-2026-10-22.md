@@ -796,3 +796,77 @@ three named strict-equivalence exclusions. Final owner-cleanup/extension checks
 pass 12/12 after the 196-check broader selection. I is complete for the defined
 supported Linux checkpoint. Shared provider/history/reliability gates M–P remain
 open. Progress is now 9 of 20 checkpoints complete; J is in progress.
+
+## Grep correction in progress
+
+Clean input source `bf9316fa` expands grep to 67 direct cases. The same-Pi
+control passes 67/67; native baseline passes 39/67, and 28 actual-function C#
+regressions reproduce the same mismatches. Confirmed gaps include Rust regex
+syntax, positive/negative globs, CR/BOM/context semantics, fractional parameters,
+pre-cancellation, a 12 MiB single matching line, and a match beyond 20,000 files.
+The first adapter passes 64/67; fractional context and broken-symlink handling
+are corrected. The related selection now passes 95/95 without skips.
+
+The bounded adapter reuses DirectProcessExecution and ProcessLifetime. It keeps
+rg's JSON protocol and matching/ignore engine, projects only displayed fields,
+skips huge submatch arrays, retains at most the displayed 500 line characters,
+and counts full formatted output while retaining only the 50 KiB head. Context
+reading is bounded and supports BOM/CR normalization and pinned fractional rows.
+The [pinned result fixtures](builtin-coding-tool-grep-results-2026-10-22.json)
+retain complete expected results. No differential sorting policy was introduced.
+
+The [actual CPU-profile order observation](builtin-coding-tool-grep-order-2026-10-22.json)
+records eight pinned executions with 24 CPUs. Those consistently produce the
+alternate complete output seen in native regression execution; two-CPU oracle
+runs consistently produce the other observed order. The C# regression accepts
+only these actual complete source-observed texts. The differential still compares
+ordering exactly within its controlled two-CPU profile.
+
+The existing repository-local core.excludesFile guard is preserved. Real pinned
+execution includes two files that the native implementation has historically
+excluded as private. The [explicit safety witness](builtin-coding-tool-grep-safety-2026-10-22.json)
+retains both full outputs, unchanged filesystem state, setup and meaningful
+ownership/mode fields. That named case remains a failed strict comparison and
+does not increase the passed count. Its .ignore rescue rules still work. CI now
+installs rg/fd system dependencies explicitly; no NuGet packages are upgraded.
+
+J remains open for malformed output, cancellation and context/failure hardening,
+fresh committed-head comparisons and shared M–P acceptance. An interruption
+between 2026-10-23 13:57:24 and 17:28:07 UTC is excluded from active engineering
+time; it is not productive work toward the eight-hour target.
+
+### Grep process protocol and real cancellation
+
+The [pinned process/protocol fixture](builtin-coding-tool-grep-protocol-2026-10-22.json)
+explicitly substitutes a synthetic rg executable for malformed-output/spawn tests.
+It is separate from the real-rg corpus and never contributes to its case count or
+version claims. The first 19 cases expose eight actual native failures. The
+incremental reader now validates JSON structure, literals/numbers, escapes,
+physical line framing and EOF before accepting a match; malformed output is
+ignored as in pinned Pi. Spawn validation reuses the existing helper, moved to
+ProcessSpawnValidation, and preserves Pi's error wrapper.
+
+Five Unicode/duplicate-field cases expand that fixture to 24; three additional
+NUL/oversized-argument cases fail before narrow error-projection corrections and
+pass after them. The resulting 27 process cases and 67 actual-input regressions,
+plus real cancellation, pass 95/95. Byte chunks of sizes 1, 7 and 8,192 verify
+Unicode and JSON parsing independently of pipe read boundaries; the earlier
+combined chunk/protocol selection passes 84/84. A streamed 12 MiB line reproduces
+the pinned prefix while allocating under 256 KiB in the reader.
+
+The same source fixture then removes the synthetic executable and runs real
+rg 15.2.0 on a private Linux FIFO. Writer-open completion proves rg has opened
+the input, while withholding bytes holds the read. Another real search completes
+before cancellation; abort settles with Operation aborted, its one observed rg
+process is gone, no updates are emitted, and another search succeeds afterwards.
+The native actual-function fixture verifies the same barrier, independent search,
+process termination and recovery without sleeps. No product global lock is added.
+
+All 21 comparison guards pass, including rejection of changed result lines,
+metadata, ownership, file hashes and inputs in the single exclusion-safety case.
+Fresh committed-head real-rg evidence remains required before J is complete.
+
+The final focused warning-as-error selection passes 427/427, including real
+inputs, synthetic process boundaries, chunked decoding, bounded allocation,
+real cancellation, old search tests, shared truncation and process compatibility.
+No existing tests are removed or skipped. J awaits fresh committed-head evidence.

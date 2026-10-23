@@ -55,3 +55,22 @@ def assess_atomic_mutation_deviation(case, observations):
         for entry in implementation['filesystem'].values():
             entry['uid'], entry['gid'] = os.geteuid(), os.getegid()
     return observations == expected
+
+
+@lru_cache(maxsize=1)
+def grep_exclusion_witness():
+    fixture = Path(__file__).resolve().parents[2] / 'docs/parity/fixtures/builtin-coding-tool-grep-safety-2026-10-22.json'
+    return json.loads(fixture.read_text())['cases'][0]
+
+
+def assess_grep_safety_deviation(case, observations):
+    if not hasattr(os, 'geteuid') or case.get('acceptanceClass') != 'intentional-repository-exclusion-safety':
+        return False
+    witness = grep_exclusion_witness()
+    if case != witness['setup']:
+        return False
+    expected = copy.deepcopy(witness['observations'])
+    for implementation in expected.values():
+        for entry in implementation['filesystem'].values():
+            entry['uid'], entry['gid'] = os.geteuid(), os.getegid()
+    return observations == expected

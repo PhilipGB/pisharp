@@ -51,7 +51,7 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
         var effectiveCommand = shellCommandPrefix is { Length: > 0 } prefix ? $"{prefix}\n{command}" : command;
         if (effectiveCommand.Contains('\0'))
             throw new ToolFailureException("The argument 'args[1]' must be a string without null bytes. Received " + CodingToolPaths.Inspect(effectiveCommand));
-        ShellSpawnValidation.RequireExecutable(shell, workingDirectory);
+        ProcessSpawnValidation.RequireExecutable(shell, workingDirectory);
         var operationId = Guid.NewGuid();
         using var abortSource = new CancellationTokenSource();
         _runningBash[operationId] = abortSource;

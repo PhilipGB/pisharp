@@ -22,6 +22,13 @@ const declarations = Object.fromEntries(Object.entries(factories).map(([name, fa
     outputSchema: tool.outputSchema ?? null, constrainedSampling: tool.constrainedSampling ?? null }];
 }));
 
+if (mode === '--grep-file-order-only') {
+  const { captureGrepFileOrdering } = await import('./builtin-coding-tool-grep-cases.mjs');
+  const result = await captureGrepFileOrdering(factories, JSON.parse(readFileSync(inputFile, 'utf8')));
+  writeFileSync(outputFile, JSON.stringify(result, null, 2) + '\n');
+  process.exit(0);
+}
+
 if (mode === '--bash-session-environment-only') {
   const { captureBashSessionEnvironment } = await import('./builtin-coding-tool-bash-process-cases.mjs');
   const result = await captureBashSessionEnvironment(factories);

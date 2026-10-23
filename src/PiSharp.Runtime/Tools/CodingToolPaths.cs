@@ -5,7 +5,7 @@ namespace PiSharp.Runtime.Tools;
 
 internal static class CodingToolPaths
 {
-    public static string Resolve(string path, string workingDirectory)
+    public static string Resolve(string path, string workingDirectory, bool allowNullBytes = false)
     {
         path = Regex.Replace(path, "[\u00a0\u2000-\u200a\u202f\u205f\u3000]", " ");
         if (path.StartsWith('@')) path = path[1..];
@@ -31,6 +31,7 @@ internal static class CodingToolPaths
         if (path.Contains('\0'))
         {
             var absolute = OperatingSystem.IsWindows() ? path : NormalizeInvalidPosixPath(path, workingDirectory);
+            if (allowNullBytes) return absolute;
             throw new ToolFailureException("The argument 'path' must be a string, Uint8Array, or URL without null bytes. Received " + Inspect(absolute));
         }
         return Path.GetFullPath(path.Length == 0 ? "." : path, workingDirectory);

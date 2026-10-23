@@ -2,7 +2,7 @@ using System.Text;
 
 namespace PiSharp.Runtime.Tools;
 
-internal static class ShellSpawnValidation
+internal static class ProcessSpawnValidation
 {
     public static void RequireExecutable(string shell, string workingDirectory)
     {

@@ -139,6 +139,11 @@
           "last_active_observation": "2026-10-23T09:10:33Z",
           "resumed_at": "2026-10-23T12:22:16Z",
           "reason": "No engineering is claimed between the terminal pre-fix test observation and the next active goal turn."
+        },
+        {
+          "last_active_observation": "2026-10-23T13:57:24Z",
+          "resumed_at": "2026-10-23T17:28:07Z",
+          "reason": "Pending differential finished at the recorded observation; no engineering is claimed before the resumed goal turn."
         }
       ]
     },
@@ -318,10 +323,10 @@
       "write": 39,
       "edit": 69,
       "bash": 44,
-      "grep": 32,
+      "grep": 68,
       "find": 27,
       "ls": 25,
-      "total": 357
+      "total": 393
     },
     "read_image_contract": {
       "status": "in_progress",
@@ -591,6 +596,60 @@
         "receipt": "docs/parity/fixtures/builtin-coding-tool-bash-acceptance-2026-10-22.json"
       },
       "related_passed_after": 196
+    },
+    "grep_contract": {
+      "status": "in_progress",
+      "baseline_source": "bf9316fa",
+      "baseline_strict_passed": 39,
+      "baseline_total": 67,
+      "control_strict_passed": 67,
+      "regression_before_failed": 28,
+      "regression_before_passed": 39,
+      "first_adapter_passed": 64,
+      "first_adapter_total": 67,
+      "related_after": 427,
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-grep-results-2026-10-22.json",
+      "bounded_processing": "Incremental rg JSON projection skips large lines/submatch arrays, keeps 500 displayed characters and bounded head output; existing process lifetime owner handles cancellation.",
+      "file_order_evidence": "Eight unrestricted 24-CPU pinned executions produce the native alternate file order; two-CPU oracle profile produces the other observed order. Both full source-observed results retained; differential ordering comparisons remain exact.",
+      "remaining": [
+        "fresh committed-head differential/control",
+        "shared M-P provider, history and reliability acceptance"
+      ],
+      "protocol_fixture": "docs/parity/fixtures/builtin-coding-tool-grep-protocol-2026-10-22.json",
+      "protocol_first_before": {
+        "failed": 8,
+        "passed": 11,
+        "total": 19
+      },
+      "protocol_argument_before": {
+        "failed": 3,
+        "passed": 24,
+        "total": 27
+      },
+      "protocol_after": {
+        "passed": 27,
+        "total": 27
+      },
+      "chunk_boundary_selection": {
+        "passed": 84,
+        "note": "24 protocol cases plus 60 byte-chunk/Unicode/validation projections; later three argument-error cases are separately verified"
+      },
+      "real_rg_cancellation": {
+        "passed": 1,
+        "barrier": "FIFO writer open while data withheld",
+        "parallel_search_completed": true,
+        "process_states": [
+          "gone"
+        ],
+        "continuation": "verified"
+      },
+      "large_line_allocation": {
+        "passed": 1,
+        "input_bytes": 12582918,
+        "maximum_reader_allocated_bytes": 262144,
+        "displayed_characters": 500
+      },
+      "comparison_guards_passed": 21
     }
   },
   "plan_received": true,

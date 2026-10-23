@@ -41,6 +41,22 @@ pass 25/25. Clean `011728fb` verifies final I evidence (44/44 direct and strict 
 all three physical shutdown cases), recorded in the final Bash acceptance.
 Move to J; shared M–P acceptance stays open.
 
+Grep is under active correction. Clean input source `bf9316fa` has 67 cases;
+control is 67/67 and baseline 39/67. All 28 mismatches reproduce in C#; the
+bounded rg adapter and compatibility guard now pass 95 related checks. Current
+worktree product changes are not yet committed. A new 68th source case captures
+the intentional stronger repository-local core.excludesFile privacy behavior.
+The CPU-profile file-order witness comes from eight actual pinned runs; no
+ordering normalization was added. Malformed rg output, Unicode chunk boundaries and process/argument errors are
+now source-captured: eight failures before the first correction and three more
+argument failures before their correction. All 27 process cases, 67 direct-input
+cases and real FIFO cancellation pass (95/95 selection). The FIFO proves real
+rg is blocked while another search completes, then cancelled/reaped with recovery.
+The 12 MiB reader allocation check stays below 256 KiB; comparison guards are
+21/21. Format and verify current changes, commit the correction and run fresh
+real-rg differentials before completing J. The 13:57:24–17:28:07 UTC
+interruption is recorded as inactive; do not count it toward active duration.
+
 The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md) and
 [inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) were
 created before product changes. They explicitly list unverified contracts and

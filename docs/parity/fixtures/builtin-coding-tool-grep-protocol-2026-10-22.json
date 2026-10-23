@@ -1,0 +1,615 @@
+{
+  "schema": 1,
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": "packages/coding-agent/src/core/tools/grep.ts",
+  "fixture": "tools/parity/builtin-coding-tool-grep-protocol.mjs",
+  "dependency": "Explicit synthetic rg process/protocol fixture; real-rg FIFO cancellation recorded separately",
+  "realRipgrepCancellation": {
+    "dependency": "Real system rg; synthetic executable removed before execution",
+    "version": "ripgrep 15.2.0 (rev e89fff89ac)",
+    "barrier": "FIFO writer opened after real rg reader; no data supplied before cancellation",
+    "blockedBeforeCancellation": true,
+    "parallel": {
+      "content": [
+        {
+          "type": "text",
+          "text": "file.txt:1: needle"
+        }
+      ]
+    },
+    "outcome": {
+      "error": "Operation aborted"
+    },
+    "updates": [],
+    "processCount": 1,
+    "processStates": [
+      "gone"
+    ],
+    "continuation": {
+      "content": [
+        {
+          "type": "text",
+          "text": "file.txt:1: needle"
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "caseId": "valid",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt:1: needle"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "valid-no-final-newline",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}}",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt:1: needle"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "ignored-garbage-then-valid",
+      "stdout": "not json\n{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt:1: needle"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "invalid-trailing-token",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}} trailing\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "invalid-two-objects-one-line",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}}{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "invalid-missing-comma",
+      "stdout": "{\"type\":\"match\"\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "invalid-number",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1x,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "invalid-string-escape",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\q\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "invalid-unicode-escape",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\u0q00\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "invalid-raw-control",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\u0001\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "incomplete-object",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "valid-root-array-ignored",
+      "stdout": "[{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}}]\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "valid-escaped-key",
+      "stdout": "{\"ty\\u0070e\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt:1: needle"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "valid-type-after-data",
+      "stdout": "{\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]},\"type\":\"match\"}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt:1: needle"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "valid-unicode-path-and-line",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/目录/日本語.txt\"},\"lines\":{\"text\":\"café 😀\\n\"},\"line_number\":1}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "目录/日本語.txt:1: café 😀"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "valid-unicode-escapes",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"caf\\u00e9\\ud83d\\ude00\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt:1: café😀"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "valid-long-unicode-line",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\\n\"},\"line_number\":1,\"submatches\":[]}}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt:1: 😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀... [truncated]\n\n[Some lines truncated to 500 chars. Use read tool to see full lines]"
+          }
+        ],
+        "details": {
+          "linesTruncated": true
+        }
+      }
+    },
+    {
+      "caseId": "duplicate-type-null",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]},\"type\":null}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No matches found"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "duplicate-data-null",
+      "stdout": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]},\"data\":null}\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "large-ignored-submatches",
+      "stdoutRecipe": {
+        "event": "{\"type\":\"match\",\"data\":{\"path\":{\"text\":\"<workspace>/file.txt\"},\"lines\":{\"text\":\"needle\\n\"},\"line_number\":1,\"submatches\":[]}}",
+        "submatches": 20000
+      },
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt:1: needle"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "exit-two-with-stderr",
+      "stdout": "",
+      "stderr": "fixture search failure\n",
+      "exitCode": 2,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "fixture search failure"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "exit-127",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 127,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "ripgrep exited with code 127"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "oversized-pattern",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": {
+          "repeat": "a",
+          "count": 140000
+        }
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "spawn E2BIG"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "nul-pattern",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle\u0000x"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "The argument 'args[5]' must be a string without null bytes. Received 'needle\\x00x'"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "nul-path",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle",
+        "path": "file.txt\u0000suffix"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Path not found: <workspace>/file.txt\u0000suffix"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "non-executable",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 420,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Failed to run ripgrep: spawn <executable> EACCES"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "missing-interpreter",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/pisharp-fixture-missing-interpreter\n",
+      "arguments": {
+        "pattern": "needle"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Failed to run ripgrep: spawn <executable> ENOENT"
+          }
+        ],
+        "details": null
+      }
+    }
+  ]
+}
