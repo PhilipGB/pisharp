@@ -369,19 +369,30 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--calibrate', action='store_true')
     parser.add_argument('--cancel-continuation', action='store_true')
+    parser.add_argument('--cancel-after-bash', action='store_true',
+                        help='Abort after Bash appends a byte; restart must retain exactly one append.')
     args = parser.parse_args()
     apply_test_thread_limit()
     pin = verify_pi_checkout(args.pi)
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     fixture = json.loads((ROOT / 'docs/parity/fixtures/builtin-coding-tool-agent-workflow-2026-10-22.json').read_text())
+    if args.cancel_after_bash:
+        args.cancel_continuation = True
     if args.cancel_continuation:
-        fixture['plan'] = fixture['plan'][:7]
-        fixture['outcomes'] = fixture['outcomes'][:7]
+        count = 8 if args.cancel_after_bash else 7
+        fixture['plan'] = fixture['plan'][:count]
+        fixture['outcomes'] = fixture['outcomes'][:count]
+    if args.cancel_after_bash:
+        bash = fixture['plan'][-1]
+        assert bash['tool'] == 'bash'
+        bash['arguments']['command'] = 'printf x >> once.txt; ' + bash['arguments']['command']
+        fixture['finalFiles']['once.txt'] = dict(text='x', mode=0o644)
     report = dict(schema=1, pinnedPiSha=pin,
                   piSharpSha=None if args.calibrate else subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   piSharpUsed=not args.calibrate, mode='same-pi-control' if args.calibrate else 'pi-vs-pisharp',
                   cancelContinuation=args.cancel_continuation,
+                  cancelAfterBash=args.cancel_after_bash,
                   dirtyPaths=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).splitlines(),
                   startedAt=datetime.now(timezone.utc).isoformat(), observations={})
     for api in args.apis:

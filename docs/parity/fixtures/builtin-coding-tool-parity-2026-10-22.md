@@ -1085,3 +1085,37 @@ filesystem state are unchanged. Its complete actual Pi/native observation pair
 is retained in the existing privacy witness without sorting. This case remains
 strict=false and pass=false; only its safety classification changes. All 27
 comparison guards continue to pass, including rejection of extra leaked lines.
+
+### Complete corpus checkpoint acceptance
+
+Clean `acfbe782` has 395/456 passes (385 strict plus ten JPEG equivalents),
+61 named safety exclusions and zero unresolved cases. The strict source control
+passes 456/456. The [complete corpus receipt](builtin-coding-tool-corpus-acceptance-2026-10-22.json)
+retains each case classification and source SHA. Counts per tool are read 121,
+write 39, edit 69, bash 44, grep 68, find 62 and ls 53. O is complete for
+this defined corpus; P stress/safety is in progress. Progress is 15/20.
+
+## Concurrent workflow and compaction hardening
+
+The [pinned concurrent agent fixture](builtin-coding-tool-concurrent-agent-2026-10-22.json)
+executes eight calls in one batch. Bash blocks on a real FIFO while two unrelated
+writes finish; reads and searches run alongside it. Provider continuation retains
+the original call order. Actual pinned session save/open and compaction retain all
+eight outcomes at an assistant boundary. The native MAF workflow reproduces the
+same barriers, file bytes, correlated results and persisted context.
+
+This exposed an RPC projector restriction to user boundaries although the native
+planner accepts user and assistant boundaries. The regression fails before the
+focused correction. A related existing repeated-read tool loop also failed because
+the context budget serialized result wrappers and presentation metadata that the
+provider never receives. The estimate now uses the existing provider projection;
+raw canonical results and bounded history fingerprinting remain unchanged. The
+new presentation-details regression fails before that correction.
+
+The corrected compaction/RPC/concurrent-workflow selection passes 114/114, with
+zero failures/skips. One interim assertion incorrectly compared completion order
+with canonical call order; it was corrected against the actual pinned fixture.
+Raw failing and passing TRX files remain under the milestone artifacts directory.
+The physical cancellation driver can additionally abort after a non-idempotent
+Bash append; its three API comparisons pass with one byte preserved after restart.
+Clean-head acceptance and five bounded reliability repetitions remain pending.

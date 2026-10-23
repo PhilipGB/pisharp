@@ -22,7 +22,8 @@ internal static class RpcSessionMessageProjector
             var firstKeptIndex = path.ToList().FindIndex(node => node.Id == keptId);
             var isPiBoundary = PiJsonlEntryCodec.OriginalEntry(compaction) is not null;
             if (firstKeptIndex < 0 || firstKeptIndex >= compactionIndex ||
-                !isPiBoundary && ConversationMessageCodec.RestoreEntry(path[firstKeptIndex]).Role != ChatRole.User)
+                !isPiBoundary && ConversationMessageCodec.RestoreEntry(path[firstKeptIndex]).Role is var role &&
+                role != ChatRole.User && role != ChatRole.Assistant)
                 throw new InvalidDataException("Invalid compaction boundary.");
 
             if (PiJsonlEntryCodec.CompactionSystemMessage(compaction) is { } systemMessage)

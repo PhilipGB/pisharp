@@ -10,8 +10,8 @@ head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
 passed 2,711 tests and both MCP jobs before the expected-head merge.
 
 Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–N are complete;
-O (complete differential corpus) is in progress; P–T remain pending. Preserve this
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–O are complete;
+P (stress and safety) is in progress; Q–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
@@ -1426,3 +1426,9 @@ contract comparison, each with 11 requests, nine correlated outcomes and an
 actual CLI restart; strict same-Pi controls pass 3/3. Only the previously
 documented native private new-file mode remains explicitly excluded. Progress
 is 14/20 complete, 6 remaining. O full corpus and P reliability remain open.
+
+Clean `acfbe782` closes O for the defined 456-case corpus: 395 passes (385
+strict plus ten named JPEG equivalents), 61 explicit failed strict safety
+comparisons and zero unresolved cases. Strict same-Pi control passes 456/456.
+Progress is 15/20 complete; P reliability is in progress. Any later product
+correction requires affected corpus revalidation before final publication.

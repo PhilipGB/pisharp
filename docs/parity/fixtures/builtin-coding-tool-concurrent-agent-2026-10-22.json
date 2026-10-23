@@ -1,0 +1,300 @@
+{
+  "schema": 1,
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": "packages/agent/src/agent-loop.ts and actual pinned tools",
+  "fixture": "tools/parity/builtin-coding-tool-concurrent-agent.mjs",
+  "barrier": "Bash holds a real FIFO; two independent write results and the Bash-ready update must arrive before its writer is released.",
+  "tools": [
+    "read",
+    "bash",
+    "edit",
+    "write",
+    "grep",
+    "find",
+    "ls"
+  ],
+  "files": {
+    "data/first.txt": "alpha\n",
+    "data/second.txt": "beta\n"
+  },
+  "plan": [
+    {
+      "tool": "bash",
+      "arguments": {
+        "command": "printf 'batch-ready\\n'; read -r release < gate; printf 'batch-released\\n'"
+      },
+      "callId": "parallel_0"
+    },
+    {
+      "tool": "read",
+      "arguments": {
+        "path": "data/first.txt"
+      },
+      "callId": "parallel_1"
+    },
+    {
+      "tool": "read",
+      "arguments": {
+        "path": "data/second.txt"
+      },
+      "callId": "parallel_2"
+    },
+    {
+      "tool": "grep",
+      "arguments": {
+        "pattern": "alpha",
+        "path": "data/first.txt"
+      },
+      "callId": "parallel_3"
+    },
+    {
+      "tool": "find",
+      "arguments": {
+        "pattern": "*.txt",
+        "path": "data"
+      },
+      "callId": "parallel_4"
+    },
+    {
+      "tool": "ls",
+      "arguments": {
+        "path": "data"
+      },
+      "callId": "parallel_5"
+    },
+    {
+      "tool": "write",
+      "arguments": {
+        "path": "out/first.txt",
+        "content": "first mutation\n"
+      },
+      "callId": "parallel_6"
+    },
+    {
+      "tool": "write",
+      "arguments": {
+        "path": "out/second.txt",
+        "content": "second mutation\n"
+      },
+      "callId": "parallel_7"
+    }
+  ],
+  "beforeRelease": [
+    "parallel_3",
+    "parallel_5",
+    "parallel_6",
+    "parallel_4",
+    "parallel_7"
+  ],
+  "outcomes": [
+    {
+      "callId": "parallel_3",
+      "tool": "grep",
+      "content": [
+        {
+          "type": "text",
+          "text": "first.txt:1: alpha"
+        }
+      ],
+      "details": null,
+      "isError": false
+    },
+    {
+      "callId": "parallel_5",
+      "tool": "ls",
+      "content": [
+        {
+          "type": "text",
+          "text": "first.txt\nsecond.txt"
+        }
+      ],
+      "details": null,
+      "isError": false
+    },
+    {
+      "callId": "parallel_6",
+      "tool": "write",
+      "content": [
+        {
+          "type": "text",
+          "text": "Successfully wrote to out/first.txt"
+        }
+      ],
+      "details": null,
+      "isError": false
+    },
+    {
+      "callId": "parallel_4",
+      "tool": "find",
+      "content": [
+        {
+          "type": "text",
+          "text": "first.txt\nsecond.txt"
+        }
+      ],
+      "details": null,
+      "isError": false
+    },
+    {
+      "callId": "parallel_7",
+      "tool": "write",
+      "content": [
+        {
+          "type": "text",
+          "text": "Successfully wrote to out/second.txt"
+        }
+      ],
+      "details": null,
+      "isError": false
+    },
+    {
+      "callId": "parallel_1",
+      "tool": "read",
+      "content": [
+        {
+          "type": "text",
+          "text": "alpha\n"
+        }
+      ],
+      "details": null,
+      "isError": false
+    },
+    {
+      "callId": "parallel_2",
+      "tool": "read",
+      "content": [
+        {
+          "type": "text",
+          "text": "beta\n"
+        }
+      ],
+      "details": null,
+      "isError": false
+    },
+    {
+      "callId": "parallel_0",
+      "tool": "bash",
+      "content": [
+        {
+          "type": "text",
+          "text": "batch-ready\nbatch-released\n"
+        }
+      ],
+      "details": null,
+      "isError": false
+    }
+  ],
+  "requests": [
+    [],
+    [
+      {
+        "callId": "parallel_0",
+        "tool": "bash",
+        "content": [
+          {
+            "type": "text",
+            "text": "batch-ready\nbatch-released\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "parallel_1",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "parallel_2",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "beta\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "parallel_3",
+        "tool": "grep",
+        "content": [
+          {
+            "type": "text",
+            "text": "first.txt:1: alpha"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "parallel_4",
+        "tool": "find",
+        "content": [
+          {
+            "type": "text",
+            "text": "first.txt\nsecond.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "parallel_5",
+        "tool": "ls",
+        "content": [
+          {
+            "type": "text",
+            "text": "first.txt\nsecond.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "parallel_6",
+        "tool": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to out/first.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "parallel_7",
+        "tool": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to out/second.txt"
+          }
+        ],
+        "isError": false
+      }
+    ]
+  ],
+  "finalFiles": {
+    "data/first.txt": "alpha\n",
+    "data/second.txt": "beta\n",
+    "out/first.txt": "first mutation\n",
+    "out/second.txt": "second mutation\n"
+  },
+  "compaction": {
+    "firstKeptRole": "assistant",
+    "actualSessionFileReload": true,
+    "retainedResultIds": [
+      "parallel_0",
+      "parallel_1",
+      "parallel_2",
+      "parallel_3",
+      "parallel_4",
+      "parallel_5",
+      "parallel_6",
+      "parallel_7"
+    ]
+  }
+}

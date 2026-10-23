@@ -1,11 +1,35 @@
 using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
+using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Tests;
 
 public sealed class InFlightContextBudgetTests
 {
+    [Fact]
+    public async Task PresentationDetailsDoNotConsumeTheProviderContinuationBudget()
+    {
+        var summaries = 0;
+        var budget = new InFlightContextBudget(() => new AutoCompactionPolicy(2700, 300),
+            (_, _) => Task.FromResult(new PiAgent.CompactionSummary($"summary #{++summaries}", null)),
+            (_, _) => Task.CompletedTask);
+        var outcome = new PiSharpToolResult("changed one line", Details: new { patch = new string('x', 100_000) });
+        var messages = new ChatMessage[]
+        {
+            new(ChatRole.User, "edit the file"),
+            new(ChatRole.Assistant,
+                [new FunctionCallContent("edit-1", "edit", new Dictionary<string, object?> { ["path"] = "file.txt" })]),
+            new(ChatRole.Tool, [new FunctionResultContent("edit-1", outcome)])
+        };
+
+        var projected = await budget.ProjectAsync(messages, force: false, CancellationToken.None);
+
+        Assert.Same(messages, projected);
+        Assert.Equal(0, summaries);
+        Assert.Same(outcome, messages[^1].Contents.OfType<FunctionResultContent>().Single().Result);
+    }
+
     [Theory]
     [InlineData("user")]
     [InlineData("call")]

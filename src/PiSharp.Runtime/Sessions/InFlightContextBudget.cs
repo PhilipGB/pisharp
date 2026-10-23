@@ -16,7 +16,7 @@ internal sealed class InFlightContextBudget(
     public async Task<IReadOnlyList<ChatMessage>> ProjectAsync(IReadOnlyList<ChatMessage> messages, bool force, CancellationToken cancellationToken)
     {
         var policy = getPolicy();
-        if (!force && AutoCompactionPolicy.Estimate(messages, "") <= policy.TriggerTokens) return messages;
+        if (!force && EstimateRequest(messages) <= policy.TriggerTokens) return messages;
 
         // Prefer whole-turn cuts. If the current turn alone is too large, only cut after
         // fully matched tool calls/results so the provider never sees an orphaned result.
@@ -26,7 +26,7 @@ internal sealed class InFlightContextBudget(
         var currentTurnStart = FindCurrentTurnStart(messages, users);
         var boundary = users[^1];
         var splitTurn = users.Length == 1 ||
-            AutoCompactionPolicy.Estimate(messages.Skip(currentTurnStart).ToArray(), "") > policy.TriggerTokens;
+            EstimateRequest(messages.Skip(currentTurnStart).ToArray()) > policy.TriggerTokens;
         if (!splitTurn && policy.KeepRecentTokens is int keepRecent)
         {
             long estimated = 0;
@@ -34,7 +34,7 @@ internal sealed class InFlightContextBudget(
             {
                 var end = i + 1 < users.Length ? users[i + 1] : messages.Count;
                 for (var index = users[i]; index < end; index++)
-                    estimated += AutoCompactionPolicy.Estimate([messages[index]], "") - 512;
+                    estimated += EstimateRequest([messages[index]]) - 512;
                 boundary = users[i];
                 if (estimated >= keepRecent) break;
             }
@@ -66,7 +66,7 @@ internal sealed class InFlightContextBudget(
         projected.AddRange(messages.Take(users[0])); // Preserve all system/developer instructions.
         projected.Add(ConversationContextProjection.CompactionSummaryMessage(summaryText));
         projected.AddRange(messages.Skip(boundary));
-        if (AutoCompactionPolicy.Estimate(projected, "") > policy.TriggerTokens)
+        if (EstimateRequest(projected) > policy.TriggerTokens)
             throw new InvalidOperationException("Tool-loop context still exceeds the configured budget after summarization; shorten tool output or increase the model context window.");
         if (!cached)
         {
@@ -75,6 +75,11 @@ internal sealed class InFlightContextBudget(
         }
         return projected;
     }
+
+    // Presentation details remain in canonical history but do not consume the model's input budget.
+    private static int EstimateRequest(IReadOnlyList<ChatMessage> messages) =>
+        AutoCompactionPolicy.Estimate(ToolResultMessageProjection.Expand(messages,
+            supportsImages: true, flattenStructuredResults: true), "");
 
     private static int FindCurrentTurnStart(IReadOnlyList<ChatMessage> messages, IReadOnlyList<int> users)
     {
