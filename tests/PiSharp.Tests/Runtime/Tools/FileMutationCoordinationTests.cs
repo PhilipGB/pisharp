@@ -164,7 +164,7 @@ public sealed class FileMutationCoordinationTests
             await Assert.ThrowsAsync<ToolFailureException>(() => mutations.WriteAsync("shared", "must not commit"));
 
             Assert.Equal("original", await File.ReadAllTextAsync(target));
-            Assert.Equal(["shared"], Directory.EnumerateFileSystemEntries(root).Select(Path.GetFileName).ToArray());
+            Assert.Equal("shared", Path.GetFileName(Assert.Single(Directory.EnumerateFileSystemEntries(root))));
         }
         finally { Directory.Delete(root, recursive: true); }
     }

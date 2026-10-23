@@ -612,6 +612,39 @@ safety differences, with zero unresolved differences. Its same-Pi control is
 39/39 strict. The supported write checkpoint is complete; broader M–P acceptance
 remains mandatory. Corpus inventory is 305 (write 39, read 121).
 
+### Edit decoding, match planning and Linux errors
+
+Clean expanded baseline `385ac35d` passes 21/67 strict cases. A separate clean
+`d1046c7b` case confirms an exact trailing-space range is incorrectly shortened
+inside a fuzzy batch. The [captured edit results](builtin-coding-tool-edit-results-2026-10-22.json)
+now drive actual-function regressions for text, all diff/patch fields and final
+file bytes, including error cases that must leave the snapshot unchanged.
+The complete pre-fix selection has seventeen failures: sixteen confirmed product
+regressions and one fixture-path comparison error. The latter omitted temporary
+root replacement inside a file-URL patch header and is corrected without
+removing any result fields. Both raw pre-fix runs remain available locally.
+
+The planner now follows pinned non-overlapping, fuzzy-normalized ambiguity counts
+while retaining exact ranges when available, including in a fuzzy batch. As in
+Pi, `aaa` with old text `aa` chooses its leftmost overlapping occurrence; all
+replacements still target one snapshot, and overlaps between batch entries remain
+invalid. This is a deliberate source-backed matching choice, not removal of batch
+validation or atomicity. Empty normalized needles follow JavaScript split/count
+behavior and preserve the original line blocks or produce the source error.
+
+Edit reads now use Node-compatible UTF-8 replacement decoding, preserve BOM and
+line endings, and check Linux read/write access before opening a readable stream.
+Directories and file ancestors produce the pinned error categories. Cancellation
+is checked across the existing stages and uses `Operation aborted`. An atomic
+parent-permission failure names the requested target rather than leaking its
+private temporary filename; the read-only-parent side-effect difference itself
+remains an explicit atomicity safety candidate.
+
+The related selection passes 327/327, including existing core conformance,
+metadata/history and mutation checks. A nullable warning in the new prepared-write
+cleanup assertion is corrected. Fresh source-pinned comparison and remaining
+edit hardening are next; H remains in progress. Corpus inventory is 340 (edit 68).
+
 ## Shared integration and safety gates
 
 Keep the existing registry, MAF `ChatClientAgent` invocation, durable outcome
@@ -643,3 +676,6 @@ H (edit) is in progress; I–T are pending. Completing
 an inventory or passing local tests does not close the milestone. PR #22 must
 be published as draft and remain unmerged; PR #23 is excluded. Global Pi parity
 remains `in_progress`.
+
+No engineering is claimed between 2026-10-23 09:10:33 UTC and resumption at
+2026-10-23 12:22:16 UTC; exclude that inactive interval from active duration.

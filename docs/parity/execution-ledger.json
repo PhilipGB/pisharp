@@ -134,6 +134,11 @@
           "last_active_observation": "2026-10-22T19:07:47Z",
           "resumed_at": "2026-10-23T07:13:30Z",
           "reason": "No engineering is claimed between these observed goal turns. This interval is excluded from active duration."
+        },
+        {
+          "last_active_observation": "2026-10-23T09:10:33Z",
+          "resumed_at": "2026-10-23T12:22:16Z",
+          "reason": "No engineering is claimed between the terminal pre-fix test observation and the next active goal turn."
         }
       ]
     },
@@ -311,12 +316,12 @@
     "current_case_inventory": {
       "read": 121,
       "write": 39,
-      "edit": 33,
+      "edit": 68,
       "bash": 28,
       "grep": 32,
       "find": 27,
       "ls": 25,
-      "total": 305
+      "total": 340
     },
     "read_image_contract": {
       "status": "in_progress",
@@ -478,6 +483,20 @@
         "control_strict_passed": 39,
         "receipt": "docs/parity/fixtures/builtin-coding-tool-write-acceptance-2026-10-22.json"
       }
+    },
+    "edit_contract": {
+      "baseline_source": "385ac35d",
+      "baseline_strict_passed": 21,
+      "baseline_total": 67,
+      "fuzzy_range_before_source": "d1046c7b",
+      "fuzzy_range_before_passed": 0,
+      "fuzzy_range_before_total": 1,
+      "product_regressions_failed_before": 16,
+      "additional_fixture_error": "Temporary roots were not replaced inside file-URL patch details; corrected without dropping fields.",
+      "pre_fix_total": 67,
+      "related_passed_after": 327,
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-edit-results-2026-10-22.json",
+      "status": "fresh paired evidence and remaining hardening pending"
     }
   },
   "plan_received": true,
