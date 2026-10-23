@@ -22,6 +22,13 @@ const declarations = Object.fromEntries(Object.entries(factories).map(([name, fa
     outputSchema: tool.outputSchema ?? null, constrainedSampling: tool.constrainedSampling ?? null }];
 }));
 
+if (mode === '--bash-session-environment-only') {
+  const { captureBashSessionEnvironment } = await import('./builtin-coding-tool-bash-process-cases.mjs');
+  const result = await captureBashSessionEnvironment(factories);
+  writeFileSync(outputFile, JSON.stringify(result, null, 2) + '\n');
+  process.exit(0);
+}
+
 if (mode === '--bash-process-lifetime-only') {
   const { captureBashProcessLifetime } = await import('./builtin-coding-tool-bash-process-cases.mjs');
   const result = await captureBashProcessLifetime(factories);

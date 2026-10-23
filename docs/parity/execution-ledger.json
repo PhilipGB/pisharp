@@ -544,11 +544,45 @@
         "source_receipt": "docs/parity/fixtures/builtin-coding-tool-bash-processes-2026-10-22.json"
       },
       "remaining": [
-        "fresh clean-head paired/control run",
-        "session environment and direct Bash/extension acceptance",
-        "timeout/signal/shutdown process lifetime",
-        "shared M-P integration and reliability"
-      ]
+        "fresh committed-head environment/shutdown acceptance",
+        "shared M-P provider, history and reliability acceptance"
+      ],
+      "stream_acceptance": {
+        "source": "b46aff69571749b11247b67bcf27e71d82cceab0",
+        "passed": 44,
+        "total": 44,
+        "control_passed": 44,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-bash-stream-acceptance-2026-10-22.json"
+      },
+      "session_environment": {
+        "fail_first": 2,
+        "model_selection": true,
+        "reasoning_selection": true,
+        "stale_inherited_values_removed": true,
+        "separate_sessions_verified": true,
+        "direct_bash_has_no_session_metadata": true,
+        "tests_after": 3,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-bash-environment-2026-10-22.json"
+      },
+      "shutdown": {
+        "before_failed": 2,
+        "before_passed": 1,
+        "after_passed": 3,
+        "native_exit_codes": {
+          "EOF": 0,
+          "SIGTERM": 143,
+          "SIGHUP": 129
+        },
+        "native_descendants_alive": 0,
+        "pinned_detached_grandchildren_alive": 3,
+        "eof_response_difference": "Native retains existing cancelled RPC completion response; pinned closes without a response. Explicitly outside strict equivalence."
+      },
+      "upstream_selected_bash_regressions": {
+        "files": 5,
+        "passed": 25,
+        "failed": 0,
+        "skipped": 0
+      }
     }
   },
   "plan_received": true,

@@ -75,6 +75,7 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
             linked.Token.ThrowIfCancellationRequested();
             process.Start();
             started = true;
+            ProcessLifetime.Track(process, processGroup);
             process.StandardInput.Close();
             if (timeout.HasValue) timeoutSource.CancelAfter(TimeSpan.FromSeconds(timeout.Value));
             stdout = PumpAsync(process.StandardOutput.BaseStream, output, updates, toolUpdates, pumpStop.Token, ticks =>
@@ -141,12 +142,16 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
         finally
         {
             _runningBash.TryRemove(operationId, out _);
-            if (started && (!process.HasExited || stdout is { IsCompleted: false } || stderr is { IsCompleted: false }))
+            try
             {
-                ProcessLifetime.KillProcessTree(process, processGroup);
-                await ProcessLifetime.WaitForExitQuietlyAsync(process);
-                await ProcessLifetime.StopPumpsAsync(process, stdout, stderr, pumpStop);
+                if (started && (!process.HasExited || stdout is { IsCompleted: false } || stderr is { IsCompleted: false }))
+                {
+                    ProcessLifetime.KillProcessTree(process, processGroup);
+                    await ProcessLifetime.WaitForExitQuietlyAsync(process);
+                    await ProcessLifetime.StopPumpsAsync(process, stdout, stderr, pumpStop);
+                }
             }
+            finally { ProcessLifetime.Untrack(process); }
         }
 
         static async Task PumpAsync(Stream source, ShellOutputBuffer target, BashOutputUpdates updates, BashToolUpdates? toolUpdates,

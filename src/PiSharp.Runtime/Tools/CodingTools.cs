@@ -143,6 +143,8 @@ public sealed class CodingTools
 
     public void AbortBash() => _shell.AbortBash();
 
+    internal const string BashSessionEnvironmentContextKey = "PiSharp.Runtime.BashSessionEnvironment";
+
     private static IReadOnlyDictionary<string, string?>? CurrentBashSessionEnvironment()
     {
         AgentRunContext? context;
@@ -151,6 +153,8 @@ public sealed class CodingTools
         if (context is null) return null;
         var properties = context.RunOptions?.AdditionalProperties;
         if (properties is null) return null;
+        if (properties.TryGetValue(BashSessionEnvironmentContextKey, out var current) &&
+            current is Func<IReadOnlyDictionary<string, string?>> getEnvironment) return getEnvironment();
         var environment = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var name in ShellExecution.SessionEnvironmentNames)
             if (properties.TryGetValue(name, out var value) && value is string text)

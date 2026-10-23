@@ -739,3 +739,48 @@ No PID values are used as expected output.
 Checkpoint I remains in progress. Fresh clean-head paired/control evidence,
 session environment, timeout/signal/shutdown behavior, physical provider loops
 and repeated reliability acceptance are still required.
+
+### Bash continuation, session environment and application shutdown
+
+Clean `b46aff69571749b11247b67bcf27e71d82cceab0` passes all 44 direct
+Bash cases; the independent same-Pi control passes 44/44. The compact
+[stream/spawn acceptance](builtin-coding-tool-bash-stream-acceptance-2026-10-22.json)
+retains source SHAs, declaration results and normalization policy. This evidence
+covers settled initial/final snapshots, not identity of every intermediate chunk.
+
+[Four physical pinned environment observations](builtin-coding-tool-bash-environment-2026-10-22.json)
+exercise current selection, changed selection, a new session with optional values
+absent and execution without tool context. All five inherited PI_* variables are
+seeded with fixture-only stale values. Two actual MAF regressions find that
+PiSharp captures old provider/model/reasoning values at run start. Resolving the
+metadata at each tool execution corrects both. Three tests then verify model and
+reasoning transitions, shared-runner new sessions, optional metadata clearing and
+the separate direct-Bash contract. The related transition selection passes 29
+checks; the complete new environment class passes 3/3.
+
+A separate CLI subprocess fixture creates child and detached-grandchild processes
+before EOF, SIGTERM or SIGHUP. Before correction, EOF cleans up but both signals
+leave descendants running (two failing regressions). The existing ProcessLifetime
+owner now tracks active shell/direct processes. Application exit performs cleanup;
+the CLI handles SIGTERM/SIGHUP with cleanup and Pi-compatible 143/129 exit codes.
+All three shutdown regressions pass, and the combined environment/lifetime/shutdown
+selection passes 8/8. Actual pinned CLI comparisons show native exit codes 0,
+143 and 129 with all fixture descendants terminated. Pinned Pi terminates its
+original group but leaves the detached grandchild sleeping in all three cases.
+
+Intentional strict-equivalence exclusions: detached-grandchild cleanup is stronger
+in PiSharp; on RPC EOF PiSharp preserves its existing explicit cancelled response
+while Pi closes without a response. Raw response bytes and process states remain
+in the physical report. No successful tool outcome is invented, and no process
+state or response is removed from comparison. SIGTERM/SIGHUP response streams are
+empty in both products for this fixture.
+
+Reproduce with `python3 tools/parity/builtin-coding-tool-shutdown.py --pi /tmp/pi-pinned-source
+--output artifacts/parity/<run>/shutdown.json`. All child PIDs are observed before
+explicit fixture cleanup. Five selected upstream Bash persistence/failure/output
+regression files also pass 25/25 without skips. Fresh committed-head acceptance and
+shared M–P gates remain pending; checkpoint I is still in progress.
+
+The expanded warning-as-error Bash/shell/protocol/selection/extension execution
+selection passes 196/196 with zero failures/skips. Active-process tracking is
+removed in finally even when output cleanup throws.

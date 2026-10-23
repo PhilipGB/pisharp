@@ -27,6 +27,19 @@ stronger cleanup guarantee and document it separately from strict parity.
 Fresh clean-head differential, session environment, timeout/shutdown and shared
 integration/reliability acceptance remain open. I remains in progress.
 
+Clean `b46aff69` now passes 44/44 direct Bash cases and its strict same-Pi control.
+Two additional MAF regressions expose stale provider/model/reasoning environment
+values after selection; the per-execution resolver fixes both, and all three
+new environment checks pass. SIGTERM/SIGHUP originally leave child processes
+running; active-process tracking and CLI cleanup fix both, with EOF/TERM/HUP
+exit codes 0/143/129. All eight new environment/lifetime/shutdown checks pass; the expanded Bash,
+extension execution, selection and protocol selection passes 196/196.
+The real pinned CLI leaves its detached grandchild alive and emits no EOF
+response; native stronger cleanup and its retained cancelled EOF response are
+explicit strict-equivalence exclusions. Five upstream Bash regression files
+pass 25/25. Commit current changes, then capture fresh final I evidence before
+moving to J; shared M–P acceptance stays open.
+
 The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md) and
 [inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) were
 created before product changes. They explicitly list unverified contracts and

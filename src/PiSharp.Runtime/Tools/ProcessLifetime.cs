@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
@@ -8,6 +9,18 @@ namespace PiSharp.Runtime.Tools;
 internal static class ProcessLifetime
 {
     private static readonly TimeSpan s_stdioIdleGrace = TimeSpan.FromMilliseconds(100);
+    private static readonly ConcurrentDictionary<Process, bool> s_active = new();
+
+    static ProcessLifetime() => AppDomain.CurrentDomain.ProcessExit += (_, _) => KillTrackedProcesses();
+
+    internal static void Track(Process process, bool processGroup) => s_active[process] = processGroup;
+
+    internal static void Untrack(Process process) => s_active.TryRemove(process, out _);
+
+    internal static void KillTrackedProcesses()
+    {
+        foreach (var (process, processGroup) in s_active) KillProcessTree(process, processGroup);
+    }
 
     internal static ProcessStartInfo CreateStartInfo(string executable, IEnumerable<string> arguments,
         string workingDirectory, out bool processGroup)

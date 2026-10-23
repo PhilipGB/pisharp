@@ -21,7 +21,9 @@ documentation, draft PR #22 and final-head CI. An inventory is not a parity clai
 Bash now has 44 independent cases, with 2/44 strict matches before the update,
 decoding, stdin and spawn corrections. The related selection passes 157 tests,
 including deterministic 100 ms coalescing and detached-grandchild cleanup.
-Fresh clean-head paired evidence and the remaining Bash acceptance are pending.
+Clean `b46aff69` now passes 44/44 with a 44/44 same-Pi control.
+The expanded environment/shutdown/extension selection passes 196 checks.
+Fresh final Bash evidence and shared integration acceptance remain pending.
 
 See the [tool milestone receipt](docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md)
 and [initial acceptance inventory](docs/parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json).

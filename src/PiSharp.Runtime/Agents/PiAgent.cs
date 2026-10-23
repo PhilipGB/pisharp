@@ -720,9 +720,10 @@ public sealed class PiAgent
         Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
-        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null) =>
+        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
+        Func<IReadOnlyDictionary<string, string?>>? getBashSessionEnvironment = null) =>
         RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent,
-            takeSteering, projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync);
+            takeSteering, projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync, getBashSessionEnvironment);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable,
@@ -730,18 +731,20 @@ public sealed class PiAgent
         Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
-        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null) =>
+        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
+        Func<IReadOnlyDictionary<string, string?>>? getBashSessionEnvironment = null) =>
         RunStreamingDurableCoreAsync(prompt, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync);
+            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync, getBashSessionEnvironment);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationDurableAsync(AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
-        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null) =>
+        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
+        Func<IReadOnlyDictionary<string, string?>>? getBashSessionEnvironment = null) =>
         RunStreamingDurableCoreAsync(null, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync);
+            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync, getBashSessionEnvironment);
 
     private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableCoreAsync(ChatMessage? prompt,
         AgentSession session,
@@ -750,7 +753,8 @@ public sealed class PiAgent
         Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment, string? conversationSessionId,
-        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync)
+        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync,
+        Func<IReadOnlyDictionary<string, string?>>? getBashSessionEnvironment)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
@@ -783,11 +787,14 @@ public sealed class PiAgent
                 chatOptions.AdditionalProperties = properties;
             }
             var runOptions = new ChatClientAgentRunOptions(chatOptions);
-            if (bashSessionEnvironment is { Count: > 0 })
+            if (bashSessionEnvironment is { Count: > 0 } || getBashSessionEnvironment is not null)
             {
                 var properties = new AdditionalPropertiesDictionary();
-                foreach (var (key, value) in bashSessionEnvironment)
-                    if (value is not null) properties[key] = value;
+                if (bashSessionEnvironment is not null)
+                    foreach (var (key, value) in bashSessionEnvironment)
+                        if (value is not null) properties[key] = value;
+                if (getBashSessionEnvironment is not null)
+                    properties[CodingTools.BashSessionEnvironmentContextKey] = getBashSessionEnvironment;
                 runOptions.AdditionalProperties = properties;
             }
             try

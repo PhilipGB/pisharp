@@ -49,6 +49,7 @@ internal static class DirectProcessExecution
             cancellationToken.ThrowIfCancellationRequested();
             process.Start();
             started = true;
+            ProcessLifetime.Track(process, processGroup);
             process.StandardInput.Close();
             if (timeout is { } duration && duration > TimeSpan.Zero) deadline.CancelAfter(duration);
             stdoutPump = PumpAsync(process.StandardOutput.BaseStream, stdout);
@@ -77,12 +78,16 @@ internal static class DirectProcessExecution
         }
         finally
         {
-            if (started && !cleaned)
+            try
             {
-                ProcessLifetime.KillProcessTree(process, processGroup);
-                await ProcessLifetime.WaitForExitQuietlyAsync(process).ConfigureAwait(false);
-                await ProcessLifetime.StopPumpsAsync(process, stdoutPump, stderrPump, pumpStop).ConfigureAwait(false);
+                if (started && !cleaned)
+                {
+                    ProcessLifetime.KillProcessTree(process, processGroup);
+                    await ProcessLifetime.WaitForExitQuietlyAsync(process).ConfigureAwait(false);
+                    await ProcessLifetime.StopPumpsAsync(process, stdoutPump, stderrPump, pumpStop).ConfigureAwait(false);
+                }
             }
+            finally { ProcessLifetime.Untrack(process); }
         }
 
         async Task PumpAsync(Stream stream, StringBuilder target)
