@@ -870,3 +870,12 @@ The final focused warning-as-error selection passes 427/427, including real
 inputs, synthetic process boundaries, chunked decoding, bounded allocation,
 real cancellation, old search tests, shared truncation and process compatibility.
 No existing tests are removed or skipped. J awaits fresh committed-head evidence.
+
+At clean `908c708e`, the real-rg run passes all 67 strict-equivalence cases and
+the same-Pi control passes 68/68. The privacy witness initially stays unresolved
+because pinned Pi returns its five matching lines in another observed order;
+native's three permitted lines and every filesystem field remain unchanged.
+That second complete actual Pi observation is retained in the named safety
+witness, with its source SHA/report. Its guard accepts only the recorded complete
+source outcomes and exact native observation; line/order comparison elsewhere
+remains exact. All 21 guards pass, including rejection of changed source text.

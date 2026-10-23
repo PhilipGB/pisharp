@@ -287,7 +287,122 @@
           },
           "fullOutputArtifacts": []
         }
-      }
+      },
+      "additionalPinnedObservations": [
+        {
+          "result": {
+            "caseId": "grep-repository-local-private-excludes",
+            "content": [
+              {
+                "type": "text",
+                "text": "global-rescued.txt:1: match-value\nlocal-rescued.txt:1: match-value\nvisible.txt:1: match-value\nglobal-untracked.txt:1: match-value\nstaged-global.txt:1: match-value"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            ".ignore": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 39,
+              "sha256": "7fc3268b72aa1913691601439346b91306cabb260bfd1b5d49acc9d6d73a40f0",
+              "base64": "IWdsb2JhbC1yZXNjdWVkLnR4dAohbG9jYWwtcmVzY3VlZC50eHQK",
+              "hardlinkPeers": []
+            },
+            "global-excludes": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 58,
+              "sha256": "2b97d2d6348d88e1b50555058f30316c324ddd97eb5f2ae04036fcce4384c4ff",
+              "base64": "Z2xvYmFsLXVudHJhY2tlZC50eHQKc3RhZ2VkLWdsb2JhbC50eHQKZ2xvYmFsLXJlc2N1ZWQudHh0Cg==",
+              "hardlinkPeers": []
+            },
+            "global-rescued.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 12,
+              "sha256": "ebe69031074402a423c785fc3f74e731b7f9e44dd052cb7fa45f05fd90bf47be",
+              "base64": "bWF0Y2gtdmFsdWUK",
+              "hardlinkPeers": []
+            },
+            "global-untracked.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 12,
+              "sha256": "ebe69031074402a423c785fc3f74e731b7f9e44dd052cb7fa45f05fd90bf47be",
+              "base64": "bWF0Y2gtdmFsdWUK",
+              "hardlinkPeers": []
+            },
+            "local-rescued.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 12,
+              "sha256": "ebe69031074402a423c785fc3f74e731b7f9e44dd052cb7fa45f05fd90bf47be",
+              "base64": "bWF0Y2gtdmFsdWUK",
+              "hardlinkPeers": []
+            },
+            "staged-global.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 12,
+              "sha256": "ebe69031074402a423c785fc3f74e731b7f9e44dd052cb7fa45f05fd90bf47be",
+              "base64": "bWF0Y2gtdmFsdWUK",
+              "hardlinkPeers": []
+            },
+            "visible.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 12,
+              "sha256": "ebe69031074402a423c785fc3f74e731b7f9e44dd052cb7fa45f05fd90bf47be",
+              "base64": "bWF0Y2gtdmFsdWUK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      ]
     }
-  ]
+  ],
+  "additionalPinnedObservationSource": {
+    "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "piSharpSha": "908c708ee569d0af442fc52bf48ecbe05dbeba3c",
+    "sourceWorktreeDirty": false,
+    "report": "grep-complete-acceptance/report.json",
+    "normalization": "No reordering; complete actual Pi observation retained as an additional allowed source outcome. Native observations remain exact."
+  }
 }

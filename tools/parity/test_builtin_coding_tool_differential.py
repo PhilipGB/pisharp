@@ -36,6 +36,9 @@ class BuiltinToolDifferentialTests(unittest.TestCase):
         wrong = copy.deepcopy(observations)
         wrong['pisharp']['filesystem']['visible.txt']['sha256'] = 'changed'
         self.assertFalse(assess_grep_safety_deviation(witness['setup'], wrong))
+        wrong = copy.deepcopy(observations)
+        wrong['pi']['result']['content'][0]['text'] = 'missing source result'
+        self.assertFalse(assess_grep_safety_deviation(witness['setup'], wrong))
         self.assertFalse(assess_grep_safety_deviation({**witness['setup'], 'arguments': {'pattern': 'changed'}}, observations))
 
     def test_atomic_exclusions_require_reviewed_setup_complete_results_and_exact_ownership(self):

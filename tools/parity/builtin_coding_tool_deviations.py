@@ -69,8 +69,11 @@ def assess_grep_safety_deviation(case, observations):
     witness = grep_exclusion_witness()
     if case != witness['setup']:
         return False
-    expected = copy.deepcopy(witness['observations'])
-    for implementation in expected.values():
-        for entry in implementation['filesystem'].values():
-            entry['uid'], entry['gid'] = os.geteuid(), os.getegid()
-    return observations == expected
+    for pinned in [witness['observations']['pi'], *witness.get('additionalPinnedObservations', [])]:
+        expected = copy.deepcopy({**witness['observations'], 'pi': pinned})
+        for implementation in expected.values():
+            for entry in implementation['filesystem'].values():
+                entry['uid'], entry['gid'] = os.geteuid(), os.getegid()
+        if observations == expected:
+            return True
+    return False
