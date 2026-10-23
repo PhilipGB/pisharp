@@ -784,3 +784,15 @@ shared M–P gates remain pending; checkpoint I is still in progress.
 The expanded warning-as-error Bash/shell/protocol/selection/extension execution
 selection passes 196/196 with zero failures/skips. Active-process tracking is
 removed in finally even when output cleanup throws.
+
+### Bash checkpoint acceptance
+
+Clean `011728fb84e998b7dec0da3b056ea0c307c3af73` passes 44/44 direct cases
+and its 44/44 strict same-Pi control. The [final Bash acceptance](builtin-coding-tool-bash-acceptance-2026-10-22.json)
+records that source and the verified component evidence. The
+[fresh physical CLI shutdown report](builtin-coding-tool-bash-shutdown-2026-10-22.json)
+retains actual response bytes, live/terminated process states, exit codes and the
+three named strict-equivalence exclusions. Final owner-cleanup/extension checks
+pass 12/12 after the 196-check broader selection. I is complete for the defined
+supported Linux checkpoint. Shared provider/history/reliability gates M–P remain
+open. Progress is now 9 of 20 checkpoints complete; J is in progress.

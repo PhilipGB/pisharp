@@ -37,6 +37,15 @@
       "total": 69,
       "intentional_safety_exclusions": 38,
       "control_strict_passed": 69
+    },
+    "bash": {
+      "source": "011728fb84e998b7dec0da3b056ea0c307c3af73",
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-bash-acceptance-2026-10-22.json",
+      "status": "supported Linux Bash checkpoint verified; shared M-P integration and reliability acceptance pending",
+      "strict": 44,
+      "total": 44,
+      "control_strict_passed": 44,
+      "shutdown_intentional_safety_exclusions": 3
     }
   },
   "tools": {

@@ -54,12 +54,12 @@
       {
         "id": "I",
         "name": "Bash",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "J",
         "name": "Grep",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "K",
@@ -526,7 +526,7 @@
       }
     },
     "bash_contract": {
-      "status": "in_progress",
+      "status": "supported checkpoint verified with explicit cleanup/EOF safety exclusions; shared M-P acceptance pending",
       "baseline_source": "6c346e4652dddaaffdd01477b8579063d22360e7",
       "baseline_strict_passed": 2,
       "baseline_total": 44,
@@ -544,7 +544,6 @@
         "source_receipt": "docs/parity/fixtures/builtin-coding-tool-bash-processes-2026-10-22.json"
       },
       "remaining": [
-        "fresh committed-head environment/shutdown acceptance",
         "shared M-P provider, history and reliability acceptance"
       ],
       "stream_acceptance": {
@@ -582,7 +581,16 @@
         "passed": 25,
         "failed": 0,
         "skipped": 0
-      }
+      },
+      "complete_acceptance": {
+        "source": "011728fb84e998b7dec0da3b056ea0c307c3af73",
+        "strict_passed": 44,
+        "total": 44,
+        "unresolved": 0,
+        "control_strict_passed": 44,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-bash-acceptance-2026-10-22.json"
+      },
+      "related_passed_after": 196
     }
   },
   "plan_received": true,

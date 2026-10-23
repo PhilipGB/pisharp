@@ -10,8 +10,8 @@ head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
 passed 2,711 tests and both MCP jobs before the expected-head merge.
 
 Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–H are complete;
-I (bash) is in progress; J–T remain pending. Preserve this
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–I are complete;
+J (grep) is in progress; K–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
@@ -37,8 +37,9 @@ extension execution, selection and protocol selection passes 196/196.
 The real pinned CLI leaves its detached grandchild alive and emits no EOF
 response; native stronger cleanup and its retained cancelled EOF response are
 explicit strict-equivalence exclusions. Five upstream Bash regression files
-pass 25/25. Commit current changes, then capture fresh final I evidence before
-moving to J; shared M–P acceptance stays open.
+pass 25/25. Clean `011728fb` verifies final I evidence (44/44 direct and strict control;
+all three physical shutdown cases), recorded in the final Bash acceptance.
+Move to J; shared M–P acceptance stays open.
 
 The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md) and
 [inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) were
