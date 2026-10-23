@@ -10,8 +10,8 @@ head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
 passed 2,711 tests and both MCP jobs before the expected-head merge.
 
 Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–G are complete;
-H (edit) is in progress; I–T remain pending. Preserve this
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–H are complete;
+I (bash) is in progress; J–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
@@ -113,7 +113,10 @@ pass. A deterministic post-read directory deletion reproduces stale-content
 resurrection by the shared atomic helper. Parent creation now belongs to write;
 edit matches the pinned ENOENT outcome, leaves the directory absent and recovers
 with another write. The fail-first regression then joins 332 passing related
-checks. Fresh classified edit comparison/control remains next; H is in progress.
+checks. Clean `00f91836` verifies 31/69 strict edit cases and thirty-eight explicit
+atomicity exclusions, with zero unexplained differences; control is 69/69 strict.
+The same fresh run rechecks write at 20 strict passes/nineteen exclusions. H is
+complete within the documented scope; I (Bash) is next. Preserve M–P acceptance.
 Corpus is 341 (edit 69).
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric

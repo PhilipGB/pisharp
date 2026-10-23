@@ -665,8 +665,12 @@ to the requested path, releases its queue and permits an independent recovery
 write. The regression fails before correction, then 332 related checks pass.
 The source coordination receipt now includes this physical deletion/recovery
 case; stage cases still do not inflate the direct corpus count. Fresh paired
-comparison/control remains next; H is still
-in progress. Corpus inventory is 341 (edit 69).
+The [complete edit receipt](builtin-coding-tool-edit-acceptance-2026-10-22.json)
+at clean `00f91836` records 31/69 strict passes and thirty-eight explicit atomicity
+exclusions, with zero unexplained differences. The same-Pi control is 69/69
+strict. Write is rechecked at 20 strict passes/nineteen exclusions on this same
+source. H is complete within this supported scope; M–P acceptance remains
+mandatory. Corpus inventory is 341 (edit 69).
 
 ## Shared integration and safety gates
 
@@ -695,7 +699,8 @@ from active engineering duration.
 Stable checkpoints are A–T from the mission. A (verified merge) and B (fresh
 branch), C (initial inventory), D (harness) and E (shared contracts) are complete.
 F (supported read) and G (write with explicit safety exclusions) are complete;
-H (edit) is in progress; I–T are pending. Completing
+H (edit with explicit atomicity exclusions) is complete; I (Bash) is in progress;
+J–T are pending. Completing
 an inventory or passing local tests does not close the milestone. PR #22 must
 be published as draft and remain unmerged; PR #23 is excluded. Global Pi parity
 remains `in_progress`.

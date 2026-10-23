@@ -28,6 +28,15 @@
       "total": 39,
       "intentional_safety_exclusions": 19,
       "control_strict_passed": 39
+    },
+    "edit": {
+      "source": "00f918365dffd8b6f27f89e02f649a0009815227",
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-edit-acceptance-2026-10-22.json",
+      "status": "supported checkpoint verified with explicit safety exclusions; shared M–P acceptance pending",
+      "strict": 31,
+      "total": 69,
+      "intentional_safety_exclusions": 38,
+      "control_strict_passed": 69
     }
   },
   "tools": {

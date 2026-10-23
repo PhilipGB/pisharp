@@ -49,12 +49,12 @@
       {
         "id": "H",
         "name": "Edit",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "I",
         "name": "Bash",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "J",
@@ -482,6 +482,13 @@
         "unresolved": 0,
         "control_strict_passed": 39,
         "receipt": "docs/parity/fixtures/builtin-coding-tool-write-acceptance-2026-10-22.json"
+      },
+      "latest_regression": {
+        "source": "00f918365dffd8b6f27f89e02f649a0009815227",
+        "strict_passed": 20,
+        "total": 39,
+        "intentional_safety_deviations": 19,
+        "unresolved": 0
       }
     },
     "edit_contract": {
@@ -496,7 +503,7 @@
       "pre_fix_total": 67,
       "related_passed_after": 332,
       "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-edit-results-2026-10-22.json",
-      "status": "fresh classified comparison/control pending",
+      "status": "supported checkpoint verified with explicit safety exclusions; shared M–P acceptance pending",
       "first_correction_source": "2250b589",
       "first_correction_strict_passed": 30,
       "first_correction_total": 68,
@@ -507,7 +514,16 @@
       "coordination_cases_passed": 11,
       "harness_guards_passed": 20,
       "parent_removed_regression_failed_before": 1,
-      "parent_removed_correction": "Atomic helper does not recreate removed parents; edit returns pinned ENOENT without resurrecting stale content; recovery write succeeds."
+      "parent_removed_correction": "Atomic helper does not recreate removed parents; edit returns pinned ENOENT without resurrecting stale content; recovery write succeeds.",
+      "complete_acceptance": {
+        "source": "00f918365dffd8b6f27f89e02f649a0009815227",
+        "strict_passed": 31,
+        "total": 69,
+        "intentional_safety_deviations": 38,
+        "unresolved": 0,
+        "control_strict_passed": 69,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-edit-acceptance-2026-10-22.json"
+      }
     }
   },
   "plan_received": true,

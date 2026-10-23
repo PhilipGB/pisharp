@@ -15,7 +15,7 @@ search/list cases. Input declarations now match the seven source schemas, with
 argument preparation/validation regressions. Primitive conversion matches 93
 pinned vectors; common head/tail truncation matches 140. Read/Bash result metadata,
 registered output schemas, sampling policy and JSON/RPC/session preservation have
-focused passing evidence in the receipt. Checkpoints A–G are complete; H (edit)
+focused passing evidence in the receipt. Checkpoints A–H are complete; I (Bash)
 is in progress. The [read acceptance](fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json)
 passes 119/121 cases (109 strict, ten JPEG equivalents), with two separately
 excluded allocation safety limits and a 121/121 strict same-Pi control. Read
@@ -23,8 +23,11 @@ images reach Responses, Chat Completions and Anthropic through local HTTP tests.
 The [write acceptance](fixtures/builtin-coding-tool-write-acceptance-2026-10-22.json)
 records 20 strict passes and nineteen explicit private/atomic safety exclusions,
 with a 39/39 strict same-Pi control. Strict filesystem equivalence is not claimed
-for those exclusions. Broader integration/reliability and the other five tools
-remain open.
+for those exclusions. The [edit acceptance](fixtures/builtin-coding-tool-edit-acceptance-2026-10-22.json)
+records 31 strict passes and thirty-eight explicit atomicity exclusions, with a
+69/69 strict same-Pi control. Actual error recovery includes parent removal after
+the snapshot, and deterministic cancellation preserves batched atomicity. Broader
+integration/reliability and the other four tools remain open.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 

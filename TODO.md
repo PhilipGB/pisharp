@@ -8,13 +8,14 @@ is present on `origin/main` and is the base of
 `milestone/builtin-coding-tool-parity`. Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-Stable mission checkpoints: **7 complete / 13 remaining** (A–T). A is the
+Stable mission checkpoints: **8 complete / 12 remaining** (A–T). A is the
 verified merge prerequisite; B is the fresh branch. C is the completed initial inventory of all seven
 tool definitions and implementations before product changes. D establishes the independent oracle.
 E completes common declarations/validation, truncation and read/Bash result metadata.
 F verifies the supported read contract (119/121, two explicit safety exclusions).
 G verifies write corrections with 20 strict passes and nineteen retained safety exclusions.
-H is in progress; H–T cover remaining tools, integration, safety, validation,
+H verifies edit behavior with 31 strict passes and thirty-eight explicit atomicity exclusions.
+I is in progress; I–T cover remaining tools, integration, safety, validation,
 documentation, draft PR #22 and final-head CI. An inventory is not a parity claim.
 
 See the [tool milestone receipt](docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md)
