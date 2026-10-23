@@ -8,7 +8,7 @@ decoding, stdin and spawn corrections. The related selection passes 157 tests,
 including deterministic 100 ms coalescing and detached-grandchild cleanup.
 Clean `b46aff69` now passes 44/44 with a 44/44 same-Pi control.
 The expanded environment/shutdown/extension selection passes 196 checks.
-Fresh final Bash evidence and shared integration acceptance remain pending.
+Final Bash source `011728fb` passes 44/44 strict cases; shared integration remains pending.
 
 Grep acceptance at `6b0017d4` has 67 strict passes, one explicit privacy
 exclusion, zero unresolved cases and a 68/68 same-Pi control. The 427-check
@@ -26,7 +26,7 @@ search/list cases. Input declarations now match the seven source schemas, with
 argument preparation/validation regressions. Primitive conversion matches 93
 pinned vectors; common head/tail truncation matches 140. Read/Bash result metadata,
 registered output schemas, sampling policy and JSON/RPC/session preservation have
-focused passing evidence in the receipt. Checkpoints A–J are complete; K (find)
+focused passing evidence in the receipt. Checkpoints A–K are complete; L (ls)
 is in progress. The [read acceptance](fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json)
 passes 119/121 cases (109 strict, ten JPEG equivalents), with two separately
 excluded allocation safety limits and a 121/121 strict same-Pi control. Read
@@ -38,7 +38,14 @@ for those exclusions. The [edit acceptance](fixtures/builtin-coding-tool-edit-ac
 records 31 strict passes and thirty-eight explicit atomicity exclusions, with a
 69/69 strict same-Pi control. Actual error recovery includes parent removal after
 the snapshot, and deterministic cancellation preserves batched atomicity. Broader
-integration/reliability and the other four tools remain open.
+integration/reliability and ls acceptance remain open.
+
+The [find acceptance](fixtures/builtin-coding-tool-find-acceptance-2026-10-22.json)
+at clean `99016879` verifies 61 strict cases, one explicit repository-privacy
+exclusion and zero unresolved differences, with a 62/62 same-Pi control. Real fd
+traversal cancellation proves process cleanup, unchanged inputs and recovery.
+The related warning-as-error selection passes 276 checks, plus 60 chunk-boundary
+checks. The old 20,000-path inventory cap no longer applies to find.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 

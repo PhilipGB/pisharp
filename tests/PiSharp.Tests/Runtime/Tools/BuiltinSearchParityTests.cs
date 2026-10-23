@@ -14,7 +14,7 @@ public sealed class BuiltinSearchParityTests
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx"))) directory = directory.Parent;
-        foreach (var tool in new[] { "grep", "find" })
+        foreach (var tool in new[] { "grep", "find", "ls" })
         {
             using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory!.FullName, "docs", "parity", "fixtures",
                 $"builtin-coding-tool-{tool}-results-2026-10-22.json")));
@@ -63,8 +63,17 @@ public sealed class BuiltinSearchParityTests
                 }
             if (setup.TryGetProperty("symlinks", out var links))
                 foreach (var link in links.EnumerateObject()) File.CreateSymbolicLink(Path.Combine(root, link.Name), link.Value.GetString()!);
-            if (setup.TryGetProperty("modes", out var modes))
-                foreach (var entry in modes.EnumerateObject())
+            if (setup.TryGetProperty("fifos", out var fifos))
+                foreach (var fifo in fifos.EnumerateArray())
+                {
+                    using var process = Process.Start(new ProcessStartInfo("mkfifo") { ArgumentList = { Path.Combine(root, fifo.GetString()!) } });
+                    Assert.NotNull(process);
+                    await process.WaitForExitAsync();
+                    Assert.Equal(0, process.ExitCode);
+                }
+            foreach (var property in new[] { "directories", "modes" })
+                if (setup.TryGetProperty(property, out var modes))
+                    foreach (var entry in modes.EnumerateObject())
                 {
                     var path = Path.Combine(root, entry.Name);
                     File.SetUnixFileMode(path, (UnixFileMode)entry.Value.GetInt32());

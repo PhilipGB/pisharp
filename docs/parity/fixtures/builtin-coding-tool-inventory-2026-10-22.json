@@ -55,6 +55,15 @@
       "total": 68,
       "intentional_safety_exclusions": 1,
       "control_strict_passed": 68
+    },
+    "find": {
+      "source": "99016879fabaee542c2b0265bb34864c98435516",
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-find-acceptance-2026-10-22.json",
+      "status": "supported Linux find checkpoint verified with one explicit privacy exclusion; shared M-P acceptance pending",
+      "strict": 61,
+      "total": 62,
+      "intentional_safety_exclusions": 1,
+      "control_strict_passed": 62
     }
   },
   "tools": {

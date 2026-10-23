@@ -64,12 +64,12 @@
       {
         "id": "K",
         "name": "Find",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "L",
         "name": "Ls",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "M",
@@ -325,8 +325,8 @@
       "bash": 44,
       "grep": 68,
       "find": 62,
-      "ls": 25,
-      "total": 428
+      "ls": 51,
+      "total": 454
     },
     "read_image_contract": {
       "status": "in_progress",
@@ -660,7 +660,7 @@
       }
     },
     "find_contract": {
-      "status": "in_progress",
+      "status": "verified_supported_linux_with_privacy_exclusion",
       "baseline_source": "d27acc4e",
       "baseline_strict_passed": 37,
       "baseline_total": 61,
@@ -682,7 +682,6 @@
       "legacy_expectation_correction": "Both symlink-directory theory rows expected a slash; actual pinned find-symlink-directory preserves fd link spelling without a slash. Presence and no-follow assertions retained.",
       "fixture": "docs/parity/fixtures/builtin-coding-tool-find-results-2026-10-22.json",
       "remaining": [
-        "fresh committed-head differential/control",
         "shared M-P acceptance"
       ],
       "process_protocol": {
@@ -707,7 +706,39 @@
       },
       "related_warning_as_error_passed": 276,
       "comparison_guards_passed": 22,
-      "path_decoding_chunk_cases_passed": 60
+      "path_decoding_chunk_cases_passed": 60,
+      "complete_acceptance": {
+        "source": "99016879fabaee542c2b0265bb34864c98435516",
+        "strict_passed": 61,
+        "total": 62,
+        "intentional_safety_deviations": 1,
+        "unresolved": 0,
+        "control_strict_passed": 62,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-find-acceptance-2026-10-22.json"
+      }
+    },
+    "ls_contract": {
+      "status": "in_progress",
+      "baseline_source": "99016879",
+      "baseline_worktree_dirty": true,
+      "baseline_strict_passed": 29,
+      "baseline_total": 51,
+      "control_strict_passed": 51,
+      "fixture": "docs/parity/fixtures/builtin-coding-tool-ls-results-2026-10-22.json",
+      "confirmed_mismatches": [
+        "Unicode and stable case ordering",
+        "fractional/numeric limits",
+        "broken links and stat failures",
+        "shared path normalization",
+        "permission errors",
+        "pre-cancellation"
+      ],
+      "regression_before": {
+        "failed": 22,
+        "passed": 157,
+        "total": 179,
+        "scope": "Shared grep/find/ls actual-function fixture"
+      }
     }
   },
   "plan_received": true,

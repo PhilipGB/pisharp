@@ -928,3 +928,21 @@ There are now 62 find cases and 428 total; fresh clean-head acceptance remains.
 
 Another 60 checks feed the pinned fd protocol outputs in 1-, 7- and 8,192-byte
 chunks, preserving UTF-8, CR/LF framing, whitespace, path order and EOF behavior.
+
+### Find checkpoint acceptance
+
+Clean `99016879` passes 61/62 strict cases with one named privacy exclusion and
+zero unresolved differences. The strict same-Pi control passes 62/62. The
+[find acceptance](builtin-coding-tool-find-acceptance-2026-10-22.json) records
+source hashes and individual classifications. K is complete for the defined
+supported Linux contract. Shared M–P acceptance remains pending. Progress is
+11 of 20 checkpoints complete; L (ls) is in progress.
+
+## Ls investigation
+
+The expanded [source-pinned ls fixture](builtin-coding-tool-ls-results-2026-10-22.json)
+has 51 distinct cases. The initial implementation passes 29/51; the independent
+strict same-Pi control passes 51/51. Twenty-two mismatches cover Unicode/stable
+case ordering, numeric limits, broken links/stat failures, normalized paths,
+Linux permission messages and pre-cancellation. These actual source observations
+are committed before the implementation correction. The corpus now has 454 cases.

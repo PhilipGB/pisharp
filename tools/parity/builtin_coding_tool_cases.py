@@ -512,4 +512,33 @@ def cases():
     add('ls', 'special-fifo', {}, fifos=['pipe'])
     add('ls', 'byte-limit', {}, {f'{n:04d}-' + '界' * 70: '' for n in range(300)})
     add('ls', 'pre-cancelled', {}, {'file': ''}, preCancelled=True)
+    for name, arguments, files in [
+        ('empty-path', {'path': ''}, {'visible': ''}),
+        ('at-prefix', {'path': '@nested'}, {'nested/file': ''}),
+        ('file-url', {'path': 'file://{WORKSPACE}/nested'}, {'nested/file': ''}),
+        ('unicode-spaces-in-path', {'path': 'space\u00a0dir'}, {'space dir/file': ''}),
+        ('file-ancestor', {'path': 'file/child'}, {'file': ''}),
+        ('nul-path', {'path': 'nested\0suffix'}, {'nested/file': ''}),
+        ('long-path', {'path': 'x' * 256}, {}),
+        ('fractional-exact', {'limit': 1.5}, {'one': '', 'two': ''}),
+        ('tiny-positive-limit', {'limit': 0.1}, {'one': '', 'two': ''}),
+        ('huge-limit', {'limit': 1e21}, {'one': '', 'two': ''}),
+        ('small-negative-limit', {'limit': -0.1}, {'one': ''}),
+        ('unicode-canonical-order', {}, {'é': '', 'e\u0301': '', 'E': '', 'e': ''}),
+        ('unicode-case-fold-order', {}, {'I': '', 'i': '', 'İ': '', 'ı': '', 'ß': '', 'ss': '', 'Σ': '', 'σ': '', 'ς': ''}),
+        ('numeric-filenames', {}, {'a1': '', 'a10': '', 'a2': '', '01': '', '1': ''}),
+        ('control-filenames', {}, {'line\nname': '', 'tab\tname': '', 'carriage\rname': ''}),
+        ('backslash-filename', {}, {'back\\slash': '', 'file name': ''}),
+        ('long-filename', {}, {'界' * 85: ''}),
+    ]:
+        add('ls', name, arguments, files)
+    add('ls', 'symlink-root', {'path': 'alias'}, {'real/file': ''}, symlinks={'alias': 'real'})
+    add('ls', 'broken-root', {'path': 'alias'}, symlinks={'alias': 'missing'})
+    add('ls', 'symlink-loop-root', {'path': 'loop'}, symlinks={'loop': 'loop'})
+    add('ls', 'only-broken-entries', {}, symlinks={'a': 'missing', 'b': 'missing'})
+    add('ls', 'unreadable-entry-still-listed', {}, {'private': 'data'}, modes={'private': 0})
+    add('ls', 'unsearchable-root', {'path': 'private'}, {'private/file': ''}, modes={'private': 0o400})
+    add('ls', 'inaccessible-ancestor', {'path': 'private/sub'}, {'private/sub/file': ''}, modes={'private': 0})
+    add('ls', 'default-entry-limit', {}, generatedFiles={'directory': '.', 'count': 501, 'text': ''})
+    add('ls', 'broken-entry-after-limit', {'limit': 1}, {'a-valid': ''}, symlinks={'z-broken': 'missing'})
     return result
