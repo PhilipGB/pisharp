@@ -1,5 +1,7 @@
 """Reproducible input descriptions; expected results always come from pinned Pi."""
 import base64
+import json
+from pathlib import Path
 import struct
 import zlib
 
@@ -99,6 +101,26 @@ def cases():
     add('read', 'invalid-path-type', {'path': []})
     add('read', 'invalid-offset-type', {'path': 'file.txt', 'offset': {}}, {'file.txt': 'unchanged'})
     add('read', 'pre-cancelled', {'path': 'file.txt'}, {'file.txt': 'unchanged'}, preCancelled=True)
+
+    images = json.loads((Path(__file__).parent / 'fixtures' / 'builtin-coding-tool-read-images.json').read_text())['assets']
+    for image in ['png-rgb', 'png-alpha', 'jpeg-rgb', 'jpeg-exif-6', 'webp-rgb', 'webp-alpha', 'webp-exif-6',
+                  'bmp-rgb', 'bmp-alpha', 'gif-single', 'gif-animated', 'webp-animated', 'apng-not-inline']:
+        add('read', 'image-original-' + image, {'path': 'image.dat'}, {'image.dat': {'base64': images[image]['base64']}})
+        if image.startswith('bmp-'):
+            result[-1]['imagePolicy'] = 'decoded-rgba'
+    for image in ['png-rgb', 'png-alpha', 'jpeg-rgb', 'webp-rgb', 'webp-alpha', 'webp-exif-6', 'bmp-rgb',
+                  'bmp-alpha', 'gif-single', 'gif-animated', 'webp-animated', 'png-exif-6'] + [f'jpeg-exif-{n}' for n in range(2, 9)]:
+        add('read', 'image-resized-' + image, {'path': 'image.dat'}, {'image.dat': {'base64': images[image]['base64']}},
+            options={'resizeOptions': {'maxWidth': 8, 'maxHeight': 6}}, imagePolicy='decoded-rgba')
+    for image in ['png-rgb', 'jpeg-rgb', 'gif-single', 'webp-rgb', 'bmp-rgb']:
+        add('read', 'image-truncated-' + image, {'path': 'image.dat'},
+            {'image.dat': {'base64': images[image + '-truncated']['base64']}})
+    for image in ['png-extreme-wide', 'png-extreme-tall']:
+        add('read', 'image-' + image, {'path': 'image.dat'}, {'image.dat': {'base64': images[image]['base64']}})
+    for name, profile in [('jpeg-quality', {'maxWidth': 60, 'maxHeight': 40, 'maxBytes': 4000, 'jpegQuality': 20}),
+                          ('progressive-payload', {'maxBytes': 1500}), ('impossible-payload', {'maxBytes': 20})]:
+        add('read', 'image-' + name, {'path': 'image.dat'}, {'image.dat': {'base64': images['png-noise']['base64']}},
+            options={'resizeOptions': profile}, imagePolicy='decoded-rgba')
 
     for name, content in [('new', 'new file\n'), ('empty', ''), ('unicode', '日本語 😀 café\n'), ('bom', '\ufefffile\n')]:
         add('write', name, {'path': 'file.txt', 'content': content})

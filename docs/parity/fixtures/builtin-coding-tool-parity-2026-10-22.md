@@ -403,6 +403,28 @@ checks, not additional pinned-Pi cancellation comparisons. A dedicated huge
 line input brings the corpus to 239 cases (read 73); fresh differential evidence
 follows. Image sampling/orientation, full provider image acceptance and remaining
 hardening are still open, so checkpoint F is not complete.
+
+At clean implementation source `600c151d`, the paired read run passes 72/73,
+including the new 64 MiB input and filesystem state comparisons. The only
+difference is resized PNG RGBA pixels. No text, filesystem error or source
+fallback is normalized away. The 75-case final focused read/streaming run passes.
+
+Image investigation freezes 28 input assets (53,081 encoded bytes), generated
+with Pillow 12.1.1, JPEG 8.0, WebP 1.5.0 and zlib 1.3.1. The retained bytes make
+inputs reproducible independently of future encoder versions. Forty-two new
+cases cover original payload preservation, conversions, all EXIF transformations,
+alpha, animation, truncated formats, extreme dimensions and payload profiles.
+Original supported payloads compare byte-for-byte; selected reencodings compare
+decoded RGBA while retaining MIME, hints, metadata and raw bytes. There is no
+pixel tolerance in these initial comparisons. The corpus now contains 281 cases
+(read 115). New image acceptance remains pending.
+
+Pinned Photon is package 0.3.4; its actual WASM artifact embeds the build marker
+`image-0.24.9`. The matching primary sampling source at
+`image-rs/image@v0.24.9:src/imageops/sample.rs` has SHA-256
+`3d7c373a3dd6b045805b0e9fcf37cb1b37325bea61cb1ae41b75c14503396633`.
+The behavior oracle remains the pinned Pi tool and its installed pinned Photon,
+not a newly compiled Rust implementation.
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or

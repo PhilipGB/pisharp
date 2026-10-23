@@ -335,7 +335,7 @@ def main():
                 'comparisonPolicy': {'temporaryRoots': 'Each root becomes <workspace> in result strings.',
                     'fullOutputNames': 'Random names mapped by references; exact file hashes/sizes/modes/safe-name checks compared.',
                     'duration': 'Nonnegative numeric wall_time_seconds retained raw; excluded from value equality.',
-                    'images': 'Original payloads exact bytes; reencoded PNG compares decoded RGBA dimensions/pixels; raw payloads retained.',
+                    'images': 'Original payloads exact bytes; selected reencoded images compare decoded RGBA dimensions/pixels; raw payloads retained. MIME, notes, structured results and failures remain exact.',
                     'updates': 'Raw complete updates retained; initial/final snapshots compared. Timing/chunk count not asserted identical.',
                     'filesystem': 'Exact content hashes, short-file bytes, kinds, modes, uid/gid, link targets/peers and inode-preservation flags. No mtime/ctime/absolute inode equality.'},
                 'declarationDifferences': declaration_differences, 'cases': report_cases,
