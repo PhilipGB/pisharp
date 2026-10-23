@@ -9,7 +9,8 @@ import unittest
 
 from builtin_coding_tool_cases import binary, cases
 from builtin_coding_tool_image_comparison import assess_jpeg_codec, only_codec_pixel_differences
-from builtin_coding_tool_deviations import assess_read_safety_deviation, READ_IMAGE_BOUNDARIES
+from builtin_coding_tool_deviations import (assess_read_safety_deviation, READ_IMAGE_BOUNDARIES,
+                                          assess_atomic_write_deviation, atomic_write_witnesses)
 
 
 spec = importlib.util.spec_from_file_location('builtin_tool_differential',
@@ -19,6 +20,32 @@ spec.loader.exec_module(driver)
 
 
 class BuiltinToolDifferentialTests(unittest.TestCase):
+    def test_atomic_exclusions_require_reviewed_setup_complete_results_and_exact_ownership(self):
+        for witness in atomic_write_witnesses().values():
+            observations = copy.deepcopy(witness['observations'])
+            for implementation in observations.values():
+                for entry in implementation['filesystem'].values():
+                    entry['uid'], entry['gid'] = os.geteuid(), os.getegid()
+            self.assertTrue(assess_atomic_write_deviation(witness['setup'], observations))
+            for key, value in [('isError', True), ('details', {'wrong': True}), ('structuredContent', 'wrong')]:
+                wrong = copy.deepcopy(observations)
+                wrong['pisharp']['result'][key] = not wrong['pisharp']['result'][key] if key == 'isError' else value
+                self.assertFalse(assess_atomic_write_deviation(witness['setup'], wrong))
+            for key, value in [('uid', os.geteuid() + 1), ('gid', os.getegid() + 1), ('mode', 0o777)]:
+                wrong = copy.deepcopy(observations)
+                wrong['pisharp']['filesystem']['.'][key] = value
+                self.assertFalse(assess_atomic_write_deviation(witness['setup'], wrong))
+            wrong = copy.deepcopy(observations)
+            wrong['pisharp']['result']['content'][0]['text'] += 'missing output'
+            self.assertFalse(assess_atomic_write_deviation(witness['setup'], wrong))
+            wrong = copy.deepcopy(observations)
+            file = next(entry for entry in wrong['pisharp']['filesystem'].values() if entry['kind'] == 'file')
+            file['sha256'] = 'incorrect content'
+            self.assertFalse(assess_atomic_write_deviation(witness['setup'], wrong))
+            wrong_setup = copy.deepcopy(witness['setup'])
+            wrong_setup['arguments']['content'] += 'changed'
+            self.assertFalse(assess_atomic_write_deviation(wrong_setup, observations))
+
     def test_safety_exclusions_require_exact_named_results_and_unchanged_filesystem(self):
         for case_id, policy in READ_IMAGE_BOUNDARIES.items():
             case = {'caseId': case_id, 'acceptanceClass': 'intentional-safety-boundary'}

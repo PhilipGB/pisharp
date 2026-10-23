@@ -4,9 +4,11 @@ using PiSharp.Core;
 namespace PiSharp.Runtime.Tools;
 
 /// <summary>Coordinates atomic writes and exact edits across facade instances.</summary>
-internal sealed class FileMutations(string workingDirectory)
+internal sealed class FileMutations(string workingDirectory, FileMutationQueue? mutationQueue = null,
+    Func<Task>? beforeCommit = null)
 {
     private static readonly FileMutationQueue s_mutations = new();
+    private readonly FileMutationQueue _mutations = mutationQueue ?? s_mutations;
     private string Resolve(string path) => CodingToolPaths.Resolve(path, workingDirectory);
 
     private static string? FindBlockingFileAncestor(string path)
@@ -41,7 +43,7 @@ internal sealed class FileMutations(string workingDirectory)
         var parent = Path.GetDirectoryName(absolute)!;
         try
         {
-            return await s_mutations.RunAsync(absolute, async () =>
+            return await _mutations.RunAsync(absolute, async () =>
             {
                 if (FindBlockingFileAncestor(parent) is { } blockingFile)
                 {
@@ -60,7 +62,7 @@ internal sealed class FileMutations(string workingDirectory)
                     throw new ToolFailureException($"EISDIR: illegal operation on a directory, open '{absolute}'");
 
                 LinuxFileAccess.RequireWritableIfPresent(absolute);
-                await AtomicFileWriter.ReplaceAsync(absolute, Encoding.UTF8.GetBytes(content), cancellationToken);
+                await AtomicFileWriter.ReplaceAsync(absolute, Encoding.UTF8.GetBytes(content), cancellationToken, beforeCommit);
                 return $"Successfully wrote to {path}";
             }, cancellationToken);
         }
@@ -90,7 +92,7 @@ internal sealed class FileMutations(string workingDirectory)
         try
         {
             var absolute = Resolve(path);
-            return await s_mutations.RunAsync(absolute, async () =>
+            return await _mutations.RunAsync(absolute, async () =>
             {
                 byte[] bytes;
                 try { bytes = await ReadEditableFileAsync(absolute, cancellationToken); }
@@ -111,7 +113,7 @@ internal sealed class FileMutations(string workingDirectory)
                 var payload = Encoding.UTF8.GetBytes(restored);
                 if (bom) payload = [0xEF, 0xBB, 0xBF, .. payload];
                 var details = FileEditDiff.Create(path, plan.OriginalContent, plan.NewContent);
-                await AtomicFileWriter.ReplaceAsync(absolute, payload, cancellationToken);
+                await AtomicFileWriter.ReplaceAsync(absolute, payload, cancellationToken, beforeCommit);
                 return new EditToolOutput($"Successfully replaced {edits.Count} block(s) in {path}.",
                     details.Diff, details.Patch, details.FirstChangedLine);
             }, cancellationToken);

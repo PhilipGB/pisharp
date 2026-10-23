@@ -86,7 +86,14 @@ and missing-file alias coordination. Corrections pass 52 related checks. The
 legacy permission assertion is corrected against an exact Pi reproduction and
 strengthened with an unchanged-directory check. Retain private modes and atomic
 replacement; classify their actual side-effect differences explicitly. Fresh
-paired write and mutation concurrency/cancellation remain next.
+paired write at `401a5b26` is 20/39 strict; nineteen explicit private/atomic
+safety witnesses preserve all failed comparisons. Four ordered mutation pairs
+now use actual Pi call results/final bytes. The existing cancelled-waiter timing
+difference is explicit: native settles promptly without releasing an active
+writer. Source queue regressions pass 7/7, related native checks pass 66/66, and
+focused coordination passes 7/7. Prepared temporary files are now private until
+commit (one fail-first regression); final target permissions remain intact.
+Fresh clean-source write comparison/control is next.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required

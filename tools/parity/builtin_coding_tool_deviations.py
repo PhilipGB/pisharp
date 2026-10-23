@@ -1,4 +1,9 @@
 """Explicit safety exclusions retain failed strict comparisons and all observations."""
+import copy
+from functools import lru_cache
+import json
+import os
+from pathlib import Path
 
 
 READ_IMAGE_BOUNDARIES = {
@@ -31,3 +36,22 @@ def assess_read_safety_deviation(case, observations):
     return (expected['result'] == oracle and actual['result'] == native and
             expected['filesystem'] == actual['filesystem'] and
             expected['fullOutputArtifacts'] == actual['fullOutputArtifacts'] == [])
+
+
+@lru_cache(maxsize=1)
+def atomic_write_witnesses():
+    fixture = Path(__file__).resolve().parents[2] / 'docs/parity/fixtures/builtin-coding-tool-write-safety-2026-10-22.json'
+    return {row['caseId']: row for row in json.loads(fixture.read_text())['cases']}
+
+
+def assess_atomic_write_deviation(case, observations):
+    if not hasattr(os, 'geteuid') or case.get('tool') != 'write':
+        return False
+    witness = atomic_write_witnesses().get(case['caseId'])
+    if witness is None or case != witness['setup']:
+        return False
+    expected = copy.deepcopy(witness['observations'])
+    for implementation in expected.values():
+        for entry in implementation['filesystem'].values():
+            entry['uid'], entry['gid'] = os.geteuid(), os.getegid()
+    return observations == expected

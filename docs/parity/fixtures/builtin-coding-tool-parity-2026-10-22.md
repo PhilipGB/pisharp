@@ -573,8 +573,41 @@ The old permission regression expected `open` for an inaccessible parent. An
 proves `realpath` is the error operation. Its assertion is corrected and also
 checks that no filesystem entry was created. No regression was removed or
 skipped. Private new-file modes and atomic replacement remain unchanged.
-Fresh paired write evidence and mutation cancellation/concurrency acceptance
-are next. Corpus inventory is 305 (write 39, read 121).
+Clean `401a5b26` passes 20/39 strict write comparisons; the remaining nineteen
+are the retained safety differences, recorded in the [write safety receipt](builtin-coding-tool-write-safety-2026-10-22.json):
+twelve private new-file modes, five inode changes, one hard-link behavior and
+one writable existing file in a read-only parent. All result/side-effect
+observations remain visible and `pass=false`. Frozen complete observations are
+required for classification; actual outputs and ownership are never rewritten.
+Expected fixture creation ownership is parameterized by the runner's effective
+UID/GID, and both actual snapshots must match. Cross-owner/ACL behavior is not
+newly claimed verified. Atomic replacement can change ownership/ACLs along with
+the inode; strict equivalence is not claimed for those consequences.
+
+The [coordination oracle](builtin-coding-tool-mutation-coordination-2026-10-22.json)
+executes actual Pi write/write, write/edit, edit/write and edit/edit operations
+behind deterministic queue barriers. Native tests use those captured call
+results and final bytes and preserve progress on unrelated files. A fifth source
+case records cancelled-waiter timing: Pi waits for the active operation before
+settling the cancelled waiter; native cancellation settles promptly without
+releasing the active writer or invoking the cancelled operation. This existing
+responsive-cancellation contract is retained and excluded from strict timing
+parity. Native coordination of missing-file directory aliases is also stronger
+than Pi's lexical fallback when `realpath` returns ENOENT. These differences are
+explicit; neither is normalized out of an execution trace.
+
+The source's seven existing mutation-queue regressions pass. The native related
+selection passes 67/67 after formatting, including the focused 7/7 coordination
+suite and prepared-write-failure cleanup. One fail-first regression reveals that a
+prepared temporary file inherited group/world readability from its target.
+Temporary contents now remain private until publication, while final target
+permissions are preserved. Cancellation retains the queue until candidate
+cleanup, leaves the original target intact and permits a following write safely.
+The internal optional queue/commit barrier parameters preserve the default
+shared coordinator and public facade. A format analyzer removed an unused xUnit
+data parameter; fixture-ID validation now uses it, and the corrected selection
+passes again. Fresh full write comparison/control and broader M–P acceptance
+remain next. Corpus inventory is 305 (write 39, read 121).
 
 ## Shared integration and safety gates
 

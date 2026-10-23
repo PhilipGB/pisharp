@@ -449,14 +449,26 @@
       "related_passed_after": 52,
       "pinned_regressions": "docs/parity/fixtures/builtin-coding-tool-write-regressions-2026-10-22.json",
       "legacy_permission_receipt": "docs/parity/fixtures/builtin-coding-tool-write-permission-2026-10-22.json",
-      "status": "fresh paired verification and mutation integration pending",
+      "status": "fresh classified write comparison/control pending",
       "safety_candidates": [
         "private new-file modes",
         "atomic replacement and inode identity",
         "hard-link preservation",
         "existing file inside read-only directory"
       ],
-      "queue": "Missing descendants retain resolved parent aliases; six alias cases also assert independent unrelated paths."
+      "queue": "Missing descendants retain resolved parent aliases; six alias cases also assert independent unrelated paths.",
+      "after_paths_source": "401a5b26",
+      "after_paths_strict_passed": 20,
+      "after_paths_total": 39,
+      "intentional_safety_candidates": 19,
+      "safety_receipt": "docs/parity/fixtures/builtin-coding-tool-write-safety-2026-10-22.json",
+      "source_queue_regressions_passed": 7,
+      "related_coordination_passed": 67,
+      "focused_coordination_passed": 7,
+      "temporary_privacy_regressions_failed_before": 1,
+      "coordination_receipt": "docs/parity/fixtures/builtin-coding-tool-mutation-coordination-2026-10-22.json",
+      "cancelled_waiter_timing": "Native settles cancellation promptly; Pi waits for the active operation. Neither executes the cancelled mutation or releases the active writer.",
+      "harness_guards_passed": 20
     }
   },
   "plan_received": true,

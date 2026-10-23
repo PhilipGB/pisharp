@@ -22,6 +22,13 @@ const declarations = Object.fromEntries(Object.entries(factories).map(([name, fa
     outputSchema: tool.outputSchema ?? null, constrainedSampling: tool.constrainedSampling ?? null }];
 }));
 
+if (mode === '--mutation-coordination-only') {
+  const { captureMutationCoordination } = await import('./builtin-coding-tool-mutation-cases.mjs');
+  const result = await captureMutationCoordination(factories, load);
+  writeFileSync(outputFile, JSON.stringify(result, null, 2) + '\n');
+  process.exit(0);
+}
+
 if (mode === '--read-cancellation-only') {
   const fs = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');

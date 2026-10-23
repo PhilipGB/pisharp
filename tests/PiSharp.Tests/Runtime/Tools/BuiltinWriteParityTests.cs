@@ -19,10 +19,11 @@ public sealed class BuiltinWriteParityTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public async Task PinnedResultsPathsAndFileBytesMatchForConfirmedDefects(string fixture)
+    public async Task PinnedResultsPathsAndFileBytesMatchForConfirmedDefects(string caseId, string fixture)
     {
         if (!OperatingSystem.IsLinux()) return;
         using var document = JsonDocument.Parse(fixture);
+        Assert.Equal(caseId, document.RootElement.GetProperty("caseId").GetString());
         var setup = document.RootElement.GetProperty("setup");
         var root = Path.Combine(Path.GetTempPath(), "pisharp-write-parity-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
