@@ -73,6 +73,15 @@ class Provider(BaseHTTPRequestHandler):
         request = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
         index = len(self.server.requests)
         self.server.requests.append(dict(path=self.path, body=request))
+        if index == getattr(self.server, 'abortAt', None):
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/event-stream')
+            self.end_headers()
+            self.wfile.flush()
+            self.server.blocked.set()
+            self.server.release.wait(timeout=20)
+            self.close_connection = True
+            return
         item = self.server.plan[index] if index < len(self.server.plan) else None
         body = stream_events(self.server.api, index, item)
         self.send_response(200)
@@ -115,7 +124,7 @@ def declarations(api, request):
     return answer
 
 
-def replay(product, api, pi, native, root, output, fixture, label=None):
+def replay(product, api, pi, native, root, output, fixture, label=None, cancel_continuation=False):
     label = label or product
     home = root / 'home'
     agent = home / 'agent'
@@ -129,6 +138,9 @@ def replay(product, api, pi, native, root, output, fixture, label=None):
         target.write_text(text)
     server = ThreadingHTTPServer(('127.0.0.1', 0), Provider)
     server.api, server.plan, server.requests = api, fixture['plan'], []
+    server.blocked, server.release = threading.Event(), threading.Event()
+    if cancel_continuation:
+        server.abortAt = len(fixture['plan'])
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     endpoint = f'http://127.0.0.1:{server.server_port}' + ('' if api == 'anthropic-messages' else '/v1')
@@ -188,7 +200,16 @@ def replay(product, api, pi, native, root, output, fixture, label=None):
                           else 'Complete the fixture coding workflow.'))
                 response = until(lambda value: value.get('id') == 'workflow' and value.get('type') == 'response')
                 assert response['success'], response
-                until(lambda value: value.get('type') == 'agent_settled')
+                if cancel_continuation and not restart:
+                    assert server.blocked.wait(timeout=20), 'Provider continuation did not reach HTTP barrier'
+                    send(dict(id='abort-workflow', type='abort'))
+                    abort = until(lambda value: value.get('id') == 'abort-workflow' and value.get('type') == 'response')
+                    assert abort['success'], abort
+                    if not any(value.get('type') == 'agent_settled' for value in records):
+                        until(lambda value: value.get('type') == 'agent_settled')
+                    server.release.set()
+                else:
+                    until(lambda value: value.get('type') == 'agent_settled')
                 send(dict(id='state', type='get_state'))
                 state = until(lambda value: value.get('id') == 'state')['data']
                 assert not state['isStreaming'] and state['pendingMessageCount'] == 0, state
@@ -224,6 +245,7 @@ def replay(product, api, pi, native, root, output, fixture, label=None):
             process.stdout.close()
             if process.stdin is not None and not process.stdin.closed:
                 process.stdin.close()
+        server.release.set()
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
@@ -346,15 +368,20 @@ def main():
     parser.add_argument('--apis', nargs='+', choices=APIS, default=APIS)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--calibrate', action='store_true')
+    parser.add_argument('--cancel-continuation', action='store_true')
     args = parser.parse_args()
     apply_test_thread_limit()
     pin = verify_pi_checkout(args.pi)
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     fixture = json.loads((ROOT / 'docs/parity/fixtures/builtin-coding-tool-agent-workflow-2026-10-22.json').read_text())
+    if args.cancel_continuation:
+        fixture['plan'] = fixture['plan'][:7]
+        fixture['outcomes'] = fixture['outcomes'][:7]
     report = dict(schema=1, pinnedPiSha=pin,
                   piSharpSha=None if args.calibrate else subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   piSharpUsed=not args.calibrate, mode='same-pi-control' if args.calibrate else 'pi-vs-pisharp',
+                  cancelContinuation=args.cancel_continuation,
                   dirtyPaths=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).splitlines(),
                   startedAt=datetime.now(timezone.utc).isoformat(), observations={})
     for api in args.apis:
@@ -364,7 +391,8 @@ def main():
             product = 'pi' if args.calibrate else label
             with tempfile.TemporaryDirectory(prefix='pisharp-provider-tools-') as temporary:
                 root = Path(temporary)
-                result = replay(product, api, args.pi.resolve(), args.pisharp.resolve(), root, output, fixture, label=label)
+                result = replay(product, api, args.pi.resolve(), args.pisharp.resolve(), root, output, fixture,
+                                label=label, cancel_continuation=args.cancel_continuation)
                 serialized = json.dumps(result).replace(str(root / 'workspace'), '<workspace>').replace(str(root), '<fixture>')
                 report['observations'][api][label] = json.loads(serialized)
                 print(api, label, result['providerRequests'], 'requests', flush=True)
