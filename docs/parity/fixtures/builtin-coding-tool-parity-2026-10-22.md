@@ -888,3 +888,43 @@ passes 68/68. The [final grep acceptance](builtin-coding-tool-grep-acceptance-20
 records actual source hashes and case classifications. J is complete for the
 defined supported Linux contract; shared M–P acceptance remains open. Progress
 is 10 of 20 checkpoints complete; K (find) is in progress.
+
+## Find correction in progress
+
+Clean input source `d27acc4e` has 61 meaningful find cases. The same-Pi control
+passes 61/61; native baseline passes 37/61 and all 24 mismatches reproduce in the
+expanded C# search fixture. The fd adapter reuses the process owner, bounded
+output builder and private-exclusion guard. It preserves fd smart-case/glob
+semantics, native path spelling and output ordering, handles zero/invalid limits,
+and removes the 20,000-path inventory loss. The first actual-function selection
+passes 128/128 (67 grep plus 61 find). The
+[pinned find results](builtin-coding-tool-find-results-2026-10-22.json) retain
+full outputs, metadata, errors and reproducible inputs.
+
+The older search/process selection passes 186/188. Both failures expect a slash
+for a directory symlink, while the independent find-symlink-directory source
+case returns its link name without a slash. Those two theory expectations are
+corrected from the source evidence; link presence and no-follow behavior remain
+asserted. K stays open for process/protocol/cancellation hardening and fresh
+committed-head acceptance; shared M–P gates also remain open.
+
+The independent [fd process fixture](builtin-coding-tool-find-protocol-2026-10-22.json)
+contains 27 cases for framing, Unicode whitespace, ordering, partial failures,
+limits and spawn/argument errors. The shared grep/find protocol selection passes
+54/54. [Real fd cancellation](builtin-coding-tool-find-cancellation-2026-10-22.json)
+uses 20,050 files and cancels at the first observed live-process output; the child
+terminates, input files remain unchanged and another actual tool call succeeds.
+The two real search cancellation cases plus protocol cases pass 56/56.
+
+Two preparation-cancellation regressions fail before the privacy guard maps its
+abort consistently, then pass. A directory-symlink privacy regression also fails
+before classification is corrected, then passes. The three focused cases pass
+3/3; the related warning-as-error selection passes 276/276. The retained
+[find privacy difference](builtin-coding-tool-find-safety-2026-10-22.json) is an
+explicit strict-parity exclusion: native omits previously private file/directory
+paths while keeping .ignore rescue rules. It stays a failed strict comparison.
+All 22 comparison guards pass, including full-observation checks for that case.
+There are now 62 find cases and 428 total; fresh clean-head acceptance remains.
+
+Another 60 checks feed the pinned fd protocol outputs in 1-, 7- and 8,192-byte
+chunks, preserving UTF-8, CR/LF framing, whitespace, path order and EOF behavior.

@@ -145,7 +145,7 @@ public sealed class SearchToolsTests
 
             var tools = new SearchTools(root);
             Assert.Equal("file-link.txt\nreal.txt\ntarget/inside.txt", await tools.Find("*.txt"));
-            Assert.Equal("dir-link/", await tools.Find("dir-link"));
+            Assert.Equal("dir-link", await tools.Find("dir-link"));
             var grepLines = (await tools.Grep("needle")).Split('\n').Order(StringComparer.Ordinal);
             Assert.Equal(["real.txt:1: needle", "target/inside.txt:1: needle"], grepLines);
         }

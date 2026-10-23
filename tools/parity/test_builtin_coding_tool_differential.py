@@ -11,7 +11,7 @@ from builtin_coding_tool_cases import binary, cases
 from builtin_coding_tool_image_comparison import assess_jpeg_codec, only_codec_pixel_differences
 from builtin_coding_tool_deviations import (assess_read_safety_deviation, READ_IMAGE_BOUNDARIES,
                                           assess_atomic_mutation_deviation, atomic_mutation_witnesses,
-                                          assess_grep_safety_deviation, grep_exclusion_witness)
+                                          assess_search_safety_deviation, search_exclusion_witness)
 
 
 spec = importlib.util.spec_from_file_location('builtin_tool_differential',
@@ -22,24 +22,30 @@ spec.loader.exec_module(driver)
 
 class BuiltinToolDifferentialTests(unittest.TestCase):
     def test_repository_exclusion_cannot_hide_changed_lines_metadata_or_files(self):
-        witness = grep_exclusion_witness()
+        self.check_repository_exclusion('grep')
+
+    def test_find_privacy_exclusion_requires_complete_source_and_native_observations(self):
+        self.check_repository_exclusion('find')
+
+    def check_repository_exclusion(self, tool):
+        witness = search_exclusion_witness(tool)
         observations = copy.deepcopy(witness['observations'])
         for side in observations.values():
             for entry in side['filesystem'].values():
                 entry['uid'], entry['gid'] = os.geteuid(), os.getegid()
-        self.assertTrue(assess_grep_safety_deviation(witness['setup'], observations))
+        self.assertTrue(assess_search_safety_deviation(witness['setup'], observations))
         for field, value in [('content', [{'type': 'text', 'text': 'missing result'}]), ('details', {'unexpected': True}),
                              ('isError', True), ('structuredContent', 'unexpected')]:
             wrong = copy.deepcopy(observations)
             wrong['pisharp']['result'][field] = value
-            self.assertFalse(assess_grep_safety_deviation(witness['setup'], wrong))
+            self.assertFalse(assess_search_safety_deviation(witness['setup'], wrong))
         wrong = copy.deepcopy(observations)
         wrong['pisharp']['filesystem']['visible.txt']['sha256'] = 'changed'
-        self.assertFalse(assess_grep_safety_deviation(witness['setup'], wrong))
+        self.assertFalse(assess_search_safety_deviation(witness['setup'], wrong))
         wrong = copy.deepcopy(observations)
         wrong['pi']['result']['content'][0]['text'] = 'missing source result'
-        self.assertFalse(assess_grep_safety_deviation(witness['setup'], wrong))
-        self.assertFalse(assess_grep_safety_deviation({**witness['setup'], 'arguments': {'pattern': 'changed'}}, observations))
+        self.assertFalse(assess_search_safety_deviation(witness['setup'], wrong))
+        self.assertFalse(assess_search_safety_deviation({**witness['setup'], 'arguments': {'pattern': 'changed'}}, observations))
 
     def test_atomic_exclusions_require_reviewed_setup_complete_results_and_exact_ownership(self):
         for witness in [row for tool in ['write', 'edit'] for row in atomic_mutation_witnesses(tool).values()]:

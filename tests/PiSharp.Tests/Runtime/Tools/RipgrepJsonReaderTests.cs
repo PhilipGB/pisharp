@@ -11,7 +11,7 @@ public sealed class RipgrepJsonReaderTests
     [Fact]
     public void HugeMatchingLineRetainsBoundedMemoryAndPinnedDisplayedPrefix()
     {
-        using var source = JsonDocument.Parse(BuiltinGrepParityTests.Cases().Single(row => (string)row[0] == "grep-huge-single-line")[1].ToString()!);
+        using var source = JsonDocument.Parse(BuiltinSearchParityTests.Cases().Single(row => (string)row[0] == "grep-huge-single-line")[1].ToString()!);
         var expected = source.RootElement.GetProperty("expectedResult").GetProperty("content")[0].GetProperty("text").GetString()!.Split("\n\n")[0];
         var matches = new List<RipgrepMatch>();
         var reader = new RipgrepJsonReader(match => { matches.Add(match); return true; });
@@ -32,9 +32,10 @@ public sealed class RipgrepJsonReaderTests
 
     public static IEnumerable<object[]> Cases()
     {
-        foreach (var row in GrepProcessProtocolTests.Cases())
+        foreach (var row in SearchProcessProtocolTests.Cases())
         {
             using var document = JsonDocument.Parse((string)row[1]);
+            if (document.RootElement.GetProperty("tool").GetString() != "grep") continue;
             if (document.RootElement.GetProperty("expected").GetProperty("rejected").GetBoolean()) continue;
             foreach (var size in new[] { 1, 7, 8192 }) yield return [row[0], row[1], size];
         }

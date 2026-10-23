@@ -20,7 +20,7 @@ import xml.sax.saxutils
 
 from builtin_coding_tool_cases import cases
 from builtin_coding_tool_image_comparison import assess_jpeg_codec, only_codec_pixel_differences
-from builtin_coding_tool_deviations import assess_read_safety_deviation, assess_atomic_mutation_deviation, assess_grep_safety_deviation
+from builtin_coding_tool_deviations import assess_read_safety_deviation, assess_atomic_mutation_deviation, assess_search_safety_deviation
 from pi_reference import verify_pi_checkout
 from terminal.thread_limits import apply_test_thread_limit
 
@@ -329,7 +329,7 @@ def main():
                         paths = []
                 safety_excluded = bool(paths) and not args.calibrate and (
                     assess_read_safety_deviation(case, observations) or assess_atomic_mutation_deviation(case, observations)
-                    or assess_grep_safety_deviation(case, observations))
+                    or assess_search_safety_deviation(case, observations))
                 if args.calibrate:
                     observations['controlPi'] = observations.pop('pisharp')
                 report_cases.append({'caseId': case_id, 'tool': case['tool'], 'pinnedPiSha': pin,

@@ -64,6 +64,14 @@ no sorting or relaxed ordinary comparisons were introduced. The 427-check
 related selection and 21 harness guards pass. Move to K (find), preserving the
 fixed 20-checkpoint denominator; broader M–P acceptance remains open.
 
+Find input source `d27acc4e` has 61 cases: control 61/61, old native 37/61.
+All 24 mismatches reproduce; the fd adapter now passes the 128-case shared
+search suite (67 grep + 61 find). Its changes are currently uncommitted. The
+old search/process selection passes 186/188; both failures assume a slash on
+directory symlinks, contradicted by the pinned find-symlink-directory fixture.
+Those source-backed expectations are corrected. Next verify fd process/protocol
+boundaries and real traversal cancellation, then commit and run fresh evidence.
+
 The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md) and
 [inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) were
 created before product changes. They explicitly list unverified contracts and
@@ -1387,3 +1395,10 @@ The pinned source audit confirms `transport` has values `auto`, `sse`, `websocke
 
 No engineering is claimed between 2026-10-23 09:10:33 UTC and resumption at
 2026-10-23 12:22:16 UTC; exclude that inactive interval from active duration.
+
+Find hardening now passes 27 pinned process cases (54 shared with grep), real fd
+first-output cancellation with cleanup/recovery, and a 276-test warning-as-error
+selection. Preparation abort and directory-symlink privacy regressions fail
+before correction and pass afterwards. Keep the named repository-local exclude
+safety difference explicitly excluded from strict parity; all 22 comparison
+guards pass. Find now has 62 cases (428 total), awaiting clean-head acceptance.

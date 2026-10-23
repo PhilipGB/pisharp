@@ -479,6 +479,13 @@ def cases():
     add('find', 'symlink-loop', {'pattern': '*'}, symlinks={'loop': 'loop'})
     add('find', 'inaccessible-root', {'pattern': '*', 'path': 'private'}, {'private/file.txt': ''}, modes={'private': 0})
     add('find', 'byte-limit', {'pattern': '*.txt'}, generatedFiles={'directory': 'nested/' + 'x' * 180, 'count': 400, 'text': ''})
+    add('find', 'repository-local-private-excludes', {'pattern': '*'},
+        {'global-excludes': 'private/\nprivate-link/\nsecret.txt\nrescued.txt\n', '.ignore': '!rescued.txt\n',
+         'private/hidden.txt': '', 'secret.txt': '', 'rescued.txt': '', 'visible.txt': ''},
+        symlinks={'private-link': 'private'}, gitDirectories=['.'],
+        gitConfig={'core.excludesFile': '{WORKSPACE}/global-excludes'},
+        acceptanceClass='intentional-repository-exclusion-safety')
+
 
     for name, arguments, files in [('default', {}, {'alpha': '', 'beta': ''}),
                                    ('empty', {}, {}), ('dotfiles', {}, {'.hidden': '', 'visible': ''}),

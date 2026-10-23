@@ -324,9 +324,9 @@
       "edit": 69,
       "bash": 44,
       "grep": 68,
-      "find": 27,
+      "find": 62,
       "ls": 25,
-      "total": 393
+      "total": 428
     },
     "read_image_contract": {
       "status": "in_progress",
@@ -658,6 +658,56 @@
         "control_strict_passed": 68,
         "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-acceptance-2026-10-22.json"
       }
+    },
+    "find_contract": {
+      "status": "in_progress",
+      "baseline_source": "d27acc4e",
+      "baseline_strict_passed": 37,
+      "baseline_total": 61,
+      "control_strict_passed": 61,
+      "regression_before": {
+        "failed": 24,
+        "passed": 37,
+        "total": 61
+      },
+      "first_adapter": {
+        "passed": 128,
+        "scope": "67 grep and 61 find actual-function cases"
+      },
+      "legacy_selection_before_expectation_correction": {
+        "passed": 186,
+        "failed": 2,
+        "total": 188
+      },
+      "legacy_expectation_correction": "Both symlink-directory theory rows expected a slash; actual pinned find-symlink-directory preserves fd link spelling without a slash. Presence and no-follow assertions retained.",
+      "fixture": "docs/parity/fixtures/builtin-coding-tool-find-results-2026-10-22.json",
+      "remaining": [
+        "fresh committed-head differential/control",
+        "shared M-P acceptance"
+      ],
+      "process_protocol": {
+        "pinned_cases": 27,
+        "shared_grep_find_passed": 54,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-find-protocol-2026-10-22.json"
+      },
+      "real_fd_cancellation": {
+        "passed": true,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-find-cancellation-2026-10-22.json",
+        "barrier": "First actual fd output; observed live process, abort, bounded cleanup, unchanged inputs and successful continuation."
+      },
+      "preparation_cancellation": {
+        "before_failed": 2,
+        "after_passed": 2
+      },
+      "directory_symlink_privacy": {
+        "before_failed": 1,
+        "after_passed": 1,
+        "strict_equivalence": false,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-find-safety-2026-10-22.json"
+      },
+      "related_warning_as_error_passed": 276,
+      "comparison_guards_passed": 22,
+      "path_decoding_chunk_cases_passed": 60
     }
   },
   "plan_received": true,

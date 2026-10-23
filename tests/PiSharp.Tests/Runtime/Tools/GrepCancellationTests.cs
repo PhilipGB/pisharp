@@ -11,7 +11,7 @@ public sealed class GrepCancellationTests
     public async Task RealRipgrepReadCanBeCancelledWithoutBlockingIndependentSearchOrRecovery()
     {
         if (!OperatingSystem.IsLinux()) return;
-        using var source = GrepProcessProtocolTests.SourceFixture();
+        using var source = SearchProcessProtocolTests.SourceFixture();
         var expected = source.RootElement.GetProperty("realRipgrepCancellation");
         var root = Path.Combine(Path.GetTempPath(), "pisharp-grep-cancel-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -36,7 +36,7 @@ public sealed class GrepCancellationTests
             Assert.Equal(expected.GetProperty("parallel").GetProperty("content")[0].GetProperty("text").GetString(), parallelText);
             Assert.True(expected.GetProperty("blockedBeforeCancellation").GetBoolean());
             Assert.False(blocked.IsCompleted);
-            children.AddRange(FindChildrenReading(fifo));
+            children.AddRange(ProcessTestHelpers.FindChildrenWithArgument(fifo));
             Assert.Equal(expected.GetProperty("processCount").GetInt32(), children.Count);
             Assert.NotEmpty(children);
             cancellation.Cancel();
@@ -51,7 +51,7 @@ public sealed class GrepCancellationTests
         finally
         {
             cancellation.Cancel();
-            foreach (var child in FindChildrenReading(fifo))
+            foreach (var child in ProcessTestHelpers.FindChildrenWithArgument(fifo))
             {
                 try { using var process = System.Diagnostics.Process.GetProcessById(child); process.Kill(entireProcessTree: true); }
                 catch (ArgumentException) { }
@@ -68,24 +68,6 @@ public sealed class GrepCancellationTests
                 try { await blocked.WaitAsync(TimeSpan.FromSeconds(5)); } catch (OperationCanceledException) { }
             Directory.Delete(root, recursive: true);
         }
-    }
-
-    private static IEnumerable<int> FindChildrenReading(string fifo)
-    {
-        var children = new HashSet<int>();
-        foreach (var task in Directory.GetDirectories("/proc/self/task"))
-        {
-            string text;
-            try { text = File.ReadAllText(Path.Combine(task, "children")); }
-            catch (IOException) { continue; }
-            foreach (var value in text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-            {
-                var child = int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
-                try { if (File.ReadAllText($"/proc/{child}/cmdline").Contains(fifo, StringComparison.Ordinal)) children.Add(child); }
-                catch (IOException) { }
-            }
-        }
-        return children;
     }
 
     [DllImport("libc", SetLastError = true)]

@@ -7,21 +7,28 @@ using PiSharp.Runtime.Tools;
 namespace PiSharp.Tests;
 
 [Collection("Extension environment")]
-public sealed class GrepProcessProtocolTests
+public sealed class SearchProcessProtocolTests
 {
     public static IEnumerable<object[]> Cases()
     {
-        using var fixture = SourceFixture();
-        foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
-            yield return [row.GetProperty("caseId").GetString()!, row.GetRawText()];
+        foreach (var tool in new[] { "grep", "find" })
+        {
+            using var fixture = SourceFixture(tool);
+            foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
+            {
+                var input = JsonNode.Parse(row.GetRawText())!;
+                input["tool"] = tool;
+                yield return [row.GetProperty("caseId").GetString()!, input.ToJsonString()];
+            }
+        }
     }
 
-    internal static JsonDocument SourceFixture()
+    internal static JsonDocument SourceFixture(string tool = "grep", string kind = "protocol")
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx"))) directory = directory.Parent;
         return JsonDocument.Parse(File.ReadAllText(Path.Combine(directory!.FullName, "docs", "parity", "fixtures",
-            "builtin-coding-tool-grep-protocol-2026-10-22.json")));
+            $"builtin-coding-tool-{tool}-{kind}-2026-10-22.json")));
     }
 
     [Theory]
@@ -44,7 +51,8 @@ public sealed class GrepProcessProtocolTests
             var stdout = row.TryGetProperty("stdout", out var supplied) ? supplied.GetString()! : BuildLargeEvent(row.GetProperty("stdoutRecipe"));
             var stdoutFile = Path.Combine(root, "stdout");
             var stderrFile = Path.Combine(root, "stderr");
-            var executable = Path.Combine(bin, "rg");
+            var toolName = row.GetProperty("tool").GetString()!;
+            var executable = Path.Combine(bin, toolName == "grep" ? "rg" : "fd");
             await File.WriteAllTextAsync(stdoutFile, stdout.Replace("<workspace>", workspace, StringComparison.Ordinal));
             await File.WriteAllTextAsync(stderrFile, row.GetProperty("stderr").GetString());
             await File.WriteAllTextAsync(executable, row.GetProperty("header").GetString() +
@@ -52,10 +60,10 @@ public sealed class GrepProcessProtocolTests
                 $"cat {ProcessTestHelpers.ShellQuote(stdoutFile)}\ncat {ProcessTestHelpers.ShellQuote(stderrFile)} >&2\nexit {row.GetProperty("exitCode").GetInt32()}\n");
             File.SetUnixFileMode(executable, (UnixFileMode)row.GetProperty("mode").GetInt32());
             Environment.SetEnvironmentVariable("PATH", bin + Path.PathSeparator + inheritedPath);
-            var function = new CodingTools(workspace).CreateAll().OfType<AIFunction>().Single(tool => tool.Name == "grep");
-            var arguments = new AIFunctionArguments(row.GetProperty("arguments").EnumerateObject().ToDictionary(item => item.Name,
-                item => (object?)(item.Value.ValueKind == JsonValueKind.String ? item.Value.GetString()! :
-                    string.Concat(Enumerable.Repeat(item.Value.GetProperty("repeat").GetString(), item.Value.GetProperty("count").GetInt32())))));
+            var function = new CodingTools(workspace).CreateAll().OfType<AIFunction>().Single(tool => tool.Name == toolName);
+            var arguments = new AIFunctionArguments(row.GetProperty("arguments").EnumerateObject().ToDictionary<JsonProperty, string, object?>(item => item.Name,
+                item => item.Value.ValueKind == JsonValueKind.String ? (object?)item.Value.GetString()! :
+                    item.Value.ValueKind == JsonValueKind.Object ? string.Concat(Enumerable.Repeat(item.Value.GetProperty("repeat").GetString(), item.Value.GetProperty("count").GetInt32())) : item.Value.Clone()));
             var expected = row.GetProperty("expected");
             string text;
             object? details = null;

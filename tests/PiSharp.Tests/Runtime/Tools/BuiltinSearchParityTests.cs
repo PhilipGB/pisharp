@@ -8,16 +8,19 @@ using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Tests;
 
-public sealed class BuiltinGrepParityTests
+public sealed class BuiltinSearchParityTests
 {
     public static IEnumerable<object[]> Cases()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx"))) directory = directory.Parent;
-        using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory!.FullName, "docs", "parity", "fixtures",
-            "builtin-coding-tool-grep-results-2026-10-22.json")));
-        foreach (var item in fixture.RootElement.GetProperty("cases").EnumerateArray())
-            yield return [item.GetProperty("caseId").GetString()!, item.GetRawText()];
+        foreach (var tool in new[] { "grep", "find" })
+        {
+            using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory!.FullName, "docs", "parity", "fixtures",
+                $"builtin-coding-tool-{tool}-results-2026-10-22.json")));
+            foreach (var item in fixture.RootElement.GetProperty("cases").EnumerateArray())
+                yield return [item.GetProperty("caseId").GetString()!, item.GetRawText()];
+        }
     }
 
     [Theory]
@@ -33,6 +36,8 @@ public sealed class BuiltinGrepParityTests
         var hashes = new Dictionary<string, byte[]>();
         try
         {
+            if (setup.TryGetProperty("directories", out var directories))
+                foreach (var entry in directories.EnumerateObject()) Directory.CreateDirectory(Path.Combine(root, entry.Name));
             foreach (var file in setup.GetProperty("files").EnumerateObject())
             {
                 var path = Path.Combine(root, file.Name);
@@ -65,7 +70,7 @@ public sealed class BuiltinGrepParityTests
                     File.SetUnixFileMode(path, (UnixFileMode)entry.Value.GetInt32());
                     protectedPaths.Add(path);
                 }
-            var function = new CodingTools(root).CreateAll().OfType<AIFunction>().Single(tool => tool.Name == "grep");
+            var function = new CodingTools(root).CreateAll().OfType<AIFunction>().Single(tool => tool.Name == setup.GetProperty("tool").GetString());
             var arguments = new AIFunctionArguments(setup.GetProperty("arguments").EnumerateObject().ToDictionary(
                 item => item.Name, item => item.Value.ValueKind == JsonValueKind.String
                     ? (object?)item.Value.GetString()!.Replace("{WORKSPACE}", root, StringComparison.Ordinal) : item.Value.Clone()));

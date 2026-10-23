@@ -57,16 +57,17 @@ def assess_atomic_mutation_deviation(case, observations):
     return observations == expected
 
 
-@lru_cache(maxsize=1)
-def grep_exclusion_witness():
-    fixture = Path(__file__).resolve().parents[2] / 'docs/parity/fixtures/builtin-coding-tool-grep-safety-2026-10-22.json'
+@lru_cache(maxsize=2)
+def search_exclusion_witness(tool):
+    fixture = Path(__file__).resolve().parents[2] / f'docs/parity/fixtures/builtin-coding-tool-{tool}-safety-2026-10-22.json'
     return json.loads(fixture.read_text())['cases'][0]
 
 
-def assess_grep_safety_deviation(case, observations):
-    if not hasattr(os, 'geteuid') or case.get('acceptanceClass') != 'intentional-repository-exclusion-safety':
+def assess_search_safety_deviation(case, observations):
+    if (not hasattr(os, 'geteuid') or case.get('tool') not in ('grep', 'find') or
+            case.get('acceptanceClass') != 'intentional-repository-exclusion-safety'):
         return False
-    witness = grep_exclusion_witness()
+    witness = search_exclusion_witness(case['tool'])
     if case != witness['setup']:
         return False
     for pinned in [witness['observations']['pi'], *witness.get('additionalPinnedObservations', [])]:
