@@ -67,8 +67,8 @@ and model profile precedence: clean `81d9a226` passes 1/4 before correction.
 Two MAF regressions fail before fixing the canonical note; the broader selection
 passes 83/83 afterward. An earlier lifecycle JSON image-byte leak is corrected
 without weakening its existing regression. Current/routed model capability now
-updates read behavior. Fresh paired evidence and read safety boundaries remain
-next. F remains in progress.
+updates read behavior. Clean source `9ebd03b5` passes all four paired context cases. Two resource-boundary
+inputs are captured next for actual safety-deviation measurement. F remains in progress.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required

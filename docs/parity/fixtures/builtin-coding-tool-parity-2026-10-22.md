@@ -508,7 +508,10 @@ structured image data leaked through the new metadata field. The lifecycle
 serializer now omits the image `data` property while retaining other structured
 metadata; canonical storage and explicit RPC image content retain their existing
 contracts. The original in-process-image-only regression passes unchanged.
-Fresh clean-source paired evidence is next. Corpus inventory is 285 (read 119).
+Clean source `9ebd03b5` passes 4/4 model-context cases, all strictly, with
+zero build warnings/errors. Two additional resource-boundary inputs now exercise
+the retained 20 MiB input and 32-million-pixel limits; actual differences remain
+to be measured. Corpus inventory is 287 (read 121).
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or

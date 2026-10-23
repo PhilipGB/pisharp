@@ -399,7 +399,17 @@
         "maf_regressions_failed_before": 2,
         "related_passed_after": 83,
         "lifecycle_json_image_bytes": "omitted; canonical data and explicit RPC images preserved",
-        "status": "fresh paired verification pending"
+        "status": "paired cases pass; broader safety work pending",
+        "after_source": "9ebd03b5",
+        "after_passed": 4,
+        "after_total": 4
+      },
+      "resource_boundaries": {
+        "case_ids": [
+          "read-image-input-safety-boundary",
+          "read-image-pixel-safety-boundary"
+        ],
+        "status": "inputs captured; actual comparison pending"
       }
     }
   },

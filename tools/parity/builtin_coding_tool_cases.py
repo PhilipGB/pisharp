@@ -24,6 +24,16 @@ def binary(data):
     return {'base64': base64.b64encode(data).decode('ascii')}
 
 
+def solid_png(width, height):
+    def chunk(kind, payload):
+        return struct.pack('>I', len(payload)) + kind + payload + struct.pack('>I', zlib.crc32(kind + payload))
+    compressor = zlib.compressobj()
+    row = b'\0' + bytes((32, 96, 160)) * width
+    payload = b''.join(compressor.compress(row) for _ in range(height)) + compressor.flush()
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+            + chunk(b'IDAT', payload) + chunk(b'IEND', b''))
+
+
 def repeated(text, count):
     return {'repeat': text, 'count': count}
 
@@ -135,6 +145,15 @@ def cases():
         add('read', 'image-' + label, {'path': 'image.dat'}, {'image.dat': {'base64': images[asset]['base64']}},
             context={'model': model}, imagePolicy='decoded-rgba' if label == 'model-profile' else 'exact-bytes',
             options={'resizeOptions': {'maxWidth': 8, 'maxHeight': 6}} if label == 'model-profile' else {})
+
+    add('read', 'image-input-safety-boundary', {'path': 'image.dat'},
+        {'image.dat': {'concat': [{'base64': images['png-rgb']['base64']}, repeated('\0', 20 * 1024 * 1024)]}},
+        imagePolicy='decoded-rgba', acceptanceClass='intentional-safety-boundary',
+        safetyBoundary='Encoded inputs above 20 MiB are omitted before allocation, even when trailing bytes are harmless.')
+    add('read', 'image-pixel-safety-boundary', {'path': 'image.dat'},
+        {'image.dat': binary(solid_png(8001, 4000))}, imagePolicy='decoded-rgba',
+        acceptanceClass='intentional-safety-boundary',
+        safetyBoundary='Images above 32,000,000 decoded pixels are omitted before allocating a decoded bitmap.')
 
     for name, content in [('new', 'new file\n'), ('empty', ''), ('unicode', '日本語 😀 café\n'), ('bom', '\ufefffile\n')]:
         add('write', name, {'path': 'file.txt', 'content': content})
