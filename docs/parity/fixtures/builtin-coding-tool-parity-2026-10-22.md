@@ -968,3 +968,11 @@ barrier and outcomes. The source-backed search/list, ls cancellation and related
 registered-tool selection passes 211/211 with warnings as errors. The previous
 51-case regression selection had 22 failures and 157 passes across all tools.
 Fresh committed-head ls acceptance is still required.
+
+### Ls checkpoint acceptance
+
+Clean `a68d365c` passes 53/53 strict ls cases and 53/53 same-Pi controls. The
+[ls acceptance](builtin-coding-tool-ls-acceptance-2026-10-22.json) retains source
+hashes and classifications. Related checks pass 211/211, plus 40 older selection
+and result tests. L is complete for the defined supported Linux contract.
+Shared M–P acceptance remains open. Stable progress is 12/20; M is in progress.

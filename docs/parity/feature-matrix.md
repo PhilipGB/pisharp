@@ -26,7 +26,7 @@ search/list cases. Input declarations now match the seven source schemas, with
 argument preparation/validation regressions. Primitive conversion matches 93
 pinned vectors; common head/tail truncation matches 140. Read/Bash result metadata,
 registered output schemas, sampling policy and JSON/RPC/session preservation have
-focused passing evidence in the receipt. Checkpoints A–K are complete; L (ls)
+focused passing evidence in the receipt. Checkpoints A–L are complete; M (tool integration)
 is in progress. The [read acceptance](fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json)
 passes 119/121 cases (109 strict, ten JPEG equivalents), with two separately
 excluded allocation safety limits and a 121/121 strict same-Pi control. Read
@@ -38,7 +38,7 @@ for those exclusions. The [edit acceptance](fixtures/builtin-coding-tool-edit-ac
 records 31 strict passes and thirty-eight explicit atomicity exclusions, with a
 69/69 strict same-Pi control. Actual error recovery includes parent removal after
 the snapshot, and deterministic cancellation preserves batched atomicity. Broader
-integration/reliability and ls acceptance remain open.
+integration/reliability acceptance remains open.
 
 The [find acceptance](fixtures/builtin-coding-tool-find-acceptance-2026-10-22.json)
 at clean `99016879` verifies 61 strict cases, one explicit repository-privacy
@@ -46,6 +46,11 @@ exclusion and zero unresolved differences, with a 62/62 same-Pi control. Real fd
 traversal cancellation proves process cleanup, unchanged inputs and recovery.
 The related warning-as-error selection passes 276 checks, plus 60 chunk-boundary
 checks. The old 20,000-path inventory cap no longer applies to find.
+
+The [ls acceptance](fixtures/builtin-coding-tool-ls-acceptance-2026-10-22.json)
+at clean `a68d365c` passes 53/53 strict cases and control cases, including Unicode
+ordering, numeric limits, symlink/stat behavior, permission errors and truncation.
+Pending-read cancellation and independent continuation are also verified.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 

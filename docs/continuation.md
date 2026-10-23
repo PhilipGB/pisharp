@@ -10,8 +10,8 @@ head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
 passed 2,711 tests and both MCP jobs before the expected-head merge.
 
 Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–K are complete;
-L (ls) is in progress; M–T remain pending. Preserve this
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–L are complete;
+M (tool integration) is in progress; N–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
@@ -1408,3 +1408,8 @@ exclusion, zero unresolved differences and 62/62 same-Pi calibration. See the
 find acceptance receipt. Stable progress is 11/20 complete, 9 remaining. L (ls)
 is now in progress; earlier chronological pending notes are superseded by this
 acceptance. No PR #22 has been published yet.
+
+Clean `a68d365c` closes L with 53/53 strict ls comparisons and a 53/53
+strict same-Pi control. Related checks pass 211/211 plus 40 legacy selection/
+result checks. Stable progress is now 12/20 complete, 8 remaining. M (tool
+integration) is in progress, followed by N physical provider workflows.

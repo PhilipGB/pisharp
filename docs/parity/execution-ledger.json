@@ -69,12 +69,12 @@
       {
         "id": "L",
         "name": "Ls",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "M",
         "name": "Tool integration",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "N",
@@ -718,7 +718,7 @@
       }
     },
     "ls_contract": {
-      "status": "in_progress",
+      "status": "verified_supported_linux",
       "baseline_source": "99016879",
       "baseline_worktree_dirty": true,
       "baseline_strict_passed": 29,
@@ -752,7 +752,18 @@
         "receipt": "docs/parity/fixtures/builtin-coding-tool-ls-cancellation-2026-10-22.json",
         "barrier": "Real names snapshot held before fulfillment; abort settles before release, independent listing and continuation succeed."
       },
-      "legacy_selection_passed": 40
+      "legacy_selection_passed": 40,
+      "complete_acceptance": {
+        "source": "a68d365c4fcf6f43e4a8fcbdf01d150627f9770c",
+        "strict_passed": 53,
+        "total": 53,
+        "control_strict_passed": 53,
+        "unresolved": 0,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-ls-acceptance-2026-10-22.json"
+      },
+      "remaining": [
+        "shared M-P acceptance"
+      ]
     }
   },
   "plan_received": true,

@@ -64,6 +64,14 @@
       "total": 62,
       "intentional_safety_exclusions": 1,
       "control_strict_passed": 62
+    },
+    "ls": {
+      "source": "a68d365c4fcf6f43e4a8fcbdf01d150627f9770c",
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-ls-acceptance-2026-10-22.json",
+      "status": "supported Linux ls checkpoint verified; shared M-P acceptance pending",
+      "strict": 53,
+      "total": 53,
+      "control_strict_passed": 53
     }
   },
   "tools": {
