@@ -933,6 +933,39 @@
         "skipped": 0,
         "abandoned_output_files": 0
       }
+    },
+    "ownership_hardening": {
+      "status": "product_corrected_fresh_full_validation_pending",
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-mutation-ownership-2026-10-22.json",
+      "source_cases": 8,
+      "defined_contract": "Owner/group preservation and kernel-compatible set-ID mode changes; atomic inode replacement remains explicitly excluded.",
+      "before": {
+        "failed": 4,
+        "passed": 4,
+        "total": 8
+      },
+      "related_after": {
+        "passed": 138,
+        "failed": 0,
+        "skipped": 0
+      },
+      "local_alternate_group_limitation": {
+        "restricted_mapping_error": "EINVAL",
+        "expanded_mapping_error": "EPERM",
+        "ordinary_owner_handle_restoration": "verified"
+      },
+      "ci_acceptance": "Fresh pinned checkout/npm-ci/source-resolver oracle; Linux CI requires a genuinely assignable alternate group and passes its actual UID/GID observations into native tests.",
+      "cold_setup_reproduction": "Fresh pinned clone plus npm ci --ignore-scripts and the actual source oracle passed locally.",
+      "previous_full_validation": {
+        "source": "a865fd0b",
+        "passed": 3718,
+        "failed": 0,
+        "skipped": 0
+      },
+      "remaining": [
+        "Fresh full validation and reliability after ownership correction.",
+        "Inspect actual alternate-group pinned/native CI evidence before final completion."
+      ]
     }
   },
   "plan_received": true,

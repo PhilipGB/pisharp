@@ -1151,3 +1151,22 @@ actual CLI processes, retains eight correlated outcomes and appends exactly one
 byte. Private write permissions remain an explicit strict-equivalence exclusion.
 See the [safety acceptance](builtin-coding-tool-safety-acceptance-2026-10-22.json).
 P is complete; Q–T remain open.
+
+## Final ownership audit
+
+The first full suite passes 3,718/3,718 (zero failures/skips). Subsequent physical
+permission investigation captures eight pinned write/edit cases and reproduces
+four set-ID mode defects before the correction. Atomic publication now restores
+owner/group through the private file handle and applies the current thread's
+kernel-compatible permission changes, preserving private staging and cancellation.
+All 138 related mutation checks pass. The original eight-case attempt also exposed
+a test helper assuming structured output for plain write strings; its correction
+leaves four genuine source-backed failures before the product change.
+
+Alternate group assignment is unavailable in the local mappings (EINVAL/EPERM).
+A fresh pinned clone, npm ci with scripts disabled and source oracle execute
+successfully; Linux CI now captures its own actual assignable-group oracle and
+compares native UID/GID/mode/content/results with it. The source artifact is
+retained by both workflows. This CI ownership gate and fresh complete validation
+remain open. Privileged execution is unverified; the committed local observations
+use an unprivileged identity. No whole-root filesystem parity claim is made.

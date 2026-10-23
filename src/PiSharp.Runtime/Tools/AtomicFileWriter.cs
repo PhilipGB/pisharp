@@ -12,6 +12,7 @@ internal static class AtomicFileWriter
         var directory = Path.GetDirectoryName(path)!;
         var temp = Path.Combine(directory, ".pisharp-" + Guid.NewGuid().ToString("N") + ".tmp");
         var originalMode = OperatingSystem.IsLinux() && File.Exists(path) ? File.GetUnixFileMode(path) : (UnixFileMode?)null;
+        LinuxFileAccess.Ownership? originalOwner = originalMode is not null ? LinuxFileAccess.ReadOwnership(path) : null;
         try
         {
             var options = new FileStreamOptions
@@ -27,11 +28,16 @@ internal static class AtomicFileWriter
             {
                 await stream.WriteAsync(data, cancellationToken);
                 await stream.FlushAsync(cancellationToken);
+                // Keep staged bytes private until publication; restore metadata through the owned handle.
+                if (beforeCommit is not null) await beforeCommit();
+                cancellationToken.ThrowIfCancellationRequested();
+                if (OperatingSystem.IsLinux() && originalOwner is { } owner && originalMode is { } mode)
+                {
+                    LinuxFileAccess.RestoreOwnership(stream.SafeFileHandle, owner, path);
+                    File.SetUnixFileMode(stream.SafeFileHandle, LinuxFileAccess.ModeAfterWrite(mode));
+                }
             }
-            if (beforeCommit is not null) await beforeCommit();
             cancellationToken.ThrowIfCancellationRequested();
-            // Uncommitted bytes stay private; restore existing permissions only when publishing the completed file.
-            if (OperatingSystem.IsLinux() && originalMode is { } mode) File.SetUnixFileMode(temp, mode);
             File.Move(temp, path, overwrite: true);
         }
         finally { if (File.Exists(temp)) File.Delete(temp); }

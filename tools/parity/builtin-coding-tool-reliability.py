@@ -15,7 +15,7 @@ from terminal.thread_limits import apply_test_thread_limit, thread_limit_environ
 
 ROOT = Path(__file__).resolve().parents[2]
 CLASSES = [
-    'FileMutationCoordinationTests', 'FileMutationAliasTests', 'BashProcessLifetimeTests',
+    'FileMutationCoordinationTests', 'FileMutationAliasTests', 'FileMutationOwnershipTests', 'BashProcessLifetimeTests',
     'BuiltinBashResultParityTests', 'BashToolUpdateParityTests', 'ReadStreamingSafetyTests',
     'ReadImageCancellationTests', 'ReadImageProcessorTests', 'BuiltinSearchParityTests',
     'GrepCancellationTests', 'FindCancellationTests', 'LsCancellationTests',

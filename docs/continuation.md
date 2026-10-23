@@ -15,6 +15,17 @@ Q (full validation) is in progress; R–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
+
+The first full Q suite passed 3,718/3,718 with zero failures/skips, but final
+ownership auditing found four executable set-ID mode mismatches. Eight new
+pinned observations and 138 related mutation checks verify the focused fix.
+Atomic publication now restores owner/group through its private handle and
+matches kernel privilege-bit clearing. Local group assignment is restricted
+(EINVAL in the narrow mapping, EPERM after expansion). CI now captures the real
+pinned oracle on its Linux runner, requires an assignable alternate group, and
+passes the actual observations into native tests. Fresh full gates, reliability
+and this physical CI receipt remain required. Progress stays 16/20; Q is open.
+
 Bash investigation now has 44 direct pinned cases; clean pre-fix `6c346e46`
 passes 2/44 when initial/final update contracts are included. The correction
 adds cumulative raw snapshots, initial empty content, 100 ms coalescing, live

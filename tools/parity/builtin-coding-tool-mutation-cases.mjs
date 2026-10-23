@@ -2,6 +2,47 @@ import * as fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
+export async function captureMutationOwnership(factories) {
+  let group = process.getgid();
+  const groupAttempts = [];
+  const probe = await fs.mkdtemp(path.join(tmpdir(), 'pisharp-pinned-group-probe-'));
+  try {
+    const target = path.join(probe, 'file');
+    await fs.writeFile(target, 'fixture');
+    for (const candidate of process.getgroups().filter(value => value !== process.getgid())) {
+      try { await fs.chown(target, process.getuid(), candidate); group = candidate; break; }
+      catch (error) { groupAttempts.push({ group: candidate, code: error.code }); }
+    }
+  } finally { await fs.rm(probe, { recursive: true, force: true }); }
+  const cases = [];
+  for (const tool of ['write', 'edit']) {
+    for (const mode of [0o660, 0o4755, 0o2755, 0o2644]) {
+      const root = await fs.mkdtemp(path.join(tmpdir(), 'pisharp-pinned-ownership-'));
+      try {
+        const target = path.join(root, 'file.txt');
+        await fs.writeFile(target, 'alpha\n');
+        await fs.chown(target, process.getuid(), group);
+        await fs.chmod(target, mode);
+        const before = await fs.stat(target);
+        const argumentsValue = tool === 'write' ? { path: 'file.txt', content: 'beta\n' }
+          : { path: 'file.txt', edits: [{ oldText: 'alpha', newText: 'beta' }] };
+        const result = await factories[tool](root).execute('ownership', argumentsValue);
+        const after = await fs.stat(target);
+        cases.push({ caseId: tool + '-ownership-' + mode.toString(8), tool, mode,
+          arguments: argumentsValue, result,
+          before: { uid: before.uid, gid: before.gid, mode: before.mode & 0o7777 },
+          after: { uid: after.uid, gid: after.gid, mode: after.mode & 0o7777 },
+          inodePreserved: before.ino === after.ino, finalText: await fs.readFile(target, 'utf8') });
+      } finally { await fs.rm(root, { recursive: true, force: true }); }
+    }
+  }
+  return { pinnedPiSha: 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6',
+    source: ['packages/coding-agent/src/core/tools/write.ts', 'packages/coding-agent/src/core/tools/edit.ts'],
+    fixture: 'tools/parity/builtin-coding-tool-mutation-cases.mjs',
+    ownerParameters: 'Use an assignable supplementary group when available, otherwise record the environment limitation and use the primary group.',
+    alternateGroupAssigned: group !== process.getgid(), groupAttempts, cases };
+}
+
 export async function captureMutationCoordination(factories, load) {
   const { withFileMutationQueue } = await load('packages/coding-agent/src/core/tools/file-mutation-queue.ts');
   const results = [];

@@ -43,6 +43,12 @@ if (mode === '--bash-process-lifetime-only') {
   process.exit(0);
 }
 
+if (mode === '--mutation-ownership-only') {
+  const { captureMutationOwnership } = await import('./builtin-coding-tool-mutation-cases.mjs');
+  writeFileSync(outputFile, JSON.stringify(await captureMutationOwnership(factories), null, 2) + '\n');
+  process.exit(0);
+}
+
 if (mode === '--mutation-coordination-only') {
   const { captureMutationCoordination } = await import('./builtin-coding-tool-mutation-cases.mjs');
   const result = await captureMutationCoordination(factories, load);
