@@ -20,7 +20,7 @@ import xml.sax.saxutils
 
 from builtin_coding_tool_cases import cases
 from builtin_coding_tool_image_comparison import assess_jpeg_codec, only_codec_pixel_differences
-from builtin_coding_tool_deviations import assess_read_safety_deviation, assess_atomic_write_deviation
+from builtin_coding_tool_deviations import assess_read_safety_deviation, assess_atomic_mutation_deviation
 from pi_reference import verify_pi_checkout
 from terminal.thread_limits import apply_test_thread_limit
 
@@ -325,7 +325,7 @@ def main():
                     if codec_comparison and codec_comparison['accepted']:
                         paths = []
                 safety_excluded = bool(paths) and not args.calibrate and (
-                    assess_read_safety_deviation(case, observations) or assess_atomic_write_deviation(case, observations))
+                    assess_read_safety_deviation(case, observations) or assess_atomic_mutation_deviation(case, observations))
                 if args.calibrate:
                     observations['controlPi'] = observations.pop('pisharp')
                 report_cases.append({'caseId': case_id, 'tool': case['tool'], 'pinnedPiSha': pin,
@@ -354,7 +354,7 @@ def main():
                     'duration': 'Nonnegative numeric wall_time_seconds retained raw; excluded from value equality.',
                     'images': 'Original payloads exact bytes; selected reencoded images compare decoded RGBA dimensions/pixels; raw payloads retained. MIME, notes, structured results and failures remain exact.',
                     'jpegCodecs': 'Only named calibrated cases may use the explicit JPEG envelope. Strict hashes/differences remain recorded. Quantization, sampling, fidelity and every non-pixel contract are checked; see setup.jpegComparison.',
-                    'safetyExclusions': 'Named image allocation limits and reviewed atomic/private-write differences remain failed strict comparisons. Only complete frozen expected observations may be excluded; actual outputs, ownership and filesystem differences are retained. They never increase passed/strictPassed.',
+                    'safetyExclusions': 'Named image allocation limits and reviewed atomic/private-mutation differences remain failed strict comparisons. Only complete frozen expected observations may be excluded; actual outputs, ownership and filesystem differences are retained. They never increase passed/strictPassed.',
                     'updates': 'Raw complete updates retained; initial/final snapshots compared. Timing/chunk count not asserted identical.',
                     'filesystem': 'Exact content hashes, short-file bytes, kinds, modes, uid/gid, link targets/peers and inode-preservation flags. No mtime/ctime/absolute inode equality.'},
                 'declarationDifferences': declaration_differences, 'cases': report_cases,

@@ -6,7 +6,6 @@ internal static class AtomicFileWriter
     public static async Task ReplaceAsync(string path, ReadOnlyMemory<byte> data, CancellationToken cancellationToken,
         Func<Task>? beforeCommit = null)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         // Preserve the target of an existing symlink rather than replacing the link itself.
         // ResolveLinkTarget throws for paths which have not yet been created.
         if (File.Exists(path)) path = new FileInfo(path).ResolveLinkTarget(true)?.FullName ?? path;

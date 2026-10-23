@@ -4068,6 +4068,141 @@
           "hardlinkPeers": []
         }
       }
+    },
+    {
+      "caseId": "edit-stable-overlap-index",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "9c23bd86e7fc683f95f60627e4925315e4013887",
+      "capture": "edit-stable-order-before/report.json",
+      "setup": {
+        "caseId": "edit-stable-overlap-index",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 0"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 1"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 2"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 3"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 4"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 5"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 6"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 7"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 8"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 9"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 10"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 11"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 12"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 13"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 14"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 15"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 16"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 17"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 18"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 19"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-stable-overlap-index",
+        "content": [
+          {
+            "type": "text",
+            "text": "edits[0] and edits[1] overlap in file.txt. Merge them into one edit or target disjoint regions."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      }
     }
   ]
 }

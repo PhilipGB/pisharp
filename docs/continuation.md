@@ -104,7 +104,17 @@ correction; a seventeenth failure is a fixture-root comparison error, corrected
 without dropping metadata. UTF-8 decoding, ambiguity counting, exact ranges,
 directory/ancestor errors and cancellation now pass 327 related checks. The
 nullable cleanup warning is fixed. Fresh paired edit evidence and additional
-hardening remain next; H is in progress. Corpus is 340 (edit 68).
+hardening find a further unstable large-batch overlap index, corrected against
+clean `9c23bd86`. Native checks pass 331/331, including prepared batched edit
+cancellation and failures. Clean `2250b589` has only thirty-eight explicit
+atomicity safety differences across its 68 cases; those complete observations
+are frozen separately and never counted as passing parity. Twenty harness guards
+pass. A deterministic post-read directory deletion reproduces stale-content
+resurrection by the shared atomic helper. Parent creation now belongs to write;
+edit matches the pinned ENOENT outcome, leaves the directory absent and recovers
+with another write. The fail-first regression then joins 332 passing related
+checks. Fresh classified edit comparison/control remains next; H is in progress.
+Corpus is 341 (edit 69).
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required

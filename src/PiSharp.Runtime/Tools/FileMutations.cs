@@ -5,7 +5,7 @@ namespace PiSharp.Runtime.Tools;
 
 /// <summary>Coordinates atomic writes and exact edits across facade instances.</summary>
 internal sealed class FileMutations(string workingDirectory, FileMutationQueue? mutationQueue = null,
-    Func<Task>? beforeCommit = null)
+    Func<Task>? beforeCommit = null, Func<Task>? afterRead = null)
 {
     private static readonly FileMutationQueue s_mutations = new();
     private readonly FileMutationQueue _mutations = mutationQueue ?? s_mutations;
@@ -45,6 +45,7 @@ internal sealed class FileMutations(string workingDirectory, FileMutationQueue? 
         {
             return await _mutations.RunAsync(absolute, async () =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (FindBlockingFileAncestor(parent) is { } blockingFile)
                 {
                     var pathIsFile = string.Equals(blockingFile, parent,
@@ -58,6 +59,7 @@ internal sealed class FileMutations(string workingDirectory, FileMutationQueue? 
                 {
                     throw new ToolFailureException($"EACCES: permission denied, mkdir '{parent}'", inner: error);
                 }
+                cancellationToken.ThrowIfCancellationRequested();
                 if (Directory.Exists(absolute))
                     throw new ToolFailureException($"EISDIR: illegal operation on a directory, open '{absolute}'");
 
@@ -108,6 +110,7 @@ internal sealed class FileMutations(string workingDirectory, FileMutationQueue? 
                 {
                     throw new ToolFailureException($"Could not edit file: {path}. Error code: EACCES.", inner: e);
                 }
+                if (afterRead is not null) await afterRead();
                 cancellationToken.ThrowIfCancellationRequested();
                 var bom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
                 var source = Encoding.UTF8.GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0));
@@ -128,6 +131,11 @@ internal sealed class FileMutations(string workingDirectory, FileMutationQueue? 
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw new OperationCanceledException("Operation aborted", cancellationToken);
+        }
+        catch (DirectoryNotFoundException error) when (OperatingSystem.IsLinux())
+        {
+            LinuxFileAccess.Require(absolute, 2, "open");
+            throw new ToolFailureException($"ENOENT: no such file or directory, open '{absolute}'", inner: error);
         }
         catch (UnauthorizedAccessException error)
         {

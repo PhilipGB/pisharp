@@ -61,8 +61,10 @@ public sealed class FileMutationCoordinationTests
         }
     }
 
-    [Fact]
-    public async Task CancellationWhileWaitingNeverRunsTheMutationOrReleasesAnActiveWriter()
+    [Theory]
+    [InlineData("write")]
+    [InlineData("edit")]
+    public async Task CancellationWhileWaitingNeverRunsTheMutationOrReleasesAnActiveWriter(string tool)
     {
         var root = CreateRoot();
         var queue = new FileMutationQueue();
@@ -76,12 +78,14 @@ public sealed class FileMutationCoordinationTests
             var mutations = new FileMutations(root, queue);
             active = queue.RunAsync(target, async () => { await release.Task; return true; }, CancellationToken.None);
             using var cancellation = new CancellationTokenSource();
-            var cancelled = mutations.WriteAsync("shared", "must not commit", cancellation.Token);
+            var cancelled = tool == "write" ? mutations.WriteAsync("shared", "must not commit", cancellation.Token)
+                : AsText(mutations.EditAsync("shared", [new TextEdit("original", "must not commit")], cancellation.Token));
 
             cancellation.Cancel();
 
             var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await cancelled.WaitAsync(TimeSpan.FromSeconds(5)));
-            var pinned = ReadPinnedResults().EnumerateArray().Single(row => row.GetProperty("caseId").GetString() == "mutation-cancelled-waiter");
+            var caseId = tool == "write" ? "mutation-cancelled-waiter" : "mutation-cancelled-edit-waiter";
+            var pinned = ReadPinnedResults().EnumerateArray().Single(row => row.GetProperty("caseId").GetString() == caseId);
             Assert.Equal(pinned.GetProperty("cancelled").GetProperty("error").GetString(), error.Message);
             following = mutations.WriteAsync("shared", "following");
             Assert.False(following.IsCompleted);
@@ -99,8 +103,10 @@ public sealed class FileMutationCoordinationTests
         }
     }
 
-    [Fact]
-    public async Task CancelledPreparedWriteKeepsItsQueueUntilCleanupAndLeavesNoPartialTarget()
+    [Theory]
+    [InlineData("write")]
+    [InlineData("edit")]
+    public async Task CancelledPreparedMutationKeepsItsQueueUntilCleanupAndLeavesNoPartialTarget(string tool)
     {
         var root = CreateRoot();
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -111,7 +117,7 @@ public sealed class FileMutationCoordinationTests
         try
         {
             var target = Path.Combine(root, "shared");
-            await File.WriteAllTextAsync(target, "original");
+            await File.WriteAllTextAsync(target, "original\nbeta\n");
             if (OperatingSystem.IsLinux()) File.SetUnixFileMode(target, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
             var mutations = new FileMutations(root, beforeCommit: async () =>
             {
@@ -121,7 +127,8 @@ public sealed class FileMutationCoordinationTests
                 await release.Task;
             });
             using var cancellation = new CancellationTokenSource();
-            first = mutations.WriteAsync("shared", "first", cancellation.Token);
+            first = tool == "write" ? mutations.WriteAsync("shared", "first", cancellation.Token)
+                : AsText(mutations.EditAsync("shared", [new TextEdit("original", "FIRST"), new TextEdit("beta", "BETA")], cancellation.Token));
             await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
             cancellation.Cancel();
@@ -129,7 +136,7 @@ public sealed class FileMutationCoordinationTests
 
             Assert.False(first.IsCompleted);
             Assert.False(second.IsCompleted);
-            Assert.Equal("original", await File.ReadAllTextAsync(target));
+            Assert.Equal("original\nbeta\n", await File.ReadAllTextAsync(target));
             release.SetResult();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await first.WaitAsync(TimeSpan.FromSeconds(5)));
             await second.WaitAsync(TimeSpan.FromSeconds(5));
@@ -151,8 +158,10 @@ public sealed class FileMutationCoordinationTests
         }
     }
 
-    [Fact]
-    public async Task PreparedWriteFailureKeepsOriginalBytesAndRemovesItsPrivateCandidate()
+    [Theory]
+    [InlineData("write")]
+    [InlineData("edit")]
+    public async Task PreparedMutationFailureKeepsOriginalBytesAndRemovesItsPrivateCandidate(string tool)
     {
         var root = CreateRoot();
         try
@@ -161,10 +170,40 @@ public sealed class FileMutationCoordinationTests
             await File.WriteAllTextAsync(target, "original");
             var mutations = new FileMutations(root, beforeCommit: () => Task.FromException(new IOException("controlled failure")));
 
-            await Assert.ThrowsAsync<ToolFailureException>(() => mutations.WriteAsync("shared", "must not commit"));
+            await Assert.ThrowsAsync<ToolFailureException>(() => tool == "write" ? mutations.WriteAsync("shared", "must not commit")
+                : AsText(mutations.EditAsync("shared", [new TextEdit("original", "must not commit")], CancellationToken.None)));
 
             Assert.Equal("original", await File.ReadAllTextAsync(target));
             Assert.Equal("shared", Path.GetFileName(Assert.Single(Directory.EnumerateFileSystemEntries(root))));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RemovedParentAfterSnapshotIsNotRecreatedByAnEdit()
+    {
+        var root = CreateRoot();
+        var parent = Path.Combine(root, "dir");
+        Directory.CreateDirectory(parent);
+        var target = Path.Combine(parent, "file");
+        try
+        {
+            await File.WriteAllTextAsync(target, "original");
+            var mutations = new FileMutations(root, afterRead: () =>
+            {
+                Directory.Delete(parent, recursive: true);
+                return Task.CompletedTask;
+            });
+
+            var error = await Assert.ThrowsAsync<ToolFailureException>(() => mutations.EditAsync("dir/file",
+                [new TextEdit("original", "updated")], CancellationToken.None));
+
+            var pinned = ReadPinnedResults().EnumerateArray().Single(row => row.GetProperty("caseId").GetString() == "mutation-parent-removed-after-read");
+            Assert.Equal(pinned.GetProperty("error").GetString()!.Replace("<workspace>", root, StringComparison.Ordinal), error.Message);
+            Assert.False(Directory.Exists(parent));
+            await mutations.WriteAsync("other", "continue");
+            Assert.Equal("continue", await File.ReadAllTextAsync(Path.Combine(root, "other")));
+            Assert.Equal("other", Path.GetFileName(Assert.Single(Directory.EnumerateFileSystemEntries(root))));
         }
         finally { Directory.Delete(root, recursive: true); }
     }
@@ -175,6 +214,8 @@ public sealed class FileMutationCoordinationTests
         Directory.CreateDirectory(root);
         return root;
     }
+
+    private static async Task<string> AsText(Task<EditToolOutput> operation) => (await operation).Text;
 
     private static JsonElement ReadPinnedResults()
     {

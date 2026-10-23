@@ -316,12 +316,12 @@
     "current_case_inventory": {
       "read": 121,
       "write": 39,
-      "edit": 68,
+      "edit": 69,
       "bash": 28,
       "grep": 32,
       "find": 27,
       "ls": 25,
-      "total": 340
+      "total": 341
     },
     "read_image_contract": {
       "status": "in_progress",
@@ -494,9 +494,20 @@
       "product_regressions_failed_before": 16,
       "additional_fixture_error": "Temporary roots were not replaced inside file-URL patch details; corrected without dropping fields.",
       "pre_fix_total": 67,
-      "related_passed_after": 327,
+      "related_passed_after": 332,
       "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-edit-results-2026-10-22.json",
-      "status": "fresh paired evidence and remaining hardening pending"
+      "status": "fresh classified comparison/control pending",
+      "first_correction_source": "2250b589",
+      "first_correction_strict_passed": 30,
+      "first_correction_total": 68,
+      "intentional_safety_candidates": 38,
+      "safety_receipt": "docs/parity/fixtures/builtin-coding-tool-edit-safety-2026-10-22.json",
+      "stable_overlap_before_source": "9c23bd86",
+      "stable_overlap_failed_before": 1,
+      "coordination_cases_passed": 11,
+      "harness_guards_passed": 20,
+      "parent_removed_regression_failed_before": 1,
+      "parent_removed_correction": "Atomic helper does not recreate removed parents; edit returns pinned ENOENT without resurrecting stale content; recovery write succeeds."
     }
   },
   "plan_received": true,

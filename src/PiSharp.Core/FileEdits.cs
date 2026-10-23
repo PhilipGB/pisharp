@@ -53,7 +53,7 @@ public static class FileEdits
             }
             spans.Add((first, needle.Length, i, replacements[i].NewText));
         }
-        spans.Sort((a, b) => a.Start.CompareTo(b.Start));
+        spans.Sort((a, b) => a.Start != b.Start ? a.Start.CompareTo(b.Start) : a.Index.CompareTo(b.Index));
         for (var i = 1; i < spans.Count; i++)
             if (spans[i - 1].Start + spans[i - 1].Length > spans[i].Start)
                 throw new ArgumentException($"edits[{spans[i - 1].Index}] and edits[{spans[i].Index}] overlap in {path}. Merge them into one edit or target disjoint regions.");

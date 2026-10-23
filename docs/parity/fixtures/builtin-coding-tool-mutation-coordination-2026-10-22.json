@@ -205,6 +205,34 @@
         ]
       },
       "finalContent": "following"
+    },
+    {
+      "caseId": "mutation-cancelled-edit-waiter",
+      "beforeRelease": {
+        "cancelledSettled": false,
+        "shared": "original"
+      },
+      "cancelled": {
+        "error": "Operation aborted"
+      },
+      "following": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to shared"
+          }
+        ]
+      },
+      "finalContent": "following"
+    },
+    {
+      "caseId": "mutation-parent-removed-after-read",
+      "success": false,
+      "error": "ENOENT: no such file or directory, open '<workspace>/dir/file'",
+      "finalEntries": [
+        "other"
+      ],
+      "recoveryContent": "continue"
     }
   ]
 }

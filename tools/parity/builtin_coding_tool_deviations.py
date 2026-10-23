@@ -38,16 +38,16 @@ def assess_read_safety_deviation(case, observations):
             expected['fullOutputArtifacts'] == actual['fullOutputArtifacts'] == [])
 
 
-@lru_cache(maxsize=1)
-def atomic_write_witnesses():
-    fixture = Path(__file__).resolve().parents[2] / 'docs/parity/fixtures/builtin-coding-tool-write-safety-2026-10-22.json'
+@lru_cache(maxsize=2)
+def atomic_mutation_witnesses(tool):
+    fixture = Path(__file__).resolve().parents[2] / f'docs/parity/fixtures/builtin-coding-tool-{tool}-safety-2026-10-22.json'
     return {row['caseId']: row for row in json.loads(fixture.read_text())['cases']}
 
 
-def assess_atomic_write_deviation(case, observations):
-    if not hasattr(os, 'geteuid') or case.get('tool') != 'write':
+def assess_atomic_mutation_deviation(case, observations):
+    if not hasattr(os, 'geteuid') or case.get('tool') not in ('write', 'edit'):
         return False
-    witness = atomic_write_witnesses().get(case['caseId'])
+    witness = atomic_mutation_witnesses(case['tool']).get(case['caseId'])
     if witness is None or case != witness['setup']:
         return False
     expected = copy.deepcopy(witness['observations'])

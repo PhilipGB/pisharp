@@ -587,8 +587,8 @@ the inode; strict equivalence is not claimed for those consequences.
 The [coordination oracle](builtin-coding-tool-mutation-coordination-2026-10-22.json)
 executes actual Pi write/write, write/edit, edit/write and edit/edit operations
 behind deterministic queue barriers. Native tests use those captured call
-results and final bytes and preserve progress on unrelated files. A fifth source
-case records cancelled-waiter timing: Pi waits for the active operation before
+results and final bytes and preserve progress on unrelated files. Two source
+cases record write/edit cancelled-waiter timing: Pi waits for the active operation before
 settling the cancelled waiter; native cancellation settles promptly without
 releasing the active writer or invoking the cancelled operation. This existing
 responsive-cancellation contract is retained and excluded from strict timing
@@ -642,8 +642,31 @@ remains an explicit atomicity safety candidate.
 
 The related selection passes 327/327, including existing core conformance,
 metadata/history and mutation checks. A nullable warning in the new prepared-write
-cleanup assertion is corrected. Fresh source-pinned comparison and remaining
-edit hardening are next; H remains in progress. Corpus inventory is 340 (edit 68).
+cleanup assertion is corrected. Clean `2250b589` matches all 68 tool-result/diff contracts except the explicitly
+retained atomic read-only-parent failure. Its 38 strict differences are thirty-six
+inode changes, one hard-link behavior and that parent-permission outcome, frozen
+in the [edit safety receipt](builtin-coding-tool-edit-safety-2026-10-22.json).
+They remain failed strict comparisons; complete expected observations and exact
+fixture ownership are required for exclusion.
+
+A larger invalid batch at clean `9c23bd86` reproduces unstable overlap error
+indices: native reports edits[0]/edits[17], while Pi reports edits[0]/edits[1].
+Ties now retain the original argument order. Queued cancellation, prepared-batch
+cancellation and failure cleanup now cover edit as well as write, including a
+cancelled two-replacement batch. The source coordination receipt includes the
+edit waiter; the related native selection first passes 331/331. Twenty harness guards
+also protect edit safety exclusions against changed bytes, results, metadata,
+setup and ownership. A further deterministic post-read deletion case reproduces a product race:
+the old shared atomic helper recreates a parent directory removed after the edit
+snapshot and publishes stale content successfully. The pinned tool rejects with
+ENOENT and leaves that directory absent. Parent creation now belongs to write;
+the shared atomic writer no longer recreates it. Edit maps the actual open error
+to the requested path, releases its queue and permits an independent recovery
+write. The regression fails before correction, then 332 related checks pass.
+The source coordination receipt now includes this physical deletion/recovery
+case; stage cases still do not inflate the direct corpus count. Fresh paired
+comparison/control remains next; H is still
+in progress. Corpus inventory is 341 (edit 69).
 
 ## Shared integration and safety gates
 
