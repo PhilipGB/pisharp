@@ -6,6 +6,22 @@ namespace PiSharp.Tests;
 
 public sealed class BuiltinToolTruncationTests
 {
+    public static IEnumerable<object[]> FixedNumberCases()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx")))
+            directory = directory.Parent;
+        using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory!.FullName, "docs", "parity", "fixtures",
+            "builtin-coding-tool-fixed-number-2026-10-22.json")));
+        foreach (var item in fixture.RootElement.GetProperty("cases").EnumerateArray())
+            yield return [item.GetProperty("value").GetDouble(), item.GetProperty("digits").GetInt32(), item.GetProperty("expected").GetString()!];
+    }
+
+    [Theory]
+    [MemberData(nameof(FixedNumberCases))]
+    public void CoordinateNumberFormattingMatchesBinaryValueRounding(double value, int digits, string expected) =>
+        Assert.Equal(expected, JavaScriptNumberText.Fixed(value, digits));
+
     public static IEnumerable<object[]> CompleteCases()
     {
         using var fixture = Fixture();

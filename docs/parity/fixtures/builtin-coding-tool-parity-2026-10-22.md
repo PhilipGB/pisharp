@@ -425,6 +425,27 @@ Pinned Photon is package 0.3.4; its actual WASM artifact embeds the build marker
 `3d7c373a3dd6b045805b0e9fcf37cb1b37325bea61cb1ae41b75c14503396633`.
 The behavior oracle remains the pinned Pi tool and its installed pinned Photon,
 not a newly compiled Rust implementation.
+
+The image baseline at `550d5f5c` passes 89/115 read cases; its independent
+same-Pi control passes 115/115. The [46 captured image results](builtin-coding-tool-read-image-results-2026-10-22.json)
+reproduce 26 failures before correction. The first correction implements the
+two-pass float Lanczos3 kernel, unpremultiplied RGBA sampling/encoding, JPEG/WebP
+EXIF transforms, complete-decode checks, extreme-ratio source fallback and
+JavaScript coordinate rounding. The image tests then pass 36/46; the ten
+remaining strict failures are JPEG-related decoded-pixel differences under
+investigation. Their dimensions, MIME types and notes match. No pixel tolerance
+has been introduced, and checkpoint F remains open.
+
+Skia remains the sole image decode/encode infrastructure. Float row storage is
+bounded to 4 MiB; very wide inputs use direct evaluation. Weight caching is
+bounded separately, and loops check cancellation. The existing 20 MiB encoded
+input and 32-million-pixel safety boundaries remain. JPEG output now uses 4:4:4
+sampling and ignores alpha, as confirmed from the pinned encoder and JPEG frame
+headers; distinct Huffman/DCT behavior still needs assessment. Seventeen
+[captured finite `toFixed` vectors](builtin-coding-tool-fixed-number-2026-10-22.json)
+pass, including binary values just below decimal ties. The related first image
+selection has 178 passes and ten failures, with zero skips; it is not a green
+milestone validation result.
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or

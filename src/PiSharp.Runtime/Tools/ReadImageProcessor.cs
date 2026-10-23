@@ -1,4 +1,4 @@
-using System.Globalization;
+using PiSharp.Core;
 using PiSharp.Runtime.Providers;
 using SkiaSharp;
 
@@ -8,7 +8,6 @@ internal static class ReadImageProcessor
 {
     private const int MaxDimension = 2000;
     internal const int MaxBase64Bytes = 4_718_592;
-    private static readonly SKSamplingOptions s_sampling = new(new SKCubicResampler(0, 0.5f));
 
     public static ReadToolOutput Process(byte[] input, string sourceMimeType,
         CancellationToken cancellationToken = default, ModelImageResizeOptions? resizeOptions = null)
@@ -30,7 +29,12 @@ internal static class ReadImageProcessor
                 return Omitted(sourceMimeType, convertedFrom is not null);
             if ((long)encodedInfo.Width * encodedInfo.Height > 32_000_000)
                 return Omitted(sourceMimeType, conversionFailed: false, resizeFailed: true);
-            using var original = SKBitmap.Decode(codec);
+            using var decoded = new SKBitmap(new SKImageInfo(encodedInfo.Width, encodedInfo.Height,
+                SKColorType.Rgba8888, SKAlphaType.Unpremul));
+            if (codec.GetPixels(decoded.Info, decoded.GetPixels()) != SKCodecResult.Success)
+                return Omitted(sourceMimeType, convertedFrom is not null);
+            using var oriented = ReadImageOrientation.Apply(decoded, input, cancellationToken);
+            var original = oriented ?? decoded;
             cancellationToken.ThrowIfCancellationRequested();
             if (original is null || original.Width <= 0 || original.Height <= 0)
                 return Omitted(sourceMimeType, convertedFrom is not null);
@@ -50,11 +54,12 @@ internal static class ReadImageProcessor
                     wasResized: false, convertedFrom, maxBase64Bytes);
 
             var (width, height) = Fit(originalWidth, originalHeight, maxWidth, maxHeight);
+            if (width <= 0 || height <= 0) return Omitted(sourceMimeType, conversionFailed: false, resizeFailed: true);
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 using var resized = width == originalWidth && height == originalHeight
-                    ? null : original.Resize(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul), s_sampling);
+                    ? null : ReadImageResampler.Resize(original, width, height, cancellationToken);
                 var target = resized ?? (width == originalWidth && height == originalHeight ? original : null);
                 if (target is not null)
                 {
@@ -99,7 +104,7 @@ internal static class ReadImageProcessor
         if (wasResized)
         {
             var scale = (double)originalWidth / width;
-            hints.Add($"[Image: original {originalWidth}x{originalHeight}, displayed at {width}x{height}. Multiply coordinates by {scale.ToString("F2", CultureInfo.InvariantCulture)} to map to original image.]");
+            hints.Add($"[Image: original {originalWidth}x{originalHeight}, displayed at {width}x{height}. Multiply coordinates by {JavaScriptNumberText.Fixed(scale, 2)} to map to original image.]");
         }
         var text = $"Read image file [{mimeType}]" + (hints.Count == 0 ? "" : "\n" + string.Join("\n", hints));
         return new ReadToolOutput(text, mimeType, Convert.ToBase64String(bytes), maxBase64Bytes);
@@ -117,8 +122,10 @@ internal static class ReadImageProcessor
 
     private static byte[]? Encode(SKBitmap bitmap, SKEncodedImageFormat format, int quality)
     {
-        using var image = SKImage.FromBitmap(bitmap);
-        using var data = image.Encode(format, quality);
+        using var pixels = bitmap.PeekPixels();
+        using var data = format == SKEncodedImageFormat.Jpeg
+            ? pixels.Encode(new SKJpegEncoderOptions(quality, SKJpegEncoderDownsample.Downsample444, SKJpegEncoderAlphaOption.Ignore))
+            : pixels.Encode(format, quality);
         return data?.ToArray();
     }
 
@@ -129,12 +136,12 @@ internal static class ReadImageProcessor
         if (width <= maxWidth && height <= maxHeight) return (width, height);
         if (width > maxWidth)
         {
-            height = Math.Max(1, (int)Math.Floor(height * (maxWidth / (double)width) + 0.5));
+            height = (int)Math.Floor((double)height * maxWidth / width + 0.5);
             width = maxWidth;
         }
         if (height > maxHeight)
         {
-            width = Math.Max(1, (int)Math.Floor(width * (maxHeight / (double)height) + 0.5));
+            width = (int)Math.Floor((double)width * maxHeight / height + 0.5);
             height = maxHeight;
         }
         return (width, height);

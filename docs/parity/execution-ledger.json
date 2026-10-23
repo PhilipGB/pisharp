@@ -300,12 +300,18 @@
         "passed": 75,
         "failed": 0,
         "skipped": 0
+      },
+      "clean_paired_after": {
+        "source": "600c151d4bc48bc222c7f77eea96dfcec089113b",
+        "passed": 72,
+        "total": 73,
+        "remaining": "Resized PNG pixels; image correction follows."
       }
     },
     "current_case_inventory": {
-      "total": 239,
+      "total": 281,
       "per_tool": {
-        "read": 73,
+        "read": 115,
         "write": 21,
         "edit": 33,
         "bash": 28,
@@ -313,7 +319,41 @@
         "find": 27,
         "ls": 25
       },
-      "new_huge_line_evidence": "pending"
+      "frozen_image_assets": 28
+    },
+    "read_image_contract": {
+      "status": "in_progress",
+      "baseline_source": "550d5f5c",
+      "baseline_read": {
+        "passed": 89,
+        "total": 115
+      },
+      "same_pi_control": {
+        "passed": 115,
+        "total": 115,
+        "piSharpUsed": false
+      },
+      "pinned_image_fixture": "docs/parity/fixtures/builtin-coding-tool-read-image-results-2026-10-22.json",
+      "regression_before": {
+        "failed": 26,
+        "passed": 20,
+        "total": 46
+      },
+      "first_correction": {
+        "failed": 10,
+        "passed": 36,
+        "total": 46
+      },
+      "related_selection": {
+        "failed": 10,
+        "passed": 178,
+        "skipped": 0
+      },
+      "fixed_number_vectors": {
+        "passed": 17,
+        "total": 17
+      },
+      "remaining": "Ten strict JPEG-related decoded-pixel mismatches. Dimensions/MIME/notes match; quantify codec behavior before any tolerance decision. Physical image provider matrix, canonical structured image persistence and remaining safety/integration remain pending."
     }
   },
   "plan_received": true,

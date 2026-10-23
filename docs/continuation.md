@@ -44,7 +44,14 @@ native probe passes four selected empty/truncated read cases at clean source
 cases (38 fail before); the related selection passes 230/230. Three bounded
 streaming/cancellation checks pass, including a 64 MiB single line with at most
 64 KiB read buffers. Read image sampling/orientation, broader image/provider
-acceptance and remaining hardening are next. F remains in progress.
+acceptance and remaining hardening are next. Clean text source `600c151d` passes
+72/73 paired read cases. The expanded frozen-image baseline/control at `550d5f5c`
+passes 89/115 and 115/115 respectively. The first image correction reduces 26
+strict image failures to ten JPEG-related pixel differences; 36/46 image cases
+pass. Dimensions/MIME/notes match, and no pixel tolerance has been added. The
+related selection has 178 passes/10 failures; seventeen source-captured fixed
+number vectors pass. Keep these failures open and quantify raw JPEG differences
+before any acceptance-policy decision. F remains in progress.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required
