@@ -8,8 +8,10 @@ namespace PiSharp.Runtime.Tools;
 internal sealed class FileReader(string workingDirectory, ModelImageResizeOptions? imageResizeOptions)
 {
     private ModelImageResizeOptions? _imageResizeOptions = imageResizeOptions;
+    private int _supportsImages = 1;
     public ModelImageResizeOptions? ImageResizeOptions => Volatile.Read(ref _imageResizeOptions);
     public void SetImageResizeOptions(ModelImageResizeOptions? options) => Volatile.Write(ref _imageResizeOptions, options);
+    public void SetModelSupportsImages(bool supportsImages) => Volatile.Write(ref _supportsImages, supportsImages ? 1 : 0);
 
     public async Task<ReadToolOutput> ReadAsync(string path, double offset, double? limit, CancellationToken cancellationToken)
     {
@@ -26,14 +28,15 @@ internal sealed class FileReader(string workingDirectory, ModelImageResizeOption
             var mimeType = await ReadImageDetector.DetectAsync(stream, cancellationToken);
             if (mimeType is not null)
             {
+                var supportsImages = Volatile.Read(ref _supportsImages) != 0;
                 if (length > maxImageBytes)
-                    return new ReadToolOutput($"Read image file [{mimeType}]\n[Image omitted: could not be resized below the inline image size limit.]");
+                    return WithModelNote(new ReadToolOutput($"Read image file [{mimeType}]\n[Image omitted: could not be resized below the inline image size limit.]"), supportsImages);
                 var bytes = new byte[checked((int)length)];
                 await stream.ReadExactlyAsync(bytes, cancellationToken);
                 var resizeOptions = Volatile.Read(ref _imageResizeOptions);
                 var image = await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken, resizeOptions), cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
-                return image;
+                return WithModelNote(image, supportsImages);
             }
             if (length > 2 * 1024 * 1024)
             {
@@ -60,4 +63,6 @@ internal sealed class FileReader(string workingDirectory, ModelImageResizeOption
         }
     }
 
+    private static ReadToolOutput WithModelNote(ReadToolOutput image, bool supportsImages) => supportsImages
+        ? image : image with { Text = image.Text + "\n" + ReadToolOutput.NonVisionNote };
 }

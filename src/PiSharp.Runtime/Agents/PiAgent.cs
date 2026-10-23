@@ -153,6 +153,7 @@ public sealed class PiAgent
             () => Volatile.Read(ref _supportsImages) != 0);
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         _supportsImages = supportsImages ? 1 : 0;
+        _codingTools.SetReadModelSupportsImages(supportsImages);
         _reasoning = reasoning;
         _summarizer = new PiCompactionSummarizer(_routedChatClient);
         _toolCatalog = new AgentToolCatalog(tools, selectedTools, excludedTools, noTools, noBuiltinTools,
@@ -646,14 +647,18 @@ public sealed class PiAgent
         _chatClient.SetClient(client);
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         Volatile.Write(ref _supportsImages, supportsImages ? 1 : 0);
+        _codingTools.SetReadModelSupportsImages(supportsImages);
         _selectedImageResizeOptions = imageResizeOptions;
         _codingTools.SetImageResizeOptions(imageResizeOptions);
     }
 
     internal bool HasVirtualModelRouter => _routedChatClient.HasRouter;
 
-    internal void SetPhysicalImageLimits(ModelDescriptor? model) =>
+    internal void SetPhysicalImageLimits(ModelDescriptor? model)
+    {
         _codingTools.SetImageResizeOptions(model is null ? _selectedImageResizeOptions : model.InputLimits?.Images?.Resize);
+        _codingTools.SetReadModelSupportsImages(model?.Input?.Contains("image") ?? Volatile.Read(ref _supportsImages) != 0);
+    }
 
     internal void SetVirtualModelSession(ConversationSession session, string thinkingLevel,
         Func<CancellationToken, Task>? save) => _routedChatClient.SetSession(session, thinkingLevel, save);

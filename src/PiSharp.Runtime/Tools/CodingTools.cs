@@ -29,6 +29,7 @@ public sealed class CodingTools
     internal string WorkingDirectory => _cwd;
 
     public void SetImageResizeOptions(ModelImageResizeOptions? options) => _reader.SetImageResizeOptions(options);
+    internal void SetReadModelSupportsImages(bool supportsImages) => _reader.SetModelSupportsImages(supportsImages);
 
     public IList<AITool> Create(IReadOnlyList<string>? requested = null, IReadOnlyList<string>? excluded = null, bool noTools = false)
     {

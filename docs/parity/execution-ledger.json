@@ -391,6 +391,15 @@
         ],
         "requests_per_api": 7,
         "scope": "Native save/reload, exact image payload/MIME, text-only/block replay, profile limits, structured metadata retained and excluded from provider wire."
+      },
+      "model_context": {
+        "before_source": "81d9a226",
+        "before_passed": 1,
+        "before_total": 4,
+        "maf_regressions_failed_before": 2,
+        "related_passed_after": 83,
+        "lifecycle_json_image_bytes": "omitted; canonical data and explicit RPC images preserved",
+        "status": "fresh paired verification pending"
       }
     }
   },

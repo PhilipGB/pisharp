@@ -497,8 +497,18 @@ workflows. Two new nullable test warnings are corrected with explicit assertions
 
 Four model-context inputs now cover non-vision notes, invalid-image fallback,
 explicit vision support and model resize-profile precedence. Their source oracle
-and native context projection are the next acceptance work; this input expansion
-is not a new product claim. Corpus inventory is now 285 (read 119).
+and native context projection reproduce three differences at clean `81d9a226`: two
+missing canonical non-vision notes and a probe-only model-profile mapping gap.
+Two actual MAF fail-first regressions confirm the product note defect. Read now
+uses current model support for successful and omitted images, and updates it
+when the selected or routed model changes. The source probe now maps the same
+model profile precedence. The related image, session and protocol selection
+passes 83/83. That selection also exposed a prior lifecycle-JSON regression:
+structured image data leaked through the new metadata field. The lifecycle
+serializer now omits the image `data` property while retaining other structured
+metadata; canonical storage and explicit RPC image content retain their existing
+contracts. The original in-process-image-only regression passes unchanged.
+Fresh clean-source paired evidence is next. Corpus inventory is 285 (read 119).
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or

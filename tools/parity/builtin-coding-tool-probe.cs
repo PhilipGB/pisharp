@@ -63,6 +63,14 @@ foreach (var request in requests)
     if (request.PreCancelled) cancellation.Cancel();
     var tools = new CodingTools(request.Workspace, request.Options?.ShellPath,
         request.Options?.ResizeOptions, request.Options?.CommandPrefix);
+    if (request.Context is { } context && context.TryGetProperty("model", out var model))
+    {
+        if (model.TryGetProperty("input", out var inputs))
+            tools.SetReadModelSupportsImages(inputs.EnumerateArray().Any(input => input.GetString() == "image"));
+        if (model.TryGetProperty("inputLimits", out var limits) && limits.TryGetProperty("images", out var images) &&
+            images.TryGetProperty("resize", out var resize))
+            tools.SetImageResizeOptions(resize.Deserialize<ModelImageResizeOptions>(jsonOptions));
+    }
     var function = tools.CreateAll().OfType<AIFunction>().Single(item => item.Name == request.Tool);
     var arguments = new AIFunctionArguments(request.Arguments.ToDictionary(
         pair => pair.Key, pair => (object?)pair.Value))
@@ -116,7 +124,7 @@ foreach (var request in requests)
 
 internal sealed record ProbeRequest(string CaseId, string Tool, string Workspace,
     Dictionary<string, JsonElement> Arguments, bool PreCancelled = false,
-    string? CancelOnOutput = null, ProbeOptions? Options = null);
+    string? CancelOnOutput = null, ProbeOptions? Options = null, JsonElement? Context = null);
 
 internal sealed record ProbeOptions(string? ShellPath = null, string? CommandPrefix = null,
     ModelImageResizeOptions? ResizeOptions = null);

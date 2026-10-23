@@ -9,6 +9,8 @@ namespace PiSharp.Runtime.Tools;
 internal sealed record ReadToolOutput(string Text, string? ImageMimeType = null, string? ImageDataBase64 = null,
     int? MaxBase64Bytes = null, object? Details = null)
 {
+    internal const string NonVisionNote = "[Current model does not support images. The image will be omitted from this request.]";
+
     [JsonPropertyName("piSharpReadResult")]
     public bool Marker => true;
 

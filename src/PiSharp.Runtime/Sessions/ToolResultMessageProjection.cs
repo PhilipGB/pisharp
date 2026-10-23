@@ -58,7 +58,10 @@ internal static class ToolResultMessageProjection
                         if (output.ImageMimeType is not null || output.ImageDataBase64 is not null)
                         {
                             if (!supportsImages)
-                                resultText += "\n[Current model does not support images. The image will be omitted from this request.]";
+                            {
+                                if (!resultText.EndsWith(ReadToolOutput.NonVisionNote, StringComparison.Ordinal))
+                                    resultText += "\n" + ReadToolOutput.NonVisionNote;
+                            }
                             else if (output.TryCreateImageContent(out var image))
                                 attachments.Add(image);
                             else
