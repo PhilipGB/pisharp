@@ -442,6 +442,43 @@ def cases():
     add('find', 'zero-limit', {'pattern': '*.txt', 'limit': 0}, {'one.txt': '', 'two.txt': ''})
     add('find', 'late-match-beyond-inventory', {'pattern': 'wanted.txt', 'limit': 1}, {'z/wanted.txt': ''},
         generatedFiles={'directory': 'a', 'count': 20050, 'text': ''})
+    for name, arguments, files in [
+        ('negative-limit', {'pattern': '*.txt', 'limit': -1}, {'file.txt': ''}),
+        ('fractional-limit', {'pattern': '*.txt', 'limit': 1.5}, {'file.txt': ''}),
+        ('huge-limit', {'pattern': '*.txt', 'limit': 1e21}, {'file.txt': ''}),
+        ('exact-limit', {'pattern': '*.txt', 'limit': 1}, {'only.txt': ''}),
+        ('empty-pattern', {'pattern': ''}, {'file.txt': '', 'nested/other.md': ''}),
+        ('double-star', {'pattern': '**'}, {'file.txt': '', 'nested/other.md': ''}),
+        ('nested-braces', {'pattern': '*.{cs,{md,txt}}'}, {'a.cs': '', 'b.md': '', 'c.txt': '', 'd.py': ''}),
+        ('negated-class', {'pattern': '[!a]*.txt'}, {'alpha.txt': '', 'beta.txt': '', 'charlie.txt': ''}),
+        ('case-insensitive-default', {'pattern': 'name.txt'}, {'Name.TXT': ''}),
+        ('case-sensitive-smart-case', {'pattern': 'Name.TXT'}, {'name.txt': ''}),
+        ('absolute-glob', {'pattern': '{WORKSPACE}/src/*.cs'}, {'src/file.cs': '', 'src/deep/other.cs': ''}),
+        ('leading-double-star', {'pattern': '**/src/*.cs'}, {'src/file.cs': '', 'other/src/second.cs': ''}),
+        ('directory-glob', {'pattern': 'folder*'}, {'folder/file.txt': '', 'folders/deep/second.txt': ''}),
+        ('unicode-name', {'pattern': '*.txt'}, {'目录/日本語.txt': ''}),
+        ('leading-space-name', {'pattern': '*.txt'}, {' file.txt': ''}),
+        ('trailing-space-name', {'pattern': '*'}, {'file.txt ': ''}),
+        ('newline-name', {'pattern': '*.txt'}, {'line\nbreak.txt': ''}),
+        ('carriage-return-name', {'pattern': '*.txt'}, {'line\rbreak.txt': ''}),
+        ('backslash-name', {'pattern': '*.txt'}, {'back\\slash.txt': ''}),
+        ('at-prefix', {'pattern': '*.txt', 'path': '@nested'}, {'nested/file.txt': ''}),
+        ('file-url', {'pattern': '*.txt', 'path': 'file://{WORKSPACE}/nested'}, {'nested/file.txt': ''}),
+        ('file-ancestor', {'pattern': '*', 'path': 'file/child'}, {'file': ''}),
+        ('node-modules-default', {'pattern': '*.txt'}, {'node_modules/file.txt': ''}),
+        ('git-directory-hidden', {'pattern': '*'}, {'.git/private.txt': '', 'visible.txt': ''}),
+        ('rgignore-does-not-apply', {'pattern': '*.txt'}, {'.rgignore': 'file.txt\n', 'file.txt': ''}),
+        ('fdignore-applies', {'pattern': '*.txt'}, {'.fdignore': 'file.txt\n', 'file.txt': ''}),
+        ('ignore-negation', {'pattern': '*.txt'}, {'.ignore': '*.txt\n!visible.txt\n', 'hidden.txt': '', 'visible.txt': ''}),
+    ]:
+        add('find', name, arguments, files)
+    add('find', 'empty-directory-result', {'pattern': 'empty*'}, directories={'empty-dir': 0o755})
+    add('find', 'symlink-directory', {'pattern': 'alias'}, {'real/file.txt': ''}, symlinks={'alias': 'real'})
+    add('find', 'explicit-symlink-root', {'pattern': '*.txt', 'path': 'alias'}, {'real/file.txt': ''}, symlinks={'alias': 'real'})
+    add('find', 'broken-symlink-root', {'pattern': '*', 'path': 'alias'}, symlinks={'alias': 'missing'})
+    add('find', 'symlink-loop', {'pattern': '*'}, symlinks={'loop': 'loop'})
+    add('find', 'inaccessible-root', {'pattern': '*', 'path': 'private'}, {'private/file.txt': ''}, modes={'private': 0})
+    add('find', 'byte-limit', {'pattern': '*.txt'}, generatedFiles={'directory': 'nested/' + 'x' * 180, 'count': 400, 'text': ''})
 
     for name, arguments, files in [('default', {}, {'alpha': '', 'beta': ''}),
                                    ('empty', {}, {}), ('dotfiles', {}, {'.hidden': '', 'visible': ''}),
