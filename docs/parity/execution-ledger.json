@@ -74,12 +74,12 @@
       {
         "id": "M",
         "name": "Tool integration",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "N",
         "name": "Physical provider workflows",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "O",
@@ -764,6 +764,31 @@
       "remaining": [
         "shared M-P acceptance"
       ]
+    },
+    "tool_integration": {
+      "status": "verified_defined_maf_schema_selection_lifecycle_and_canonical_workflows",
+      "fixture": "docs/parity/fixtures/builtin-coding-tool-agent-workflow-2026-10-22.json",
+      "source_loop": "Actual pinned Agent and SessionManager save/open; deterministic stream provider",
+      "workflow_calls": 9,
+      "workflow_tools": 7,
+      "source_requests": 10,
+      "source_restored_results": 9,
+      "source_error_cases": 7,
+      "confirmed_mismatch": "Expected actionable failed-edit text; model received Error: Function failed.; native workflow stopped at request 7 under the strict provider assertion.",
+      "regression_before_failed": 1,
+      "remaining": [
+        "physical HTTP checkpoint N",
+        "final corpus and stress checkpoints O-P"
+      ],
+      "native_new_checks_passed": 15,
+      "source_selection": {
+        "files": 6,
+        "passed": 37,
+        "failed": 0,
+        "skipped": 0
+      },
+      "related_passed": 825,
+      "comparison_guards_passed": 22
     }
   },
   "plan_received": true,

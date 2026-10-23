@@ -26,7 +26,7 @@ search/list cases. Input declarations now match the seven source schemas, with
 argument preparation/validation regressions. Primitive conversion matches 93
 pinned vectors; common head/tail truncation matches 140. Read/Bash result metadata,
 registered output schemas, sampling policy and JSON/RPC/session preservation have
-focused passing evidence in the receipt. Checkpoints A–L are complete; M (tool integration)
+focused passing evidence in the receipt. Checkpoints A–M are complete; N (physical providers)
 is in progress. The [read acceptance](fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json)
 passes 119/121 cases (109 strict, ten JPEG equivalents), with two separately
 excluded allocation safety limits and a 121/121 strict same-Pi control. Read
@@ -51,6 +51,12 @@ The [ls acceptance](fixtures/builtin-coding-tool-ls-acceptance-2026-10-22.json)
 at clean `a68d365c` passes 53/53 strict cases and control cases, including Unicode
 ordering, numeric limits, symlink/stat behavior, permission errors and truncation.
 Pending-read cancellation and independent continuation are also verified.
+
+The [agent workflow](fixtures/builtin-coding-tool-agent-workflow-2026-10-22.json)
+executes all seven tools through pinned Agent and native MAF, including an
+invalid edit, successful recovery, verification Bash and session restart. Fifteen
+new checks and 825 related checks pass. Expected built-in failures now preserve
+actionable model text and failed durable metadata. Physical HTTP remains open.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 

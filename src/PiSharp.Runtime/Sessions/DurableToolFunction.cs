@@ -227,6 +227,15 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             resultContext.IsError = true;
             resultContext.Error ??= failure.Message;
         }
+        var builtinFailure = failure is ToolFailureException &&
+            !cancellationToken.IsCancellationRequested && CodingToolDeclarations.IsBuiltin(InnerFunction);
+        if (builtinFailure)
+        {
+            // Keep the failed durable outcome while returning Pi's recoverable error text to MAF.
+            contract = new PiSharpToolResult(failure!.Message, Details: new Dictionary<string, object?>(),
+                IsError: true, Error: failure.Message);
+            value = contract;
+        }
         if (nestedInvocation is not null)
         {
             nestedInvocation.IsError = resultContext.IsError;
@@ -336,7 +345,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             NestedToolCalls = toolExecutionContext?.NestedCalls,
             ToolResultMessage = toolResultMessage
         });
-        if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
+        if (failure is not null && !builtinFailure) ExceptionDispatchInfo.Capture(failure).Throw();
         if (messageLifecycleCancellation is not null)
             ExceptionDispatchInfo.Capture(messageLifecycleCancellation).Throw();
         return value;

@@ -16,6 +16,8 @@ internal static class CodingToolDeclarations
     public static AIFunction Find(AIFunction implementation) => new BuiltinToolFunction(implementation);
     public static AIFunction Ls(AIFunction implementation) => new BuiltinToolFunction(implementation);
 
+    internal static bool IsBuiltin(AIFunction function) => function is BuiltinToolFunction;
+
     public static JsonElement? OutputSchema(string name) => Property(name, "outputSchema");
     public static JsonElement? ConstrainedSampling(string name) => Property(name, "constrainedSampling");
 

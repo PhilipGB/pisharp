@@ -8,7 +8,7 @@ is present on `origin/main` and is the base of
 `milestone/builtin-coding-tool-parity`. Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-Stable mission checkpoints: **12 complete / 8 remaining** (A–T). A is the
+Stable mission checkpoints: **13 complete / 7 remaining** (A–T). A is the
 verified merge prerequisite; B is the fresh branch. C is the completed initial inventory of all seven
 tool definitions and implementations before product changes. D establishes the independent oracle.
 E completes common declarations/validation, truncation and read/Bash result metadata.
@@ -19,7 +19,8 @@ I verifies supported Bash streams, metadata, process cleanup and current session
 J verifies the supported grep contract (67 strict passes, one privacy exclusion).
 K verifies the supported find contract (61 strict passes, one privacy exclusion).
 L verifies supported ls behavior (53/53 strict comparisons).
-M is in progress; M–T cover integration, safety, validation,
+M verifies defined MAF/schema/selection/lifecycle/history workflows (825 related checks).
+N is in progress; N–T cover physical providers, safety, validation,
 documentation, draft PR #22 and final-head CI. An inventory is not a parity claim.
 
 Bash now has 44 independent cases, with 2/44 strict matches before the update,

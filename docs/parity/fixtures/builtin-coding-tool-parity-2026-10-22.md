@@ -976,3 +976,47 @@ Clean `a68d365c` passes 53/53 strict ls cases and 53/53 same-Pi controls. The
 hashes and classifications. Related checks pass 211/211, plus 40 older selection
 and result tests. L is complete for the defined supported Linux contract.
 Shared M–P acceptance remains open. Stable progress is 12/20; M is in progress.
+
+## Tool integration in progress
+
+The [pinned Agent workflow](builtin-coding-tool-agent-workflow-2026-10-22.json)
+executes all seven tools in nine actual core-agent calls: read, find, grep, ls,
+edit, failed edit, write, bash verification and final read. Its deterministic
+provider observes ten requests. Actual SessionManager save/open retains all nine
+correlated outcomes and a resumed agent receives them without executing tools.
+Seven additional source agent loops capture recoverable errors, one per tool.
+This is an in-process provider fixture; physical HTTP remains checkpoint N.
+
+The native MAF workflow initially fails: after the failed edit, the model sees
+`Error: Function failed.` instead of the pinned actionable error text. The
+failed durable event also lacks result text. This is a confirmed integration
+defect beyond direct-function tests. The correction returns the built-in failure
+contract while preserving its failed durable status and the normal cancellation
+path. The fresh seven-tool error, history and provider checks remain open.
+
+The new MAF checks now pass 15/15: the complete workflow with actual native
+ConversationStore save/load, seven independent source-pinned recoverable errors,
+and seven excluded built-ins after restoring a previous complete loadout. They
+verify exact result text and metadata, call/result IDs, update ordering, failed
+mutation state, provider continuation and absence of repeated results on restart.
+The excluded-call checks assert unavailability and no side effect; they do not
+claim exact generic framework error wording for unknown tools.
+
+Expected built-in ToolFailureException outcomes now return an explicit failed
+result with actionable text and empty error details, while the durable outcome
+retains the exception. Unexpected exceptions and cancellation retain their
+existing paths. The workflow's new-file mode difference remains the previously
+documented private-creation safety exclusion (0600 native versus 0644 pinned);
+final file contents match. No tool-history metadata is projected as provider text.
+
+Six pinned upstream selection/prompt regression files pass 37/37 with no skips,
+covering defaults, exclusions, extension allowlists, no-builtin-tools and
+next-turn activation. Physical provider requests remain an independent N gate.
+
+### Tool integration checkpoint acceptance
+
+The focused tool/lifecycle/extension/recovery selection passes 825/825, including
+the 15 new workflow/error/exclusion checks, with zero failures/skips. The source
+selection tests pass 37/37 across six files. M is complete for its defined schema,
+selection, MAF lifecycle and canonical persistence contract. Physical HTTP and
+final cross-tool reliability remain N–P gates. Progress is 13/20 complete.
