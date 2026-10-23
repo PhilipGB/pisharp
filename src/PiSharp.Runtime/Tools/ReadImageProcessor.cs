@@ -72,6 +72,7 @@ internal static class ReadImageProcessor
                     foreach (var quality in jpegQualities)
                     {
                         var jpeg = Encode(target, SKEncodedImageFormat.Jpeg, quality);
+                        if (jpeg is not null) jpeg = ReadImageJpegEncoding.StandardizeWithinBudget(jpeg, maxBase64Bytes, cancellationToken);
                         cancellationToken.ThrowIfCancellationRequested();
                         if (jpeg is not null && Base64Length(jpeg.Length) < maxBase64Bytes)
                             return CreateOutput(jpeg, "image/jpeg", originalWidth, originalHeight, width, height, true,

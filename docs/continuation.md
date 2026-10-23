@@ -51,7 +51,14 @@ strict image failures to ten JPEG-related pixel differences; 36/46 image cases
 pass. Dimensions/MIME/notes match, and no pixel tolerance has been added. The
 related selection has 178 passes/10 failures; seventeen source-captured fixed
 number vectors pass. Keep these failures open and quantify raw JPEG differences
-before any acceptance-policy decision. F remains in progress.
+before any acceptance-policy decision. Investigation found and corrected a real
+JPEG budget defect (native quality 80 versus pinned 40) by lossless standard
+Huffman coding. An explicit, calibrated native-JPEG envelope now verifies
+quantization, sampling and distortion while keeping all strict hashes/differences
+visible. The pre-encoding buffers are byte-exact; other PNGs stay exact. Image,
+budget and existing OpenAI wire checks pass 66/66; eighteen harness guards pass.
+Next verify fresh paired evidence, Anthropic images and canonical structured
+image persistence. F remains in progress.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required

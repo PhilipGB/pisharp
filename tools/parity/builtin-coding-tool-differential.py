@@ -19,6 +19,7 @@ import tempfile
 import xml.sax.saxutils
 
 from builtin_coding_tool_cases import cases
+from builtin_coding_tool_image_comparison import assess_jpeg_codec, only_codec_pixel_differences
 from pi_reference import verify_pi_checkout
 from terminal.thread_limits import apply_test_thread_limit
 
@@ -305,8 +306,10 @@ def main():
             for case in selected:
                 case_id = case['caseId']
                 observations = {}
+                raw_results = {}
                 for implementation in commands:
                     result = next(value for value in raw[implementation]['results'] if value['caseId'] == case_id)
+                    raw_results[implementation] = result
                     root = roots[implementation, case_id]
                     fs, _ = filesystem(root, snapshots[implementation, case_id])
                     artifacts, replacements = capture_artifacts(result, temps[implementation])
@@ -314,19 +317,28 @@ def main():
                     observations[implementation] = {'result': normalize_result(result, root, replacements, policy),
                                                     'filesystem': fs, 'fullOutputArtifacts': artifacts}
                 paths = differences(observations['pi'], observations['pisharp'])
+                strict_paths = paths.copy()
+                codec_comparison = None
+                if case.get('jpegComparison') and only_codec_pixel_differences(paths):
+                    codec_comparison = assess_jpeg_codec(raw_results['pi'], raw_results['pisharp'], case['jpegComparison'])
+                    if codec_comparison and codec_comparison['accepted']:
+                        paths = []
                 if args.calibrate:
                     observations['controlPi'] = observations.pop('pisharp')
                 report_cases.append({'caseId': case_id, 'tool': case['tool'], 'pinnedPiSha': pin,
                     'piSharpSha': None if args.calibrate else source,
                     'piSharpUsed': not args.calibrate, 'sourceWorktreeDirty': bool(dirty), 'platform': platform.platform(),
                     'setup': case, 'observations': observations, 'differences': paths,
-                    'pass': not paths, 'classification': 'exact_with_documented_normalization' if not paths else 'unresolved'})
+                    'strictDifferences': strict_paths, 'strictPass': not strict_paths,
+                    'codecComparison': codec_comparison,
+                    'pass': not paths, 'classification': 'native_jpeg_codec_equivalent' if codec_comparison and not paths else
+                    'exact_with_documented_normalization' if not paths else 'unresolved'})
             declaration_differences = {}
             for name in raw['pi']['declarations']:
                 expected, actual = raw['pi']['declarations'][name], raw['pisharp']['declarations'][name]
                 declaration_differences[name] = differences(
-                    {key: expected[key] for key in ['name', 'description', 'parameters']},
-                    {key: actual[key] for key in ['name', 'description', 'parameters']})
+                    {key: expected[key] for key in ['name', 'description', 'parameters', 'outputSchema', 'constrainedSampling']},
+                    {key: actual[key] for key in ['name', 'description', 'parameters', 'outputSchema', 'constrainedSampling']})
             report = {'schema': 1, 'mode': 'same-pi-control' if args.calibrate else 'pi-vs-pisharp',
                 'piSha': pin, 'piSharpSha': None if args.calibrate else source,
                 'piSharpUsed': not args.calibrate, 'harnessRepositorySha': source, 'dirtyPaths': dirty,
@@ -336,10 +348,13 @@ def main():
                     'fullOutputNames': 'Random names mapped by references; exact file hashes/sizes/modes/safe-name checks compared.',
                     'duration': 'Nonnegative numeric wall_time_seconds retained raw; excluded from value equality.',
                     'images': 'Original payloads exact bytes; selected reencoded images compare decoded RGBA dimensions/pixels; raw payloads retained. MIME, notes, structured results and failures remain exact.',
+                    'jpegCodecs': 'Only named calibrated cases may use the explicit JPEG envelope. Strict hashes/differences remain recorded. Quantization, sampling, fidelity and every non-pixel contract are checked; see setup.jpegComparison.',
                     'updates': 'Raw complete updates retained; initial/final snapshots compared. Timing/chunk count not asserted identical.',
                     'filesystem': 'Exact content hashes, short-file bytes, kinds, modes, uid/gid, link targets/peers and inode-preservation flags. No mtime/ctime/absolute inode equality.'},
                 'declarationDifferences': declaration_differences, 'cases': report_cases,
                 'summary': {'passed': sum(case['pass'] for case in report_cases), 'total': len(report_cases),
+                            'strictPassed': sum(case['strictPass'] for case in report_cases),
+                            'jpegCodecEquivalent': sum(case['classification'] == 'native_jpeg_codec_equivalent' for case in report_cases),
                             'perTool': dict(Counter(case['tool'] for case in report_cases))}}
             (output / 'report.json').write_text(json.dumps(report, indent=2, ensure_ascii=True) + '\n')
             print(json.dumps(report['summary']), flush=True)

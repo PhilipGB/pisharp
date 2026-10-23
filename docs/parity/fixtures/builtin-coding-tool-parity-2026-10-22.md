@@ -446,6 +446,40 @@ headers; distinct Huffman/DCT behavior still needs assessment. Seventeen
 pass, including binary values just below decimal ties. The related first image
 selection has 178 passes and ten failures, with zero skips; it is not a green
 milestone validation result.
+
+### Native JPEG assessment and payload correction
+
+The clean `c35858a0` run retains 105/115 exact read comparisons and ten JPEG pixel
+hash differences. Input decoder calibration shows a maximum two-level difference
+in 13/748 channels of each frozen JPEG input; the resulting resized PNGs differ
+by at most one level. Both independently captured pre-JPEG Lanczos buffers
+(60x40 and 37x24) match Photon byte-for-byte.
+
+The initial native JPEG budget path incorrectly selected quality 80 where Pi
+selected quality 40. This is a product defect, not an accepted codec difference.
+Skia's optimized Huffman coding made its payload smaller. A focused lossless
+entropy adapter retains Skia's quantized coefficients while applying the pinned
+standard tables. Both budget cases now match full quantization tables and 4:4:4
+sampling. Five sizes/qualities retain every decoded pixel through transcoding;
+nine adapter tests cover those, cancellation, malformed input and strict payload
+boundaries. Candidates stop when they cannot fit the byte budget.
+
+The [explicit JPEG envelope](builtin-coding-tool-jpeg-codec-2026-10-22.json)
+records the requested distinct-encoder allowance for ten named cases. It checks
+decoder error bounds, exact alpha/dimensions, full quantization and sampling,
+and bounded distortion against the common uncompressed reference. At quality
+20, reference/native MSE is 1891.198333/1888.556389; at quality 40 it is
+1004.427553/1012.331832. JPEG byte or pixel identity is not asserted. Original
+payloads and all other PNG pixel comparisons remain exact. Metadata, text,
+filesystem, errors and cancellation are never covered by this exception.
+
+Reports retain `strictPass`, `strictDifferences`, actual hashes and JPEG metrics
+alongside contract acceptance. Eighteen harness tests reject wrong quality,
+sampling, pixels, dimensions, missing/corrupt witnesses and unrelated differences.
+The image/budget/existing OpenAI wire selection passes 66/66, zero skips.
+Fresh committed-source paired evidence follows; Anthropic and structured-image
+session persistence remain open. CI now installs the already-used Pillow version
+from the explicit image-tool requirements and runs the harness guard tests.
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or

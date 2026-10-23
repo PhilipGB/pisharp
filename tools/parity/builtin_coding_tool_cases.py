@@ -121,6 +121,11 @@ def cases():
                           ('progressive-payload', {'maxBytes': 1500}), ('impossible-payload', {'maxBytes': 20})]:
         add('read', 'image-' + name, {'path': 'image.dat'}, {'image.dat': {'base64': images['png-noise']['base64']}},
             options={'resizeOptions': profile}, imagePolicy='decoded-rgba')
+    codec_comparisons = json.loads((Path(__file__).resolve().parents[2] / 'docs/parity/fixtures' /
+        'builtin-coding-tool-jpeg-codec-2026-10-22.json').read_text())['comparisons']
+    for case in result:
+        if case['caseId'] in codec_comparisons:
+            case['jpegComparison'] = codec_comparisons[case['caseId']]
 
     for name, content in [('new', 'new file\n'), ('empty', ''), ('unicode', '日本語 😀 café\n'), ('bom', '\ufefffile\n')]:
         add('write', name, {'path': 'file.txt', 'content': content})

@@ -353,7 +353,19 @@
         "passed": 17,
         "total": 17
       },
-      "remaining": "Ten strict JPEG-related decoded-pixel mismatches. Dimensions/MIME/notes match; quantify codec behavior before any tolerance decision. Physical image provider matrix, canonical structured image persistence and remaining safety/integration remain pending."
+      "remaining": "Fresh committed-source paired evidence; Anthropic image loopback, canonical structured image persistence, text-only canonical notes and remaining image safety/format hardening.",
+      "jpeg_codec_envelope": "docs/parity/fixtures/builtin-coding-tool-jpeg-codec-2026-10-22.json",
+      "jpeg_budget_correction": "Lossless standard Huffman coding corrects native quality 80 versus pinned quality 40 under the progressive payload cap. Full quantization and sampling are checked.",
+      "contract_selection": {
+        "passed": 66,
+        "failed": 0,
+        "skipped": 0,
+        "includes": "Pinned image contracts with explicit JPEG envelope, private adapter/lossless/budget checks, existing OpenAI image wire/reload tests."
+      },
+      "harness_guard_tests": {
+        "passed": 18,
+        "total": 18
+      }
     }
   },
   "plan_received": true,

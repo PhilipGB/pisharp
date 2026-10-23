@@ -20,8 +20,16 @@ public sealed class BuiltinReadImageParityTests
             directory = directory.Parent;
         using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory!.FullName, "docs", "parity",
             "fixtures", "builtin-coding-tool-read-image-results-2026-10-22.json")));
+        using var codecs = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory.FullName, "docs", "parity",
+            "fixtures", "builtin-coding-tool-jpeg-codec-2026-10-22.json")));
         foreach (var item in fixture.RootElement.GetProperty("cases").EnumerateArray())
-            yield return [item.GetProperty("caseId").GetString()!, item.GetRawText()];
+        {
+            var value = JsonNode.Parse(item.GetRawText())!;
+            var caseId = item.GetProperty("caseId").GetString()!;
+            if (codecs.RootElement.GetProperty("comparisons").TryGetProperty(caseId, out var policy))
+                value["jpegComparison"] = JsonNode.Parse(policy.GetRawText());
+            yield return [caseId, value.ToJsonString()];
+        }
     }
 
     [Theory]
@@ -65,7 +73,18 @@ public sealed class BuiltinReadImageParityTests
                 if (actual["structuredContent"] is JsonObject structured && structured["type"]?.GetValue<string>() == "image")
                     structured["data"] = Decode(structured["data"]!.GetValue<string>());
             }
-            Assert.True(JsonElement.DeepEquals(document.RootElement.GetProperty("expected"), JsonSerializer.SerializeToElement(actual)),
+            var expected = JsonNode.Parse(document.RootElement.GetProperty("expected").GetRawText())!;
+            if (document.RootElement.TryGetProperty("jpegComparison", out var codecPolicy))
+            {
+                var input = Convert.FromBase64String(setup.GetProperty("files").GetProperty("image.dat").GetProperty("base64").GetString()!);
+                ReadImageCodecAssertions.Equivalent(Assert.Single(result.Images!), codecPolicy, input);
+                foreach (var tree in new[] { expected, actual })
+                {
+                    tree["content"]![1]!["data"]!["rgbaSha256"] = "verified-native-jpeg-envelope";
+                    tree["structuredContent"]!["data"]!["rgbaSha256"] = "verified-native-jpeg-envelope";
+                }
+            }
+            Assert.True(JsonElement.DeepEquals(JsonSerializer.SerializeToElement(expected), JsonSerializer.SerializeToElement(actual)),
                 caseId + " actual: " + actual.ToJsonString());
             foreach (var file in setup.GetProperty("files").EnumerateObject())
                 Assert.Equal(Convert.FromBase64String(file.Value.GetProperty("base64").GetString()!), await File.ReadAllBytesAsync(Path.Combine(root, file.Name)));

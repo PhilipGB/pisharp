@@ -1,12 +1,14 @@
 """Guard the corpus and comparison against concealing real contract differences."""
 import copy
 import importlib.util
+import json
 import os
 from pathlib import Path
 import tempfile
 import unittest
 
 from builtin_coding_tool_cases import binary, cases
+from builtin_coding_tool_image_comparison import assess_jpeg_codec, only_codec_pixel_differences
 
 
 spec = importlib.util.spec_from_file_location('builtin_tool_differential',
@@ -16,6 +18,80 @@ spec.loader.exec_module(driver)
 
 
 class BuiltinToolDifferentialTests(unittest.TestCase):
+    @staticmethod
+    def codec_fixture(kind):
+        fixture = json.loads((Path(__file__).resolve().parents[2] / 'docs/parity/fixtures' /
+            'builtin-coding-tool-jpeg-codec-2026-10-22.json').read_text())
+        policy = next(value for value in fixture['comparisons'].values() if value['kind'] == kind)
+        mime = 'image/jpeg' if kind == 'jpeg_encoder' else 'image/png'
+        block = {'type': 'image', 'mimeType': mime, 'data': policy['referenceImageBase64']}
+        result = {'content': [{'type': 'text', 'text': 'pinned note'}, block],
+                  'structuredContent': {'type': 'image', 'mimeType': mime, 'data': block['data'], 'note': 'pinned note'}}
+        return result, policy
+
+    def test_codec_exception_cannot_hide_non_pixel_or_filesystem_differences(self):
+        self.assertTrue(only_codec_pixel_differences(['/result/content/1/data/rgbaSha256']))
+        for path in ['/filesystem/file/sha256', '/result/content/0/text', '/result/details',
+                     '/result/isError', '/result/content/1/data/width', '/result/structuredContent/note']:
+            self.assertFalse(only_codec_pixel_differences(['/result/content/1/data/rgbaSha256', path]))
+
+    def test_jpeg_decoder_identity_is_accepted_with_zero_error(self):
+        result, policy = self.codec_fixture('jpeg_decoder')
+        score = assess_jpeg_codec(result, copy.deepcopy(result), policy)
+        self.assertTrue(score['accepted'])
+        self.assertEqual(0, score['maximumChannelDelta'])
+
+    def test_jpeg_encoder_identity_checks_reference_quantization_and_fidelity(self):
+        result, policy = self.codec_fixture('jpeg_encoder')
+        score = assess_jpeg_codec(result, copy.deepcopy(result), policy)
+        self.assertTrue(score['accepted'])
+        self.assertTrue(score['quantizationMatched'])
+        self.assertEqual(0, score['pairedMse'])
+
+    def test_codec_missing_or_uncorrelated_structured_image_is_rejected(self):
+        result, policy = self.codec_fixture('jpeg_decoder')
+        native = copy.deepcopy(result)
+        native['structuredContent']['data'] = 'different'
+        self.assertIsNone(assess_jpeg_codec(result, native, policy))
+        native['structuredContent'] = None
+        self.assertIsNone(assess_jpeg_codec(result, native, policy))
+
+    def test_jpeg_wrong_quality_and_sampling_are_rejected(self):
+        import io
+        import base64
+        from PIL import Image
+        result, policy = self.codec_fixture('jpeg_encoder')
+        original = Image.open(io.BytesIO(base64.b64decode(result['content'][1]['data'])))
+        for quality, sampling in [(95, 0), (20, 2)]:
+            output = io.BytesIO()
+            original.save(output, 'JPEG', quality=quality, subsampling=sampling)
+            native = copy.deepcopy(result)
+            data = base64.b64encode(output.getvalue()).decode()
+            native['content'][1]['data'] = native['structuredContent']['data'] = data
+            self.assertIsNone(assess_jpeg_codec(result, native, policy))
+
+    def test_codec_reference_witness_hash_is_verified(self):
+        result, policy = self.codec_fixture('jpeg_encoder')
+        policy = {**policy, 'referenceRgbaSha256': 'wrong'}
+        self.assertIsNone(assess_jpeg_codec(result, copy.deepcopy(result), policy))
+
+    def test_codec_wrong_pixels_and_dimensions_are_rejected(self):
+        import io
+        import base64
+        from PIL import Image
+        for kind in ['jpeg_decoder', 'jpeg_encoder']:
+            result, policy = self.codec_fixture(kind)
+            reference = Image.open(io.BytesIO(base64.b64decode(result['content'][1]['data'])))
+            for size in [reference.size, (reference.width + 1, reference.height)]:
+                output = io.BytesIO()
+                wrong = Image.new('RGB', size, (0, 0, 0))
+                wrong.save(output, 'JPEG' if kind == 'jpeg_encoder' else 'PNG', quality=20, subsampling=0)
+                native = copy.deepcopy(result)
+                data = base64.b64encode(output.getvalue()).decode()
+                native['content'][1]['data'] = native['structuredContent']['data'] = data
+                score = assess_jpeg_codec(result, native, policy)
+                self.assertTrue(score is None or not score['accepted'])
+
     def test_distinct_meaningful_cases_cover_every_tool(self):
         fixtures = cases()
         self.assertEqual(len(fixtures), len({case['caseId'] for case in fixtures}))

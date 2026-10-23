@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { verifyPiCheckout } from './pi-reference.mjs';
 
 const [pi, inputFile, outputFile, mode] = process.argv.slice(2);
@@ -20,6 +21,32 @@ const declarations = Object.fromEntries(Object.entries(factories).map(([name, fa
   return [name, { name, description: tool.description, parameters: tool.parameters,
     outputSchema: tool.outputSchema ?? null, constrainedSampling: tool.constrainedSampling ?? null }];
 }));
+
+if (mode === '--decode-images-only' || mode === '--sample-images-only') {
+  const { loadPhoton } = await load('packages/coding-agent/src/utils/photon.ts');
+  const photon = await loadPhoton();
+  if (!photon) throw new Error('Pinned Photon is unavailable for image calibration');
+  const fixture = JSON.parse(readFileSync(inputFile, 'utf8'));
+  const results = [];
+  const entries = mode === '--sample-images-only' ? fixture.samples.map(row => [row.caseId,
+    { ...fixture.assets[row.asset], sample: row }]) : Object.entries(fixture.assets);
+  for (const [caseId, asset] of entries) {
+    let decoded;
+    let resized;
+    try {
+      decoded = photon.PhotonImage.new_from_byteslice(Buffer.from(asset.base64, 'base64'));
+      if (asset.sample) resized = photon.resize(decoded, asset.sample.width, asset.sample.height, photon.SamplingFilter.Lanczos3);
+      const target = resized ?? decoded;
+      const pixels = Buffer.from(target.get_raw_pixels());
+      results.push({ caseId, width: target.get_width(), height: target.get_height(),
+        rgbaBase64: pixels.toString('base64'), rgbaSha256: createHash('sha256').update(pixels).digest('hex') });
+    } catch {
+      results.push({ caseId, unsupported: true });
+    } finally { resized?.free(); decoded?.free(); }
+  }
+  writeFileSync(outputFile, JSON.stringify({ results }, null, 2) + '\n');
+  process.exit(0);
+}
 
 if (mode === '--truncate-only') {
   const { truncateHead, truncateTail } = await load('packages/coding-agent/src/core/tools/truncate.ts');

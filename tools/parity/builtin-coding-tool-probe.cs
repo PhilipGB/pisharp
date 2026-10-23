@@ -3,8 +3,48 @@ using Microsoft.Extensions.AI;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Tools;
+using SkiaSharp;
 
 var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true };
+if (args.Length > 2 && args[2] == "--sample-images-only")
+{
+    using var fixture = JsonDocument.Parse(File.ReadAllText(args[0]));
+    var sampleResults = new List<object>();
+    foreach (var sample in fixture.RootElement.GetProperty("samples").EnumerateArray())
+    {
+        var asset = fixture.RootElement.GetProperty("assets").GetProperty(sample.GetProperty("asset").GetString()!);
+        using var bytes = new MemoryStream(Convert.FromBase64String(asset.GetProperty("base64").GetString()!));
+        using var codec = SKCodec.Create(bytes);
+        using var bitmap = new SKBitmap(new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
+        if (codec.GetPixels(bitmap.Info, bitmap.GetPixels()) != SKCodecResult.Success) throw new InvalidDataException("Sample input could not be decoded.");
+        using var resized = ReadImageResampler.Resize(bitmap, sample.GetProperty("width").GetInt32(), sample.GetProperty("height").GetInt32(), CancellationToken.None);
+        var pixels = resized.GetPixelSpan().ToArray();
+        sampleResults.Add(new { caseId = sample.GetProperty("caseId").GetString(), width = resized.Width, height = resized.Height,
+            rgbaBase64 = Convert.ToBase64String(pixels), rgbaSha256 = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(pixels)) });
+    }
+    await File.WriteAllTextAsync(args[1], JsonSerializer.Serialize(new { results = sampleResults }, jsonOptions) + "\n");
+    return;
+}
+if (args.Length > 2 && args[2] == "--decode-images-only")
+{
+    using var fixture = JsonDocument.Parse(File.ReadAllText(args[0]));
+    var decodedResults = new List<object>();
+    foreach (var asset in fixture.RootElement.GetProperty("assets").EnumerateObject())
+    {
+        using var bytes = new MemoryStream(Convert.FromBase64String(asset.Value.GetProperty("base64").GetString()!));
+        using var codec = SKCodec.Create(bytes);
+        if (codec is null) { decodedResults.Add(new { caseId = asset.Name, unsupported = true }); continue; }
+        var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+        var pixels = new byte[checked(info.Width * info.Height * 4)];
+        if (codec.GetPixels(info, pixels) != SKCodecResult.Success)
+        { decodedResults.Add(new { caseId = asset.Name, unsupported = true }); continue; }
+        decodedResults.Add(new { caseId = asset.Name, width = info.Width, height = info.Height,
+            rgbaBase64 = Convert.ToBase64String(pixels),
+            rgbaSha256 = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(pixels)) });
+    }
+    await File.WriteAllTextAsync(args[1], JsonSerializer.Serialize(new { results = decodedResults }, jsonOptions) + "\n");
+    return;
+}
 var requests = JsonSerializer.Deserialize<List<ProbeRequest>>(File.ReadAllText(args[0]), jsonOptions)!;
 var declarations = new AgentToolCatalog(new CodingTools("/tmp"), null, null, false, false, null, null)
     .Registrations.ToDictionary(registration => registration.Function.Name, registration => new
