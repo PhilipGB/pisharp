@@ -250,6 +250,7 @@ def cases():
     edit('whitespace-duplicate-count', 'a b', [(' ', 'X')])
     edit('nfkc-unchanged-lines', 'keep \ufb03\nreplace \ufb03\nkeep \u2460\n', [('replace ffi', 'done')])
     edit('multiple-fuzzy-one-line', '\u201calpha\u201d then \u201cbeta\u201d\n', [('"alpha"', 'A'), ('"beta"', 'B')])
+    edit('batch-fuzzy-exact-space', '\u201cx\u201d\nalpha tail\n', [('"x"', 'X'), ('alpha ', 'A')])
     edit('adjacent-boundaries', 'abcDEFghi', [('abc', 'ABC'), ('DEF', 'def')])
     edit('newline-only-replacement', 'alpha\nbeta\n', [('alpha\n', '\n')])
     edit('invalid-utf8-before-match', binary(b'\xffalpha\n'), [('alpha', 'ALPHA')])
