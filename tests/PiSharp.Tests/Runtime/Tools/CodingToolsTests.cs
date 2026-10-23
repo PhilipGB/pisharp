@@ -153,12 +153,13 @@ public sealed class CodingToolsTests : IDisposable
             catch (UnauthorizedAccessException) { }
 
             var error = await Assert.ThrowsAsync<ToolFailureException>(() => new CodingTools(_dir).Write("private-write-dir/file.txt", "content"));
-            Assert.Equal($"EACCES: permission denied, open '{path}'", error.Message);
+            Assert.Equal($"EACCES: permission denied, realpath '{path}'", error.Message);
         }
         finally
         {
             File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
+        Assert.Empty(Directory.EnumerateFileSystemEntries(directory));
     }
 
     [Fact]

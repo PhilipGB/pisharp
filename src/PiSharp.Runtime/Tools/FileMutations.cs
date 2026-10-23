@@ -7,7 +7,7 @@ namespace PiSharp.Runtime.Tools;
 internal sealed class FileMutations(string workingDirectory)
 {
     private static readonly FileMutationQueue s_mutations = new();
-    private string Resolve(string path) => Path.GetFullPath(path, workingDirectory);
+    private string Resolve(string path) => CodingToolPaths.Resolve(path, workingDirectory);
 
     private static string? FindBlockingFileAncestor(string path)
     {
@@ -59,9 +59,19 @@ internal sealed class FileMutations(string workingDirectory)
                 if (Directory.Exists(absolute))
                     throw new ToolFailureException($"EISDIR: illegal operation on a directory, open '{absolute}'");
 
+                LinuxFileAccess.RequireWritableIfPresent(absolute);
                 await AtomicFileWriter.ReplaceAsync(absolute, Encoding.UTF8.GetBytes(content), cancellationToken);
                 return $"Successfully wrote to {path}";
             }, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException("Operation aborted", cancellationToken);
+        }
+        catch (DirectoryNotFoundException error) when (OperatingSystem.IsLinux())
+        {
+            LinuxFileAccess.Require(absolute, 2, "open");
+            throw new ToolFailureException($"ENOENT: no such file or directory, open '{absolute}'", inner: error);
         }
         catch (UnauthorizedAccessException error)
         {

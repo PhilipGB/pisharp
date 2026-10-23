@@ -1,0 +1,1018 @@
+{
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpBeforeSha": "509aab2d787a6a9f0ffeee9f3f63e4027b6b3bad",
+  "capture": "write-expanded-before/report.json",
+  "scope": "Actual function results, paths and file bytes for confirmed defects and related error controls. Modes, ownership, inode and hard links remain asserted by the full differential, not normalized here.",
+  "cases": [
+    {
+      "caseId": "write-at-prefix",
+      "setup": {
+        "caseId": "write-at-prefix",
+        "tool": "write",
+        "arguments": {
+          "path": "@file.txt",
+          "content": "at path\n"
+        },
+        "files": {}
+      },
+      "expectedResult": {
+        "caseId": "write-at-prefix",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to @file.txt"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "kind": "file",
+          "size": 8,
+          "sha256": "f76256402a07eb3e2943c2670f329282c977e42dd290fbf2a4c4a0b10c3be4df",
+          "base64": "YXQgcGF0aAo=",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "write-directory",
+      "setup": {
+        "caseId": "write-directory",
+        "tool": "write",
+        "arguments": {
+          "path": "dir",
+          "content": "bad"
+        },
+        "files": {},
+        "directories": {
+          "dir": 493
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-directory",
+        "content": [
+          {
+            "type": "text",
+            "text": "EISDIR: illegal operation on a directory, open '<workspace>/dir'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "dir": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        }
+      }
+    },
+    {
+      "caseId": "write-file-parent",
+      "setup": {
+        "caseId": "write-file-parent",
+        "tool": "write",
+        "arguments": {
+          "path": "parent/file",
+          "content": "bad"
+        },
+        "files": {
+          "parent": "original"
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-file-parent",
+        "content": [
+          {
+            "type": "text",
+            "text": "EEXIST: file already exists, mkdir '<workspace>/parent'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "parent": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+          "base64": "b3JpZ2luYWw=",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "write-file-ancestor",
+      "setup": {
+        "caseId": "write-file-ancestor",
+        "tool": "write",
+        "arguments": {
+          "path": "parent/child/file",
+          "content": "bad"
+        },
+        "files": {
+          "parent": "original"
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-file-ancestor",
+        "content": [
+          {
+            "type": "text",
+            "text": "ENOTDIR: not a directory, mkdir '<workspace>/parent/child'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "parent": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+          "base64": "b3JpZ2luYWw=",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "write-readonly-file",
+      "setup": {
+        "caseId": "write-readonly-file",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": "bad"
+        },
+        "files": {
+          "file.txt": "original"
+        },
+        "modes": {
+          "file.txt": 292
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-readonly-file",
+        "content": [
+          {
+            "type": "text",
+            "text": "EACCES: permission denied, open '<workspace>/file.txt'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 292,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+          "base64": "b3JpZ2luYWw=",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "write-readonly-directory",
+      "setup": {
+        "caseId": "write-readonly-directory",
+        "tool": "write",
+        "arguments": {
+          "path": "dir/file",
+          "content": "bad"
+        },
+        "files": {},
+        "directories": {
+          "dir": 365
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-readonly-directory",
+        "content": [
+          {
+            "type": "text",
+            "text": "EACCES: permission denied, open '<workspace>/dir/file'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "dir": {
+          "mode": 365,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        }
+      }
+    },
+    {
+      "caseId": "write-unicode-space-path",
+      "setup": {
+        "caseId": "write-unicode-space-path",
+        "tool": "write",
+        "arguments": {
+          "path": "file\u00a0name.txt",
+          "content": "spaces\n"
+        },
+        "files": {}
+      },
+      "expectedResult": {
+        "caseId": "write-unicode-space-path",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to file\u00a0name.txt"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file name.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "kind": "file",
+          "size": 7,
+          "sha256": "e47fbedb2823cf1ae4d4cdb8273635be2024cb870588e259c9b23d76ae49d484",
+          "base64": "c3BhY2VzCg==",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "write-file-url",
+      "setup": {
+        "caseId": "write-file-url",
+        "tool": "write",
+        "arguments": {
+          "path": "file://{WORKSPACE}/nested/file.txt",
+          "content": "URI\n"
+        },
+        "files": {}
+      },
+      "expectedResult": {
+        "caseId": "write-file-url",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to file://<workspace>/nested/file.txt"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "nested": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "kind": "directory"
+        },
+        "nested/file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "kind": "file",
+          "size": 4,
+          "sha256": "aa60964b9c8aecc8f147f9f0b4a493278402da3902480d35a2b544845596d184",
+          "base64": "VVJJCg==",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "write-empty-path",
+      "setup": {
+        "caseId": "write-empty-path",
+        "tool": "write",
+        "arguments": {
+          "path": "",
+          "content": "bad"
+        },
+        "files": {}
+      },
+      "expectedResult": {
+        "caseId": "write-empty-path",
+        "content": [
+          {
+            "type": "text",
+            "text": "EISDIR: illegal operation on a directory, open '<workspace>'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        }
+      }
+    },
+    {
+      "caseId": "write-nul-path",
+      "setup": {
+        "caseId": "write-nul-path",
+        "tool": "write",
+        "arguments": {
+          "path": "invalid\u0000path",
+          "content": "bad"
+        },
+        "files": {}
+      },
+      "expectedResult": {
+        "caseId": "write-nul-path",
+        "content": [
+          {
+            "type": "text",
+            "text": "The argument 'path' must be a string, Uint8Array, or URL without null bytes. Received '<workspace>/invalid\\x00path'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        }
+      }
+    },
+    {
+      "caseId": "write-long-name",
+      "setup": {
+        "caseId": "write-long-name",
+        "tool": "write",
+        "arguments": {
+          "path": "\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0",
+          "content": "bad"
+        },
+        "files": {}
+      },
+      "expectedResult": {
+        "caseId": "write-long-name",
+        "content": [
+          {
+            "type": "text",
+            "text": "ENAMETOOLONG: name too long, realpath '<workspace>/\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        }
+      }
+    },
+    {
+      "caseId": "write-symlink-loop",
+      "setup": {
+        "caseId": "write-symlink-loop",
+        "tool": "write",
+        "arguments": {
+          "path": "alias",
+          "content": "bad"
+        },
+        "files": {},
+        "symlinks": {
+          "alias": "alias"
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-symlink-loop",
+        "content": [
+          {
+            "type": "text",
+            "text": "ELOOP: too many symbolic links encountered, realpath '<workspace>/alias'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "alias"
+        }
+      }
+    },
+    {
+      "caseId": "write-symlink-directory",
+      "setup": {
+        "caseId": "write-symlink-directory",
+        "tool": "write",
+        "arguments": {
+          "path": "alias",
+          "content": "bad"
+        },
+        "files": {},
+        "directories": {
+          "directory": 493
+        },
+        "symlinks": {
+          "alias": "directory"
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-symlink-directory",
+        "content": [
+          {
+            "type": "text",
+            "text": "EISDIR: illegal operation on a directory, open '<workspace>/alias'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "directory"
+        },
+        "directory": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        }
+      }
+    },
+    {
+      "caseId": "write-symlink-missing-target-parent",
+      "setup": {
+        "caseId": "write-symlink-missing-target-parent",
+        "tool": "write",
+        "arguments": {
+          "path": "alias",
+          "content": "bad"
+        },
+        "files": {},
+        "symlinks": {
+          "alias": "missing/target"
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-symlink-missing-target-parent",
+        "content": [
+          {
+            "type": "text",
+            "text": "ENOENT: no such file or directory, open '<workspace>/alias'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "missing/target"
+        }
+      }
+    },
+    {
+      "caseId": "write-symlink-readonly-target",
+      "setup": {
+        "caseId": "write-symlink-readonly-target",
+        "tool": "write",
+        "arguments": {
+          "path": "alias",
+          "content": "bad"
+        },
+        "files": {
+          "target": "original"
+        },
+        "symlinks": {
+          "alias": "target"
+        },
+        "modes": {
+          "target": 292
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-symlink-readonly-target",
+        "content": [
+          {
+            "type": "text",
+            "text": "EACCES: permission denied, open '<workspace>/alias'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "target"
+        },
+        "target": {
+          "mode": 292,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+          "base64": "b3JpZ2luYWw=",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "write-symlink-file-parent",
+      "setup": {
+        "caseId": "write-symlink-file-parent",
+        "tool": "write",
+        "arguments": {
+          "path": "alias/child",
+          "content": "bad"
+        },
+        "files": {
+          "target": "original"
+        },
+        "symlinks": {
+          "alias": "target"
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-symlink-file-parent",
+        "content": [
+          {
+            "type": "text",
+            "text": "EEXIST: file already exists, mkdir '<workspace>/alias'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "target"
+        },
+        "target": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+          "base64": "b3JpZ2luYWw=",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "write-symlink-loop-parent",
+      "setup": {
+        "caseId": "write-symlink-loop-parent",
+        "tool": "write",
+        "arguments": {
+          "path": "alias/child",
+          "content": "bad"
+        },
+        "files": {},
+        "symlinks": {
+          "alias": "alias"
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-symlink-loop-parent",
+        "content": [
+          {
+            "type": "text",
+            "text": "ELOOP: too many symbolic links encountered, realpath '<workspace>/alias/child'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "alias"
+        }
+      }
+    },
+    {
+      "caseId": "write-readonly-ancestor",
+      "setup": {
+        "caseId": "write-readonly-ancestor",
+        "tool": "write",
+        "arguments": {
+          "path": "secret/nested/file",
+          "content": "bad"
+        },
+        "files": {},
+        "directories": {
+          "secret": 320
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-readonly-ancestor",
+        "content": [
+          {
+            "type": "text",
+            "text": "EACCES: permission denied, mkdir '<workspace>/secret/nested'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "secret": {
+          "mode": 320,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        }
+      }
+    },
+    {
+      "caseId": "write-inaccessible-parent",
+      "setup": {
+        "caseId": "write-inaccessible-parent",
+        "tool": "write",
+        "arguments": {
+          "path": "secret/file",
+          "content": "bad"
+        },
+        "files": {
+          "secret/file": "original"
+        },
+        "modes": {
+          "secret": 384
+        }
+      },
+      "expectedResult": {
+        "caseId": "write-inaccessible-parent",
+        "content": [
+          {
+            "type": "text",
+            "text": "EACCES: permission denied, realpath '<workspace>/secret/file'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "secret": {
+          "mode": 384,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "secret/file": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+          "base64": "b3JpZ2luYWw=",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "write-pre-cancelled",
+      "setup": {
+        "caseId": "write-pre-cancelled",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": "bad"
+        },
+        "files": {
+          "file.txt": "original"
+        },
+        "preCancelled": true
+      },
+      "expectedResult": {
+        "caseId": "write-pre-cancelled",
+        "content": [
+          {
+            "type": "text",
+            "text": "Operation aborted"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+          "base64": "b3JpZ2luYWw=",
+          "hardlinkPeers": []
+        }
+      }
+    }
+  ]
+}

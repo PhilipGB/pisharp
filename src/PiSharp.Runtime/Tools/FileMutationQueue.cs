@@ -1,3 +1,5 @@
+using PiSharp.Runtime.Tools;
+
 namespace PiSharp.Runtime;
 
 /// <summary>Serializes edits and writes to the same resolved file, without blocking unrelated paths.</summary>
@@ -12,7 +14,7 @@ public sealed class FileMutationQueue
     {
         // Resolve an existing symlink before taking the lock so aliases share one queue.
         var absolute = Path.GetFullPath(path);
-        var key = ResolveExistingPath(absolute);
+        var key = LinuxFileAccess.ResolveExistingPath(absolute) ?? ResolveExistingPath(absolute);
         Lease lease;
         lock (_gate)
         {
@@ -36,14 +38,18 @@ public sealed class FileMutationQueue
     {
         var root = Path.GetPathRoot(absolute)!;
         var current = root;
-        foreach (var segment in absolute[root.Length..].Split(
-                     [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries))
+        var segments = absolute[root.Length..].Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries);
+        for (var index = 0; index < segments.Length; index++)
         {
-            current = Path.Combine(current, segment);
+            current = Path.Combine(current, segments[index]);
             FileAttributes attributes;
             try { attributes = File.GetAttributes(current); }
-            catch (FileNotFoundException) { return absolute; }
-            catch (DirectoryNotFoundException) { return absolute; }
+            catch (IOException error) when (error is FileNotFoundException or DirectoryNotFoundException)
+            {
+                // Keep resolved parent aliases when the final file or its descendants do not exist yet.
+                return segments.Skip(index + 1).Aggregate(current, Path.Combine);
+            }
 
             if ((attributes & FileAttributes.ReparsePoint) == 0) continue;
             FileSystemInfo info = (attributes & FileAttributes.Directory) != 0

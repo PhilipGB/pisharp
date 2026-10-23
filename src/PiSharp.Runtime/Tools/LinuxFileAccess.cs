@@ -4,6 +4,27 @@ namespace PiSharp.Runtime.Tools;
 
 internal static class LinuxFileAccess
 {
+    public static string? ResolveExistingPath(string path)
+    {
+        if (!OperatingSystem.IsLinux()) return null;
+        var resolved = realpath(path, IntPtr.Zero);
+        if (resolved != IntPtr.Zero)
+        {
+            try { return Marshal.PtrToStringUTF8(resolved)!; }
+            finally { free(resolved); }
+        }
+        var error = Marshal.GetLastPInvokeError();
+        if (error is 2 or 20) return null;
+        throw Failure(error, "realpath", path);
+    }
+
+    public static void RequireWritableIfPresent(string path)
+    {
+        if (!OperatingSystem.IsLinux() || access(path, 2) == 0) return;
+        var error = Marshal.GetLastPInvokeError();
+        if (error is not (2 or 20)) throw Failure(error, "open", path);
+    }
+
     public static void Require(string path, int mode, string operation)
     {
         if (OperatingSystem.IsLinux() && access(path, mode) != 0)
@@ -34,4 +55,10 @@ internal static class LinuxFileAccess
 
     [DllImport("libc", SetLastError = true)]
     private static extern int access([MarshalAs(UnmanagedType.LPUTF8Str)] string path, int mode);
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern IntPtr realpath([MarshalAs(UnmanagedType.LPUTF8Str)] string path, IntPtr buffer);
+
+    [DllImport("libc")]
+    private static extern void free(IntPtr buffer);
 }

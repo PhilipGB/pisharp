@@ -309,17 +309,14 @@
       }
     },
     "current_case_inventory": {
-      "total": 285,
-      "per_tool": {
-        "read": 119,
-        "write": 21,
-        "edit": 33,
-        "bash": 28,
-        "grep": 32,
-        "find": 27,
-        "ls": 25
-      },
-      "frozen_image_assets": 28
+      "read": 121,
+      "write": 39,
+      "edit": 33,
+      "bash": 28,
+      "grep": 32,
+      "find": 27,
+      "ls": 25,
+      "total": 305
     },
     "read_image_contract": {
       "status": "in_progress",
@@ -441,6 +438,25 @@
         "receipt": "docs/parity/fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json",
         "remaining_cross_cutting": "M–P integration, cancellation, concurrency and reliability gates remain open."
       }
+    },
+    "write_contract": {
+      "before_source": "509aab2d787a6a9f0ffeee9f3f63e4027b6b3bad",
+      "before_passed": 11,
+      "before_total": 39,
+      "regressions_failed_before": 14,
+      "regressions_total": 26,
+      "test_harness_correction": "Initial snapshot omitted the workspace root; corrected before product changes, retained both raw runs.",
+      "related_passed_after": 52,
+      "pinned_regressions": "docs/parity/fixtures/builtin-coding-tool-write-regressions-2026-10-22.json",
+      "legacy_permission_receipt": "docs/parity/fixtures/builtin-coding-tool-write-permission-2026-10-22.json",
+      "status": "fresh paired verification and mutation integration pending",
+      "safety_candidates": [
+        "private new-file modes",
+        "atomic replacement and inode identity",
+        "hard-link preservation",
+        "existing file inside read-only directory"
+      ],
+      "queue": "Missing descendants retain resolved parent aliases; six alias cases also assert independent unrelated paths."
     }
   },
   "plan_received": true,

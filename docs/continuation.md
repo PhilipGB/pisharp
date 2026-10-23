@@ -80,6 +80,13 @@ read acceptance receipt retains both outputs, filesystem state, source SHAs and
 all differences. Continue with write permissions, path semantics and mutation
 serialization; retain private new-file modes and atomic replacement unless a
 change preserves their existing safety guarantees.
+Write baseline `509aab2d` passes 11/39; fourteen corrected fail-first
+regressions confirm paths, read-only replacement, realpath/cancellation errors
+and missing-file alias coordination. Corrections pass 52 related checks. The
+legacy permission assertion is corrected against an exact Pi reproduction and
+strengthened with an unchanged-directory check. Retain private modes and atomic
+replacement; classify their actual side-effect differences explicitly. Fresh
+paired write and mutation concurrency/cancellation remain next.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required

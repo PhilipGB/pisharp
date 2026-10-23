@@ -550,6 +550,32 @@ equivalents and two explicit allocation safety exclusions, with zero unresolved
 differences. Its same-Pi control is 121/121 strict. This closes the supported read
 checkpoint. Broader MAF cancellation, concurrency and reliability remain M–P work.
 
+### Write paths, permissions and alias coordination
+
+Expanded clean baseline `509aab2d` passes 11/39 write cases. Confirmed product
+failures include wrong `@`/Unicode-space/file-URL targets, read-only target
+replacement, wrong Linux realpath/open errors and cancellation text. Existing
+private creation modes, atomic replacement/inodes, hard links and writing an
+existing file inside a read-only parent are separate safety-deviation candidates;
+they are not normalized away or classified as resolved yet.
+
+The [write regressions](builtin-coding-tool-write-regressions-2026-10-22.json)
+capture actual pinned results, paths and file bytes. After correcting a test
+snapshot omission of the workspace root, 14/26 regressions fail on the old
+product (12 function cases and two missing-file directory-alias queue cases).
+The product reuses common path resolution, checks existing target writability,
+uses actual Linux `realpath` errors and retains resolved parents when queue keys
+reach a missing descendant. The related write/queue/edit selection passes 52/52.
+Unrelated-path execution remains independent; no global execution lock is added.
+
+The old permission regression expected `open` for an inaccessible parent. An
+[exact pinned reproduction](builtin-coding-tool-write-permission-2026-10-22.json)
+proves `realpath` is the error operation. Its assertion is corrected and also
+checks that no filesystem entry was created. No regression was removed or
+skipped. Private new-file modes and atomic replacement remain unchanged.
+Fresh paired write evidence and mutation cancellation/concurrency acceptance
+are next. Corpus inventory is 305 (write 39, read 121).
+
 ## Shared integration and safety gates
 
 Keep the existing registry, MAF `ChatClientAgent` invocation, durable outcome
