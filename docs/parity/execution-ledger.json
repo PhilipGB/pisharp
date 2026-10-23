@@ -916,7 +916,17 @@
         "Five bounded reliability repetitions.",
         "Clean-head physical cancellation/restart acceptance.",
         "Full repository validation."
-      ]
+      ],
+      "initial_reliability_attempt": {
+        "passed": 258,
+        "failed": 4,
+        "abandoned_output_files": 0,
+        "classification": "Independent pinned observations confirm all four encounter-order alternatives; no product behavior changed.",
+        "source_witness": "docs/parity/fixtures/builtin-coding-tool-search-order-2026-10-22.json",
+        "distinct_existing_cases_observed": 5,
+        "repeated_source_observations": 640,
+        "search_regressions_after": 182
+      }
     }
   },
   "plan_received": true,

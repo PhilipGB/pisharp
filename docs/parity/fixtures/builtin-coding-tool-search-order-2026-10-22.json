@@ -1,0 +1,230 @@
+{
+  "schema": 1,
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": [
+    "packages/coding-agent/src/core/tools/grep.ts",
+    "packages/coding-agent/src/core/tools/find.ts"
+  ],
+  "fixture": "tools/parity/builtin-coding-tool-grep-cases.mjs",
+  "fixtureSha256": "9184f7bfc0ae814f9f4d893c4cf5dfe0a9cd3617a69aa1106d63c29648052cb4",
+  "receiptCreatedAt": "2026-10-23T23:07:15.831971+00:00",
+  "normalization": "None. Complete ordered tool results are preserved. Identical observations are counted per CPU profile; raw repeated captures remain in milestone artifacts. No permutation is inferred or synthesized.",
+  "executables": {
+    "rg": "ripgrep 15.2.0 (rev e89fff89ac)",
+    "fdfind": "fdfind 10.3.0"
+  },
+  "profiles": [
+    {
+      "name": "24-cpus",
+      "availableParallelism": 24,
+      "cpuProfile": "Cpus_allowed_list:\t0-23",
+      "observationsPerCase": 64,
+      "rawCapture": "search-order-observations.json"
+    },
+    {
+      "name": "2-cpus",
+      "availableParallelism": 2,
+      "cpuProfile": "Cpus_allowed_list:\t0-1",
+      "observationsPerCase": 64,
+      "rawCapture": "search-order-observations-two-cpus.json"
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "grep-glob-braces",
+      "setup": {
+        "caseId": "grep-glob-braces",
+        "tool": "grep",
+        "arguments": {
+          "pattern": "needle",
+          "glob": "*.{cs,md}"
+        },
+        "files": {
+          "file.cs": "needle\n",
+          "file.md": "needle\n",
+          "file.py": "needle\n"
+        }
+      },
+      "observations": [
+        {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "file.md:1: needle\nfile.cs:1: needle"
+              }
+            ]
+          },
+          "countsByProfile": {
+            "24-cpus": 64,
+            "2-cpus": 64
+          }
+        }
+      ]
+    },
+    {
+      "caseId": "grep-glob-character-class",
+      "setup": {
+        "caseId": "grep-glob-character-class",
+        "tool": "grep",
+        "arguments": {
+          "pattern": "needle",
+          "glob": "[ab].txt"
+        },
+        "files": {
+          "a.txt": "needle\n",
+          "b.txt": "needle\n",
+          "c.txt": "needle\n"
+        }
+      },
+      "observations": [
+        {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "b.txt:1: needle\na.txt:1: needle"
+              }
+            ]
+          },
+          "countsByProfile": {
+            "24-cpus": 64,
+            "2-cpus": 64
+          }
+        }
+      ]
+    },
+    {
+      "caseId": "grep-rgignore-precedence",
+      "setup": {
+        "caseId": "grep-rgignore-precedence",
+        "tool": "grep",
+        "arguments": {
+          "pattern": "needle"
+        },
+        "files": {
+          ".ignore": "ignored.txt\n",
+          ".rgignore": "!ignored.txt\n",
+          "ignored.txt": "needle\n",
+          "visible.txt": "needle\n"
+        }
+      },
+      "observations": [
+        {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "visible.txt:1: needle\nignored.txt:1: needle"
+              }
+            ]
+          },
+          "countsByProfile": {
+            "24-cpus": 64,
+            "2-cpus": 64
+          }
+        }
+      ]
+    },
+    {
+      "caseId": "grep-nested-repositories",
+      "setup": {
+        "caseId": "grep-nested-repositories",
+        "tool": "grep",
+        "arguments": {
+          "pattern": "needle"
+        },
+        "files": {
+          ".gitignore": "nested/outer-ignored.txt\n",
+          "nested/outer-ignored.txt": "needle\n",
+          "nested/visible.txt": "needle\n",
+          "nested/.gitignore": "inner-ignored.txt\n",
+          "nested/inner-ignored.txt": "needle\n"
+        },
+        "gitDirectories": [
+          ".",
+          "nested"
+        ]
+      },
+      "observations": [
+        {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "nested/visible.txt:1: needle\nnested/outer-ignored.txt:1: needle"
+              }
+            ]
+          },
+          "countsByProfile": {
+            "24-cpus": 49,
+            "2-cpus": 64
+          }
+        },
+        {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "nested/outer-ignored.txt:1: needle\nnested/visible.txt:1: needle"
+              }
+            ]
+          },
+          "countsByProfile": {
+            "24-cpus": 15
+          }
+        }
+      ]
+    },
+    {
+      "caseId": "find-result-limit",
+      "setup": {
+        "caseId": "find-result-limit",
+        "tool": "find",
+        "arguments": {
+          "pattern": "*.txt",
+          "limit": 1
+        },
+        "files": {
+          "one.txt": "",
+          "two.txt": ""
+        }
+      },
+      "observations": [
+        {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "two.txt\n\n[1 results limit reached. Use limit=2 for more, or refine pattern]"
+              }
+            ],
+            "details": {
+              "resultLimitReached": 1
+            }
+          },
+          "countsByProfile": {
+            "24-cpus": 32,
+            "2-cpus": 64
+          }
+        },
+        {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "one.txt\n\n[1 results limit reached. Use limit=2 for more, or refine pattern]"
+              }
+            ],
+            "details": {
+              "resultLimitReached": 1
+            }
+          },
+          "countsByProfile": {
+            "24-cpus": 32
+          }
+        }
+      ]
+    }
+  ]
+}

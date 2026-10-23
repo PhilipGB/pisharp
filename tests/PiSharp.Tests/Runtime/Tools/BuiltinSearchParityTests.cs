@@ -23,6 +23,31 @@ public sealed class BuiltinSearchParityTests
         }
     }
 
+    [Fact]
+    public void AdditionalEncounterOrdersAreCompletePinnedObservations()
+    {
+        using var source = SearchProcessProtocolTests.SourceFixture("search", "order");
+        Assert.Equal("b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6", source.RootElement.GetProperty("pinnedPiSha").GetString());
+        foreach (var row in Cases())
+        {
+            using var fixture = JsonDocument.Parse((string)row[1]);
+            var test = fixture.RootElement;
+            if (!test.TryGetProperty("additionalPinnedTexts", out var variants)) continue;
+            var witness = Assert.Single(source.RootElement.GetProperty("cases").EnumerateArray(),
+                item => item.GetProperty("caseId").GetString() == (string)row[0]);
+            Assert.True(JsonElement.DeepEquals(test.GetProperty("setup"), witness.GetProperty("setup")));
+            foreach (var variant in variants.EnumerateArray())
+                Assert.Contains(witness.GetProperty("observations").EnumerateArray(), item =>
+                {
+                    var result = item.GetProperty("result");
+                    var details = result.TryGetProperty("details", out var value) ? value : JsonSerializer.SerializeToElement<object?>(null);
+                    return result.GetProperty("content").GetArrayLength() == 1 &&
+                        result.GetProperty("content")[0].GetProperty("text").GetString() == variant.GetString() &&
+                        JsonElement.DeepEquals(details, test.GetProperty("expectedResult").GetProperty("details"));
+                });
+        }
+    }
+
     [Theory]
     [MemberData(nameof(Cases))]
     public async Task RegisteredFunctionMatchesPinnedResultWithoutChangingFiles(string caseId, string fixture)

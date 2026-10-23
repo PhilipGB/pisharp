@@ -1119,3 +1119,22 @@ Raw failing and passing TRX files remain under the milestone artifacts directory
 The physical cancellation driver can additionally abort after a non-idempotent
 Bash append; its three API comparisons pass with one byte preserved after restart.
 Clean-head acceptance and five bounded reliability repetitions remain pending.
+
+### Search reliability: independently observed encounter-order alternatives
+
+The first bounded reliability attempt stopped after 258 passes and four failures,
+all exact search-order expectations. It left no full-output artifacts. The raw
+failed TRX/report are retained in `reliability/`, without overwriting the attempt.
+Actual pinned grep/find were then executed 64 times for each of five existing
+cases on both two-CPU and 24-CPU profiles. These 640 observations do not increase
+the 456 distinct-case count. All four differing native results also occur in Pi.
+
+The [source witness](builtin-coding-tool-search-order-2026-10-22.json) retains
+complete ordered results and per-profile frequencies. Original expected results
+remain unchanged; regression fixtures additionally accept only complete results
+actually observed from the pinned implementation, including its variable first
+result under `find`'s limit. A provenance assertion checks identical setup,
+content and details for every accepted alternative. No sorting, inferred
+permutation or relaxed differential comparison was introduced. All 182 search
+regressions/provenance checks now pass. Five fresh reliability repetitions remain
+pending on the updated, committed fixtures.

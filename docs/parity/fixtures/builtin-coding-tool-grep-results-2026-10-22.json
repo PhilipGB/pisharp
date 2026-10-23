@@ -1133,7 +1133,11 @@
           "initial": null,
           "final": null
         }
-      }
+      },
+      "additionalPinnedTexts": [
+        "file.md:1: needle\nfile.cs:1: needle"
+      ],
+      "orderingEvidence": "builtin-coding-tool-search-order-2026-10-22.json"
     },
     {
       "caseId": "grep-glob-recursive",
@@ -1199,7 +1203,11 @@
           "initial": null,
           "final": null
         }
-      }
+      },
+      "additionalPinnedTexts": [
+        "b.txt:1: needle\na.txt:1: needle"
+      ],
+      "orderingEvidence": "builtin-coding-tool-search-order-2026-10-22.json"
     },
     {
       "caseId": "grep-glob-invalid",
@@ -1715,7 +1723,8 @@
       "additionalPinnedTexts": [
         "visible.txt:1: needle\nignored.txt:1: needle"
       ],
-      "additionalPinnedTextSource": "builtin-coding-tool-grep-order-2026-10-22.json; unrestricted 24-CPU execution"
+      "additionalPinnedTextSource": "builtin-coding-tool-grep-order-2026-10-22.json; unrestricted 24-CPU execution",
+      "orderingEvidence": "builtin-coding-tool-search-order-2026-10-22.json"
     },
     {
       "caseId": "grep-nested-ignore-negation",
@@ -1988,7 +1997,11 @@
           "initial": null,
           "final": null
         }
-      }
+      },
+      "additionalPinnedTexts": [
+        "nested/visible.txt:1: needle\nnested/outer-ignored.txt:1: needle"
+      ],
+      "orderingEvidence": "builtin-coding-tool-search-order-2026-10-22.json"
     },
     {
       "caseId": "grep-symlink-file",

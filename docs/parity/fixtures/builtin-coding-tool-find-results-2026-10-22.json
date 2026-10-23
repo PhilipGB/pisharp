@@ -887,7 +887,11 @@
           "initial": null,
           "final": null
         }
-      }
+      },
+      "additionalPinnedTexts": [
+        "two.txt\n\n[1 results limit reached. Use limit=2 for more, or refine pattern]"
+      ],
+      "orderingEvidence": "builtin-coding-tool-search-order-2026-10-22.json"
     },
     {
       "caseId": "find-zero-limit",
