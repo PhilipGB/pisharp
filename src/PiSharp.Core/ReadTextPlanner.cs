@@ -5,6 +5,8 @@ namespace PiSharp.Core;
 
 public sealed record ReadTextSelection(string Text, TextTruncationResult? Truncation);
 
+public sealed record ReadTextWindow(long Start, long End, double RawStart, double? UserLimitedLines);
+
 /// <summary>Pi's text read line/byte selection; image reads and streamed file IO are separate concerns.</summary>
 public static class ReadTextPlanner
 {
@@ -14,27 +16,60 @@ public static class ReadTextPlanner
     public static ReadTextSelection SelectDetailed(string text, string path, int offset = 1, int? limit = null)
     {
         if (offset < 1 || limit is <= 0) throw new ArgumentOutOfRangeException(nameof(offset), "Offset and limit must be positive.");
+        return SelectDetailed(text, path, (double)offset, limit);
+    }
+
+    public static ReadTextSelection SelectDetailed(string text, string path, double offset, double? limit)
+    {
         var lines = text.Split('\n');
-        if (offset > lines.Length) throw new ArgumentOutOfRangeException(nameof(offset), $"Offset {offset} is beyond end of file ({lines.Length} lines total)");
-        var start = offset - 1;
-        var count = Math.Min(limit ?? lines.Length, lines.Length - start);
-        var selected = string.Join("\n", lines.Skip(start).Take(count));
-        return FormatSelection(path, lines.Length, offset, limit.HasValue ? count : null,
-            TextOutputTruncator.Head(selected), Encoding.UTF8.GetByteCount(lines[start]));
+        var window = PlanWindow(lines.LongLength, offset, limit);
+        var selected = string.Join("\n", lines.Skip((int)window.Start).Take((int)(window.End - window.Start)));
+        var truncation = TextOutputTruncator.Head(selected);
+        return FormatSelection(path, lines.LongLength, window, truncation,
+            truncation.FirstLineExceedsLimit ? Encoding.UTF8.GetByteCount(lines[window.Start]) : 0);
+    }
+
+    public static ReadTextWindow PlanWindow(long totalFileLines, double offset, double? limit)
+    {
+        if (!double.IsFinite(offset) || limit is { } maximum && !double.IsFinite(maximum))
+            throw new ArgumentOutOfRangeException(nameof(offset), "Offset and limit must be finite.");
+        var start = offset == 0 ? 0 : Math.Max(0, offset - 1);
+        if (start >= totalFileLines)
+            throw new ArgumentOutOfRangeException(null, $"Offset {JavaScriptNumberText.Format(offset)} is beyond end of file ({totalFileLines} lines total)");
+        var end = limit.HasValue ? Math.Min(start + limit.Value, totalFileLines) : totalFileLines;
+        var first = SliceIndex(start, totalFileLines);
+        return new(first, Math.Max(first, SliceIndex(end, totalFileLines)), start, limit.HasValue ? end - start : null);
+    }
+
+    private static long SliceIndex(double value, long length)
+    {
+        var index = Math.Truncate(value);
+        if (index < 0) index += length;
+        return index <= 0 ? 0 : index >= length ? length : (long)index;
     }
 
     public static ReadTextSelection FormatSelection(string path, long totalFileLines, int offset,
-        long? userLimitedLines, TextTruncationResult truncation, long firstLineBytes)
+        long? userLimitedLines, TextTruncationResult truncation, long firstLineBytes) =>
+        FormatSelection(path, totalFileLines, new(offset - 1L, offset - 1L, offset - 1d, userLimitedLines), truncation, firstLineBytes);
+
+    public static ReadTextSelection FormatSelection(string path, long totalFileLines, ReadTextWindow window,
+        TextTruncationResult truncation, long firstLineBytes)
     {
+        var start = window.RawStart + 1;
+        var displayStart = JavaScriptNumberText.Format(start);
         if (truncation.FirstLineExceedsLimit)
-            return new($"[Line {offset} is {Size(firstLineBytes)}, exceeds 50.0KB limit. Use bash: sed -n '{offset}p' {path} | head -c {truncation.MaxBytes}]", truncation);
+        {
+            if (window.RawStart != Math.Truncate(window.RawStart))
+                throw new ArgumentException("The \"string\" argument must be of type string or an instance of Buffer or ArrayBuffer. Received undefined");
+            return new($"[Line {displayStart} is {Size(firstLineBytes)}, exceeds 50.0KB limit. Use bash: sed -n '{displayStart}p' {path} | head -c {truncation.MaxBytes}]", truncation);
+        }
         if (truncation.Truncated)
         {
-            var end = offset + truncation.OutputLines - 1;
-            return new(truncation.Content + $"\n\n[Showing lines {offset}-{end} of {totalFileLines}{(truncation.TruncatedBy == "bytes" ? " (50.0KB limit)" : "")}. Use offset={end + 1} to continue.]", truncation);
+            var end = start + truncation.OutputLines - 1;
+            return new(truncation.Content + $"\n\n[Showing lines {displayStart}-{JavaScriptNumberText.Format(end)} of {totalFileLines}{(truncation.TruncatedBy == "bytes" ? " (50.0KB limit)" : "")}. Use offset={JavaScriptNumberText.Format(end + 1)} to continue.]", truncation);
         }
-        if (userLimitedLines is { } count && offset - 1 + count < totalFileLines)
-            return new($"{truncation.Content}\n\n[{totalFileLines - offset + 1 - count} more lines in file. Use offset={offset + count} to continue.]", null);
+        if (window.UserLimitedLines is { } count && window.RawStart + count < totalFileLines)
+            return new($"{truncation.Content}\n\n[{JavaScriptNumberText.Format(totalFileLines - (window.RawStart + count))} more lines in file. Use offset={JavaScriptNumberText.Format(window.RawStart + count + 1)} to continue.]", null);
         return new(truncation.Content, null);
     }
 

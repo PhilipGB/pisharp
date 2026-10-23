@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Numerics;
 using System.Text.Json;
+using PiSharp.Core;
 
 namespace PiSharp.Runtime.Tools;
 
@@ -31,7 +32,7 @@ internal static class BuiltinScalarConversions
                 null => "null",
                 string text => text,
                 bool boolean => boolean ? "true" : "false",
-                _ when TryNumber(primitive, out var number) => NumberText(number),
+                _ when TryNumber(primitive, out var number) => JavaScriptNumberText.Format(number),
                 _ => value
             };
         if (type == "number")
@@ -109,23 +110,5 @@ internal static class BuiltinScalarConversions
         return false;
     }
 
-    private static string NumberText(double number)
-    {
-        if (number == 0) return "0";
-        var negative = number < 0;
-        var text = Math.Abs(number).ToString("R", CultureInfo.InvariantCulture);
-        var exponentIndex = text.IndexOf('E');
-        var exponent = exponentIndex < 0 ? 0 : int.Parse(text.AsSpan(exponentIndex + 1), CultureInfo.InvariantCulture);
-        var significand = exponentIndex < 0 ? text : text[..exponentIndex];
-        var point = significand.IndexOf('.');
-        var position = (point < 0 ? significand.Length : point) + exponent;
-        var digits = significand.Replace(".", "", StringComparison.Ordinal);
-        var scientificExponent = position - 1;
-        var formatted = scientificExponent is >= -6 and < 21
-            ? position <= 0 ? "0." + new string('0', -position) + digits : position >= digits.Length
-                ? digits + new string('0', position - digits.Length) : digits[..position] + "." + digits[position..]
-            : digits[0] + (digits.Length > 1 ? "." + digits[1..] : "") + "e" +
-              (scientificExponent >= 0 ? "+" : "") + scientificExponent.ToString(CultureInfo.InvariantCulture);
-        return negative ? "-" + formatted : formatted;
-    }
+
 }

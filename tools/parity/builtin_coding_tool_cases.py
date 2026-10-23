@@ -59,6 +59,7 @@ def cases():
     add('read', 'invalid-utf8', {'path': 'file.txt'}, {'file.txt': binary(b'a\xff\xe2\x82\nlast')})
     add('read', 'invalid-utf8-stream', {'path': 'file.txt', 'offset': 70000, 'limit': 4},
         {'file.txt': {'base64Repeat': base64.b64encode(b'\xff' * 20 + b'\n').decode(), 'count': 120000}})
+    add('read', 'huge-single-line', {'path': 'file.txt'}, {'file.txt': repeated('\0', 64 * 1024 * 1024)})
     add('read', 'binary-looking', {'path': 'file.txt'}, {'file.txt': binary(b'a\x00b\x01\nlast')})
     for name, arguments in [
         ('fractional-limit', {'limit': 1.5}), ('sub-line-limit', {'limit': 0.5}),

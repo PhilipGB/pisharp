@@ -50,6 +50,8 @@ internal static class CodingToolDeclarations
                 StringComparer.Ordinal))
             { Context = arguments.Context };
             BuiltinToolArguments.PrepareAndValidate(Name, JsonSchema, prepared);
+            if (Name == "read" && cancellationToken.IsCancellationRequested)
+                throw new OperationCanceledException("Operation aborted", cancellationToken);
             return base.InvokeCoreAsync(prepared, cancellationToken);
         }
     }

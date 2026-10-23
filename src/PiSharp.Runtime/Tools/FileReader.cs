@@ -10,13 +10,15 @@ internal sealed class FileReader(string workingDirectory, ModelImageResizeOption
     private ModelImageResizeOptions? _imageResizeOptions = imageResizeOptions;
     public ModelImageResizeOptions? ImageResizeOptions => Volatile.Read(ref _imageResizeOptions);
     public void SetImageResizeOptions(ModelImageResizeOptions? options) => Volatile.Write(ref _imageResizeOptions, options);
-    private string Resolve(string path) => Path.GetFullPath(path, workingDirectory);
 
-    public async Task<ReadToolOutput> ReadAsync(string path, int offset, int? limit, CancellationToken cancellationToken)
+    public async Task<ReadToolOutput> ReadAsync(string path, double offset, double? limit, CancellationToken cancellationToken)
     {
         try
         {
-            var resolved = Resolve(path);
+            cancellationToken.ThrowIfCancellationRequested();
+            var resolved = CodingToolPaths.ResolveRead(path, workingDirectory);
+            LinuxFileAccess.Require(resolved, 4, "access");
+            if (OperatingSystem.IsLinux() && Directory.Exists(resolved)) throw LinuxFileAccess.Failure(21, "read");
             const int maxImageBytes = 20 * 1024 * 1024;
             await using var stream = new FileStream(resolved, FileMode.Open, FileAccess.Read, FileShare.Read,
                 bufferSize: 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
@@ -29,12 +31,14 @@ internal sealed class FileReader(string workingDirectory, ModelImageResizeOption
                 var bytes = new byte[checked((int)length)];
                 await stream.ReadExactlyAsync(bytes, cancellationToken);
                 var resizeOptions = Volatile.Read(ref _imageResizeOptions);
-                return await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken, resizeOptions), cancellationToken);
+                var image = await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken, resizeOptions), cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                return image;
             }
-            if (offset < 1 || limit is <= 0) throw new ToolFailureException("offset and limit must be positive.");
             if (length > 2 * 1024 * 1024)
             {
-                var selection = await StreamingTextReader.SelectDetailedAsync(resolved, path, offset, limit, cancellationToken);
+                var selection = await StreamingTextReader.SelectDetailedAsync(stream, path, offset, limit, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
                 return new ReadToolOutput(selection.Text, Details: selection.Truncation is { } truncation ? new { truncation } : null);
             }
             var content = new byte[checked((int)length)];
@@ -42,9 +46,14 @@ internal sealed class FileReader(string workingDirectory, ModelImageResizeOption
             await stream.ReadExactlyAsync(content, cancellationToken);
             var text = Encoding.UTF8.GetString(content);
             var selected = ReadTextPlanner.SelectDetailed(text, path, offset, limit);
+            cancellationToken.ThrowIfCancellationRequested();
             return new ReadToolOutput(selected.Text, Details: selected.Truncation is { } details ? new { truncation = details } : null);
         }
-        catch (ArgumentOutOfRangeException e) { throw new ToolFailureException(e.Message.Split('\n')[0], inner: e); }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException("Operation aborted", cancellationToken);
+        }
+        catch (ArgumentOutOfRangeException e) { throw new ToolFailureException(e.Message, inner: e); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             throw new ToolFailureException($"Error reading {path}: {e.Message}", inner: e);

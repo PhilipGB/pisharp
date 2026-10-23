@@ -18,6 +18,17 @@ internal static class StreamingTextReader
     {
         await using var stream = new FileStream(absolute, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
             64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        return await SelectDetailedAsync(stream, displayPath, offset, limit, cancellationToken);
+    }
+
+    public static async Task<ReadTextSelection> SelectDetailedAsync(FileStream stream, string displayPath, double offset,
+        double? limit, CancellationToken cancellationToken)
+    {
+        var totalFileLines = await CountFileLinesAsync(stream, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        var window = ReadTextPlanner.PlanWindow(totalFileLines, offset, limit);
+        if (window.Start == window.End)
+            return ReadTextPlanner.FormatSelection(displayPath, totalFileLines, window, TextOutputTruncator.Head(""), 0);
         // No decoder preamble: Buffer.toString preserves a UTF-8 BOM and replaces malformed bytes.
         using var reader = new StreamReader(stream, new UTF8Encoding(false), detectEncodingFromByteOrderMarks: false,
             bufferSize: 32 * 1024, leaveOpen: true);
@@ -32,7 +43,7 @@ internal static class StreamingTextReader
         var lineStarted = false;
         var previousHighSurrogate = false;
 
-        bool IsSelected() => fileLines + 1 >= offset && (limit is null || fileLines + 1 - offset < limit.Value);
+        bool IsSelected() => fileLines >= window.Start && fileLines < window.End;
         void Append(char value)
         {
             // Two extra rows prove line truncation even for a prefix made entirely of empty rows.
@@ -61,12 +72,18 @@ internal static class StreamingTextReader
         }
 
         int count;
-        while ((count = await reader.ReadAsync(block.AsMemory(), cancellationToken)) > 0)
+        var reachedEnd = false;
+        while (!reachedEnd && (count = await reader.ReadAsync(block.AsMemory(), cancellationToken)) > 0)
         {
             for (var index = 0; index < count; index++)
             {
                 var character = block[index];
-                if (character == '\n') { FinishLine(); continue; }
+                if (character == '\n')
+                {
+                    FinishLine();
+                    if (fileLines >= window.End) { reachedEnd = true; break; }
+                    continue;
+                }
                 // Count surrogate pairs across decoder chunks as one four-byte scalar.
                 lineBytes += char.IsLowSurrogate(character) && previousHighSurrogate ? 1 :
                     character <= 0x7f ? 1 : character <= 0x7ff ? 2 : 3;
@@ -75,15 +92,28 @@ internal static class StreamingTextReader
             }
             cancellationToken.ThrowIfCancellationRequested();
         }
-        FinishLine(); // split('\n') includes a final row even after the final newline.
-        if (offset > fileLines)
-            throw new ArgumentOutOfRangeException(nameof(offset), $"Offset {offset} is beyond end of file ({fileLines} lines total)");
+        if (!reachedEnd) FinishLine(); // split('\n') includes a final row even after the final newline.
         var truncation = TextOutputTruncator.Head(prefix.ToString()) with
         {
             TotalLines = selectedBytes == 0 ? 0 : selectedLines - (lastEmpty ? 1 : 0),
             TotalBytes = selectedBytes
         };
-        return ReadTextPlanner.FormatSelection(displayPath, fileLines, offset, limit.HasValue ? selectedLines : null,
-            truncation, firstLineBytes);
+        cancellationToken.ThrowIfCancellationRequested();
+        return ReadTextPlanner.FormatSelection(displayPath, totalFileLines, window, truncation, firstLineBytes);
+    }
+
+    private static async Task<long> CountFileLinesAsync(FileStream stream, CancellationToken cancellationToken)
+    {
+        stream.Position = 0;
+        var block = new byte[64 * 1024];
+        long lines = 1;
+        int count;
+        while ((count = await stream.ReadAsync(block.AsMemory(), cancellationToken)) > 0)
+        {
+            for (var index = 0; index < count; index++)
+                if (block[index] == '\n') lines++;
+        }
+        stream.Position = 0;
+        return lines;
     }
 }

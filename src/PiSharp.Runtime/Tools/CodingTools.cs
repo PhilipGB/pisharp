@@ -72,8 +72,8 @@ public sealed class CodingTools
     [Description("Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.")]
     private async Task<object> ReadForTool(
         [Description("Path to the file to read (relative or absolute)")] string path,
-        [Description("Line number to start reading from (1-indexed)")] int offset = 1,
-        [Description("Maximum number of lines to read")] int? limit = null,
+        [Description("Line number to start reading from (1-indexed)")] double offset = 1,
+        [Description("Maximum number of lines to read")] double? limit = null,
         CancellationToken cancellationToken = default)
     {
         var output = await _reader.ReadAsync(path, offset, limit, cancellationToken);

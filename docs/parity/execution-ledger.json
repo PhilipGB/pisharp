@@ -128,7 +128,14 @@
     "engineering_duration": {
       "status": "ongoing",
       "active_seconds": null,
-      "policy": "Record measured active work, distinguish idle/interrupted time; do not equate eight-hour target with actual duration."
+      "policy": "Record measured active work, distinguish idle/interrupted time; do not equate eight-hour target with actual duration.",
+      "excluded_inactive_intervals": [
+        {
+          "last_active_observation": "2026-10-22T19:07:47Z",
+          "resumed_at": "2026-10-23T07:13:30Z",
+          "reason": "No engineering is claimed between these observed goal turns. This interval is excluded from active duration."
+        }
+      ]
     },
     "broader_pi_parity": "in_progress",
     "harness_acceptance": "docs/parity/fixtures/builtin-coding-tool-harness-2026-10-22.json",
@@ -239,6 +246,74 @@
         "skipped": 0
       },
       "remaining": "Bash live cumulative snapshots and process lifecycle/cancellation acceptance; all-seven physical provider/session workflow and full gates."
+    },
+    "expanded_case_inventory": {
+      "total": 238,
+      "per_tool": {
+        "read": 72,
+        "write": 21,
+        "edit": 33,
+        "bash": 28,
+        "grep": 32,
+        "find": 27,
+        "ls": 25
+      },
+      "source": "abb00efc05347198686fe7a795137b6175a982eb",
+      "same_pi_control": {
+        "passed": 238,
+        "total": 238,
+        "piSharpUsed": false
+      },
+      "read_before": {
+        "passed": 33,
+        "total": 72,
+        "dirty_paths": []
+      }
+    },
+    "read_text_contract": {
+      "status": "verified_for_defined_cases",
+      "fixture": "docs/parity/fixtures/builtin-coding-tool-read-text-2026-10-22.json",
+      "source_captured_additional_cases": 55,
+      "total_pinned_text_file_cases": 68,
+      "regression_before": {
+        "failed": 38,
+        "passed": 30
+      },
+      "after_numeric": {
+        "failed": 17,
+        "passed": 195,
+        "total": 212
+      },
+      "related_after": {
+        "passed": 230,
+        "failed": 0,
+        "skipped": 0
+      },
+      "streaming_safety": {
+        "passed": 3,
+        "single_line_bytes": 67108864,
+        "maximum_read_buffer": 65536,
+        "scope": "Direct streaming component; kernel-backed fixture with deterministic cancellation barriers. Pinned mid-read cancellation comparison remains pending."
+      },
+      "remaining": "Image sampling/orientation/format/profile acceptance, physical image provider matrix and remaining tool integration/hardening.",
+      "hardened_selection_after": {
+        "passed": 75,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "current_case_inventory": {
+      "total": 239,
+      "per_tool": {
+        "read": 73,
+        "write": 21,
+        "edit": 33,
+        "bash": 28,
+        "grep": 32,
+        "find": 27,
+        "ls": 25
+      },
+      "new_huge_line_evidence": "pending"
     }
   },
   "plan_received": true,

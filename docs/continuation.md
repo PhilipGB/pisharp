@@ -40,7 +40,11 @@ failures before correction). Related checks pass 201/201; selection/hooks/Codemo
 pass 60/60. JSON hid structured content via `JsonIgnore`; two wire tests fail
 before the additive correction, then 23/23 wire/session checks pass. The corrected
 native probe passes four selected empty/truncated read cases at clean source
-`35601464`. Next complete read numeric/path/error/image behavior.
+`35601464`. Read text/path/error corrections now pass 68 pinned actual-function
+cases (38 fail before); the related selection passes 230/230. Three bounded
+streaming/cancellation checks pass, including a 64 MiB single line with at most
+64 KiB read buffers. Read image sampling/orientation, broader image/provider
+acceptance and remaining hardening are next. F remains in progress.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required
@@ -49,7 +53,8 @@ mandatory after direct function tests pass.
 
 Started at 2026-10-22 17:44:40 UTC; record active engineering duration truthfully,
 excluding interruptions/idle intervals. Raw work is ignored under
-`artifacts/parity/builtin-coding-tools-2026-10-22/`. Never modify/stage/delete
+`artifacts/parity/builtin-coding-tools-2026-10-22/`. Exclude the interval between
+2026-10-22 19:07:47 UTC and 2026-10-23 07:13:30 UTC from active duration. Never modify/stage/delete
 `test.pdf`; stage intended paths explicitly. Publish new draft PR #22 and
 verify final-head push and PR CI. Do not merge #22 or start #23. Global parity
 remains `in_progress`.

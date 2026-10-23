@@ -378,6 +378,31 @@ Linux filesystem-error inputs before further product corrections. The corpus
 now contains 238 cases: read 72, write 21, edit 33, Bash 28, grep 32, find 27,
 ls 25. Eleven harness regressions pass; new oracle/control runs follow. This
 input expansion establishes no new product acceptance.
+
+The expanded same-Pi control passes 238/238 at clean harness source `abb00efc`.
+The corresponding native read baseline passes 33/72. The additional
+[55 source-captured text/filesystem results](builtin-coding-tool-read-text-2026-10-22.json)
+combine with the earlier thirteen to cover 68 actual-function cases. The old
+implementation fails 38/68. Numeric-window corrections reduce the remaining
+failures to seventeen path/error cases; after those corrections, all 68 pass
+and the related selection passes 230/230, zero skips.
+
+Tool invocation accepts Pi's numeric offset/limit schema, including its slice
+and fractional-display arithmetic. Existing integer public facade signatures
+remain unchanged. Large files use bounded counting/selection passes on the
+same open file, preserving decoded UTF-8 counts and avoiding whole-line/file
+allocation. Pi's `@`, Unicode-space, file-URL and filename-fallback resolution
+is implemented. Linux access errors come from the kernel's `access` check;
+directories, missing targets, ancestor permissions and symlink loops retain
+the pinned error categories. No permission check is bypassed.
+
+Three additional streaming acceptance tests pass: deterministic cancellation
+while counting and while awaiting selected-content I/O, and a 64 MiB single
+line whose read requests never exceed 64 KiB. These are component/resource
+checks, not additional pinned-Pi cancellation comparisons. A dedicated huge
+line input brings the corpus to 239 cases (read 73); fresh differential evidence
+follows. Image sampling/orientation, full provider image acceptance and remaining
+hardening are still open, so checkpoint F is not complete.
 A forced restore using the writable
 NuGet HTTP cache passes and clears the earlier cached audit warnings; final
 warning-as-error gates have not yet been claimed. No dependency upgrade or
@@ -403,6 +428,9 @@ full repository gates and fresh final-head push/PR CI.
 Started 2026-10-22 17:44:40 UTC. Engineering is ongoing. Final active duration has
 not yet been measured and must not be inferred from the eight-hour target.
 Idle or externally interrupted intervals must be excluded or identified.
+No engineering is claimed between the last active observation on 2026-10-22
+19:07:47 UTC and resumption on 2026-10-23 07:13:30 UTC. That interval is excluded
+from active engineering duration.
 
 Stable checkpoints are A–T from the mission. A (verified merge) and B (fresh
 branch), C (initial inventory), D (harness) and E (shared contracts) are complete.
