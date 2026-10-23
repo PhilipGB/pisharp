@@ -1138,3 +1138,16 @@ content and details for every accepted alternative. No sorting, inferred
 permutation or relaxed differential comparison was introduced. All 182 search
 regressions/provenance checks now pass. Five fresh reliability repetitions remain
 pending on the updated, committed fixtures.
+
+### Stress and safety checkpoint acceptance
+
+At clean `8fb933e7`, five bounded repetitions each pass 263 existing safety,
+large-input, cancellation, concurrency, image, MAF and persistence checks:
+1,315 passes, zero failures/skips/timeouts and no abandoned full-output files.
+The initial four ordering failures remain recorded separately. Clean `cdebf8ff`
+also passes all three physical non-idempotent Bash cancellation/restart workflows,
+with three strict same-Pi controls. Each product makes ten requests across two
+actual CLI processes, retains eight correlated outcomes and appends exactly one
+byte. Private write permissions remain an explicit strict-equivalence exclusion.
+See the [safety acceptance](builtin-coding-tool-safety-acceptance-2026-10-22.json).
+P is complete; Q–T remain open.

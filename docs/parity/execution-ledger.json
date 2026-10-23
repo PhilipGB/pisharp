@@ -89,12 +89,12 @@
       {
         "id": "P",
         "name": "Stress and safety",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "Q",
         "name": "Full validation",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "R",
@@ -897,7 +897,7 @@
       }
     },
     "stress_and_safety": {
-      "status": "in_progress",
+      "status": "verified_defined_acceptance",
       "source_agent_fixture": "docs/parity/fixtures/builtin-coding-tool-concurrent-agent-2026-10-22.json",
       "native_compaction_selection": {
         "passed": 114,
@@ -912,11 +912,7 @@
         "The concurrent workflow fails before the RPC boundary correction.",
         "The existing repeated-tool-loop regression and a focused presentation-details regression fail before the budget correction."
       ],
-      "pending": [
-        "Five bounded reliability repetitions.",
-        "Clean-head physical cancellation/restart acceptance.",
-        "Full repository validation."
-      ],
+      "pending": [],
       "initial_reliability_attempt": {
         "passed": 258,
         "failed": 4,
@@ -926,6 +922,16 @@
         "distinct_existing_cases_observed": 5,
         "repeated_source_observations": 640,
         "search_regressions_after": 182
+      },
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-safety-acceptance-2026-10-22.json",
+      "reliability": {
+        "source": "8fb933e7ea17def3bf6e36a17a15fe69e2ab64de",
+        "repetitions": 5,
+        "checks_per_repetition": 263,
+        "total_passed": 1315,
+        "failed": 0,
+        "skipped": 0,
+        "abandoned_output_files": 0
       }
     }
   },

@@ -10,8 +10,8 @@ head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
 passed 2,711 tests and both MCP jobs before the expected-head merge.
 
 Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–O are complete;
-P (stress and safety) is in progress; Q–T remain pending. Preserve this
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–P are complete;
+Q (full validation) is in progress; R–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 

@@ -1,0 +1,285 @@
+{
+  "schema": 1,
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "reliability": {
+    "schema": 1,
+    "piSharpSha": "8fb933e7ea17def3bf6e36a17a15fe69e2ab64de",
+    "dirtyPaths": [],
+    "startedAt": "2026-10-23T23:08:49.540894+00:00",
+    "classes": [
+      "FileMutationCoordinationTests",
+      "FileMutationAliasTests",
+      "BashProcessLifetimeTests",
+      "BuiltinBashResultParityTests",
+      "BashToolUpdateParityTests",
+      "ReadStreamingSafetyTests",
+      "ReadImageCancellationTests",
+      "ReadImageProcessorTests",
+      "BuiltinSearchParityTests",
+      "GrepCancellationTests",
+      "FindCancellationTests",
+      "LsCancellationTests",
+      "SearchPreparationCancellationTests",
+      "BuiltinToolWorkflowTests",
+      "BuiltinConcurrencyReliabilityTests",
+      "ReadImageToolTests"
+    ],
+    "iterations": [
+      {
+        "iteration": 1,
+        "elapsedSeconds": 11.593,
+        "exitCode": 0,
+        "timedOut": false,
+        "counters": {
+          "total": "263",
+          "executed": "263",
+          "passed": "263",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "abandonedFullOutputFiles": [],
+        "passed": true
+      },
+      {
+        "iteration": 2,
+        "elapsedSeconds": 10.634,
+        "exitCode": 0,
+        "timedOut": false,
+        "counters": {
+          "total": "263",
+          "executed": "263",
+          "passed": "263",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "abandonedFullOutputFiles": [],
+        "passed": true
+      },
+      {
+        "iteration": 3,
+        "elapsedSeconds": 9.821,
+        "exitCode": 0,
+        "timedOut": false,
+        "counters": {
+          "total": "263",
+          "executed": "263",
+          "passed": "263",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "abandonedFullOutputFiles": [],
+        "passed": true
+      },
+      {
+        "iteration": 4,
+        "elapsedSeconds": 10.529,
+        "exitCode": 0,
+        "timedOut": false,
+        "counters": {
+          "total": "263",
+          "executed": "263",
+          "passed": "263",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "abandonedFullOutputFiles": [],
+        "passed": true
+      },
+      {
+        "iteration": 5,
+        "elapsedSeconds": 9.488,
+        "exitCode": 0,
+        "timedOut": false,
+        "counters": {
+          "total": "263",
+          "executed": "263",
+          "passed": "263",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "abandonedFullOutputFiles": [],
+        "passed": true
+      }
+    ],
+    "finishedAt": "2026-10-23T23:09:41.608419+00:00",
+    "passed": true
+  },
+  "initialReliabilityAttempt": {
+    "piSharpSha": "cdebf8ff662e636f2055ccf2c1bad8c7672108f9",
+    "iterations": [
+      {
+        "iteration": 1,
+        "elapsedSeconds": 24.972,
+        "exitCode": 1,
+        "timedOut": false,
+        "counters": {
+          "total": "262",
+          "executed": "262",
+          "passed": "258",
+          "failed": "4",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "abandonedFullOutputFiles": [],
+        "passed": false
+      }
+    ],
+    "classification": "Four complete search encounter-order differences independently reproduced by pinned Pi; original expectations preserved and source-witnessed alternatives added."
+  },
+  "orderingWitness": "docs/parity/fixtures/builtin-coding-tool-search-order-2026-10-22.json",
+  "concurrentAgentWitness": "docs/parity/fixtures/builtin-coding-tool-concurrent-agent-2026-10-22.json",
+  "compactionAndRpcRegressionSelection": {
+    "passed": 114,
+    "failed": 0,
+    "skipped": 0
+  },
+  "physicalCancellation": {
+    "piSharpSha": "cdebf8ff662e636f2055ccf2c1bad8c7672108f9",
+    "dirtyPaths": [],
+    "startedAt": "2026-10-23T23:03:20.559786+00:00",
+    "finishedAt": "2026-10-23T23:03:50.702769+00:00",
+    "barrier": "HTTP response headers sent after eight completed tools; hold continuation response body, RPC abort, settle, exit CLI, restart from actual session file.",
+    "cases": {
+      "openai-responses": {
+        "requestsPerProduct": 10,
+        "canonicalResultsPerProduct": 8,
+        "actualCliProcessesPerProduct": 2,
+        "nonIdempotentAppend": {
+          "text": "x",
+          "mode": 420
+        },
+        "comparison": {
+          "supportedContractPass": true,
+          "strictPass": false,
+          "intentionalPrivateCreationExclusion": true,
+          "differences": [],
+          "strictDifferences": [
+            "finalFiles/generated/result.txt/mode"
+          ]
+        },
+        "samePiControl": {
+          "supportedContractPass": true,
+          "strictPass": true,
+          "intentionalPrivateCreationExclusion": false,
+          "differences": [],
+          "strictDifferences": []
+        }
+      },
+      "openai-completions": {
+        "requestsPerProduct": 10,
+        "canonicalResultsPerProduct": 8,
+        "actualCliProcessesPerProduct": 2,
+        "nonIdempotentAppend": {
+          "text": "x",
+          "mode": 420
+        },
+        "comparison": {
+          "supportedContractPass": true,
+          "strictPass": false,
+          "intentionalPrivateCreationExclusion": true,
+          "differences": [],
+          "strictDifferences": [
+            "finalFiles/generated/result.txt/mode"
+          ]
+        },
+        "samePiControl": {
+          "supportedContractPass": true,
+          "strictPass": true,
+          "intentionalPrivateCreationExclusion": false,
+          "differences": [],
+          "strictDifferences": []
+        }
+      },
+      "anthropic-messages": {
+        "requestsPerProduct": 10,
+        "canonicalResultsPerProduct": 8,
+        "actualCliProcessesPerProduct": 2,
+        "nonIdempotentAppend": {
+          "text": "x",
+          "mode": 420
+        },
+        "comparison": {
+          "supportedContractPass": true,
+          "strictPass": false,
+          "intentionalPrivateCreationExclusion": true,
+          "differences": [],
+          "strictDifferences": [
+            "finalFiles/generated/result.txt/mode"
+          ]
+        },
+        "samePiControl": {
+          "supportedContractPass": true,
+          "strictPass": true,
+          "intentionalPrivateCreationExclusion": false,
+          "differences": [],
+          "strictDifferences": []
+        }
+      }
+    }
+  }
+}
