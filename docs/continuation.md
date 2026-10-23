@@ -10,8 +10,8 @@ head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
 passed 2,711 tests and both MCP jobs before the expected-head merge.
 
 Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–E are complete;
-F (read) is in progress; G–T remain pending. Preserve this
+Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–F are complete;
+G (write) is in progress; H–T remain pending. Preserve this
 twenty-checkpoint denominator for progress reports. Tool and differential case
 counts are separate measures and must not be substituted for checkpoint counts.
 
@@ -72,7 +72,14 @@ inputs establish two retained allocation-safety differences at `f33ffd1f`; they
 remain failed strict comparisons and are counted separately. A post-decode barrier
 reproduces delayed cancellation; the cancellable worker await fixes it, and 149
 related read checks pass. Two pinned pending-read abort cases are captured without
-inflating the direct corpus count. Complete read comparison/control is next. F remains in progress.
+inflating the direct corpus count. Complete read comparison/control is next. The supported read checkpoint is complete; broader M–P acceptance remains open.
+Clean `9f733919` passes 119/121 read cases: 109 strict and ten explicit JPEG
+equivalents. The two allocation safety cases stay failed strict comparisons and
+are separately excluded. The full same-Pi control is 121/121 strict. The committed
+read acceptance receipt retains both outputs, filesystem state, source SHAs and
+all differences. Continue with write permissions, path semantics and mutation
+serialization; retain private new-file modes and atomic replacement unless a
+change preserves their existing safety guarantees.
 Do not count component vectors as tool cases.
 Do not treat declaration equality as complete callable-schema parity: numeric
 tool semantics still need correction. Required

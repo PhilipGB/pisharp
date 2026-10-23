@@ -544,8 +544,11 @@ operation barriers are released. Reproduce with the existing source probe and
 `--read-cancellation-only` using the frozen image asset fixture. These source
 barriers and the native post-decode barrier are distinct stage tests; they are
 not added to the direct differential case count. Both yield `Operation aborted`,
-no updates and unchanged input. Full read comparison/control is next; broader
-MAF cancellation, concurrency and reliability remain acceptance work in M–P.
+no updates and unchanged input. The [complete read receipt](builtin-coding-tool-read-acceptance-2026-10-22.json)
+at clean `9f733919` records 119/121 passing contracts: 109 strict, ten named JPEG
+equivalents and two explicit allocation safety exclusions, with zero unresolved
+differences. Its same-Pi control is 121/121 strict. This closes the supported read
+checkpoint. Broader MAF cancellation, concurrency and reliability remain M–P work.
 
 ## Shared integration and safety gates
 
@@ -573,7 +576,7 @@ from active engineering duration.
 
 Stable checkpoints are A–T from the mission. A (verified merge) and B (fresh
 branch), C (initial inventory), D (harness) and E (shared contracts) are complete.
-F (read) is in progress; G–T are pending. Completing
+F (supported read) is complete; G (write) is in progress; H–T are pending. Completing
 an inventory or passing local tests does not close the milestone. PR #22 must
 be published as draft and remain unmerged; PR #23 is excluded. Global Pi parity
 remains `in_progress`.

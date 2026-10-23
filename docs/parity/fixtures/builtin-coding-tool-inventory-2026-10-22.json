@@ -8,6 +8,19 @@
   "platform": "Linux",
   "createdBeforeProductChanges": true,
   "sourceReferencePolicy": "Paths are relative to pinned Pi unless PiSharp implementation paths. Declaration values extracted by importing all seven pinned definitions with upstream source-resolver.ts; no stale dist fallback.",
+  "acceptanceUpdates": {
+    "read": {
+      "source": "9f73391992b60838a77d6c7c1126c063b4a1b919",
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json",
+      "status": "supported read checkpoint verified; shared M–P acceptance pending",
+      "passed": 119,
+      "total": 121,
+      "strict": 109,
+      "jpeg_equivalent": 10,
+      "intentional_safety_exclusions": 2,
+      "control_strict_passed": 121
+    }
+  },
   "tools": {
     "read": {
       "implementation": [

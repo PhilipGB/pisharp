@@ -39,12 +39,12 @@
       {
         "id": "F",
         "name": "Read",
-        "status": "in_progress"
+        "status": "complete"
       },
       {
         "id": "G",
         "name": "Write",
-        "status": "pending"
+        "status": "in_progress"
       },
       {
         "id": "H",
@@ -424,7 +424,23 @@
         "barriers": "Pi: held operations.readFile after physical read. Native: held after actual Skia decode. Distinct stage tests, not added to direct corpus count.",
         "native_correction": "Cancellable await settles before worker cleanup; worker retains ownership of bounded buffers."
       },
-      "harness_guards_passed": 19
+      "harness_guards_passed": 19,
+      "complete_read_acceptance": {
+        "source": "9f73391992b60838a77d6c7c1126c063b4a1b919",
+        "passed": 119,
+        "total": 121,
+        "strict_passed": 109,
+        "jpeg_codec_equivalent": 10,
+        "intentional_safety_deviations": 2,
+        "unresolved": 0,
+        "same_pi_control": {
+          "passed": 121,
+          "total": 121,
+          "strict": true
+        },
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json",
+        "remaining_cross_cutting": "M–P integration, cancellation, concurrency and reliability gates remain open."
+      }
     }
   },
   "plan_received": true,

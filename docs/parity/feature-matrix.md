@@ -15,9 +15,12 @@ search/list cases. Input declarations now match the seven source schemas, with
 argument preparation/validation regressions. Primitive conversion matches 93
 pinned vectors; common head/tail truncation matches 140. Read/Bash result metadata,
 registered output schemas, sampling policy and JSON/RPC/session preservation have
-focused passing evidence in the receipt. Checkpoints A–E are complete; F (read)
-is in progress. Complete tool behavior and the mandatory physical integrations
-remain open. These scoped results do not verify a whole tool.
+focused passing evidence in the receipt. Checkpoints A–F are complete; G (write)
+is in progress. The [read acceptance](fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json)
+passes 119/121 cases (109 strict, ten JPEG equivalents), with two separately
+excluded allocation safety limits and a 121/121 strict same-Pi control. Read
+images reach Responses, Chat Completions and Anthropic through local HTTP tests.
+Broader integration/reliability and the other six tools remain open.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 
