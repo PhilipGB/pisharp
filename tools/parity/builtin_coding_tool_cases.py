@@ -170,6 +170,33 @@ def cases():
     add('write', 'dangling-symlink', {'path': 'alias', 'content': 'new target'}, symlinks={'alias': 'target'})
     add('write', 'hardlink', {'path': 'file.txt', 'content': 'replacement'}, {'file.txt': 'original'}, hardlinks={'alias': 'file.txt'})
     add('write', 'existing-mode', {'path': 'file.txt', 'content': 'replacement'}, {'file.txt': 'original'}, modes={'file.txt': 0o640})
+    add('write', 'unicode-space-path', {'path': 'file\u00a0name.txt', 'content': 'spaces\n'})
+    add('write', 'file-url', {'path': 'file://{WORKSPACE}/nested/file.txt', 'content': 'URI\n'})
+    add('write', 'relative-normalization', {'path': './unused/../file.txt', 'content': 'normalized\n'})
+    add('write', 'empty-path', {'path': '', 'content': 'bad'})
+    add('write', 'nul-path', {'path': 'invalid\x00path', 'content': 'bad'})
+    add('write', 'long-name', {'path': '\u03c0' * 130, 'content': 'bad'})
+    add('write', 'symlink-loop', {'path': 'alias', 'content': 'bad'}, symlinks={'alias': 'alias'})
+    add('write', 'symlink-directory', {'path': 'alias', 'content': 'bad'},
+        directories={'directory': 0o755}, symlinks={'alias': 'directory'})
+    add('write', 'symlink-parent-existing', {'path': 'alias/file', 'content': 'replacement'},
+        {'directory/file': 'original'}, symlinks={'alias': 'directory'})
+    add('write', 'symlink-parent-new', {'path': 'alias/file', 'content': 'new'},
+        directories={'directory': 0o755}, symlinks={'alias': 'directory'})
+    add('write', 'symlink-missing-target-parent', {'path': 'alias', 'content': 'bad'},
+        symlinks={'alias': 'missing/target'})
+    add('write', 'symlink-readonly-target', {'path': 'alias', 'content': 'bad'},
+        {'target': 'original'}, symlinks={'alias': 'target'}, modes={'target': 0o444})
+    add('write', 'symlink-file-parent', {'path': 'alias/child', 'content': 'bad'},
+        {'target': 'original'}, symlinks={'alias': 'target'})
+    add('write', 'symlink-loop-parent', {'path': 'alias/child', 'content': 'bad'}, symlinks={'alias': 'alias'})
+    add('write', 'readonly-directory-existing', {'path': 'dir/file', 'content': 'replacement'},
+        {'dir/file': 'original'}, modes={'dir': 0o555})
+    add('write', 'readonly-ancestor', {'path': 'secret/nested/file', 'content': 'bad'}, directories={'secret': 0o500})
+    add('write', 'write-only-file', {'path': 'file.txt', 'content': 'replacement'},
+        {'file.txt': 'original'}, modes={'file.txt': 0o200})
+    add('write', 'inaccessible-parent', {'path': 'secret/file', 'content': 'bad'},
+        {'secret/file': 'original'}, modes={'secret': 0o600})
     add('write', 'missing-content', {'path': 'file.txt'}, {'file.txt': 'original'})
     add('write', 'invalid-content-type', {'path': 'file.txt', 'content': {}}, {'file.txt': 'original'})
     add('write', 'invalid-path-type', {'path': [], 'content': 'bad'})
