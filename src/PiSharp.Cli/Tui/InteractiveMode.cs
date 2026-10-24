@@ -38,13 +38,14 @@ internal static class InteractiveMode
         var shutdownRequested = 0;
         TerminalSessionNavigation? sessionNavigationReference = null;
         var terminalThinkingSelector = editor is null ? null : new TerminalThinkingSelector(editor);
+        var settingsCommands = new TerminalSettingsCommands(agentDirectory, projectBinding, modelBinding, conversationBinding,
+            modelTransitions, presentation, execution);
         var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding,
-            () => Console.Out, terminalThinkingSelector);
+            () => Console.Out, terminalThinkingSelector, editor,
+            value => settingsCommands.SaveSettingAsync(projectScope: false, "enabledModels", value));
         var sessionNavigation = new TerminalSessionNavigation(projectBinding, conversationBinding, projectTransitions,
             presentation, AdoptProjectSession);
         sessionNavigationReference = sessionNavigation;
-        var settingsCommands = new TerminalSettingsCommands(agentDirectory, projectBinding, modelBinding, conversationBinding,
-            modelTransitions, presentation, execution);
         var modelSelection = new TerminalModelSelectionCommands(modelRuntime, modelRuntimeController, projectBinding, modelBinding,
             modelTransitions, presentation, settingsCommands);
         var inputActions = new TerminalInputActions(projectBinding, conversationBinding, presentation);

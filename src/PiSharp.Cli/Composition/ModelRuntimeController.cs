@@ -108,10 +108,18 @@ internal sealed class ModelRuntimeController(
 
     public string ResolveThinkingLevelForModelSwitch(ModelSelection selection, string currentLevel)
     {
-        var settings = getSettings();
-        var preferred = settings.GetModelThinkingLevel(selection) ?? settings.DefaultThinkingLevel ?? currentLevel;
-        return ThinkingLevels.ValidateForModel(preferred, selection.Model.Reasoning,
+        var requested = ResolveRequestedThinkingLevelForModelSwitch(selection, currentLevel);
+        return ThinkingLevels.ValidateForModel(requested, selection.Model.Reasoning,
             selection.Model.ThinkingLevelMap);
+    }
+
+    internal string ResolveRequestedThinkingLevelForModelSwitch(ModelSelection selection, string currentLevel)
+    {
+        var settings = getSettings();
+        return selection.RequestedThinkingLevel ??
+            providers.GetScopeThinkingLevel(selection.Provider.Id, selection.Model.Id) ??
+            settings.GetModelThinkingLevel(selection) ??
+            settings.DefaultThinkingLevel ?? currentLevel ?? ThinkingLevels.Default;
     }
 
     public async Task<bool> ApplySelectionAsync(ModelSelection selection, string thinkingLevel,

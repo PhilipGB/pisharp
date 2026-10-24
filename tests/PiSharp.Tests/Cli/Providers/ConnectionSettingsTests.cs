@@ -34,7 +34,7 @@ public sealed class ConnectionSettingsTests
         var cloud = ConnectionSettings.Resolve(false, Environment(("OPENAI_API_KEY", "cloud-key")));
         Assert.Null(cloud.Endpoint);
         Assert.Equal("cloud-key", cloud.ApiKey);
-        Assert.Equal("gpt-4o-mini", cloud.Model);
+        Assert.Equal("gpt-5.5", cloud.Model);
         Assert.Equal("not-needed", ConnectionSettings.Resolve(false,
             Environment(("PISHARP_BASE_URL", "http://localhost:8000/v1"))).ApiKey);
     }

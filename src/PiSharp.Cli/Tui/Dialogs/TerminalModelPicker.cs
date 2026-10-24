@@ -62,7 +62,7 @@ internal sealed class TerminalModelPicker(ProviderModelRuntime modelRuntime, Ter
         catch (Exception error)
         {
             var safe = SecretRedactor.Redact(error.Message);
-            return new(cached, modelRuntime.Scope.Count == 0 ? null : cached.Where(option => IsInScope(option.Value)).ToArray(),
+            return new(cached, ScopeOptions(cached),
                 $"Could not refresh model catalogs: {safe}", IsSuccess: false);
         }
     }
@@ -85,7 +85,7 @@ internal sealed class TerminalModelPicker(ProviderModelRuntime modelRuntime, Ter
             .ThenBy(model => model.Provider, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         var options = ordered.Select(model => ToOption(model, current, defaultModelKey)).ToArray();
-        var scopedOptions = modelRuntime.Scope.Count == 0 ? null : options.Where(option => IsInScope(option.Value)).ToArray();
+        var scopedOptions = ScopeOptions(options);
         return new(options, scopedOptions, "", IsSuccess: true);
     }
 
@@ -99,11 +99,17 @@ internal sealed class TerminalModelPicker(ProviderModelRuntime modelRuntime, Ter
             IsDefault: Key(provider, model.Id).Equals(defaultModelKey, StringComparison.OrdinalIgnoreCase));
     }
 
-    private bool IsInScope(ModelDescriptor model)
+    private IReadOnlyList<TerminalSelectionOption<ModelDescriptor>>? ScopeOptions(
+        IEnumerable<TerminalSelectionOption<ModelDescriptor>> options)
     {
-        var provider = model.Provider ?? "";
-        return modelRuntime.Scope.Any(pattern => ModelScopeGlob.Matches(pattern, $"{provider}/{model.Id}") ||
-            ModelScopeGlob.Matches(pattern, model.Id));
+        if (!modelRuntime.HasScope) return null;
+        var all = options.ToArray();
+        var resolved = ModelScopeResolver.Resolve(modelRuntime.Scope, all.Select(option => option.Value).ToArray());
+        var byKey = all.GroupBy(option => Key(option.Value.Provider ?? "", option.Value.Id),
+                StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+        return resolved.Models.Select(item => Key(item.Model.Provider ?? "", item.Model.Id))
+            .Where(byKey.ContainsKey).Select(key => byKey[key]).ToArray();
     }
 
     private static bool SameModel(ModelDescriptor model, string provider, string id) =>

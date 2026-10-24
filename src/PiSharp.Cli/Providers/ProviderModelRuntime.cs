@@ -22,6 +22,8 @@ public sealed record ModelSelection(ProviderProfile Provider, ModelDescriptor Mo
     bool Authenticated, string AuthSource,
     Func<CancellationToken, Task<(string Access, string AccountId)>>? OAuthCredentialResolver = null)
 {
+    public string? RequestedThinkingLevel { get; init; }
+    public string? ResolutionWarning { get; init; }
     public string? AnthropicAuthToken { get; init; }
     public bool AnthropicIsOAuthToken { get; init; }
     public AnthropicWorkloadIdentityOptions? AnthropicWorkloadIdentity { get; init; }
@@ -56,6 +58,7 @@ public sealed class ProviderModelRuntime
     private readonly LlamaRouterDiscovery _llamaDiscovery;
     private readonly AvailableModelSnapshot _available;
     private IReadOnlyList<string> _scope;
+    private bool _scopeConfigured;
     private VirtualModelRegistry? _virtualModels;
     private readonly object _extensionProviderGate = new();
     private IReadOnlyDictionary<string, ProviderProfile> _extensionProviders =
@@ -74,12 +77,14 @@ public sealed class ProviderModelRuntime
         _runtimeApiKey = runtimeApiKey;
         _offline = offline;
         _scope = scope ?? [];
+        _scopeConfigured = scope is not null;
         _available = new AvailableModelSnapshot(providers.Values.Where(provider => provider.ApiKeyEnvironment is { } keyName &&
             !string.IsNullOrWhiteSpace(environment(keyName)) && provider.Models.Any(model => model.Available)));
         _llamaDiscovery = new LlamaRouterDiscovery(agentDirectory, http, providers["llama.cpp"], _available);
     }
 
     public IReadOnlyList<string> Scope => _scope;
+    public bool HasScope => _scopeConfigured;
     public VirtualModelRegistry? VirtualModels => _virtualModels;
     public int AvailableModelProviderCount => _available.ProviderCount;
     internal IReadOnlyList<ModelDescriptor> GetAvailableModelSnapshot() => _available.Models;
@@ -262,10 +267,45 @@ public sealed class ProviderModelRuntime
         _virtualModels?.Models.Any(item => item.Model.Provider == id) == true ? VirtualProvider(id) :
         throw new ArgumentException($"Unknown provider '{id}'. Available providers: {string.Join(", ", Providers.Select(item => item.Id).Order())}.");
 
-    public void SetScope(IEnumerable<string> patterns)
+    public void SetScope(IEnumerable<string>? patterns)
     {
+        if (patterns is null)
+        {
+            ClearScope();
+            return;
+        }
         var values = patterns.Select(value => value.Trim()).Where(value => value.Length > 0).ToArray();
         _scope = values;
+        _scopeConfigured = true;
+    }
+
+    public void ClearScope()
+    {
+        _scope = [];
+        _scopeConfigured = false;
+    }
+
+    internal async Task<ModelScopeResolution> ResolveScopeAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_scopeConfigured) return new([], []);
+        var catalog = await ListModelsAsync(cancellationToken: cancellationToken, includeOutOfScope: true)
+            .ConfigureAwait(false);
+        return ModelScopeResolver.Resolve(_scope, catalog.Where(model => model.Available).ToArray());
+    }
+
+    internal string? GetScopeThinkingLevel(string providerId, string modelId)
+    {
+        if (!_scopeConfigured) return null;
+        var models = Providers.SelectMany(provider => provider.Models.Select(model => model with { Provider = provider.Id }))
+            .Concat(_available.Models)
+            .Concat(_virtualModels?.Models.Select(item => item.Model) ?? [])
+            .Where(model => model.Provider is not null)
+            .GroupBy(model => (Provider: model.Provider!, model.Id), StringTupleComparer.Instance)
+            .Select(group => group.First()).ToArray();
+        var resolved = ModelScopeResolver.Resolve(_scope, models);
+        return resolved.Models.FirstOrDefault(item => item.Model.Provider?.Equals(providerId,
+            StringComparison.OrdinalIgnoreCase) == true && item.Model.Id.Equals(modelId,
+            StringComparison.OrdinalIgnoreCase))?.ThinkingLevel;
     }
 
     public Task<(string Key, bool Authenticated, string Source)> ResolveAuthAsync(string providerId,
@@ -409,16 +449,24 @@ public sealed class ProviderModelRuntime
     }
 
     public async Task<ModelSelection> ResolveAsync(string? providerId, string? modelReference,
-        CancellationToken cancellationToken = default, bool includeOutOfScope = false)
+        CancellationToken cancellationToken = default, bool includeOutOfScope = false,
+        bool allowThinkingSuffix = true, string? customThinkingLevel = null)
     {
-        var selected = await ResolveSelectionAsync(providerId, modelReference, cancellationToken, includeOutOfScope);
+        var selected = await ResolveSelectionAsync(providerId, modelReference, cancellationToken, includeOutOfScope,
+            allowThinkingSuffix, customThinkingLevel);
         _credentials.BindRuntimeCredential(selected.Provider.Id);
         return selected;
     }
 
     private async Task<ModelSelection> ResolveSelectionAsync(string? providerId, string? modelReference,
-        CancellationToken cancellationToken, bool includeOutOfScope)
+        CancellationToken cancellationToken, bool includeOutOfScope, bool allowThinkingSuffix = true,
+        string? customThinkingLevel = null)
     {
+        if (providerId is null && !string.IsNullOrWhiteSpace(modelReference))
+            return await ResolveAcrossProvidersAsync(modelReference, cancellationToken, includeOutOfScope,
+                    allowThinkingSuffix, customThinkingLevel)
+                .ConfigureAwait(false);
+
         ProviderProfile? explicitProvider = providerId is null ? null : GetProvider(providerId);
         var inferredReference = modelReference?.Trim();
         var slash = inferredReference?.IndexOf('/') ?? -1;
@@ -452,20 +500,44 @@ public sealed class ProviderModelRuntime
         }
         // An explicitly configured exact ID is usable without /models: many compatible servers
         // do not implement that endpoint, and it must not consume a prompt's first response.
-        var configured = (includeOutOfScope ? explicitProvider.Models : ApplyScope(explicitProvider.Models)).Where(item =>
+        var configuredModels = explicitProvider.Models.Concat(_available.Models.Where(model =>
+            model.Provider?.Equals(explicitProvider.Id, StringComparison.OrdinalIgnoreCase) == true))
+            .GroupBy(model => model.Id, StringComparer.OrdinalIgnoreCase).Select(group => group.First());
+        var configured = (includeOutOfScope ? configuredModels : ApplyScope(configuredModels)).Where(item =>
             item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)).ToArray();
         var models = configured.Length == 1 && explicitProvider.Id is not ("radius" or "llama.cpp") ? configured :
             await ListModelsAsync(explicitProvider.Id, cancellationToken, includeOutOfScope);
         var matches = models.Where(item => item.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)).ToArray();
+        string? requestedThinkingLevel = null;
         if (matches.Length == 0)
-            matches = models.Where(item => item.Id.Contains(reference, StringComparison.OrdinalIgnoreCase) ||
-                (item.Owner?.Contains(reference, StringComparison.OrdinalIgnoreCase) ?? false)).ToArray();
+            matches = BestFuzzyMatches(models.Where(item => item.Id.Contains(reference, StringComparison.OrdinalIgnoreCase) ||
+                (item.Name?.Contains(reference, StringComparison.OrdinalIgnoreCase) ?? false))).Take(1).ToArray();
+        if (allowThinkingSuffix && matches.Length == 0 && TrySplitThinkingSuffix(reference, out var baseReference, out var suffixLevel))
+        {
+            var suffixMatches = models.Where(item => item.Id.Equals(baseReference, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (suffixMatches.Length > 0)
+            {
+                reference = baseReference;
+                requestedThinkingLevel = suffixLevel;
+                matches = suffixMatches;
+            }
+            else
+            {
+                // Pi treats an otherwise unknown valid suffix as a model-reference suffix for
+                // custom-model fallback. Preserve the original spelling when there is no suffix.
+                reference = baseReference;
+                requestedThinkingLevel = suffixLevel;
+            }
+        }
         if (matches.Length > 1)
             throw new ArgumentException($"Model '{reference}' is ambiguous: {string.Join(", ", matches.Select(item => explicitProvider.Id + "/" + item.Id))}.");
-        if (matches.Length == 0 && _scope.Count > 0 && !includeOutOfScope)
+        if (matches.Length == 0 && _scopeConfigured && !includeOutOfScope)
             throw new ArgumentException($"Model '{explicitProvider.Id}/{reference}' is outside the --models scope.");
-        var model = matches.Length == 1 ? matches[0] : new ModelDescriptor(reference, explicitProvider.Id, null,
-            "custom model ID", Provider: explicitProvider.Id);
+        string? resolutionWarning = null;
+        var model = matches.Length == 1 ? matches[0] : CreateCustomModel(explicitProvider, reference,
+            requestedThinkingLevel ?? customThinkingLevel);
+        if (matches.Length == 0)
+            resolutionWarning = $"Model \"{reference}\" not found for provider \"{explicitProvider.Id}\". Using custom model id.";
         var auth = await ResolveAuthAsync(explicitProvider.Id, useRuntimeOverride: true, cancellationToken);
         model = model with
         {
@@ -482,6 +554,8 @@ public sealed class ProviderModelRuntime
         return new ModelSelection(explicitProvider, model, auth.Key, auth.Authenticated, auth.Source,
             oauthCredentialResolver)
         {
+            RequestedThinkingLevel = requestedThinkingLevel,
+            ResolutionWarning = resolutionWarning,
             AnthropicAuthToken = auth.Source is "ANTHROPIC_AUTH_TOKEN" or "ANTHROPIC_OAUTH_TOKEN"
                 ? auth.Key : explicitProvider.Id == "anthropic" && auth.Key.Contains("sk-ant-oat", StringComparison.Ordinal)
                     ? auth.Key : null,
@@ -490,6 +564,255 @@ public sealed class ProviderModelRuntime
             AnthropicWorkloadIdentity = auth.Source == "workload identity federation"
                 ? _credentials.ResolveAnthropicWorkloadIdentity() : null
         };
+    }
+
+    private async Task<ModelSelection> ResolveAcrossProvidersAsync(string modelReference,
+        CancellationToken cancellationToken, bool includeOutOfScope, bool allowThinkingSuffix,
+        string? customThinkingLevel)
+    {
+        var providers = Providers;
+        var allModels = providers.SelectMany(provider => provider.Models.Select(model =>
+                model with { Provider = provider.Id }))
+            .Concat(_available.Models)
+            .Concat(_virtualModels?.Models.Select(item => item.Model) ?? [])
+            .Where(model => model.Provider is not null)
+            .GroupBy(model => (Provider: model.Provider!, model.Id), StringTupleComparer.Instance)
+            .Select(group => group.First())
+            .ToArray();
+        var candidates = includeOutOfScope ? allModels : ApplyScope(allModels);
+        var text = modelReference.Trim();
+        var matches = FindExactReferenceCandidates(text, candidates, out var namedCandidate);
+        string? requestedThinkingLevel = null;
+
+        if (matches.Length == 0)
+        {
+            var prefixSlash = text.IndexOf('/');
+            var prefixProvider = prefixSlash > 0
+                ? providers.FirstOrDefault(provider => provider.Id.Equals(text[..prefixSlash], StringComparison.OrdinalIgnoreCase))
+                : null;
+            var fuzzyText = text;
+            if (prefixProvider is not null) fuzzyText = text[(prefixSlash + 1)..];
+            var fuzzyCandidates = candidates.Where(model =>
+                (prefixProvider is null || model.Provider!.Equals(prefixProvider.Id, StringComparison.OrdinalIgnoreCase)) &&
+                (model.Id.Contains(fuzzyText, StringComparison.OrdinalIgnoreCase) ||
+                 (model.Name?.Contains(fuzzyText, StringComparison.OrdinalIgnoreCase) ?? false))).ToArray();
+            if (fuzzyCandidates.Length > 0)
+            {
+                if (prefixProvider is null && fuzzyCandidates.Select(model => model.Provider)
+                    .Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
+                {
+                    var usable = _runtimeApiKey is null
+                        ? await GetAuthenticatedCandidatesAsync(fuzzyCandidates, cancellationToken).ConfigureAwait(false)
+                        : [];
+                    if (usable.Length > 0) fuzzyCandidates = usable;
+                }
+                matches = BestFuzzyMatches(fuzzyCandidates);
+            }
+        }
+
+        // Pi resolves exact and fuzzy matches against the entire reference before interpreting a
+        // valid thinking suffix. Literal IDs and names containing `:high` therefore take priority.
+        if (allowThinkingSuffix && matches.Length == 0 && TrySplitThinkingSuffix(text, out var baseReference, out var suffixLevel))
+        {
+            text = baseReference;
+            matches = FindExactReferenceCandidates(text, candidates, out namedCandidate);
+            requestedThinkingLevel = suffixLevel;
+            if (matches.Length == 0)
+            {
+                var suffixSlash = text.IndexOf('/');
+                var suffixProvider = suffixSlash > 0
+                    ? providers.FirstOrDefault(provider => provider.Id.Equals(text[..suffixSlash], StringComparison.OrdinalIgnoreCase))
+                    : null;
+                var suffixFuzzyText = suffixProvider is null ? text : text[(suffixSlash + 1)..];
+                var suffixFuzzyCandidates = candidates.Where(model =>
+                    (suffixProvider is null || model.Provider!.Equals(suffixProvider.Id, StringComparison.OrdinalIgnoreCase)) &&
+                    (model.Id.Contains(suffixFuzzyText, StringComparison.OrdinalIgnoreCase) ||
+                     (model.Name?.Contains(suffixFuzzyText, StringComparison.OrdinalIgnoreCase) ?? false))).ToArray();
+                if (suffixFuzzyCandidates.Length > 0)
+                {
+                    if (suffixProvider is null && suffixFuzzyCandidates.Select(model => model.Provider)
+                        .Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
+                    {
+                        var usable = _runtimeApiKey is null
+                            ? await GetAuthenticatedCandidatesAsync(suffixFuzzyCandidates, cancellationToken).ConfigureAwait(false)
+                            : [];
+                        if (usable.Length > 0) suffixFuzzyCandidates = usable;
+                    }
+                    matches = BestFuzzyMatches(suffixFuzzyCandidates);
+                }
+            }
+        }
+
+        if (matches.Length == 0)
+        {
+            if (!includeOutOfScope && _scopeConfigured && allModels.Any(model =>
+                    model.Id.Equals(text, StringComparison.OrdinalIgnoreCase) ||
+                    model.Id.Equals(modelReference.Trim(), StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException($"Model '{modelReference}' is outside the --models scope.");
+
+            var slash = modelReference.IndexOf('/');
+            var namedProvider = slash > 0
+                ? providers.FirstOrDefault(provider => provider.Id.Equals(modelReference[..slash], StringComparison.OrdinalIgnoreCase))
+                : null;
+            var fallbackProvider = namedProvider ?? GetProvider(_providers.ContainsKey("local") ? "local" :
+                _providers.ContainsKey("custom") ? "custom" : "openai");
+            var fallbackReference = namedProvider is null ? text : modelReference[(slash + 1)..];
+            var fallback = await ResolveSelectionAsync(fallbackProvider.Id, fallbackReference,
+                cancellationToken, includeOutOfScope, allowThinkingSuffix, customThinkingLevel).ConfigureAwait(false);
+            return fallback with { RequestedThinkingLevel = requestedThinkingLevel ?? fallback.RequestedThinkingLevel };
+        }
+
+        var byProvider = matches.GroupBy(model => model.Provider!, StringComparer.OrdinalIgnoreCase).ToArray();
+        ModelDescriptor selected;
+        if (byProvider.Length == 1)
+        {
+            selected = matches[0];
+        }
+        else
+        {
+            var named = namedCandidate;
+            if (named is null)
+            {
+                var slash = text.IndexOf('/');
+                var namedProvider = slash > 0
+                    ? providers.FirstOrDefault(provider => provider.Id.Equals(text[..slash], StringComparison.OrdinalIgnoreCase))
+                    : null;
+                var namedModelId = namedProvider is null ? null : text[(slash + 1)..];
+                named = namedProvider is null ? null : matches.FirstOrDefault(model =>
+                    model.Provider!.Equals(namedProvider.Id, StringComparison.OrdinalIgnoreCase) &&
+                    model.Id.Equals(namedModelId, StringComparison.OrdinalIgnoreCase));
+            }
+            var others = matches.Where(model => model != named).ToArray();
+            if (named is not null)
+            {
+                var namedAuth = await ResolveAuthAsync(named.Provider!, useRuntimeOverride: false,
+                    cancellationToken, allowOAuthRefresh: false).ConfigureAwait(false);
+                if (namedAuth.Authenticated)
+                {
+                    selected = named;
+                }
+                else
+                {
+                    var usableOthers = _runtimeApiKey is null
+                        ? await GetAuthenticatedCandidatesAsync(others, cancellationToken).ConfigureAwait(false)
+                        : [];
+                    if (usableOthers.Length == 1) selected = usableOthers[0];
+                    else if (usableOthers.Length == 0) selected = named;
+                    else throw AmbiguousModelReference(modelReference, matches, usableOthers.Length,
+                        inlineApiKey: _runtimeApiKey is not null);
+                }
+            }
+            else
+            {
+                var usable = _runtimeApiKey is null
+                    ? await GetAuthenticatedCandidatesAsync(matches, cancellationToken).ConfigureAwait(false)
+                    : [];
+                if (usable.Length == 1) selected = usable[0];
+                else if (usable.Length == 0) throw AmbiguousModelReference(modelReference, matches, 0,
+                    inlineApiKey: _runtimeApiKey is not null);
+                else throw AmbiguousModelReference(modelReference, matches, usable.Length,
+                    inlineApiKey: _runtimeApiKey is not null);
+            }
+        }
+
+        var resolved = await ResolveSelectionAsync(selected.Provider, selected.Id,
+            cancellationToken, includeOutOfScope).ConfigureAwait(false);
+        return resolved with { RequestedThinkingLevel = requestedThinkingLevel };
+    }
+
+    private async Task<ModelDescriptor[]> GetAuthenticatedCandidatesAsync(IEnumerable<ModelDescriptor> candidates,
+        CancellationToken cancellationToken)
+    {
+        var result = new List<ModelDescriptor>();
+        foreach (var candidate in candidates.GroupBy(model => model.Provider!, StringComparer.OrdinalIgnoreCase))
+        {
+            var auth = await ResolveAuthAsync(candidate.Key, useRuntimeOverride: false,
+                cancellationToken, allowOAuthRefresh: false).ConfigureAwait(false);
+            if (auth.Authenticated) result.AddRange(candidate);
+        }
+        return result.ToArray();
+    }
+
+    private static ModelDescriptor[] BestFuzzyMatches(IEnumerable<ModelDescriptor> candidates)
+    {
+        var matches = candidates.ToArray();
+        if (matches.Length <= 1) return matches;
+        var aliases = matches.Where(model => !System.Text.RegularExpressions.Regex.IsMatch(model.Id,
+            "-\\d{8}$", System.Text.RegularExpressions.RegexOptions.CultureInvariant) ||
+            model.Id.EndsWith("-latest", StringComparison.OrdinalIgnoreCase)).ToArray();
+        var ranked = (aliases.Length > 0 ? aliases : matches)
+            .OrderByDescending(model => model.Id, StringComparer.OrdinalIgnoreCase).ToArray();
+        var bestId = ranked[0].Id;
+        return ranked.Where(model => model.Id.Equals(bestId, StringComparison.OrdinalIgnoreCase)).ToArray();
+    }
+
+    private ModelDescriptor[] FindExactReferenceCandidates(string reference,
+        IReadOnlyList<ModelDescriptor> candidates, out ModelDescriptor? named)
+    {
+        var matches = candidates.Where(model => model.Id.Equals(reference, StringComparison.OrdinalIgnoreCase)).ToList();
+        ModelDescriptor? namedCandidate = null;
+        var slash = reference.IndexOf('/');
+        if (slash > 0)
+        {
+            var provider = Providers.FirstOrDefault(item =>
+                item.Id.Equals(reference[..slash], StringComparison.OrdinalIgnoreCase));
+            if (provider is not null)
+            {
+                namedCandidate = candidates.FirstOrDefault(model => model.Provider!.Equals(provider.Id, StringComparison.OrdinalIgnoreCase) &&
+                    model.Id.Equals(reference[(slash + 1)..], StringComparison.OrdinalIgnoreCase)) ??
+                    matches.FirstOrDefault(model => model.Provider!.Equals(provider.Id, StringComparison.OrdinalIgnoreCase));
+                if (namedCandidate is not null && matches.All(model => model != namedCandidate)) matches.Insert(0, namedCandidate);
+            }
+        }
+        named = namedCandidate;
+        return matches.ToArray();
+    }
+
+    private static ArgumentException AmbiguousModelReference(string reference,
+        IEnumerable<ModelDescriptor> candidates, int usableCount, bool inlineApiKey = false)
+    {
+        var authHint = inlineApiKey ? "--api-key does not choose a provider." : usableCount == 0
+            ? "No matching provider is authenticated."
+            : "More than one matching provider is authenticated.";
+        return new($"Model \"{reference}\" is ambiguous across providers: {string.Join(", ", candidates
+            .Select(model => $"{model.Provider}/{model.Id}").Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase))}. {authHint} Use --provider or provider/model.");
+    }
+
+    private ModelDescriptor CreateCustomModel(ProviderProfile provider, string modelId,
+        string? thinkingLevel)
+    {
+        var models = provider.Models.Concat(_available.Models.Where(model =>
+                model.Provider?.Equals(provider.Id, StringComparison.OrdinalIgnoreCase) == true))
+            .GroupBy(model => model.Id, StringComparer.OrdinalIgnoreCase).Select(group => group.First()).ToArray();
+        var defaultId = PinnedProviderModelDefaults.GetModel(provider.Id);
+        var baseModel = (defaultId is null ? null : models.FirstOrDefault(model =>
+                model.Id.Equals(defaultId, StringComparison.Ordinal))) ?? models.FirstOrDefault();
+        var custom = baseModel is null
+            ? new ModelDescriptor(modelId, provider.Id, null, "custom model ID", Provider: provider.Id)
+            : baseModel with { Id = modelId, Name = modelId, Status = "custom model ID", Provider = provider.Id };
+        if (thinkingLevel is not null && thinkingLevel != "off")
+            custom = custom with { Reasoning = true };
+        return custom;
+    }
+
+    private static bool TrySplitThinkingSuffix(string reference, out string modelId, out string level)
+    {
+        var colon = reference.LastIndexOf(':');
+        modelId = colon < 0 ? reference : reference[..colon];
+        level = colon < 0 ? string.Empty : reference[(colon + 1)..];
+        return colon > 0 && ThinkingLevels.IsValid(level);
+    }
+
+    private sealed class StringTupleComparer : IEqualityComparer<(string Provider, string Id)>
+    {
+        public static StringTupleComparer Instance { get; } = new();
+        public bool Equals((string Provider, string Id) x, (string Provider, string Id) y) =>
+            StringComparer.OrdinalIgnoreCase.Equals(x.Provider, y.Provider) &&
+            StringComparer.OrdinalIgnoreCase.Equals(x.Id, y.Id);
+        public int GetHashCode((string Provider, string Id) value) => HashCode.Combine(
+            StringComparer.OrdinalIgnoreCase.GetHashCode(value.Provider),
+            StringComparer.OrdinalIgnoreCase.GetHashCode(value.Id));
     }
 
     public Task LoginApiKeyAsync(string provider, string secret, CancellationToken cancellationToken = default)
@@ -545,19 +868,8 @@ public sealed class ProviderModelRuntime
     private IReadOnlyList<ModelDescriptor> ApplyScope(IEnumerable<ModelDescriptor> models)
     {
         var all = models.ToArray();
-        if (_scope.Count == 0) return all;
-        var scoped = new List<ModelDescriptor>();
-        var included = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var pattern in _scope)
-        {
-            foreach (var model in all)
-            {
-                if (!ModelScopeGlob.Matches(pattern, $"{model.Provider}/{model.Id}") &&
-                    !ModelScopeGlob.Matches(pattern, model.Id)) continue;
-                if (included.Add($"{model.Provider}\0{model.Id}")) scoped.Add(model);
-            }
-        }
-        return scoped;
+        if (!_scopeConfigured) return all;
+        return ModelScopeResolver.Resolve(_scope, all).Models.Select(item => item.Model).ToArray();
     }
 
     private IReadOnlyList<ModelDescriptor> VirtualModelsFor(string provider) =>

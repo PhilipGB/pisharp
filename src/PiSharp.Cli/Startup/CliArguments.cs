@@ -6,6 +6,8 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
     IReadOnlyList<string>? ThemePaths = null, string? UseTheme = null, bool NoThemes = false)
 {
     internal string? PendingUnknownOption { get; init; }
+    internal bool HasExplicitModelSelection { get; init; }
+    internal bool HasExplicitModelScope { get; init; }
     internal bool? UsesDefaultToolSelection { get; init; }
     internal IReadOnlyList<string>? DefaultToolModifiers { get; init; }
     internal IReadOnlyDictionary<string, PiSharp.Extensions.Abstractions.PiSharpExtensionFlagValue> ExtensionFlagValues { get; init; } =
@@ -250,6 +252,8 @@ public sealed record CliArguments(bool Help, bool Local, bool Print, bool Contin
             provider, scopedModels, thinking, apiKey, fileArguments, systemPrompt, appendSystemPrompts.Count == 0 ? null : appendSystemPrompts, noContextFiles, noBuiltinTools, noExtensions, noSkills, noPromptTemplates, version, offline, skillPaths, promptTemplatePaths, extensionPaths, listModelsFilter, verbose,
             themePaths, useTheme, noThemes)
         {
+            HasExplicitModelSelection = local || modelOverride is not null || provider is not null,
+            HasExplicitModelScope = scopedModels is not null,
             ExtensionFlagValues = extensionFlagValues
         };
     }

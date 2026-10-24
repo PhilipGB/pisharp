@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using PiSharp.Cli;
+using PiSharp.Cli.Composition;
 using PiSharp.Runtime.Providers;
 
 namespace PiSharp.Tests;
@@ -34,6 +35,234 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
+    public async Task BareModelReferenceUsesTheUniqueAuthenticatedProviderAcrossCatalogs()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-reference-provider-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{
+                  "fixture-a":{"baseUrl":"https://a.fixture.test/v1","apiKeyEnv":"FIXTURE_A_KEY","models":[{"id":"shared","name":"Shared model"}]},
+                  "fixture-b":{"baseUrl":"https://b.fixture.test/v1","apiKeyEnv":"FIXTURE_B_KEY","models":[{"id":"shared","name":"Shared model"}]}
+                }}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_A_KEY" ? "fixture-a-test-key" : null, http, offline: true);
+
+            var selection = await runtime.ResolveAsync(null, "shared");
+
+            Assert.Equal("fixture-a", selection.Provider.Id);
+            Assert.Equal("shared", selection.Model.Id);
+            Assert.Equal("fixture-a-test-key", selection.ApiKey);
+            Assert.Null(selection.RequestedThinkingLevel);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task ThinkingSuffixSelectsTheBaseModelInsteadOfBecomingPartOfItsId()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-reference-thinking-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"FIXTURE_KEY","models":[
+                  {"id":"reasoner","reasoning":true,"thinkingLevelMap":{"high":"high"}}
+                ]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_KEY" ? "fixture-test-key" : null, http, offline: true);
+
+            var selection = await runtime.ResolveAsync("fixture", "reasoner:high");
+
+            Assert.Equal("reasoner", selection.Model.Id);
+            Assert.Equal("high", selection.RequestedThinkingLevel);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task FuzzyMatchForFullReferencePrecedesThinkingSuffixParsing()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-reference-fuzzy-suffix-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"FIXTURE_KEY","models":[
+                  {"id":"reasoner","reasoning":true,"thinkingLevelMap":{"high":"high"}},
+                  {"id":"reasoner:highlighter","name":"Model whose ID includes the suffix text"}
+                ]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_KEY" ? "fixture-test-key" : null, http, offline: true);
+
+            var selection = await runtime.ResolveAsync("fixture", "reasoner:high");
+
+            Assert.Equal("reasoner:highlighter", selection.Model.Id);
+            Assert.Null(selection.RequestedThinkingLevel);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task FuzzyModelReferencesPreferAliasesAndSearchNamesWithinNamedProviders()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-reference-fuzzy-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"FIXTURE_KEY","models":[
+                  {"id":"reasoner-20250101","name":"Old Reasoner"},
+                  {"id":"reasoner","name":"Current Reasoner"}
+                ]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_KEY" ? "fixture-test-key" : null, http, offline: true);
+
+            var alias = await runtime.ResolveAsync("fixture", "reason");
+            var namedByName = await runtime.ResolveAsync(null, "FIXTURE/Current Reasoner");
+
+            Assert.Equal("reasoner", alias.Model.Id);
+            Assert.Equal("fixture", namedByName.Provider.Id);
+            Assert.Equal("reasoner", namedByName.Model.Id);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task BareModelReferenceWithNoAuthenticatedProviderReportsAmbiguity()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-reference-ambiguous-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{
+                  "fixture-a":{"baseUrl":"https://a.fixture.test/v1","apiKeyEnv":"FIXTURE_A_KEY","models":[{"id":"shared"}]},
+                  "fixture-b":{"baseUrl":"https://b.fixture.test/v1","apiKeyEnv":"FIXTURE_B_KEY","models":[{"id":"shared"}]}
+                }}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false, _ => null, http, offline: true);
+
+            var error = await Assert.ThrowsAsync<ArgumentException>(() => runtime.ResolveAsync(null, "shared"));
+
+            Assert.Contains("ambiguous across providers", error.Message, StringComparison.Ordinal);
+            Assert.Contains("fixture-a/shared", error.Message, StringComparison.Ordinal);
+            Assert.Contains("fixture-b/shared", error.Message, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task ThinkingSuffixUsesExactBaseAndInvalidSuffixRemainsInCustomModelId()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-reference-suffix-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"FIXTURE_KEY","models":[
+                  {"id":"reasoner","reasoning":true,"thinkingLevelMap":{"high":"high"}},
+                  {"id":"literal:high"}
+                ]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_KEY" ? "fixture-test-key" : null, http, offline: true);
+
+            var custom = await runtime.ResolveAsync("fixture", "unlisted:high");
+            var literal = await runtime.ResolveAsync("fixture", "literal:high");
+            var invalid = await runtime.ResolveAsync("fixture", "unlisted:random");
+
+            Assert.Equal("unlisted", custom.Model.Id);
+            Assert.Equal("high", custom.RequestedThinkingLevel);
+            Assert.Equal("literal:high", literal.Model.Id);
+            Assert.Null(literal.RequestedThinkingLevel);
+            Assert.Equal("unlisted:random", invalid.Model.Id);
+            Assert.Null(invalid.RequestedThinkingLevel);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task ExplicitThinkingOverridesAReferenceSuffixAndGlobalDefaultDoesNot()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-reference-thinking-precedence-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"FIXTURE_KEY","models":[
+                  {"id":"reasoner","reasoning":true,"thinkingLevelMap":{"high":"high","low":"low"}}
+                ]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_KEY" ? "fixture-test-key" : null, http, offline: true);
+            var parsed = CliArguments.Parse(["--provider", "fixture", "--model", "reasoner:high"]);
+
+            var fromGlobalDefault = await InitialModelComposition.ResolveAsync(runtime,
+                parsed with { Thinking = "low" }, explicitThinking: null, new UserSettings());
+            var fromExplicitFlag = await InitialModelComposition.ResolveAsync(runtime,
+                parsed with { Thinking = "low" }, explicitThinking: "low", new UserSettings());
+
+            Assert.Equal("high", fromGlobalDefault?.Thinking);
+            Assert.Equal("low", fromExplicitFlag?.Thinking);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task FreshStartupUsesFirstScopedModelButExplicitModelsAndResumeKeepPrecedence()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-initial-scoped-model-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"FIXTURE_KEY","models":[
+                  {"id":"first","reasoning":true,"thinkingLevelMap":{"high":"high","low":"low"}},
+                  {"id":"second","reasoning":true,"thinkingLevelMap":{"high":"high","low":"low"}}
+                ]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_KEY" ? "fixture-test-key" : null, http,
+                scope: ["fixture/second:high", "fixture/first"], offline: true);
+
+            var defaults = CliArguments.Parse([]) with { Provider = "fixture", ModelOverride = "first", Thinking = "low" };
+            var scoped = await InitialModelComposition.ResolveAsync(runtime, defaults, explicitThinking: null, new UserSettings());
+            var explicitThinking = await InitialModelComposition.ResolveAsync(runtime, defaults, explicitThinking: "low", new UserSettings());
+            var explicitModel = await InitialModelComposition.ResolveAsync(runtime,
+                CliArguments.Parse(["--provider", "fixture", "--model", "first"]), explicitThinking: null, new UserSettings());
+            var resumed = await InitialModelComposition.ResolveAsync(runtime,
+                CliArguments.Parse(["--continue"]) with
+                {
+                    Provider = "fixture",
+                    ModelOverride = "first",
+                    HasExplicitModelSelection = true
+                },
+                explicitThinking: null, new UserSettings());
+
+            Assert.Equal("second", scoped?.Selection.Model.Id);
+            Assert.Equal("high", scoped?.Thinking);
+            Assert.Equal("low", explicitThinking?.Thinking);
+            Assert.Equal("first", explicitModel?.Selection.Model.Id);
+            Assert.Equal("first", resumed?.Selection.Model.Id);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
     public async Task ModelScopePreservesPatternOrderAndRemovesDuplicates()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-model-scope-order-" + Guid.NewGuid().ToString("N"));
@@ -50,6 +279,57 @@ public sealed class ProviderModelRuntimeTests
 
             Assert.Equal(["model-three", "model-one", "model-two"],
                 (await runtime.ListModelsAsync("fixture")).Select(model => model.Id));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task ScopedThinkingSuffixWinsOverPerModelAndGlobalDefaultsDuringModelSwitch()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-scope-thinking-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"FIXTURE_KEY","models":[
+                  {"id":"reasoner","reasoning":true,"thinkingLevelMap":{"high":"high","low":"low"}}
+                ]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_KEY" ? "fixture-test-key" : null, http,
+                scope: ["fixture/reasoner:high"], offline: true);
+            var selection = await runtime.ResolveAsync("fixture", "reasoner");
+            var settings = new UserSettings(DefaultThinkingLevel: "low",
+                ModelThinkingLevels: new Dictionary<string, string> { ["fixture/reasoner"] = "low" });
+            var controller = new ModelRuntimeController(runtime, () => settings, _ => null);
+
+            Assert.Equal("high", controller.ResolveThinkingLevelForModelSwitch(selection, "off"));
+            Assert.Equal("low", controller.ResolveThinkingLevelForModelSwitch(
+                selection with { RequestedThinkingLevel = "low" }, "off"));
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task ExplicitlyEmptyModelScopeDisablesEveryModelUntilCleared()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-empty-scope-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(root, "models.json"), """
+                {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"FIXTURE_KEY","models":[{"id":"one"}]}}}
+                """);
+            using var http = new HttpClient(new ModelHandler());
+            var runtime = await ProviderModelRuntime.CreateAsync(root, false,
+                name => name == "FIXTURE_KEY" ? "fixture-key" : null, http, scope: [], offline: true);
+
+            Assert.True(runtime.HasScope);
+            Assert.Empty(await runtime.ListModelsAsync("fixture"));
+            runtime.ClearScope();
+            Assert.False(runtime.HasScope);
+            Assert.Single(await runtime.ListModelsAsync("fixture"));
         }
         finally { Directory.Delete(root, true); }
     }

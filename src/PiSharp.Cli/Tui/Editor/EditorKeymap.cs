@@ -68,6 +68,12 @@ public sealed class EditorKeymap
         ["app.session.fork"] = new("Open fork selector", []),
         ["app.session.rename"] = new("Rename selected session", ["ctrl+r"]),
         ["app.session.toggleSort"] = new("Toggle session sort mode", ["ctrl+s"]),
+        ["app.models.save"] = new("Save scoped model selection", ["ctrl+s"]),
+        ["app.models.enableAll"] = new("Enable all scoped models", ["ctrl+a"]),
+        ["app.models.clearAll"] = new("Clear scoped models", ["ctrl+x"]),
+        ["app.models.toggleProvider"] = new("Toggle all models for this provider", ["ctrl+p"]),
+        ["app.models.reorderUp"] = new("Move model earlier in the scope", ["alt+up"]),
+        ["app.models.reorderDown"] = new("Move model later in the scope", ["alt+down"]),
         ["app.thinking.cycle"] = new("Cycle thinking level", ["shift+tab"]),
         ["app.thinking.toggle"] = new("Toggle thinking block visibility", ["ctrl+t"]),
         ["app.tools.expand"] = new("Expand or collapse tool output", ["ctrl+o"]),
@@ -229,6 +235,7 @@ public sealed class EditorKeymap
         var builtIns = new Dictionary<PiSharpShortcutKey, BuiltInBinding>();
         foreach (var (action, bindings) in _bindings)
         {
+            if (action.StartsWith("app.models.", StringComparison.Ordinal)) continue;
             var isReserved = s_reservedShortcutActions.Contains(action);
             foreach (var binding in bindings)
             {

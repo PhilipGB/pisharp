@@ -1,0 +1,665 @@
+{
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "cases": [
+    {
+      "id": "wire-openai-responses-thinking-sampling-tools",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.2,
+          "top_p": 0.9
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "temperature": 0.7,
+            "top_k": 64
+          }
+        }
+      },
+      "request": {
+        "reasoning": "high",
+        "maxTokens": 4096,
+        "samplingParams": {
+          "temperature": 0.8,
+          "top_p": 0.45
+        },
+        "includeTools": true
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-custom-thinking-budget",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-budget-model",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {
+          "supportsThinkingTokenBudget": true,
+          "thinkingTokenBudgetField": "thinking_budget"
+        },
+        "samplingParams": {
+          "temperature": 0.3
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "top_p": 0.8
+          }
+        }
+      },
+      "request": {
+        "reasoning": "high",
+        "thinkingBudgets": {
+          "high": 3072
+        },
+        "maxTokens": 4096,
+        "samplingParams": {
+          "temperature": 0.6
+        },
+        "includeTools": true
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-anthropic-messages-custom-thinking-budget",
+      "api": "anthropic-messages",
+      "model": {
+        "provider": "fixture-anthropic",
+        "id": "fixture-claude",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {},
+        "samplingParams": {
+          "temperature": 0.3
+        }
+      },
+      "request": {
+        "reasoning": "high",
+        "thinkingBudgets": {
+          "high": 3072
+        },
+        "maxTokens": 4096,
+        "includeTools": true
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/anthropic-messages.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-google-genai-thinking-sampling-tools",
+      "api": "google-generative-ai",
+      "model": {
+        "provider": "google",
+        "id": "gemini-3.5-flash",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.25
+        }
+      },
+      "request": {
+        "reasoning": "high",
+        "maxTokens": 4096,
+        "temperature": 0.5,
+        "includeTools": true
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/google-generative-ai.ts",
+        "packages/ai/src/api/google-shared.ts"
+      ]
+    },
+    {
+      "id": "wire-google-vertex-thinking-sampling-tools",
+      "api": "google-vertex",
+      "model": {
+        "provider": "google-vertex",
+        "id": "gemini-3.5-flash",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.25
+        }
+      },
+      "request": {
+        "reasoning": "high",
+        "maxTokens": 4096,
+        "temperature": 0.5,
+        "includeTools": true
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/google-vertex.ts",
+        "packages/ai/src/api/google-shared.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-responses-off",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.2,
+          "top_p": 0.9
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "temperature": 0.7,
+            "top_k": 64
+          }
+        }
+      },
+      "request": {
+        "reasoning": "off",
+        "maxTokens": 2048,
+        "samplingParams": {
+          "temperature": 0.35
+        },
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-responses-low",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.2,
+          "top_p": 0.9
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "temperature": 0.7,
+            "top_k": 64
+          }
+        }
+      },
+      "request": {
+        "reasoning": "low",
+        "maxTokens": 2048,
+        "samplingParams": {
+          "temperature": 0.35
+        },
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-responses-medium",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.2,
+          "top_p": 0.9
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "temperature": 0.7,
+            "top_k": 64
+          }
+        }
+      },
+      "request": {
+        "reasoning": "medium",
+        "maxTokens": 2048,
+        "samplingParams": {
+          "temperature": 0.35
+        },
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-responses-xhigh",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.2,
+          "top_p": 0.9
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "temperature": 0.7,
+            "top_k": 64
+          }
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "maxTokens": 2048,
+        "samplingParams": {
+          "temperature": 0.35
+        },
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-off",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-budget-model",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {
+          "supportsThinkingTokenBudget": true,
+          "thinkingTokenBudgetField": "thinking_budget"
+        },
+        "samplingParams": {
+          "temperature": 0.3
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "top_p": 0.8
+          }
+        }
+      },
+      "request": {
+        "reasoning": "off",
+        "thinkingBudgets": {
+          "high": 3072
+        },
+        "maxTokens": 2048,
+        "samplingParams": {
+          "temperature": 0.6
+        },
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-low",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-budget-model",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {
+          "supportsThinkingTokenBudget": true,
+          "thinkingTokenBudgetField": "thinking_budget"
+        },
+        "samplingParams": {
+          "temperature": 0.3
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "top_p": 0.8
+          }
+        }
+      },
+      "request": {
+        "reasoning": "low",
+        "thinkingBudgets": {
+          "high": 3072
+        },
+        "maxTokens": 2048,
+        "samplingParams": {
+          "temperature": 0.6
+        },
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-xhigh",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-budget-model",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {
+          "supportsThinkingTokenBudget": true,
+          "thinkingTokenBudgetField": "thinking_budget"
+        },
+        "samplingParams": {
+          "temperature": 0.3
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "top_p": 0.8
+          }
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "thinkingBudgets": {
+          "high": 3072
+        },
+        "maxTokens": 2048,
+        "samplingParams": {
+          "temperature": 0.6
+        },
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-custom-budget-clamped-high",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-budget-model",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {
+          "supportsThinkingTokenBudget": true,
+          "thinkingTokenBudgetField": "thinking_budget"
+        },
+        "samplingParams": {
+          "temperature": 0.3
+        },
+        "samplingParamsByThinkingLevel": {
+          "high": {
+            "top_p": 0.8
+          }
+        }
+      },
+      "request": {
+        "reasoning": "high",
+        "thinkingBudgets": {
+          "high": 8192
+        },
+        "maxTokens": 1024,
+        "samplingParams": {
+          "temperature": 0.6
+        },
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-anthropic-messages-off",
+      "api": "anthropic-messages",
+      "model": {
+        "provider": "fixture-anthropic",
+        "id": "fixture-claude",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {},
+        "samplingParams": {
+          "temperature": 0.3
+        }
+      },
+      "request": {
+        "reasoning": "off",
+        "thinkingBudgets": {
+          "high": 3072
+        },
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/anthropic-messages.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-anthropic-messages-low",
+      "api": "anthropic-messages",
+      "model": {
+        "provider": "fixture-anthropic",
+        "id": "fixture-claude",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {},
+        "samplingParams": {
+          "temperature": 0.3
+        }
+      },
+      "request": {
+        "reasoning": "low",
+        "thinkingBudgets": {
+          "high": 3072
+        },
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/anthropic-messages.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-anthropic-messages-medium",
+      "api": "anthropic-messages",
+      "model": {
+        "provider": "fixture-anthropic",
+        "id": "fixture-claude",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {},
+        "samplingParams": {
+          "temperature": 0.3
+        }
+      },
+      "request": {
+        "reasoning": "medium",
+        "thinkingBudgets": {
+          "high": 3072
+        },
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/anthropic-messages.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-anthropic-messages-custom-budget-clamped-high",
+      "api": "anthropic-messages",
+      "model": {
+        "provider": "fixture-anthropic",
+        "id": "fixture-claude",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "compat": {},
+        "samplingParams": {
+          "temperature": 0.3
+        }
+      },
+      "request": {
+        "reasoning": "high",
+        "thinkingBudgets": {
+          "high": 8192
+        },
+        "maxTokens": 1024,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/anthropic-messages.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-google-generative-ai-off",
+      "api": "google-generative-ai",
+      "model": {
+        "provider": "google",
+        "id": "gemini-3.5-flash",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.25
+        }
+      },
+      "request": {
+        "reasoning": "off",
+        "maxTokens": 2048,
+        "temperature": 0.5,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/google-generative-ai.ts",
+        "packages/ai/src/api/google-shared.ts"
+      ]
+    },
+    {
+      "id": "wire-google-generative-ai-low",
+      "api": "google-generative-ai",
+      "model": {
+        "provider": "google",
+        "id": "gemini-3.5-flash",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.25
+        }
+      },
+      "request": {
+        "reasoning": "low",
+        "maxTokens": 2048,
+        "temperature": 0.5,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/google-generative-ai.ts",
+        "packages/ai/src/api/google-shared.ts"
+      ]
+    },
+    {
+      "id": "wire-google-generative-ai-xhigh",
+      "api": "google-generative-ai",
+      "model": {
+        "provider": "google",
+        "id": "gemini-3.5-flash",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.25
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "maxTokens": 2048,
+        "temperature": 0.5,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/google-generative-ai.ts",
+        "packages/ai/src/api/google-shared.ts"
+      ]
+    },
+    {
+      "id": "wire-google-vertex-off",
+      "api": "google-vertex",
+      "model": {
+        "provider": "google-vertex",
+        "id": "gemini-3.5-flash",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.25
+        }
+      },
+      "request": {
+        "reasoning": "off",
+        "maxTokens": 2048,
+        "temperature": 0.5,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/google-vertex.ts",
+        "packages/ai/src/api/google-shared.ts"
+      ]
+    },
+    {
+      "id": "wire-google-vertex-low",
+      "api": "google-vertex",
+      "model": {
+        "provider": "google-vertex",
+        "id": "gemini-3.5-flash",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.25
+        }
+      },
+      "request": {
+        "reasoning": "low",
+        "maxTokens": 2048,
+        "temperature": 0.5,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/google-vertex.ts",
+        "packages/ai/src/api/google-shared.ts"
+      ]
+    },
+    {
+      "id": "wire-google-vertex-xhigh",
+      "api": "google-vertex",
+      "model": {
+        "provider": "google-vertex",
+        "id": "gemini-3.5-flash",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "samplingParams": {
+          "temperature": 0.25
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "maxTokens": 2048,
+        "temperature": 0.5,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/google-vertex.ts",
+        "packages/ai/src/api/google-shared.ts"
+      ]
+    }
+  ]
+}

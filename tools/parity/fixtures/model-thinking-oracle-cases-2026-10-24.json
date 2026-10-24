@@ -1,0 +1,2020 @@
+{
+  "models": [
+    {
+      "id": "shared",
+      "name": "Shared reasoning model",
+      "api": "openai-completions",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192,
+      "thinkingLevelMap": {
+        "high": "high",
+        "xhigh": "high"
+      },
+      "samplingParams": {
+        "temperature": 0.2,
+        "top_p": 0.9
+      },
+      "samplingParamsByThinkingLevel": {
+        "low": {
+          "temperature": 0.3
+        },
+        "high": {
+          "temperature": 0.8,
+          "top_k": 64
+        }
+      }
+    },
+    {
+      "id": "shared",
+      "name": "Shared reasoning model",
+      "api": "openai-completions",
+      "provider": "fixture-b",
+      "baseUrl": "https://fixture-b.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192,
+      "thinkingLevelMap": {
+        "high": "high"
+      }
+    },
+    {
+      "id": "fixture-a/shared",
+      "name": "Gateway qualified shared alias",
+      "api": "openai-completions",
+      "provider": "gateway",
+      "baseUrl": "https://gateway.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "reasoner",
+      "name": "Reasoner Model",
+      "api": "openai-completions",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192,
+      "thinkingLevelMap": {
+        "high": "high",
+        "xhigh": "high"
+      },
+      "samplingParams": {
+        "temperature": 0.2,
+        "top_p": 0.9
+      },
+      "samplingParamsByThinkingLevel": {
+        "low": {
+          "temperature": 0.3,
+          "top_p": 0.7
+        },
+        "high": {
+          "temperature": 0.8,
+          "top_k": 64
+        }
+      }
+    },
+    {
+      "id": "reasoner-20250101",
+      "name": "Old Reasoner",
+      "api": "openai-completions",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "reasoner:highlighter",
+      "name": "Reasoner highlighter",
+      "api": "openai-completions",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "reasoner-plus",
+      "name": "Reasoner Plus Alias",
+      "api": "openai-completions",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "fixture-sonnet",
+      "name": "Fixture Sonnet Alias",
+      "api": "anthropic-messages",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "fixture-sonnet-20250101",
+      "name": "Fixture Sonnet dated",
+      "api": "anthropic-messages",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "model[1m]",
+      "name": "Bracketed model",
+      "api": "openai-completions",
+      "provider": "custom",
+      "baseUrl": "https://custom.invalid/v1",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "other-v1",
+      "name": "Other Model One",
+      "api": "openai-completions",
+      "provider": "fixture-b",
+      "baseUrl": "https://fixture-b.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "other-v2",
+      "name": "Other Model Two",
+      "api": "openai-completions",
+      "provider": "fixture-b",
+      "baseUrl": "https://fixture-b.invalid/v1",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "blocked-v1",
+      "name": "Blocked Model",
+      "api": "openai-completions",
+      "provider": "custom",
+      "baseUrl": "https://custom.invalid/v1",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "allowed-v1",
+      "name": "Allowed Model",
+      "api": "openai-completions",
+      "provider": "custom",
+      "baseUrl": "https://custom.invalid/v1",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "alpha-01",
+      "name": "Alpha One",
+      "api": "openai-completions",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "alpha-02",
+      "name": "Alpha Two",
+      "api": "openai-completions",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "alpha-03",
+      "name": "Alpha Three",
+      "api": "openai-completions",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "plain",
+      "name": "Plain Chat",
+      "api": "openai-completions",
+      "provider": "fixture-b",
+      "baseUrl": "https://fixture-b.invalid/v1",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    },
+    {
+      "id": "limited",
+      "name": "Limited reasoning",
+      "api": "openai-completions",
+      "provider": "fixture-a",
+      "baseUrl": "https://fixture-a.invalid/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192,
+      "thinkingLevelMap": {
+        "high": null,
+        "xhigh": null,
+        "max": null
+      }
+    },
+    {
+      "id": "gpt-5.5",
+      "name": "OpenAI default",
+      "api": "openai-responses",
+      "provider": "openai",
+      "baseUrl": "https://api.openai.com/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192,
+      "thinkingLevelMap": {
+        "high": "high",
+        "xhigh": "high"
+      }
+    },
+    {
+      "id": "gpt-5.4",
+      "name": "OpenAI alternate",
+      "api": "openai-responses",
+      "provider": "openai",
+      "baseUrl": "https://api.openai.com/v1",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "contextWindow": 32768,
+      "maxTokens": 8192
+    }
+  ],
+  "cases": [
+    {
+      "id": "reference-unique-authenticated-provider",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "shared",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [
+        "fixture-a"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-shared-id-ambiguous-without-auth",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "shared",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-case-insensitive-provider-prefix",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "FiXtUrE-A/shared",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-gateway-qualified-id-wins-when-usable",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-a/shared",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [
+        "fixture-a"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-thinking-suffix-on-exact-model",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-a/reasoner:high",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "cli-thinking-suffix-on-exact-model",
+      "category": "model-references-and-ambiguity",
+      "operation": "cli",
+      "options": {
+        "cliProvider": "fixture-a",
+        "cliModel": "reasoner:high"
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "cli-explicit-thinking-overrides-suffix",
+      "category": "model-references-and-ambiguity",
+      "operation": "cli",
+      "options": {
+        "cliProvider": "fixture-a",
+        "cliModel": "reasoner:high",
+        "cliThinking": "low"
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "cli-strict-invalid-thinking-suffix",
+      "category": "model-references-and-ambiguity",
+      "operation": "cli",
+      "options": {
+        "cliProvider": "fixture-a",
+        "cliModel": "reasoner:random"
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-minimatch-brace-alternatives",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "custom/{reasoner,other}-*"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-escaped-bracketed-model-id",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "custom/model\\[1m\\]"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-thinking-suffix",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "fixture-a/reasoner:high"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-exact-qualified",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-a/reasoner",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-bare-unique-id",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "other-v1",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-gateway-qualified-id",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-a/shared",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [
+        "gateway"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-literal-colon-id",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-a/reasoner:highlighter",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-fuzzy-model-name",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-a/Reasoner Plus",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-alias-before-dated",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-sonnet-2",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-cross-provider-auth-tie",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "shared",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [
+        "fixture-b"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-unknown-named-target",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-a/missing:high",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-explicit-provider-pool",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "shared",
+        "provider": "fixture-b",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-invalid-suffix-strict",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-a/reasoner:random",
+        "thinkingSuffix": "strict",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-invalid-suffix-lenient",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "fixture-a/reasoner:random",
+        "thinkingSuffix": "lenient",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "reference-no-suffix-colon-literal",
+      "category": "model-references-and-ambiguity",
+      "operation": "reference",
+      "request": {
+        "text": "reasoner:highlighter",
+        "thinkingSuffix": "none",
+        "fuzzy": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "cli-inline-key-does-not-break-ambiguity",
+      "category": "model-references-and-ambiguity",
+      "operation": "cli",
+      "options": {
+        "cliModel": "shared",
+        "inlineApiKey": true
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts",
+        "packages/coding-agent/src/cli/args.ts"
+      ]
+    },
+    {
+      "id": "cli-explicit-provider-breaks-ambiguity",
+      "category": "model-references-and-ambiguity",
+      "operation": "cli",
+      "options": {
+        "cliProvider": "fixture-b",
+        "cliModel": "shared"
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts",
+        "packages/coding-agent/src/cli/args.ts"
+      ]
+    },
+    {
+      "id": "cli-provider-case-insensitive",
+      "category": "model-references-and-ambiguity",
+      "operation": "cli",
+      "options": {
+        "cliProvider": "FIXTURE-A",
+        "cliModel": "reason"
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts",
+        "packages/coding-agent/src/cli/args.ts"
+      ]
+    },
+    {
+      "id": "cli-custom-model-thinking-suffix",
+      "category": "model-references-and-ambiguity",
+      "operation": "cli",
+      "options": {
+        "cliProvider": "fixture-a",
+        "cliModel": "unlisted:high"
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts",
+        "packages/coding-agent/src/cli/args.ts"
+      ]
+    },
+    {
+      "id": "cli-explicit-thinking-keeps-suffix-literal",
+      "category": "model-references-and-ambiguity",
+      "operation": "cli",
+      "options": {
+        "cliProvider": "fixture-a",
+        "cliModel": "unlisted:high",
+        "cliThinking": "low"
+      },
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts",
+        "packages/coding-agent/src/cli/args.ts"
+      ]
+    },
+    {
+      "id": "initial-scoped-wins-fresh",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "scopedModels": [
+        {
+          "provider": "fixture-a",
+          "id": "reasoner"
+        }
+      ],
+      "authenticatedProviders": [
+        "openai",
+        "fixture-a"
+      ],
+      "defaultProvider": "openai",
+      "defaultModelId": "gpt-5.5",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "initial-scope-skipped-while-continuing",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "scopedModels": [
+        {
+          "provider": "fixture-a",
+          "id": "reasoner"
+        }
+      ],
+      "isContinuing": true,
+      "authenticatedProviders": [
+        "openai"
+      ],
+      "defaultProvider": "openai",
+      "defaultModelId": "gpt-5.5",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "initial-saved-default-authenticated",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "defaultProvider": "fixture-a",
+      "defaultModelId": "reasoner",
+      "authenticatedProviders": [
+        "fixture-a"
+      ],
+      "defaultThinkingLevel": "low",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "initial-per-model-level-over-global",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "defaultProvider": "fixture-a",
+      "defaultModelId": "reasoner",
+      "authenticatedProviders": [
+        "fixture-a"
+      ],
+      "defaultThinkingLevel": "low",
+      "modelThinkingLevels": {
+        "fixture-a/reasoner": "high"
+      },
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "initial-unauthed-default-falls-to-provider-default",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "defaultProvider": "fixture-a",
+      "defaultModelId": "reasoner",
+      "authenticatedProviders": [
+        "openai"
+      ],
+      "defaultThinkingLevel": "low",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "initial-first-available-when-no-known-provider-default",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "authenticatedProviders": [
+        "fixture-a"
+      ],
+      "defaultProvider": "unknown",
+      "defaultModelId": "missing",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "initial-empty-catalogue",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "authenticatedProviders": [],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "initial-scope-thinking-overrides-model-setting",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "scopedModels": [
+        {
+          "provider": "fixture-a",
+          "id": "reasoner-plus",
+          "thinkingLevel": "high"
+        }
+      ],
+      "authenticatedProviders": [
+        "fixture-a"
+      ],
+      "defaultThinkingLevel": "low",
+      "modelThinkingLevels": {
+        "fixture-a/reasoner-plus": "minimal"
+      },
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "initial-scope-model-default-precedence",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "scopedModels": [
+        {
+          "provider": "fixture-a",
+          "id": "reasoner"
+        }
+      ],
+      "authenticatedProviders": [
+        "fixture-a"
+      ],
+      "defaultThinkingLevel": "low",
+      "modelThinkingLevels": {
+        "fixture-a/reasoner": "high"
+      },
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "initial-fallback-known-provider-model",
+      "category": "initial-selection-and-recovery",
+      "operation": "initial",
+      "authenticatedProviders": [
+        "openai"
+      ],
+      "defaultProvider": "missing",
+      "defaultModelId": "missing",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-case-insensitive-glob",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "FIXTURE-A/REASONER*"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-id-only-glob",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "*reasoner*"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-brace-range",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "fixture-a/alpha-{01..03}"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-nested-braces",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "fixture-a/{reasoner,{alpha,plain}}*"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-extglob",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "fixture-a/@(reasoner|alpha-01)"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-negated-pattern",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "!custom/blocked-*"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-valid-suffix-glob",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "fixture-a/reasoner*:high"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-invalid-suffix-glob-stays-literal",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "fixture-a/reasoner*:unknown"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-exact-bracketed-id-before-glob",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "custom/model[1m]"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-escaped-bracketed-id",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "custom/model\\[1m\\]"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-ordered-deduplicated-patterns",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "fixture-a/alpha-03",
+        "fixture-a/alpha-01",
+        "fixture-a/alpha-*"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-bare-duplicate-id-ambiguous",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "shared"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-glob-cross-provider-no-ambiguity",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "*/shared"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-fuzzy-alias-ranking",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "sonnet"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "scope-no-match-diagnostic",
+      "category": "scoped-models",
+      "operation": "scope",
+      "patterns": [
+        "fixture-a/does-not-exist"
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-scoped-level-first",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "scopedThinkingLevel": "high",
+      "settings": {
+        "defaultThinkingLevel": "low",
+        "modelThinkingLevels": {
+          "fixture-a/reasoner": "minimal"
+        }
+      },
+      "currentLevel": "off",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-per-model-before-global",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "settings": {
+        "defaultThinkingLevel": "low",
+        "modelThinkingLevels": {
+          "fixture-a/reasoner": "high"
+        }
+      },
+      "currentLevel": "off",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-global-before-current",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "settings": {
+        "defaultThinkingLevel": "low"
+      },
+      "currentLevel": "minimal",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-current-before-medium-default",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "settings": {},
+      "currentLevel": "low",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-medium-default",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "settings": {},
+      "currentLevel": null,
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-high-clamps-down-to-medium",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "fixture-a",
+      "modelId": "limited",
+      "settings": {
+        "defaultThinkingLevel": "high"
+      },
+      "currentLevel": "off",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-nonreasoning-forces-off",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "custom",
+      "modelId": "model[1m]",
+      "settings": {
+        "defaultThinkingLevel": "high"
+      },
+      "currentLevel": "high",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-xhigh-explicitly-supported",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "scopedThinkingLevel": "xhigh",
+      "settings": {},
+      "currentLevel": "off",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-max-clamps-to-xhigh",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "scopedThinkingLevel": "max",
+      "settings": {},
+      "currentLevel": "off",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "thinking-scoped-request-clamped",
+      "category": "thinking-levels-and-defaults",
+      "operation": "thinking",
+      "provider": "fixture-a",
+      "modelId": "limited",
+      "scopedThinkingLevel": "max",
+      "settings": {},
+      "currentLevel": "off",
+      "sourceReferences": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/ai/src/models.ts",
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/test/agent-session-runtime-events.test.ts"
+      ]
+    },
+    {
+      "id": "options-minimal-default",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "minimal",
+      "requestedMaxTokens": null,
+      "customBudgets": null,
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "options-low-default",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "low",
+      "requestedMaxTokens": null,
+      "customBudgets": null,
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "options-medium-default",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "medium",
+      "requestedMaxTokens": null,
+      "customBudgets": null,
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "options-high-default",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "high",
+      "requestedMaxTokens": null,
+      "customBudgets": null,
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "options-xhigh-maps-high",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "xhigh",
+      "requestedMaxTokens": null,
+      "customBudgets": null,
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "options-max-maps-high",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "max",
+      "requestedMaxTokens": null,
+      "customBudgets": null,
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "options-custom-low",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "low",
+      "requestedMaxTokens": null,
+      "customBudgets": {
+        "low": 4096
+      },
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "options-custom-high",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "high",
+      "requestedMaxTokens": null,
+      "customBudgets": {
+        "high": 24576
+      },
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "options-small-output-preserves-answer-room",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "high",
+      "requestedMaxTokens": 512,
+      "customBudgets": {
+        "high": 4096
+      },
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "options-requested-output-ceiling",
+      "category": "budgets-and-sampling",
+      "operation": "options",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "medium",
+      "requestedMaxTokens": 2048,
+      "customBudgets": null,
+      "requestSamplingParams": {
+        "temperature": 0.1
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ]
+    },
+    {
+      "id": "settings-project-default-over-global",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {
+        "defaultThinkingLevel": "low"
+      },
+      "projectSettings": {
+        "defaultThinkingLevel": "high"
+      },
+      "projectTrusted": true,
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "settings-untrusted-project-ignored",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {
+        "defaultThinkingLevel": "low"
+      },
+      "projectSettings": {
+        "defaultThinkingLevel": "high"
+      },
+      "projectTrusted": false,
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "settings-project-model-override-over-global-model-override",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {
+        "modelThinkingLevels": {
+          "fixture-a/reasoner": "low"
+        }
+      },
+      "projectSettings": {
+        "modelThinkingLevels": {
+          "fixture-a/reasoner": "high"
+        }
+      },
+      "projectTrusted": true,
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "settings-set-default-thinking-global",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {},
+      "mutations": [
+        {
+          "type": "defaultThinking",
+          "value": "high"
+        }
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "settings-set-model-thinking-global",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {},
+      "mutations": [
+        {
+          "type": "modelThinking",
+          "provider": "fixture-a",
+          "modelId": "reasoner",
+          "value": "high"
+        }
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "settings-remove-model-thinking",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {
+        "modelThinkingLevels": {
+          "fixture-a/reasoner": "high"
+        }
+      },
+      "mutations": [
+        {
+          "type": "removeModelThinking",
+          "provider": "fixture-a",
+          "modelId": "reasoner"
+        }
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "settings-enabled-model-order",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {},
+      "mutations": [
+        {
+          "type": "enabledModels",
+          "value": [
+            "fixture-a/reasoner:high",
+            "fixture-a/shared",
+            "fixture-a/reasoner:high"
+          ]
+        }
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "settings-remove-enabled-model-scope",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {
+        "enabledModels": [
+          "fixture-a/reasoner"
+        ]
+      },
+      "mutations": [
+        {
+          "type": "enabledModels",
+          "value": null
+        }
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "settings-set-default-model-provider",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {},
+      "mutations": [
+        {
+          "type": "defaultModel",
+          "provider": "fixture-a",
+          "modelId": "reasoner"
+        }
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "settings-mutations-preserve-unrelated-fields",
+      "category": "settings-precedence-and-persistence",
+      "operation": "settings",
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "globalSettings": {
+        "shellCommandPrefix": "printf safe",
+        "defaultThinkingLevel": "low"
+      },
+      "mutations": [
+        {
+          "type": "modelThinking",
+          "provider": "fixture-a",
+          "modelId": "reasoner",
+          "value": "high"
+        }
+      ],
+      "sourceReferences": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-manager.test.ts"
+      ]
+    },
+    {
+      "id": "interface-cli-explicit-provider",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "cli",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "options": {
+        "cliProvider": "fixture-a",
+        "cliModel": "reasoner:high"
+      },
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    },
+    {
+      "id": "interface-cli-inline-key-ambiguity",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "cli",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "options": {
+        "cliModel": "shared",
+        "inlineApiKey": true
+      },
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    },
+    {
+      "id": "interface-cli-explicit-thinking",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "cli",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "options": {
+        "cliProvider": "fixture-a",
+        "cliModel": "reasoner:high",
+        "cliThinking": "low"
+      },
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    },
+    {
+      "id": "interface-tui-model-switch-scope-level-unique-reference",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "tui",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "provider": "fixture-a",
+      "modelId": "reasoner-plus",
+      "scopedThinkingLevel": "high",
+      "settings": {
+        "defaultThinkingLevel": "low"
+      },
+      "currentLevel": "off",
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    },
+    {
+      "id": "interface-tui-model-switch-per-model-level",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "tui",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "settings": {
+        "modelThinkingLevels": {
+          "fixture-a/reasoner": "high"
+        }
+      },
+      "currentLevel": "off",
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    },
+    {
+      "id": "interface-rpc-set-model-supported-thinking",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "rpc",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "high",
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    },
+    {
+      "id": "interface-rpc-set-model-nonreasoning-clamps",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "rpc",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "provider": "custom",
+      "modelId": "model[1m]",
+      "thinkingLevel": "high",
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    },
+    {
+      "id": "interface-rpc-missing-model-error",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "rpc",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "provider": "fixture-a",
+      "modelId": "missing",
+      "thinkingLevel": "high",
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    },
+    {
+      "id": "interface-rpc-xhigh-available",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "rpc",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "provider": "fixture-a",
+      "modelId": "reasoner",
+      "thinkingLevel": "xhigh",
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    },
+    {
+      "id": "interface-rpc-limited-model-clamps",
+      "category": "cli-tui-rpc-integration",
+      "operation": "interface",
+      "interface": "rpc",
+      "authenticatedProviders": [
+        "fixture-a",
+        "fixture-b",
+        "custom",
+        "openai"
+      ],
+      "provider": "fixture-a",
+      "modelId": "limited",
+      "thinkingLevel": "max",
+      "sourceReferences": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
+      ]
+    }
+  ]
+}
