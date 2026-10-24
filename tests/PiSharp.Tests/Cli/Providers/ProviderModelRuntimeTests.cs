@@ -312,7 +312,7 @@ public sealed class ProviderModelRuntimeTests
     }
 
     [Fact]
-    public async Task ExplicitlyEmptyModelScopeDisablesEveryModelUntilCleared()
+    public async Task EmptyModelScopeMeansAllModelsAreAvailable()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-model-empty-scope-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -325,8 +325,11 @@ public sealed class ProviderModelRuntimeTests
             var runtime = await ProviderModelRuntime.CreateAsync(root, false,
                 name => name == "FIXTURE_KEY" ? "fixture-key" : null, http, scope: [], offline: true);
 
-            Assert.True(runtime.HasScope);
-            Assert.Empty(await runtime.ListModelsAsync("fixture"));
+            Assert.False(runtime.HasScope);
+            Assert.Single(await runtime.ListModelsAsync("fixture"));
+            runtime.SetScope([" ", ""]);
+            Assert.False(runtime.HasScope);
+            Assert.Single(await runtime.ListModelsAsync("fixture"));
             runtime.ClearScope();
             Assert.False(runtime.HasScope);
             Assert.Single(await runtime.ListModelsAsync("fixture"));

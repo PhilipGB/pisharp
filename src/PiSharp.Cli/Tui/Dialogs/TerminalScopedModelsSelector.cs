@@ -9,17 +9,53 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
 {
     public async Task ShowAsync(IReadOnlyList<ModelDescriptor> catalog, CancellationToken cancellationToken = default)
     {
-        var models = catalog.Select(model => model.Provider is null ? model with { Provider = "unknown" } : model)
-            .GroupBy(model => Key(model.Provider!, model.Id), StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.First()).ToList();
+        var models = NormalizeCatalog(catalog);
         var allIds = models.Select(model => Key(model.Provider!, model.Id)).ToList();
         var enabledIds = InitialEnabledIds(models);
         var selectedKey = modelRuntime.HasScope ? enabledIds?.FirstOrDefault() : null;
         var options = BuildOptions();
 
-        await editor.ShowSelectionListAsync("Scoped Models", options, selectedKey,
-            actionHint: "Enter toggle · Ctrl+A enable all · Ctrl+X clear · Ctrl+P provider · Alt+↑/↓ reorder · Ctrl+S save · Esc cancel",
-            handleInput: HandleInput, cancellationToken: cancellationToken).ConfigureAwait(false);
+        using var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        refreshCancellation.CancelAfter(TimeSpan.FromSeconds(15));
+        var refreshTask = modelRuntime.ListModelsAsync(cancellationToken: refreshCancellation.Token,
+            includeOutOfScope: true);
+        var refreshApplied = false;
+        try
+        {
+            await editor.ShowSelectionListAsync("Scoped Models", options, selectedKey,
+                actionHint: "Enter toggle · Ctrl+A enable all · Ctrl+X clear · Ctrl+P provider · Alt+↑/↓ reorder · Ctrl+S save · Esc cancel",
+                handleInput: HandleInput, cancellationToken: cancellationToken,
+                onIdle: RefreshCatalogAsync).ConfigureAwait(false);
+        }
+        finally
+        {
+            refreshCancellation.Cancel();
+            try { await refreshTask.ConfigureAwait(false); }
+            catch (OperationCanceledException) { }
+            catch (Exception) { }
+        }
+
+        async Task RefreshCatalogAsync(TerminalSelectionList<ModelDescriptor> list)
+        {
+            if (refreshApplied || !refreshTask.IsCompleted) return;
+            refreshApplied = true;
+            try
+            {
+                var refreshed = await refreshTask.ConfigureAwait(false);
+                models = NormalizeCatalog(refreshed.Concat(models));
+                allIds = models.Select(model => Key(model.Provider!, model.Id)).ToList();
+                list.ReplaceOptions(BuildOptions(), null);
+                ApplySessionScope();
+            }
+            catch (OperationCanceledException) when (refreshCancellation.IsCancellationRequested)
+            {
+                list.SetTitle("Scoped Models · catalog refresh timed out");
+            }
+            catch (Exception)
+            {
+                list.SetTitle("Scoped Models · catalog refresh failed");
+            }
+        }
 
         async Task<bool> HandleInput(TerminalSelectionList<ModelDescriptor> list, TerminalInputEvent input)
         {
@@ -75,8 +111,7 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
             {
                 var value = enabledIds is null ? null : JsonSerializer.Serialize(enabledIds);
                 await persist(value).ConfigureAwait(false);
-                if (enabledIds is null) modelRuntime.ClearScope();
-                else modelRuntime.SetScope(enabledIds);
+                ApplySessionScope();
                 return true;
             }
             return false;
@@ -137,6 +172,7 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
             else enabledIds.Add(id);
             if (enabledIds.Count == allIds.Count && allIds.All(item => enabledIds.Contains(item, StringComparer.OrdinalIgnoreCase)))
                 enabledIds = null;
+            ApplySessionScope();
         }
 
         void Enable(IEnumerable<string> targets)
@@ -145,6 +181,7 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
             foreach (var target in targets)
                 if (!enabledIds.Contains(target, StringComparer.OrdinalIgnoreCase)) enabledIds.Add(target);
             if (allIds.All(item => enabledIds.Contains(item, StringComparer.OrdinalIgnoreCase))) enabledIds = null;
+            ApplySessionScope();
         }
 
         void Clear(IEnumerable<string> targets)
@@ -152,6 +189,7 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
             enabledIds ??= [.. allIds];
             var remove = targets.ToHashSet(StringComparer.OrdinalIgnoreCase);
             enabledIds.RemoveAll(remove.Contains);
+            ApplySessionScope();
         }
 
         void Reorder(string? id, int delta)
@@ -161,8 +199,20 @@ internal sealed class TerminalScopedModelsSelector(ProviderModelRuntime modelRun
             var next = index + delta;
             if (index < 0 || next < 0 || next >= enabledIds.Count) return;
             (enabledIds[index], enabledIds[next]) = (enabledIds[next], enabledIds[index]);
+            ApplySessionScope();
+        }
+
+        void ApplySessionScope()
+        {
+            if (enabledIds is null || enabledIds.Count == 0) modelRuntime.ClearScope();
+            else modelRuntime.SetScope(enabledIds);
         }
     }
+
+    private static List<ModelDescriptor> NormalizeCatalog(IEnumerable<ModelDescriptor> catalog) => catalog
+        .Select(model => model.Provider is null ? model with { Provider = "unknown" } : model)
+        .GroupBy(model => Key(model.Provider!, model.Id), StringComparer.OrdinalIgnoreCase)
+        .Select(group => group.First()).ToList();
 
     private static bool IsDefaultSaveKey(ConsoleKeyInfo key) =>
         key.Key == ConsoleKey.S && key.Modifiers.HasFlag(ConsoleModifiers.Control);

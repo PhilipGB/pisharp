@@ -165,14 +165,25 @@ public sealed class RpcToolCallDeltaProcessTests
 
     private static HttpListener StartLoopbackListener(out int port)
     {
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        var listener = new HttpListener();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
-        return listener;
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            using var reservation = new TcpListener(IPAddress.Loopback, 0);
+            reservation.Start();
+            port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+            reservation.Stop();
+            var listener = new HttpListener();
+            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+            try
+            {
+                listener.Start();
+                return listener;
+            }
+            catch (HttpListenerException) when (attempt < 9)
+            {
+                listener.Close();
+            }
+        }
+        throw new InvalidOperationException("Could not bind a loopback listener for RPC tool-call delta fixture.");
     }
 
     private static object ToolChunk(object delta, string? finishReason) => new

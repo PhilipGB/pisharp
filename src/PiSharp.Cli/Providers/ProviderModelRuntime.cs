@@ -76,8 +76,9 @@ public sealed class ProviderModelRuntime
         _http = http;
         _runtimeApiKey = runtimeApiKey;
         _offline = offline;
-        _scope = scope ?? [];
-        _scopeConfigured = scope is not null;
+        _scope = [];
+        _scopeConfigured = false;
+        SetScope(scope);
         _available = new AvailableModelSnapshot(providers.Values.Where(provider => provider.ApiKeyEnvironment is { } keyName &&
             !string.IsNullOrWhiteSpace(environment(keyName)) && provider.Models.Any(model => model.Available)));
         _llamaDiscovery = new LlamaRouterDiscovery(agentDirectory, http, providers["llama.cpp"], _available);
@@ -275,6 +276,11 @@ public sealed class ProviderModelRuntime
             return;
         }
         var values = patterns.Select(value => value.Trim()).Where(value => value.Length > 0).ToArray();
+        if (values.Length == 0)
+        {
+            ClearScope();
+            return;
+        }
         _scope = values;
         _scopeConfigured = true;
     }

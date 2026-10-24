@@ -39,7 +39,7 @@ internal static class InteractiveMode
         TerminalSessionNavigation? sessionNavigationReference = null;
         var terminalThinkingSelector = editor is null ? null : new TerminalThinkingSelector(editor);
         var settingsCommands = new TerminalSettingsCommands(agentDirectory, projectBinding, modelBinding, conversationBinding,
-            modelTransitions, presentation, execution);
+            modelTransitions, modelRuntimeController, modelRuntime, presentation, execution);
         var terminalProviderCommands = new TerminalProviderCommands(modelRuntime, modelRuntimeController, modelBinding,
             () => Console.Out, terminalThinkingSelector, editor,
             value => settingsCommands.SaveSettingAsync(projectScope: false, "enabledModels", value));

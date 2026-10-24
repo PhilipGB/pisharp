@@ -14,7 +14,7 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
             ? null
             : (list, input) => ValueTask.FromResult(handleInput(list, input));
         return SelectCoreAsync(screen, title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
-            emptyMessage, actionHint, asyncHandler, CancellationToken.None).GetAwaiter().GetResult();
+            emptyMessage, actionHint, asyncHandler, null, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public Task<TerminalSelection<T>?> SelectAsync<T>(TerminalScreen screen, string title,
@@ -23,13 +23,14 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
         string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
         string? actionHint = null,
         Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<TerminalSelectionList<T>, Task>? onIdle = null)
     {
         Func<TerminalSelectionList<T>, TerminalInputEvent, ValueTask<bool>>? asyncHandler = handleInput is null
             ? null
             : (list, input) => new ValueTask<bool>(handleInput(list, input));
         return SelectCoreAsync(screen, title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
-            emptyMessage, actionHint, asyncHandler, cancellationToken);
+            emptyMessage, actionHint, asyncHandler, onIdle, cancellationToken);
     }
 
     private async Task<TerminalSelection<T>?> SelectCoreAsync<T>(TerminalScreen screen, string title,
@@ -37,7 +38,7 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
         IReadOnlyList<TerminalSelectionOption<T>>? scopedOptions, string allLabel, string scopedLabel,
         string emptyMessage, string? actionHint,
         Func<TerminalSelectionList<T>, TerminalInputEvent, ValueTask<bool>>? handleInput,
-        CancellationToken cancellationToken)
+        Func<TerminalSelectionList<T>, Task>? onIdle, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(screen);
         var list = new TerminalSelectionList<T>(title, options, selectedKey, scopedOptions,
@@ -48,10 +49,11 @@ internal sealed class TerminalOverlayHost(TerminalInput input)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 screen.RefreshIfResized();
+                if (onIdle is not null) await onIdle(list).ConfigureAwait(false);
                 var content = list.Render(screen.TerminalWidth, screen.TerminalHeight);
                 screen.SetOverlay(content);
                 TerminalInputEvent next;
-                if (list.Selected?.Option.SelectedLabelRenderer is not null)
+                if (onIdle is not null || list.Selected?.Option.SelectedLabelRenderer is not null)
                 {
                     if (!input.TryRead(50, out next)) continue;
                 }
