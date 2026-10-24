@@ -67,13 +67,14 @@ internal sealed class TerminalDialogs(EditorKeymap keymap, Func<TerminalInput> g
         string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
         string? actionHint = null,
         Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<TerminalSelectionList<T>, Task>? onIdle = null)
     {
         if (getScreen() is not { IsActive: true } screen) return null;
         var input = getInput();
         using var mode = TerminalMode.Enter(screen);
         return await new TerminalOverlayHost(input).SelectAsync(screen, title, options, selectedKey, scopedOptions,
-            allLabel, scopedLabel, emptyMessage, actionHint, handleInput, cancellationToken).ConfigureAwait(false);
+            allLabel, scopedLabel, emptyMessage, actionHint, handleInput, cancellationToken, onIdle).ConfigureAwait(false);
     }
 
     public TerminalSelection<T>? ShowModelSelectionList<T>(

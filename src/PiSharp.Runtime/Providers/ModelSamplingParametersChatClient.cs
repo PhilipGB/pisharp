@@ -6,18 +6,22 @@ namespace PiSharp.Runtime.Providers;
 
 public sealed class SamplingParametersRequestContext
 {
-    private readonly AsyncLocal<JsonElement?> _current = new();
+    private readonly AsyncLocal<RequestState?> _current = new();
 
-    public JsonElement? Current => _current.Value;
+    public JsonElement? Current => _current.Value?.SamplingParameters;
+    public string? ThinkingLevel => _current.Value?.ThinkingLevel;
+    public ModelDescriptor? Model => _current.Value?.Model;
 
-    public IDisposable Push(JsonElement? parameters)
+    public IDisposable Push(JsonElement? parameters, string thinkingLevel, ModelDescriptor model)
     {
         var previous = _current.Value;
-        _current.Value = parameters;
+        _current.Value = new(parameters, thinkingLevel, model);
         return new Scope(this, previous);
     }
 
-    private sealed class Scope(SamplingParametersRequestContext owner, JsonElement? previous) : IDisposable
+    private sealed record RequestState(JsonElement? SamplingParameters, string ThinkingLevel, ModelDescriptor Model);
+
+    private sealed class Scope(SamplingParametersRequestContext owner, RequestState? previous) : IDisposable
     {
         private int _disposed;
 
@@ -39,7 +43,8 @@ public sealed class ModelSamplingParametersChatClient(IChatClient inner, ModelDe
         ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         var (requestOptions, parameters) = Prepare(options);
-        using var scope = requestContext.Push(parameters);
+        var thinkingLevel = GetString(options?.AdditionalProperties, ThinkingLevelProperty) ?? GetThinkingLevel(options?.Reasoning);
+        using var scope = requestContext.Push(parameters, thinkingLevel, model);
         return await base.GetResponseAsync(messages, requestOptions, cancellationToken).ConfigureAwait(false);
     }
 
@@ -48,7 +53,8 @@ public sealed class ModelSamplingParametersChatClient(IChatClient inner, ModelDe
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var (requestOptions, parameters) = Prepare(options);
-        using var scope = requestContext.Push(parameters);
+        var thinkingLevel = GetString(options?.AdditionalProperties, ThinkingLevelProperty) ?? GetThinkingLevel(options?.Reasoning);
+        using var scope = requestContext.Push(parameters, thinkingLevel, model);
         await foreach (var update in base.GetStreamingResponseAsync(messages, requestOptions, cancellationToken)
             .WithCancellation(cancellationToken).ConfigureAwait(false))
             yield return update;
@@ -92,7 +98,7 @@ public sealed class ModelSamplingParametersChatClient(IChatClient inner, ModelDe
         return (requestOptions, parameters);
     }
 
-    private static JsonElement? Resolve(ModelDescriptor model, string thinkingLevel,
+    internal static JsonElement? Resolve(ModelDescriptor model, string thinkingLevel,
         JsonElement? requestParameters)
     {
         var effectiveLevel = ClampThinkingLevel(model, thinkingLevel);

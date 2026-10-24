@@ -5,11 +5,14 @@ internal sealed record PersistedUserSettings(UserSettings User, UserSettings? Pr
 internal static class UserSettingsPersistence
 {
     public static async Task<PersistedUserSettings> SaveModelThinkingLevelAsync(string agentDirectory,
-        string provider, string modelId, string level, UserSettings user, UserSettings? project,
+        string provider, string modelId, string? level, UserSettings user, UserSettings? project,
         Func<string, string?> environment, CancellationToken cancellationToken = default)
     {
         var path = UserSettings.GetSettingsPath(agentDirectory, environment);
-        await UserSettingsWriter.SetModelThinkingLevelAsync(path, provider, modelId, level, cancellationToken);
+        if (level is null)
+            await UserSettingsWriter.RemoveModelThinkingLevelAsync(path, provider, modelId, cancellationToken);
+        else
+            await UserSettingsWriter.SetModelThinkingLevelAsync(path, provider, modelId, level, cancellationToken);
         user = await UserSettings.LoadAsync(agentDirectory, environment, cancellationToken);
         return new(user, project, user.Overlay(project ?? new UserSettings()));
     }

@@ -1252,6 +1252,37 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Fact]
+    public async Task OpenAiCompletionsPreservesMediumThinkingEffort()
+    {
+        using var listener = StartLoopbackListener(out var port);
+        string? reasoningEffort = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync();
+            using var reader = new StreamReader(request.Request.InputStream);
+            using var body = JsonDocument.Parse(await reader.ReadToEndAsync());
+            reasoningEffort = body.RootElement.GetProperty("reasoning_effort").GetString();
+            request.Response.ContentType = "application/json";
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("""
+                {"id":"chatcmpl_medium","object":"chat.completion","created":1,"model":"fixture-model","choices":[{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}
+                """);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        var baseSelection = Selection("fixture", $"http://127.0.0.1:{port}/v1", "openai-completions");
+        var selection = baseSelection with { Model = baseSelection.Model with { Reasoning = true } };
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var response = await ProviderChatClientFactory.Create(selection).GetResponseAsync(
+            [new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, "hello")],
+            new Microsoft.Extensions.AI.ChatOptions { Reasoning = ThinkingLevels.ToOptions("medium") }, deadline.Token);
+        await server.WaitAsync(deadline.Token);
+
+        Assert.Equal("medium", reasoningEffort);
+        Assert.Equal("ok", response.Text);
+    }
+
+    [Fact]
     public async Task OpenAiCompletionsProjectsCurrentPiDefaultRequestShape()
     {
         using var listener = StartLoopbackListener(out var port);

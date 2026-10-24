@@ -54,6 +54,8 @@ internal sealed class TerminalSelectionList<T>
     }
 
     public bool IsScoped { get; private set; }
+    public string SearchQuery => _query;
+    public IReadOnlyList<TerminalSelectionOption<T>> VisibleOptions => _filteredOptions;
     public void SetTitle(string title) => _title = Clean(title);
     public TerminalSelection<T>? Selected
     {

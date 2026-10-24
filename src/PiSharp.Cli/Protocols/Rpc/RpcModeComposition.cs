@@ -97,7 +97,8 @@ internal static class RpcModeComposition
             projectBinding.Resources, GetRpcModelsAsync,
             extensionLease.Current.Registration, () => modelBinding.Selection.Authenticated ? null :
                 $"Provider '{modelBinding.Selection.Provider.Id}' is not authenticated. Use /login {modelBinding.Selection.Provider.Id} or configure {modelBinding.Selection.Provider.ApiKeyEnvironment ?? "a credential"}.",
-            modelTransitions.SelectRpcModelAsync, () => conversationBinding.Run, () => modelBinding.Thinking, () => modelRuntime.Scope.Count > 0,
+            modelTransitions.SelectRpcModelAsync, () => conversationBinding.Run, () => conversationBinding.Run.ThinkingLevel,
+            () => modelRuntime.HasScope,
             modelTransitions.SetRpcThinkingLevelAsync, () => ThinkingLevels.AvailableForModel(modelBinding.Selection.Model.Reasoning,
                 modelBinding.Selection.Model.ThinkingLevelMap),
             () => modelBinding.Selection.Model.Reasoning == true, () => ProviderChatClientFactory.ResolveProtocol(modelBinding.Selection),

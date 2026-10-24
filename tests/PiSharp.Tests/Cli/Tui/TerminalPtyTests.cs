@@ -1485,7 +1485,7 @@ public sealed class TerminalPtyTests
             var initial = await screen.WaitForFrameAsync(frame =>
                 frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
                 frame.Contains("Auto-compact", StringComparison.Ordinal) &&
-                frame.Contains("(1/27)", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+                frame.Contains("(1/28)", StringComparison.Ordinal)).WaitAsync(timeout.Token);
             var sharedOrder = new[]
             {
                 "Auto-compact", "Auto-resize images", "Block images", "Skill commands",
@@ -2849,7 +2849,476 @@ public sealed class TerminalPtyTests
             """);
     }
 
-    private static Process StartThinkingFixtureProcess(string workingDirectory, string agentDirectory)
+    [Fact]
+    public async Task ScopedModelsSelectorAppliesSessionEditsAndPersistsReorderedScopeThroughLinuxPty()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-scoped-models-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"https://fixture.test/v1","apiKeyEnv":"PISHARP_SCOPED_KEY","models":[
+              {"id":"model-a","name":"Model A","reasoning":true},
+              {"id":"model-b","name":"Model B","reasoning":true}
+            ]}}}
+            """);
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
+            "{\"shellCommandPrefix\":\"preserved\",\"enabledModels\":[\"fixture/model-a\",\"fixture/model-b\"]}\n");
+
+        Process? process = null;
+        Process? restoredProcess = null;
+        try
+        {
+            process = StartThinkingFixtureProcess(root, agent);
+            var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+            try { await screen.InputReady.WaitAsync(timeout.Token); }
+            catch (OperationCanceledException)
+            {
+                var stdoutTail = screen.CapturedOutput;
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                var errorText = await stderr;
+                throw new InvalidOperationException($"Scoped-model selector PTY did not become interactive. Exit={process.ExitCode}. stdout: {stdoutTail[^Math.Min(2000, stdoutTail.Length)..]} stderr: {errorText}");
+            }
+            await process.StandardInput.WriteAsync("/scoped-models\r");
+            await process.StandardInput.FlushAsync();
+            await screen.WaitForFrameAsync(frame => frame.Contains("Scoped Models", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+
+            await process.StandardInput.WriteAsync("fixture/model-b");
+            await process.StandardInput.FlushAsync();
+            await screen.WaitForFrameAsync(frame => frame.Contains("Search: fixture/model-b", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("\r");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u001b");
+            await process.StandardInput.FlushAsync();
+            await screen.WaitForFrameAsync(frame => !frame.Contains("Scoped Models", StringComparison.Ordinal) &&
+                EditorInputLine(frame).Length == 0).WaitAsync(timeout.Token);
+
+            using (var unchanged = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(agent, "settings.json"))))
+                Assert.Equal(new[] { "fixture/model-a", "fixture/model-b" }, unchanged.RootElement.GetProperty("enabledModels")
+                    .EnumerateArray().Select(item => item.GetString()));
+
+            await process.StandardInput.WriteAsync("/scoped-models\r");
+            await process.StandardInput.FlushAsync();
+            await screen.WaitForFrameAsync(frame => frame.Contains("Scoped Models", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("fixture/model-a");
+            await process.StandardInput.FlushAsync();
+            var reopened = await screen.WaitForFrameAsync(frame => frame.Contains("Search: fixture/model-a", StringComparison.Ordinal) &&
+                frame.Contains("✓ model-a [fixture]", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            Assert.Contains("✓ model-a [fixture]", reopened, StringComparison.Ordinal);
+            await process.StandardInput.WriteAsync("\u0010");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u001b[1;3B");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u0018");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u0001");
+            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteAsync("\u0013");
+            await process.StandardInput.FlushAsync();
+
+            var settingsPath = Path.Combine(agent, "settings.json");
+            using (var savedWait = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token))
+            {
+                savedWait.CancelAfter(TimeSpan.FromSeconds(8));
+                while (!File.Exists(settingsPath))
+                    await Task.Delay(30, savedWait.Token);
+            }
+            var scopeSaved = false;
+            try
+            {
+                while (!scopeSaved)
+                {
+                    using var savedDocument = JsonDocument.Parse(await File.ReadAllTextAsync(settingsPath, timeout.Token));
+                    scopeSaved = savedDocument.RootElement.TryGetProperty("enabledModels", out var enabledModels) &&
+                        enabledModels.ValueKind == JsonValueKind.Array && enabledModels.EnumerateArray()
+                            .Select(item => item.GetString()).SequenceEqual(new[] { "fixture/model-b", "fixture/model-a" });
+                    if (!scopeSaved) await Task.Delay(30, timeout.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                var stdoutTail = screen.CapturedOutput;
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                var errorText = await stderr;
+                throw new InvalidOperationException($"Scoped-model selection was not saved. Screen: {screen.LastFrame}. stdout: {stdoutTail[^Math.Min(2000, stdoutTail.Length)..]} stderr: {errorText}");
+            }
+            var saved = await UserSettings.LoadAsync(agent, _ => null, timeout.Token);
+            Assert.Equal("preserved", saved.ShellCommandPrefix);
+            Assert.Equal(new[] { "fixture/model-b", "fixture/model-a" }, saved.EnabledModels);
+
+            await process.StandardInput.WriteAsync("\u001b");
+            await process.StandardInput.FlushAsync();
+            await screen.WaitForFrameAsync(frame => frame.Contains(
+                    $"Scoped models: {saved.EnabledModels!.Count} model references", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            await stdout.WaitAsync(timeout.Token);
+
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Exception:", await stderr, StringComparison.Ordinal);
+
+            restoredProcess = StartThinkingFixtureProcess(root, agent);
+            var restoredScreen = new PtyScreenCapture(restoredProcess, rows: 24, columns: 100);
+            var restoredStdout = restoredScreen.ReadCompletion;
+            var restoredStderr = restoredProcess.StandardError.ReadToEndAsync();
+            await restoredScreen.InputReady.WaitAsync(timeout.Token);
+            await restoredProcess.StandardInput.WriteAsync("/scoped-models\r");
+            await restoredProcess.StandardInput.FlushAsync();
+            var restoredOrder = await restoredScreen.WaitForFrameAsync(frame =>
+                frame.Contains("Scoped Models", StringComparison.Ordinal) &&
+                frame.Contains("model-b [fixture]", StringComparison.Ordinal) &&
+                frame.Contains("model-a [fixture]", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            Assert.True(restoredOrder.IndexOf("model-b [fixture]", StringComparison.Ordinal) <
+                restoredOrder.IndexOf("model-a [fixture]", StringComparison.Ordinal));
+            await restoredProcess.StandardInput.WriteAsync("fixture/model-a");
+            await restoredProcess.StandardInput.FlushAsync();
+            var restoredSelection = await restoredScreen.WaitForFrameAsync(frame =>
+                frame.Contains("Search: fixture/model-a", StringComparison.Ordinal) &&
+                frame.Contains("model-a [fixture]", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            Assert.Contains("✓ model-a [fixture]", restoredSelection, StringComparison.Ordinal);
+            await restoredProcess.StandardInput.WriteAsync("\u001b");
+            await restoredProcess.StandardInput.FlushAsync();
+            await restoredScreen.WaitForFrameAsync(frame => !frame.Contains("Scoped Models", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await restoredProcess.StandardInput.WriteAsync("/quit\r");
+            restoredProcess.StandardInput.Close();
+            await restoredProcess.WaitForExitAsync(timeout.Token);
+            await restoredStdout.WaitAsync(timeout.Token);
+            Assert.Equal(0, restoredProcess.ExitCode);
+            Assert.DoesNotContain("Exception:", await restoredStderr, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            if (restoredProcess is { HasExited: false }) restoredProcess.Kill(entireProcessTree: true);
+            process?.Dispose();
+            restoredProcess?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SettingsPickerSetsAndRemovesPerModelThinkingDefaultsThroughLinuxPty()
+    {
+        // Pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6 exposes per-model levels and clear in settings-selector.ts.
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-thinking-settings-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        Process? process = null;
+        try
+        {
+            await WriteThinkingFixtureSettingsAsync(agent);
+            await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), """
+                {"defaultThinkingLevel":"medium","modelThinkingLevels":{"fixture/fixture-model":"low"}}
+                """);
+            process = StartThinkingFixtureProcess(root, agent);
+            var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            async Task OpenModelThinkingSettingsAsync(bool rootPicker)
+            {
+                if (rootPicker)
+                {
+                    await SendAsync("/settings\r");
+                    await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal))
+                        .WaitAsync(timeout.Token);
+                    await SendAsync(string.Concat(Enumerable.Repeat("\u001b[B", 17)));
+                    await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
+                        frame.Contains("Default thinking per model", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+                }
+                await SendAsync("\r");
+                try
+                {
+                    await screen.WaitForFrameAsync(frame => frame.Contains("Default Thinking · Model", StringComparison.Ordinal) &&
+                        frame.Contains("fixture-model [fixture]", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw new InvalidOperationException($"Per-model thinking picker did not open. Last frame:\n{screen.LastFrame}");
+                }
+                await SendAsync("\r");
+                await screen.WaitForFrameAsync(frame => frame.Contains("Thinking Default · fixture/fixture-model", StringComparison.Ordinal))
+                    .WaitAsync(timeout.Token);
+            }
+
+            await OpenModelThinkingSettingsAsync(rootPicker: true);
+            await SendAsync("\u001b[B\u001b[B");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Thinking Default · fixture/fixture-model", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("> ", StringComparison.Ordinal) &&
+                    line.Contains("high", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            await SendAsync("\r");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
+                frame.Contains("Saved thinking default for fixture/fixture-model: high.", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await SendAsync("\u001b");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Settings closed.", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await screen.WaitForFrameAsync(frame => frame.Split('\n').Any(line =>
+                line.Contains("fixture-model • high", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            Assert.Equal("high", (await UserSettings.LoadAsync(agent, _ => null, timeout.Token))
+                .GetModelThinkingLevel("fixture", "fixture-model"));
+            await OpenModelThinkingSettingsAsync(rootPicker: true);
+            await SendAsync("\u001b[B");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Thinking Default · fixture/fixture-model", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("> ", StringComparison.Ordinal) &&
+                    line.Contains("Clear override", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            await SendAsync("\r");
+            using (var clearTimeout = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token))
+            {
+                clearTimeout.CancelAfter(TimeSpan.FromSeconds(10));
+                var cleared = false;
+                while (!cleared)
+                {
+                    var currentSettings = await UserSettings.LoadAsync(agent, _ => null, clearTimeout.Token);
+                    cleared = currentSettings.ModelThinkingLevels is null;
+                    if (!cleared)
+                        await Task.Delay(30, clearTimeout.Token);
+                }
+            }
+            await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await SendAsync("\u001b");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Settings closed.", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await screen.WaitForFrameAsync(frame => frame.Split('\n').Any(line =>
+                line.Contains("fixture-model • medium", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            Assert.Null((await UserSettings.LoadAsync(agent, _ => null, timeout.Token)).ModelThinkingLevels);
+
+            await SendAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            await stdout.WaitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Exception:", await stderr, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SavedPerModelThinkingDefaultChangesTheNextProviderRequestThroughLinuxPty()
+    {
+        // The selected settings value must reach the next physical OpenAI Responses request.
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-model-thinking-wire-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        using var listener = StartLoopbackListener(out var port);
+        using var serverTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        var wireRequest = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(serverTimeout.Token);
+            Assert.Equal("/v1/responses", request.Request.Url?.AbsolutePath);
+            using (var reader = new StreamReader(request.Request.InputStream))
+                wireRequest.TrySetResult(await reader.ReadToEndAsync(serverTimeout.Token));
+            request.Response.ContentType = "text/event-stream";
+            request.Response.KeepAlive = false;
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            await writer.WriteAsync("data: {\"type\":\"response.created\",\"response\":{\"id\":\"settings_wire\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n");
+            await writer.WriteAsync("data: {\"type\":\"response.output_text.delta\",\"item_id\":\"settings_wire_msg\",\"output_index\":0,\"content_index\":0,\"delta\":\"SETTINGS_WIRE_OK\"}\n\n");
+            await writer.WriteAsync("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"settings_wire\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\n");
+            await writer.WriteAsync("data: [DONE]\n\n");
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+        Process? process = null;
+        try
+        {
+            await WriteThinkingFixtureSettingsAsync(agent);
+            var modelsPath = Path.Combine(agent, "models.json");
+            var models = await File.ReadAllTextAsync(modelsPath);
+            await File.WriteAllTextAsync(modelsPath,
+                models.Replace("http://127.0.0.1:1/v1", $"http://127.0.0.1:{port}/v1", StringComparison.Ordinal));
+            await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"), """
+                {"defaultThinkingLevel":"medium","modelThinkingLevels":{"fixture/fixture-model":"low"}}
+                """);
+            await UserSettingsWriter.SetAsync(Path.Combine(agent, "settings.json"),
+                "terminal.showTerminalProgress", "true", userScope: true);
+            process = StartThinkingFixtureProcess(root, agent);
+            var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            await screen.InputReady.WaitAsync(timeout.Token);
+
+            async Task SendAsync(string input)
+            {
+                await process.StandardInput.WriteAsync(input);
+                await process.StandardInput.FlushAsync();
+            }
+
+            await SendAsync("/settings\r");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await SendAsync(string.Concat(Enumerable.Repeat("\u001b[B", 17)));
+            await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
+                frame.Contains("Default thinking per model", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            await SendAsync("\r");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Default Thinking · Model", StringComparison.Ordinal) &&
+                frame.Contains("fixture-model [fixture]", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            await SendAsync("\r");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Thinking Default · fixture/fixture-model", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await SendAsync("\u001b[B\u001b[B");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Thinking Default · fixture/fixture-model", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("> ", StringComparison.Ordinal) &&
+                    line.Contains("high", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+            await SendAsync("\r");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Settings · User settings", StringComparison.Ordinal) &&
+                frame.Contains("Saved thinking default for fixture/fixture-model: high.", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await SendAsync("\u001b");
+            await screen.WaitForFrameAsync(frame => frame.Contains("Settings closed.", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await screen.WaitForFrameAsync(frame => frame.Split('\n').Any(line =>
+                line.Contains("fixture-model • high", StringComparison.Ordinal))).WaitAsync(timeout.Token);
+
+            await SendAsync("request after settings change\r");
+            using (var requestBody = JsonDocument.Parse(await wireRequest.Task.WaitAsync(timeout.Token)))
+                Assert.Equal("high", requestBody.RootElement.GetProperty("reasoning").GetProperty("effort").GetString());
+            const string progressStarted = "\u001b]9;4;3\u0007";
+            const string progressCleared = "\u001b]9;4;0\u0007";
+            async Task WaitForOutputAsync(string expected)
+            {
+                while (!screen.CapturedOutput.Contains(expected, StringComparison.Ordinal))
+                    await Task.Delay(10, timeout.Token);
+            }
+
+            await WaitForOutputAsync(progressStarted);
+            await screen.WaitForFrameAsync(frame => frame.Contains("SETTINGS_WIRE_OK", StringComparison.Ordinal) &&
+                frame.Split('\n').Any(line => line.Contains("fixture-model • high", StringComparison.Ordinal)))
+                .WaitAsync(timeout.Token);
+            await WaitForOutputAsync(progressCleared);
+
+            await SendAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            await stdout.WaitAsync(timeout.Token);
+            await server.WaitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Exception:", await stderr, StringComparison.Ordinal);
+        }
+        finally
+        {
+            serverTimeout.Cancel();
+            listener.Close();
+            try { await server; }
+            catch (Exception error) when (error is OperationCanceledException or HttpListenerException or ObjectDisposedException) { }
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ScopedModelsSelectorAddsModelsDiscoveredWhileOpenThroughLinuxPty()
+    {
+        // Pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6 refreshes the selector catalog while it remains open.
+        if (!OperatingSystem.IsLinux() || !File.Exists("/usr/bin/script")) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-scoped-model-refresh-pty-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agent);
+        using var listener = StartLoopbackListener(out var port);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var refreshRequest = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseRefresh = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = Task.Run(async () =>
+        {
+            for (var index = 0; index < 2; index++)
+            {
+                var request = await listener.GetContextAsync().WaitAsync(timeout.Token);
+                Assert.Equal("/v1/models", request.Request.Url?.AbsolutePath);
+                Assert.Equal("Bearer scoped-key", request.Request.Headers["Authorization"]);
+                if (index == 1)
+                {
+                    refreshRequest.TrySetResult();
+                    await releaseRefresh.Task.WaitAsync(timeout.Token);
+                }
+                var body = index == 0
+                    ? """{"data":[{"id":"model-a","name":"Model A","reasoning":true}]}"""
+                    : """{"data":[{"id":"model-a","name":"Model A","reasoning":true},{"id":"refresh-probe-zebra-482","name":"Refresh Probe","reasoning":true}]}""";
+                var bytes = Encoding.UTF8.GetBytes(body);
+                request.Response.ContentType = "application/json";
+                request.Response.ContentLength64 = bytes.Length;
+                await request.Response.OutputStream.WriteAsync(bytes, timeout.Token);
+                request.Response.Close();
+            }
+        });
+        Process? process = null;
+        try
+        {
+            var modelsJson = """
+                {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:0/v1","apiKeyEnv":"PISHARP_SCOPED_KEY","models":[{"id":"fixture-model","reasoning":true}]}}}
+                """;
+            await File.WriteAllTextAsync(Path.Combine(agent, "models.json"),
+                modelsJson.Replace("127.0.0.1:0/v1", $"127.0.0.1:{port}/v1", StringComparison.Ordinal));
+            process = StartThinkingFixtureProcess(root, agent, offline: false, scopedKey: "scoped-key");
+            var screen = new PtyScreenCapture(process, rows: 24, columns: 100);
+            var stdout = screen.ReadCompletion;
+            var stderr = process.StandardError.ReadToEndAsync();
+            await screen.InputReady.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/scoped-models\r");
+            await process.StandardInput.FlushAsync();
+            await screen.WaitForFrameAsync(frame => frame.Contains("Scoped Models", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await refreshRequest.Task.WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("fixture/refresh-probe-zebra-482");
+            await process.StandardInput.FlushAsync();
+            await screen.WaitForFrameAsync(frame => frame.Contains("Search: fixture/refresh-probe-zebra-482", StringComparison.Ordinal) &&
+                frame.Contains("No matching items", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+
+            releaseRefresh.TrySetResult();
+            var refreshed = await screen.WaitForFrameAsync(frame =>
+                frame.Contains("Search: fixture/refresh-probe-zebra-482", StringComparison.Ordinal) &&
+                frame.Contains("refresh-probe-zebra-482 [fixture]", StringComparison.Ordinal)).WaitAsync(timeout.Token);
+            Assert.Contains("refresh-probe-zebra-482 [fixture]", refreshed, StringComparison.Ordinal);
+
+            await process.StandardInput.WriteAsync("\u001b");
+            await process.StandardInput.FlushAsync();
+            await screen.WaitForFrameAsync(frame => !frame.Contains("Scoped Models", StringComparison.Ordinal))
+                .WaitAsync(timeout.Token);
+            await process.StandardInput.WriteAsync("/quit\r");
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            await stdout.WaitAsync(timeout.Token);
+            await server.WaitAsync(timeout.Token);
+            Assert.Equal(0, process.ExitCode);
+            Assert.DoesNotContain("Exception:", await stderr, StringComparison.Ordinal);
+        }
+        finally
+        {
+            releaseRefresh.TrySetResult();
+            if (process is { HasExited: false }) process.Kill(entireProcessTree: true);
+            process?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static Process StartThinkingFixtureProcess(string workingDirectory, string agentDirectory,
+        bool offline = true, string? scopedKey = null)
     {
         var start = new ProcessStartInfo("/usr/bin/script")
         {
@@ -2861,11 +3330,12 @@ public sealed class TerminalPtyTests
         start.ArgumentList.Add("-q");
         start.ArgumentList.Add("-e");
         start.ArgumentList.Add("-c");
-        start.ArgumentList.Add($"stty rows 30 cols 100; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --provider fixture --model fixture-model --no-session --offline --no-tools");
+        start.ArgumentList.Add($"stty rows 30 cols 100; exec dotnet {ShellQuote(typeof(CliArguments).Assembly.Location)} --provider fixture --model fixture-model --no-session{(offline ? " --offline" : "")} --no-tools");
         start.ArgumentList.Add("/dev/null");
         foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH" })
             start.Environment.Remove(name);
         start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+        if (scopedKey is not null) start.Environment["PISHARP_SCOPED_KEY"] = scopedKey;
         return Process.Start(start) ?? throw new InvalidOperationException("Could not start the interactive PTY fixture.");
     }
 

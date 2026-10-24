@@ -10,7 +10,7 @@ namespace PiSharp.Tests;
 public sealed class RpcActiveModelSelectionProcessTests
 {
     [Fact]
-    public async Task RpcModelSelectionAndCycleDuringBlockedToolTurnChangeTheNextProviderRequest()
+    public async Task RpcModelAndThinkingChangesDuringBlockedToolTurnReachTheNextProviderRequest()
     {
         if (!OperatingSystem.IsLinux()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-active-model-" + Guid.NewGuid().ToString("N"));
@@ -25,6 +25,7 @@ public sealed class RpcActiveModelSelectionProcessTests
         var listener = StartLoopbackListener(out var port);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
         Process? process = null;
+        string? continuedThinking = null;
         var server = Task.Run(async () =>
         {
             var first = await listener.GetContextAsync().WaitAsync(timeout.Token);
@@ -53,14 +54,16 @@ public sealed class RpcActiveModelSelectionProcessTests
             using (var request = await JsonDocument.ParseAsync(second.Request.InputStream, cancellationToken: timeout.Token))
             {
                 Assert.Equal("model-one", request.RootElement.GetProperty("model").GetString());
-                Assert.Equal("high", request.RootElement.GetProperty("reasoning_effort").GetString());
+                continuedThinking = request.RootElement.GetProperty("reasoning_effort").GetString();
             }
             await WriteSseResponseAsync(second, "model-one-final", "model-one",
                 new { role = "assistant", content = "switched" }, "stop");
 
             var compact = await listener.GetContextAsync().WaitAsync(timeout.Token);
             using (var request = await JsonDocument.ParseAsync(compact.Request.InputStream, cancellationToken: timeout.Token))
+            {
                 Assert.Equal("model-one", request.RootElement.GetProperty("model").GetString());
+            }
             compact.Response.StatusCode = (int)HttpStatusCode.OK;
             compact.Response.ContentType = "application/json";
             await using (var writer = new StreamWriter(compact.Response.OutputStream))
@@ -128,6 +131,24 @@ public sealed class RpcActiveModelSelectionProcessTests
             await ReadUntilAsync(process, lines, rootElement => IsResponse(rootElement, "select-while-busy"), timeout.Token);
             await WriteCommandAsync(process, new { id = "cycle-while-busy", type = "cycle_model" }, timeout.Token);
             await ReadUntilAsync(process, lines, rootElement => IsResponse(rootElement, "cycle-while-busy"), timeout.Token);
+            await WriteCommandAsync(process, new
+            {
+                id = "thinking-while-busy",
+                type = "set_thinking_level",
+                level = "medium"
+            }, timeout.Token);
+            await ReadUntilAsync(process, lines, rootElement => IsResponse(rootElement, "thinking-while-busy"), timeout.Token);
+            using var thinkingState = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "thinking-while-busy")));
+            Assert.True(thinkingState.RootElement.GetProperty("success").GetBoolean());
+            var explicitThinkingEvent = lines.FindIndex(line => line.Contains(
+                "\"type\":\"thinking_level_changed\",\"level\":\"medium\"", StringComparison.Ordinal));
+            var explicitThinkingResponse = lines.FindIndex(line => IsResponseLine(line, "thinking-while-busy"));
+            Assert.True(explicitThinkingEvent >= 0 && explicitThinkingEvent < explicitThinkingResponse);
+            await WriteCommandAsync(process, new { id = "state-while-busy", type = "get_state" }, timeout.Token);
+            await ReadUntilAsync(process, lines, rootElement => IsResponse(rootElement, "state-while-busy"), timeout.Token);
+            using var busyState = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "state-while-busy")));
+            Assert.True(busyState.RootElement.GetProperty("data").GetProperty("isStreaming").GetBoolean());
+            Assert.Equal("medium", busyState.RootElement.GetProperty("data").GetProperty("thinkingLevel").GetString());
 
             var fifoWriter = Task.Run(async () =>
             {
@@ -144,7 +165,7 @@ public sealed class RpcActiveModelSelectionProcessTests
             await server;
 
             Assert.Equal(0, process.ExitCode);
-            Assert.Equal(string.Empty, await stderr.WaitAsync(timeout.Token));
+            Assert.Empty(await stderr.WaitAsync(timeout.Token));
             using var available = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "available-while-busy")));
             Assert.True(available.RootElement.GetProperty("success").GetBoolean());
             var availableModels = available.RootElement.GetProperty("data").GetProperty("models").EnumerateArray().ToArray();
@@ -167,6 +188,7 @@ public sealed class RpcActiveModelSelectionProcessTests
                 "\"type\":\"thinking_level_changed\",\"level\":\"high\"", StringComparison.Ordinal));
             var cycleResponse = lines.FindIndex(line => IsResponseLine(line, "cycle-while-busy"));
             Assert.True(cycledThinkingEvent >= 0 && cycledThinkingEvent < cycleResponse);
+            Assert.Equal("medium", continuedThinking);
             using var compacted = JsonDocument.Parse(Assert.Single(lines, line => IsResponseLine(line, "compact-current-model")));
             Assert.True(compacted.RootElement.GetProperty("success").GetBoolean(), compacted.RootElement.GetRawText());
             Assert.Contains("compacted current model", compacted.RootElement.GetProperty("data").GetProperty("summary").GetString());

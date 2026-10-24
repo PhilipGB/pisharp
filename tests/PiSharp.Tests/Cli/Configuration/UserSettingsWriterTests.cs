@@ -1,3 +1,4 @@
+using System.Text.Json;
 using PiSharp.Cli;
 using PiSharp.Runtime.Sessions;
 
@@ -5,6 +6,71 @@ namespace PiSharp.Tests;
 
 public sealed class UserSettingsWriterTests
 {
+    [Fact]
+    public async Task ConcurrentModelAndScopeUpdatesPreserveEveryCoordinatedChange()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-settings-concurrent-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var modelWrites = Enumerable.Range(0, 24).Select(index => Task.Run(async () =>
+            {
+                await start.Task;
+                await UserSettingsWriter.SetModelThinkingLevelAsync(path, "fixture",
+                    $"model-{index}", index % 2 == 0 ? "high" : "low");
+            }));
+            var scopeWrite = Task.Run(async () =>
+            {
+                await start.Task;
+                await UserSettingsWriter.SetAsync(path, "enabledModels",
+                    "[\"fixture/model-23\",\"fixture/model-0\"]", userScope: true);
+            });
+            var defaultWrite = Task.Run(async () =>
+            {
+                await start.Task;
+                await UserSettingsWriter.SetAsync(path, "defaultThinkingLevel", "medium", userScope: true);
+            });
+            start.SetResult();
+            await Task.WhenAll(modelWrites.Append(scopeWrite).Append(defaultWrite));
+
+            using var settings = JsonDocument.Parse(await File.ReadAllTextAsync(path));
+            var levels = settings.RootElement.GetProperty("modelThinkingLevels");
+            Assert.Equal(24, levels.EnumerateObject().Count());
+            Assert.Equal("high", levels.GetProperty("fixture/model-0").GetString());
+            Assert.Equal("low", levels.GetProperty("fixture/model-23").GetString());
+            Assert.Equal("medium", settings.RootElement.GetProperty("defaultThinkingLevel").GetString());
+            Assert.Equal(new[] { "fixture/model-23", "fixture/model-0" }, settings.RootElement
+                .GetProperty("enabledModels").EnumerateArray().Select(item => item.GetString()));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task EnabledModelScopePersistsOrderedModelsAndSupportsClearingTheSetting()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-enabled-models-write-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            await File.WriteAllTextAsync(path, "{\"shellCommandPrefix\":\"preserved\"}\n");
+            await UserSettingsWriter.SetAsync(path, "enabledModels",
+                "[\"fixture-b/shared\",\"fixture-a/reasoner\"]", userScope: true);
+
+            var settings = await UserSettings.LoadAsync(root, _ => null);
+            Assert.Equal(["fixture-b/shared", "fixture-a/reasoner"], settings.EnabledModels);
+            Assert.Equal("preserved", settings.ShellCommandPrefix);
+
+            await UserSettingsWriter.SetAsync(path, "enabledModels", "[\"duplicate\",\"duplicate\"]", userScope: true);
+            Assert.Equal(["duplicate", "duplicate"], (await UserSettings.LoadAsync(root, _ => null)).EnabledModels);
+            await UserSettingsWriter.SetAsync(path, "enabledModels", null, userScope: true);
+            Assert.Null((await UserSettings.LoadAsync(root, _ => null)).EnabledModels);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task SavesModelSpecificThinkingDefaultWithoutDroppingExistingSettings()
     {
@@ -26,6 +92,13 @@ public sealed class UserSettingsWriterTests
                 UserSettingsWriter.SetModelThinkingLevelAsync(path, "llama.cpp", "Qwen3.8-27B", "unsupported"));
             Assert.Equal("xhigh", (await UserSettings.LoadAsync(root, _ => null))
                 .GetModelThinkingLevel("llama.cpp", "Qwen3.8-27B"));
+
+            await UserSettingsWriter.RemoveModelThinkingLevelAsync(path, "openai", "gpt-5");
+            Assert.Null((await UserSettings.LoadAsync(root, _ => null)).GetModelThinkingLevel("openai", "gpt-5"));
+            Assert.Equal("xhigh", (await UserSettings.LoadAsync(root, _ => null))
+                .GetModelThinkingLevel("llama.cpp", "Qwen3.8-27B"));
+            await UserSettingsWriter.RemoveModelThinkingLevelAsync(path, "llama.cpp", "Qwen3.8-27B");
+            Assert.Null((await UserSettings.LoadAsync(root, _ => null)).ModelThinkingLevels);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

@@ -6,6 +6,9 @@ namespace PiSharp.Runtime.Resources;
 /// <summary>Applies Pi's scope-relative local resource path exclusions and exact overrides.</summary>
 public static class LocalResourcePathRules
 {
+    private const int MaximumCachedGlobSegmentPatterns = 256;
+    private static readonly object s_globRegexGate = new();
+    private static readonly Dictionary<(string Pattern, bool IgnoreCase), Regex> s_globRegexes = [];
     private static readonly StringComparison s_pathComparison = OperatingSystem.IsWindows()
         ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     private static readonly IReadOnlyDictionary<string, (string Pattern, bool Negated)> s_posixClasses =
@@ -123,7 +126,7 @@ public static class LocalResourcePathRules
             string.Equals(Path.GetRelativePath(fullBase, parent), Normalize(expanded), s_pathComparison);
     }
 
-    internal static bool GlobMatch(string value, string pattern)
+    internal static bool GlobMatch(string value, string pattern, bool ignoreCase = false)
     {
         if (pattern.Length == 0 || pattern.Length > 4096) return false;
 
@@ -140,11 +143,11 @@ public static class LocalResourcePathRules
         }
         if (patternStart > 0) pattern = pattern[patternStart..];
 
-        var matches = ExpandBracePatterns(pattern).Any(expanded => GlobMatchExpanded(value, expanded));
+        var matches = ExpandBracePatterns(pattern).Any(expanded => GlobMatchExpanded(value, expanded, ignoreCase));
         return negated != matches;
     }
 
-    private static bool GlobMatchExpanded(string value, string pattern)
+    private static bool GlobMatchExpanded(string value, string pattern, bool ignoreCase = false)
     {
         var valueSegments = Normalize(value).Split('/');
         var patternSegments = Normalize(pattern).Split('/');
@@ -184,7 +187,7 @@ public static class LocalResourcePathRules
             }
             else
             {
-                result = SegmentMatch(valueSegments[valueIndex], patternSegments[patternIndex]) &&
+                result = SegmentMatch(valueSegments[valueIndex], patternSegments[patternIndex], ignoreCase) &&
                     MatchSegments(valueIndex + 1, patternIndex + 1);
             }
 
@@ -323,15 +326,25 @@ public static class LocalResourcePathRules
             .ToArray();
     }
 
-    private static bool SegmentMatch(string value, string pattern)
+    private static bool SegmentMatch(string value, string pattern, bool ignoreCase = false)
     {
-        var regex = new StringBuilder("^").Append(CompileSegmentPattern(pattern));
-        regex.Append('$');
-        var options = RegexOptions.CultureInvariant | RegexOptions.Singleline;
-        if (OperatingSystem.IsWindows()) options |= RegexOptions.IgnoreCase;
         try
         {
-            return Regex.IsMatch(value, regex.ToString(), options, TimeSpan.FromMilliseconds(50));
+            var cacheIgnoreCase = OperatingSystem.IsWindows() || ignoreCase;
+            Regex regex;
+            lock (s_globRegexGate)
+            {
+                if (!s_globRegexes.TryGetValue((pattern, cacheIgnoreCase), out regex!))
+                {
+                    if (s_globRegexes.Count >= MaximumCachedGlobSegmentPatterns) s_globRegexes.Clear();
+                    var expression = new StringBuilder("^").Append(CompileSegmentPattern(pattern)).Append('$');
+                    var options = RegexOptions.CultureInvariant | RegexOptions.Singleline;
+                    if (cacheIgnoreCase) options |= RegexOptions.IgnoreCase;
+                    regex = new Regex(expression.ToString(), options, TimeSpan.FromMilliseconds(50));
+                    s_globRegexes[(pattern, cacheIgnoreCase)] = regex;
+                }
+            }
+            return regex.IsMatch(value);
         }
         catch (RegexMatchTimeoutException)
         {

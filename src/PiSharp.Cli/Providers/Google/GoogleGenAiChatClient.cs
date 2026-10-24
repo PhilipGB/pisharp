@@ -407,7 +407,7 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
             ReasoningEffort.Low => "low",
             ReasoningEffort.Medium => "medium",
             ReasoningEffort.High => "high",
-            ReasoningEffort.ExtraHigh => "max",
+            ReasoningEffort.ExtraHigh => UsesThinkingLevel(_modelId) ? "high" : "max",
             _ => "off"
         };
         if (model.ThinkingLevelMap is { ValueKind: JsonValueKind.Object } map)
@@ -422,7 +422,13 @@ internal sealed class GoogleGenAiChatClient(HttpClient http, Uri endpoint, strin
         }
         else if (UsesThinkingLevel(_modelId))
         {
-            var level = enabled ? requested : "minimal";
+            var level = enabled ? requested : ThinkingLevels.ValidateForModel("off", model.Reasoning,
+                model.ThinkingLevelMap);
+            if (!enabled && level == "off")
+            {
+                AddThinkingConfigNode(root, new JsonObject { ["thinkingBudget"] = 0 });
+                return;
+            }
             AddThinkingConfigNode(root, new JsonObject
             {
                 ["includeThoughts"] = enabled,

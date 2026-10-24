@@ -50,7 +50,7 @@ internal sealed class TerminalPresentation : IDisposable
         var initialTerminalTheme = ResolveConfiguredTheme(ActiveThemeSetting());
         var startupPresentation = new TerminalStartupPresentation(_projectBinding.Settings.QuietStartup, _projectBinding.Arguments.Verbose,
             action => _editor?.GetDisplayKeys(action));
-        if (_editor is not null && startupPresentation.ShowDetails && _modelRuntime.Scope.Count > 0)
+        if (_editor is not null && startupPresentation.ShowDetails && _modelRuntime.HasScope)
         {
             var cycleKey = _editor.GetDisplayKeys("app.model.cycleForward");
             var cycleHint = string.IsNullOrWhiteSpace(cycleKey) ? "" : $" ({cycleKey} to cycle)";

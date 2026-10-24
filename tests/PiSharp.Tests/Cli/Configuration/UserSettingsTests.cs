@@ -446,7 +446,9 @@ public sealed class UserSettingsTests
             Assert.Equal(["cli/*"], user.ApplyDefaults(CliArguments.Parse(["--models", "cli/*"]), _ => null).ScopedModels);
             await File.WriteAllTextAsync(Path.Combine(root, ".pi", "settings.json"), "{\"enabledModels\":[]}");
             Assert.Empty(user.Overlay(await UserSettings.LoadProjectAsync(root)).EnabledModels!);
-            foreach (var invalid in new[] { "null", "[1]", "[\"\"]", "[\"same\",\"same\"]", "[\" leading\"]" })
+            await File.WriteAllTextAsync(path, "{\"enabledModels\":[\"fixture/st*\",\"fixture/st*\"]}");
+            Assert.Equal(["fixture/st*", "fixture/st*"], (await UserSettings.LoadAsync(root, _ => null)).EnabledModels);
+            foreach (var invalid in new[] { "null", "[1]", "[\"\"]", "[\" leading\"]" })
             {
                 await File.WriteAllTextAsync(path, "{\"enabledModels\":" + invalid + "}");
                 await Assert.ThrowsAsync<InvalidDataException>(() => UserSettings.LoadAsync(root, _ => null));

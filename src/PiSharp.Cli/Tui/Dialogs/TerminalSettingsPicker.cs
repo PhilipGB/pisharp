@@ -1,10 +1,12 @@
 using PiSharp.Cli;
+using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 
 namespace PiSharp.Cli.Tui;
 
 /// <summary>Edits supported settings through a compact, searchable in-flow settings list.</summary>
-internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOnlyList<string>>? themeNames = null)
+internal sealed class TerminalSettingsPicker(TerminalEditor editor, ProviderModelRuntime modelRuntime,
+    Func<IReadOnlyList<string>>? themeNames = null)
 {
     private readonly Func<IReadOnlyList<string>> _themeNames = themeNames ?? (() => ["system", "dark", "light"]);
 
@@ -38,6 +40,7 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         new("hideThinkingBlock", "Hide thinking", "Hide reasoning blocks in the interactive transcript."),
         new("quietStartup", "Quiet startup", "Disable verbose printing at startup; header keeps only the startup header."),
         new("defaultProjectTrust", "Default project trust", "Fallback decision for protected project resources.", UserOnly: true),
+        new("modelThinkingLevels", "Default thinking per model", "Override the default thinking level for a specific model.", UserOnly: true),
         new("theme", "Theme", "Choose the system theme, a named theme, or a light/dark pair."),
         new("fullscreenWheelScrollLines", "Fullscreen wheel scrolling", "Lines per mouse-wheel event in fullscreen mode; auto accelerates fast wheel spins where the terminal does not."),
         // PiSharp-only settings follow Pi's shared selector settings.
@@ -53,7 +56,9 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
 
     public async Task ShowAsync(UserSettings userSettings, UserSettings? projectSettings,
         Func<bool, string, string?, Task<(UserSettings User, UserSettings? Project)>> save,
-        CancellationToken cancellationToken = default, Func<string?>? activeThemeSetting = null)
+        CancellationToken cancellationToken = default, Func<string?>? activeThemeSetting = null,
+        Func<ModelDescriptor, string?, Task<(UserSettings User, UserSettings? Project)>>? saveModelThinkingLevel = null,
+        ModelDescriptor? currentModel = null)
     {
         ArgumentNullException.ThrowIfNull(userSettings);
         ArgumentNullException.ThrowIfNull(save);
@@ -79,6 +84,21 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
 
             if (selected.Item is not { } selectedItem) return;
             var setting = Settings.Single(item => item.Id == selectedItem.Key);
+            if (setting.Id == "modelThinkingLevels")
+            {
+                if (saveModelThinkingLevel is not null)
+                {
+                    var savedModelSettings = await ShowModelThinkingDefaultsAsync(effectiveSettings, saveModelThinkingLevel,
+                        currentModel, cancellationToken).ConfigureAwait(false);
+                    if (savedModelSettings is { } saved)
+                    {
+                        userSettings = saved.User;
+                        projectSettings = saved.Project;
+                    }
+                }
+                selectedKey = setting.Id;
+                continue;
+            }
             if (selected.ResetValue)
             {
                 var reset = await save(scope, setting.Id, null);
@@ -145,6 +165,54 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
             projectSettings = updated.Project;
             selectedKey = setting.Id;
         }
+    }
+
+    private async Task<(UserSettings User, UserSettings? Project)?> ShowModelThinkingDefaultsAsync(UserSettings settings,
+        Func<ModelDescriptor, string?, Task<(UserSettings User, UserSettings? Project)>> save, ModelDescriptor? currentModel,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var models = modelRuntime.Providers
+            .SelectMany(provider => provider.Models.Select(model => model with { Provider = provider.Id }))
+            .Concat(modelRuntime.GetAvailableModelSnapshot())
+            .Concat(modelRuntime.VirtualModels?.Models.Select(item => item.Model) ?? [])
+            .Where(model => !string.IsNullOrWhiteSpace(model.Provider))
+            .GroupBy(model => $"{model.Provider}/{model.Id}", StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .OrderBy(model => currentModel is not null && model.Provider!.Equals(currentModel.Provider,
+                StringComparison.OrdinalIgnoreCase) && model.Id.Equals(currentModel.Id, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(model => model.Provider, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(model => model.Id, StringComparer.OrdinalIgnoreCase).ToArray();
+        var modelOptions = models.Select(model =>
+        {
+            var key = $"{model.Provider}/{model.Id}";
+            var currentLevel = settings.GetModelThinkingLevel(model.Provider!, model.Id);
+            return new TerminalSelectionOption<ModelDescriptor>(key, model,
+                $"{model.Id} [{model.Provider}]", model.Name ?? model.Id,
+                $"{model.Provider} {model.Name} {currentLevel}", IsCurrent: currentLevel is not null);
+        }).ToArray();
+        var selectedModel = await editor.ShowSelectionListAsync("Default Thinking · Model", modelOptions,
+            currentModel is null ? null : $"{currentModel.Provider}/{currentModel.Id}",
+            emptyMessage: "No models available", cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (selectedModel is null) return null;
+
+        var model = selectedModel.Option.Value;
+        var overrideLevel = settings.GetModelThinkingLevel(model.Provider!, model.Id);
+        var levelOptions = ThinkingLevels.AvailableForModel(model.Reasoning, model.ThinkingLevelMap)
+            .Select(level => new TerminalSelectionOption<string?>(level, level,
+                $"{(level.Equals(overrideLevel, StringComparison.OrdinalIgnoreCase) ? "✓ " : "  ")}{level}",
+                ThinkingLevels.Description(level))).ToList();
+        if (overrideLevel is not null)
+            levelOptions.Add(new TerminalSelectionOption<string?>("__clear", null, "Clear override",
+                $"Revert to the global default ({settings.DefaultThinkingLevel ?? ThinkingLevels.Default})."));
+        var selectedLevel = await editor.ShowSelectionListAsync($"Thinking Default · {model.Provider}/{model.Id}",
+            levelOptions, overrideLevel, emptyMessage: "No thinking levels available",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        if (selectedLevel is null) return null;
+        if (selectedLevel.Option.Value is null && overrideLevel is null) return null;
+        if (selectedLevel.Option.Value is { } selected && selected.Equals(overrideLevel, StringComparison.OrdinalIgnoreCase))
+            return null;
+        return await save(model, selectedLevel.Option.Value).ConfigureAwait(false);
     }
 
     private static TerminalSettingsListItem ToListItem(Setting setting, UserSettings settings,
@@ -215,6 +283,8 @@ internal sealed class TerminalSettingsPicker(TerminalEditor editor, Func<IReadOn
         "defaultProjectTrust" => settings.DefaultProjectTrust,
         "httpProxy" => settings.HttpProxy is null ? null : "configured",
         "defaultThinkingLevel" => settings.DefaultThinkingLevel,
+        "modelThinkingLevels" => settings.ModelThinkingLevels is { Count: > 0 } levels
+            ? $"{levels.Count} model{(levels.Count == 1 ? "" : "s")}" : "none",
         "theme" => settings.Theme,
         "terminal.trueColor" => settings.TerminalTrueColor,
         "images.autoResize" => settings.AutoResizeImages?.ToString().ToLowerInvariant(),
