@@ -124,6 +124,10 @@ Match/context/long-line limits, notices, error handling and cancellation have
 physical and synthetic process evidence. A 12 MiB line uses less than 256 KiB of
 parser allocation. See [grep acceptance](builtin-coding-tool-grep-acceptance-2026-10-22.json).
 
+The grep context review correction retains per-file decoding positions and a bounded rolling cache. It keeps at most eight open files, 1,024 cached lines / 32,768 UTF-16 units per file, 8 KiB read buffers and 2 KiB line prefixes. An oversized overlapping window replays from its previous boundary; backward queries and evicted files can reopen earlier data. Failed reads discard partial blocks, and cancellation disposes readers through the existing process lifecycle.
+
+The [context receipt](builtin-coding-tool-grep-context-2026-10-22.json) contains four independently executed pinned cases and seven native regressions. The 33,555,532-byte late-match fixture changes from 100 opens / 3,355,553,200 context bytes to one open / 33,555,532 bytes, with exact source text and metadata. The 10,486,860-byte oversized-window fixture reads 13,699,988 bytes while keeping its cache bounded. These counters measure application reads of context files, excluding rg and fixture setup/hash reads; they are not physical-device or timing benchmarks. All 270 related checks pass.
+
 `find` delegates discovery grammar, ignore rules, smart case, symlinks and
 encounter order to real `fd`/`fdfind`. It streams results without the old inventory
 cap and preserves numeric limit and process error behavior. A real 20,050-file

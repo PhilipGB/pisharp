@@ -47,6 +47,8 @@ the corresponding successful test job before closing T. Local group mapping
 restrictions are recorded, without claiming that the alternate-group case ran
 locally. Privileged and native Windows/macOS parity remain unverified.
 
+The grep context review correction replaces repeated prefix scans with bounded per-file windows and byte-offset checkpoints. Seven regressions cover the measured 32 MiB case, oversized windows, UTF-8/CRLF boundaries, cancellation, read failures, eviction and backward queries. The [context receipt](parity/fixtures/builtin-coding-tool-grep-context-2026-10-22.json) preserves source expectations and application-read counters. Consult PR #22 for the corrected-head gates.
+
 Before resuming work, fetch PR #22 metadata and verify the published head, draft
 status, merge state and CI rather than repeating completed implementation. If
 final-head test/MCP/ownership gates pass, the milestone is complete within its

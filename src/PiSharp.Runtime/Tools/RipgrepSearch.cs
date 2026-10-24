@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Text;
 using System.Text.Json.Serialization;
 using PiSharp.Core;
 using PiSharp.Extensions.Abstractions;
@@ -10,7 +9,7 @@ internal static class RipgrepSearch
 {
     public static async Task<SearchToolOutput> ExecuteAsync(string cwd, string pattern, string? path, string? glob,
         bool ignoreCase, bool literal, double context, double? limit, CancellationToken cancellationToken,
-        bool respectGitIgnoreOutsideRepository = false)
+        bool respectGitIgnoreOutsideRepository = false, Func<string, Stream>? openContextFile = null)
     {
         AbortIfCancelled(cancellationToken);
         var executable = ProcessLifetime.FindExecutable(OperatingSystem.IsWindows() ? "rg.exe" : "rg");
@@ -42,6 +41,7 @@ internal static class RipgrepSearch
         var matchCount = 0L;
         var limitReached = false;
         var linesTruncated = false;
+        await using var contexts = new GrepContextReader(openContextFile);
         var excluded = await SearchInventory.CreateRepositoryExclusionGuardAsync(isDirectory ? root : Path.GetDirectoryName(root)!, cancellationToken);
         var reader = new RipgrepJsonReader(match =>
         {
@@ -74,7 +74,7 @@ internal static class RipgrepSearch
                     {
                         var position = output.Capture();
                         var previousTruncation = linesTruncated;
-                        var read = await ContextLinesAsync(match.Path!, match.LineNumber!.Value, surrounding,
+                        var read = await contexts.AppendAsync(match.Path!, match.LineNumber!.Value, surrounding,
                             (number, text, truncated) =>
                             {
                                 linesTruncated |= truncated;
@@ -115,51 +115,6 @@ internal static class RipgrepSearch
             ? new GrepToolDetails(truncation, limitReached ? (int)maximum : null, linesTruncated ? true : null)
             : new FractionalGrepDetails(truncation, limitReached ? maximum : null, linesTruncated ? true : null);
         return new(content + (notices.Count > 0 ? "\n\n[" + string.Join(". ", notices) + "]" : ""), details);
-    }
-
-    private static async Task<bool> ContextLinesAsync(string path, double matchLine, double context,
-        Action<double, string, bool> append, CancellationToken cancellationToken)
-    {
-        var start = Math.Max(1, matchLine - context);
-        var end = matchLine + context;
-        var readThrough = Math.Ceiling(end);
-        var fractional = start != Math.Truncate(start);
-        try
-        {
-            await using var file = File.OpenRead(path);
-            using var reader = new StreamReader(file, new UTF8Encoding(false), detectEncodingFromByteOrderMarks: false);
-            var number = 1;
-            var line = new StringBuilder();
-            long length = 0;
-            var skipLf = false;
-            var characters = new char[8192];
-            void FinishLine()
-            {
-                if (!fractional && number >= start && number <= end)
-                    append(number, line.ToString() + (length > 500 ? "... [truncated]" : ""), length > 500);
-                number++;
-                line.Clear();
-                length = 0;
-            }
-            int count;
-            while (number <= readThrough && (count = await reader.ReadAsync(characters, cancellationToken)) > 0)
-                foreach (var character in characters.AsSpan(0, count))
-                {
-                    if (skipLf && character == '\n') { skipLf = false; continue; }
-                    skipLf = character == '\r';
-                    if (character is '\r' or '\n') FinishLine();
-                    else { length++; if (line.Length < 500) line.Append(character); }
-                    if (number > readThrough) break;
-                }
-            if (number <= readThrough) FinishLine();
-            if (fractional)
-            {
-                var last = Math.Min(number - 1, end);
-                for (var current = start; current <= last; current++) append(current, "", false);
-            }
-            return true;
-        }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return false; }
     }
 
     private static void AbortIfCancelled(CancellationToken token)

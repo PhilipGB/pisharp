@@ -361,6 +361,16 @@ def cases():
         ('byte-limit', {'pattern': 'needle', 'limit': 500}, {'file.txt': repeated('needle ' + 'x' * 450 + '\n', 150)}),
     ]:
         add('grep', name, args, files)
+    add('grep', 'context-large-repeated', {'pattern': 'needle', 'context': 2, 'limit': 100},
+        {'file.txt': {'concat': [repeated('x' * 1023 + '\n', 32768),
+                               ''.join(f'needle-{index:03d}\n' for index in range(100))]}})
+    add('grep', 'context-cache-overflow', {'pattern': 'needle', 'context': 100, 'limit': 100},
+        {'file.txt': {'concat': [repeated('x' * 1023 + '\n', 10240),
+                               ''.join(f'needle-{index:03d}\n' for index in range(100))]}})
+    add('grep', 'context-crlf-buffer-boundary', {'pattern': 'needle', 'context': 1},
+        {'file.txt': 'x' * 8191 + '\r\nneedle\r\nlast'})
+    add('grep', 'context-utf8-buffer-boundary', {'pattern': 'needle', 'context': 1},
+        {'file.txt': 'x' * 8190 + '\n😀needle\nlast\n'})
     for name, args, files in [
         ('fractional-limit', {'pattern': 'needle', 'limit': 1.5}, {'file.txt': 'needle\nneedle\nneedle\n'}),
         ('fractional-context', {'pattern': 'needle', 'context': 1.5}, {'file.txt': 'one\ntwo\nneedle\nfour\nfive\n'}),

@@ -64,7 +64,13 @@
       "intentional_safety_exclusions": 1,
       "control_strict_passed": 68,
       "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
-      "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
+      "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22.",
+      "contextForwardReading": {
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-context-2026-10-22.json",
+        "source_control_cases": 4,
+        "related_tests_passed": 270,
+        "status": "bounded per-file windows implemented; exact-head publication receipt remains PR22"
+      }
     },
     "find": {
       "source": "99016879fabaee542c2b0265bb34864c98435516",

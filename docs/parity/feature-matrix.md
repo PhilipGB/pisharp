@@ -22,6 +22,8 @@ Eight additional pinned owner/mode observations catch and correct restoration of
 executable privilege bits. Linux CI supplies its independently captured actual
 alternate-group oracle to the native regression tests.
 
+Grep context lookups now reuse bounded per-file readers instead of scanning the prefix for every match. The [context receipt](fixtures/builtin-coding-tool-grep-context-2026-10-22.json) records a 99% reduction in context-file read bytes for 100 late matches and identical source output, with explicit cache and handle bounds.
+
 Private/atomic mutation behavior, allocation bounds, repository-local privacy and
 stronger detached-process cleanup remain explicit exclusions from strict
 identity. Native Windows/macOS and privileged execution remain unverified.

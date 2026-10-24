@@ -20,6 +20,8 @@ provider workflows and session restart. The final owner/mode hardening preserves
 metadata and clears executable privilege bits as pinned direct writes do;
 Linux CI independently captures its actual alternate-group oracle.
 
+Review hardening adds bounded per-file grep context readers. The 32 MiB late-match regression preserves pinned output while reducing context reads from 100 full scans to one. See the [context receipt](docs/parity/fixtures/builtin-coding-tool-grep-context-2026-10-22.json); final follow-up publication checks are recorded in PR #22.
+
 See the [milestone receipt](docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md),
 [acceptance inventory](docs/parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json)
 and [continuation rules](docs/continuation.md). Strict equivalence excludes the
