@@ -19,9 +19,12 @@ warning-as-error build pass; the full .NET suite passes 3,780/3,780 with no
 failures or skips. Node terminal (24/24), Python terminal (66/66), parity guards
 (27/27), documentation paths (152 documents / 627 references), and MCP
 conformance also pass. Checkpoints A–T are complete. The remaining checkpoints
-are branch publication and exact-head CI. PR #23 is currently occupied by an
-unrelated Dependabot update, and this milestone forbids creating PR #24; push
-and branch CI can proceed, while draft PR publication and PR CI await #23.
+are branch publication and exact-head CI. PR #23's unrelated Dependabot change
+has merged to `main` at `f4f57ca754662222d2c0162b2758778eb2999a57`; the milestone
+branch now contains it through sync commit
+`e828fa3965e9183671863635808aff36b29a0034`. The earlier push CI passed on
+`71ef645d`; the synchronized branch needs final push CI, then draft PR #24 and
+its exact-head PR CI.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
@@ -33,16 +36,18 @@ at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`.
 The current branch `milestone/model-thinking-configuration-parity` is based on
-that actual `origin/main` SHA and keeps Pi pinned at
+the PR #22 merge `eefa89454a3c1cfd196894f94744b6f393c8e721`, and now includes
+the later PR #23 merge from current `origin/main` at
+`f4f57ca754662222d2c0162b2758778eb2999a57`. Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Implementation source is
 `bacc756495b92788eb3e22f122317c16b095780e`.
 
 The refreshed pinned-Pi behavior report passes 93/93 and the provider-wire
 report passes 23/23 against this source. Local format, warning-as-error build,
 full .NET suite (3,780/3,780), Node, Python, parity guard, documentation-path and
-MCP checks pass. Branch push and exact-head push CI remain. Draft PR #23 and PR
-CI are blocked because an unrelated Dependabot PR #23 exists; the milestone
-instructions prohibit PR #24. See the active [model-selection milestone
+MCP checks pass. The previous exact-head push CI succeeded at `71ef645d` before
+the branch synced current `main`; final push CI and draft PR #24 with its
+exact-head PR CI remain. See the active [model-selection milestone
 receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 Product acceptance source is `962cfa48d97a960149e1f0cc020f25bc302c1d48`.
@@ -1350,7 +1355,7 @@ passing local acceptance and validation. The 93-case corpus does not model every
 possible busy-run interleaving; native Windows/macOS are not claimed, and the
 documented unauthenticated continuation fallback remains an adaptation.
 
-Checkpoints A–T are complete. Publication and exact-head CI remain: live PR #23
-is an unrelated Dependabot update, and the milestone instructions prohibit PR
-#24. Do not alter the unrelated PR; push CI can run, while draft PR creation and
-PR CI must wait until #23 is available.
+Checkpoints A–T are complete. The unrelated PR #23 Dependabot update has merged
+to `main`; the milestone branch was synchronized with its merge. Final push CI,
+draft PR #24 publication and exact-head PR CI remain. Keep the milestone PR in
+draft and do not merge it.

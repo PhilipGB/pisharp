@@ -3,8 +3,10 @@
 ## Active milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
 
 PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`.
-The branch `milestone/model-thinking-configuration-parity` starts from that
-actual post-merge main; Pi remains pinned at
+The branch `milestone/model-thinking-configuration-parity` started from that
+actual post-merge main and now includes the subsequent PR #23 merge at
+`f4f57ca754662222d2c0162b2758778eb2999a57` via sync commit
+`e828fa3965e9183671863635808aff36b29a0034`. Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The current implementation
 commit is `bacc756495b92788eb3e22f122317c16b095780e`.
 
@@ -19,10 +21,11 @@ the warning-as-error build and the full .NET suite pass (3,780 passed, zero
 failed or skipped); terminal Node (24/24), Python (66/66), parity guards
 (27/27), documentation paths (152 documents / 627 references) and MCP
 conformance also pass. Checkpoints A–T are complete. Push and exact-head push CI,
-then draft PR publication and PR CI, remain. Live PR #23 is an unrelated
-Dependabot update; the milestone instructions prohibit PR #24, so do not modify
-that PR or create another one. Keep the milestone PR open, draft and unmerged
-once #23 is available.
+then draft PR #24 publication and its exact-head PR CI, remain. The prior push CI
+passed on `71ef645d`; the branch has since synced current `main`, so both final
+push and PR checks must verify the published head. Create PR #24 titled
+“Complete Model Selection, Thinking and Configuration Parity”; keep it draft
+and unmerged.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
@@ -34,10 +37,10 @@ PR #22 is merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`. The current
 milestone is model selection, thinking and configuration parity on
 `milestone/model-thinking-configuration-parity`, based on that exact main SHA.
 Implementation `bacc756495b92788eb3e22f122317c16b095780e` passes its refreshed
-93-case behavior and 23-case provider-wire reports; local validation is complete
-at 3,780 passing .NET tests. Branch push and exact-head push CI remain. Draft PR
-#23 and PR CI are blocked because unrelated Dependabot PR #23 already exists;
-the milestone instructions prohibit PR #24. See the [active milestone receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
+93-case behavior and 23-case provider-wire reports; local validation passes at
+3,780 .NET tests. PR #23's unrelated Dependabot merge is now on `main`, and the
+milestone branch is synchronized with it. Final push CI and draft PR #24 with
+its exact-head PR CI remain. See the [active milestone receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 The defined corpus has 399 supported passes out of 460: 389 exact, ten JPEG
 codec equivalents and 61 explicit safety exclusions, with zero unresolved

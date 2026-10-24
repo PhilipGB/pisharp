@@ -13216,18 +13216,20 @@
     }
   },
   "model_thinking_configuration_parity_milestone": {
-    "status": "local_acceptance_complete_publication_blocked",
+    "status": "local_acceptance_complete_publication_pending",
     "started_at": "2026-10-24",
     "branch": "milestone/model-thinking-configuration-parity",
     "pr22_actual_merge": "eefa89454a3c1cfd196894f94744b6f393c8e721",
     "branch_base": "eefa89454a3c1cfd196894f94744b6f393c8e721",
+    "current_main_after_pr23_merge": "f4f57ca754662222d2c0162b2758778eb2999a57",
+    "current_main_sync_merge": "e828fa3965e9183671863635808aff36b29a0034",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "implementation_sha": "bacc756495b92788eb3e22f122317c16b095780e",
     "inventory": "docs/parity/fixtures/model-selection-thinking-configuration-inventory-2026-10-24.json",
     "oracle": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
     "provider_wire_oracle": "docs/parity/fixtures/model-selection-thinking-provider-wire-oracle-2026-10-24.json",
     "receipt": "docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md",
-    "checkpoint_policy": "Fixed 22 checkpoints A\u2013V; A\u2013T have implementation, acceptance, full validation and documentation evidence. U publication and V exact-head CI are pending; PR #23 is occupied by an unrelated Dependabot update and PR #24 is prohibited.",
+    "checkpoint_policy": "Fixed 22 checkpoints A\u2013V; A\u2013T have implementation, acceptance, full validation and documentation evidence. U draft PR #24 publication and V exact-head push/PR CI are pending.",
     "differential": {
       "direct_pi_cases": 93,
       "direct_pi_passed": 93,
@@ -13265,10 +13267,15 @@
       "differential": "93/93 direct-Pi cases and 23/23 physical provider-wire cases refreshed against implementation commit bacc756495b92788eb3e22f122317c16b095780e"
     },
     "publication": {
-      "status": "blocked_by_unrelated_pr_23",
-      "draft_pr": 23,
-      "branch_head_before_docs_commit": "bacc756495b92788eb3e22f122317c16b095780e",
-      "blocker": "PR #23 is occupied by an unrelated Dependabot update; the milestone instructions prohibit creating PR #24. Branch push and push CI may proceed; draft PR creation and PR CI await #23 becoming available."
+      "status": "pending",
+      "draft_pr": 24,
+      "branch_head_before_current_receipt_update": "e828fa3965e9183671863635808aff36b29a0034",
+      "prior_push_ci": {
+        "head_sha": "71ef645d18305f2c3491bd05732f11ce06314946",
+        "run_id": 40100015360,
+        "result": "success",
+        "scope_note": "Passed before syncing the unrelated PR #23 merge; final synchronized head must receive fresh push and PR CI."
+      }
     }
   }
 }

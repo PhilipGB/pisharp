@@ -1,7 +1,9 @@
 ## Active milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
 
 PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`,
-which is both the actual post-merge `origin/main` and PR #23 branch base. Pi is
+which was the milestone branch's original base. Current `origin/main` includes
+the unrelated PR #23 merge `f4f57ca754662222d2c0162b2758778eb2999a57`; the
+milestone branch includes that sync. Pi is
 pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; implementation source is
 `bacc756495b92788eb3e22f122317c16b095780e` on
 `milestone/model-thinking-configuration-parity`.
@@ -37,10 +39,9 @@ provider-wire cases pass. Format verification and the warning-as-error build
 pass, and the full .NET suite passes 3,780/3,780 with zero failures/skips. Node
 terminal 24/24, Python terminal 66/66, parity guards 27/27, documentation paths
 (152 documents / 627 references), and MCP conformance pass; MCP retains the same
-eight classified baseline failures across three scenarios. Branch push and
-exact-head push CI remain. Live PR #23 is an unrelated Dependabot update, and
-the milestone instructions prohibit PR #24, so draft publication and PR CI are
-blocked until #23 is available. Global Pi parity remains `in_progress`.
+eight classified baseline failures across three scenarios. Prior push CI passed
+on `71ef645d` before synchronization with the updated base. Final push CI and
+draft PR #24's exact-head PR CI remain. Global Pi parity remains `in_progress`.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 

@@ -3,8 +3,11 @@
 ## Scope and source revisions
 
 PR #22 was verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`.
-That actual merge is the post-merge `origin/main` and PR #23 branch base. The
-implementation is on `milestone/model-thinking-configuration-parity` at
+That actual merge was the milestone branch's original base. PR #23's unrelated
+Dependabot update has since merged to `main` at
+`f4f57ca754662222d2c0162b2758778eb2999a57`; the milestone branch sync commit
+is `e828fa3965e9183671863635808aff36b29a0034`. The implementation source is on
+`milestone/model-thinking-configuration-parity` at
 `bacc756495b92788eb3e22f122317c16b095780e`. Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
@@ -88,8 +91,7 @@ counted as a strict oracle case.
 
 The project-wide parity status remains `in_progress`; this receipt covers only
 the defined model-selection, thinking and configuration increment. Checkpoints
-A–T are complete; branch push and exact-head CI, draft PR publication and PR CI
-remain. The live PR #23 is an unrelated Dependabot update, and the milestone
-instructions prohibit PR #24. Do not modify that unrelated PR; publish the
-milestone as draft #23 when the number is available and record final CI evidence
-in its description.
+A–T are complete. The earlier push CI passed at `71ef645d` before syncing current
+`main`; final push CI, draft PR #24 and its exact-head PR CI remain. Keep the
+milestone PR draft and unmerged, and record final workflow evidence in its
+description.
