@@ -57,7 +57,8 @@ public sealed class StartupOrderingProcessTests
             var result = await run(["--offline", "--provider", "openai", "--model", "gpt-4o", "--no-session", "--mode", "rpc"],
                 "{\"id\":\"state\",\"type\":\"get_state\"}\n");
             Assert.Equal(0, result.ExitCode);
-            Assert.Equal("", result.Error);
+            Assert.Contains("Warning: Model \"gpt-4o\" not found for provider \"openai\". Using custom model id.",
+                result.Error, StringComparison.Ordinal);
             Assert.Contains("\"id\":\"state\"", result.Output, StringComparison.Ordinal);
             Assert.Contains("\"success\":true", result.Output, StringComparison.Ordinal);
         });

@@ -24,6 +24,7 @@ internal static class UserSettingsWriter
             Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         else
             Directory.CreateDirectory(directory);
+        await using var settingsLease = await AuthFileLock.AcquireAsync(target + ".lock", cancellationToken);
 
         JsonObject root;
         if (File.Exists(target))
@@ -60,6 +61,7 @@ internal static class UserSettingsWriter
             Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         else
             Directory.CreateDirectory(directory);
+        await using var settingsLease = await AuthFileLock.AcquireAsync(target + ".lock", cancellationToken);
 
         JsonObject root;
         if (File.Exists(target))
@@ -94,6 +96,35 @@ internal static class UserSettingsWriter
         await ReplaceAsync(target, bytes, cancellationToken);
     }
 
+    public static async Task RemoveModelThinkingLevelAsync(string path, string provider, string modelId,
+        CancellationToken cancellationToken = default)
+    {
+        var modelKey = $"{provider}/{modelId}";
+        if (provider.Length is 0 or > 128 || modelId.Length is 0 or > 384 || modelKey.Length > 512 ||
+            provider.Contains('/') || modelKey.Any(char.IsControl))
+            throw new ArgumentException("A valid provider and model ID are required.", nameof(modelId));
+        var target = Path.GetFullPath(path);
+        if (File.Exists(target)) target = new FileInfo(target).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? target;
+        await using var settingsLease = await AuthFileLock.AcquireAsync(target + ".lock", cancellationToken);
+        if (!File.Exists(target)) return;
+        var info = new FileInfo(target);
+        if (info.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
+        var root = JsonNode.Parse(await File.ReadAllTextAsync(target, cancellationToken),
+            documentOptions: new JsonDocumentOptions { MaxDepth = 16 }) as JsonObject ??
+            throw new InvalidDataException("settings.json must contain a JSON object.");
+        if (root["modelThinkingLevels"] is not JsonObject levels)
+        {
+            if (root.ContainsKey("modelThinkingLevels"))
+                throw new InvalidDataException("settings.json modelThinkingLevels must be an object.");
+            return;
+        }
+        if (!levels.Remove(modelKey)) return;
+        if (levels.Count == 0) root.Remove("modelThinkingLevels");
+        var bytes = System.Text.Encoding.UTF8.GetBytes(root.ToJsonString(s_jsonOptions) + "\n");
+        if (bytes.Length > MaximumSettingsBytes) throw new InvalidDataException("settings.json exceeds 64KB.");
+        await ReplaceAsync(target, bytes, cancellationToken);
+    }
+
     /// <summary>Replaces or removes one package declaration while preserving its filter and custom fields.</summary>
     public static async Task<bool> UpdatePackageSourceAsync(string path, string source, string settingsSource,
         string inputBaseDirectory, string scopeBaseDirectory, bool remove, bool userScope,
@@ -106,6 +137,7 @@ internal static class UserSettingsWriter
             Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         else
             Directory.CreateDirectory(directory);
+        await using var settingsLease = await AuthFileLock.AcquireAsync(target + ".lock", cancellationToken);
 
         JsonObject root;
         if (File.Exists(target))
@@ -187,6 +219,7 @@ internal static class UserSettingsWriter
             Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         else
             Directory.CreateDirectory(directory);
+        await using var settingsLease = await AuthFileLock.AcquireAsync(target + ".lock", cancellationToken);
 
         JsonObject root;
         if (File.Exists(target))
@@ -294,6 +327,7 @@ internal static class UserSettingsWriter
             "defaultModel" => value is null || value.Length is > 0 and <= 256 && value == value.Trim() &&
                 !value.Any(char.IsControl),
             "defaultThinkingLevel" => value is null || ThinkingLevels.IsValid(value),
+            "enabledModels" => value is null || IsValidEnabledModels(value),
             "theme" => value is null || IsValidThemeSetting(value),
             "externalEditor" => value is null || value.Length is > 0 and <= 4096 && value == value.Trim() && !value.Any(char.IsControl),
             _ => false
@@ -311,6 +345,24 @@ internal static class UserSettingsWriter
             _ when value.IndexOf('/', separator + 1) >= 0 => false,
             _ => !string.IsNullOrWhiteSpace(value[..separator]) && !string.IsNullOrWhiteSpace(value[(separator + 1)..])
         };
+    }
+
+    private static bool IsValidEnabledModels(string value)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(value, new JsonDocumentOptions { MaxDepth = 2 });
+            if (document.RootElement.ValueKind != JsonValueKind.Array || document.RootElement.GetArrayLength() > 512)
+                return false;
+            foreach (var item in document.RootElement.EnumerateArray())
+                if (item.ValueKind != JsonValueKind.String || item.GetString() is not { } pattern ||
+                    string.IsNullOrWhiteSpace(pattern) || pattern.Length > 512 || pattern != pattern.Trim()) return false;
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static bool IsValidHttpProxy(string value) => value.Length is > 0 and <= 2048 && value == value.Trim() &&
@@ -335,6 +387,7 @@ internal static class UserSettingsWriter
         "retry.provider.timeoutMs" => JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         "thinkingBudgets.minimal" or "thinkingBudgets.low" or "thinkingBudgets.medium" or "thinkingBudgets.high" =>
             JsonValue.Create(int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
+        "enabledModels" => JsonNode.Parse(value!),
         "httpIdleTimeoutMs" => JsonValue.Create(string.Equals(value, "disabled", StringComparison.OrdinalIgnoreCase)
             ? 0 : int.Parse(value!, NumberStyles.None, CultureInfo.InvariantCulture)),
         _ => JsonValue.Create(value)

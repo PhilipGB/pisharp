@@ -23,14 +23,15 @@ public sealed class TerminalSettingsPickerTests
         Assert.Equal(new[]
         {
             "steeringMode", "followUpMode", "sessionShareDestination", "httpIdleTimeoutMs",
-            "hideThinkingBlock", "quietStartup", "defaultProjectTrust", "theme"
-        }, ids.Skip(10).Take(8));
+            "hideThinkingBlock", "quietStartup", "defaultProjectTrust", "modelThinkingLevels", "theme",
+            "fullscreenWheelScrollLines"
+        }, ids.Skip(10).Take(10));
         Assert.Equal(new[]
         {
-            "fullscreenWheelScrollLines", "defaultThinkingLevel", "httpProxy", "terminal.trueColor", "externalEditor",
+            "defaultThinkingLevel", "httpProxy", "terminal.trueColor", "externalEditor",
             "retry.provider.timeoutMs", "retry.provider.maxRetries",
             "retry.provider.maxRetryDelayMs", "markdown.codeBlockIndent"
-        }, ids.Skip(18));
+        }, ids.Skip(20));
         Assert.DoesNotContain(ids, id => id is "markdown.mermaid" or "showCacheMissNotices" or "collapseChangelog");
     }
 
@@ -55,7 +56,7 @@ public sealed class TerminalSettingsPickerTests
         Assert.Equal(10, settingRows.Length);
         Assert.Equal(firstValue, secondValue);
         Assert.Contains(plainRows, row => row.Contains("Automatically compact context", StringComparison.Ordinal));
-        Assert.Contains(plainRows, row => row.Contains("1/27", StringComparison.Ordinal));
+        Assert.Contains(plainRows, row => row.Contains("1/28", StringComparison.Ordinal));
         Assert.Contains(plainRows, row => row.Contains("Type to filter", StringComparison.Ordinal));
         Assert.DoesNotContain(plainRows, row => row.Contains("Search:", StringComparison.Ordinal));
         Assert.All(rendered, row => Assert.True(TerminalTextLayout.Width(row) <= width));

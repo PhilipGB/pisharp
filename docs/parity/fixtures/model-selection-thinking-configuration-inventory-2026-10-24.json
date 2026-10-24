@@ -1,0 +1,459 @@
+{
+  "inventory": "PiSharp model selection, thinking and configuration parity",
+  "capturedAt": "2026-10-24",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpBaseSha": "eefa89454a3c1cfd196894f94744b6f393c8e721",
+  "phase": "review correction implemented; paired differential complete; PR #24 draft with exact-head checks tracked in its description",
+  "classifications": [
+    "implemented and source-verified",
+    "implemented but not verified",
+    "demonstrably incorrect",
+    "missing",
+    "supported with an intentional safety deviation",
+    "outside the defined milestone scope",
+    "unsupported by the existing provider/platform boundary"
+  ],
+  "features": [
+    {
+      "id": "model-reference-resolution",
+      "feature": "Exact, fuzzy, provider-qualified and ambiguous model references, including custom fallback and thinking suffixes",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/model-resolver.ts:120-310",
+        "packages/coding-agent/test/model-resolver.test.ts:referenceCases"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs:ResolveSelectionAsync",
+        "src/PiSharp.Cli/Tui/Commands/TerminalProviderCommands.cs:SelectNamedModelAsync"
+      ],
+      "inputConfiguration": "Optional provider constraint and model text; catalog models include provider, ID, name, reasoning and request metadata; provider usability comes from configured authentication or inline --api-key.",
+      "defaults": "No model-reference default. Unknown explicit references may become custom model IDs for the selected provider.",
+      "precedence": "Pinned Pi collects exact candidates, uses provider-prefix hints and authentication to resolve cross-provider ambiguity, then fuzzy candidates; valid thinking suffixes are considered after literal matching. PiSharp currently selects a provider before matching.",
+      "validation": "Pinned strict CLI suffix parsing preserves invalid suffixes in the ID; lenient scope parsing warns and drops an invalid suffix. Exact matches are case-insensitive; fuzzy matches search IDs and names.",
+      "observableBehavior": "Resolved provider/model, requested thinking, ambiguity candidates, warning/error text and fallback model identity.",
+      "providerRequestEffect": "The resolved provider, endpoint, credential identity and model ID must drive the subsequent request.",
+      "persistence": "Selection persistence is handled by model defaults or the session, not by reference parsing.",
+      "reloadBehavior": "Re-resolution after catalog/auth refresh remains to be verified.",
+      "failureBehavior": "Pinned ambiguity is explicit; an unavailable but unique match can still be selected for first-time authentication. PiSharp errors or falls back within a preselected provider.",
+      "knownDifference": "25 strict direct-Pi reference and CLI cases cover exact, qualified, fuzzy, ambiguous, authenticated-provider, suffix and error behavior.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Startup/ModelThinkingDifferentialTests.cs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "initial-selection-and-recovery",
+      "feature": "Fresh startup, saved defaults, explicit CLI choice, scoped-first choice, authentication fallback and session restoration",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/model-resolver.ts:533-684",
+        "packages/coding-agent/test/model-resolver.test.ts:687-883",
+        "packages/coding-agent/src/core/agent-session.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Composition/InitialModelComposition.cs",
+        "src/PiSharp.Cli/Sessions/SessionStartupController.cs",
+        "src/PiSharp.Cli/Sessions/ProjectSessionRuntimeFactory.cs",
+        "src/PiSharp.Cli/Configuration/UserSettings.cs:ApplyDefaults"
+      ],
+      "inputConfiguration": "CLI provider/model/thinking, global and trusted-project defaults, enabledModels, available catalog/auth state and restored session metadata.",
+      "defaults": "Pinned default thinking is medium; the first scoped model wins on a new session, followed by a configured default and then an available model. Exact fallback details depend on catalog/auth state.",
+      "precedence": "Pinned source order is scoped model, saved default, then first available model; resume bypasses fresh scoped selection and restores session model state. PiSharp precedence is not yet differentially verified.",
+      "validation": "Model capability constraints apply to the effective thinking level; missing providers/models and stale sessions have explicit recovery paths.",
+      "observableBehavior": "Initial provider/model/thinking, fallback message, session metadata and next request.",
+      "providerRequestEffect": "First request uses the effective startup or restored selection.",
+      "persistence": "Saved default remains separate from transient session selection; session model/thinking are restored.",
+      "reloadBehavior": "Catalog/auth changes and settings reload during startup remain to be verified.",
+      "failureBehavior": "Unavailable saved/session model should recover without corrupting the session or silently rewriting defaults.",
+      "knownDifference": "10 strict direct-Pi cases cover fresh start, scope/default precedence, unauthenticated selection, empty catalogues, provider defaults and continuation behavior. RPC/session continuation retains a usable configured identity when no provider is authenticated; this existing-runtime adaptation is documented separately.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Startup/ModelThinkingDifferentialTests.cs; tests/PiSharp.Tests/Cli/Packages/NativeExtensionModelProcessTests.cs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "scoped-model-pattern-resolution",
+      "feature": "Scoped model pattern resolution, ordering, diagnostics, duplicate elimination and per-pattern thinking",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/model-resolver.ts:316-420",
+        "packages/coding-agent/test/model-resolver.test.ts:scoped model cases"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Startup/ModelScopeGlob.cs",
+        "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs:ApplyScope"
+      ],
+      "inputConfiguration": "Ordered enabledModels or --models patterns matched against provider/model and bare model ID.",
+      "defaults": "An empty scope means all configured models; first match order controls scoped ordering.",
+      "precedence": "Pinned exact references are checked before glob interpretation; otherwise patterns are applied in order and models are deduplicated.",
+      "validation": "Pinned uses minimatch with nocase; bracketed literal IDs are protected by exact lookup. Invalid thinking suffixes and no-match/ambiguity conditions produce diagnostics.",
+      "observableBehavior": "Ordered scoped models and warning diagnostics; per-pattern thinking follows the selected scope entry.",
+      "providerRequestEffect": "Scope constrains startup/cycling/picker choices but must not reroute an already active request.",
+      "persistence": "Global or trusted-project enabledModels are persisted as ordered patterns.",
+      "reloadBehavior": "Scope recomputation after settings/catalog reload remains to be verified.",
+      "failureBehavior": "No-match and ambiguous patterns warn; malformed/oversized configuration is bounded by PiSharp validation.",
+      "knownDifference": "18 strict direct-Pi cases cover minimatch braces, ranges, extglobs, negation, escaped IDs, suffixes, ordering, ambiguity and diagnostics; the regex cache is bounded at 256 patterns.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Startup/ModelThinkingDifferentialTests.cs; tests/PiSharp.Tests/Cli/Startup/ModelScopeGlobTests.cs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "scoped-model-interactive-editing",
+      "feature": "Interactive scope search, toggle, enable-all, clear, reorder, save, refresh and cancel",
+      "pinnedSource": [
+        "packages/coding-agent/src/modes/interactive/components/scoped-models-selector.ts",
+        "packages/coding-agent/test/scoped-models-selector.test.ts",
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts:/scoped-models"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Tui/Commands/TerminalProviderCommands.cs:SetScopeAsync",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalModelPicker.cs",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalSelectionList.cs"
+      ],
+      "inputConfiguration": "Current model catalog, ordered scope IDs/patterns, search text and selector actions.",
+      "defaults": "Changes are session-only until the explicit save action; cancel leaves the prior scope unchanged.",
+      "precedence": "Configured order is retained, newly enabled models follow the selector's defined order, and save writes the resulting scope.",
+      "validation": "Unavailable configured IDs remain visible; refresh reconciles current catalog entries without silently losing saved choices.",
+      "observableBehavior": "Search/toggle/bulk/reorder state, cancellation behavior and persisted order.",
+      "providerRequestEffect": "Scope edits affect later model selection only.",
+      "persistence": "Explicit save persists the scope; selector edits before save are transient.",
+      "reloadBehavior": "Refresh and settings reload must retain valid user choices and handle unavailable entries.",
+      "failureBehavior": "Cancel without mutation; save failures must not report success.",
+      "knownDifference": "The interactive selector supports filtering, toggle, save and cancel while preserving unrelated settings. Native Windows/macOS PTY behavior was not exercised.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs",
+      "acceptanceStatus": "implemented and verified on Linux PTY"
+    },
+    {
+      "id": "thinking-level-selection",
+      "feature": "Thinking levels, suffix/default precedence, model compatibility and requested-versus-effective clamping",
+      "pinnedSource": [
+        "packages/agent/src/thinking.ts",
+        "packages/ai/src/models.ts:clampThinkingLevel",
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/thinking-selector.test.ts",
+        "packages/coding-agent/test/max-thinking.test.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Providers/ThinkingLevels.cs",
+        "src/PiSharp.Cli/Composition/ModelRuntimeController.cs",
+        "src/PiSharp.Cli/Composition/ConversationModelTransitions.cs",
+        "src/PiSharp.Cli/Sessions/SessionStartupController.cs"
+      ],
+      "inputConfiguration": "Requested CLI/suffix/session level, per-model default, global default, model reasoning capability and thinkingLevelMap.",
+      "defaults": "PiSharp declares medium; pinned default and level support are sourced from agent-core and model metadata.",
+      "precedence": "Explicit CLI, suffix, model override, global default and restored session values must be derived per startup/transition path.",
+      "validation": "Seven levels are represented; model capability maps can remove or remap levels. Effective clamping must not silently rewrite saved preferences.",
+      "observableBehavior": "Requested and effective level, selector choices, transition events and session restoration.",
+      "providerRequestEffect": "Adapter-specific reasoning effort/mode/disable fields reflect effective thinking.",
+      "persistence": "Per-model/global defaults persist; incidental clamping is not persisted unless source does so.",
+      "reloadBehavior": "Model switch, resumed session and settings reload recompute effective thinking.",
+      "failureBehavior": "Unsupported explicit values report or clamp according to the source path; transition failure must preserve the prior active state.",
+      "knownDifference": "10 strict direct-Pi cases cover scoped, per-model, global and current defaults, clamping, non-reasoning models and supported xhigh.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Startup/ModelThinkingDifferentialTests.cs; tests/PiSharp.Tests/Cli/Tui/TerminalThinkingSelectorTests.cs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "thinking-budgets-output-limits",
+      "feature": "Default/custom/per-level reasoning budgets, output-token room, clamping and provider compatibility",
+      "pinnedSource": [
+        "packages/ai/src/api/simple-options.ts",
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/api/anthropic-messages.ts",
+        "packages/ai/src/api/google-shared.ts",
+        "packages/ai/test/openai-completions-thinking-token-budget.test.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Runtime/Providers/ThinkingBudgetPolicy.cs",
+        "src/PiSharp.Runtime/Providers/ModelSamplingParametersChatClient.cs",
+        "src/PiSharp.Cli/Providers/ProviderSamplingRequestHandler.cs",
+        "provider-specific request mappers"
+      ],
+      "inputConfiguration": "Effective level, configured budgets for minimal/low/medium/high, model/output token ceilings and provider compatibility metadata.",
+      "defaults": "PiSharp currently uses 1024/2048/8192/16384 tokens and reserves 1024 answer tokens; exact provider-specific pinned defaults remain under review.",
+      "precedence": "Provider mapper, model metadata, user budgets and requested output constraints must be compared per adapter.",
+      "validation": "Non-negative integer budgets; clamp against output limits without overflow and omit unsupported fields.",
+      "observableBehavior": "Effective request max output, reasoning budget and absent/present compatibility fields.",
+      "providerRequestEffect": "Actual outgoing request body for supported token-budget and effort-based providers.",
+      "persistence": "Configured budgets persist in user/project settings and project trust gates project values.",
+      "reloadBehavior": "The next provider operation after settings reload uses the new budgets.",
+      "failureBehavior": "Invalid settings do not partially alter active budgets; unsupported levels/fields are omitted or handled per source.",
+      "knownDifference": "10 strict option cases and provider-wire captures verify default/custom budgets, output ceilings and provider-specific omission/clamping.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Startup/ModelThinkingDifferentialTests.cs; tests/PiSharp.Tests/Cli/Providers/ModelThinkingProviderWireDifferentialTests.cs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "sampling-and-model-metadata",
+      "feature": "Model-level and thinking-level sampling parameters, max tokens, compatibility projection and switching",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/model-config.ts",
+        "packages/coding-agent/src/core/model-runtime.ts",
+        "packages/ai/src/api/constrained-sampling.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Runtime/Providers/ModelCatalog.cs",
+        "src/PiSharp.Runtime/Providers/ModelSamplingParametersChatClient.cs",
+        "src/PiSharp.Cli/Providers/ProviderSamplingRequestHandler.cs",
+        "src/PiSharp.Cli/Providers/ProviderProfileLoader.cs"
+      ],
+      "inputConfiguration": "Provider/model catalog metadata, configured model overrides, samplingParams, samplingParamsByThinkingLevel, thinkingLevelMap and per-request options.",
+      "defaults": "Provider/catalog metadata supplies model defaults; precedence and merge behavior are source-defined and not yet fully extracted.",
+      "precedence": "Must verify model defaults, per-level values, explicit request overrides and provider compatibility adjustments from pinned mapper code.",
+      "validation": "Invalid nested configuration must fail or be ignored exactly where source behavior specifies; unsupported fields must not leak.",
+      "observableBehavior": "Actual resolved request options after model/provider/thinking transitions.",
+      "providerRequestEffect": "Sampling fields in outgoing HTTP payload; absent fields are asserted too.",
+      "persistence": "Catalog/configured model metadata is loaded from provider configuration; settings reload behavior remains to be verified.",
+      "reloadBehavior": "Updated model metadata applies to subsequent requests without stale values.",
+      "failureBehavior": "Malformed config fails safely and leaves the previous active runtime intact.",
+      "knownDifference": "Model and per-thinking-level sampling merges are compared in the oracle and physical requests; provider-specific unsupported fields are omitted by the adapter.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-provider-wire-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Providers/ModelThinkingProviderWireDifferentialTests.cs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "settings-precedence-validation-trust",
+      "feature": "Model-related global/project/CLI/session settings, validation and project trust",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/settings-manager.ts",
+        "packages/coding-agent/src/core/settings-schema.ts",
+        "packages/coding-agent/src/core/settings-defaults.ts",
+        "packages/coding-agent/src/core/resolve-config-value.ts",
+        "packages/coding-agent/test/settings-manager.test.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Configuration/UserSettings.cs",
+        "src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs",
+        "src/PiSharp.Cli/Composition/InitialModelComposition.cs",
+        "src/PiSharp.Cli/Startup/CliArguments.cs"
+      ],
+      "inputConfiguration": "Built-in defaults, user settings, trusted project settings, CLI flags, environment and restored session state for model/scope/thinking/budget fields.",
+      "defaults": "Default thinking is medium; absent model/provider/scope values use runtime defaults.",
+      "precedence": "PiSharp overlays project values over user values for selected fields and applies CLI defaults; pinned field-specific precedence still needs case-by-case verification.",
+      "validation": "Typed JSON, duplicate-key checks, bounded file size/depth, valid thinking names, model keys and nonnegative budget integers.",
+      "observableBehavior": "Effective value, origin/scope, validation diagnostic and whether project values are ignored while untrusted.",
+      "providerRequestEffect": "Only effective trusted/explicit values reach provider configuration.",
+      "persistence": "Settings are stored separately at user and project paths.",
+      "reloadBehavior": "Trust changes and settings reload must recompute effective values without partial application.",
+      "failureBehavior": "Malformed or untrusted project values must not redirect provider routing or credentials.",
+      "knownDifference": "10 strict direct-Pi cases cover global/project precedence, trust, defaults, model thinking, enabled-model order/removal and preservation of unrelated fields.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Startup/ModelThinkingDifferentialTests.cs; tests/PiSharp.Tests/Cli/Configuration/UserSettingsWriterTests.cs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "settings-persistence-concurrency-reload",
+      "feature": "Atomic settings changes, nested/model override updates, removal, coordinated concurrency, reload and restart",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/settings-manager.ts:reload/update/save",
+        "packages/coding-agent/test/settings-manager.test.ts",
+        "packages/coding-agent/test/settings-manager-bug.test.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Configuration/UserSettingsWriter.cs",
+        "src/PiSharp.Cli/Configuration/UserSettingsPersistence.cs",
+        "src/PiSharp.Cli/Configuration/UserSettings.cs",
+        "src/PiSharp.Cli/Tui/Commands/TerminalSettingsCommands.cs",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcUserSettingsController.cs"
+      ],
+      "inputConfiguration": "User/project settings JSON mutations, reload notifications and concurrent PiSharp writers.",
+      "defaults": "Existing unrelated keys and nested values are preserved during an update.",
+      "precedence": "Write then parse/validate, publish an effective settings snapshot, update relevant runtime owners and use it for the next operation.",
+      "validation": "Malformed JSON, duplicate properties, BOM, invalid types, bounds, missing/empty/oversized files and write errors.",
+      "observableBehavior": "On-disk JSON, active snapshot, next runtime value, restart value and failure atomicity.",
+      "providerRequestEffect": "Subsequent requests use updated effective settings; invalid reload retains last valid state.",
+      "persistence": "Atomic private-file writer and per-scope settings paths.",
+      "reloadBehavior": "Live reload and restart are in scope; exact settings-to-runtime synchronization is unverified.",
+      "failureBehavior": "No partial writes or partial active configuration; cancellation and write failures preserve valid state.",
+      "knownDifference": "Settings writes are coordinated, atomically persisted and reloadable; deterministic concurrent updates and malformed-input handling are covered by the .NET suite.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Configuration/UserSettingsWriterTests.cs; tests/PiSharp.Tests/Cli/Packages/NativeExtensionModelProcessTests.cs",
+      "acceptanceStatus": "implemented and verified by regressions"
+    },
+    {
+      "id": "interactive-model-thinking-settings-controls",
+      "feature": "Model picker, scoped model editor, thinking selector, settings picker, search, cancellation and unsent draft preservation",
+      "pinnedSource": [
+        "packages/coding-agent/src/modes/interactive/components/model-selector.ts",
+        "packages/coding-agent/src/modes/interactive/components/scoped-models-selector.ts",
+        "packages/coding-agent/src/modes/interactive/components/thinking-selector.ts",
+        "packages/coding-agent/src/modes/interactive/components/settings-selector.ts",
+        "packages/coding-agent/test/model-selector.test.ts",
+        "packages/coding-agent/test/settings-selector.test.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalModelPicker.cs",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalThinkingSelector.cs",
+        "src/PiSharp.Cli/Tui/Dialogs/TerminalSettingsPicker.cs",
+        "src/PiSharp.Cli/Tui/Commands/TerminalProviderCommands.cs",
+        "tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs"
+      ],
+      "inputConfiguration": "Available catalog, current/default model, scope, supported thinking levels and effective settings scope.",
+      "defaults": "Current selection is highlighted; default model/thinking values are labeled; cancellation does not change selection.",
+      "precedence": "Selection and persistence actions follow pinned keybindings and selector callbacks; exact cross-surface behavior remains unverified.",
+      "validation": "Only available models and model-supported thinking levels can be selected; settings edits validate before save.",
+      "observableBehavior": "Search ranking, selected state, keyboard actions, focus/cursor/draft retention and save/cancel result.",
+      "providerRequestEffect": "Committed selection changes affect subsequent requests only.",
+      "persistence": "Model/default and settings save actions persist only when explicitly selected.",
+      "reloadBehavior": "Catalog refresh while picker is open and settings live application remain to be verified.",
+      "failureBehavior": "Cancellation or failed save leaves previous state active; no success event before commit.",
+      "knownDifference": "Model/thinking selection and scoped-model editing have selector/PTY coverage. Native Windows/macOS interaction is not claimed.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Tui/TerminalThinkingSelectorTests.cs; tests/PiSharp.Tests/Cli/Tui/TerminalPtyTests.cs",
+      "acceptanceStatus": "implemented and verified on Linux"
+    },
+    {
+      "id": "cli-and-rpc-model-contract",
+      "feature": "CLI model/provider/thinking/list/scope options and RPC model/thinking state transitions",
+      "pinnedSource": [
+        "packages/coding-agent/src/cli/args.ts",
+        "packages/coding-agent/src/cli/list-models.ts",
+        "packages/coding-agent/test/args.test.ts",
+        "packages/coding-agent/src/core/agent-session.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Startup/CliArguments.cs",
+        "src/PiSharp.Cli/Composition/InitialModelComposition.cs",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcModelCommandHandler.cs",
+        "src/PiSharp.Cli/Composition/ConversationModelTransitions.cs"
+      ],
+      "inputConfiguration": "--provider, --model, --thinking, --models, --list-models, --api-key, session flags and supported RPC operations.",
+      "defaults": "Pinned flags and RPC operations are authoritative; PiSharp currently exposes a subset with custom semantics.",
+      "precedence": "Explicit CLI and runtime transition behavior must agree where interfaces express the same action.",
+      "validation": "Exact accepted values, exit codes, warnings/errors, cancellation and credential redaction.",
+      "observableBehavior": "CLI output/exit status and RPC response/event/state after transition.",
+      "providerRequestEffect": "The next request must match reported provider/model/thinking.",
+      "persistence": "Only commands that explicitly save defaults/settings mutate persistent defaults; session selection persists per session.",
+      "reloadBehavior": "RPC/TUI after reload must see the same effective catalog/settings snapshot.",
+      "failureBehavior": "Blocked active runs, auth failures and cancellation cannot return false success or stale state.",
+      "knownDifference": "10 strict source-pinned CLI/TUI/RPC cases cover provider selection, suffixes, scoped model switching, clamping, errors and supported thinking levels.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Startup/ModelThinkingDifferentialTests.cs; tests/PiSharp.Tests/Cli/Packages/NativeExtensionModelProcessTests.cs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "session-extension-integration",
+      "feature": "Session resume/replacement/fork/clone, persisted selection metadata and extension selection callbacks",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/test/suite/agent-session-model-extension.test.ts",
+        "packages/coding-agent/src/core/session-manager.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Sessions/SessionStartupController.cs",
+        "src/PiSharp.Cli/Sessions/ConversationModelReplacement.cs",
+        "src/PiSharp.Cli/Composition/ConversationModelTransitions.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs"
+      ],
+      "inputConfiguration": "Persisted session provider/model/thinking, current project runtime, transition source and extension registrations.",
+      "defaults": "Restored session metadata applies unless explicit connection/model selection semantics override it.",
+      "precedence": "Session selection, explicit CLI and saved defaults must match pinned per scenario.",
+      "validation": "Restored provider/client/metadata must resolve as one valid runtime; failures preserve the prior state.",
+      "observableBehavior": "JSONL/session state, extension event order/payload, active client and next provider request.",
+      "providerRequestEffect": "First post-resume or post-transition call uses restored/committed identity.",
+      "persistence": "Committed model/thinking transitions update session records; transient drafts and completed tool effects are preserved.",
+      "reloadBehavior": "Session replacement and project runtime adoption remain to be verified under catalog/settings changes.",
+      "failureBehavior": "No duplicate callback, tool replay, stale runtime or success event on failed transition.",
+      "knownDifference": "Fresh start, model/thinking changes, extension selection events, replacement and resume are covered by process tests. Extended busy-run transition interleavings are not represented in the direct oracle.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Packages/NativeExtensionModelProcessTests.cs; tests/PiSharp.Tests/Cli/Sessions/PiSharpExtensionSelectionEventsTests.cs",
+      "acceptanceStatus": "implemented and verified by process regressions"
+    },
+    {
+      "id": "physical-provider-requests",
+      "feature": "Physical provider request effects of model, thinking, budget, sampling, reload and session changes",
+      "pinnedSource": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/api/anthropic-messages.ts",
+        "packages/ai/src/api/google-generative-ai.ts",
+        "packages/ai/test/reasoning-options.test.ts",
+        "packages/ai/test/sampling-options.test.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Providers/ProviderChatClientFactory.cs",
+        "src/PiSharp.Cli/Providers/ProviderSamplingRequestHandler.cs",
+        "src/PiSharp.Runtime/Providers/ModelSamplingParametersChatClient.cs",
+        "provider-specific request mappers"
+      ],
+      "inputConfiguration": "Resolved model and provider, effective thinking/budget/sampling, messages/tools and local fixture credentials.",
+      "defaults": "Adapter and model metadata defaults; no live provider credentials are needed.",
+      "precedence": "Per-adapter serialization is authoritative; no universal reasoning field is assumed.",
+      "validation": "Assert present and absent wire fields, provider routing and credential identity.",
+      "observableBehavior": "Captured local HTTP method/path/headers/body and resulting provider response handling.",
+      "providerRequestEffect": "Direct physical request comparison for supported OpenAI Responses/Chat, Anthropic Messages and token-budget-capable paths; Google adapters where supported.",
+      "persistence": "Not persisted by the HTTP layer; derives from effective runtime/configuration.",
+      "reloadBehavior": "Updated configuration must affect the next captured request.",
+      "failureBehavior": "Auth/provider changes cannot leak credentials across providers or leave stale parameters.",
+      "knownDifference": "23 direct pinned-Pi local-HTTP cases cover OpenAI Responses/Completions, Anthropic Messages, Google Generative AI and Vertex request fields, credentials, budgets and sampling.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-provider-wire-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Providers/ModelThinkingProviderWireDifferentialTests.cs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "independent-oracle-and-differential-corpus",
+      "feature": "Reproducible direct-Pi oracle, independent calibration and minimum 80 meaningful cases with provenance",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/model-resolver.ts",
+        "packages/coding-agent/test/model-resolver.test.ts",
+        "packages/coding-agent/test/settings-manager.test.ts",
+        "packages/ai/test/openai-completions-thinking-token-budget.test.ts"
+      ],
+      "piSharpOwner": [
+        "tools/parity (new milestone harness planned)",
+        "tests/PiSharp.Tests (product-side fixtures planned)"
+      ],
+      "inputConfiguration": "Synthetic models/auth/settings and temporary workspaces; local HTTP endpoints for provider-wire cases.",
+      "defaults": "Every case records the pinned SHA and actual PiSharp SHA; no expected output is generated from PiSharp.",
+      "precedence": "Direct pinned source/process is the expected result; same-Pi control is independently repeated.",
+      "validation": "Case provenance includes platform, oracle, input, auth/config, invocation, comparison policy, classification and result.",
+      "observableBehavior": "Case-level strict pass/fail, category counts, calibration and exclusions.",
+      "providerRequestEffect": "Wire cases capture actual HTTP payloads and headers.",
+      "persistence": "Case workspaces are isolated; machine-readable reports are committed as compact reviewed evidence.",
+      "reloadBehavior": "Include persistence/reload/restart cases.",
+      "failureBehavior": "Retain failed calibrations and real differences; normalization cannot hide provider/model/thinking/settings divergences.",
+      "knownDifference": "The direct Pi oracle has 93 strict behavior cases; separate provider-wire evidence has 35 strict cases. Reports include pinned Pi and PiSharp SHAs, platform, inputs, auth/configuration, comparison policy and results.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Startup/ModelThinkingDifferentialTests.cs; tests/PiSharp.Tests/Cli/Providers/ModelThinkingProviderWireDifferentialTests.cs; tools/parity/model-thinking-oracle.mjs",
+      "acceptanceStatus": "implemented and source-verified"
+    },
+    {
+      "id": "reliability-and-recovery",
+      "feature": "Concurrent settings/model transitions, reload, refresh, cancellation, large inputs and failure recovery",
+      "pinnedSource": [
+        "packages/coding-agent/test/settings-manager-bug.test.ts",
+        "packages/coding-agent/test/suite/regressions/3217-scoped-model-order.test.ts",
+        "packages/coding-agent/test/suite/regressions/6949-unavailable-scoped-model.test.ts"
+      ],
+      "piSharpOwner": [
+        "src/PiSharp.Cli/Configuration/UserSettingsWriter.cs",
+        "src/PiSharp.Cli/Composition/ConversationModelTransitions.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationRun.cs",
+        "src/PiSharp.Cli/Providers/ProviderModelRuntime.cs"
+      ],
+      "inputConfiguration": "Deterministic barriers for concurrent writers, active provider/tool runs, refresh/reload and malformed or large inputs.",
+      "defaults": "No arbitrary timeout is used to hide deadlocks; work and memory remain bounded.",
+      "precedence": "A transition publishes only after preparation and commit; the last valid config remains active after invalid reload.",
+      "validation": "Thousands of models, long IDs, many patterns, large settings files within the configured limit and malformed nested JSON.",
+      "observableBehavior": "No lost updates, stale clients/budgets/sampling, duplicate events, replayed tool effects, deadlocks or secret leakage.",
+      "providerRequestEffect": "Requests before/after barriers retain the correct provider/model/config snapshot.",
+      "persistence": "Concurrent PiSharp updates are coordinated; arbitrary external writers are not assumed to share that lock.",
+      "reloadBehavior": "Reload during model selection must publish an atomic effective snapshot.",
+      "failureBehavior": "Cancellation/failure leaves previous valid runtime/settings usable and avoids partial success.",
+      "knownDifference": "The suite covers 2,048-model catalogues, 96 scope patterns, bounded matching/cache behavior, concurrent settings mutation and failure/reload paths. Busy-run interleavings beyond existing process coverage remain a limitation.",
+      "differentialFixture": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
+      "regressionTest": "tests/PiSharp.Tests/Cli/Configuration/UserSettingsWriterTests.cs; tests/PiSharp.Tests/Cli/Startup/ModelScopeGlobTests.cs; tests/PiSharp.Tests/Cli/Packages/NativeExtensionModelProcessTests.cs",
+      "acceptanceStatus": "implemented and verified by regressions"
+    }
+  ],
+  "pairedDifferentialCounts": {
+    "model-references-and-ambiguity": 25,
+    "scoped-models": 18,
+    "initial-selection-and-recovery": 10,
+    "thinking-levels-and-defaults": 10,
+    "budgets-and-sampling": 10,
+    "settings-precedence-and-persistence": 10,
+    "cli-tui-rpc-integration": 10,
+    "provider-wire": 35
+  },
+  "implementationSha": "bdbf2de91a30614ca7a258f1eaaf5e13141784c7",
+  "branchBaseSha": "eefa89454a3c1cfd196894f94744b6f393c8e721",
+  "publicationStatus": "PR #24 remains draft and unmerged; current exact-head CI evidence is maintained in the PR description"
+}

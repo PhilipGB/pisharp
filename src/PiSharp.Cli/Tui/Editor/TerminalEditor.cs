@@ -369,9 +369,10 @@ public sealed class TerminalEditor
         string allLabel = "All", string scopedLabel = "Scoped", string emptyMessage = "No matching items",
         string? actionHint = null,
         Func<TerminalSelectionList<T>, TerminalInputEvent, Task<bool>>? handleInput = null,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default,
+        Func<TerminalSelectionList<T>, Task>? onIdle = null) =>
         _dialogs.ShowSelectionListAsync(title, options, selectedKey, scopedOptions, allLabel, scopedLabel,
-            emptyMessage, actionHint, handleInput, cancellationToken);
+            emptyMessage, actionHint, handleInput, cancellationToken, onIdle);
 
     internal TerminalSelection<T>? ShowModelSelectionList<T>(
         IReadOnlyList<TerminalSelectionOption<T>> options, string? selectedKey, string hint,

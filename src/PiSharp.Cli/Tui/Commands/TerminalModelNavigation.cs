@@ -29,7 +29,7 @@ internal sealed class TerminalModelNavigation(ProviderModelRuntime models, Func<
         }
         if (available.Length == 1)
         {
-            output().WriteLine(models.Scope.Count > 0 ? "Only one model in scope." : "Only one model available.");
+            output().WriteLine(models.HasScope ? "Only one model in scope." : "Only one model available.");
             return null;
         }
         var selection = getSelection();

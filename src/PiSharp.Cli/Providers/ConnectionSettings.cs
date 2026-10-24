@@ -8,7 +8,7 @@ public sealed record ConnectionSettings(string Model, Uri? Endpoint, string ApiK
 
     public static ConnectionSettings Resolve(bool local, Func<string, string?> getEnvironmentVariable)
     {
-        var model = getEnvironmentVariable("PISHARP_MODEL") ?? (local ? LocalModel : "gpt-4o-mini");
+        var model = getEnvironmentVariable("PISHARP_MODEL") ?? (local ? LocalModel : "gpt-5.5");
         var baseUrl = getEnvironmentVariable("PISHARP_BASE_URL") ?? (local ? LocalEndpoint : null);
         Uri? endpoint = null;
         if (baseUrl is not null)

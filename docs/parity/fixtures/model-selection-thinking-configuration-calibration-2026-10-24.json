@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "capturedAt": "2026-10-24",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpSha": "bdbf2de91a30614ca7a258f1eaaf5e13141784c7",
+  "platform": "linux-x64",
+  "node": "v24.21.0",
+  "samePiControl": {
+    "runs": 2,
+    "casesPerRun": 93,
+    "piSharpUsed": false,
+    "normalization": "remove only provenance.invocation; preserve all input and result fields",
+    "normalizedResultSha256": "7db3e9e805672f81656013956a94b143e1f22e8c7800cefe4b13a92f3897f231",
+    "result": "identical"
+  },
+  "providerWireControl": {
+    "runs": 2,
+    "casesPerRun": 35,
+    "piSharpUsed": false,
+    "normalization": "exact normalized captured request observations",
+    "resultSha256": "767d3ba27b01d956e62856ad0274cebe64f799bf7901933de946877cbddfdedf",
+    "result": "identical"
+  },
+  "scope": "Calibration demonstrates repeatability of the pinned Pi oracle only. It is not a PiSharp pass count or a substitute for paired differential results."
+}

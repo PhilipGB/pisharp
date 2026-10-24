@@ -3,8 +3,12 @@ using PiSharp.Cli.Composition;
 namespace PiSharp.Cli.Tui;
 
 internal sealed class TerminalProviderCommands(ProviderModelRuntime providers, ModelRuntimeController controller,
-    ActiveModelRuntime model, Func<TextWriter> output, TerminalThinkingSelector? thinkingSelector = null)
+    ActiveModelRuntime model, Func<TextWriter> output, TerminalThinkingSelector? thinkingSelector = null,
+    TerminalEditor? editor = null, Func<string?, Task>? saveEnabledModels = null)
 {
+    private readonly TerminalScopedModelsSelector? _scopedModelsSelector = editor is not null && saveEnabledModels is not null
+        ? new(providers, editor, saveEnabledModels) : null;
+
     public async Task ListModelsAsync(string filter, string? providerFilter)
     {
         foreach (var item in (await providers.ListModelsAsync(providerFilter)).Where(item => string.IsNullOrEmpty(filter) ||
@@ -16,12 +20,24 @@ internal sealed class TerminalProviderCommands(ProviderModelRuntime providers, M
 
     public async Task SetScopeAsync(string argument, string? providerFilter)
     {
+        var interactive = false;
         if (argument.Length > 0)
             providers.SetScope(argument.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-        output().WriteLine(providers.Scope.Count == 0 ? "Scoped models: all" :
-            "Scoped models: " + string.Join(", ", providers.Scope));
-        foreach (var scoped in await providers.ListModelsAsync(providerFilter))
-            output().WriteLine($"  {scoped.Provider}/{scoped.Id}{(scoped.Available ? "" : " · unavailable")}");
+        else if (_scopedModelsSelector is { } selector)
+        {
+            interactive = true;
+            var catalog = await providers.ListModelsAsync(includeOutOfScope: true);
+            await selector.ShowAsync(catalog);
+        }
+        if (interactive)
+            output().WriteLine(!providers.HasScope ? "Scoped models: all" : $"Scoped models: {providers.Scope.Count} model references");
+        else
+        {
+            output().WriteLine(!providers.HasScope ? "Scoped models: all" :
+                "Scoped models: " + string.Join(", ", providers.Scope));
+            foreach (var scoped in await providers.ListModelsAsync(argument.Length == 0 ? null : providerFilter))
+                output().WriteLine($"  {scoped.Provider}/{scoped.Id}{(scoped.Available ? "" : " · unavailable")}");
+        }
     }
 
     public async Task SetThinkingAsync(string argument, string? defaultLevel,

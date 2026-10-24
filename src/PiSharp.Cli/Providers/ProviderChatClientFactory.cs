@@ -131,7 +131,8 @@ public static class ProviderChatClientFactory
                 BaseUrl = baseUrl,
                 MaxRetries = 0,
                 Timeout = sdkTimeout,
-                Handlers = [new AnthropicSystemMessageHandler(transcript), argumentCapture.CreateHandler(),
+                Handlers = [new AnthropicThinkingRequestHandler(samplingContext!),
+                    new AnthropicSystemMessageHandler(transcript), argumentCapture.CreateHandler(),
                     ProviderWireHookHandler.CreateAnthropic(selection)]
             };
             if (selection.AnthropicIsOAuthToken)

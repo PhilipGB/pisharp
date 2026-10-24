@@ -334,6 +334,9 @@ public sealed partial class ConversationRun
     /// <summary>Whether this run currently owns the active prompt loop.</summary>
     public bool IsActive => _promptDelivery.IsActive;
 
+    /// <summary>The effective thinking level currently applied to this run.</summary>
+    public string ThinkingLevel => Volatile.Read(ref _reasoningLevel) ?? "off";
+
     /// <summary>Whether an extension callback can compact without reentering a run or compaction.</summary>
     internal bool CanCompactFromExtensionCallback => !_promptDelivery.IsActive &&
         !_compactionCoordinator.IsCompacting && Volatile.Read(ref _manualCompactionActive) == 0 && _gate.CurrentCount != 0;

@@ -43,6 +43,25 @@ public sealed class DefaultToolReloadPolicyTests
     }
 
     [Fact]
+    public void SettingsReloadReplacesInheritedModelScopeButKeepsExplicitCliScope()
+    {
+        var original = new UserSettings(EnabledModels: ["fixture/first"]);
+        var updated = new UserSettings(EnabledModels: ["fixture/second"]);
+        var inherited = DefaultToolReloadPolicy.ApplyStartupDefaults(CliArguments.Parse([]), original,
+            _ => null, preserveSessionModel: false);
+        var inheritedReload = DefaultToolReloadPolicy.Resolve(inherited, usesSettingsDefaults: true,
+            original, updated, [], _ => null);
+
+        var explicitScope = DefaultToolReloadPolicy.ApplyStartupDefaults(
+            CliArguments.Parse(["--models", "fixture/first"]), original, _ => null, preserveSessionModel: false);
+        var explicitReload = DefaultToolReloadPolicy.Resolve(explicitScope, usesSettingsDefaults: true,
+            original, updated, [], _ => null);
+
+        Assert.Equal(["fixture/second"], inheritedReload.Arguments.ScopedModels);
+        Assert.Equal(["fixture/first"], explicitReload.Arguments.ScopedModels);
+    }
+
+    [Fact]
     public void NoBuiltinToolsContinuesToFilterBuiltinsAddedBySettings()
     {
         var previousSettings = new UserSettings(DefaultTools: []);

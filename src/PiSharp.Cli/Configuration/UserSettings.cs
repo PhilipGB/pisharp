@@ -279,15 +279,14 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             }
             if (property.Name == "enabledModels")
             {
-                if (property.Value.ValueKind != JsonValueKind.Array || property.Value.GetArrayLength() > 128)
-                    throw new InvalidDataException("settings.json enabledModels must be an array of at most 128 patterns.");
+                if (property.Value.ValueKind != JsonValueKind.Array || property.Value.GetArrayLength() > 512)
+                    throw new InvalidDataException("settings.json enabledModels must be an array of at most 512 patterns.");
                 var patterns = new List<string>();
                 foreach (var item in property.Value.EnumerateArray())
                 {
                     if (item.ValueKind != JsonValueKind.String || item.GetString() is not { } pattern ||
-                        string.IsNullOrWhiteSpace(pattern) || pattern.Length > 512 || pattern != pattern.Trim() ||
-                        patterns.Contains(pattern, StringComparer.Ordinal))
-                        throw new InvalidDataException("settings.json enabledModels contains an invalid or duplicate pattern.");
+                        string.IsNullOrWhiteSpace(pattern) || pattern.Length > 512 || pattern != pattern.Trim())
+                        throw new InvalidDataException("settings.json enabledModels contains an invalid pattern.");
                     patterns.Add(pattern);
                 }
                 enabledModels = patterns;
@@ -639,7 +638,7 @@ public sealed record UserSettings(string? DefaultProvider = null, string? Defaul
             Local = useLocal,
             ModelOverride = cli.ModelOverride ?? (!useLocal && !preserveSessionModel && environment(modelEnvironment) is null ? DefaultModel : null),
             Thinking = cli.Thinking ?? DefaultThinkingLevel,
-            ScopedModels = cli.ScopedModels ?? EnabledModels,
+            ScopedModels = cli.HasExplicitModelScope ? cli.ScopedModels : EnabledModels,
             Tools = cli.Tools ?? (!cli.NoTools ? ResolveDefaultTools(DefaultTools) : null)
         };
     }

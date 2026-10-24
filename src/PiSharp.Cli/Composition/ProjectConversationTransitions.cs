@@ -85,6 +85,7 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
             committed = true;
             modelRuntime.SetExtensionProviders(nextProject.Extensions.Registration.ExtensionProviders);
             modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
+            modelRuntime.SetScope(reloadPlan.Arguments.ScopedModels);
             var nextExtensions = nextProject.TransferExtensions();
             projectBinding.Adopt(nextConfiguration, nextProject, reloadPlan.Arguments);
             modelBinding.SetContext(nextContextPolicy, nextModelPricing);
@@ -127,6 +128,8 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
         var shutdownError = await NotifyShutdownForCommitAsync(conversationBinding.Run, ToShutdownReason(reason));
         modelRuntime.SetExtensionProviders(nextProject.Extensions.Registration.ExtensionProviders);
         modelRuntime.SetVirtualModelRegistry(nextProject.Extensions.Registration.VirtualModels);
+        if (!projectBinding.Arguments.HasExplicitModelScope)
+            modelRuntime.SetScope(nextProject.Configuration.Settings.EnabledModels);
         var nextExtensions = nextProject.TransferExtensions();
         replacement.CommitAdoption();
         projectBinding.Adopt(nextProject.Configuration, nextProject);
