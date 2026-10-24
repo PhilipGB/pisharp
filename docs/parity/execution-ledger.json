@@ -116,9 +116,9 @@
     "required_differential": {
       "minimum_cases": 70,
       "minimum_per_tool": 10,
-      "executed": 456,
-      "passed": 395,
-      "strict_passed": 385,
+      "executed": 460,
+      "passed": 399,
+      "strict_passed": 389,
       "jpeg_codec_equivalent": 10,
       "intentional_safety_exclusions": 61,
       "unresolved": 0
@@ -357,10 +357,10 @@
       "write": 39,
       "edit": 69,
       "bash": 44,
-      "grep": 68,
+      "grep": 72,
       "find": 62,
       "ls": 53,
-      "total": 456
+      "total": 460
     },
     "read_image_contract": {
       "status": "in_progress",
@@ -1032,20 +1032,21 @@
         "failed": 0
       }
     },
-    "final_product_source": "e152e686017f659141d1bd5a83ef8823627c5410",
+    "final_product_source": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
     "final_local_validation_source": "3d0d7d6db783a036930b5c39edf0796d90fdd447",
     "final_local_validation": "docs/parity/fixtures/builtin-coding-tool-local-validation-2026-10-22.json",
     "incremental_record_policy": "Earlier nested status/remaining fields are chronological investigation snapshots. Current acceptance is defined by checkpoints, final_product_source, required_differential and linked final receipts; do not reinterpret historical gaps as current work.",
     "corrected_corpus": {
-      "source": "e152e686017f659141d1bd5a83ef8823627c5410",
-      "supported": 395,
-      "strict": 385,
+      "source": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
+      "supported": 399,
+      "strict": 389,
       "jpeg_equivalent": 10,
       "safety_exclusions": 61,
-      "total": 456,
+      "total": 460,
       "unresolved": 0,
       "fd": "official 10.5.0",
-      "physical_provider_and_cancel_apis": 3
+      "physical_provider_and_cancel_apis": 3,
+      "providerAcceptanceSource": "e152e686017f659141d1bd5a83ef8823627c5410"
     },
     "current_full_suite_receipt": "Final corrected publication head and fresh full-suite counters are authoritative in PR #22; prior source-specific local counters are retained.",
     "review_followups": {
@@ -1065,7 +1066,30 @@
           "context_opens": 1,
           "context_bytes": 33555532
         },
-        "related_tests_passed": 270
+        "related_tests_passed": 270,
+        "source": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
+        "full_corpus": {
+          "passed": 399,
+          "total": 460,
+          "strictPassed": 389,
+          "jpegCodecEquivalent": 10,
+          "intentionalSafetyDeviations": 61,
+          "unresolved": 0,
+          "perTool": {
+            "read": 121,
+            "write": 39,
+            "edit": 69,
+            "bash": 44,
+            "grep": 72,
+            "find": 62,
+            "ls": 53
+          }
+        },
+        "same_pi_control": {
+          "passed": 460,
+          "total": 460,
+          "earlier_order_difference": 459
+        }
       }
     }
   },

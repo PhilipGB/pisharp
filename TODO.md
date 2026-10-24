@@ -12,9 +12,9 @@ final head and exact-head push/PR CI are recorded in
 [PR #22](https://github.com/PhilipGB/pisharp/pull/22). Consult that live receipt
 before reporting subsequent progress. Keep #22 draft/unmerged; do not start #23.
 
-The defined corpus has 395 supported passes out of 456: 385 exact, ten JPEG
+The defined corpus has 399 supported passes out of 460: 389 exact, ten JPEG
 codec equivalents and 61 explicit safety exclusions, with zero unresolved
-cases. The same-Pi control is 456/456. All seven tools have source-pinned
+cases. The same-Pi control is 460/460. All seven tools have source-pinned
 filesystem/process/error/limit evidence, shared MAF invocation, three physical
 provider workflows and session restart. The final owner/mode hardening preserves
 metadata and clears executable privilege bits as pinned direct writes do;

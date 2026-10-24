@@ -101,7 +101,7 @@ trust interactions. Their known baseline differences remain recorded in parity
 evidence; passing covered checks do not establish complete upstream parity.
 
 The [built-in milestone receipt](../parity/fixtures/builtin-coding-tool-parity-2026-10-22.md)
-records 456 direct cases, three physical provider APIs, actual CLI restarts,
+records 460 direct cases, three physical provider APIs, actual CLI restarts,
 concurrency/cancellation and safety exclusions against the unchanged Pi pin.
 Eight additional ownership/mode observations are facets of the contract; atomic
 inode replacement remains excluded from strict identity. Linux CI captures the

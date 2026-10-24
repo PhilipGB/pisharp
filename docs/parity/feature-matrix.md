@@ -9,10 +9,10 @@ was captured before product changes. The
 [milestone receipt](fixtures/builtin-coding-tool-parity-2026-10-22.md) records the
 implemented corrections, actual source SHAs, Linux scope and limitations.
 The [complete corpus](fixtures/builtin-coding-tool-corpus-acceptance-2026-10-22.json)
-has 385 exact passes, ten calibrated JPEG equivalents and 61 explicit safety
-exclusions across 456 cases, with zero unresolved differences. A strict same-Pi
-control passes 456/456, without PiSharp. Tool totals are read121/write39/edit69/
-bash44/grep68/find62/ls53.
+has 389 exact passes, ten calibrated JPEG equivalents and 61 explicit safety
+exclusions across 460 cases, with zero unresolved differences. A strict same-Pi
+control passes 460/460, without PiSharp. Tool totals are read121/write39/edit69/
+bash44/grep72/find62/ls53.
 
 The seven-tool MAF workflow includes failed-edit recovery and canonical restart.
 All three physical provider APIs preserve declarations, results, IDs and history.

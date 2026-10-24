@@ -66,15 +66,15 @@ a percentage comparison of an unchanged suite.
 | write | 39 | 20 | 0 | 19 |
 | edit | 69 | 31 | 0 | 38 |
 | bash | 44 | 44 | 0 | 0 |
-| grep | 68 | 67 | 0 | 1 |
+| grep | 72 | 71 | 0 | 1 |
 | find | 62 | 61 | 0 | 1 |
 | ls | 53 | 53 | 0 | 0 |
-| Total | 456 | 385 | 10 | 61 |
+| Total | 460 | 389 | 10 | 61 |
 
 The [corpus receipt](builtin-coding-tool-corpus-acceptance-2026-10-22.json)
 records each case, source SHAs, strict differences and classifications. There are
-395 supported passes, 61 strict-equivalence exclusions and zero unresolved
-cases. A separate same-Pi control passes 456/456; PiSharp is not used by it. A preceding control had 455 exact matches and one ordered privacy-case difference between two actual Pi runs; both attempts remain recorded. The successful bounded repeat does not erase that observation.
+399 supported passes, 61 strict-equivalence exclusions and zero unresolved
+cases. A separate same-Pi control passes 460/460; PiSharp is not used by it. A preceding control had 455 exact matches and one ordered privacy-case difference between two actual Pi runs; both attempts remain recorded. The successful bounded repeat does not erase that observation.
 Protocol vectors, repeated observations and agent/provider workflows below do
 not inflate the 456 distinct-case count.
 
@@ -153,7 +153,7 @@ effective capabilities. Candidate bytes remain private until the commit barrier.
 An ownership-restoration failure leaves the original target in place.
 
 The mode/ownership facet is verified separately from the deliberate inode
-replacement difference; these eight observations do not inflate the 456-case
+replacement difference; these eight observations do not inflate the 460-case
 corpus. An alternate supplementary group could not be assigned in this execution
 environment: the restricted mapping returns EINVAL and the expanded mapping
 returns EPERM. That physical cross-group comparison remains explicitly unverified
@@ -239,7 +239,7 @@ Strict-equivalence exclusions remain visible:
 - Three additional shutdown cases retain stronger descendant cleanup and native
   cancelled EOF feedback. Pinned Pi leaves the detached grandchild alive at
   settlement; the oracle fixture terminates its own children during cleanup.
-  These cases are outside the 456-case direct corpus and remain separately
+  These cases are outside the 460-case direct corpus and remain separately
   excluded from strict shutdown equivalence.
 
 None of these exclusions increases the strict/pass count or hides an unexplained
@@ -248,8 +248,10 @@ retained for the established tool contract; tests remove their own artifacts.
 
 ## Local validation and reproduction
 
-Current differential and physical provider acceptance source is
-`e152e686017f659141d1bd5a83ef8823627c5410`. The last committed full-suite
+Current differential acceptance source is
+`962cfa48d97a960149e1f0cc020f25bc302c1d48`. Physical provider/abort acceptance
+retains its actual source `e152e686017f659141d1bd5a83ef8823627c5410`; the
+context correction has fresh pinned formatting and final-head regression evidence. The last committed full-suite
 counter receipt below is from `3d0d7d6db783a036930b5c39edf0796d90fdd447`,
 before the final public-facade and fixture follow-up. The live PR description
 records the fresh corrected-head full suite and exact-head CI counters.

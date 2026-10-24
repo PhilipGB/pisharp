@@ -19,7 +19,7 @@
       "jpeg_equivalent": 10,
       "intentional_safety_exclusions": 2,
       "control_strict_passed": 121,
-      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
+      "finalCorpusSource": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "write": {
@@ -30,7 +30,7 @@
       "total": 39,
       "intentional_safety_exclusions": 19,
       "control_strict_passed": 39,
-      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
+      "finalCorpusSource": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "edit": {
@@ -41,7 +41,7 @@
       "total": 69,
       "intentional_safety_exclusions": 38,
       "control_strict_passed": 69,
-      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
+      "finalCorpusSource": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "bash": {
@@ -52,24 +52,32 @@
       "total": 44,
       "control_strict_passed": 44,
       "shutdown_intentional_safety_exclusions": 3,
-      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
+      "finalCorpusSource": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "grep": {
-      "source": "6b0017d470c9927c366deb4c76fe93e1e9c1e554",
-      "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-acceptance-2026-10-22.json",
+      "source": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-corpus-acceptance-2026-10-22.json",
       "status": "verified_defined_supported_Linux_contract_with_explicit_exclusions",
-      "strict": 67,
-      "total": 68,
+      "strict": 71,
+      "total": 72,
       "intentional_safety_exclusions": 1,
-      "control_strict_passed": 68,
-      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
+      "control_strict_passed": 72,
+      "finalCorpusSource": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22.",
       "contextForwardReading": {
         "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-context-2026-10-22.json",
         "source_control_cases": 4,
         "related_tests_passed": 270,
-        "status": "bounded per-file windows implemented; exact-head publication receipt remains PR22"
+        "status": "bounded per-file windows implemented; exact-head publication receipt remains PR22",
+        "acceptedSource": "962cfa48d97a960149e1f0cc020f25bc302c1d48"
+      },
+      "initialToolAcceptance": {
+        "source": "6b0017d470c9927c366deb4c76fe93e1e9c1e554",
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-acceptance-2026-10-22.json",
+        "strict": 67,
+        "total": 68,
+        "control_strict_passed": 68
       }
     },
     "find": {
@@ -80,7 +88,7 @@
       "total": 62,
       "intentional_safety_exclusions": 1,
       "control_strict_passed": 62,
-      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
+      "finalCorpusSource": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "ls": {
@@ -90,7 +98,7 @@
       "strict": 53,
       "total": 53,
       "control_strict_passed": 53,
-      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
+      "finalCorpusSource": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     }
   },

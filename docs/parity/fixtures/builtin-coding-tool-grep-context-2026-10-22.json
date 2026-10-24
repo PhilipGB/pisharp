@@ -266,5 +266,55 @@
     "Cancellation during a held context read disposes the stream, reaps rg and permits recovery.",
     "A later read failure rolls back partial context output and caches the failure.",
     "Interleaved files, backward windows, eviction, large windows and separated forward windows preserve output with bounded handles/text."
-  ]
+  ],
+  "acceptedPiSharpSource": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
+  "fullCorpusSummary": {
+    "passed": 399,
+    "total": 460,
+    "strictPassed": 389,
+    "jpegCodecEquivalent": 10,
+    "intentionalSafetyDeviations": 61,
+    "unresolved": 0,
+    "perTool": {
+      "read": 121,
+      "write": 39,
+      "edit": 69,
+      "bash": 44,
+      "grep": 72,
+      "find": 62,
+      "ls": 53
+    }
+  },
+  "fullSamePiControl": {
+    "passed": 460,
+    "total": 460,
+    "piSharpUsed": false,
+    "earlierAttempt": {
+      "passed": 459,
+      "total": 460,
+      "difference": "Known source-only repository-privacy encounter order."
+    }
+  },
+  "formatAndBuild": {
+    "startedAt": "2026-10-24T08:27:34.439658+00:00",
+    "gates": [
+      {
+        "gate": "format",
+        "exitCode": 0,
+        "elapsedSeconds": 38.874
+      },
+      {
+        "gate": "build",
+        "exitCode": 0,
+        "elapsedSeconds": 16.33
+      }
+    ],
+    "passed": true,
+    "finishedAt": "2026-10-24T08:28:29.644940+00:00"
+  },
+  "documentation": {
+    "documents": 151,
+    "references": 619,
+    "passed": true
+  }
 }

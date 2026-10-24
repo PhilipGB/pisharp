@@ -15,7 +15,7 @@ current run metadata before reporting progress; do not mistake this frozen local
 checkpoint count for the later publication state. Keep the twenty-checkpoint
 denominator. Do not merge #22 or start #23.
 
-Product acceptance source is `e152e686017f659141d1bd5a83ef8823627c5410`.
+Product acceptance source is `962cfa48d97a960149e1f0cc020f25bc302c1d48`.
 The final publication head and push/PR workflow IDs are maintained in the PR
 description so the tested head does not change solely to record its CI result.
 The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md),
@@ -23,10 +23,10 @@ The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md),
 [corpus acceptance](parity/fixtures/builtin-coding-tool-corpus-acceptance-2026-10-22.json)
 record exact source revisions and scope.
 
-The 456-case corpus has 385 exact passes, ten calibrated JPEG equivalents,
+The 460-case corpus has 389 exact passes, ten calibrated JPEG equivalents,
 61 explicit safety exclusions and zero unresolved cases; the strict same-Pi
-control is 456/456 without PiSharp. Case counts are read121/write39/edit69/
-bash44/grep68/find62/ls53. Atomic/private mutations, image allocation bounds,
+control is 460/460 without PiSharp. Case counts are read121/write39/edit69/
+bash44/grep72/find62/ls53. Atomic/private mutations, image allocation bounds,
 repository privacy and stronger shutdown behavior remain clearly excluded from
 strict equivalence. Eight additional pinned owner/mode observations are facets,
 not eight extra strict whole-filesystem passes: inode replacement remains
