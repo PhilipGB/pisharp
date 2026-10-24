@@ -32,7 +32,8 @@ public sealed class SearchTools(string workingDirectory)
         [Description("Number of surrounding lines (default 0). ")] int context = 0,
         [Description("Maximum matches (default 100). ")] int? limit = null,
         CancellationToken cancellationToken = default) =>
-        (await GrepForTool(pattern, path, glob, ignoreCase, literal, context, limit, cancellationToken)).Text;
+        (await RipgrepSearch.ExecuteAsync(_cwd, pattern, path, glob, ignoreCase, literal, context, limit,
+            cancellationToken, respectGitIgnoreOutsideRepository: true)).Text;
 
     [Description("Search file contents with a regex or literal string. Returns matching lines with file paths and line numbers. Respects Git ignore rules in repositories.")]
     internal Task<SearchToolOutput> GrepForTool(

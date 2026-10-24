@@ -261,13 +261,15 @@ Product acceptance source is `3c2640e38b173117e5c8f8ee0406530bdca1f073`; the fin
 | Final bounded reliability | Five repetitions × 271 checks = 1,355 passes |
 | Documentation paths | 151 documents / 617 references; passed |
 
-The [validation receipt](builtin-coding-tool-validation-2026-10-22.json) records
+The [validation receipt](builtin-coding-tool-local-validation-2026-10-22.json) records
 source identities and full-suite counters. The first corrected-product full run
 had 3,725 passes and one test race: restored startup history was already visible
 before the test's output mark. The initial settled frame is now checked before
 marking the next prompt, retaining the same bounded deadlines and all product
 assertions. Five focused physical repetitions and the later full suite verify
 that synchronization correction. A subsequent run exposed a fixture-only HttpListener cleanup race. A standalone .NET 10.0.13 probe reproduces Stop/disposal attempting to rebind a released port, while Close/disposal succeeds. The fixture now closes its owned listener once, preserving all product assertions and bounded deadlines. Five physical repetitions verify that cleanup. Earlier failing evidence remains retained.
+
+The first published head exposed nine CI failures, retained in the local validation receipt. The documentation finalizer had overwritten the existing sixteen-case argument fixture; the original fixture is restored byte-for-byte and this validation receipt has a distinct filename. Public `SearchTools.Grep` retains its legacy ignore behavior outside Git while registered model tools retain the pinned argument vector. Synthetic fd fixtures now create an explicit repository marker; all 27 pinned outcomes are unchanged. CI installs checksum-verified official fd 10.5.0, which passes a 62/62 independent same-Pi find control. The earlier official fd 10.3 build and CI fd 9 reject nested braces accepted by the local distribution build. Search behavior therefore records the actual executable build, alongside its version. Both initial CI ownership gates passed all eight native cases against fresh source observations at UID 1001 / alternate GID 4. The final corrected-head suite and CI results are recorded in the live publication receipt below.
 
 Run from the repository root with .NET 10, Node 24, Python/Pillow, real rg and
 fd/fdfind, and the pinned Pi checkout with its dependencies already installed:

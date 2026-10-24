@@ -13,6 +13,7 @@ process.env.PI_CODING_AGENT_DIR = path.join(root, 'agent');
 process.env.PI_OFFLINE = '1';
 process.env.PATH = bin + path.delimiter + process.env.PATH;
 await fs.mkdir(workspace, { recursive: true });
+await fs.mkdir(path.join(workspace, '.git'));
 await fs.mkdir(bin, { recursive: true });
 await fs.writeFile(path.join(workspace, 'file.txt'), 'needle\n');
 await import(pathToFileURL(path.join(pi, 'packages/coding-agent/src/experimental/source-resolver.ts')).href);
@@ -71,7 +72,7 @@ try {
       arguments: caseId === 'oversized-pattern' ? { pattern: { repeat: 'a', count: 140000 } } : argumentsValue,
       expected: { rejected: error !== undefined, content: result?.content ?? [{ type: 'text', text: error }], details: result?.details ?? null } });
   }
-  await fs.writeFile(output, JSON.stringify({ schema: 1, pinnedPiSha: 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6',
+  await fs.writeFile(output, JSON.stringify({ schema: 1, repositoryMarker: '.git', pinnedPiSha: 'b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6',
     source: 'packages/coding-agent/src/core/tools/find.ts', fixture: 'tools/parity/builtin-coding-tool-find-protocol.mjs',
     dependency: 'Explicit synthetic fd process/protocol fixture; separate from real-fd differentials', cases: rows }, null, 2) + '\n');
 } finally { await fs.rm(root, { recursive: true, force: true }); }

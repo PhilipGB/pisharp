@@ -2,6 +2,8 @@ namespace PiSharp.Runtime.Tools;
 
 internal static partial class SearchInventory
 {
+    internal static bool IsWithinGitRepository(string directory) => HasGitMarker(FindGitRoot(directory));
+
     internal static async Task<Func<string, bool>?> CreateRepositoryExclusionGuardAsync(string directory,
         CancellationToken cancellationToken)
     {

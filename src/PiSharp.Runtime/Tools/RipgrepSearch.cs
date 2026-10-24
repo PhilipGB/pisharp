@@ -9,7 +9,8 @@ namespace PiSharp.Runtime.Tools;
 internal static class RipgrepSearch
 {
     public static async Task<SearchToolOutput> ExecuteAsync(string cwd, string pattern, string? path, string? glob,
-        bool ignoreCase, bool literal, double context, double? limit, CancellationToken cancellationToken)
+        bool ignoreCase, bool literal, double context, double? limit, CancellationToken cancellationToken,
+        bool respectGitIgnoreOutsideRepository = false)
     {
         AbortIfCancelled(cancellationToken);
         var executable = ProcessLifetime.FindExecutable(OperatingSystem.IsWindows() ? "rg.exe" : "rg");
@@ -24,6 +25,9 @@ internal static class RipgrepSearch
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         { throw new ToolFailureException($"Path not found: {root}"); }
         var arguments = new List<string> { "--json", "--line-number", "--color=never", "--hidden" };
+        if (respectGitIgnoreOutsideRepository &&
+            !SearchInventory.IsWithinGitRepository(isDirectory ? root : Path.GetDirectoryName(root)!))
+            arguments.Add("--no-require-git");
         if (ignoreCase) arguments.Add("--ignore-case");
         if (literal) arguments.Add("--fixed-strings");
         if (glob is { Length: > 0 }) { arguments.Add("--glob"); arguments.Add(glob); }

@@ -77,6 +77,8 @@ registry/MAF loadout, with excluded tools rejected and extension tools retained
 when built-ins are disabled. A completed side effect has one durable outcome;
 cancellation and restart do not replay it.
 
+The public `SearchTools.Grep` facade preserves its legacy handling of ignore files outside Git repositories. Registered model tools use the pinned Pi argument vector. Search grammar follows the installed executable build; local receipts name those builds, and Linux CI installs checksum-verified official fd 10.5.0.
+
 ## Verification
 
 [CodingToolsTests](../../tests/PiSharp.Tests/Runtime/Tools/CodingToolsTests.cs) protects exact

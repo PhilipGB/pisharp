@@ -16,7 +16,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install --yes ripgrep fd-find
+      - run: sudo apt-get update && sudo apt-get install --yes ripgrep
+      - name: Install the validated fd build
+        run: |
+          mkdir -p "$RUNNER_TEMP/pisharp-search-bin"
+          curl --fail --location --silent --show-error --retry 3 --output "$RUNNER_TEMP/fd.tar.gz" https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-musl.tar.gz
+          echo "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7  $RUNNER_TEMP/fd.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$RUNNER_TEMP/fd.tar.gz" --directory "$RUNNER_TEMP/pisharp-search-bin" --strip-components=1 fd-v10.5.0-x86_64-unknown-linux-musl/fd
+          echo "$RUNNER_TEMP/pisharp-search-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/pisharp-search-bin/fd" --version
+          rg --version
       - run: python3 -m pip install --requirement tools/parity/requirements-images.txt
       - run: npm ci --prefix tools/parity/terminal --ignore-scripts --no-audit --no-fund
       - run: npm test --prefix tools/parity/terminal

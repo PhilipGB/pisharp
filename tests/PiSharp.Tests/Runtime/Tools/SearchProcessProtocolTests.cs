@@ -14,6 +14,7 @@ public sealed class SearchProcessProtocolTests
         foreach (var tool in new[] { "grep", "find" })
         {
             using var fixture = SourceFixture(tool);
+            if (tool == "find") Assert.Equal(".git", fixture.RootElement.GetProperty("repositoryMarker").GetString());
             foreach (var row in fixture.RootElement.GetProperty("cases").EnumerateArray())
             {
                 var input = JsonNode.Parse(row.GetRawText())!;
@@ -43,6 +44,7 @@ public sealed class SearchProcessProtocolTests
         var workspace = Path.Combine(root, "workspace");
         var bin = Path.Combine(root, "bin");
         Directory.CreateDirectory(workspace);
+        Directory.CreateDirectory(Path.Combine(workspace, ".git"));
         Directory.CreateDirectory(bin);
         var inheritedPath = Environment.GetEnvironmentVariable("PATH");
         try
@@ -83,6 +85,42 @@ public sealed class SearchProcessProtocolTests
             var actualDetails = JsonSerializer.SerializeToElement(details, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             Assert.True(JsonElement.DeepEquals(expected.GetProperty("details"), actualDetails), caseId + " details");
             Assert.Equal("needle\n", await File.ReadAllTextAsync(Path.Combine(workspace, "file.txt")));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PATH", inheritedPath);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PublicAndRegisteredGrepPreserveRepositoryArgumentSemantics(bool publicFacade)
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-grep-public-contract-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        Directory.CreateDirectory(Path.Combine(root, ".git"));
+        var inheritedPath = Environment.GetEnvironmentVariable("PATH");
+        try
+        {
+            var executable = Path.Combine(root, "rg");
+            var argumentsPath = Path.Combine(root, "arguments");
+            await File.WriteAllTextAsync(executable, "#!/bin/sh\nprintf '%s\\n' \"$@\" > " + ProcessTestHelpers.ShellQuote(argumentsPath) + "\n");
+            File.SetUnixFileMode(executable, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            Environment.SetEnvironmentVariable("PATH", root + Path.PathSeparator + inheritedPath);
+            if (publicFacade)
+                Assert.Equal("No matches found", await new SearchTools(root).Grep("needle"));
+            else
+            {
+                var tool = new CodingTools(root).CreateAll().OfType<AIFunction>().Single(tool => tool.Name == "grep");
+                var value = await tool.InvokeAsync(new AIFunctionArguments { ["pattern"] = "needle" });
+                Assert.True(ToolResultOutput.TryRead(value, out var text, out _));
+                Assert.Equal("No matches found", text);
+            }
+            var arguments = await File.ReadAllLinesAsync(argumentsPath);
+            Assert.DoesNotContain("--no-require-git", arguments);
         }
         finally
         {

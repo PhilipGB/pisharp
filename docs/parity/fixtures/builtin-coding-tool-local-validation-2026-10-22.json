@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "productSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+  "fullSuiteSource": "3d0d7d6db783a036930b5c39edf0796d90fdd447",
+  "recordedAt": "2026-10-24T07:10:24.330092+00:00",
+  "fullDotnet": {
+    "total": "3726",
+    "executed": "3726",
+    "passed": "3726",
+    "failed": "0",
+    "error": "0",
+    "timeout": "0",
+    "aborted": "0",
+    "inconclusive": "0",
+    "passedButRunAborted": "0",
+    "notRunnable": "0",
+    "notExecuted": "0",
+    "disconnected": "0",
+    "warning": "0",
+    "completed": "0",
+    "inProgress": "0",
+    "pending": "0"
+  },
+  "architecture": [
+    "PiSharp.Tests.ArchitectureTests.PublicExtensionAbstractionsStayIndependentOfRuntimeAndTheFixtureUsesOnlyThatBoundary",
+    "PiSharp.Tests.ArchitectureTests.BoundaryScannerRecognizesFilesystemCallsInTheRepositoryReader",
+    "PiSharp.Tests.ArchitectureTests.CoreDoesNotCallTerminalFilesystemProcessOrNetworkApis",
+    "PiSharp.Tests.ArchitectureTests.ProductionProjectReferencesFollowDependencyDirection(project: \"PiSharp.Cli\", allowedReferences: \"PiSharp.Core,PiSharp.Runtime\")",
+    "PiSharp.Tests.ArchitectureTests.ProductionProjectReferencesFollowDependencyDirection(project: \"PiSharp.Core\", allowedReferences: \"\")",
+    "PiSharp.Tests.ArchitectureTests.ProductionProjectReferencesFollowDependencyDirection(project: \"PiSharp.Runtime\", allowedReferences: \"PiSharp.Core,PiSharp.Extensions.Abstractions\")",
+    "PiSharp.Tests.ArchitectureTests.CoreAndRuntimeKeepCliAndProviderSdksOut"
+  ],
+  "compiledExtensionTests": [
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.LoaderReportsMissingEntryTypeAndInvalidEntryContract",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.ManifestReaderBoundsSizeAndNestingDepth",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.LoaderUsesDeclaredEntryAndSharesHostApiIdentity",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.MissingMalformedAndUnsafeManifestEntriesAreRejected",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.ConstructorFailureReturnsDiagnosticAndUnloadsItsContext",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.IncompatibleApiVersionIsRejectedBeforeEntryConstruction",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.PrivateDependenciesResolveIndependentlyAndPackageContextsUnload",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.IncompatibleSharedAssemblyIdentityIsRejectedBeforeEntryConstruction"
+  ],
+  "formatBuild": [
+    {
+      "gate": "format",
+      "exitCode": 0,
+      "elapsedSeconds": 44.792
+    },
+    {
+      "gate": "build",
+      "exitCode": 0,
+      "elapsedSeconds": 57.662
+    }
+  ],
+  "node": {
+    "passed": 24,
+    "failed": 0
+  },
+  "pythonTerminal": {
+    "passed": 66,
+    "failed": 0
+  },
+  "comparisonGuards": {
+    "passed": 27,
+    "failed": 0
+  },
+  "mcp": {
+    "passed": 261,
+    "classifiedBaselineFailures": 8,
+    "newFailures": 0
+  },
+  "earlierFullRun": {
+    "source": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+    "passed": 3725,
+    "failed": 1,
+    "skipped": 0,
+    "reason": "Restored TUI history already painted before the test marked its output; initial settled-frame synchronization corrected without product changes or timeout increases."
+  },
+  "httpFixtureCleanup": {
+    "source": "52bba8a8ca7c9ec2e42dc4bd452cbe07faea71d6",
+    "failure": "HttpListener Stop followed by disposal may rebind a released port. A standalone .NET 10.0.13 reproduction fails with Stop/Dispose and succeeds with Close/Dispose.",
+    "correction": "Close the owned fixture listener once; product assertions and timeouts unchanged.",
+    "physicalRepeatedRuns": [
+      {
+        "gate": "mcp-repeat-1",
+        "exitCode": 0,
+        "elapsedSeconds": 10.457
+      },
+      {
+        "gate": "mcp-repeat-2",
+        "exitCode": 0,
+        "elapsedSeconds": 11.049
+      },
+      {
+        "gate": "mcp-repeat-3",
+        "exitCode": 0,
+        "elapsedSeconds": 10.332
+      },
+      {
+        "gate": "mcp-repeat-4",
+        "exitCode": 0,
+        "elapsedSeconds": 10.028
+      },
+      {
+        "gate": "mcp-repeat-5",
+        "exitCode": 0,
+        "elapsedSeconds": 10.569
+      }
+    ]
+  },
+  "publicationReceipt": "https://github.com/PhilipGB/pisharp/pull/22",
+  "finalSuiteExecution": {
+    "startedAt": "2026-10-24T00:32:48.294761+00:00",
+    "finishedAt": "2026-10-24T00:45:08.246413+00:00",
+    "source": "3d0d7d6db783a036930b5c39edf0796d90fdd447",
+    "dirtyPaths": [],
+    "passed": true
+  },
+  "documentation": {
+    "documents": 151,
+    "references": 617,
+    "passed": true
+  },
+  "firstPublishedCi": {
+    "head": "056d58b54ef5a70fe26540318208a51d3987be7f",
+    "pushRun": 40073343361,
+    "pullRequestRun": 40073345412,
+    "failed": 9,
+    "passed": 3702,
+    "skipped": 0,
+    "total": 3711,
+    "argumentFixtureRestoration": "The documentation finalizer overwrote the pre-existing 16-case validation fixture; it is restored byte-for-byte. This full-suite receipt now has a distinct filename.",
+    "searchCorrections": [
+      "Keep legacy public grep ignore behavior outside repositories while preserving the registered pinned argument vector.",
+      "Create an explicit repository marker in synthetic fd fixtures; all 27 actual pinned expected outcomes remain unchanged.",
+      "Install checksum-verified official fd 10.5.0 in CI; the older official 10.3 build and CI fd 9 reject nested braces accepted by the distribution build used for original capture."
+    ],
+    "ownershipFacet": {
+      "sourceCases": 8,
+      "nativeCases": 8,
+      "alternateGroupAssigned": true,
+      "uid": 1001,
+      "gid": 4,
+      "bothWorkflows": "passed"
+    }
+  },
+  "fdBuildValidation": {
+    "version": "10.5.0",
+    "assetSha256": "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7",
+    "pinnedControlPassed": 62,
+    "pinnedControlTotal": 62,
+    "piSharpUsed": false
+  },
+  "correctionIterations": [
+    {
+      "report": "ci-public-grep-before.trx",
+      "passed": 1,
+      "failed": 1,
+      "classification": "Fail-first public facade flag probe before correction."
+    },
+    {
+      "report": "ci-search-and-validation-after.trx",
+      "passed": 310,
+      "failed": 87,
+      "classification": "Invalid development launch omitted rg from PATH; retained and repeated with inherited PATH."
+    },
+    {
+      "report": "ci-search-and-validation-fixed-path.trx",
+      "passed": 395,
+      "failed": 2,
+      "classification": "Official fd 10.3 nested-glob difference and an initial unconditional public flag crossing nested repository boundaries."
+    },
+    {
+      "report": "ci-search-and-validation-fd10.5.trx",
+      "passed": 396,
+      "failed": 1,
+      "classification": "New test used Git repository validity instead of the source marker-presence contract; replaced inherited state with an explicit repository marker."
+    },
+    {
+      "report": "ci-search-and-validation-final.trx",
+      "passed": 397,
+      "failed": 0,
+      "skipped": 0,
+      "classification": "Corrected selection, checksum-verified official fd 10.5, all original assertions retained."
+    }
+  ],
+  "currentPublicationValidation": "The final full-suite source/counters, corrected corpus and exact-head workflows are retained in the linked live PR #22 description and ignored raw reports; earlier counters above remain historical."
+}

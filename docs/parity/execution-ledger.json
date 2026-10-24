@@ -128,7 +128,18 @@
       "draft": true,
       "merged": false,
       "status": "consult_live_PR_description_for_final_S_T_state",
-      "url": "https://github.com/PhilipGB/pisharp/pull/22"
+      "url": "https://github.com/PhilipGB/pisharp/pull/22",
+      "initial_head": "056d58b54ef5a70fe26540318208a51d3987be7f",
+      "first_ci": {
+        "push": 40073343361,
+        "pull_request": 40073345412,
+        "conclusion": "failed",
+        "failed": 9,
+        "passed": 3702,
+        "skipped": 0,
+        "total": 3711,
+        "corrective_work": "Restore the 16-case argument fixture overwritten by the documentation finalizer; pin checksum-verified fd 10.5.0 after independently confirming its defined grammar matches the local distribution build; make synthetic fd repository markers explicit; preserve legacy public grep ignore behavior outside Git while registered tools keep pinned arguments."
+      }
     },
     "engineering_duration": {
       "status": "ongoing",
@@ -1023,7 +1034,7 @@
     },
     "final_product_source": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
     "final_local_validation_source": "3d0d7d6db783a036930b5c39edf0796d90fdd447",
-    "final_local_validation": "docs/parity/fixtures/builtin-coding-tool-validation-2026-10-22.json",
+    "final_local_validation": "docs/parity/fixtures/builtin-coding-tool-local-validation-2026-10-22.json",
     "incremental_record_policy": "Earlier nested status/remaining fields are chronological investigation snapshots. Current acceptance is defined by checkpoints, final_product_source, required_differential and linked final receipts; do not reinterpret historical gaps as current work."
   },
   "plan_received": true,
