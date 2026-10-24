@@ -5,7 +5,7 @@
 PR #22 was verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`.
 That actual merge is the post-merge `origin/main` and PR #23 branch base. The
 implementation is on `milestone/model-thinking-configuration-parity` at
-`f9afa08a4ab8fc7509ad7cc961af76184906220f`. Pi remains pinned at
+`bacc756495b92788eb3e22f122317c16b095780e`. Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 This increment implements source-pinned model-reference selection, startup and
@@ -58,14 +58,21 @@ cover RPC model/thinking selection, extension selection events, session
 replacement and resume. Concurrency and failure tests cover settings updates,
 large model/pattern inputs and reload behavior.
 
-After the report-recorder test helper edit, format verification and the
-warning-as-error build passed, and the full .NET suite passed (3,776 passed,
-zero failed, zero skipped; 6 m 12 s). The paired 116-case run also passed after
-that edit. Node terminal (24/24), Python terminal (66/66), parity comparison
-guards (27/27) and MCP conformance passed on the same product source; the helper
-only adds .NET test-report provenance. MCP has no regression to its eight
-classified failures across three scenarios. Documentation paths pass for 152
-documents and 627 references.
+Additional transition regressions now exercise model selection and an explicit
+thinking change during a blocked RPC tool call, then inspect the physical
+continuation request and persisted session entries. A Linux PTY settings journey
+also saves a per-model `high` default and verifies that the next OpenAI Responses
+request sends `reasoning.effort: high`. The refreshed 93-case behavior and
+23-case provider-wire reports both record implementation commit
+`bacc756495b92788eb3e22f122317c16b095780e` and pass in full.
+
+Final local validation passes: format verification; warning-as-error build with
+zero warnings/errors; full .NET suite (3,780 passed, zero failed/skipped;
+6 m 23 s); Node terminal (24/24); Python terminal (66/66); parity guards
+(27/27); documentation paths (152 documents / 627 references); and MCP
+conformance with no regression to the same eight classified failures across
+three scenarios. Focused active-run, settings-to-wire, and settings reliability
+regressions are included in the full .NET result.
 
 ## Scope limits and classified behavior
 
@@ -80,6 +87,9 @@ catalogue, matching the pinned behavior. This adaptation is explicit and is not
 counted as a strict oracle case.
 
 The project-wide parity status remains `in_progress`; this receipt covers only
-the defined model-selection, thinking and configuration increment. Draft PR #23
-and exact-head CI evidence will be recorded in the live PR description after the
-final branch head is published.
+the defined model-selection, thinking and configuration increment. Checkpoints
+A–T are complete; branch push and exact-head CI, draft PR publication and PR CI
+remain. The live PR #23 is an unrelated Dependabot update, and the milestone
+instructions prohibit PR #24. Do not modify that unrelated PR; publish the
+milestone as draft #23 when the number is available and record final CI evidence
+in its description.

@@ -12,11 +12,16 @@ interleavings, and the retained RPC/session fallback identity when no provider
 is authenticated. See the [inventory](parity/fixtures/model-selection-thinking-configuration-inventory-2026-10-24.json)
 and [receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
-After the report-helper edit, the warning-as-error build and format verification
-passed, and the full .NET suite passed 3,776/3,776 with zero failures/skips.
-Node/Python/MCP checks passed on the same product source; the helper changes only
-.NET test-report metadata. Documentation is staged. Commit and publish the branch,
-then verify exact-head CI.
+The paired reports pass 93/93 direct-Pi behavior cases and 23/23 physical
+provider-wire cases, both refreshed against implementation commit
+`bacc756495b92788eb3e22f122317c16b095780e`. Format verification and the
+warning-as-error build pass; the full .NET suite passes 3,780/3,780 with no
+failures or skips. Node terminal (24/24), Python terminal (66/66), parity guards
+(27/27), documentation paths (152 documents / 627 references), and MCP
+conformance also pass. Checkpoints A–T are complete. The remaining checkpoints
+are branch publication and exact-head CI. PR #23 is currently occupied by an
+unrelated Dependabot update, and this milestone forbids creating PR #24; push
+and branch CI can proceed, while draft PR publication and PR CI await #23.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
@@ -29,17 +34,16 @@ at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`.
 The current branch `milestone/model-thinking-configuration-parity` is based on
 that actual `origin/main` SHA and keeps Pi pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The implementation source is
-`f9afa08a4ab8fc7509ad7cc961af76184906220f`.
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Implementation source is
+`bacc756495b92788eb3e22f122317c16b095780e`.
 
-The pinned-Pi behavior report passes 93/93 and the physical provider-wire report
-passes 23/23. The test-report recorder was edited after the prior full local
-validation, so rerun format, warning-as-error build, the full .NET suite and
-required parity checks before committing the evidence. Update the matrix,
-inventory, execution ledger and this continuation record; then commit, push and
-create draft PR #23. Verify push and PR CI against its exact final head. Keep #23
-open, draft and unmerged; do not start PR #24. See the active
-[model-selection milestone receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
+The refreshed pinned-Pi behavior report passes 93/93 and the provider-wire
+report passes 23/23 against this source. Local format, warning-as-error build,
+full .NET suite (3,780/3,780), Node, Python, parity guard, documentation-path and
+MCP checks pass. Branch push and exact-head push CI remain. Draft PR #23 and PR
+CI are blocked because an unrelated Dependabot PR #23 exists; the milestone
+instructions prohibit PR #24. See the active [model-selection milestone
+receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 Product acceptance source is `962cfa48d97a960149e1f0cc020f25bc302c1d48`.
 The final publication head and push/PR workflow IDs are maintained in the PR
@@ -1323,3 +1327,30 @@ strict plus ten named JPEG equivalents), 61 explicit failed strict safety
 comparisons and zero unresolved cases. Strict same-Pi control passes 456/456.
 Progress is 15/20 complete; P reliability is in progress. Any later product
 correction requires affected corpus revalidation before final publication.
+
+## Model and thinking configuration milestone
+
+On branch `milestone/model-thinking-configuration-parity`, the previously
+reported 20/22 workflow checkpoints are complete, but they do not mean the
+behavioral acceptance list is complete. The pinned-Pi implementation now
+normalizes empty scope to unrestricted, applies selector edits to the current
+session before save, preserves those edits on Escape, supports bulk/provider/
+reorder controls, and refreshes the catalog while the selector remains open.
+The settings picker supports per-model thinking defaults, supported levels,
+clearing, persistence, and live current-model changes. Focused Linux tests pass
+for these paths.
+
+Additional process evidence sends two model changes and a thinking-level
+change while a Bash tool is still blocked, then checks the continued provider
+request, RPC state/event order and session entries. A separate Linux PTY test
+changes a per-model default in the settings picker and verifies the next
+OpenAI Responses request carries the saved `high` effort. These transitions,
+settings reliability cases, and the tracked source audit are included in the
+passing local acceptance and validation. The 93-case corpus does not model every
+possible busy-run interleaving; native Windows/macOS are not claimed, and the
+documented unauthenticated continuation fallback remains an adaptation.
+
+Checkpoints A–T are complete. Publication and exact-head CI remain: live PR #23
+is an unrelated Dependabot update, and the milestone instructions prohibit PR
+#24. Do not alter the unrelated PR; push CI can run, while draft PR creation and
+PR CI must wait until #23 is available.

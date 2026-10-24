@@ -183,8 +183,8 @@
           "includeTools": true
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -370,8 +370,8 @@
           "includeTools": true
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -546,8 +546,8 @@
           "includeTools": true
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -711,8 +711,8 @@
           "includeTools": true
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -876,8 +876,8 @@
           "includeTools": true
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -1021,8 +1021,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -1171,8 +1171,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -1321,8 +1321,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -1473,8 +1473,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -1624,8 +1624,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -1778,8 +1778,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -1934,8 +1934,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -2089,8 +2089,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -2230,8 +2230,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -2375,8 +2375,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -2520,8 +2520,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -2665,8 +2665,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -2796,8 +2796,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -2929,8 +2929,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -3062,8 +3062,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -3193,8 +3193,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -3326,8 +3326,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     },
@@ -3459,8 +3459,8 @@
           "includeTools": false
         },
         "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e"
       },
       "passed": true
     }

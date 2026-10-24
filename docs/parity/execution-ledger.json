@@ -5505,10 +5505,10 @@
         "Test malformed settings, trust boundaries, reload and startup behaviour"
       ],
       "implementation": [
-        "Implemented but not fully verified: UserSettings validates and merges per-provider/model thinking maps from user and trusted-project settings. ModelRuntimeController applies the value during startup/model selection and active RPC model switches; the ledger had been stale."
+        "Implemented but not fully verified: UserSettings validates and merges per-provider/model thinking maps from user and trusted-project settings. ModelRuntimeController applies the value during startup/model selection and active RPC model switches. The user-scope /settings submenu now selects a model, offers supported thinking levels and an explicit clear action, persists the map and applies a changed default to the active model through the idle or active-run transition path."
       ],
       "evidence": [
-        "UserSettingsTests.ModelThinkingLevelsLoadValidateAndMergeTrustedProjectOverrides covers parsing, malformed values and precedence; ModelRuntimeController and RPC/model selection tests cover runtime application. Current-Pi process differential for arbitrary map values remains open."
+        "UserSettingsTests.ModelThinkingLevelsLoadValidateAndMergeTrustedProjectOverrides covers parsing, malformed values and precedence; ModelRuntimeController and RPC/model selection tests cover runtime application. TerminalPtyTests.SettingsPickerSetsAndRemovesPerModelThinkingDefaultsThroughLinuxPty verifies save, clear, and live current-model changes. Current-Pi process differential for arbitrary map values and project-scope editing remains open."
       ],
       "dependencies": [],
       "handover_review": {
@@ -13216,18 +13216,18 @@
     }
   },
   "model_thinking_configuration_parity_milestone": {
-    "status": "local_acceptance_complete_publication_pending",
+    "status": "local_acceptance_complete_publication_blocked",
     "started_at": "2026-10-24",
     "branch": "milestone/model-thinking-configuration-parity",
     "pr22_actual_merge": "eefa89454a3c1cfd196894f94744b6f393c8e721",
     "branch_base": "eefa89454a3c1cfd196894f94744b6f393c8e721",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-    "implementation_sha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+    "implementation_sha": "bacc756495b92788eb3e22f122317c16b095780e",
     "inventory": "docs/parity/fixtures/model-selection-thinking-configuration-inventory-2026-10-24.json",
     "oracle": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
     "provider_wire_oracle": "docs/parity/fixtures/model-selection-thinking-provider-wire-oracle-2026-10-24.json",
     "receipt": "docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md",
-    "checkpoint_policy": "Fixed 22 checkpoints A\u2013V; A\u2013T have implementation, acceptance, full validation and documentation evidence. U publication and V exact-head CI are pending.",
+    "checkpoint_policy": "Fixed 22 checkpoints A\u2013V; A\u2013T have implementation, acceptance, full validation and documentation evidence. U publication and V exact-head CI are pending; PR #23 is occupied by an unrelated Dependabot update and PR #24 is prohibited.",
     "differential": {
       "direct_pi_cases": 93,
       "direct_pi_passed": 93,
@@ -13235,7 +13235,7 @@
       "provider_wire_passed": 23,
       "unresolved": 0,
       "pinned_pi_sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-      "pi_sharp_sha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      "pi_sharp_sha": "bacc756495b92788eb3e22f122317c16b095780e"
     },
     "local_validation_before_report_recorder_edit": {
       "dotnet_build_warnaserror": "passed, zero warnings and errors",
@@ -13256,13 +13256,19 @@
     "local_validation_after_report_recorder_edit": {
       "dotnet_format": "passed",
       "dotnet_build_warnaserror": "passed, zero warnings and errors",
-      "dotnet_full_suite": "3,776 passed, zero failed, zero skipped; 6m12s",
-      "documentation_paths": "152 documents, 627 references verified"
+      "dotnet_full_suite": "3,780 passed, zero failed, zero skipped; 6m23s",
+      "node_terminal": "24 passed",
+      "python_terminal": "66 passed",
+      "python_parity_guards": "27 passed",
+      "mcp_conformance": "no new regressions; same eight classified failures across three scenarios",
+      "documentation_paths": "152 documents, 627 references verified",
+      "differential": "93/93 direct-Pi cases and 23/23 physical provider-wire cases refreshed against implementation commit bacc756495b92788eb3e22f122317c16b095780e"
     },
     "publication": {
-      "status": "pending",
+      "status": "blocked_by_unrelated_pr_23",
       "draft_pr": 23,
-      "branch_head_before_docs_commit": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      "branch_head_before_docs_commit": "bacc756495b92788eb3e22f122317c16b095780e",
+      "blocker": "PR #23 is occupied by an unrelated Dependabot update; the milestone instructions prohibit creating PR #24. Branch push and push CI may proceed; draft PR creation and PR CI await #23 becoming available."
     }
   }
 }

@@ -10,7 +10,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -475,7 +475,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-unique-authenticated-provider",
@@ -515,7 +515,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -978,7 +978,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-shared-id-ambiguous-without-auth",
@@ -1022,7 +1022,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -1485,7 +1485,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-case-insensitive-provider-prefix",
@@ -1523,7 +1523,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -1988,7 +1988,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-gateway-qualified-id-wins-when-usable",
@@ -2028,7 +2028,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -2491,7 +2491,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-thinking-suffix-on-exact-model",
@@ -2529,7 +2529,7 @@
       "operation": "cli",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -2991,7 +2991,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "cli-thinking-suffix-on-exact-model",
@@ -3030,7 +3030,7 @@
       "operation": "cli",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -3493,7 +3493,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "cli-explicit-thinking-overrides-suffix",
@@ -3533,7 +3533,7 @@
       "operation": "cli",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -3995,7 +3995,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "cli-strict-invalid-thinking-suffix",
@@ -4034,7 +4034,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -4495,7 +4495,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-minimatch-brace-alternatives",
@@ -4538,7 +4538,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -4999,7 +4999,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-escaped-bracketed-model-id",
@@ -5040,7 +5040,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -5501,7 +5501,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-thinking-suffix",
@@ -5542,7 +5542,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -6005,7 +6005,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-exact-qualified",
@@ -6043,7 +6043,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -6506,7 +6506,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-bare-unique-id",
@@ -6544,7 +6544,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -7009,7 +7009,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-gateway-qualified-id",
@@ -7049,7 +7049,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -7512,7 +7512,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-literal-colon-id",
@@ -7550,7 +7550,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -8013,7 +8013,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-fuzzy-model-name",
@@ -8051,7 +8051,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -8514,7 +8514,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-alias-before-dated",
@@ -8552,7 +8552,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -9017,7 +9017,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-cross-provider-auth-tie",
@@ -9057,7 +9057,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -9520,7 +9520,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-unknown-named-target",
@@ -9576,7 +9576,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -10040,7 +10040,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-explicit-provider-pool",
@@ -10079,7 +10079,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -10542,7 +10542,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-invalid-suffix-strict",
@@ -10598,7 +10598,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -11061,7 +11061,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-invalid-suffix-lenient",
@@ -11099,7 +11099,7 @@
       "operation": "reference",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -11562,7 +11562,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "reference-no-suffix-colon-literal",
@@ -11600,7 +11600,7 @@
       "operation": "cli",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -12063,7 +12063,7 @@
           "packages/coding-agent/src/cli/args.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "cli-inline-key-does-not-break-ambiguity",
@@ -12103,7 +12103,7 @@
       "operation": "cli",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -12566,7 +12566,7 @@
           "packages/coding-agent/src/cli/args.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "cli-explicit-provider-breaks-ambiguity",
@@ -12606,7 +12606,7 @@
       "operation": "cli",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -13069,7 +13069,7 @@
           "packages/coding-agent/src/cli/args.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "cli-provider-case-insensitive",
@@ -13109,7 +13109,7 @@
       "operation": "cli",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -13572,7 +13572,7 @@
           "packages/coding-agent/src/cli/args.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "cli-custom-model-thinking-suffix",
@@ -13612,7 +13612,7 @@
       "operation": "cli",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -14076,7 +14076,7 @@
           "packages/coding-agent/src/cli/args.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "cli-explicit-thinking-keeps-suffix-literal",
@@ -14117,7 +14117,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -14599,7 +14599,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-scoped-wins-fresh",
@@ -14641,7 +14641,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -15122,7 +15122,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-scope-skipped-while-continuing",
@@ -15164,7 +15164,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -15639,7 +15639,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-saved-default-authenticated",
@@ -15675,7 +15675,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -16153,7 +16153,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-per-model-level-over-global",
@@ -16192,7 +16192,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -16667,7 +16667,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-unauthed-default-falls-to-provider-default",
@@ -16703,7 +16703,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -17177,7 +17177,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-first-available-when-no-known-provider-default",
@@ -17212,7 +17212,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -17680,7 +17680,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-empty-catalogue",
@@ -17711,7 +17711,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -18194,7 +18194,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-scope-thinking-overrides-model-setting",
@@ -18238,7 +18238,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -18720,7 +18720,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-scope-model-default-precedence",
@@ -18763,7 +18763,7 @@
       "operation": "initial",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -19237,7 +19237,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "initial-fallback-known-provider-model",
@@ -19272,7 +19272,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -19733,7 +19733,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-case-insensitive-glob",
@@ -19798,7 +19798,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -20259,7 +20259,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-id-only-glob",
@@ -20324,7 +20324,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -20785,7 +20785,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-brace-range",
@@ -20828,7 +20828,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -21289,7 +21289,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-nested-braces",
@@ -21378,7 +21378,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -21839,7 +21839,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-extglob",
@@ -21882,7 +21882,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -22343,7 +22343,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-negated-pattern",
@@ -22544,7 +22544,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -23005,7 +23005,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-valid-suffix-glob",
@@ -23070,7 +23070,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -23531,7 +23531,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-invalid-suffix-glob-stays-literal",
@@ -23574,7 +23574,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -24035,7 +24035,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-exact-bracketed-id-before-glob",
@@ -24076,7 +24076,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -24537,7 +24537,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-escaped-bracketed-id",
@@ -24578,7 +24578,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -25041,7 +25041,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-ordered-deduplicated-patterns",
@@ -25100,7 +25100,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -25561,7 +25561,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-bare-duplicate-id-ambiguous",
@@ -25622,7 +25622,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -26083,7 +26083,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-glob-cross-provider-no-ambiguity",
@@ -26140,7 +26140,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -26601,7 +26601,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-fuzzy-alias-ranking",
@@ -26642,7 +26642,7 @@
       "operation": "scope",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -27103,7 +27103,7 @@
           "packages/coding-agent/test/model-resolver.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "scope-no-match-diagnostic",
@@ -27146,7 +27146,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -27627,7 +27627,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-scoped-level-first",
@@ -27683,7 +27683,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -28163,7 +28163,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-per-model-before-global",
@@ -28218,7 +28218,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -28695,7 +28695,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-global-before-current",
@@ -28747,7 +28747,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -29222,7 +29222,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-current-before-medium-default",
@@ -29272,7 +29272,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -29747,7 +29747,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-medium-default",
@@ -29797,7 +29797,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -30274,7 +30274,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-high-clamps-down-to-medium",
@@ -30322,7 +30322,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -30799,7 +30799,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-nonreasoning-forces-off",
@@ -30841,7 +30841,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -31317,7 +31317,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-xhigh-explicitly-supported",
@@ -31368,7 +31368,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -31844,7 +31844,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-max-clamps-to-xhigh",
@@ -31895,7 +31895,7 @@
       "operation": "thinking",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -32371,7 +32371,7 @@
           "packages/coding-agent/test/agent-session-runtime-events.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "thinking-scoped-request-clamped",
@@ -32418,7 +32418,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -32895,7 +32895,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-minimal-default",
@@ -32942,7 +32942,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -33419,7 +33419,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-low-default",
@@ -33466,7 +33466,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -33943,7 +33943,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-medium-default",
@@ -33990,7 +33990,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -34467,7 +34467,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-high-default",
@@ -34516,7 +34516,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -34993,7 +34993,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-xhigh-maps-high",
@@ -35040,7 +35040,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -35517,7 +35517,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-max-maps-high",
@@ -35564,7 +35564,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -36043,7 +36043,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-custom-low",
@@ -36092,7 +36092,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -36571,7 +36571,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-custom-high",
@@ -36622,7 +36622,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -37101,7 +37101,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-small-output-preserves-answer-room",
@@ -37152,7 +37152,7 @@
       "operation": "options",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -37629,7 +37629,7 @@
           "packages/ai/test/sampling-options.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "options-requested-output-ceiling",
@@ -37676,7 +37676,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -38152,7 +38152,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-project-default-over-global",
@@ -38201,7 +38201,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -38677,7 +38677,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-untrusted-project-ignored",
@@ -38726,7 +38726,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -39206,7 +39206,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-project-model-override-over-global-model-override",
@@ -39263,7 +39263,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -39739,7 +39739,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-set-default-thinking-global",
@@ -39788,7 +39788,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -40266,7 +40266,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-set-model-thinking-global",
@@ -40321,7 +40321,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -40802,7 +40802,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-remove-model-thinking",
@@ -40852,7 +40852,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -41332,7 +41332,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-enabled-model-order",
@@ -41401,7 +41401,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -41881,7 +41881,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-remove-enabled-model-scope",
@@ -41930,7 +41930,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -42407,7 +42407,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-set-default-model-provider",
@@ -42459,7 +42459,7 @@
       "operation": "settings",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -42940,7 +42940,7 @@
           "packages/coding-agent/src/core/settings-manager.test.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "settings-mutations-preserve-unrelated-fields",
@@ -43002,7 +43002,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -43472,7 +43472,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-cli-explicit-provider",
@@ -43520,7 +43520,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -43990,7 +43990,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-cli-inline-key-ambiguity",
@@ -44038,7 +44038,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -44509,7 +44509,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-cli-explicit-thinking",
@@ -44558,7 +44558,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -45050,7 +45050,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-tui-model-switch-scope-level-unique-reference",
@@ -45097,7 +45097,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -45590,7 +45590,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-tui-model-switch-per-model-level",
@@ -45638,7 +45638,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -46126,7 +46126,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-rpc-set-model-supported-thinking",
@@ -46185,7 +46185,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -46673,7 +46673,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-rpc-set-model-nonreasoning-clamps",
@@ -46722,7 +46722,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -47210,7 +47210,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-rpc-missing-model-error",
@@ -47251,7 +47251,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -47739,7 +47739,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-rpc-xhigh-available",
@@ -47798,7 +47798,7 @@
       "operation": "interface",
       "provenance": {
         "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f",
+        "piSharpSha": "bacc756495b92788eb3e22f122317c16b095780e",
         "platform": "linux-x64",
         "oracleImplementation": "direct import of pinned Pi model-resolution, session, AI options and settings APIs",
         "invocation": "node --import /tmp/pi-model-parity-oracle/packages/coding-agent/src/experimental/source-resolver.ts /home/philip/Projects/pisharp/tools/parity/model-thinking-oracle.mjs /tmp/pi-model-parity-oracle /home/philip/Projects/pisharp/tools/parity/fixtures/model-thinking-oracle-cases-2026-10-24.json /home/philip/Projects/pisharp/docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
@@ -48286,7 +48286,7 @@
           "packages/coding-agent/src/modes/interactive/components/model-selector.ts"
         ],
         "comparisonPolicy": "compare normalized model/provider, thinking, settings and option fields exactly; only candidate arrays are sorted where provider selection is unordered",
-        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
+        "piSharpInvocation": "dotnet test PiSharp.slnx --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests"
       },
       "input": {
         "id": "interface-rpc-limited-model-clamps",

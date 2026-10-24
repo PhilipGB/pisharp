@@ -5,22 +5,24 @@
 PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`.
 The branch `milestone/model-thinking-configuration-parity` starts from that
 actual post-merge main; Pi remains pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The implementation commit is
-`f9afa08a4ab8fc7509ad7cc961af76184906220f`.
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The current implementation
+commit is `bacc756495b92788eb3e22f122317c16b095780e`.
 
 The direct pinned-Pi corpus passes 93/93 and direct physical provider requests
 pass 23/23. The paired reports, source inventory, calibration, local checks and
 known scope limits are recorded in the [milestone receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 Global parity remains `in_progress`.
 
-The warning-as-error build and full .NET suite passed after the report-recorder
-edit (3,776 passed, zero failed or skipped); format verification also passes.
-Node/Python/MCP checks remain at their recorded passing results because the edit
-affects only test-report metadata. Commit the documentation and reports, push the
-branch, create draft PR #23 titled
-“Complete Model Selection, Thinking and Configuration Parity”, and verify both
-CI workflows on its final head. Keep #23 open, draft and unmerged; do not start
-PR #24.
+The paired reports were refreshed against the current implementation commit and
+pass 93/93 behavior cases and 23/23 provider-wire cases. Format verification,
+the warning-as-error build and the full .NET suite pass (3,780 passed, zero
+failed or skipped); terminal Node (24/24), Python (66/66), parity guards
+(27/27), documentation paths (152 documents / 627 references) and MCP
+conformance also pass. Checkpoints A–T are complete. Push and exact-head push CI,
+then draft PR publication and PR CI, remain. Live PR #23 is an unrelated
+Dependabot update; the milestone instructions prohibit PR #24, so do not modify
+that PR or create another one. Keep the milestone PR open, draft and unmerged
+once #23 is available.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
@@ -31,10 +33,11 @@ Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 PR #22 is merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`. The current
 milestone is model selection, thinking and configuration parity on
 `milestone/model-thinking-configuration-parity`, based on that exact main SHA.
-Its source-pinned 93-case behavior corpus and 23-case provider-wire corpus pass.
-Final validation after a test-report recorder edit, documentation commit,
-publication as draft PR #23 and exact-head CI remain to be completed. See the
-[active milestone receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
+Implementation `bacc756495b92788eb3e22f122317c16b095780e` passes its refreshed
+93-case behavior and 23-case provider-wire reports; local validation is complete
+at 3,780 passing .NET tests. Branch push and exact-head push CI remain. Draft PR
+#23 and PR CI are blocked because unrelated Dependabot PR #23 already exists;
+the milestone instructions prohibit PR #24. See the [active milestone receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 The defined corpus has 399 supported passes out of 460: 389 exact, ten JPEG
 codec equivalents and 61 explicit safety exclusions, with zero unresolved
@@ -435,6 +438,7 @@ The detailed entries in this section preserve earlier source/test evidence only;
 - The earlier `35be9dc8f8614dcdc66ceaab3136c8ad4301f406` run [36282903215](https://github.com/PhilipGB/pisharp/actions/runs/36282903215) failed 4/607 tests after format/build passed. Provider history reconciliation in `b71ed3119b3827a525515aa50d952f7b99d5a4f1` fixed the regressions; exact-head run [36286403870](https://github.com/PhilipGB/pisharp/actions/runs/36286403870) passed 612/612. `138820263` adds process-level abort lifecycle coverage and passed 613/613.
 - Current Pi `main` was refreshed on 2026-09-28 at `6f7551516b84278eb9da1c340c8e7bc66be1a6ba`; durable parity baseline: `b3487650f6378f1b0d1643dd254445ceb4a98035`. Feature-specific records preserve their historical source SHAs.
 - RPC model selection now uses the extracted `ModelRuntimeController`; model listing, `set_model`, and `cycle_model` work during a blocked tool turn. Current Pi process comparison and PiSharp CLI coverage match declared scoped model order, per-model thinking defaults, `thinking_level_changed` before correlated model-command responses, `isScoped`, persisted model-change order, and the next provider request. Scoped `:thinking` suffixes remain open.
+- The scoped-model selector applies toggle/provider/bulk/reorder edits to the session immediately, saves only on Ctrl+S, retains session edits after Escape, treats an empty scope as unrestricted, and refreshes its catalog while open. Linux PTY cases verify filtered controls, saved order after restart, and a model added by a delayed loopback catalog refresh. The settings picker provides per-model thinking defaults with supported-level selection, clear, persistence and live current-model changes. Blocked-tool process coverage checks model/thinking changes reach the next provider request; 23 provider-wire cases and settings reliability regressions pass. Extended busy-run permutations and native Windows/macOS validation remain outside the evidence.
 - RPC abort process coverage now matches current Pi's partial assistant output, `message_end < turn_end < agent_end < agent_settled < abort response`, `willRetry: false`, consistent snapshots, and success response fields with no `data` or `error`; see `docs/parity/fixtures/rpc-abort-baseline.md`.
 - Compaction remains in progress. `ConversationCompactionCoordinator` owns planning, two-stage history/turn-prefix summaries, persistence, usage and context restoration; the working slice adds current Pi defaults and recent-token/recovery cut-point behavior. Deterministic and process tests cover assistant boundaries, oversized trailing tool results, reload, branches, failure rollback and pre-prompt automatic compaction. A current Pi process at `6f7551516b84278eb9da1c340c8e7bc66be1a6ba` matches the split summary, interrupted-assistant boundary, details and usage; exact token estimates and in-flight/overflow behavior remain open. The historical paired process fixture is `docs/parity/fixtures/rpc-compact-baseline.md`.
 - `--fork <path>` across project boundaries is implemented: PiSharp loads native or Pi JSONL sources, preserves every branch and the selected head, and writes the child into the invocation project. Focused tree and cross-project fork tests passed 10/10; exact-head CI run `36288246889` passed all 616 tests.
