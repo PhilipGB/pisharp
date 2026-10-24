@@ -1,16 +1,40 @@
 # PiSharp capability parity
 
-## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
+## Active milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
+
+PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`.
+The branch `milestone/model-thinking-configuration-parity` starts from that
+actual post-merge main; Pi remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The implementation commit is
+`f9afa08a4ab8fc7509ad7cc961af76184906220f`.
+
+The direct pinned-Pi corpus passes 93/93 and direct physical provider requests
+pass 23/23. The paired reports, source inventory, calibration, local checks and
+known scope limits are recorded in the [milestone receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
+Global parity remains `in_progress`.
+
+The warning-as-error build and full .NET suite passed after the report-recorder
+edit (3,776 passed, zero failed or skipped); format verification also passes.
+Node/Python/MCP checks remain at their recorded passing results because the edit
+affects only test-report metadata. Commit the documentation and reports, push the
+branch, create draft PR #23 titled
+“Complete Model Selection, Thinking and Configuration Parity”, and verify both
+CI workflows on its final head. Keep #23 open, draft and unmerged; do not start
+PR #24.
+
+## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
 PR #21's actual merge `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a` is verified
 on `origin/main` and is the base of `milestone/builtin-coding-tool-parity`.
 Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-Local acceptance is **18 complete / 2 publication checkpoints remaining** at
-this documentation revision (fixed A–T denominator). The current S/T state,
-final head and exact-head push/PR CI are recorded in
-[PR #22](https://github.com/PhilipGB/pisharp/pull/22). Consult that live receipt
-before reporting subsequent progress. Keep #22 draft/unmerged; do not start #23.
+PR #22 is merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`. The current
+milestone is model selection, thinking and configuration parity on
+`milestone/model-thinking-configuration-parity`, based on that exact main SHA.
+Its source-pinned 93-case behavior corpus and 23-case provider-wire corpus pass.
+Final validation after a test-report recorder edit, documentation commit,
+publication as draft PR #23 and exact-head CI remain to be completed. See the
+[active milestone receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 The defined corpus has 399 supported passes out of 460: 389 exact, ten JPEG
 codec equivalents and 61 explicit safety exclusions, with zero unresolved

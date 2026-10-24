@@ -36,7 +36,7 @@
         "includeTools": true
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "high",
         "maxTokens": 4096,
         "samplingParams": {
@@ -54,7 +54,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -108,7 +108,85 @@
           "top_p": 0.45,
           "top_k": 64
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-responses",
+        "Method": "POST",
+        "Path": "/v1/responses",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-responses",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 4096,
+        "Streaming": true,
+        "Thinking": {
+          "effort": "high"
+        },
+        "Sampling": {
+          "temperature": 0.8,
+          "top_p": 0.45,
+          "top_k": 64
+        },
+        "Tools": [
+          {
+            "name": "lookup",
+            "properties": [
+              "query"
+            ],
+            "required": [
+              "query"
+            ]
+          }
+        ]
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "openai",
+          "id": "fixture-responses",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.2,
+            "top_p": 0.9
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "temperature": 0.7,
+              "top_k": 64
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "high",
+          "maxTokens": 4096,
+          "samplingParams": {
+            "temperature": 0.8,
+            "top_p": 0.45
+          },
+          "includeTools": true
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-openai-completions-custom-thinking-budget",
@@ -146,7 +224,7 @@
         "includeTools": true
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "high",
         "maxTokens": 4096,
         "thinkingBudgets": {
@@ -166,7 +244,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -214,7 +292,88 @@
           "temperature": 0.6,
           "top_p": 0.8
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-completions",
+        "Method": "POST",
+        "Path": "/v1/chat/completions",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-budget-model",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 4096,
+        "Streaming": true,
+        "Thinking": {
+          "effort": "high"
+        },
+        "Sampling": {
+          "temperature": 0.6,
+          "top_p": 0.8
+        },
+        "Tools": [
+          {
+            "name": "lookup",
+            "properties": [
+              "query"
+            ],
+            "required": [
+              "query"
+            ]
+          }
+        ]
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-openai-compatible",
+          "id": "fixture-budget-model",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {
+            "supportsThinkingTokenBudget": true,
+            "thinkingTokenBudgetField": "thinking_budget"
+          },
+          "samplingParams": {
+            "temperature": 0.3
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "top_p": 0.8
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "high",
+          "thinkingBudgets": {
+            "high": 3072
+          },
+          "maxTokens": 4096,
+          "samplingParams": {
+            "temperature": 0.6
+          },
+          "includeTools": true
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-anthropic-messages-custom-thinking-budget",
@@ -241,7 +400,7 @@
         "includeTools": true
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "high",
         "maxTokens": 4096,
         "thinkingBudgets": {
@@ -260,7 +419,7 @@
         },
         "headers": {
           "anthropic-version": "2023-06-01",
-          "x-api-key": "<fixture-key>",
+          "x-api-key": "\u003Cfixture-key\u003E",
           "accept": "application/json",
           "content-type": "application/json",
           "anthropic-beta": "interleaved-thinking-2025-05-14"
@@ -320,7 +479,77 @@
             "display": "summarized"
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "anthropic-messages",
+        "Method": "POST",
+        "Path": "/v1/messages",
+        "Query": {
+          "beta": "true"
+        },
+        "CredentialHeader": "x-api-key",
+        "Model": "fixture-claude",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 7168,
+        "Streaming": true,
+        "Thinking": {
+          "mode": "enabled",
+          "budget": 3072
+        },
+        "Sampling": {},
+        "Tools": [
+          {
+            "name": "lookup",
+            "properties": [
+              "query"
+            ],
+            "required": [
+              "query"
+            ]
+          }
+        ]
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-anthropic",
+          "id": "fixture-claude",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {},
+          "samplingParams": {
+            "temperature": 0.3
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "high",
+          "thinkingBudgets": {
+            "high": 3072
+          },
+          "maxTokens": 4096,
+          "includeTools": true
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-google-genai-thinking-sampling-tools",
@@ -344,7 +573,7 @@
         "includeTools": true
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "high",
         "maxTokens": 4096,
         "temperature": 0.5
@@ -361,7 +590,7 @@
         },
         "headers": {
           "content-type": "application/json",
-          "x-goog-api-key": "<fixture-key>",
+          "x-goog-api-key": "\u003Cfixture-key\u003E",
           "accept": "*/*"
         },
         "credentialIdentity": "fixture-key",
@@ -415,7 +644,77 @@
             }
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "google-generative-ai",
+        "Method": "POST",
+        "Path": "/v1beta/models/gemini-3.5-flash:streamGenerateContent",
+        "Query": {
+          "alt": "sse"
+        },
+        "CredentialHeader": "x-goog-api-key",
+        "Model": "gemini-3.5-flash",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 4096,
+        "Streaming": true,
+        "Thinking": {
+          "level": "HIGH",
+          "budget": null,
+          "includeThoughts": true
+        },
+        "Sampling": {
+          "temperature": 0.5
+        },
+        "Tools": [
+          {
+            "name": "lookup",
+            "properties": [
+              "query"
+            ],
+            "required": [
+              "query"
+            ]
+          }
+        ]
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "google",
+          "id": "gemini-3.5-flash",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.25
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "high",
+          "maxTokens": 4096,
+          "temperature": 0.5,
+          "includeTools": true
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-google-vertex-thinking-sampling-tools",
@@ -439,7 +738,7 @@
         "includeTools": true
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "high",
         "maxTokens": 4096,
         "temperature": 0.5
@@ -456,7 +755,7 @@
         },
         "headers": {
           "content-type": "application/json",
-          "x-goog-api-key": "<fixture-key>",
+          "x-goog-api-key": "\u003Cfixture-key\u003E",
           "accept": "*/*"
         },
         "credentialIdentity": "fixture-key",
@@ -510,7 +809,77 @@
             }
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "google-vertex",
+        "Method": "POST",
+        "Path": "/v1beta/publishers/google/models/gemini-3.5-flash:streamGenerateContent",
+        "Query": {
+          "alt": "sse"
+        },
+        "CredentialHeader": "x-goog-api-key",
+        "Model": "gemini-3.5-flash",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 4096,
+        "Streaming": true,
+        "Thinking": {
+          "level": "HIGH",
+          "budget": null,
+          "includeThoughts": true
+        },
+        "Sampling": {
+          "temperature": 0.5
+        },
+        "Tools": [
+          {
+            "name": "lookup",
+            "properties": [
+              "query"
+            ],
+            "required": [
+              "query"
+            ]
+          }
+        ]
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "google-vertex",
+          "id": "gemini-3.5-flash",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.25
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "high",
+          "maxTokens": 4096,
+          "temperature": 0.5,
+          "includeTools": true
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-openai-responses-off",
@@ -543,7 +912,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "maxTokens": 2048,
         "samplingParams": {
           "temperature": 0.35
@@ -559,7 +928,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -589,7 +958,73 @@
           "temperature": 0.35,
           "top_p": 0.9
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-responses",
+        "Method": "POST",
+        "Path": "/v1/responses",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-responses",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "effort": "none"
+        },
+        "Sampling": {
+          "temperature": 0.35,
+          "top_p": 0.9
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "openai",
+          "id": "fixture-responses",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.2,
+            "top_p": 0.9
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "temperature": 0.7,
+              "top_k": 64
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "off",
+          "maxTokens": 2048,
+          "samplingParams": {
+            "temperature": 0.35
+          },
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-openai-responses-low",
@@ -622,7 +1057,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "low",
         "maxTokens": 2048,
         "samplingParams": {
@@ -639,7 +1074,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -673,7 +1108,73 @@
           "temperature": 0.35,
           "top_p": 0.9
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-responses",
+        "Method": "POST",
+        "Path": "/v1/responses",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-responses",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "effort": "low"
+        },
+        "Sampling": {
+          "temperature": 0.35,
+          "top_p": 0.9
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "openai",
+          "id": "fixture-responses",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.2,
+            "top_p": 0.9
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "temperature": 0.7,
+              "top_k": 64
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "low",
+          "maxTokens": 2048,
+          "samplingParams": {
+            "temperature": 0.35
+          },
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-openai-responses-medium",
@@ -706,7 +1207,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "medium",
         "maxTokens": 2048,
         "samplingParams": {
@@ -723,7 +1224,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -757,7 +1258,73 @@
           "temperature": 0.35,
           "top_p": 0.9
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-responses",
+        "Method": "POST",
+        "Path": "/v1/responses",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-responses",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "effort": "medium"
+        },
+        "Sampling": {
+          "temperature": 0.35,
+          "top_p": 0.9
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "openai",
+          "id": "fixture-responses",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.2,
+            "top_p": 0.9
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "temperature": 0.7,
+              "top_k": 64
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "medium",
+          "maxTokens": 2048,
+          "samplingParams": {
+            "temperature": 0.35
+          },
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-openai-responses-xhigh",
@@ -790,7 +1357,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "xhigh",
         "maxTokens": 2048,
         "samplingParams": {
@@ -807,7 +1374,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -842,7 +1409,74 @@
           "top_p": 0.9,
           "top_k": 64
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-responses",
+        "Method": "POST",
+        "Path": "/v1/responses",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-responses",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "effort": "high"
+        },
+        "Sampling": {
+          "temperature": 0.35,
+          "top_p": 0.9,
+          "top_k": 64
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "openai",
+          "id": "fixture-responses",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.2,
+            "top_p": 0.9
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "temperature": 0.7,
+              "top_k": 64
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "xhigh",
+          "maxTokens": 2048,
+          "samplingParams": {
+            "temperature": 0.35
+          },
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-openai-completions-off",
@@ -880,7 +1514,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "maxTokens": 2048,
         "thinkingBudgets": {
           "high": 3072
@@ -899,7 +1533,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -923,7 +1557,77 @@
           "max_completion_tokens": 2048,
           "temperature": 0.6
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-completions",
+        "Method": "POST",
+        "Path": "/v1/chat/completions",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-budget-model",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "effort": null
+        },
+        "Sampling": {
+          "temperature": 0.6
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-openai-compatible",
+          "id": "fixture-budget-model",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {
+            "supportsThinkingTokenBudget": true,
+            "thinkingTokenBudgetField": "thinking_budget"
+          },
+          "samplingParams": {
+            "temperature": 0.3
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "top_p": 0.8
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "off",
+          "thinkingBudgets": {
+            "high": 3072
+          },
+          "maxTokens": 2048,
+          "samplingParams": {
+            "temperature": 0.6
+          },
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-openai-completions-low",
@@ -961,7 +1665,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "low",
         "maxTokens": 2048,
         "thinkingBudgets": {
@@ -981,7 +1685,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -1007,7 +1711,77 @@
           "thinking_budget": 1024,
           "temperature": 0.6
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-completions",
+        "Method": "POST",
+        "Path": "/v1/chat/completions",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-budget-model",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "effort": "low"
+        },
+        "Sampling": {
+          "temperature": 0.6
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-openai-compatible",
+          "id": "fixture-budget-model",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {
+            "supportsThinkingTokenBudget": true,
+            "thinkingTokenBudgetField": "thinking_budget"
+          },
+          "samplingParams": {
+            "temperature": 0.3
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "top_p": 0.8
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "low",
+          "thinkingBudgets": {
+            "high": 3072
+          },
+          "maxTokens": 2048,
+          "samplingParams": {
+            "temperature": 0.6
+          },
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-openai-completions-xhigh",
@@ -1045,7 +1819,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "xhigh",
         "maxTokens": 2048,
         "thinkingBudgets": {
@@ -1065,7 +1839,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -1092,7 +1866,78 @@
           "temperature": 0.6,
           "top_p": 0.8
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-completions",
+        "Method": "POST",
+        "Path": "/v1/chat/completions",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-budget-model",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "effort": "high"
+        },
+        "Sampling": {
+          "temperature": 0.6,
+          "top_p": 0.8
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-openai-compatible",
+          "id": "fixture-budget-model",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {
+            "supportsThinkingTokenBudget": true,
+            "thinkingTokenBudgetField": "thinking_budget"
+          },
+          "samplingParams": {
+            "temperature": 0.3
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "top_p": 0.8
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "xhigh",
+          "thinkingBudgets": {
+            "high": 3072
+          },
+          "maxTokens": 2048,
+          "samplingParams": {
+            "temperature": 0.6
+          },
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-openai-completions-custom-budget-clamped-high",
@@ -1130,7 +1975,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "high",
         "maxTokens": 1024,
         "thinkingBudgets": {
@@ -1150,7 +1995,7 @@
         "query": {},
         "headers": {
           "accept": "application/json",
-          "authorization": "<fixture-key>",
+          "authorization": "\u003Cfixture-key\u003E",
           "content-type": "application/json"
         },
         "credentialIdentity": "fixture-key",
@@ -1176,7 +2021,78 @@
           "temperature": 0.6,
           "top_p": 0.8
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "openai-completions",
+        "Method": "POST",
+        "Path": "/v1/chat/completions",
+        "Query": {},
+        "CredentialHeader": "authorization",
+        "Model": "fixture-budget-model",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 1024,
+        "Streaming": true,
+        "Thinking": {
+          "effort": "high"
+        },
+        "Sampling": {
+          "temperature": 0.6,
+          "top_p": 0.8
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-openai-compatible",
+          "id": "fixture-budget-model",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {
+            "supportsThinkingTokenBudget": true,
+            "thinkingTokenBudgetField": "thinking_budget"
+          },
+          "samplingParams": {
+            "temperature": 0.3
+          },
+          "samplingParamsByThinkingLevel": {
+            "high": {
+              "top_p": 0.8
+            }
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "high",
+          "thinkingBudgets": {
+            "high": 8192
+          },
+          "maxTokens": 1024,
+          "samplingParams": {
+            "temperature": 0.6
+          },
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-anthropic-messages-off",
@@ -1203,7 +2119,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "maxTokens": 2048,
         "thinkingBudgets": {
           "high": 3072
@@ -1221,7 +2137,7 @@
         },
         "headers": {
           "anthropic-version": "2023-06-01",
-          "x-api-key": "<fixture-key>",
+          "x-api-key": "\u003Cfixture-key\u003E",
           "accept": "application/json",
           "content-type": "application/json"
         },
@@ -1257,7 +2173,67 @@
             "type": "disabled"
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "anthropic-messages",
+        "Method": "POST",
+        "Path": "/v1/messages",
+        "Query": {
+          "beta": "true"
+        },
+        "CredentialHeader": "x-api-key",
+        "Model": "fixture-claude",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "mode": "disabled",
+          "budget": null
+        },
+        "Sampling": {},
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-anthropic",
+          "id": "fixture-claude",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {},
+          "samplingParams": {
+            "temperature": 0.3
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "off",
+          "thinkingBudgets": {
+            "high": 3072
+          },
+          "maxTokens": 2048,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-anthropic-messages-low",
@@ -1284,7 +2260,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "low",
         "maxTokens": 2048,
         "thinkingBudgets": {
@@ -1303,7 +2279,7 @@
         },
         "headers": {
           "anthropic-version": "2023-06-01",
-          "x-api-key": "<fixture-key>",
+          "x-api-key": "\u003Cfixture-key\u003E",
           "accept": "application/json",
           "content-type": "application/json",
           "anthropic-beta": "interleaved-thinking-2025-05-14"
@@ -1342,7 +2318,67 @@
             "display": "summarized"
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "anthropic-messages",
+        "Method": "POST",
+        "Path": "/v1/messages",
+        "Query": {
+          "beta": "true"
+        },
+        "CredentialHeader": "x-api-key",
+        "Model": "fixture-claude",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 4096,
+        "Streaming": true,
+        "Thinking": {
+          "mode": "enabled",
+          "budget": 2048
+        },
+        "Sampling": {},
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-anthropic",
+          "id": "fixture-claude",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {},
+          "samplingParams": {
+            "temperature": 0.3
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "low",
+          "thinkingBudgets": {
+            "high": 3072
+          },
+          "maxTokens": 2048,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-anthropic-messages-medium",
@@ -1369,7 +2405,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "medium",
         "maxTokens": 2048,
         "thinkingBudgets": {
@@ -1388,7 +2424,7 @@
         },
         "headers": {
           "anthropic-version": "2023-06-01",
-          "x-api-key": "<fixture-key>",
+          "x-api-key": "\u003Cfixture-key\u003E",
           "accept": "application/json",
           "content-type": "application/json",
           "anthropic-beta": "interleaved-thinking-2025-05-14"
@@ -1427,7 +2463,67 @@
             "display": "summarized"
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "anthropic-messages",
+        "Method": "POST",
+        "Path": "/v1/messages",
+        "Query": {
+          "beta": "true"
+        },
+        "CredentialHeader": "x-api-key",
+        "Model": "fixture-claude",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 8192,
+        "Streaming": true,
+        "Thinking": {
+          "mode": "enabled",
+          "budget": 7168
+        },
+        "Sampling": {},
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-anthropic",
+          "id": "fixture-claude",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {},
+          "samplingParams": {
+            "temperature": 0.3
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "medium",
+          "thinkingBudgets": {
+            "high": 3072
+          },
+          "maxTokens": 2048,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-anthropic-messages-custom-budget-clamped-high",
@@ -1454,7 +2550,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "high",
         "maxTokens": 1024,
         "thinkingBudgets": {
@@ -1473,7 +2569,7 @@
         },
         "headers": {
           "anthropic-version": "2023-06-01",
-          "x-api-key": "<fixture-key>",
+          "x-api-key": "\u003Cfixture-key\u003E",
           "accept": "application/json",
           "content-type": "application/json",
           "anthropic-beta": "interleaved-thinking-2025-05-14"
@@ -1512,7 +2608,67 @@
             "display": "summarized"
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "anthropic-messages",
+        "Method": "POST",
+        "Path": "/v1/messages",
+        "Query": {
+          "beta": "true"
+        },
+        "CredentialHeader": "x-api-key",
+        "Model": "fixture-claude",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 8192,
+        "Streaming": true,
+        "Thinking": {
+          "mode": "enabled",
+          "budget": 7168
+        },
+        "Sampling": {},
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "fixture-anthropic",
+          "id": "fixture-claude",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "compat": {},
+          "samplingParams": {
+            "temperature": 0.3
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "high",
+          "thinkingBudgets": {
+            "high": 8192
+          },
+          "maxTokens": 1024,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-google-generative-ai-off",
@@ -1536,7 +2692,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "maxTokens": 2048,
         "temperature": 0.5
       },
@@ -1552,7 +2708,7 @@
         },
         "headers": {
           "content-type": "application/json",
-          "x-goog-api-key": "<fixture-key>",
+          "x-goog-api-key": "\u003Cfixture-key\u003E",
           "accept": "*/*"
         },
         "credentialIdentity": "fixture-key",
@@ -1583,7 +2739,67 @@
             }
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "google-generative-ai",
+        "Method": "POST",
+        "Path": "/v1beta/models/gemini-3.5-flash:streamGenerateContent",
+        "Query": {
+          "alt": "sse"
+        },
+        "CredentialHeader": "x-goog-api-key",
+        "Model": "gemini-3.5-flash",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "level": null,
+          "budget": 0,
+          "includeThoughts": null
+        },
+        "Sampling": {
+          "temperature": 0.5
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "google",
+          "id": "gemini-3.5-flash",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.25
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "off",
+          "maxTokens": 2048,
+          "temperature": 0.5,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-google-generative-ai-low",
@@ -1607,7 +2823,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "low",
         "maxTokens": 2048,
         "temperature": 0.5
@@ -1624,7 +2840,7 @@
         },
         "headers": {
           "content-type": "application/json",
-          "x-goog-api-key": "<fixture-key>",
+          "x-goog-api-key": "\u003Cfixture-key\u003E",
           "accept": "*/*"
         },
         "credentialIdentity": "fixture-key",
@@ -1656,7 +2872,67 @@
             }
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "google-generative-ai",
+        "Method": "POST",
+        "Path": "/v1beta/models/gemini-3.5-flash:streamGenerateContent",
+        "Query": {
+          "alt": "sse"
+        },
+        "CredentialHeader": "x-goog-api-key",
+        "Model": "gemini-3.5-flash",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "level": "LOW",
+          "budget": null,
+          "includeThoughts": true
+        },
+        "Sampling": {
+          "temperature": 0.5
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "google",
+          "id": "gemini-3.5-flash",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.25
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "low",
+          "maxTokens": 2048,
+          "temperature": 0.5,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-google-generative-ai-xhigh",
@@ -1680,7 +2956,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "xhigh",
         "maxTokens": 2048,
         "temperature": 0.5
@@ -1697,7 +2973,7 @@
         },
         "headers": {
           "content-type": "application/json",
-          "x-goog-api-key": "<fixture-key>",
+          "x-goog-api-key": "\u003Cfixture-key\u003E",
           "accept": "*/*"
         },
         "credentialIdentity": "fixture-key",
@@ -1729,7 +3005,67 @@
             }
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "google-generative-ai",
+        "Method": "POST",
+        "Path": "/v1beta/models/gemini-3.5-flash:streamGenerateContent",
+        "Query": {
+          "alt": "sse"
+        },
+        "CredentialHeader": "x-goog-api-key",
+        "Model": "gemini-3.5-flash",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "level": "HIGH",
+          "budget": null,
+          "includeThoughts": true
+        },
+        "Sampling": {
+          "temperature": 0.5
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "google",
+          "id": "gemini-3.5-flash",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.25
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "xhigh",
+          "maxTokens": 2048,
+          "temperature": 0.5,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-google-vertex-off",
@@ -1753,7 +3089,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "maxTokens": 2048,
         "temperature": 0.5
       },
@@ -1769,7 +3105,7 @@
         },
         "headers": {
           "content-type": "application/json",
-          "x-goog-api-key": "<fixture-key>",
+          "x-goog-api-key": "\u003Cfixture-key\u003E",
           "accept": "*/*"
         },
         "credentialIdentity": "fixture-key",
@@ -1800,7 +3136,67 @@
             }
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "google-vertex",
+        "Method": "POST",
+        "Path": "/v1beta/publishers/google/models/gemini-3.5-flash:streamGenerateContent",
+        "Query": {
+          "alt": "sse"
+        },
+        "CredentialHeader": "x-goog-api-key",
+        "Model": "gemini-3.5-flash",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "level": null,
+          "budget": 0,
+          "includeThoughts": null
+        },
+        "Sampling": {
+          "temperature": 0.5
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "google-vertex",
+          "id": "gemini-3.5-flash",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.25
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "off",
+          "maxTokens": 2048,
+          "temperature": 0.5,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-google-vertex-low",
@@ -1824,7 +3220,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "low",
         "maxTokens": 2048,
         "temperature": 0.5
@@ -1841,7 +3237,7 @@
         },
         "headers": {
           "content-type": "application/json",
-          "x-goog-api-key": "<fixture-key>",
+          "x-goog-api-key": "\u003Cfixture-key\u003E",
           "accept": "*/*"
         },
         "credentialIdentity": "fixture-key",
@@ -1873,7 +3269,67 @@
             }
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "google-vertex",
+        "Method": "POST",
+        "Path": "/v1beta/publishers/google/models/gemini-3.5-flash:streamGenerateContent",
+        "Query": {
+          "alt": "sse"
+        },
+        "CredentialHeader": "x-goog-api-key",
+        "Model": "gemini-3.5-flash",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "level": "LOW",
+          "budget": null,
+          "includeThoughts": true
+        },
+        "Sampling": {
+          "temperature": 0.5
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "google-vertex",
+          "id": "gemini-3.5-flash",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.25
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "low",
+          "maxTokens": 2048,
+          "temperature": 0.5,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     },
     {
       "id": "wire-google-vertex-xhigh",
@@ -1897,7 +3353,7 @@
         "includeTools": false
       },
       "providerOptions": {
-        "apiKey": "<fixture-key>",
+        "apiKey": "\u003Cfixture-key\u003E",
         "reasoning": "xhigh",
         "maxTokens": 2048,
         "temperature": 0.5
@@ -1914,7 +3370,7 @@
         },
         "headers": {
           "content-type": "application/json",
-          "x-goog-api-key": "<fixture-key>",
+          "x-goog-api-key": "\u003Cfixture-key\u003E",
           "accept": "*/*"
         },
         "credentialIdentity": "fixture-key",
@@ -1946,7 +3402,67 @@
             }
           }
         }
-      }
+      },
+      "piSharpResult": {
+        "Api": "google-vertex",
+        "Method": "POST",
+        "Path": "/v1beta/publishers/google/models/gemini-3.5-flash:streamGenerateContent",
+        "Query": {
+          "alt": "sse"
+        },
+        "CredentialHeader": "x-goog-api-key",
+        "Model": "gemini-3.5-flash",
+        "Context": [
+          {
+            "role": "system",
+            "text": "fixture system instruction"
+          },
+          {
+            "role": "user",
+            "text": "fixture user request"
+          }
+        ],
+        "MaxOutputTokens": 2048,
+        "Streaming": true,
+        "Thinking": {
+          "level": "HIGH",
+          "budget": null,
+          "includeThoughts": true
+        },
+        "Sampling": {
+          "temperature": 0.5
+        },
+        "Tools": []
+      },
+      "classification": "strict-match",
+      "provenance": {
+        "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+        "platform": "linux-x64",
+        "oracleImplementation": "direct pinned Pi AI streamSimple provider API against a local HTTP server",
+        "inputCatalog": {
+          "provider": "google-vertex",
+          "id": "gemini-3.5-flash",
+          "reasoning": true,
+          "maxTokens": 8192,
+          "samplingParams": {
+            "temperature": 0.25
+          }
+        },
+        "authenticationState": {
+          "credentialIdentity": "synthetic local fixture credential",
+          "secretValueRecorded": false
+        },
+        "configuration": {
+          "reasoning": "xhigh",
+          "maxTokens": 2048,
+          "temperature": 0.5,
+          "includeTools": false
+        },
+        "comparisonPolicy": "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context",
+        "piSharpInvocation": "dotnet test tests/PiSharp.Tests --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests",
+        "piSharpSha": "f9afa08a4ab8fc7509ad7cc961af76184906220f"
+      },
+      "passed": true
     }
   ]
 }

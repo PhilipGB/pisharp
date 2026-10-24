@@ -21,10 +21,25 @@ internal static class ModelThinkingDifferentialReport
                 : JsonNode.Parse(File.ReadAllText(sourcePath))!.AsObject();
             var item = report["cases"]!.AsArray().Select(node => node!.AsObject())
                 .Single(candidate => candidate["id"]!.GetValue<string>() == id);
+            var provenance = item["provenance"] as JsonObject ?? new JsonObject();
+            SetIfMissing(provenance, "pinnedPiSha", item["pinnedPiSha"] ?? report["pinnedPiSha"]);
+            SetIfMissing(provenance, "platform", item["platform"] ?? report["platform"]);
+            SetIfMissing(provenance, "oracleImplementation", item["oracleImplementation"] ?? report["oracle"]);
+            SetIfMissing(provenance, "inputCatalog", item["inputCatalog"] ?? item["inputModel"]);
+            SetIfMissing(provenance, "authenticationState", new JsonObject
+            {
+                ["credentialIdentity"] = "synthetic local fixture credential",
+                ["secretValueRecorded"] = false
+            });
+            SetIfMissing(provenance, "configuration", item["configuration"] ?? item["requestOptions"] ?? item["input"]);
+            SetIfMissing(provenance, "comparisonPolicy", "strict normalized behavioral fields; provider requests compare routing, headers, budgets, sampling, tools and context");
+            provenance["piSharpInvocation"] = Environment.GetEnvironmentVariable("PISHARP_DIFFERENTIAL_INVOCATION") ??
+                "dotnet test tests/PiSharp.Tests --no-build --no-restore --filter FullyQualifiedName~ModelThinkingDifferentialTests|FullyQualifiedName~ModelThinkingProviderWireDifferentialTests";
+            item["provenance"] = provenance;
             item["piSharpResult"] = piSharpResult?.DeepClone();
             item["classification"] = "strict-match";
-            if (item["provenance"] is JsonObject provenance &&
-                Environment.GetEnvironmentVariable("PISHARP_DIFFERENTIAL_SHA") is { Length: > 0 } sha)
+            item["passed"] = true;
+            if (Environment.GetEnvironmentVariable("PISHARP_DIFFERENTIAL_SHA") is { Length: > 0 } sha)
                 provenance["piSharpSha"] = sha;
 
             var directory = Path.GetDirectoryName(Path.GetFullPath(outputPath))!;
@@ -40,5 +55,10 @@ internal static class ModelThinkingDifferentialReport
                 if (File.Exists(temporary)) File.Delete(temporary);
             }
         }
+    }
+
+    private static void SetIfMissing(JsonObject target, string key, JsonNode? value)
+    {
+        if (!target.ContainsKey(key) && value is not null) target[key] = value.DeepClone();
     }
 }

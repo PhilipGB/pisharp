@@ -1,4 +1,42 @@
-## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
+## Active milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
+
+PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`,
+which is both the actual post-merge `origin/main` and PR #23 branch base. Pi is
+pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; implementation source is
+`f9afa08a4ab8fc7509ad7cc961af76184906220f` on
+`milestone/model-thinking-configuration-parity`.
+
+The direct pinned-Pi corpus passes 93/93 strict cases: 25 model reference/CLI,
+18 scoped-model, 10 initial-selection, 10 thinking, 10 budget/sampling, 10
+settings and 10 CLI/TUI/RPC integration cases. A separate direct provider-wire
+oracle passes 23/23 local HTTP cases across OpenAI Responses, OpenAI
+Completions, Anthropic Messages, Google Generative AI and Vertex. Repeated
+same-Pi calibration is stable after removing only invocation provenance; it does
+not use PiSharp as the oracle. See the [inventory](fixtures/model-selection-thinking-configuration-inventory-2026-10-24.json),
+[paired behavior report](fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json),
+[provider-wire report](fixtures/model-selection-thinking-provider-wire-oracle-2026-10-24.json),
+[calibration](fixtures/model-selection-thinking-configuration-calibration-2026-10-24.json)
+and [milestone receipt](fixtures/model-selection-thinking-configuration-2026-10-24.md).
+
+Implementation covers provider-aware reference resolution, scoped model matching
+and editing, model/thinking defaults and clamping, budget/sampling projection,
+settings precedence and coordinated persistence, and CLI/TUI/RPC behavior. The
+scoped-model editor has Linux PTY evidence. Session replacement/resume and
+extension selection events have process regression coverage. The full acceptance
+corpus does not model every busy-run interleaving; native Windows/macOS are not
+claimed. RPC/session continuation retains a configured fallback identity when no
+provider is authenticated, while ordinary interactive startup preserves an
+empty model selection to match Pi's empty catalogue behavior.
+
+After the report-recorder test edit, format verification and warning-as-error
+build pass, and the full .NET suite passes 3,776/3,776 with zero failures/skips.
+Node terminal 24/24, Python terminal 66/66, parity guards 27/27 and MCP
+conformance (no regression to eight classified baseline failures) passed on the
+same product source; the edit only adds test-report metadata. Documentation and
+paired reports are complete. The branch has not yet been pushed and draft PR #23
+has not yet been created. Global Pi parity remains `in_progress`.
+
+## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
 PR #21's actual merge `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a` is verified
 on `origin/main` and is the base of `milestone/builtin-coding-tool-parity`.
@@ -27,9 +65,8 @@ Grep context lookups now reuse bounded per-file readers instead of scanning the 
 Private/atomic mutation behavior, allocation bounds, repository-local privacy and
 stronger detached-process cleanup remain explicit exclusions from strict
 identity. Native Windows/macOS and privileged execution remain unverified.
-Local A–R acceptance is complete at this document revision; use the live
-[PR #22 receipt](https://github.com/PhilipGB/pisharp/pull/22) for final publication
-head and exact-head CI. #22 must remain draft/unmerged. Global parity remains
+PR #22 merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`; the active model,
+thinking and configuration milestone is recorded below. Global parity remains
 `in_progress`.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22

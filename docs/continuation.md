@@ -1,6 +1,24 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
+## Active milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
+
+The 93-case source-pinned behavior corpus and 23-case provider-wire corpus pass.
+The implementation covers model references, initial selection, scope matching
+and editing, thinking defaults/clamping, budgets and sampling, settings
+precedence/persistence, and CLI/TUI/RPC integration. The Linux PTY scoped-model
+journey and session/extension process regressions are included. Documented
+limits include no native Windows/macOS run, unmodeled extended busy-run
+interleavings, and the retained RPC/session fallback identity when no provider
+is authenticated. See the [inventory](parity/fixtures/model-selection-thinking-configuration-inventory-2026-10-24.json)
+and [receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
+
+After the report-helper edit, the warning-as-error build and format verification
+passed, and the full .NET suite passed 3,776/3,776 with zero failures/skips.
+Node/Python/MCP checks passed on the same product source; the helper changes only
+.NET test-report metadata. Documentation is staged. Commit and publish the branch,
+then verify exact-head CI.
+
+## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
 PR #21 is merged at `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a`, verified on
 fetched `origin/main` before product work. Its reviewed head was
@@ -8,12 +26,20 @@ fetched `origin/main` before product work. Its reviewed head was
 `milestone/builtin-coding-tool-parity` starts from that actual merge. Pi remains
 at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-Local acceptance checkpoints A–R are complete: **18/20 at this documentation
-revision**. Publication (S) and exact-head CI (T) have a live receipt in
-[PR #22](https://github.com/PhilipGB/pisharp/pull/22). Read that description and
-current run metadata before reporting progress; do not mistake this frozen local
-checkpoint count for the later publication state. Keep the twenty-checkpoint
-denominator. Do not merge #22 or start #23.
+PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`.
+The current branch `milestone/model-thinking-configuration-parity` is based on
+that actual `origin/main` SHA and keeps Pi pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The implementation source is
+`f9afa08a4ab8fc7509ad7cc961af76184906220f`.
+
+The pinned-Pi behavior report passes 93/93 and the physical provider-wire report
+passes 23/23. The test-report recorder was edited after the prior full local
+validation, so rerun format, warning-as-error build, the full .NET suite and
+required parity checks before committing the evidence. Update the matrix,
+inventory, execution ledger and this continuation record; then commit, push and
+create draft PR #23. Verify push and PR CI against its exact final head. Keep #23
+open, draft and unmerged; do not start PR #24. See the active
+[model-selection milestone receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 Product acceptance source is `962cfa48d97a960149e1f0cc020f25bc302c1d48`.
 The final publication head and push/PR workflow IDs are maintained in the PR
