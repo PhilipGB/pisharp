@@ -28,7 +28,12 @@ and this physical CI receipt remain required. Progress stays 16/20; Q is open. T
 restart-test synchronization failure. The restored LOCAL_TOOL_OK frame is already
 visible before its output mark. The test now checks the initial settled frame
 before marking the next prompt; the focused run passes. Five physical repetitions
-and another full suite remain required; do not increase the timeout.
+pass. A subsequent full run passes the restart test but finds one HTTP fixture
+cleanup failure (3,725 pass / one fail). An independent .NET 10.0.13 probe shows
+Stop followed by Dispose can rebind a released port; Close followed by Dispose
+is clean. The test now closes its listener once, and the focused test passes.
+Five MCP repetitions and a fresh complete run remain required. No product or
+timeout change is involved.
 
 Bash investigation now has 44 direct pinned cases; clean pre-fix `6c346e46`
 passes 2/44 when initial/final update contracts are included. The correction

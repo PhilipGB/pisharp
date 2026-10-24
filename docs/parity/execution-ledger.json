@@ -981,6 +981,32 @@
         "passed": 1,
         "failed": 0
       },
+      "remaining": [],
+      "repeated_after": {
+        "passed": 5,
+        "failed": 0
+      }
+    },
+    "local_http_fixture_cleanup": {
+      "source": "52bba8a8ca7c9ec2e42dc4bd452cbe07faea71d6",
+      "full_before": {
+        "passed": 3725,
+        "failed": 1,
+        "skipped": 0,
+        "total": 3726
+      },
+      "failure": "HttpListener Stop followed by automatic Dispose re-enters endpoint removal and can bind the released port again.",
+      "independent_reproduction": {
+        "runtime": "10.0.13",
+        "stop_then_dispose": "Address already in use with the released port deliberately held by its next owner",
+        "close_then_dispose": "clean"
+      },
+      "primary_source": "https://github.com/dotnet/runtime/blob/v10.0.13/src/libraries/System.Net.HttpListener/src/System/Net/Managed/HttpEndPointManager.cs",
+      "correction": "Close the owned test listener once; automatic disposal is then idempotent. All product assertions and timeouts are retained.",
+      "focused_after": {
+        "passed": 1,
+        "failed": 0
+      },
       "remaining": [
         "Five physical repetitions",
         "Fresh full suite"

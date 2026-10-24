@@ -171,7 +171,7 @@ public sealed class InteractiveMcpProcessTests
         finally
         {
             timeout.Cancel();
-            listener.Stop();
+            listener.Close();
             if (process is { HasExited: false })
             {
                 process.Kill(entireProcessTree: true);
