@@ -24,7 +24,11 @@ matches kernel privilege-bit clearing. Local group assignment is restricted
 (EINVAL in the narrow mapping, EPERM after expansion). CI now captures the real
 pinned oracle on its Linux runner, requires an assignable alternate group, and
 passes the actual observations into native tests. Fresh full gates, reliability
-and this physical CI receipt remain required. Progress stays 16/20; Q is open.
+and this physical CI receipt remain required. Progress stays 16/20; Q is open. The fresh full suite has 3,725 passes and one
+restart-test synchronization failure. The restored LOCAL_TOOL_OK frame is already
+visible before its output mark. The test now checks the initial settled frame
+before marking the next prompt; the focused run passes. Five physical repetitions
+and another full suite remain required; do not increase the timeout.
 
 Bash investigation now has 44 direct pinned cases; clean pre-fix `6c346e46`
 passes 2/44 when initial/final update contracts are included. The correction

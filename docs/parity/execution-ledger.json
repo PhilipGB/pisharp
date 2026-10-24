@@ -966,6 +966,25 @@
         "Fresh full validation and reliability after ownership correction.",
         "Inspect actual alternate-group pinned/native CI evidence before final completion."
       ]
+    },
+    "local_restart_test_synchronization": {
+      "product_source": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "full_before": {
+        "passed": 3725,
+        "failed": 1,
+        "skipped": 0,
+        "total": 3726
+      },
+      "failure": "The resumed startup already contained LOCAL_TOOL_OK before the test recorded its resumeMark; waiting only after that mark timed out.",
+      "correction": "Require the initial settled frame to contain both qwen and restored LOCAL_TOOL_OK, then mark the next prompt. No product changes or timeout increase.",
+      "focused_after": {
+        "passed": 1,
+        "failed": 0
+      },
+      "remaining": [
+        "Five physical repetitions",
+        "Fresh full suite"
+      ]
     }
   },
   "plan_received": true,
