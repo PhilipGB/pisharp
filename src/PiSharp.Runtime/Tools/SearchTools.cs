@@ -1,14 +1,11 @@
 using System.ComponentModel;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace PiSharp.Runtime.Tools;
 
-/// <summary>Opt-in managed search tools. Git supplies ignore rules inside repositories.</summary>
+/// <summary>Opt-in discovery and ripgrep search with shared result and process ownership.</summary>
 public sealed class SearchTools(string workingDirectory)
 {
     private readonly string _cwd = Path.GetFullPath(workingDirectory);
-    private const int MaxBytes = 50 * 1024;
 
     [Description("Find files and directories matching a glob pattern. Paths are relative to the search root. Respects Git ignore rules inside a repository.")]
     public async Task<string> Find(
@@ -19,49 +16,11 @@ public sealed class SearchTools(string workingDirectory)
         (await FindForTool(pattern, path, limit, cancellationToken)).Text;
 
     [Description("Find files and directories matching a glob pattern. Paths are relative to the search root. Respects Git ignore rules inside a repository.")]
-    internal async Task<SearchToolOutput> FindForTool(
+    internal Task<SearchToolOutput> FindForTool(
         [Description("Glob pattern, e.g. '*.cs' or 'src/**/*.cs'.")] string pattern,
         [Description("Search directory (defaults to current working directory).")] string? path = null,
-        [Description("Maximum results (default 1000).")] int? limit = null,
-        CancellationToken cancellationToken = default)
-    {
-        var root = Path.GetFullPath(path is null or "" ? "." : path, _cwd);
-        if (File.Exists(root)) throw new ToolFailureException($"Not a directory: {root}");
-        var max = Math.Max(1, limit ?? 1000);
-        Regex regex;
-        try { regex = GlobRegex(pattern); }
-        catch (ArgumentException error) { throw new ToolFailureException($"Invalid glob pattern: {error.Message}", inner: error); }
-        var files = await SearchInventory.EnumerateAsync(root, cancellationToken, includeDirectories: true,
-            includeFdIgnore: true, ignoreBaseDirectory: _cwd);
-        var candidates = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var file in files)
-        {
-            var relative = Path.GetRelativePath(root, file).Replace('\\', '/');
-            var isDirectory = Directory.Exists(file);
-            if (regex.IsMatch(pattern.Contains('/') ? relative : Path.GetFileName(relative)))
-                candidates.Add(isDirectory ? relative + "/" : relative);
-            // fd includes matching directories. Synthesize ancestors of the discovered files.
-            var dir = Path.GetDirectoryName(relative)?.Replace('\\', '/');
-            while (!string.IsNullOrEmpty(dir) && dir != ".")
-            {
-                var name = Path.GetFileName(dir);
-                if (regex.IsMatch(pattern.Contains('/') ? dir : name)) candidates.Add(dir + "/");
-                dir = Path.GetDirectoryName(dir)?.Replace('\\', '/');
-            }
-        }
-        cancellationToken.ThrowIfCancellationRequested();
-        var ordered = candidates.Order(StringComparer.Ordinal).ToArray();
-        if (ordered.Length == 0) return new SearchToolOutput("No files found matching pattern");
-        var resultLimitReached = ordered.Length >= max;
-        var rawOutput = string.Join('\n', ordered.Take(max));
-        var (output, truncation) = ToolOutputTruncator.TruncateHead(rawOutput, MaxBytes);
-        var notices = new List<string>();
-        if (resultLimitReached) notices.Add($"{max} results limit reached. Use limit={max * 2} for more, or refine pattern");
-        if (truncation is not null) notices.Add("50.0KB limit reached");
-        var text = notices.Count > 0 ? output + "\n\n[" + string.Join(". ", notices) + "]" : output;
-        return new SearchToolOutput(text, resultLimitReached || truncation is not null
-            ? new FindToolDetails(truncation, resultLimitReached ? max : null) : null);
-    }
+        [Description("Maximum results (default 1000).")] double? limit = null,
+        CancellationToken cancellationToken = default) => FdSearch.ExecuteAsync(_cwd, pattern, path, limit, cancellationToken);
 
     [Description("Search file contents with a regex or literal string. Returns matching lines with file paths and line numbers. Respects Git ignore rules in repositories.")]
     public async Task<string> Grep(
@@ -73,89 +32,19 @@ public sealed class SearchTools(string workingDirectory)
         [Description("Number of surrounding lines (default 0). ")] int context = 0,
         [Description("Maximum matches (default 100). ")] int? limit = null,
         CancellationToken cancellationToken = default) =>
-        (await GrepForTool(pattern, path, glob, ignoreCase, literal, context, limit, cancellationToken)).Text;
+        (await RipgrepSearch.ExecuteAsync(_cwd, pattern, path, glob, ignoreCase, literal, context, limit,
+            cancellationToken, respectGitIgnoreOutsideRepository: true)).Text;
 
     [Description("Search file contents with a regex or literal string. Returns matching lines with file paths and line numbers. Respects Git ignore rules in repositories.")]
-    internal async Task<SearchToolOutput> GrepForTool(
+    internal Task<SearchToolOutput> GrepForTool(
         [Description("Regex or literal pattern to search.")] string pattern,
         [Description("Search directory or file (default working directory).")] string? path = null,
         [Description("Filter files by glob, e.g. '*.cs'.")] string? glob = null,
         [Description("Case-insensitive match (default false).")] bool ignoreCase = false,
         [Description("Interpret pattern literally (default false).")] bool literal = false,
-        [Description("Number of surrounding lines (default 0).")] int context = 0,
-        [Description("Maximum matches (default 100).")] int? limit = null,
-        CancellationToken cancellationToken = default)
-    {
-        var root = Path.GetFullPath(path is null or "" ? "." : path, _cwd);
-        if (context < 0) throw new ToolFailureException("context must not be negative.");
-        var max = Math.Max(1, limit ?? 100);
-        Regex regex;
-        Regex? filter = null;
-        try
-        {
-            regex = new Regex(literal ? Regex.Escape(pattern) : pattern,
-                (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) | RegexOptions.CultureInvariant,
-                TimeSpan.FromSeconds(1));
-            if (glob is not null) filter = GlobRegex(glob);
-        }
-        catch (ArgumentException error) { throw new ToolFailureException($"Invalid search pattern: {error.Message}", inner: error); }
-        var matches = new List<string>();
-        var matchLimitReached = false;
-        var truncated = false;
-        foreach (var file in await SearchInventory.EnumerateAsync(root, cancellationToken, includeRgIgnore: true))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var relative = (File.Exists(root) ? Path.GetFileName(file) : Path.GetRelativePath(root, file)).Replace('\\', '/');
-            if (filter is not null && !filter.IsMatch(glob!.Contains('/') ? relative : Path.GetFileName(relative))) continue;
-            // A managed fallback must never allocate an unbounded whole file or huge lines.
-            if (new FileInfo(file).Length > 10 * 1024 * 1024)
-                throw new ToolFailureException($"File exceeds 10MB managed search limit: {relative}. Narrow the search path.");
-            string[] lines;
-            try { lines = (await File.ReadAllLinesAsync(file, cancellationToken)).Select(line => line.TrimEnd('\r')).ToArray(); }
-            catch (UnauthorizedAccessException error)
-            {
-                throw SearchInventory.PermissionDenied("rg", file, error);
-            }
-            catch (Exception error) when (error is IOException or DecoderFallbackException) { continue; }
-            if (lines.Any(line => line.Contains('\0'))) continue;
-            for (var index = 0; index < lines.Length; index++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                bool isMatch;
-                try { isMatch = regex.IsMatch(lines[index]); }
-                catch (RegexMatchTimeoutException error) { throw new ToolFailureException("Search regex timed out.", inner: error); }
-                if (!isMatch) continue;
-                if (matches.Count >= max) { matchLimitReached = true; break; }
-                var block = new StringBuilder();
-                for (var current = Math.Max(0, index - context); current <= Math.Min(lines.Length - 1, index + context); current++)
-                {
-                    var line = lines[current];
-                    if (line.Length > 500) { line = line[..500] + "... [truncated]"; truncated = true; }
-                    if (block.Length > 0) block.Append('\n');
-                    block.Append(relative).Append(current == index ? ':' : '-').Append(current + 1)
-                        .Append(current == index ? ": " : "- ").Append(line);
-                }
-                matches.Add(block.ToString());
-                if (matches.Count >= max) { matchLimitReached = true; break; }
-            }
-            if (matchLimitReached) break;
-        }
-        if (matches.Count == 0) return new SearchToolOutput("No matches found");
-        var (result, truncation) = ToolOutputTruncator.TruncateHead(string.Join('\n', matches), MaxBytes);
-        var notices = new List<string>();
-        if (matchLimitReached) notices.Add($"{max} matches limit reached. Use limit={max * 2} for more, or refine pattern");
-        if (truncation is not null) notices.Add("50.0KB limit reached");
-        if (truncated) notices.Add("Some lines truncated to 500 chars. Use read tool to see full lines");
-        var text = notices.Count > 0 ? result + "\n\n[" + string.Join(". ", notices) + "]" : result;
-        object? details = truncation is null && !matchLimitReached && !truncated ? null
-            : new GrepToolDetails(truncation, matchLimitReached ? max : null, truncated ? true : null);
-        return new SearchToolOutput(text, details);
-    }
+        [Description("Number of surrounding lines (default 0).")] double context = 0,
+        [Description("Maximum matches (default 100).")] double? limit = null,
+        CancellationToken cancellationToken = default) =>
+        RipgrepSearch.ExecuteAsync(_cwd, pattern, path, glob, ignoreCase, literal, context, limit, cancellationToken);
 
-    private static Regex GlobRegex(string pattern)
-    {
-        if (string.IsNullOrWhiteSpace(pattern)) throw new ArgumentException("Pattern cannot be empty.");
-        return new Regex("^" + SearchInventory.GlobRegex(pattern) + "$", RegexOptions.CultureInvariant,
-            TimeSpan.FromSeconds(1));
-    }
 }

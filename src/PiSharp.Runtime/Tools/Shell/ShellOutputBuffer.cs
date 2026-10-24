@@ -1,9 +1,13 @@
 using System.Globalization;
 using System.Text;
+using PiSharp.Core;
 
 namespace PiSharp.Runtime;
 
-public sealed record ShellOutputResult(string Output, string DisplayOutput, bool Truncated, string? FullOutputPath);
+public sealed record ShellOutputResult(string Output, string DisplayOutput, bool Truncated, string? FullOutputPath)
+{
+    public TextTruncationResult? Truncation { get; init; }
+}
 
 /// <summary>Captures command output with a bounded in-memory tail; spills full output to a private temp file.</summary>
 public sealed class ShellOutputBuffer : IAsyncDisposable
@@ -20,9 +24,10 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
     private long _rawBytes;
     private long _decodedBytes;
     private long _currentLineBytes;
-    private int _newlines;
+    private long _newlines;
     private bool _endsWithNewline;
     private bool _decoderFlushed;
+    private bool _decoderStarted;
 
     /// <param name="normalizeOutput">Strip terminal escapes, binary controls and carriage returns for direct Bash execution.</param>
     public ShellOutputBuffer(bool normalizeOutput = false)
@@ -40,7 +45,8 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             if (_decoderFlushed) throw new InvalidOperationException("Cannot append after the output decoder has been flushed.");
             var chars = new char[Encoding.UTF8.GetMaxCharCount(data.Length)];
             var count = _decoder.GetChars(data.Span, chars, flush: false);
-            var decoded = _normalizer is null ? new string(chars, 0, count) : _normalizer.Append(chars.AsSpan(0, count));
+            var decoded = DecodeStart(new string(chars, 0, count));
+            if (_normalizer is not null) decoded = _normalizer.Append(decoded.AsSpan());
             ReadOnlyMemory<byte> stored = _normalizer is null ? data : Encoding.UTF8.GetBytes(decoded);
 
             if (_full is null && _rawBytes + data.Length > MaxBytes)
@@ -71,8 +77,8 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             _decoderFlushed = true;
             var chars = new char[4];
             var count = _decoder.GetChars(ReadOnlySpan<byte>.Empty, chars, flush: true);
-            var decoded = _normalizer is null ? new string(chars, 0, count) :
-                _normalizer.Append(chars.AsSpan(0, count)) + _normalizer.Finish();
+            var decoded = DecodeStart(new string(chars, 0, count));
+            if (_normalizer is not null) decoded = _normalizer.Append(decoded.AsSpan()) + _normalizer.Finish();
             if (_normalizer is not null && decoded.Length != 0)
             {
                 var stored = Encoding.UTF8.GetBytes(decoded);
@@ -89,49 +95,51 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
     public async Task<ShellOutputResult> FinishWithMetadataAsync()
     {
         await FlushDecoderAsync();
+        return await SnapshotAsync();
+    }
+
+    internal async Task<ShellOutputResult> SnapshotAsync()
+    {
         await _gate.WaitAsync();
         try
         {
             if (_full is not null) await _full.FlushAsync();
             var totalLines = TotalLines;
             var truncated = totalLines > MaxLines || _decodedBytes > MaxBytes;
-            string content;
-            string displayOutput;
-            int shownLines, shownBytes;
-            bool partialLastLine;
-            if (truncated)
-                content = SelectTail(_tail.ToString(), out shownLines, out shownBytes, out partialLastLine);
-            else
+            var truncation = TextOutputTruncator.Tail(_tail.ToString()) with
             {
-                content = _tail.ToString();
-                shownLines = totalLines;
-                shownBytes = (int)_decodedBytes;
-                partialLastLine = false;
-            }
-            displayOutput = content;
+                TotalLines = totalLines,
+                TotalBytes = _decodedBytes,
+                Truncated = truncated
+            };
+            if (truncated && truncation.TruncatedBy is null)
+                truncation = truncation with { TruncatedBy = _decodedBytes > MaxBytes ? "bytes" : "lines" };
+            var content = truncation.Content;
+            var displayOutput = content;
             if (truncated)
             {
                 if (_full is null)
                 {
                     _fullPath = Path.Combine(Path.GetTempPath(), "pi-bash-" + Guid.NewGuid().ToString("N") + ".log");
-                    await using var spill = NewPrivateFile(_fullPath);
+                    _full = NewPrivateFile(_fullPath);
                     _prefix.Position = 0;
-                    await _prefix.CopyToAsync(spill);
+                    await _prefix.CopyToAsync(_full);
+                    await _full.FlushAsync();
                 }
-                var startLine = totalLines - shownLines + 1;
-                if (partialLastLine)
+                var startLine = totalLines - truncation.OutputLines + 1;
+                if (truncation.LastLinePartial)
                 {
                     var lineBytes = LastLineBytes;
-                    var shown = FormatSize(shownBytes);
+                    var shown = FormatSize(truncation.OutputBytes);
                     displayOutput += $"\n\n[Showing last {shown} of line {totalLines} (line is {FormatSize(lineBytes)}). Full output: {_fullPath}]";
                 }
-                else if (shownLines >= MaxLines && shownBytes <= MaxBytes)
+                else if (truncation.TruncatedBy == "lines")
                     displayOutput += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines}. Full output: {_fullPath}]";
                 else
                     displayOutput += $"\n\n[Showing lines {startLine}-{totalLines} of {totalLines} ({FormatSize(MaxBytes)} limit). Full output: {_fullPath}]";
             }
             if (displayOutput.Length == 0) displayOutput = "(no output)";
-            return new(content, displayOutput, truncated, _fullPath);
+            return new(content, displayOutput, truncated, _fullPath) { Truncation = truncation };
         }
         finally { _gate.Release(); }
     }
@@ -142,14 +150,14 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
         try
         {
             if (_full is not null) await _full.FlushAsync();
-            if (_fullPath is null) return (Encoding.UTF8.GetString(_prefix.ToArray()), false);
+            if (_fullPath is null) return (WithoutBom(Encoding.UTF8.GetString(_prefix.ToArray())), false);
             await using var file = new FileStream(_fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite,
                 8192, FileOptions.Asynchronous);
             if (file.Length <= maxBytes)
             {
                 var bytes = new byte[(int)file.Length];
                 await file.ReadExactlyAsync(bytes);
-                return (Encoding.UTF8.GetString(bytes), false);
+                return (WithoutBom(Encoding.UTF8.GetString(bytes)), false);
             }
             var head = new byte[maxBytes / 2];
             var tail = new byte[maxBytes - head.Length];
@@ -160,13 +168,22 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             var count = Encoding.UTF8.GetDecoder().GetChars(head, chars, flush: false);
             var tailStart = 0;
             while (tailStart < tail.Length && (tail[tailStart] & 0xc0) == 0x80) tailStart++;
-            return (new string(chars, 0, count) + $"\n\n[... {file.Length - maxBytes} bytes omitted ...]\n\n" +
-                Encoding.UTF8.GetString(tail.AsSpan(tailStart)), true);
+            return (WithoutBom(new string(chars, 0, count)) + $"\n\n[... {file.Length - maxBytes} bytes omitted ...]\n\n" +
+                WithoutBom(Encoding.UTF8.GetString(tail.AsSpan(tailStart))), true);
         }
         finally { _gate.Release(); }
     }
 
-    private int TotalLines => _decodedBytes == 0 ? 0 : _newlines + (_endsWithNewline ? 0 : 1);
+    private long TotalLines => _decodedBytes == 0 ? 0 : _newlines + (_endsWithNewline ? 0 : 1);
+
+    private string DecodeStart(string decoded)
+    {
+        if (_decoderStarted || decoded.Length == 0) return decoded;
+        _decoderStarted = true;
+        return WithoutBom(decoded);
+    }
+
+    private static string WithoutBom(string text) => text.StartsWith('\uFEFF') ? text[1..] : text;
     private long LastLineBytes
         => _currentLineBytes;
 
@@ -190,49 +207,6 @@ public sealed class ShellOutputBuffer : IAsyncDisposable
             _tail.Remove(0, remove);
         }
         return new string(chars[..count]);
-    }
-
-    private static string SelectTail(string content, out int outputLines, out int outputBytes, out bool partialLastLine)
-    {
-        if (content.EndsWith('\n')) content = content[..^1];
-        if (content.Length == 0)
-        {
-            outputLines = outputBytes = 0;
-            partialLastLine = false;
-            return "";
-        }
-
-        var lines = content.Split('\n');
-        var selected = new List<string>(Math.Min(lines.Length, MaxLines));
-        var bytes = 0;
-        partialLastLine = false;
-        for (var i = lines.Length - 1; i >= 0 && selected.Count < MaxLines; i--)
-        {
-            var lineBytes = Encoding.UTF8.GetByteCount(lines[i]) + (selected.Count > 0 ? 1 : 0);
-            if (bytes + lineBytes > MaxBytes)
-            {
-                if (selected.Count == 0)
-                {
-                    selected.Add(TruncateUtf8FromEnd(lines[i], MaxBytes));
-                    partialLastLine = true;
-                }
-                break;
-            }
-            selected.Insert(0, lines[i]);
-            bytes += lineBytes;
-        }
-        var suffix = string.Join('\n', selected);
-        outputLines = selected.Count;
-        outputBytes = Encoding.UTF8.GetByteCount(suffix);
-        return suffix;
-    }
-
-    private static string TruncateUtf8FromEnd(string value, int maxBytes)
-    {
-        var bytes = Encoding.UTF8.GetBytes(value);
-        var start = Math.Max(0, bytes.Length - maxBytes);
-        while (start < bytes.Length && (bytes[start] & 0xC0) == 0x80) start++;
-        return Encoding.UTF8.GetString(bytes, start, bytes.Length - start);
     }
 
     private static string FormatSize(long bytes)

@@ -1,0 +1,122 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpSha": "011728fb84e998b7dec0da3b056ea0c307c3af73",
+  "dirtyPaths": [],
+  "startedAt": "2026-10-23T13:36:07.247308+00:00",
+  "cases": [
+    {
+      "caseId": "bash-rpc-shutdown-eof",
+      "observations": {
+        "pi": {
+          "shutdown": "eof",
+          "timedOut": false,
+          "exitCode": 0,
+          "processesAtToolSettlement": {
+            "child": "gone",
+            "detachedGrandchild": "S"
+          },
+          "stdout": "",
+          "stderr": "",
+          "cleanup": "Recorded fixture descendants killed in finally after observation"
+        },
+        "pisharp": {
+          "shutdown": "eof",
+          "timedOut": false,
+          "exitCode": 0,
+          "processesAtToolSettlement": {
+            "child": "gone",
+            "detachedGrandchild": "gone"
+          },
+          "stdout": "{\"id\":\"shutdown-bash\",\"type\":\"response\",\"command\":\"bash\",\"success\":true,\"data\":{\"output\":\"\",\"cancelled\":true,\"truncated\":false}}\n",
+          "stderr": "",
+          "cleanup": "Recorded fixture descendants killed in finally after observation"
+        }
+      },
+      "tool": "bash",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "011728fb84e998b7dec0da3b056ea0c307c3af73",
+      "strictPass": false,
+      "classification": "intentional_safety_deviation",
+      "nativeSafetyPassed": true,
+      "remainingClassification": "Native kills detached grandchild; pinned leaves it alive. Native also retains cancelled EOF completion response."
+    },
+    {
+      "caseId": "bash-rpc-shutdown-sigterm",
+      "observations": {
+        "pi": {
+          "shutdown": "SIGTERM",
+          "timedOut": false,
+          "exitCode": 143,
+          "processesAtToolSettlement": {
+            "child": "gone",
+            "detachedGrandchild": "S"
+          },
+          "stdout": "",
+          "stderr": "",
+          "cleanup": "Recorded fixture descendants killed in finally after observation"
+        },
+        "pisharp": {
+          "shutdown": "SIGTERM",
+          "timedOut": false,
+          "exitCode": 143,
+          "processesAtToolSettlement": {
+            "child": "gone",
+            "detachedGrandchild": "gone"
+          },
+          "stdout": "",
+          "stderr": "",
+          "cleanup": "Recorded fixture descendants killed in finally after observation"
+        }
+      },
+      "tool": "bash",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "011728fb84e998b7dec0da3b056ea0c307c3af73",
+      "strictPass": false,
+      "classification": "intentional_safety_deviation",
+      "nativeSafetyPassed": true,
+      "remainingClassification": "Native kills detached grandchild; pinned leaves it alive."
+    },
+    {
+      "caseId": "bash-rpc-shutdown-sighup",
+      "observations": {
+        "pi": {
+          "shutdown": "SIGHUP",
+          "timedOut": false,
+          "exitCode": 129,
+          "processesAtToolSettlement": {
+            "child": "gone",
+            "detachedGrandchild": "S"
+          },
+          "stdout": "",
+          "stderr": "",
+          "cleanup": "Recorded fixture descendants killed in finally after observation"
+        },
+        "pisharp": {
+          "shutdown": "SIGHUP",
+          "timedOut": false,
+          "exitCode": 129,
+          "processesAtToolSettlement": {
+            "child": "gone",
+            "detachedGrandchild": "gone"
+          },
+          "stdout": "",
+          "stderr": "",
+          "cleanup": "Recorded fixture descendants killed in finally after observation"
+        }
+      },
+      "tool": "bash",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "011728fb84e998b7dec0da3b056ea0c307c3af73",
+      "strictPass": false,
+      "classification": "intentional_safety_deviation",
+      "nativeSafetyPassed": true,
+      "remainingClassification": "Native kills detached grandchild; pinned leaves it alive."
+    }
+  ],
+  "finishedAt": "2026-10-23T13:36:11.465286+00:00",
+  "normalizationPolicy": {
+    "temporaryRoots": "Each disposable root becomes <workspace> in raw stdout/stderr.",
+    "processStates": "Retained exactly; no normalization of live versus terminated.",
+    "responses": "Retained exactly; EOF response difference explicitly excluded from strict parity."
+  }
+}

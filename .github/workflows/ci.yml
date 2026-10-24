@@ -13,14 +13,47 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install --yes ripgrep
+      - name: Install the validated fd build
+        run: |
+          mkdir -p "$RUNNER_TEMP/pisharp-search-bin"
+          curl --fail --location --silent --show-error --retry 3 --output "$RUNNER_TEMP/fd.tar.gz" https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-musl.tar.gz
+          echo "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7  $RUNNER_TEMP/fd.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$RUNNER_TEMP/fd.tar.gz" --directory "$RUNNER_TEMP/pisharp-search-bin" --strip-components=1 fd-v10.5.0-x86_64-unknown-linux-musl/fd
+          echo "$RUNNER_TEMP/pisharp-search-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/pisharp-search-bin/fd" --version
+          rg --version
+      - run: python3 -m pip install --requirement tools/parity/requirements-images.txt
       - run: npm ci --prefix tools/parity/terminal --ignore-scripts --no-audit --no-fund
       - run: npm test --prefix tools/parity/terminal
       - run: python3 -m unittest discover -s tools/parity/terminal -p 'test_*.py'
+      - run: python3 -m unittest discover -s tools/parity -p 'test_builtin_coding_tool_differential.py'
       - run: python3 tools/validate_doc_paths.py
       - run: dotnet restore PiSharp.slnx
       - run: dotnet format PiSharp.slnx --verify-no-changes --no-restore
       - run: dotnet build PiSharp.slnx --no-restore --warnaserror
+      - uses: actions/checkout@v4
+        with:
+          repository: earendil-works/pi
+          ref: b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6
+          path: artifacts/parity/pi-ownership-oracle
+          persist-credentials: false
+          clean: false
+      - run: npm ci --prefix artifacts/parity/pi-ownership-oracle --ignore-scripts --no-audit --no-fund
+      - run: |
+          mkdir -p artifacts/parity/builtin-ownership
+          PI_OFFLINE=1 node tools/parity/builtin-coding-tool-probe.mjs artifacts/parity/pi-ownership-oracle /dev/null artifacts/parity/builtin-ownership/pinned.json --mutation-ownership-only
       - run: dotnet test PiSharp.slnx --no-build --no-restore
+        env:
+          PISHARP_TEST_OWNERSHIP_ORACLE: ${{ github.workspace }}/artifacts/parity/builtin-ownership/pinned.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: builtin-ownership-${{ github.event_name }}
+          path: artifacts/parity/builtin-ownership/pinned.json
   mcp-conformance:
     runs-on: ubuntu-latest
     steps:

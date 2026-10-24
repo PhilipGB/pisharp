@@ -1,13 +1,23 @@
 using System.ComponentModel;
+using System.Text.Json.Serialization;
+using PiSharp.Core;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Runtime;
 
-/// <summary>Opt-in ls tool; alphabetical directory listing with Pi's basic entry/byte notices.</summary>
-public sealed class DirectoryListingTool(string workingDirectory)
+/// <summary>Opt-in ls tool with source-compatible ordering, stat filtering and limits.</summary>
+public sealed class DirectoryListingTool
 {
-    private readonly string _cwd = Path.GetFullPath(workingDirectory);
-    private const int MaxBytes = 50 * 1024;
+    private readonly string _cwd;
+    private readonly Action? _entriesRead;
+
+    public DirectoryListingTool(string workingDirectory) : this(workingDirectory, null) { }
+
+    internal DirectoryListingTool(string workingDirectory, Action? entriesRead)
+    {
+        _cwd = Path.GetFullPath(workingDirectory);
+        _entriesRead = entriesRead;
+    }
 
     [Description("List directory contents, including dotfiles. Entries are sorted case-insensitively; directories end in '/'.")]
     public async Task<string> List(
@@ -17,48 +27,65 @@ public sealed class DirectoryListingTool(string workingDirectory)
         (await ListForTool(path, limit, cancellationToken)).Text;
 
     [Description("List directory contents, including dotfiles. Entries are sorted case-insensitively; directories end in '/'.")]
-    internal Task<SearchToolOutput> ListForTool(
-        [Description("Directory to list (default current directory). ")] string? path = null,
-        [Description("Maximum number of entries (default 500). ")] int? limit = null,
+    internal async Task<SearchToolOutput> ListForTool(
+        [Description("Directory to list (default current directory).")] string? path = null,
+        [Description("Maximum number of entries (default 500).")] double? limit = null,
         CancellationToken cancellationToken = default)
     {
-        var absolute = Path.GetFullPath(path is null or "" ? "." : path, _cwd);
-        if (!Directory.Exists(absolute))
-            throw new ToolFailureException(File.Exists(absolute) ? $"Not a directory: {absolute}" : $"Path not found: {absolute}");
         try
         {
-            var names = Directory.GetFileSystemEntries(absolute)
-                .Select(Path.GetFileName)
-                .Where(name => name is not null)
-                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-            var count = Math.Max(0, limit ?? 500);
-            var results = new List<string>();
-            foreach (var name in names)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (results.Count >= count) break;
-                try
-                {
-                    var target = Path.Combine(absolute, name!);
-                    results.Add(name + (Directory.Exists(target) ? "/" : ""));
-                }
-                catch (IOException) { /* Entry vanished while listing. */ }
-            }
-            if (results.Count == 0) return Task.FromResult(new SearchToolOutput("(empty directory)"));
-            var (output, truncation) = ToolOutputTruncator.TruncateHead(string.Join('\n', results), MaxBytes);
-            var notices = new List<string>();
-            var entryLimitReached = names.Length > count;
-            if (entryLimitReached) notices.Add($"{count} entries limit reached. Use limit={count * 2} for more");
-            if (truncation is not null) notices.Add("50.0KB limit reached");
-            var text = notices.Count > 0 ? output + "\n\n[" + string.Join(". ", notices) + "]" : output;
-            object? details = entryLimitReached || truncation is not null
-                ? new LsToolDetails(truncation, entryLimitReached ? count : null) : null;
-            return Task.FromResult(new SearchToolOutput(text, details));
+            return await Task.Run(() => ListCore(path, limit ?? 500, cancellationToken), cancellationToken)
+                .WaitAsync(cancellationToken);
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
-        {
-            throw new ToolFailureException($"Cannot read directory: {error.Message}", inner: error);
-        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        { throw new OperationCanceledException("Operation aborted", cancellationToken); }
     }
+
+    private SearchToolOutput ListCore(string? path, double limit, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var absolute = CodingToolPaths.Resolve(path is null or "" ? "." : path, _cwd, allowNullBytes: true);
+        if (!Exists(absolute)) throw new ToolFailureException($"Path not found: {absolute}");
+        LinuxFileAccess.Require(absolute, 0, "stat");
+        if (!Directory.Exists(absolute)) throw new ToolFailureException($"Not a directory: {absolute}");
+        string[] names;
+        try
+        {
+            LinuxFileAccess.Require(absolute, 4, "scandir");
+            names = Directory.GetFileSystemEntries(absolute).Select(file => Path.GetFileName(file)!).ToArray();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ToolFailureException)
+        { throw new ToolFailureException($"Cannot read directory: {error.Message}", inner: error); }
+        _entriesRead?.Invoke();
+        cancellationToken.ThrowIfCancellationRequested();
+        var count = 0L;
+        var entryLimitReached = false;
+        var output = new SearchOutputBuilder();
+        foreach (var name in DirectoryEntryOrdering.Sort(names))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (count >= limit) { entryLimitReached = true; break; }
+            var target = Path.Combine(absolute, name);
+            if (!Exists(target)) continue;
+            output.Append(name + (Directory.Exists(target) ? "/" : ""));
+            count++;
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        if (count == 0) return new("(empty directory)");
+        var (content, truncation) = output.Finish();
+        var notices = new List<string>();
+        if (entryLimitReached) notices.Add($"{JavaScriptNumberText.Format(limit)} entries limit reached. Use limit={JavaScriptNumberText.Format(limit * 2)} for more");
+        if (truncation is not null) notices.Add("50.0KB limit reached");
+        object? details = notices.Count == 0 ? null : limit >= int.MinValue && limit <= int.MaxValue && limit == Math.Truncate(limit)
+            ? new LsToolDetails(truncation, entryLimitReached ? (int)limit : null)
+            : new NumericLsDetails(truncation, entryLimitReached ? limit : null);
+        return new(content + (notices.Count > 0 ? "\n\n[" + string.Join(". ", notices) + "]" : ""), details);
+    }
+
+    private static bool Exists(string path) => !path.Contains('\0') && (OperatingSystem.IsLinux()
+        ? LinuxFileAccess.AccessError(path, 0) == 0 : File.Exists(path) || Directory.Exists(path));
+
+    private sealed record NumericLsDetails(
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ToolTruncationDetails? Truncation,
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] double? EntryLimitReached);
 }

@@ -9,7 +9,8 @@ internal sealed class OpenAiToolSchemaCompatibilityHandler(HttpMessageHandler in
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        if (request.RequestUri?.AbsolutePath.EndsWith("/chat/completions", StringComparison.Ordinal) == true &&
+        if ((request.RequestUri?.AbsolutePath.EndsWith("/chat/completions", StringComparison.Ordinal) == true ||
+             request.RequestUri?.AbsolutePath.EndsWith("/responses", StringComparison.Ordinal) == true) &&
             request.Content?.Headers.ContentType?.MediaType == "application/json")
         {
             var content = request.Content;
@@ -39,9 +40,16 @@ internal sealed class OpenAiToolSchemaCompatibilityHandler(HttpMessageHandler in
         var changed = false;
         foreach (var tool in tools)
         {
-            if (tool is not JsonObject toolObject || toolObject["function"] is not JsonObject function ||
-                function["parameters"] is not JsonObject parameters)
-                continue;
+            if (tool is not JsonObject toolObject) continue;
+            var function = toolObject["function"] as JsonObject ??
+                (toolObject["type"]?.GetValue<string>() == "function" ? toolObject : null);
+            if (function?["parameters"] is not JsonObject parameters) continue;
+            var builtin = function["name"]?.GetValue<string>() is ("read" or "bash" or "write" or "edit" or "grep" or "find" or "ls");
+            if (builtin && function.ContainsKey("strict") && function["strict"] is null)
+            {
+                function.Remove("strict");
+                changed = true;
+            }
 
             if (parameters["required"] is JsonArray required && required.Count == 0)
             {
@@ -49,7 +57,7 @@ internal sealed class OpenAiToolSchemaCompatibilityHandler(HttpMessageHandler in
                 changed = true;
             }
 
-            if (function["name"]?.GetValue<string>() is ("read" or "bash" or "write" or "edit") &&
+            if (builtin &&
                 parameters["additionalProperties"] is JsonValue additionalProperties &&
                 additionalProperties.TryGetValue<bool>(out var allowAdditionalProperties) && !allowAdditionalProperties)
             {

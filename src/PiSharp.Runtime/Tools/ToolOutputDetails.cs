@@ -1,5 +1,5 @@
-using System.Text;
 using System.Text.Json.Serialization;
+using PiSharp.Core;
 
 namespace PiSharp.Runtime.Tools;
 
@@ -19,7 +19,10 @@ public sealed record ToolTruncationDetails(
     bool LastLinePartial,
     bool FirstLineExceedsLimit,
     long MaxLines,
-    int MaxBytes);
+    int MaxBytes)
+{
+    public string Content { get; init; } = "";
+}
 
 public sealed record GrepToolDetails(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ToolTruncationDetails? Truncation = null,
@@ -34,7 +37,9 @@ public sealed record LsToolDetails(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ToolTruncationDetails? Truncation = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? EntryLimitReached = null);
 
-internal sealed record SearchToolOutput(string Text, object? Details = null) : IStructuredToolOutput
+// Text/Details identifies the persisted result; MAF must retain Details even when it is null.
+internal sealed record SearchToolOutput(string Text,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)] object? Details = null) : IStructuredToolOutput
 {
     public object? EventDetails => Details;
     public override string ToString() => Text;
@@ -46,26 +51,10 @@ internal static class ToolOutputTruncator
 
     public static (string Content, ToolTruncationDetails? Details) TruncateHead(string content, int maxBytes)
     {
-        var totalBytes = Encoding.UTF8.GetByteCount(content);
-        var lines = content.Length == 0 ? [] : content.Split('\n');
-        var totalLines = lines.Length;
-        if (totalBytes <= maxBytes) return (content, null);
-        var firstLineBytes = lines.Length == 0 ? 0 : Encoding.UTF8.GetByteCount(lines[0]);
-        if (firstLineBytes > maxBytes)
-            return ("", new ToolTruncationDetails(true, "bytes", totalLines, totalBytes, 0, 0, false, true,
-                UnlimitedLineLimit, maxBytes));
-
-        var output = new List<string>();
-        var bytes = 0;
-        for (var index = 0; index < lines.Length; index++)
-        {
-            var lineBytes = Encoding.UTF8.GetByteCount(lines[index]) + (index > 0 ? 1 : 0);
-            if (bytes + lineBytes > maxBytes) break;
-            output.Add(lines[index]);
-            bytes += lineBytes;
-        }
-        var result = string.Join('\n', output);
-        return (result, new ToolTruncationDetails(true, "bytes", totalLines, totalBytes, output.Count,
-            Encoding.UTF8.GetByteCount(result), false, false, UnlimitedLineLimit, maxBytes));
+        var result = TextOutputTruncator.Head(content, UnlimitedLineLimit, maxBytes);
+        return (result.Content, result.Truncated ? new ToolTruncationDetails(true, result.TruncatedBy,
+            checked((int)result.TotalLines), checked((int)result.TotalBytes), result.OutputLines, result.OutputBytes,
+            result.LastLinePartial, result.FirstLineExceedsLimit, result.MaxLines, result.MaxBytes)
+        { Content = result.Content } : null);
     }
 }

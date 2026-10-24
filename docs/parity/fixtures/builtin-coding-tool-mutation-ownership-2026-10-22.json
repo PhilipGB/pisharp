@@ -1,0 +1,290 @@
+{
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": [
+    "packages/coding-agent/src/core/tools/write.ts",
+    "packages/coding-agent/src/core/tools/edit.ts"
+  ],
+  "fixture": "tools/parity/builtin-coding-tool-mutation-cases.mjs",
+  "ownerParameters": "Use an assignable supplementary group when available, otherwise record the environment limitation and use the primary group.",
+  "alternateGroupAssigned": false,
+  "groupAttempts": [
+    {
+      "group": 65534,
+      "code": "EINVAL"
+    }
+  ],
+  "cases": [
+    {
+      "caseId": "write-ownership-660",
+      "tool": "write",
+      "mode": 432,
+      "arguments": {
+        "path": "file.txt",
+        "content": "beta\n"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to file.txt"
+          }
+        ]
+      },
+      "before": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 432
+      },
+      "after": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 432
+      },
+      "inodePreserved": true,
+      "finalText": "beta\n"
+    },
+    {
+      "caseId": "write-ownership-4755",
+      "tool": "write",
+      "mode": 2541,
+      "arguments": {
+        "path": "file.txt",
+        "content": "beta\n"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to file.txt"
+          }
+        ]
+      },
+      "before": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 2541
+      },
+      "after": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 493
+      },
+      "inodePreserved": true,
+      "finalText": "beta\n"
+    },
+    {
+      "caseId": "write-ownership-2755",
+      "tool": "write",
+      "mode": 1517,
+      "arguments": {
+        "path": "file.txt",
+        "content": "beta\n"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to file.txt"
+          }
+        ]
+      },
+      "before": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 1517
+      },
+      "after": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 493
+      },
+      "inodePreserved": true,
+      "finalText": "beta\n"
+    },
+    {
+      "caseId": "write-ownership-2644",
+      "tool": "write",
+      "mode": 1444,
+      "arguments": {
+        "path": "file.txt",
+        "content": "beta\n"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to file.txt"
+          }
+        ]
+      },
+      "before": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 1444
+      },
+      "after": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 1444
+      },
+      "inodePreserved": true,
+      "finalText": "beta\n"
+    },
+    {
+      "caseId": "edit-ownership-660",
+      "tool": "edit",
+      "mode": 432,
+      "arguments": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+beta\n",
+          "firstChangedLine": 1
+        }
+      },
+      "before": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 432
+      },
+      "after": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 432
+      },
+      "inodePreserved": true,
+      "finalText": "beta\n"
+    },
+    {
+      "caseId": "edit-ownership-4755",
+      "tool": "edit",
+      "mode": 2541,
+      "arguments": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+beta\n",
+          "firstChangedLine": 1
+        }
+      },
+      "before": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 2541
+      },
+      "after": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 493
+      },
+      "inodePreserved": true,
+      "finalText": "beta\n"
+    },
+    {
+      "caseId": "edit-ownership-2755",
+      "tool": "edit",
+      "mode": 1517,
+      "arguments": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+beta\n",
+          "firstChangedLine": 1
+        }
+      },
+      "before": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 1517
+      },
+      "after": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 493
+      },
+      "inodePreserved": true,
+      "finalText": "beta\n"
+    },
+    {
+      "caseId": "edit-ownership-2644",
+      "tool": "edit",
+      "mode": 1444,
+      "arguments": {
+        "path": "file.txt",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+beta\n",
+          "firstChangedLine": 1
+        }
+      },
+      "before": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 1444
+      },
+      "after": {
+        "uid": 1000,
+        "gid": 1000,
+        "mode": 1444
+      },
+      "inodePreserved": true,
+      "finalText": "beta\n"
+    }
+  ]
+}

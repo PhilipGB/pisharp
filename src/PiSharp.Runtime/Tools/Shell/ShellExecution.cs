@@ -35,16 +35,23 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
     public async Task<BashExecutionResult> ExecuteAsync(string command, double? timeout, Action<string>? onUpdate,
         CancellationToken cancellationToken, bool returnCancellationResult,
         IReadOnlyDictionary<string, string?>? sessionEnvironment = null, bool normalizeOutput = false,
-        bool throttleUpdates = true, bool captureStructuredOutput = false)
+        bool throttleUpdates = true, bool captureStructuredOutput = false, Action<BashToolUpdate>? onToolUpdate = null)
     {
         if (timeout.HasValue && (!double.IsFinite(timeout.Value) || timeout.Value <= 0))
             throw new ToolFailureException("Invalid timeout: must be a finite number of seconds");
         if (timeout > MaxTimeoutSeconds)
             throw new ToolFailureException($"Invalid timeout: maximum is {MaxTimeoutSeconds.ToString("0.###", CultureInfo.InvariantCulture)} seconds");
-        if (!Directory.Exists(workingDirectory))
+        if (cancellationToken.IsCancellationRequested && !returnCancellationResult)
+            throw new OperationCanceledException("Command aborted", cancellationToken);
+        var shell = ResolveShell(shellPath, workingDirectory);
+        if (OperatingSystem.IsLinux() ? LinuxFileAccess.AccessError(workingDirectory, 0) != 0 :
+            !Directory.Exists(workingDirectory) && !File.Exists(workingDirectory))
             throw new ToolFailureException($"Working directory does not exist: {workingDirectory}\nCannot execute bash commands.");
 
-        var shell = ResolveShell(shellPath, workingDirectory);
+        var effectiveCommand = shellCommandPrefix is { Length: > 0 } prefix ? $"{prefix}\n{command}" : command;
+        if (effectiveCommand.Contains('\0'))
+            throw new ToolFailureException("The argument 'args[1]' must be a string without null bytes. Received " + CodingToolPaths.Inspect(effectiveCommand));
+        ProcessSpawnValidation.RequireExecutable(shell, workingDirectory);
         var operationId = Guid.NewGuid();
         using var abortSource = new CancellationTokenSource();
         _runningBash[operationId] = abortSource;
@@ -52,12 +59,12 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutSource.Token, abortSource.Token);
         using var process = new Process
         {
-            StartInfo = CreateStartInfo(shell, shellCommandPrefix is { Length: > 0 } prefix
-                ? $"{prefix}\n{command}" : command, workingDirectory, out var processGroup, sessionEnvironment)
+            StartInfo = CreateStartInfo(shell, effectiveCommand, workingDirectory, out var processGroup, sessionEnvironment)
         };
         using var pumpStop = new CancellationTokenSource();
         await using var output = new ShellOutputBuffer(normalizeOutput);
         using var updates = new BashOutputUpdates(onUpdate, throttleUpdates);
+        await using var toolUpdates = onToolUpdate is null ? null : new BashToolUpdates(output, onToolUpdate);
         long lastOutputTicks = Stopwatch.GetTimestamp();
         var started = false;
         var startTime = Stopwatch.GetTimestamp();
@@ -68,10 +75,12 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
             linked.Token.ThrowIfCancellationRequested();
             process.Start();
             started = true;
+            ProcessLifetime.Track(process, processGroup);
+            process.StandardInput.Close();
             if (timeout.HasValue) timeoutSource.CancelAfter(TimeSpan.FromSeconds(timeout.Value));
-            stdout = PumpAsync(process.StandardOutput.BaseStream, output, updates, pumpStop.Token, ticks =>
+            stdout = PumpAsync(process.StandardOutput.BaseStream, output, updates, toolUpdates, pumpStop.Token, ticks =>
                 Interlocked.Exchange(ref lastOutputTicks, ticks));
-            stderr = PumpAsync(process.StandardError.BaseStream, output, updates, pumpStop.Token, ticks =>
+            stderr = PumpAsync(process.StandardError.BaseStream, output, updates, toolUpdates, pumpStop.Token, ticks =>
                 Interlocked.Exchange(ref lastOutputTicks, ticks));
             await process.WaitForExitAsync(linked.Token);
             Interlocked.Exchange(ref lastOutputTicks, Stopwatch.GetTimestamp());
@@ -80,12 +89,14 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
             var finalDecoded = await output.FlushDecoderAsync();
             updates.Append(finalDecoded);
             updates.Complete();
+            if (toolUpdates is not null) await toolUpdates.CompleteAsync();
             var result = await output.FinishWithMetadataAsync();
             var cancelled = returnCancellationResult && (cancellationToken.IsCancellationRequested || abortSource.IsCancellationRequested);
             var structured = captureStructuredOutput ? await output.ReadFullOutputAsync(BashToolOutput.MaximumBytes) : default;
             return new(result.Output, result.DisplayOutput, cancelled ? null : process.ExitCode, cancelled,
                 result.Truncated, result.FullOutputPath, structured.Content, structured.Truncated,
-                Math.Round(Stopwatch.GetElapsedTime(startTime).TotalSeconds, 1, MidpointRounding.AwayFromZero));
+                Math.Round(Stopwatch.GetElapsedTime(startTime).TotalSeconds, 1, MidpointRounding.AwayFromZero))
+            { Truncation = result.Truncation };
         }
         catch (OperationCanceledException) when (started)
         {
@@ -94,6 +105,7 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
             await ProcessLifetime.StopPumpsAsync(process, stdout, stderr, pumpStop);
             var finalDecoded = await output.FlushDecoderAsync();
             updates.Append(finalDecoded);
+            if (toolUpdates is not null) await toolUpdates.CompleteAsync();
             var result = await output.FinishWithMetadataAsync();
             updates.Complete();
             if (cancellationToken.IsCancellationRequested || abortSource.IsCancellationRequested)
@@ -122,20 +134,27 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
                 await ProcessLifetime.WaitForExitQuietlyAsync(process);
                 await ProcessLifetime.StopPumpsAsync(process, stdout, stderr, pumpStop);
             }
+            if (!started && OperatingSystem.IsLinux() && e is System.ComponentModel.Win32Exception native)
+                throw new ToolFailureException("spawn " + (native.NativeErrorCode is 7 or 20 ? "" : shell + " ") +
+                    (native.NativeErrorCode == 7 ? "E2BIG" : LinuxFileAccess.ErrorCode(native.NativeErrorCode)), inner: e);
             throw new ToolFailureException($"Error executing command: {e.Message}", inner: e);
         }
         finally
         {
             _runningBash.TryRemove(operationId, out _);
-            if (started && (!process.HasExited || stdout is { IsCompleted: false } || stderr is { IsCompleted: false }))
+            try
             {
-                ProcessLifetime.KillProcessTree(process, processGroup);
-                await ProcessLifetime.WaitForExitQuietlyAsync(process);
-                await ProcessLifetime.StopPumpsAsync(process, stdout, stderr, pumpStop);
+                if (started && (!process.HasExited || stdout is { IsCompleted: false } || stderr is { IsCompleted: false }))
+                {
+                    ProcessLifetime.KillProcessTree(process, processGroup);
+                    await ProcessLifetime.WaitForExitQuietlyAsync(process);
+                    await ProcessLifetime.StopPumpsAsync(process, stdout, stderr, pumpStop);
+                }
             }
+            finally { ProcessLifetime.Untrack(process); }
         }
 
-        static async Task PumpAsync(Stream source, ShellOutputBuffer target, BashOutputUpdates updates,
+        static async Task PumpAsync(Stream source, ShellOutputBuffer target, BashOutputUpdates updates, BashToolUpdates? toolUpdates,
             CancellationToken stop, Action<long> activity)
         {
             var buffer = new byte[8192];
@@ -145,7 +164,8 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
                 while ((count = await source.ReadAsync(buffer, stop)) > 0)
                 {
                     activity(Stopwatch.GetTimestamp());
-                    await target.AppendAsync(buffer.AsMemory(0, count), stop, updates.Append);
+                    if (toolUpdates is not null) await toolUpdates.AppendAsync(buffer.AsMemory(0, count), stop);
+                    else await target.AppendAsync(buffer.AsMemory(0, count), stop, updates.Append);
                 }
             }
             catch (OperationCanceledException) when (stop.IsCancellationRequested) { }
@@ -212,6 +232,7 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
         out bool processGroup, IReadOnlyDictionary<string, string?>? sessionEnvironment)
     {
         var start = ProcessLifetime.CreateStartInfo(shell, ["-c", command], workingDirectory, out processGroup);
+        start.RedirectStandardInput = true;
         var pathKey = start.Environment.Keys.FirstOrDefault(key => key.Equals("PATH", StringComparison.OrdinalIgnoreCase)) ?? "PATH";
         var path = start.Environment.TryGetValue(pathKey, out var inheritedPath) ? inheritedPath ?? "" : "";
         var appDirectory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -236,7 +257,7 @@ internal sealed class ShellExecution(string workingDirectory, string? shellPath,
                     : customPath;
             expanded = NormalizeWindowsShellPath(expanded);
             var resolved = Path.GetFullPath(expanded, workingDirectory);
-            if (File.Exists(resolved)) return resolved;
+            if (File.Exists(resolved) || Directory.Exists(resolved)) return resolved;
             throw new ToolFailureException($"Custom shell path not found: {customPath}");
         }
         if (OperatingSystem.IsWindows())

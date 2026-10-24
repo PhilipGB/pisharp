@@ -11,6 +11,7 @@ internal static class RpcSessionMessageProjector
     public static JsonArray Project(ConversationSession conversation, string? api)
     {
         var path = conversation.Tree.ActivePath();
+        var toolNames = ResolveToolNames(path);
         var compactionIndex = path.ToList().FindLastIndex(node => node.Type == "compaction");
         IReadOnlyList<ConversationNode> projectedNodes = path;
         var messages = new JsonArray();
@@ -21,7 +22,8 @@ internal static class RpcSessionMessageProjector
             var firstKeptIndex = path.ToList().FindIndex(node => node.Id == keptId);
             var isPiBoundary = PiJsonlEntryCodec.OriginalEntry(compaction) is not null;
             if (firstKeptIndex < 0 || firstKeptIndex >= compactionIndex ||
-                !isPiBoundary && ConversationMessageCodec.RestoreEntry(path[firstKeptIndex]).Role != ChatRole.User)
+                !isPiBoundary && ConversationMessageCodec.RestoreEntry(path[firstKeptIndex]).Role is var role &&
+                role != ChatRole.User && role != ChatRole.Assistant)
                 throw new InvalidDataException("Invalid compaction boundary.");
 
             if (PiJsonlEntryCodec.CompactionSystemMessage(compaction) is { } systemMessage)
@@ -49,6 +51,8 @@ internal static class RpcSessionMessageProjector
         {
             var message = ProjectNode(conversation, node, api);
             if (message is null) continue;
+            if (message["role"]?.GetValue<string>() == "toolResult" && toolNames.TryGetValue(node.Id, out var toolName))
+                message["toolName"] = toolName;
             if (node.Type == "interrupted" && message["role"]?.GetValue<string>() == "assistant" &&
                 ReadText(message["content"]) is { Length: > 0 } partialText &&
                 messages.OfType<JsonObject>().LastOrDefault(item => item["role"]?.GetValue<string>() == "assistant") is { } existing &&
@@ -68,6 +72,23 @@ internal static class RpcSessionMessageProjector
             messages.Add(message);
         }
         return messages;
+    }
+
+    private static Dictionary<string, string> ResolveToolNames(IReadOnlyList<ConversationNode> path)
+    {
+        var pending = new Dictionary<string, string>(StringComparer.Ordinal);
+        var names = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var node in path)
+        {
+            if (node.Type != "chat") continue;
+            var message = ConversationMessageCodec.RestoreEntry(node);
+            foreach (var call in message.Contents.OfType<FunctionCallContent>())
+                pending[call.CallId] = call.Name;
+            if (message.Contents.OfType<FunctionResultContent>().FirstOrDefault() is { } result &&
+                pending.TryGetValue(result.CallId, out var name))
+                names[node.Id] = name;
+        }
+        return names;
     }
 
     private static JsonObject? ProjectNode(ConversationSession conversation, ConversationNode node, string? api)

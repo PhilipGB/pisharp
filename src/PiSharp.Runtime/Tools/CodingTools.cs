@@ -11,6 +11,7 @@ namespace PiSharp.Runtime;
 public sealed class CodingTools
 {
     internal const string BashOutputContextKey = "PiSharp.Runtime.BashOutputUpdate";
+    internal const string BashSnapshotContextKey = "PiSharp.Runtime.BashOutputSnapshot";
     private readonly string _cwd;
     private readonly FileReader _reader;
     private readonly FileMutations _mutations;
@@ -29,6 +30,7 @@ public sealed class CodingTools
     internal string WorkingDirectory => _cwd;
 
     public void SetImageResizeOptions(ModelImageResizeOptions? options) => _reader.SetImageResizeOptions(options);
+    internal void SetReadModelSupportsImages(bool supportsImages) => _reader.SetModelSupportsImages(supportsImages);
 
     public IList<AITool> Create(IReadOnlyList<string>? requested = null, IReadOnlyList<string>? excluded = null, bool noTools = false)
     {
@@ -55,9 +57,9 @@ public sealed class CodingTools
             CodingToolDeclarations.Bash(AIFunctionFactory.Create(BashForTool, name: "bash")),
             CodingToolDeclarations.Edit(AIFunctionFactory.Create(EditForTool, name: "edit")),
             CodingToolDeclarations.Write(AIFunctionFactory.Create(Write, name: "write")),
-            AIFunctionFactory.Create(search.GrepForTool, name: "grep"),
-            AIFunctionFactory.Create(search.FindForTool, name: "find"),
-            AIFunctionFactory.Create(listing.ListForTool, name: "ls")
+            CodingToolDeclarations.Grep(AIFunctionFactory.Create(search.GrepForTool, name: "grep")),
+            CodingToolDeclarations.Find(AIFunctionFactory.Create(search.FindForTool, name: "find")),
+            CodingToolDeclarations.Ls(AIFunctionFactory.Create(listing.ListForTool, name: "ls"))
         ]);
     }
 
@@ -72,12 +74,12 @@ public sealed class CodingTools
     [Description("Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.")]
     private async Task<object> ReadForTool(
         [Description("Path to the file to read (relative or absolute)")] string path,
-        [Description("Line number to start reading from (1-indexed)")] int offset = 1,
-        [Description("Maximum number of lines to read")] int? limit = null,
+        [Description("Line number to start reading from (1-indexed)")] double offset = 1,
+        [Description("Maximum number of lines to read")] double? limit = null,
         CancellationToken cancellationToken = default)
     {
         var output = await _reader.ReadAsync(path, offset, limit, cancellationToken);
-        return output.ImageDataBase64 is null ? output.Text : output;
+        return output;
     }
 
     [Description("Write content to a file, creating parent directories if necessary. Overwrites existing files.")]
@@ -109,8 +111,16 @@ public sealed class CodingTools
         Action<string>? onUpdate = null;
         if (arguments?.Context?.TryGetValue(BashOutputContextKey, out var value) == true)
             onUpdate = value as Action<string>;
+        Action<BashToolUpdate>? onSnapshot = null;
+        if (arguments?.Context?.TryGetValue(BashSnapshotContextKey, out var snapshot) == true)
+            onSnapshot = snapshot as Action<BashToolUpdate>;
+        if (onSnapshot is not null)
+        {
+            onUpdate = null;
+            onSnapshot(new(null, null));
+        }
         var result = await _shell.ExecuteAsync(command, timeout, onUpdate, cancellationToken, returnCancellationResult: false,
-            CurrentBashSessionEnvironment(), captureStructuredOutput: true);
+            CurrentBashSessionEnvironment(), captureStructuredOutput: true, onToolUpdate: onSnapshot);
         return BashToolOutput.Project(result);
     }
 
@@ -133,6 +143,8 @@ public sealed class CodingTools
 
     public void AbortBash() => _shell.AbortBash();
 
+    internal const string BashSessionEnvironmentContextKey = "PiSharp.Runtime.BashSessionEnvironment";
+
     private static IReadOnlyDictionary<string, string?>? CurrentBashSessionEnvironment()
     {
         AgentRunContext? context;
@@ -141,6 +153,8 @@ public sealed class CodingTools
         if (context is null) return null;
         var properties = context.RunOptions?.AdditionalProperties;
         if (properties is null) return null;
+        if (properties.TryGetValue(BashSessionEnvironmentContextKey, out var current) &&
+            current is Func<IReadOnlyDictionary<string, string?>> getEnvironment) return getEnvironment();
         var environment = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var name in ShellExecution.SessionEnvironmentNames)
             if (properties.TryGetValue(name, out var value) && value is string text)

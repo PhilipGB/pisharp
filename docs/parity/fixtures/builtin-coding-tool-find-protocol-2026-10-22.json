@@ -1,0 +1,588 @@
+{
+  "schema": 1,
+  "repositoryMarker": ".git",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": "packages/coding-agent/src/core/tools/find.ts",
+  "fixture": "tools/parity/builtin-coding-tool-find-protocol.mjs",
+  "dependency": "Explicit synthetic fd process/protocol fixture; separate from real-fd differentials",
+  "cases": [
+    {
+      "caseId": "absolute",
+      "stdout": "<workspace>/file.txt\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "relative",
+      "stdout": "file.txt\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "directory-marker",
+      "stdout": "<workspace>/nested/\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "nested/"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "no-final-newline",
+      "stdout": "<workspace>/file.txt",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "crlf",
+      "stdout": "<workspace>/file.txt\r\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "cr-only",
+      "stdout": "<workspace>/first.txt\r<workspace>/second.txt\r",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "first.txt\nsecond.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "order-preserved",
+      "stdout": "<workspace>/second.txt\n<workspace>/first.txt\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "second.txt\nfirst.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "whitespace-trim",
+      "stdout": " \t<workspace>/file.txt \t\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "unicode-trim-bom",
+      "stdout": "<workspace>/file.txt﻿\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "unicode-nel-preserved",
+      "stdout": "<workspace>/file.txt\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "unicode-path",
+      "stdout": "<workspace>/目录/日本語.txt\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "目录/日本語.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "empty",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No files found matching pattern"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "one-empty-line",
+      "stdout": "\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No files found matching pattern"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "two-empty-lines",
+      "stdout": "\n\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "whitespace-only",
+      "stdout": " \t\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "partial-error",
+      "stdout": "<workspace>/file.txt\n",
+      "stderr": "fixture traversal failure\n",
+      "exitCode": 1,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "file.txt"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "partial-error-whitespace",
+      "stdout": " \n",
+      "stderr": "fixture traversal failure\n",
+      "exitCode": 2,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "error-without-output",
+      "stdout": "",
+      "stderr": "fixture traversal failure\n",
+      "exitCode": 1,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "fixture traversal failure"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "exit-127",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 127,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "fd exited with code 127"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "limit-one-extra-output",
+      "stdout": "<workspace>/one.txt\n<workspace>/two.txt\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*",
+        "limit": 1
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "one.txt\ntwo.txt\n\n[1 results limit reached. Use limit=2 for more, or refine pattern]"
+          }
+        ],
+        "details": {
+          "resultLimitReached": 1
+        }
+      }
+    },
+    {
+      "caseId": "fractional-limit-output",
+      "stdout": "<workspace>/one.txt\n<workspace>/two.txt\n",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*",
+        "limit": 1.5
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "one.txt\ntwo.txt\n\n[1.5 results limit reached. Use limit=3 for more, or refine pattern]"
+          }
+        ],
+        "details": {
+          "resultLimitReached": 1.5
+        }
+      }
+    },
+    {
+      "caseId": "zero-limit-empty",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*",
+        "limit": 0
+      },
+      "expected": {
+        "rejected": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "No files found matching pattern"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "oversized-pattern",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": {
+          "repeat": "a",
+          "count": 140000
+        }
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "spawn E2BIG"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "nul-pattern",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "needle\u0000x"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "The argument 'args[6]' must be a string without null bytes. Received 'needle\\x00x'"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "nul-path",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*",
+        "path": "file.txt\u0000suffix"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "The argument 'args[7]' must be a string without null bytes. Received '<workspace>/file.txt\\x00suffix'"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "non-executable",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 420,
+      "header": "#!/bin/sh\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Failed to run fd: spawn <executable> EACCES"
+          }
+        ],
+        "details": null
+      }
+    },
+    {
+      "caseId": "missing-interpreter",
+      "stdout": "",
+      "stderr": "",
+      "exitCode": 0,
+      "mode": 493,
+      "header": "#!/pisharp-fixture-missing-interpreter\n",
+      "arguments": {
+        "pattern": "*"
+      },
+      "expected": {
+        "rejected": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Failed to run fd: spawn <executable> ENOENT"
+          }
+        ],
+        "details": null
+      }
+    }
+  ]
+}

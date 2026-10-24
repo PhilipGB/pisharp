@@ -24,30 +24,36 @@ public static class FileEdits
 
         // Pi tries exact matches first. If one requires fuzzy matching, match every edit
         // against the same normalized snapshot, never the output of an earlier edit.
+        var normalizedOriginal = Fuzzy(original);
         var fuzzy = replacements.Any(e => !original.Contains(e.OldText, StringComparison.Ordinal) &&
-            Fuzzy(original).Contains(Fuzzy(e.OldText), StringComparison.Ordinal));
-        var baseContent = fuzzy ? Fuzzy(original) : original;
+            normalizedOriginal.Contains(Fuzzy(e.OldText), StringComparison.Ordinal));
+        var baseContent = fuzzy ? normalizedOriginal : original;
+        var countBasis = Fuzzy(baseContent);
         var spans = new List<(int Start, int Length, int Index, string Replacement)>();
         for (var i = 0; i < replacements.Length; i++)
         {
-            var needle = fuzzy ? Fuzzy(replacements[i].OldText) : replacements[i].OldText;
+            var needle = replacements[i].OldText;
             var first = baseContent.IndexOf(needle, StringComparison.Ordinal);
+            if (first < 0)
+            {
+                needle = Fuzzy(needle);
+                first = countBasis.IndexOf(needle, StringComparison.Ordinal);
+            }
             if (first < 0)
                 throw new ArgumentException(edits.Count == 1
                     ? $"Could not find the exact text in {path}. The old text must match exactly including all whitespace and newlines."
                     : $"Could not find edits[{i}] in {path}. The oldText must match exactly including all whitespace and newlines.");
-            var next = baseContent.IndexOf(needle, first + 1, StringComparison.Ordinal);
-            if (next >= 0)
+            var countNeedle = Fuzzy(replacements[i].OldText);
+            var count = countNeedle.Length == 0 ? countBasis.Length - 1 : CountOccurrences(countBasis, countNeedle);
+            if (count > 1)
             {
-                var count = 2;
-                while ((next = baseContent.IndexOf(needle, next + 1, StringComparison.Ordinal)) >= 0) count++;
                 throw new ArgumentException(edits.Count == 1
                     ? $"Found {count} occurrences of the text in {path}. The text must be unique. Please provide more context to make it unique."
                     : $"Found {count} occurrences of edits[{i}] in {path}. Each oldText must be unique. Please provide more context to make it unique.");
             }
             spans.Add((first, needle.Length, i, replacements[i].NewText));
         }
-        spans.Sort((a, b) => a.Start.CompareTo(b.Start));
+        spans.Sort((a, b) => a.Start != b.Start ? a.Start.CompareTo(b.Start) : a.Index.CompareTo(b.Index));
         for (var i = 1; i < spans.Count; i++)
             if (spans[i - 1].Start + spans[i - 1].Length > spans[i].Start)
                 throw new ArgumentException($"edits[{spans[i - 1].Index}] and edits[{spans[i].Index}] overlap in {path}. Merge them into one edit or target disjoint regions.");
@@ -67,6 +73,19 @@ public static class FileEdits
     }
 
     private static string NormalizeLf(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+
+    private static int CountOccurrences(string content, string needle)
+    {
+        var count = 0;
+        for (var offset = 0; offset <= content.Length;)
+        {
+            var index = content.IndexOf(needle, offset, StringComparison.Ordinal);
+            if (index < 0) break;
+            count++;
+            offset = index + needle.Length;
+        }
+        return count;
+    }
 
     // Matches Pi's progressive whitespace/Unicode normalization. This is not a general
     // approximate search: the normalized oldText must still occur uniquely.
@@ -101,14 +120,16 @@ public static class FileEdits
         // Group replacements that touch the same line; replace only those groups.
         var originalLines = SplitLines(original);
         var baseLines = SplitLines(basis);
-        if (originalLines.Count != baseLines.Count) throw new ArgumentException("Fuzzy normalization changed the line count.");
+        if (originalLines.Count != baseLines.Count)
+            throw new ArgumentException("Cannot preserve unchanged lines because the base content has a different line count.");
         var starts = new int[baseLines.Count];
         for (var i = 1; i < starts.Length; i++) starts[i] = starts[i - 1] + baseLines[i - 1].Length;
         var groups = new List<(int First, int Last, List<(int Start, int Length, int Index, string Replacement)> Spans)>();
         foreach (var span in spans)
         {
             var first = Array.FindLastIndex(starts, offset => offset <= span.Start);
-            var last = Array.FindLastIndex(starts, offset => offset < span.Start + span.Length);
+            if (first < 0 || span.Start >= basis.Length) throw new ArgumentException("Replacement range is outside the base content.");
+            var last = Math.Max(first, Array.FindLastIndex(starts, offset => offset < span.Start + span.Length));
             var previous = groups.LastOrDefault();
             if (groups.Count > 0 && first < previous.Last)
             {

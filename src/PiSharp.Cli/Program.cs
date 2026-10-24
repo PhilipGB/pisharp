@@ -7,6 +7,7 @@ using PiSharp.Cli.Startup;
 using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Extensions;
 
+using var processShutdown = new CliProcessShutdown();
 using var terminalIO = new CliTerminalIO();
 var standardInput = terminalIO.Input;
 

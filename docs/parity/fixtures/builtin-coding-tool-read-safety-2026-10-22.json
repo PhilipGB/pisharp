@@ -1,0 +1,252 @@
+{
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpSha": "f33ffd1f06c624afd8d058808a790f645f2873b1",
+  "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+  "capture": "read-safety-boundaries/report.json",
+  "normalization": {
+    "temporaryRoots": "Each root becomes <workspace> in result strings.",
+    "fullOutputNames": "Random names mapped by references; exact file hashes/sizes/modes/safe-name checks compared.",
+    "duration": "Nonnegative numeric wall_time_seconds retained raw; excluded from value equality.",
+    "images": "Original payloads exact bytes; selected reencoded images compare decoded RGBA dimensions/pixels; raw payloads retained. MIME, notes, structured results and failures remain exact.",
+    "jpegCodecs": "Only named calibrated cases may use the explicit JPEG envelope. Strict hashes/differences remain recorded. Quantization, sampling, fidelity and every non-pixel contract are checked; see setup.jpegComparison.",
+    "updates": "Raw complete updates retained; initial/final snapshots compared. Timing/chunk count not asserted identical.",
+    "filesystem": "Exact content hashes, short-file bytes, kinds, modes, uid/gid, link targets/peers and inode-preservation flags. No mtime/ctime/absolute inode equality."
+  },
+  "strictParityClaim": false,
+  "cases": [
+    {
+      "caseId": "read-image-input-safety-boundary",
+      "tool": "read",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "f33ffd1f06c624afd8d058808a790f645f2873b1",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "read-image-input-safety-boundary",
+            "content": [
+              {
+                "type": "text",
+                "text": "Read image file [image/png]\n[Image: original 17x11, displayed at 17x11. Multiply coordinates by 1.00 to map to original image.]"
+              },
+              {
+                "type": "image",
+                "data": {
+                  "width": 17,
+                  "height": 11,
+                  "rgbaSha256": "c41d826336119783a942d4b989a6a8081995c7b4c1ac48b702e58393a7238787"
+                },
+                "mimeType": "image/png"
+              }
+            ],
+            "details": null,
+            "structuredContent": {
+              "type": "image",
+              "data": {
+                "width": 17,
+                "height": 11,
+                "rgbaSha256": "c41d826336119783a942d4b989a6a8081995c7b4c1ac48b702e58393a7238787"
+              },
+              "mimeType": "image/png",
+              "note": "Read image file [image/png]\n[Image: original 17x11, displayed at 17x11. Multiply coordinates by 1.00 to map to original image.]"
+            },
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "image.dat": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 20972160,
+              "sha256": "bc1315bb459b7153195c775f885aae9793944545489c32052aadfdc872658753",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "read-image-input-safety-boundary",
+            "content": [
+              {
+                "type": "text",
+                "text": "Read image file [image/png]\n[Image omitted: could not be resized below the inline image size limit.]"
+              }
+            ],
+            "details": null,
+            "structuredContent": "Read image file [image/png]\n[Image omitted: could not be resized below the inline image size limit.]",
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "image.dat": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 20972160,
+              "sha256": "bc1315bb459b7153195c775f885aae9793944545489c32052aadfdc872658753",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/result/content/length",
+        "/result/content/0/text",
+        "/result/structuredContent"
+      ],
+      "strictPass": false,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "reproduction": {
+        "caseSource": "tools/parity/builtin_coding_tool_cases.py",
+        "caseId": "read-image-input-safety-boundary"
+      },
+      "reason": "Encoded inputs above 20 MiB are omitted before allocation, even when trailing bytes are harmless."
+    },
+    {
+      "caseId": "read-image-pixel-safety-boundary",
+      "tool": "read",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpSha": "f33ffd1f06c624afd8d058808a790f645f2873b1",
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "read-image-pixel-safety-boundary",
+            "content": [
+              {
+                "type": "text",
+                "text": "Read image file [image/png]\n[Image: original 8001x4000, displayed at 2000x1000. Multiply coordinates by 4.00 to map to original image.]"
+              },
+              {
+                "type": "image",
+                "data": {
+                  "width": 2000,
+                  "height": 1000,
+                  "rgbaSha256": "f11cf69490d6847fba73631e3404edf2a0d849a0fb4635127a639e36dcd9a2af"
+                },
+                "mimeType": "image/png"
+              }
+            ],
+            "details": null,
+            "structuredContent": {
+              "type": "image",
+              "data": {
+                "width": 2000,
+                "height": 1000,
+                "rgbaSha256": "f11cf69490d6847fba73631e3404edf2a0d849a0fb4635127a639e36dcd9a2af"
+              },
+              "mimeType": "image/png",
+              "note": "Read image file [image/png]\n[Image: original 8001x4000, displayed at 2000x1000. Multiply coordinates by 4.00 to map to original image.]"
+            },
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "image.dat": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 105477,
+              "sha256": "bab50195f592225676f6fb6dcbfed40ad793ab41eb109eb2c61ff28e1133ca07",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "read-image-pixel-safety-boundary",
+            "content": [
+              {
+                "type": "text",
+                "text": "Read image file [image/png]\n[Image omitted: could not be resized below the inline image size limit.]"
+              }
+            ],
+            "details": null,
+            "structuredContent": "Read image file [image/png]\n[Image omitted: could not be resized below the inline image size limit.]",
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "image.dat": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 105477,
+              "sha256": "bab50195f592225676f6fb6dcbfed40ad793ab41eb109eb2c61ff28e1133ca07",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "differences": [
+        "/result/content/length",
+        "/result/content/0/text",
+        "/result/structuredContent"
+      ],
+      "strictPass": false,
+      "pass": false,
+      "classification": "intentional_safety_deviation",
+      "reproduction": {
+        "caseSource": "tools/parity/builtin_coding_tool_cases.py",
+        "caseId": "read-image-pixel-safety-boundary"
+      },
+      "reason": "Images above 32,000,000 decoded pixels are omitted before allocating a decoded bitmap."
+    }
+  ]
+}

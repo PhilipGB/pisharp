@@ -1,0 +1,2104 @@
+{
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpCapturedSha": "401a5b26142873c7747e41100738c86928805777",
+  "capture": "write-path-and-alias-after/report.json",
+  "scope": "Reviewed exact source/native safety exclusions. These never count as passing parity.",
+  "ownerParameters": "Frozen expected fixture uid/gid use the current process effective uid/gid; both actual snapshots must match them. Actual observations and differences are never rewritten.",
+  "cases": [
+    {
+      "caseId": "write-new",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-new",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": "new file\n"
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-new",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 9,
+              "sha256": "0f15384d18789b1ebf3043dc7b6bc27273c8576373fbeb6f3e15854b588141c0",
+              "base64": "bmV3IGZpbGUK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-new",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 9,
+              "sha256": "0f15384d18789b1ebf3043dc7b6bc27273c8576373fbeb6f3e15854b588141c0",
+              "base64": "bmV3IGZpbGUK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-empty",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-empty",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": ""
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-empty",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-empty",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-unicode",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-unicode",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": "\u65e5\u672c\u8a9e \ud83d\ude00 caf\u00e9\n"
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-unicode",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 21,
+              "sha256": "f64bee3a23caed7d95e96eb74546d8a86d34b97258cb21a7ea9f97373d18ec18",
+              "base64": "5pel5pys6KqeIPCfmIAgY2Fmw6kK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-unicode",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 21,
+              "sha256": "f64bee3a23caed7d95e96eb74546d8a86d34b97258cb21a7ea9f97373d18ec18",
+              "base64": "5pel5pys6KqeIPCfmIAgY2Fmw6kK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-bom",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-bom",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": "\ufefffile\n"
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-bom",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 8,
+              "sha256": "a754c251464eddad4f8b268723e2625c77eee53a29ab37b604742d214539563a",
+              "base64": "77u/ZmlsZQo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-bom",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 8,
+              "sha256": "a754c251464eddad4f8b268723e2625c77eee53a29ab37b604742d214539563a",
+              "base64": "77u/ZmlsZQo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-existing",
+      "reason": "Atomic replacement changes the file inode. It prevents partial target contents on cancellation or filesystem failure, so inode identity is excluded from strict parity.",
+      "setup": {
+        "caseId": "write-existing",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": "replacement\n"
+        },
+        "files": {
+          "file.txt": "original\n"
+        }
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 12,
+              "sha256": "1d054714357ce5ee01723ed91fcaa69206e221faaf9c1fad64f73be2e5d051da",
+              "base64": "cmVwbGFjZW1lbnQK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 12,
+              "sha256": "1d054714357ce5ee01723ed91fcaa69206e221faaf9c1fad64f73be2e5d051da",
+              "base64": "cmVwbGFjZW1lbnQK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-nested-parents",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-nested-parents",
+        "tool": "write",
+        "arguments": {
+          "path": "a/b/file.txt",
+          "content": "nested\n"
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-nested-parents",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to a/b/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "a": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "a/b": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "a/b/file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 7,
+              "sha256": "370a8c04b8a65bb4494275eec227f1b694db04c76da6b0b8ae88ed1ab19790a3",
+              "base64": "bmVzdGVkCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-nested-parents",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to a/b/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "a": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "a/b": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "a/b/file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 7,
+              "sha256": "370a8c04b8a65bb4494275eec227f1b694db04c76da6b0b8ae88ed1ab19790a3",
+              "base64": "bmVzdGVkCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/a/b/file.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-absolute",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-absolute",
+        "tool": "write",
+        "arguments": {
+          "path": "{WORKSPACE}/file.txt",
+          "content": "absolute\n"
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-absolute",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to <workspace>/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 9,
+              "sha256": "db7525aebe28ce382736a6b5f6b056f6e2f6a7a6682a25277be794e91b409a40",
+              "base64": "YWJzb2x1dGUK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-absolute",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to <workspace>/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 9,
+              "sha256": "db7525aebe28ce382736a6b5f6b056f6e2f6a7a6682a25277be794e91b409a40",
+              "base64": "YWJzb2x1dGUK",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-at-prefix",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-at-prefix",
+        "tool": "write",
+        "arguments": {
+          "path": "@file.txt",
+          "content": "at path\n"
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-at-prefix",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to @file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 8,
+              "sha256": "f76256402a07eb3e2943c2670f329282c977e42dd290fbf2a4c4a0b10c3be4df",
+              "base64": "YXQgcGF0aAo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-at-prefix",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to @file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 8,
+              "sha256": "f76256402a07eb3e2943c2670f329282c977e42dd290fbf2a4c4a0b10c3be4df",
+              "base64": "YXQgcGF0aAo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-symlink",
+      "reason": "Atomic replacement changes the file inode. It prevents partial target contents on cancellation or filesystem failure, so inode identity is excluded from strict parity.",
+      "setup": {
+        "caseId": "write-symlink",
+        "tool": "write",
+        "arguments": {
+          "path": "alias",
+          "content": "replacement"
+        },
+        "files": {
+          "target": "original"
+        },
+        "symlinks": {
+          "alias": "target"
+        }
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/target/inodePreserved"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-dangling-symlink",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-dangling-symlink",
+        "tool": "write",
+        "arguments": {
+          "path": "alias",
+          "content": "new target"
+        },
+        "files": {},
+        "symlinks": {
+          "alias": "target"
+        }
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-dangling-symlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 10,
+              "sha256": "f5afae78a1c61541200e5730aef358f2f0a636e7e24af28fc6994d4a0f7c712c",
+              "base64": "bmV3IHRhcmdldA==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-dangling-symlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "target"
+            },
+            "target": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 10,
+              "sha256": "f5afae78a1c61541200e5730aef358f2f0a636e7e24af28fc6994d4a0f7c712c",
+              "base64": "bmV3IHRhcmdldA==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/target/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-hardlink",
+      "reason": "Atomic replacement changes only the requested directory entry; other hard-link aliases retain their previous bytes and inode. Pi writes the shared inode. This preserves the existing atomic-write guarantee and prevents claiming strict hard-link parity.",
+      "setup": {
+        "caseId": "write-hardlink",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": "replacement"
+        },
+        "files": {
+          "file.txt": "original"
+        },
+        "hardlinks": {
+          "alias": "file.txt"
+        }
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-hardlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": [
+                "file.txt"
+              ]
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": [
+                "alias"
+              ]
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-hardlink",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/alias/base64",
+        "/filesystem/alias/hardlinkPeers/length",
+        "/filesystem/alias/sha256",
+        "/filesystem/alias/size",
+        "/filesystem/file.txt/hardlinkPeers/length",
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-existing-mode",
+      "reason": "Atomic replacement changes the file inode. It prevents partial target contents on cancellation or filesystem failure, so inode identity is excluded from strict parity.",
+      "setup": {
+        "caseId": "write-existing-mode",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": "replacement"
+        },
+        "files": {
+          "file.txt": "original"
+        },
+        "modes": {
+          "file.txt": 416
+        }
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-existing-mode",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 416,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-existing-mode",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 416,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-unicode-space-path",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-unicode-space-path",
+        "tool": "write",
+        "arguments": {
+          "path": "file\u00a0name.txt",
+          "content": "spaces\n"
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-unicode-space-path",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file\u00a0name.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file name.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 7,
+              "sha256": "e47fbedb2823cf1ae4d4cdb8273635be2024cb870588e259c9b23d76ae49d484",
+              "base64": "c3BhY2VzCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-unicode-space-path",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file\u00a0name.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file name.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 7,
+              "sha256": "e47fbedb2823cf1ae4d4cdb8273635be2024cb870588e259c9b23d76ae49d484",
+              "base64": "c3BhY2VzCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file name.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-file-url",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-file-url",
+        "tool": "write",
+        "arguments": {
+          "path": "file://{WORKSPACE}/nested/file.txt",
+          "content": "URI\n"
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-file-url",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file://<workspace>/nested/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "nested": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "nested/file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 4,
+              "sha256": "aa60964b9c8aecc8f147f9f0b4a493278402da3902480d35a2b544845596d184",
+              "base64": "VVJJCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-file-url",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file://<workspace>/nested/file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "nested": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "directory"
+            },
+            "nested/file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 4,
+              "sha256": "aa60964b9c8aecc8f147f9f0b4a493278402da3902480d35a2b544845596d184",
+              "base64": "VVJJCg==",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/nested/file.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-relative-normalization",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-relative-normalization",
+        "tool": "write",
+        "arguments": {
+          "path": "./unused/../file.txt",
+          "content": "normalized\n"
+        },
+        "files": {}
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-relative-normalization",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to ./unused/../file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 11,
+              "sha256": "5279fc33061aa06e246995c8f063a5869c8b31c77b12173e05cb3b5198d451cb",
+              "base64": "bm9ybWFsaXplZAo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-relative-normalization",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to ./unused/../file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 11,
+              "sha256": "5279fc33061aa06e246995c8f063a5869c8b31c77b12173e05cb3b5198d451cb",
+              "base64": "bm9ybWFsaXplZAo=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-symlink-parent-existing",
+      "reason": "Atomic replacement changes the file inode. It prevents partial target contents on cancellation or filesystem failure, so inode identity is excluded from strict parity.",
+      "setup": {
+        "caseId": "write-symlink-parent-existing",
+        "tool": "write",
+        "arguments": {
+          "path": "alias/file",
+          "content": "replacement"
+        },
+        "files": {
+          "directory/file": "original"
+        },
+        "symlinks": {
+          "alias": "directory"
+        }
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-parent-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "directory/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-parent-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "directory/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/directory/file/inodePreserved"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-symlink-parent-new",
+      "reason": "New files retain private 0600 permissions instead of Pi\u2019s umask-derived mode. This deliberately narrows sharing and is excluded from strict filesystem parity.",
+      "setup": {
+        "caseId": "write-symlink-parent-new",
+        "tool": "write",
+        "arguments": {
+          "path": "alias/file",
+          "content": "new"
+        },
+        "files": {},
+        "directories": {
+          "directory": 493
+        },
+        "symlinks": {
+          "alias": "directory"
+        }
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-symlink-parent-new",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "directory/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 3,
+              "sha256": "11507a0e2f5e69d5dfa40a62a1bd7b6ee57e6bcd85c67c9b8431b36fff21c437",
+              "base64": "bmV3",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-symlink-parent-new",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to alias/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "alias": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "directory"
+            },
+            "directory": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "directory/file": {
+              "mode": 384,
+              "uid": 1000,
+              "gid": 1000,
+              "kind": "file",
+              "size": 3,
+              "sha256": "11507a0e2f5e69d5dfa40a62a1bd7b6ee57e6bcd85c67c9b8431b36fff21c437",
+              "base64": "bmV3",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/directory/file/mode"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-readonly-directory-existing",
+      "reason": "Atomic replacement requires parent-directory write permission. Pi can directly update a writable existing file in a read-only parent; PiSharp rejects without changing it. The existing atomicity guarantee is retained, excluding this case from strict parity.",
+      "setup": {
+        "caseId": "write-readonly-directory-existing",
+        "tool": "write",
+        "arguments": {
+          "path": "dir/file",
+          "content": "replacement"
+        },
+        "files": {
+          "dir/file": "original"
+        },
+        "modes": {
+          "dir": 365
+        }
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-readonly-directory-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to dir/file"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir": {
+              "mode": 365,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-readonly-directory-existing",
+            "content": [
+              {
+                "type": "text",
+                "text": "EACCES: permission denied, open '<workspace>/dir/file'"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": true,
+            "rejected": true,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir": {
+              "mode": 365,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "dir/file": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 8,
+              "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+              "base64": "b3JpZ2luYWw=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/dir/file/base64",
+        "/filesystem/dir/file/sha256",
+        "/filesystem/dir/file/size",
+        "/result/content/0/text",
+        "/result/isError",
+        "/result/rejected"
+      ],
+      "strictPass": false,
+      "pass": false
+    },
+    {
+      "caseId": "write-write-only-file",
+      "reason": "Atomic replacement changes the file inode. It prevents partial target contents on cancellation or filesystem failure, so inode identity is excluded from strict parity.",
+      "setup": {
+        "caseId": "write-write-only-file",
+        "tool": "write",
+        "arguments": {
+          "path": "file.txt",
+          "content": "replacement"
+        },
+        "files": {
+          "file.txt": "original"
+        },
+        "modes": {
+          "file.txt": 128
+        }
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "write-write-only-file",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 128,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "write-write-only-file",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to file.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "file.txt": {
+              "mode": 128,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": false,
+              "kind": "file",
+              "size": 11,
+              "sha256": "95713e9cbdd1dfcb2d4080c2537f418d43ca0da25f0d7d6631f4f7c97b89dc47",
+              "base64": "cmVwbGFjZW1lbnQ=",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      },
+      "strictDifferences": [
+        "/filesystem/file.txt/inodePreserved"
+      ],
+      "strictPass": false,
+      "pass": false
+    }
+  ]
+}

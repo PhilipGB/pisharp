@@ -1,13 +1,29 @@
 using System.Buffers.Binary;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Extensions;
 
 namespace PiSharp.Runtime.Tools;
 
 internal sealed record ReadToolOutput(string Text, string? ImageMimeType = null, string? ImageDataBase64 = null,
-    int? MaxBase64Bytes = null)
+    int? MaxBase64Bytes = null, object? Details = null)
 {
+    internal const string NonVisionNote = "[Current model does not support images. The image will be omitted from this request.]";
+
+    [JsonPropertyName("piSharpReadResult")]
+    public bool Marker => true;
+
     public override string ToString() => Text;
+
+    public PiSharpToolResult ToToolResult()
+    {
+        var hasImage = TryCreateImageContent(out _);
+        var structured = hasImage
+            ? JsonSerializer.SerializeToElement(new { type = "image", data = ImageDataBase64, mimeType = ImageMimeType, note = Text })
+            : JsonSerializer.SerializeToElement(Text);
+        return new(Text, Details, structured, Images: hasImage ? [new(ImageMimeType!, ImageDataBase64!)] : null);
+    }
 
     public static bool TryRead(object? value, out ReadToolOutput output)
     {
@@ -54,8 +70,14 @@ internal sealed record ReadToolOutput(string Text, string? ImageMimeType = null,
             return false;
         TryGetString(value, nameof(ImageMimeType), out var mimeType);
         TryGetString(value, nameof(ImageDataBase64), out var imageData);
-        if (mimeType is null && imageData is null) return false;
-        output = new(text, mimeType, imageData, TryGetInt32(value, nameof(MaxBase64Bytes)));
+        if (mimeType is null && imageData is null &&
+            !(value.TryGetProperty("piSharpReadResult", out var marker) && marker.ValueKind == JsonValueKind.True))
+            return false;
+        object? details = null;
+        foreach (var item in value.EnumerateObject())
+            if (item.Name.Equals(nameof(Details), StringComparison.OrdinalIgnoreCase) && item.Value.ValueKind != JsonValueKind.Null)
+                details = item.Value.Clone();
+        output = new(text, mimeType, imageData, TryGetInt32(value, nameof(MaxBase64Bytes)), details);
         return true;
     }
 

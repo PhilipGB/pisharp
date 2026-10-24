@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "kind": "initial_harness_acceptance",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "initialProductSha": "ebfeb24c9dd5e03592c3b388236f22a3a3a3299a",
+  "harnessParentSha": "9cfa97adab23433724ec41e4f4386d32cd7e53ad",
+  "caseCounts": {
+    "read": 45,
+    "write": 21,
+    "edit": 33,
+    "bash": 28,
+    "grep": 32,
+    "find": 27,
+    "ls": 25
+  },
+  "samePiCalibration": {
+    "passed": 211,
+    "total": 211,
+    "piSharpUsed": false,
+    "rawReport": "artifacts/parity/builtin-coding-tools-2026-10-22/calibration-initial/report.json",
+    "sha256": "6f6cb4bff17546c5e27d512f18208bd282ab9e0f44ad38a19056d01eb8514d2a"
+  },
+  "comparisonUnitTests": {
+    "passed": 11,
+    "total": 11
+  },
+  "probeComposition": "CLI project reference supplies existing native Linux Skia assets. Earlier Runtime-only three image captures are invalid for product image assessment; corrected image smoke retained separately.",
+  "limitations": [
+    "This does not verify any corrected PiSharp product behavior.",
+    "211 initial cases do not exhaust required concurrency, image, provider and restart integration.",
+    "Initial full native baseline is diagnostic; a clean committed harness baseline follows before product changes."
+  ],
+  "reproduction": {
+    "paired": "python3 tools/parity/builtin-coding-tool-differential.py --pi /tmp/pi-pinned-source --output artifacts/parity/builtin-coding-tools-2026-10-22/baseline",
+    "calibration": "python3 tools/parity/builtin-coding-tool-differential.py --pi /tmp/pi-pinned-source --output artifacts/parity/builtin-coding-tools-2026-10-22/calibration --calibrate",
+    "unit": "python3 -m unittest discover -s tools/parity -p test_builtin_coding_tool_differential.py"
+  },
+  "harnessFileSha256": {
+    "tools/parity/builtin-coding-tool-probe.mjs": "65baa5431752f322f0346426eea4d679ca2ff5f4122a5b13420f12658945598a",
+    "tools/parity/builtin-coding-tool-probe.cs": "fd713834b5fefea0ea6aef83b2630ed3af964afdbb3b669a93c3af9e8f7a8b15",
+    "tools/parity/builtin_coding_tool_cases.py": "f0a6d3136f9a88322123032c1e2915fea6f2f3bf433a6109ff0f09d4ca80499d",
+    "tools/parity/builtin-coding-tool-differential.py": "20e3dfe23749430fb9b791a998414f972da7ea486607293ba333216cfb75ea21",
+    "tools/parity/test_builtin_coding_tool_differential.py": "1ea98c0de6d1dc295aaa11b39e092603c9c49797aef14de484b8659469adbe21"
+  }
+}

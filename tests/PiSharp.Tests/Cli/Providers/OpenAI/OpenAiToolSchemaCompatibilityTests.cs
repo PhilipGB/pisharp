@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text;
 using PiSharp.Cli;
 
@@ -6,6 +7,43 @@ namespace PiSharp.Tests;
 
 public sealed class OpenAiToolSchemaCompatibilityTests
 {
+    [Theory]
+    [InlineData("openai-completions")]
+    [InlineData("openai-responses")]
+    public void PhysicalBuiltinDeclarationsMatchPinnedWithoutAdapterObjectDefaults(string api)
+    {
+        using var fixture = SearchProcessProtocolTests.SourceFixture("provider", "before");
+        var row = fixture.RootElement.GetProperty("cases").EnumerateArray().Single(row => row.GetProperty("api").GetString() == api);
+        var expected = row.GetProperty("observations").GetProperty("pi").GetProperty("declarations");
+        var native = row.GetProperty("observations").GetProperty("pisharp").GetProperty("declarations");
+        var tools = new JsonArray();
+        foreach (var declaration in native.EnumerateArray())
+        {
+            var function = JsonNode.Parse(declaration.GetRawText())!.AsObject();
+            if (api == "openai-responses") function["strict"] = null;
+            tools.Add(api == "openai-completions"
+                ? new JsonObject { ["type"] = "function", ["function"] = function }
+                : WithType(function));
+        }
+        var body = new JsonObject { ["tools"] = tools };
+        using var projected = JsonDocument.Parse(OpenAiToolSchemaCompatibilityHandler.ProjectToolSchemas(Encoding.UTF8.GetBytes(body.ToJsonString())));
+        var actual = projected.RootElement.GetProperty("tools");
+        for (var index = 0; index < actual.GetArrayLength(); index++)
+        {
+            var function = api == "openai-completions" ? actual[index].GetProperty("function") : actual[index];
+            Assert.Equal(expected[index].GetProperty("name").GetString(), function.GetProperty("name").GetString());
+            Assert.False(function.TryGetProperty("strict", out _));
+            Assert.True(JsonElement.DeepEquals(expected[index].GetProperty("parameters"), function.GetProperty("parameters")),
+                api + " " + function.GetProperty("name").GetString());
+        }
+    }
+
+    private static JsonObject WithType(JsonObject function)
+    {
+        function["type"] = "function";
+        return function;
+    }
+
     [Fact]
     public void ToolSchemasOmitAdapterEmptyRequiredAndBuiltinAdditionalPropertiesDefaults()
     {

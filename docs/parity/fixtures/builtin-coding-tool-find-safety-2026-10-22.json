@@ -1,0 +1,312 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpSha": "d27acc4e847c2a9cfce6daa546b2b4c4622159b9",
+  "dirtyPaths": [
+    " M docs/continuation.md",
+    " M docs/parity/execution-ledger.json",
+    " M docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md",
+    " M src/PiSharp.Runtime/Tools/SearchInventory.ExclusionGuard.cs",
+    " M src/PiSharp.Runtime/Tools/SearchTools.cs",
+    " D tests/PiSharp.Tests/Runtime/Tools/BuiltinGrepParityTests.cs",
+    " M tests/PiSharp.Tests/Runtime/Tools/GrepCancellationTests.cs",
+    " D tests/PiSharp.Tests/Runtime/Tools/GrepProcessProtocolTests.cs",
+    " M tests/PiSharp.Tests/Runtime/Tools/RipgrepJsonReaderTests.cs",
+    " M tests/PiSharp.Tests/Runtime/Tools/SearchToolsTests.cs",
+    " M tests/PiSharp.Tests/TestInfrastructure/ProcessTestHelpers.cs",
+    " M tools/parity/builtin_coding_tool_cases.py",
+    "?? docs/parity/fixtures/builtin-coding-tool-find-cancellation-2026-10-22.json",
+    "?? docs/parity/fixtures/builtin-coding-tool-find-protocol-2026-10-22.json",
+    "?? docs/parity/fixtures/builtin-coding-tool-find-results-2026-10-22.json",
+    "?? src/PiSharp.Runtime/Tools/FdSearch.cs",
+    "?? src/PiSharp.Runtime/Tools/ProcessTextLines.cs",
+    "?? tests/PiSharp.Tests/Runtime/Tools/BuiltinSearchParityTests.cs",
+    "?? tests/PiSharp.Tests/Runtime/Tools/FindCancellationTests.cs",
+    "?? tests/PiSharp.Tests/Runtime/Tools/SearchPreparationCancellationTests.cs",
+    "?? tests/PiSharp.Tests/Runtime/Tools/SearchPrivacyExclusionTests.cs",
+    "?? tests/PiSharp.Tests/Runtime/Tools/SearchProcessProtocolTests.cs",
+    "?? tools/parity/builtin-coding-tool-find-cancellation.mjs",
+    "?? tools/parity/builtin-coding-tool-find-protocol.mjs"
+  ],
+  "startedAt": "2026-10-23T18:27:50.329931+00:00",
+  "finishedAt": "2026-10-23T18:27:55.593932+00:00",
+  "executables": {
+    "rg": {
+      "path": "/home/philip/.codex-account2/packages/app-server-daemon/releases/0.164.0-x86_64-unknown-linux-musl/codex-path/rg",
+      "version": "ripgrep 15.2.0 (rev e89fff89ac)"
+    },
+    "fdfind": {
+      "path": "/usr/bin/fdfind",
+      "version": "fdfind 10.3.0"
+    },
+    "fd": {
+      "path": null,
+      "version": null
+    },
+    "node": {
+      "path": "/home/philip/.config/nvm/versions/node/v24.21.0/bin/node",
+      "version": "v24.21.0"
+    },
+    "dotnet": {
+      "path": "/usr/bin/dotnet",
+      "version": "10.0.113"
+    }
+  },
+  "schema": 1,
+  "scope": "Retain existing repository-local core.excludesFile privacy exclusions for files, directories and directory symlinks, including .ignore rescue rules; strict parity is explicitly excluded.",
+  "why": "Pinned fd ignores repository-local core.excludesFile. Removing the native guard would expose previously excluded paths.",
+  "consequences": "Native omits private/, private/hidden.txt, private-link and secret.txt while leaving rescued.txt and visible.txt visible.",
+  "strictParityClaim": false,
+  "regression": "SearchPrivacyExclusionTests fails before directory-symlink classification and passes after it.",
+  "cases": [
+    {
+      "caseId": "find-repository-local-private-excludes",
+      "setup": {
+        "caseId": "find-repository-local-private-excludes",
+        "tool": "find",
+        "arguments": {
+          "pattern": "*"
+        },
+        "files": {
+          "global-excludes": "private/\nprivate-link/\nsecret.txt\nrescued.txt\n",
+          ".ignore": "!rescued.txt\n",
+          "private/hidden.txt": "",
+          "secret.txt": "",
+          "rescued.txt": "",
+          "visible.txt": ""
+        },
+        "symlinks": {
+          "private-link": "private"
+        },
+        "gitDirectories": [
+          "."
+        ],
+        "gitConfig": {
+          "core.excludesFile": "{WORKSPACE}/global-excludes"
+        },
+        "acceptanceClass": "intentional-repository-exclusion-safety"
+      },
+      "observations": {
+        "pi": {
+          "result": {
+            "caseId": "find-repository-local-private-excludes",
+            "content": [
+              {
+                "type": "text",
+                "text": ".git/\n.git/HEAD\n.git/config\n.git/description\n.git/hooks/\n.git/hooks/applypatch-msg.sample\n.git/hooks/commit-msg.sample\n.git/hooks/fsmonitor-watchman.sample\n.git/hooks/post-update.sample\n.git/hooks/pre-applypatch.sample\n.git/hooks/pre-commit.sample\n.git/hooks/pre-merge-commit.sample\n.git/hooks/pre-push.sample\n.git/hooks/pre-rebase.sample\n.git/hooks/pre-receive.sample\n.git/hooks/prepare-commit-msg.sample\n.git/hooks/push-to-checkout.sample\n.git/hooks/sendemail-validate.sample\n.git/hooks/update.sample\n.git/info/\n.git/info/exclude\n.git/objects/\n.git/objects/info/\n.git/objects/pack/\n.git/refs/\n.git/refs/heads/\n.git/refs/tags/\n.ignore\nglobal-excludes\nprivate/\nprivate/hidden.txt\nprivate-link\nrescued.txt\nsecret.txt\nvisible.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            ".ignore": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 13,
+              "sha256": "fdf478904cfddce699c2dc1c4531ee20fcc5f9e3903c99e4524cb0abaf5d08d5",
+              "base64": "IXJlc2N1ZWQudHh0Cg==",
+              "hardlinkPeers": []
+            },
+            "global-excludes": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 46,
+              "sha256": "f2226083b0d28306dae38302eeb93b27b934ae26de13fd34986456912d03060a",
+              "base64": "cHJpdmF0ZS8KcHJpdmF0ZS1saW5rLwpzZWNyZXQudHh0CnJlc2N1ZWQudHh0Cg==",
+              "hardlinkPeers": []
+            },
+            "private": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "private-link": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "private"
+            },
+            "private/hidden.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            },
+            "rescued.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            },
+            "secret.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            },
+            "visible.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        },
+        "pisharp": {
+          "result": {
+            "caseId": "find-repository-local-private-excludes",
+            "content": [
+              {
+                "type": "text",
+                "text": ".git/\n.git/HEAD\n.git/config\n.git/description\n.git/hooks/\n.git/hooks/applypatch-msg.sample\n.git/hooks/commit-msg.sample\n.git/hooks/fsmonitor-watchman.sample\n.git/hooks/post-update.sample\n.git/hooks/pre-applypatch.sample\n.git/hooks/pre-commit.sample\n.git/hooks/pre-merge-commit.sample\n.git/hooks/pre-push.sample\n.git/hooks/pre-rebase.sample\n.git/hooks/pre-receive.sample\n.git/hooks/prepare-commit-msg.sample\n.git/hooks/push-to-checkout.sample\n.git/hooks/sendemail-validate.sample\n.git/hooks/update.sample\n.git/info/\n.git/info/exclude\n.git/objects/\n.git/objects/info/\n.git/objects/pack/\n.git/refs/\n.git/refs/heads/\n.git/refs/tags/\n.ignore\nglobal-excludes\nrescued.txt\nvisible.txt"
+              }
+            ],
+            "details": null,
+            "structuredContent": null,
+            "isError": false,
+            "rejected": false,
+            "updateContract": {
+              "initial": null,
+              "final": null
+            }
+          },
+          "filesystem": {
+            ".": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            ".ignore": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 13,
+              "sha256": "fdf478904cfddce699c2dc1c4531ee20fcc5f9e3903c99e4524cb0abaf5d08d5",
+              "base64": "IXJlc2N1ZWQudHh0Cg==",
+              "hardlinkPeers": []
+            },
+            "global-excludes": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 46,
+              "sha256": "f2226083b0d28306dae38302eeb93b27b934ae26de13fd34986456912d03060a",
+              "base64": "cHJpdmF0ZS8KcHJpdmF0ZS1saW5rLwpzZWNyZXQudHh0CnJlc2N1ZWQudHh0Cg==",
+              "hardlinkPeers": []
+            },
+            "private": {
+              "mode": 493,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "directory"
+            },
+            "private-link": {
+              "mode": 511,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "symlink",
+              "target": "private"
+            },
+            "private/hidden.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            },
+            "rescued.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            },
+            "secret.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            },
+            "visible.txt": {
+              "mode": 420,
+              "uid": 1000,
+              "gid": 1000,
+              "inodePreserved": true,
+              "kind": "file",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "base64": "",
+              "hardlinkPeers": []
+            }
+          },
+          "fullOutputArtifacts": []
+        }
+      }
+    }
+  ]
+}

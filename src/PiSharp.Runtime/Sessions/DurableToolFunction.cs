@@ -87,6 +87,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         IDictionary<object, object?>? argumentContext = null;
         object? previousUpdate = null;
         var hadUpdate = false;
+        object? previousSnapshot = null;
+        var hadSnapshot = false;
         object? previousPiSharpContext = null;
         var hadPiSharpContext = false;
         if (Name == "bash" || loadout is not null)
@@ -106,6 +108,20 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                             ParentToolCallId = parentToolCallId
                         });
                 });
+                hadSnapshot = argumentContext.TryGetValue(CodingTools.BashSnapshotContextKey, out previousSnapshot);
+                argumentContext[CodingTools.BashSnapshotContextKey] = (Action<BashToolUpdate>)(update =>
+                {
+                    if (toolExecutionContext is not null) toolExecutionContext.ReportBashProgress(update);
+                    else publish(new AgentLifecycleEvent("tool_execution_update", Text: update.Text, Tool: Name,
+                        OperationId: id, Details: update.Details)
+                    {
+                        ToolArguments = displayArguments,
+                        ToolCallId = toolCallId,
+                        ParentToolCallId = parentToolCallId,
+                        OutputIsSnapshot = true,
+                        OutputDelta = update.Delta
+                    });
+                });
             }
             if (loadout is not null)
             {
@@ -117,6 +133,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         {
             if (!isCallable)
                 throw new InvalidOperationException($"Tool '{Name}' is not active or callable in this session.");
+            CodingToolDeclarations.PrepareArguments(InnerFunction, invocationArguments);
             await (toolHooks?.BeforeAsync(new PiSharpToolCallContext(Name, toolCallId, parentToolCallId,
                 invocationArguments, reachesTools, toolNamespace), cancellationToken) ?? ValueTask.CompletedTask);
             displayArguments = invocationArguments.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
@@ -135,6 +152,8 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
                 {
                     if (hadUpdate) argumentContext[CodingTools.BashOutputContextKey] = previousUpdate!;
                     else argumentContext.Remove(CodingTools.BashOutputContextKey);
+                    if (hadSnapshot) argumentContext[CodingTools.BashSnapshotContextKey] = previousSnapshot!;
+                    else argumentContext.Remove(CodingTools.BashSnapshotContextKey);
                 }
                 if (loadout is not null)
                 {
@@ -207,6 +226,15 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
         {
             resultContext.IsError = true;
             resultContext.Error ??= failure.Message;
+        }
+        var builtinFailure = failure is ToolFailureException &&
+            !cancellationToken.IsCancellationRequested && CodingToolDeclarations.IsBuiltin(InnerFunction);
+        if (builtinFailure)
+        {
+            // Keep the failed durable outcome while returning Pi's recoverable error text to MAF.
+            contract = new PiSharpToolResult(failure!.Message, Details: new Dictionary<string, object?>(),
+                IsError: true, Error: failure.Message);
+            value = contract;
         }
         if (nestedInvocation is not null)
         {
@@ -317,7 +345,7 @@ internal sealed class DurableToolFunction(AIFunction inner, Func<DurableExecutio
             NestedToolCalls = toolExecutionContext?.NestedCalls,
             ToolResultMessage = toolResultMessage
         });
-        if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
+        if (failure is not null && !builtinFailure) ExceptionDispatchInfo.Capture(failure).Throw();
         if (messageLifecycleCancellation is not null)
             ExceptionDispatchInfo.Capture(messageLifecycleCancellation).Throw();
         return value;

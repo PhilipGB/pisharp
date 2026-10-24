@@ -1,0 +1,449 @@
+{
+  "schema": 1,
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpSha": "a68d365c4fcf6f43e4a8fcbdf01d150627f9770c",
+  "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+  "startedAt": "2026-10-23T18:40:29.250570+00:00",
+  "finishedAt": "2026-10-23T18:40:48.307163+00:00",
+  "executables": {
+    "rg": {
+      "path": "/home/philip/.codex-account2/packages/app-server-daemon/releases/0.164.0-x86_64-unknown-linux-musl/codex-path/rg",
+      "version": "ripgrep 15.2.0 (rev e89fff89ac)"
+    },
+    "fdfind": {
+      "path": "/usr/bin/fdfind",
+      "version": "fdfind 10.3.0"
+    },
+    "fd": {
+      "path": null,
+      "version": null
+    },
+    "node": {
+      "path": "/home/philip/.config/nvm/versions/node/v24.21.0/bin/node",
+      "version": "v24.21.0"
+    },
+    "dotnet": {
+      "path": "/usr/bin/dotnet",
+      "version": "10.0.113"
+    }
+  },
+  "comparisonPolicy": {
+    "temporaryRoots": "Each root becomes <workspace> in result strings.",
+    "fullOutputNames": "Random names mapped by references; exact file hashes/sizes/modes/safe-name checks compared.",
+    "duration": "Nonnegative numeric wall_time_seconds retained raw; excluded from value equality.",
+    "images": "Original payloads exact bytes; selected reencoded images compare decoded RGBA dimensions/pixels; raw payloads retained. MIME, notes, structured results and failures remain exact.",
+    "jpegCodecs": "Only named calibrated cases may use the explicit JPEG envelope. Strict hashes/differences remain recorded. Quantization, sampling, fidelity and every non-pixel contract are checked; see setup.jpegComparison.",
+    "safetyExclusions": "Named image allocation limits and reviewed atomic/private-mutation differences remain failed strict comparisons. Only complete frozen expected observations may be excluded; actual outputs, ownership and filesystem differences are retained. They never increase passed/strictPassed.",
+    "updates": "Raw complete updates retained; initial/final snapshots compared. Timing/chunk count not asserted identical.",
+    "filesystem": "Exact content hashes, short-file bytes, kinds, modes, uid/gid, link targets/peers and inode-preservation flags. No mtime/ctime/absolute inode equality."
+  },
+  "declarationDifferences": {
+    "read": [],
+    "write": [],
+    "edit": [],
+    "bash": [],
+    "grep": [],
+    "find": [],
+    "ls": []
+  },
+  "summary": {
+    "passed": 53,
+    "total": 53,
+    "strictPassed": 53,
+    "jpegCodecEquivalent": 0,
+    "intentionalSafetyDeviations": 0,
+    "unresolved": 0,
+    "perTool": {
+      "ls": 53
+    }
+  },
+  "status": "supported Linux ls checkpoint verified; shared M-P acceptance pending",
+  "control": {
+    "piSharpUsed": false,
+    "harnessRepositorySha": "a68d365c4fcf6f43e4a8fcbdf01d150627f9770c",
+    "summary": {
+      "passed": 53,
+      "total": 53,
+      "strictPassed": 53,
+      "jpegCodecEquivalent": 0,
+      "intentionalSafetyDeviations": 0,
+      "unresolved": 0,
+      "perTool": {
+        "ls": 53
+      }
+    }
+  },
+  "cases": [
+    {
+      "caseId": "ls-default",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-empty",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-dotfiles",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-case-order",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-unicode-order",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-punctuation-order",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-exact-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-over-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-zero-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-negative-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-fractional-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-directories",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-relative-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-absolute-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-symlink-directory",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-broken-symlink",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-broken-link-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-missing",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-file-target",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-permission",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-invalid-path-type",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-invalid-limit-type",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-special-fifo",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-byte-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-pre-cancelled",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-empty-path",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-at-prefix",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-file-url",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-unicode-spaces-in-path",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-file-ancestor",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-nul-path",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-long-path",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-fractional-exact",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-tiny-positive-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-huge-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-small-negative-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-unicode-canonical-order",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-unicode-case-fold-order",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-unicode-contextual-lowercase",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-unicode-ignorable-tie-order",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-numeric-filenames",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-control-filenames",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-backslash-filename",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-long-filename",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-symlink-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-broken-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-symlink-loop-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-only-broken-entries",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-unreadable-entry-still-listed",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-unsearchable-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-inaccessible-ancestor",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-default-entry-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "ls-broken-entry-after-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    }
+  ]
+}

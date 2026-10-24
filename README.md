@@ -62,7 +62,7 @@ Custom providers and static model metadata can be declared in `models.json` unde
 
 The CLI ships the audited Pi JSON schemas in `schemas/` beside its assembly and exposes embedded copies through `ConfigSchemaCatalog`. They describe the parity target; some fields and runtime validation rules remain incomplete. See the [schema provenance](src/PiSharp.Cli/Configuration/Schemas/README.md).
 
-The default coding tools are `read`, `bash`, `edit` and `write`. `grep`, `find` and `ls` are opt-in. Use `--tools`, `--exclude-tools` or `--no-tools` to adjust the set. Images are supported on selected provider paths; RPC image prompts and broader multimodal parity remain open.
+The default coding tools are `read`, `bash`, `edit` and `write`. `grep`, `find` and `ls` are opt-in. Use `--tools`, `--exclude-tools` or `--no-tools` to adjust the set. Optional `grep` requires `rg` on `PATH`; `find` requires `fd` (`fdfind` is also accepted on Linux). `ls` uses native directory enumeration. See the [coding-tool contracts and safety differences](docs/capabilities/coding-tools.md). Images are supported on selected provider paths; RPC image prompts and broader multimodal parity remain open.
 
 ## Sessions and resources
 

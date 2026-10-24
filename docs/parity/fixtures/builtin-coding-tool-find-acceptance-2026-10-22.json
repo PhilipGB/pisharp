@@ -1,0 +1,512 @@
+{
+  "schema": 1,
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpSha": "99016879fabaee542c2b0265bb34864c98435516",
+  "platform": "Linux-7.2.9-ogc3.1.fc44.x86_64-x86_64-with-glibc2.43",
+  "startedAt": "2026-10-23T18:30:20.444854+00:00",
+  "finishedAt": "2026-10-23T18:30:43.691282+00:00",
+  "executables": {
+    "rg": {
+      "path": "/home/philip/.codex-account2/packages/app-server-daemon/releases/0.164.0-x86_64-unknown-linux-musl/codex-path/rg",
+      "version": "ripgrep 15.2.0 (rev e89fff89ac)"
+    },
+    "fdfind": {
+      "path": "/usr/bin/fdfind",
+      "version": "fdfind 10.3.0"
+    },
+    "fd": {
+      "path": null,
+      "version": null
+    },
+    "node": {
+      "path": "/home/philip/.config/nvm/versions/node/v24.21.0/bin/node",
+      "version": "v24.21.0"
+    },
+    "dotnet": {
+      "path": "/usr/bin/dotnet",
+      "version": "10.0.113"
+    }
+  },
+  "comparisonPolicy": {
+    "temporaryRoots": "Each root becomes <workspace> in result strings.",
+    "fullOutputNames": "Random names mapped by references; exact file hashes/sizes/modes/safe-name checks compared.",
+    "duration": "Nonnegative numeric wall_time_seconds retained raw; excluded from value equality.",
+    "images": "Original payloads exact bytes; selected reencoded images compare decoded RGBA dimensions/pixels; raw payloads retained. MIME, notes, structured results and failures remain exact.",
+    "jpegCodecs": "Only named calibrated cases may use the explicit JPEG envelope. Strict hashes/differences remain recorded. Quantization, sampling, fidelity and every non-pixel contract are checked; see setup.jpegComparison.",
+    "safetyExclusions": "Named image allocation limits and reviewed atomic/private-mutation differences remain failed strict comparisons. Only complete frozen expected observations may be excluded; actual outputs, ownership and filesystem differences are retained. They never increase passed/strictPassed.",
+    "updates": "Raw complete updates retained; initial/final snapshots compared. Timing/chunk count not asserted identical.",
+    "filesystem": "Exact content hashes, short-file bytes, kinds, modes, uid/gid, link targets/peers and inode-preservation flags. No mtime/ctime/absolute inode equality."
+  },
+  "declarationDifferences": {
+    "read": [],
+    "write": [],
+    "edit": [],
+    "bash": [],
+    "grep": [],
+    "find": [],
+    "ls": []
+  },
+  "summary": {
+    "passed": 61,
+    "total": 62,
+    "strictPassed": 61,
+    "jpegCodecEquivalent": 0,
+    "intentionalSafetyDeviations": 1,
+    "unresolved": 0,
+    "perTool": {
+      "find": 62
+    }
+  },
+  "status": "supported Linux find checkpoint verified with one explicit privacy exclusion; shared M-P acceptance pending",
+  "control": {
+    "piSharpUsed": false,
+    "harnessRepositorySha": "99016879fabaee542c2b0265bb34864c98435516",
+    "summary": {
+      "passed": 62,
+      "total": 62,
+      "strictPassed": 62,
+      "jpegCodecEquivalent": 0,
+      "intentionalSafetyDeviations": 0,
+      "unresolved": 0,
+      "perTool": {
+        "find": 62
+      }
+    }
+  },
+  "cases": [
+    {
+      "caseId": "find-gitignore",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-ignore-outside-repo",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-nested-repositories",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-symlink-file",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-missing-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-permission",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-missing-required",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-invalid-pattern-type",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-pre-cancelled",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-basename",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-recursive",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-brace",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-character-class",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-escaped-space",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-escaped-class",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-dotfile",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-smart-case",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-invalid-glob",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-flag-like-pattern",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-no-match",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-absolute-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-directory-result",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-broken-link",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-file-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-result-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-zero-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-late-match-beyond-inventory",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-negative-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-fractional-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-huge-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-exact-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-empty-pattern",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-double-star",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-nested-braces",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-negated-class",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-case-insensitive-default",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-case-sensitive-smart-case",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-absolute-glob",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-leading-double-star",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-directory-glob",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-unicode-name",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-leading-space-name",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-trailing-space-name",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-newline-name",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-carriage-return-name",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-backslash-name",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-at-prefix",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-file-url",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-file-ancestor",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-node-modules-default",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-git-directory-hidden",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-rgignore-does-not-apply",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-fdignore-applies",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-ignore-negation",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-empty-directory-result",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-symlink-directory",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-explicit-symlink-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-broken-symlink-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-symlink-loop",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-inaccessible-root",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-byte-limit",
+      "strictPass": true,
+      "pass": true,
+      "strictParityExcluded": false,
+      "classification": "exact_with_documented_normalization"
+    },
+    {
+      "caseId": "find-repository-local-private-excludes",
+      "strictPass": false,
+      "pass": false,
+      "strictParityExcluded": true,
+      "classification": "intentional_safety_deviation"
+    }
+  ]
+}

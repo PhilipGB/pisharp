@@ -570,10 +570,10 @@ public sealed class LlamaRouterManagerTuiTests
 
             await using var resumed = new ManagerTerminal(root, agent, server.Origin, llamaProvider: true,
                 sessionDirectory: sessions, noTools: false, continueSession: true);
-            await resumed.WaitTextAsync("qwen");
+            await resumed.WaitFrameAsync(frame => frame.Contains("qwen", StringComparison.Ordinal) &&
+                frame.Contains("LOCAL_TOOL_OK", StringComparison.Ordinal) &&
+                !frame.Contains("Working", StringComparison.Ordinal));
             var resumeMark = resumed.Mark;
-            await resumed.WaitTextAsync("LOCAL_TOOL_OK", resumeMark);
-            resumeMark = resumed.Mark;
             await resumed.SendAsync("Continue from the saved local tool result.\n");
             await resumed.WaitTextAsync("LLAMA_RESUMED_OK", resumeMark);
             await resumed.WaitFrameAsync(frame => frame.Contains("LLAMA_RESUMED_OK", StringComparison.Ordinal) &&

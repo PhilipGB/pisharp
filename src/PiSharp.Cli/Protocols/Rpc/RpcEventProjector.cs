@@ -191,17 +191,20 @@ internal sealed class RpcEventProjector
 
     private static JsonObject ProjectToolUpdate(AgentLifecycleEvent item)
     {
+        var partial = new JsonObject
+        {
+            ["content"] = item.OutputIsSnapshot && item.Text is null ? new JsonArray()
+                : new JsonArray(new JsonObject { ["type"] = "text", ["text"] = item.Text ?? "" })
+        };
+        if (item.Details is not null || !item.OutputIsSnapshot)
+            partial["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject();
         var projected = new JsonObject
         {
             ["type"] = "tool_execution_update",
             ["toolCallId"] = item.ToolCallId ?? item.OperationId ?? "unknown-call",
             ["toolName"] = item.Tool,
             ["args"] = JsonSerializer.SerializeToNode(item.ToolArguments) ?? new JsonObject(),
-            ["partialResult"] = new JsonObject
-            {
-                ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = item.Text ?? "" }),
-                ["details"] = JsonSerializer.SerializeToNode(item.Details) ?? new JsonObject()
-            }
+            ["partialResult"] = partial
         };
         if (item.ParentToolCallId is not null) projected["parentToolCallId"] = item.ParentToolCallId;
         return projected;

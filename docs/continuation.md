@@ -1,6 +1,60 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Terminal Rendering and Interaction Parity — 2026-10-22
+## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
+
+PR #21 is merged at `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a`, verified on
+fetched `origin/main` before product work. Its reviewed head was
+`64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. The new branch
+`milestone/builtin-coding-tool-parity` starts from that actual merge. Pi remains
+at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+Local acceptance checkpoints A–R are complete: **18/20 at this documentation
+revision**. Publication (S) and exact-head CI (T) have a live receipt in
+[PR #22](https://github.com/PhilipGB/pisharp/pull/22). Read that description and
+current run metadata before reporting progress; do not mistake this frozen local
+checkpoint count for the later publication state. Keep the twenty-checkpoint
+denominator. Do not merge #22 or start #23.
+
+Product acceptance source is `962cfa48d97a960149e1f0cc020f25bc302c1d48`.
+The final publication head and push/PR workflow IDs are maintained in the PR
+description so the tested head does not change solely to record its CI result.
+The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md),
+[inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) and
+[corpus acceptance](parity/fixtures/builtin-coding-tool-corpus-acceptance-2026-10-22.json)
+record exact source revisions and scope.
+
+The 460-case corpus has 389 exact passes, ten calibrated JPEG equivalents,
+61 explicit safety exclusions and zero unresolved cases; the strict same-Pi
+control is 460/460 without PiSharp. Case counts are read121/write39/edit69/
+bash44/grep72/find62/ls53. Atomic/private mutations, image allocation bounds,
+repository privacy and stronger shutdown behavior remain clearly excluded from
+strict equivalence. Eight additional pinned owner/mode observations are facets,
+not eight extra strict whole-filesystem passes: inode replacement remains
+intentional.
+
+All seven tools run through MAF, three physical provider workflows and actual
+session restart. The Bash-abort workflow preserves exactly one appended byte
+after restart. Concurrent tool results survive persistent compaction and RPC
+history. Final validation and reliability results are in the receipt. The first
+full 3,718-test run preceded the late set-ID correction and is historical; use
+the later full suite, corpus, provider and repeat receipts.
+
+CI checks out the same pinned Pi separately, installs its locked dependencies
+with scripts disabled, captures actual Linux owner/group/mode results and gives
+that oracle to the native tests. Both workflows retain the source JSON artifact.
+The Linux gate requires an assignable alternate group; inspect this artifact and
+the corresponding successful test job before closing T. Local group mapping
+restrictions are recorded, without claiming that the alternate-group case ran
+locally. Privileged and native Windows/macOS parity remain unverified.
+
+The grep context review correction replaces repeated prefix scans with bounded per-file windows and byte-offset checkpoints. Seven regressions cover the measured 32 MiB case, oversized windows, UTF-8/CRLF boundaries, cancellation, read failures, eviction and backward queries. The [context receipt](parity/fixtures/builtin-coding-tool-grep-context-2026-10-22.json) preserves source expectations and application-read counters. Consult PR #22 for the corrected-head gates.
+
+Before resuming work, fetch PR #22 metadata and verify the published head, draft
+status, merge state and CI rather than repeating completed implementation. If
+final-head test/MCP/ownership gates pass, the milestone is complete within its
+recorded scope. Broader Pi parity remains `in_progress`.
+
+## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 
 PR #20 merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`; that exact
 commit is the base of `milestone/terminal-rendering-interaction-parity`.
@@ -34,7 +88,8 @@ rendered CWD truncation. Those exploratory reports are retained, not accepted.
 
 The implementation, local validation and classified receipt are complete.
 [PR #21](https://github.com/PhilipGB/pisharp/pull/21) records the published head and exact-head
-push/PR CI run IDs and conclusions. PR #21 must remain draft and unmerged. Evidence is in the
+push/PR CI run IDs and conclusions. PR #21 remained draft/unmerged through review;
+the following mission merged it as recorded above. Evidence is in the
 [terminal parity receipt](parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md).
 
 The independent-review correction propagates nested LaTeX failures to source
@@ -1202,3 +1257,43 @@ The refreshed audit is [rpc-residual-audit-2026-09-28.md](parity/rpc-residual-au
 At current Pi `6f7551516b84278eb9da1c340c8e7bc66be1a6ba`, `httpIdleTimeoutMs` defaults to 300000 ms and configures Undici response-header and body idle timers; Pi also forwards the effective request timeout to provider streams, with `retry.provider.timeoutMs` taking precedence. PiSharp maps these settings through the OpenAI and Anthropic SDKs, enforces a total deadline, and now rearms the streaming idle timer on body reads in all three active HTTP adapters. The partial-SSE loopback fixture covers response bytes arriving without a parsed event, and existing stalled-stream fixtures still verify timeout after body activity stops. Local format and warnings-as-errors build pass; the full suite passes 699/699. Exact-head Linux CI run [36403312164](https://github.com/PhilipGB/pisharp/actions/runs/36403312164) passed on source `67c283d6c`. The earlier paired pinned-Pi/PiSharp process run used a 300 ms request timeout and delayed local endpoint; each CLI sent one request and exited before the response. Pi's timer observes Undici socket-data activity while PiSharp observes bytes as .NET content-stream reads, leaving buffering/read cadence as an implementation difference. See [the timeout fixture](parity/fixtures/settings-provider-timeout-baseline.md).
 
 The pinned source audit confirms `transport` has values `auto`, `sse`, `websocket`, and `websocket-cached`; the legacy `websockets` boolean migrates to the enum. Both it and `websocketConnectTimeoutMs` reach only Pi's `openai-codex-responses` adapter. That path performs WebSocket handshake timing, session/account connection reuse, cached continuation requests, and pre-stream SSE fallback. PiSharp now has an `openai-codex-responses` SSE adapter with account-scoped headers and session affinity. WebSocket handshake/reuse, cached continuation and pre-stream SSE fallback remain explicit unsupported provider-scope residuals; these controls are not exposed as no-op settings. PiSharp now parses and applies `markdown.codeBlockIndent` at startup and through `/settings`, including a live rerender of committed Markdown; see [the setting fixture](parity/fixtures/settings-markdown-baseline.md). Its source commit passed exact-head Linux CI run 36355353424 with 683/683 tests. The pinned `markdown.mermaid` setting controls an actual Markdown transformer backed by `grok-mermaid`; it remains unsupported until that renderer boundary is implemented. The four local resource path arrays now resolve independently from user and trusted-project roots, preserve additive settings, filter configured and automatic resources with `!`/`+`/`-`, and refresh through `/reload`; see [the resource-path fixture](parity/fixtures/settings-resource-paths-baseline.md). Focused tests passed 61/61, format and warnings-as-errors build passed, the full suite passed 696/696 (0 skipped), and exact-head CI run 36401121298 passed. Provider idle timeouts now reset on body reads across all three adapters, including partial SSE events; local validation is 699/699 and exact-head CI run 36403312164 passed. Keep unsupported schema families explicit and do not claim complete settings parity. Revisit RPC only when new evidence changes a residual's impact.
+
+No engineering is claimed between 2026-10-23 09:10:33 UTC and resumption at
+2026-10-23 12:22:16 UTC; exclude that inactive interval from active duration.
+
+Find hardening now passes 27 pinned process cases (54 shared with grep), real fd
+first-output cancellation with cleanup/recovery, and a 276-test warning-as-error
+selection. Preparation abort and directory-symlink privacy regressions fail
+before correction and pass afterwards. Keep the named repository-local exclude
+safety difference explicitly excluded from strict parity; all 22 comparison
+guards pass. Find now has 62 cases (428 total), awaiting clean-head acceptance.
+
+Clean `99016879` closes K: 61/62 strict comparisons, one explicit privacy
+exclusion, zero unresolved differences and 62/62 same-Pi calibration. See the
+find acceptance receipt. Stable progress is 11/20 complete, 9 remaining. L (ls)
+is now in progress; earlier chronological pending notes are superseded by this
+acceptance. No PR #22 has been published yet.
+
+Clean `a68d365c` closes L with 53/53 strict ls comparisons and a 53/53
+strict same-Pi control. Related checks pass 211/211 plus 40 legacy selection/
+result checks. Stable progress is now 12/20 complete, 8 remaining. M (tool
+integration) is in progress, followed by N physical provider workflows.
+
+M acceptance: 15 new MAF checks and 825 related checks pass, plus 37 source
+selection/prompt tests across six upstream files. ToolFailureException results
+now retain actionable provider text, explicit failed metadata and durable errors.
+The complete nine-call, seven-tool workflow survives native file save/reload.
+Seven exclusions stay enforced after restoring an earlier all-tool loadout.
+Stable progress is 13/20 complete, 7 remaining. N physical HTTP is open.
+
+Clean `75e02e64` closes N: all three physical HTTP workflows pass supported
+contract comparison, each with 11 requests, nine correlated outcomes and an
+actual CLI restart; strict same-Pi controls pass 3/3. Only the previously
+documented native private new-file mode remains explicitly excluded. Progress
+is 14/20 complete, 6 remaining. O full corpus and P reliability remain open.
+
+Clean `acfbe782` closes O for the defined 456-case corpus: 395 passes (385
+strict plus ten named JPEG equivalents), 61 explicit failed strict safety
+comparisons and zero unresolved cases. Strict same-Pi control passes 456/456.
+Progress is 15/20 complete; P reliability is in progress. Any later product
+correction requires affected corpus revalidation before final publication.

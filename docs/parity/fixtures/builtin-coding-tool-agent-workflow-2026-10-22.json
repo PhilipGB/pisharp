@@ -1,0 +1,1345 @@
+{
+  "schema": 1,
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": [
+    "packages/agent/src/agent.ts",
+    "packages/agent/src/agent-loop.ts",
+    "packages/coding-agent/src/core/session-manager.ts"
+  ],
+  "fixture": "tools/parity/builtin-coding-tool-agent-workflow.mjs",
+  "scope": "Actual pinned Agent tool loop and SessionManager file save/open, deterministic stream provider; physical HTTP is a separate gate.",
+  "files": {
+    "src/value.txt": "value=old\n",
+    "src/related.txt": "related value\n"
+  },
+  "tools": [
+    "read",
+    "bash",
+    "edit",
+    "write",
+    "grep",
+    "find",
+    "ls"
+  ],
+  "plan": [
+    {
+      "tool": "read",
+      "arguments": {
+        "path": "src/value.txt"
+      },
+      "callId": "workflow_0"
+    },
+    {
+      "tool": "find",
+      "arguments": {
+        "pattern": "*.txt",
+        "path": "src"
+      },
+      "callId": "workflow_1"
+    },
+    {
+      "tool": "grep",
+      "arguments": {
+        "pattern": "value",
+        "path": "src/value.txt"
+      },
+      "callId": "workflow_2"
+    },
+    {
+      "tool": "ls",
+      "arguments": {
+        "path": "src"
+      },
+      "callId": "workflow_3"
+    },
+    {
+      "tool": "edit",
+      "arguments": {
+        "path": "src/value.txt",
+        "edits": [
+          {
+            "oldText": "value=old",
+            "newText": "value=new"
+          }
+        ]
+      },
+      "callId": "workflow_4"
+    },
+    {
+      "tool": "edit",
+      "arguments": {
+        "path": "src/value.txt",
+        "edits": [
+          {
+            "oldText": "missing text",
+            "newText": "must not appear"
+          }
+        ]
+      },
+      "callId": "workflow_5"
+    },
+    {
+      "tool": "write",
+      "arguments": {
+        "path": "generated/result.txt",
+        "content": "created\n"
+      },
+      "callId": "workflow_6"
+    },
+    {
+      "tool": "bash",
+      "arguments": {
+        "command": "test \"$(cat src/value.txt)\" = value=new && test \"$(cat generated/result.txt)\" = created && printf 'verified\\n'"
+      },
+      "callId": "workflow_7"
+    },
+    {
+      "tool": "read",
+      "arguments": {
+        "path": "src/value.txt"
+      },
+      "callId": "workflow_8"
+    }
+  ],
+  "requests": [
+    [],
+    [
+      {
+        "callId": "workflow_0",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "isError": false
+      }
+    ],
+    [
+      {
+        "callId": "workflow_0",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_1",
+        "tool": "find",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      }
+    ],
+    [
+      {
+        "callId": "workflow_0",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_1",
+        "tool": "find",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_2",
+        "tool": "grep",
+        "content": [
+          {
+            "type": "text",
+            "text": "value.txt:1: value=old"
+          }
+        ],
+        "isError": false
+      }
+    ],
+    [
+      {
+        "callId": "workflow_0",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_1",
+        "tool": "find",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_2",
+        "tool": "grep",
+        "content": [
+          {
+            "type": "text",
+            "text": "value.txt:1: value=old"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_3",
+        "tool": "ls",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      }
+    ],
+    [
+      {
+        "callId": "workflow_0",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_1",
+        "tool": "find",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_2",
+        "tool": "grep",
+        "content": [
+          {
+            "type": "text",
+            "text": "value.txt:1: value=old"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_3",
+        "tool": "ls",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_4",
+        "tool": "edit",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in src/value.txt."
+          }
+        ],
+        "isError": false
+      }
+    ],
+    [
+      {
+        "callId": "workflow_0",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_1",
+        "tool": "find",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_2",
+        "tool": "grep",
+        "content": [
+          {
+            "type": "text",
+            "text": "value.txt:1: value=old"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_3",
+        "tool": "ls",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_4",
+        "tool": "edit",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in src/value.txt."
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_5",
+        "tool": "edit",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+          }
+        ],
+        "isError": true
+      }
+    ],
+    [
+      {
+        "callId": "workflow_0",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_1",
+        "tool": "find",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_2",
+        "tool": "grep",
+        "content": [
+          {
+            "type": "text",
+            "text": "value.txt:1: value=old"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_3",
+        "tool": "ls",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_4",
+        "tool": "edit",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in src/value.txt."
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_5",
+        "tool": "edit",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+          }
+        ],
+        "isError": true
+      },
+      {
+        "callId": "workflow_6",
+        "tool": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to generated/result.txt"
+          }
+        ],
+        "isError": false
+      }
+    ],
+    [
+      {
+        "callId": "workflow_0",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_1",
+        "tool": "find",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_2",
+        "tool": "grep",
+        "content": [
+          {
+            "type": "text",
+            "text": "value.txt:1: value=old"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_3",
+        "tool": "ls",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_4",
+        "tool": "edit",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in src/value.txt."
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_5",
+        "tool": "edit",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+          }
+        ],
+        "isError": true
+      },
+      {
+        "callId": "workflow_6",
+        "tool": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to generated/result.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_7",
+        "tool": "bash",
+        "content": [
+          {
+            "type": "text",
+            "text": "verified\n"
+          }
+        ],
+        "isError": false
+      }
+    ],
+    [
+      {
+        "callId": "workflow_0",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_1",
+        "tool": "find",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_2",
+        "tool": "grep",
+        "content": [
+          {
+            "type": "text",
+            "text": "value.txt:1: value=old"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_3",
+        "tool": "ls",
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_4",
+        "tool": "edit",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in src/value.txt."
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_5",
+        "tool": "edit",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+          }
+        ],
+        "isError": true
+      },
+      {
+        "callId": "workflow_6",
+        "tool": "write",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to generated/result.txt"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_7",
+        "tool": "bash",
+        "content": [
+          {
+            "type": "text",
+            "text": "verified\n"
+          }
+        ],
+        "isError": false
+      },
+      {
+        "callId": "workflow_8",
+        "tool": "read",
+        "content": [
+          {
+            "type": "text",
+            "text": "value=new\n"
+          }
+        ],
+        "isError": false
+      }
+    ]
+  ],
+  "outcomes": [
+    {
+      "callId": "workflow_0",
+      "tool": "read",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "value=old\n"
+          }
+        ],
+        "structuredContent": "value=old\n"
+      },
+      "isError": false
+    },
+    {
+      "callId": "workflow_1",
+      "tool": "find",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ]
+      },
+      "isError": false
+    },
+    {
+      "callId": "workflow_2",
+      "tool": "grep",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "value.txt:1: value=old"
+          }
+        ]
+      },
+      "isError": false
+    },
+    {
+      "callId": "workflow_3",
+      "tool": "ls",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "related.txt\nvalue.txt"
+          }
+        ]
+      },
+      "isError": false
+    },
+    {
+      "callId": "workflow_4",
+      "tool": "edit",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in src/value.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 value=old\n+1 value=new",
+          "patch": "--- src/value.txt\n+++ src/value.txt\n@@ -1,1 +1,1 @@\n-value=old\n+value=new\n",
+          "firstChangedLine": 1
+        }
+      },
+      "isError": false
+    },
+    {
+      "callId": "workflow_5",
+      "tool": "edit",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+          }
+        ],
+        "details": {}
+      },
+      "isError": true
+    },
+    {
+      "callId": "workflow_6",
+      "tool": "write",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully wrote to generated/result.txt"
+          }
+        ]
+      },
+      "isError": false
+    },
+    {
+      "callId": "workflow_7",
+      "tool": "bash",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "verified\n"
+          }
+        ],
+        "structuredContent": {
+          "output": "verified\n",
+          "truncated": false,
+          "exit_code": 0,
+          "wall_time_seconds": 0
+        }
+      },
+      "isError": false
+    },
+    {
+      "callId": "workflow_8",
+      "tool": "read",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "value=new\n"
+          }
+        ],
+        "structuredContent": "value=new\n"
+      },
+      "isError": false
+    }
+  ],
+  "toolEvents": [
+    {
+      "type": "tool_execution_start",
+      "callId": "workflow_0",
+      "tool": "read"
+    },
+    {
+      "type": "tool_execution_end",
+      "callId": "workflow_0",
+      "tool": "read"
+    },
+    {
+      "type": "tool_execution_start",
+      "callId": "workflow_1",
+      "tool": "find"
+    },
+    {
+      "type": "tool_execution_end",
+      "callId": "workflow_1",
+      "tool": "find"
+    },
+    {
+      "type": "tool_execution_start",
+      "callId": "workflow_2",
+      "tool": "grep"
+    },
+    {
+      "type": "tool_execution_end",
+      "callId": "workflow_2",
+      "tool": "grep"
+    },
+    {
+      "type": "tool_execution_start",
+      "callId": "workflow_3",
+      "tool": "ls"
+    },
+    {
+      "type": "tool_execution_end",
+      "callId": "workflow_3",
+      "tool": "ls"
+    },
+    {
+      "type": "tool_execution_start",
+      "callId": "workflow_4",
+      "tool": "edit"
+    },
+    {
+      "type": "tool_execution_end",
+      "callId": "workflow_4",
+      "tool": "edit"
+    },
+    {
+      "type": "tool_execution_start",
+      "callId": "workflow_5",
+      "tool": "edit"
+    },
+    {
+      "type": "tool_execution_end",
+      "callId": "workflow_5",
+      "tool": "edit"
+    },
+    {
+      "type": "tool_execution_start",
+      "callId": "workflow_6",
+      "tool": "write"
+    },
+    {
+      "type": "tool_execution_end",
+      "callId": "workflow_6",
+      "tool": "write"
+    },
+    {
+      "type": "tool_execution_start",
+      "callId": "workflow_7",
+      "tool": "bash"
+    },
+    {
+      "type": "tool_execution_update",
+      "callId": "workflow_7",
+      "tool": "bash",
+      "partialResult": {
+        "content": []
+      }
+    },
+    {
+      "type": "tool_execution_update",
+      "callId": "workflow_7",
+      "tool": "bash",
+      "partialResult": {
+        "content": [
+          {
+            "type": "text",
+            "text": "verified\n"
+          }
+        ],
+        "details": {}
+      }
+    },
+    {
+      "type": "tool_execution_end",
+      "callId": "workflow_7",
+      "tool": "bash"
+    },
+    {
+      "type": "tool_execution_start",
+      "callId": "workflow_8",
+      "tool": "read"
+    },
+    {
+      "type": "tool_execution_end",
+      "callId": "workflow_8",
+      "tool": "read"
+    }
+  ],
+  "restoredResults": [
+    {
+      "callId": "workflow_0",
+      "tool": "read",
+      "content": [
+        {
+          "type": "text",
+          "text": "value=old\n"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_1",
+      "tool": "find",
+      "content": [
+        {
+          "type": "text",
+          "text": "related.txt\nvalue.txt"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_2",
+      "tool": "grep",
+      "content": [
+        {
+          "type": "text",
+          "text": "value.txt:1: value=old"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_3",
+      "tool": "ls",
+      "content": [
+        {
+          "type": "text",
+          "text": "related.txt\nvalue.txt"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_4",
+      "tool": "edit",
+      "content": [
+        {
+          "type": "text",
+          "text": "Successfully replaced 1 block(s) in src/value.txt."
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_5",
+      "tool": "edit",
+      "content": [
+        {
+          "type": "text",
+          "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+        }
+      ],
+      "isError": true
+    },
+    {
+      "callId": "workflow_6",
+      "tool": "write",
+      "content": [
+        {
+          "type": "text",
+          "text": "Successfully wrote to generated/result.txt"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_7",
+      "tool": "bash",
+      "content": [
+        {
+          "type": "text",
+          "text": "verified\n"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_8",
+      "tool": "read",
+      "content": [
+        {
+          "type": "text",
+          "text": "value=new\n"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "resumedResults": [
+    {
+      "callId": "workflow_0",
+      "tool": "read",
+      "content": [
+        {
+          "type": "text",
+          "text": "value=old\n"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_1",
+      "tool": "find",
+      "content": [
+        {
+          "type": "text",
+          "text": "related.txt\nvalue.txt"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_2",
+      "tool": "grep",
+      "content": [
+        {
+          "type": "text",
+          "text": "value.txt:1: value=old"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_3",
+      "tool": "ls",
+      "content": [
+        {
+          "type": "text",
+          "text": "related.txt\nvalue.txt"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_4",
+      "tool": "edit",
+      "content": [
+        {
+          "type": "text",
+          "text": "Successfully replaced 1 block(s) in src/value.txt."
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_5",
+      "tool": "edit",
+      "content": [
+        {
+          "type": "text",
+          "text": "Could not find the exact text in src/value.txt. The old text must match exactly including all whitespace and newlines."
+        }
+      ],
+      "isError": true
+    },
+    {
+      "callId": "workflow_6",
+      "tool": "write",
+      "content": [
+        {
+          "type": "text",
+          "text": "Successfully wrote to generated/result.txt"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_7",
+      "tool": "bash",
+      "content": [
+        {
+          "type": "text",
+          "text": "verified\n"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "callId": "workflow_8",
+      "tool": "read",
+      "content": [
+        {
+          "type": "text",
+          "text": "value=new\n"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "failures": [
+    {
+      "item": {
+        "tool": "read",
+        "arguments": {
+          "path": "absent"
+        },
+        "callId": "failure_read"
+      },
+      "outcome": {
+        "callId": "failure_read",
+        "tool": "read",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "ENOENT: no such file or directory, access '<workspace>/absent'"
+            }
+          ],
+          "details": {}
+        },
+        "isError": true
+      },
+      "providerResults": [
+        {
+          "callId": "failure_read",
+          "tool": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "ENOENT: no such file or directory, access '<workspace>/absent'"
+            }
+          ],
+          "isError": true
+        }
+      ]
+    },
+    {
+      "item": {
+        "tool": "write",
+        "arguments": {
+          "path": "src/value.txt/child",
+          "content": "must not appear"
+        },
+        "callId": "failure_write"
+      },
+      "outcome": {
+        "callId": "failure_write",
+        "tool": "write",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "EEXIST: file already exists, mkdir '<workspace>/src/value.txt'"
+            }
+          ],
+          "details": {}
+        },
+        "isError": true
+      },
+      "providerResults": [
+        {
+          "callId": "failure_write",
+          "tool": "write",
+          "content": [
+            {
+              "type": "text",
+              "text": "EEXIST: file already exists, mkdir '<workspace>/src/value.txt'"
+            }
+          ],
+          "isError": true
+        }
+      ]
+    },
+    {
+      "item": {
+        "tool": "edit",
+        "arguments": {
+          "path": "absent",
+          "edits": [
+            {
+              "oldText": "old",
+              "newText": "new"
+            }
+          ]
+        },
+        "callId": "failure_edit"
+      },
+      "outcome": {
+        "callId": "failure_edit",
+        "tool": "edit",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Could not edit file: absent. Error code: ENOENT."
+            }
+          ],
+          "details": {}
+        },
+        "isError": true
+      },
+      "providerResults": [
+        {
+          "callId": "failure_edit",
+          "tool": "edit",
+          "content": [
+            {
+              "type": "text",
+              "text": "Could not edit file: absent. Error code: ENOENT."
+            }
+          ],
+          "isError": true
+        }
+      ]
+    },
+    {
+      "item": {
+        "tool": "bash",
+        "arguments": {},
+        "callId": "failure_bash"
+      },
+      "outcome": {
+        "callId": "failure_bash",
+        "tool": "bash",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Validation failed for tool \"bash\":\n  - command: must have required properties command\n\nReceived arguments:\n{}"
+            }
+          ],
+          "details": {}
+        },
+        "isError": true
+      },
+      "providerResults": [
+        {
+          "callId": "failure_bash",
+          "tool": "bash",
+          "content": [
+            {
+              "type": "text",
+              "text": "Validation failed for tool \"bash\":\n  - command: must have required properties command\n\nReceived arguments:\n{}"
+            }
+          ],
+          "isError": true
+        }
+      ]
+    },
+    {
+      "item": {
+        "tool": "grep",
+        "arguments": {
+          "pattern": "value",
+          "path": "absent"
+        },
+        "callId": "failure_grep"
+      },
+      "outcome": {
+        "callId": "failure_grep",
+        "tool": "grep",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Path not found: <workspace>/absent"
+            }
+          ],
+          "details": {}
+        },
+        "isError": true
+      },
+      "providerResults": [
+        {
+          "callId": "failure_grep",
+          "tool": "grep",
+          "content": [
+            {
+              "type": "text",
+              "text": "Path not found: <workspace>/absent"
+            }
+          ],
+          "isError": true
+        }
+      ]
+    },
+    {
+      "item": {
+        "tool": "find",
+        "arguments": {
+          "pattern": "*",
+          "path": "absent"
+        },
+        "callId": "failure_find"
+      },
+      "outcome": {
+        "callId": "failure_find",
+        "tool": "find",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "[fd error]: Search path '<workspace>/absent' is not a directory.\n[fd error]: No valid search paths given."
+            }
+          ],
+          "details": {}
+        },
+        "isError": true
+      },
+      "providerResults": [
+        {
+          "callId": "failure_find",
+          "tool": "find",
+          "content": [
+            {
+              "type": "text",
+              "text": "[fd error]: Search path '<workspace>/absent' is not a directory.\n[fd error]: No valid search paths given."
+            }
+          ],
+          "isError": true
+        }
+      ]
+    },
+    {
+      "item": {
+        "tool": "ls",
+        "arguments": {
+          "path": "absent"
+        },
+        "callId": "failure_ls"
+      },
+      "outcome": {
+        "callId": "failure_ls",
+        "tool": "ls",
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Path not found: <workspace>/absent"
+            }
+          ],
+          "details": {}
+        },
+        "isError": true
+      },
+      "providerResults": [
+        {
+          "callId": "failure_ls",
+          "tool": "ls",
+          "content": [
+            {
+              "type": "text",
+              "text": "Path not found: <workspace>/absent"
+            }
+          ],
+          "isError": true
+        }
+      ]
+    }
+  ],
+  "finalFiles": {
+    "src/value.txt": {
+      "text": "value=new\n",
+      "mode": 420
+    },
+    "src/related.txt": {
+      "text": "related value\n",
+      "mode": 420
+    },
+    "generated/result.txt": {
+      "text": "created\n",
+      "mode": 420
+    }
+  },
+  "sessionFileWritten": true
+}

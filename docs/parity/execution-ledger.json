@@ -1,5 +1,1098 @@
 {
   "schema": 1,
+  "builtin_coding_tool_parity_milestone": {
+    "status": "local_acceptance_complete_publication_receipt_external",
+    "started_at": "2026-10-22T17:44:40Z",
+    "branch": "milestone/builtin-coding-tool-parity",
+    "pr21_reviewed_head": "64fc15b7317a2307b066bbba6ebb3ea630b19ee1",
+    "pr21_actual_merge": "ebfeb24c9dd5e03592c3b388236f22a3a3a3299a",
+    "branch_base": "ebfeb24c9dd5e03592c3b388236f22a3a3a3299a",
+    "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "inventory": "docs/parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json",
+    "receipt": "docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md",
+    "checkpoints": [
+      {
+        "id": "A",
+        "name": "Merge prerequisite",
+        "status": "complete"
+      },
+      {
+        "id": "B",
+        "name": "New branch",
+        "status": "complete"
+      },
+      {
+        "id": "C",
+        "name": "Parity inventory",
+        "status": "complete"
+      },
+      {
+        "id": "D",
+        "name": "Differential harness",
+        "status": "complete"
+      },
+      {
+        "id": "E",
+        "name": "Shared result semantics",
+        "status": "complete"
+      },
+      {
+        "id": "F",
+        "name": "Read",
+        "status": "complete"
+      },
+      {
+        "id": "G",
+        "name": "Write",
+        "status": "complete"
+      },
+      {
+        "id": "H",
+        "name": "Edit",
+        "status": "complete"
+      },
+      {
+        "id": "I",
+        "name": "Bash",
+        "status": "complete"
+      },
+      {
+        "id": "J",
+        "name": "Grep",
+        "status": "complete"
+      },
+      {
+        "id": "K",
+        "name": "Find",
+        "status": "complete"
+      },
+      {
+        "id": "L",
+        "name": "Ls",
+        "status": "complete"
+      },
+      {
+        "id": "M",
+        "name": "Tool integration",
+        "status": "complete"
+      },
+      {
+        "id": "N",
+        "name": "Physical provider workflows",
+        "status": "complete"
+      },
+      {
+        "id": "O",
+        "name": "Differential corpus",
+        "status": "complete"
+      },
+      {
+        "id": "P",
+        "name": "Stress and safety",
+        "status": "complete"
+      },
+      {
+        "id": "Q",
+        "name": "Full validation",
+        "status": "complete"
+      },
+      {
+        "id": "R",
+        "name": "Documentation",
+        "status": "complete"
+      },
+      {
+        "id": "S",
+        "name": "Publication",
+        "status": "pending_external_publication_receipt"
+      },
+      {
+        "id": "T",
+        "name": "Exact-head CI",
+        "status": "pending_external_publication_receipt"
+      }
+    ],
+    "progress_policy": "Fixed twenty mission checkpoints. A\u2013R are complete at this repository receipt; later S/T state, final head and CI are authoritative in PR #22 description. Do not report a later reduced completed count from this frozen snapshot.",
+    "required_differential": {
+      "minimum_cases": 70,
+      "minimum_per_tool": 10,
+      "executed": 460,
+      "passed": 399,
+      "strict_passed": 389,
+      "jpeg_codec_equivalent": 10,
+      "intentional_safety_exclusions": 61,
+      "unresolved": 0
+    },
+    "publication": {
+      "expected_pr": 22,
+      "draft": true,
+      "merged": false,
+      "status": "consult_live_PR_description_for_final_S_T_state",
+      "url": "https://github.com/PhilipGB/pisharp/pull/22",
+      "initial_head": "056d58b54ef5a70fe26540318208a51d3987be7f",
+      "first_ci": {
+        "push": 40073343361,
+        "pull_request": 40073345412,
+        "conclusion": "failed",
+        "failed": 9,
+        "passed": 3702,
+        "skipped": 0,
+        "total": 3711,
+        "corrective_work": "Restore the 16-case argument fixture overwritten by the documentation finalizer; pin checksum-verified fd 10.5.0 after independently confirming its defined grammar matches the local distribution build; make synthetic fd repository markers explicit; preserve legacy public grep ignore behavior outside Git while registered tools keep pinned arguments."
+      }
+    },
+    "engineering_duration": {
+      "status": "ongoing",
+      "active_seconds": null,
+      "policy": "Record measured active work, distinguish idle/interrupted time; do not equate eight-hour target with actual duration.",
+      "excluded_inactive_intervals": [
+        {
+          "last_active_observation": "2026-10-22T19:07:47Z",
+          "resumed_at": "2026-10-23T07:13:30Z",
+          "reason": "No engineering is claimed between these observed goal turns. This interval is excluded from active duration."
+        },
+        {
+          "last_active_observation": "2026-10-23T09:10:33Z",
+          "resumed_at": "2026-10-23T12:22:16Z",
+          "reason": "No engineering is claimed between the terminal pre-fix test observation and the next active goal turn."
+        },
+        {
+          "last_active_observation": "2026-10-23T13:57:24Z",
+          "resumed_at": "2026-10-23T17:28:07Z",
+          "reason": "Pending differential finished at the recorded observation; no engineering is claimed before the resumed goal turn."
+        },
+        {
+          "last_active_observation": "2026-10-23T19:17:23Z",
+          "resumed_at": "2026-10-23T22:23:52Z",
+          "reason": "Previous goal turn ended after completed physical captures; no engineering is claimed before the resumed goal turn."
+        },
+        {
+          "last_active_observation": "2026-10-23T22:28:01.940924Z",
+          "resumed_at": "2026-10-23T22:44:45Z",
+          "reason": "Previous corpus receipt finished before the next observed active turn; no engineering is claimed in this interval."
+        },
+        {
+          "last_active_observation": "2026-10-24T00:45:08.246413Z",
+          "resumed_at": "2026-10-24T07:09:37Z",
+          "reason": "The pending full validation finished at this recorded time; no engineering is claimed before the next observed goal turn."
+        }
+      ],
+      "active_seconds_observed": 31064,
+      "observed_at": "2026-10-24T07:10:24.346131+00:00",
+      "final_duration_receipt": "https://github.com/PhilipGB/pisharp/pull/22"
+    },
+    "broader_pi_parity": "in_progress",
+    "harness_acceptance": "docs/parity/fixtures/builtin-coding-tool-harness-2026-10-22.json",
+    "same_pi_control": {
+      "passed": 211,
+      "total": 211,
+      "piSharpUsed": false
+    },
+    "initial_case_inventory": {
+      "read": 45,
+      "write": 21,
+      "edit": 33,
+      "bash": 28,
+      "grep": 32,
+      "find": 27,
+      "ls": 25
+    },
+    "baseline_differential": {
+      "source": "a9ab1c091d003396024685baca44d588bb0f1d31",
+      "passed": 23,
+      "total": 211,
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-baseline-2026-10-22.json"
+    },
+    "shared_result_projection": {
+      "source": "f9f3fa56",
+      "new_fail_first_tests": 7,
+      "related_tests_passed": 14,
+      "pinned_search_passed": 54,
+      "pinned_search_total": 84
+    },
+    "shared_argument_correction": {
+      "status": "verified_defined_shared_contract",
+      "fail_first": {
+        "failed": 24,
+        "passed": 7,
+        "total": 31
+      },
+      "after": {
+        "passed": 31,
+        "total": 31
+      },
+      "related_passed": 64,
+      "selection_native_hooks_passed": 77,
+      "scalar_conversion": {
+        "pinned_vectors": 93,
+        "passed": 93,
+        "physical_converted_writes": 2,
+        "dotnet_representations": 2,
+        "related_selection_passed": 169,
+        "status": "verified_for_defined_vectors"
+      },
+      "remaining": "Tool-specific numeric semantics, complete physical provider and session acceptance."
+    },
+    "selected_upstream_regressions": {
+      "files": 5,
+      "passed": 116,
+      "failed": 0,
+      "skipped": 0
+    },
+    "shared_truncation": {
+      "pinned_vectors": 140,
+      "passed": 140,
+      "mapped_head_cases": 28,
+      "before": {
+        "failed": 5,
+        "passed": 23
+      },
+      "related_selection_passed": 184,
+      "read_and_bash_metadata_integration": "verified_for_defined_result_cases"
+    },
+    "read_result_metadata": {
+      "status": "verified_scoped",
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-read-results-2026-10-22.json",
+      "source_captured_cases": 13,
+      "regression_before": {
+        "failed": 15,
+        "passed": 7
+      },
+      "related_after": {
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0
+      },
+      "scope": "Text result structured content, full truncation metadata, decoded streaming byte counts, MAF lifecycle, provider text projection and native session round trip. Existing image provider/replay tests pass; broader read/image acceptance remains open."
+    },
+    "bash_result_metadata": {
+      "status": "verified_scoped",
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-bash-results-2026-10-22.json",
+      "source_captured_cases": 7,
+      "registered_schema_policy_cases": 7,
+      "regression_before": {
+        "failed": 11,
+        "passed": 3
+      },
+      "related_after": {
+        "passed": 201,
+        "failed": 0,
+        "skipped": 0
+      },
+      "selection_hooks_codemode_passed": 60,
+      "json_rpc_session_before": {
+        "failed": 2,
+        "passed": 20
+      },
+      "json_rpc_session_after": {
+        "passed": 23,
+        "failed": 0,
+        "skipped": 0
+      },
+      "remaining": "Bash live cumulative snapshots and process lifecycle/cancellation acceptance; all-seven physical provider/session workflow and full gates."
+    },
+    "expanded_case_inventory": {
+      "total": 238,
+      "per_tool": {
+        "read": 72,
+        "write": 21,
+        "edit": 33,
+        "bash": 28,
+        "grep": 32,
+        "find": 27,
+        "ls": 25
+      },
+      "source": "abb00efc05347198686fe7a795137b6175a982eb",
+      "same_pi_control": {
+        "passed": 238,
+        "total": 238,
+        "piSharpUsed": false
+      },
+      "read_before": {
+        "passed": 33,
+        "total": 72,
+        "dirty_paths": []
+      }
+    },
+    "read_text_contract": {
+      "status": "verified_for_defined_cases",
+      "fixture": "docs/parity/fixtures/builtin-coding-tool-read-text-2026-10-22.json",
+      "source_captured_additional_cases": 55,
+      "total_pinned_text_file_cases": 68,
+      "regression_before": {
+        "failed": 38,
+        "passed": 30
+      },
+      "after_numeric": {
+        "failed": 17,
+        "passed": 195,
+        "total": 212
+      },
+      "related_after": {
+        "passed": 230,
+        "failed": 0,
+        "skipped": 0
+      },
+      "streaming_safety": {
+        "passed": 3,
+        "single_line_bytes": 67108864,
+        "maximum_read_buffer": 65536,
+        "scope": "Direct streaming component; kernel-backed fixture with deterministic cancellation barriers. Pinned mid-read cancellation comparison remains pending."
+      },
+      "remaining": "Image sampling/orientation/format/profile acceptance, physical image provider matrix and remaining tool integration/hardening.",
+      "hardened_selection_after": {
+        "passed": 75,
+        "failed": 0,
+        "skipped": 0
+      },
+      "clean_paired_after": {
+        "source": "600c151d4bc48bc222c7f77eea96dfcec089113b",
+        "passed": 72,
+        "total": 73,
+        "remaining": "Resized PNG pixels; image correction follows."
+      }
+    },
+    "current_case_inventory": {
+      "read": 121,
+      "write": 39,
+      "edit": 69,
+      "bash": 44,
+      "grep": 72,
+      "find": 62,
+      "ls": 53,
+      "total": 460
+    },
+    "read_image_contract": {
+      "status": "in_progress",
+      "baseline_source": "550d5f5c",
+      "baseline_read": {
+        "passed": 89,
+        "total": 115
+      },
+      "same_pi_control": {
+        "passed": 115,
+        "total": 115,
+        "piSharpUsed": false
+      },
+      "pinned_image_fixture": "docs/parity/fixtures/builtin-coding-tool-read-image-results-2026-10-22.json",
+      "regression_before": {
+        "failed": 26,
+        "passed": 20,
+        "total": 46
+      },
+      "first_correction": {
+        "failed": 10,
+        "passed": 36,
+        "total": 46
+      },
+      "related_selection": {
+        "failed": 10,
+        "passed": 178,
+        "skipped": 0
+      },
+      "fixed_number_vectors": {
+        "passed": 17,
+        "total": 17
+      },
+      "remaining": "Model-context notes and profile precedence, native read cancellation during image work, remaining image/safety/format hardening and complete tool workflow integration.",
+      "jpeg_codec_envelope": "docs/parity/fixtures/builtin-coding-tool-jpeg-codec-2026-10-22.json",
+      "jpeg_budget_correction": "Lossless standard Huffman coding corrects native quality 80 versus pinned quality 40 under the progressive payload cap. Full quantization and sampling are checked.",
+      "contract_selection": {
+        "passed": 66,
+        "failed": 0,
+        "skipped": 0,
+        "includes": "Pinned image contracts with explicit JPEG envelope, private adapter/lossless/budget checks, existing OpenAI image wire/reload tests."
+      },
+      "harness_guard_tests": {
+        "passed": 18,
+        "total": 18
+      },
+      "clean_paired_contract": {
+        "source": "20d18a514c19be5cc2fa2c03a684e92ae007f3ba",
+        "passed": 115,
+        "total": 115,
+        "strict_passed": 105,
+        "jpeg_codec_equivalent": 10,
+        "same_pi_control_strict_passed": 115
+      },
+      "structured_image_persistence": {
+        "before": {
+          "failed": 3,
+          "passed": 0
+        },
+        "after_related": {
+          "passed": 22,
+          "failed": 0,
+          "skipped": 0
+        },
+        "physical_apis": [
+          "openai-responses",
+          "openai-completions",
+          "anthropic-messages"
+        ],
+        "requests_per_api": 7,
+        "scope": "Native save/reload, exact image payload/MIME, text-only/block replay, profile limits, structured metadata retained and excluded from provider wire."
+      },
+      "model_context": {
+        "before_source": "81d9a226",
+        "before_passed": 1,
+        "before_total": 4,
+        "maf_regressions_failed_before": 2,
+        "related_passed_after": 83,
+        "lifecycle_json_image_bytes": "omitted; canonical data and explicit RPC images preserved",
+        "status": "paired cases pass; broader safety work pending",
+        "after_source": "9ebd03b5",
+        "after_passed": 4,
+        "after_total": 4
+      },
+      "resource_boundaries": {
+        "case_ids": [
+          "read-image-input-safety-boundary",
+          "read-image-pixel-safety-boundary"
+        ],
+        "status": "explicit allocation safety exclusions; never counted as passing parity",
+        "source": "f33ffd1f",
+        "strict_passed": 0,
+        "total": 2,
+        "intentional_safety_deviations": 2,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-read-safety-2026-10-22.json"
+      },
+      "cancellation": {
+        "regressions_failed_before": 1,
+        "related_passed_after": 149,
+        "pinned_pending_reads": 2,
+        "pinned_receipt": "docs/parity/fixtures/builtin-coding-tool-read-cancellation-2026-10-22.json",
+        "barriers": "Pi: held operations.readFile after physical read. Native: held after actual Skia decode. Distinct stage tests, not added to direct corpus count.",
+        "native_correction": "Cancellable await settles before worker cleanup; worker retains ownership of bounded buffers."
+      },
+      "harness_guards_passed": 19,
+      "complete_read_acceptance": {
+        "source": "9f73391992b60838a77d6c7c1126c063b4a1b919",
+        "passed": 119,
+        "total": 121,
+        "strict_passed": 109,
+        "jpeg_codec_equivalent": 10,
+        "intentional_safety_deviations": 2,
+        "unresolved": 0,
+        "same_pi_control": {
+          "passed": 121,
+          "total": 121,
+          "strict": true
+        },
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json",
+        "remaining_cross_cutting": "M\u2013P integration, cancellation, concurrency and reliability gates remain open."
+      }
+    },
+    "write_contract": {
+      "before_source": "509aab2d787a6a9f0ffeee9f3f63e4027b6b3bad",
+      "before_passed": 11,
+      "before_total": 39,
+      "regressions_failed_before": 14,
+      "regressions_total": 26,
+      "test_harness_correction": "Initial snapshot omitted the workspace root; corrected before product changes, retained both raw runs.",
+      "related_passed_after": 52,
+      "pinned_regressions": "docs/parity/fixtures/builtin-coding-tool-write-regressions-2026-10-22.json",
+      "legacy_permission_receipt": "docs/parity/fixtures/builtin-coding-tool-write-permission-2026-10-22.json",
+      "status": "supported checkpoint verified with explicit safety exclusions; M\u2013P acceptance pending",
+      "safety_candidates": [
+        "private new-file modes",
+        "atomic replacement and inode identity",
+        "hard-link preservation",
+        "existing file inside read-only directory"
+      ],
+      "queue": "Missing descendants retain resolved parent aliases; six alias cases also assert independent unrelated paths.",
+      "after_paths_source": "401a5b26",
+      "after_paths_strict_passed": 20,
+      "after_paths_total": 39,
+      "intentional_safety_candidates": 19,
+      "safety_receipt": "docs/parity/fixtures/builtin-coding-tool-write-safety-2026-10-22.json",
+      "source_queue_regressions_passed": 7,
+      "related_coordination_passed": 67,
+      "focused_coordination_passed": 7,
+      "temporary_privacy_regressions_failed_before": 1,
+      "coordination_receipt": "docs/parity/fixtures/builtin-coding-tool-mutation-coordination-2026-10-22.json",
+      "cancelled_waiter_timing": "Native settles cancellation promptly; Pi waits for the active operation. Neither executes the cancelled mutation or releases the active writer.",
+      "harness_guards_passed": 20,
+      "complete_acceptance": {
+        "source": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
+        "strict_passed": 20,
+        "total": 39,
+        "intentional_safety_deviations": 19,
+        "unresolved": 0,
+        "control_strict_passed": 39,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-write-acceptance-2026-10-22.json"
+      },
+      "latest_regression": {
+        "source": "00f918365dffd8b6f27f89e02f649a0009815227",
+        "strict_passed": 20,
+        "total": 39,
+        "intentional_safety_deviations": 19,
+        "unresolved": 0
+      }
+    },
+    "edit_contract": {
+      "baseline_source": "385ac35d",
+      "baseline_strict_passed": 21,
+      "baseline_total": 67,
+      "fuzzy_range_before_source": "d1046c7b",
+      "fuzzy_range_before_passed": 0,
+      "fuzzy_range_before_total": 1,
+      "product_regressions_failed_before": 16,
+      "additional_fixture_error": "Temporary roots were not replaced inside file-URL patch details; corrected without dropping fields.",
+      "pre_fix_total": 67,
+      "related_passed_after": 332,
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-edit-results-2026-10-22.json",
+      "status": "supported checkpoint verified with explicit safety exclusions; shared M\u2013P acceptance pending",
+      "first_correction_source": "2250b589",
+      "first_correction_strict_passed": 30,
+      "first_correction_total": 68,
+      "intentional_safety_candidates": 38,
+      "safety_receipt": "docs/parity/fixtures/builtin-coding-tool-edit-safety-2026-10-22.json",
+      "stable_overlap_before_source": "9c23bd86",
+      "stable_overlap_failed_before": 1,
+      "coordination_cases_passed": 11,
+      "harness_guards_passed": 20,
+      "parent_removed_regression_failed_before": 1,
+      "parent_removed_correction": "Atomic helper does not recreate removed parents; edit returns pinned ENOENT without resurrecting stale content; recovery write succeeds.",
+      "complete_acceptance": {
+        "source": "00f918365dffd8b6f27f89e02f649a0009815227",
+        "strict_passed": 31,
+        "total": 69,
+        "intentional_safety_deviations": 38,
+        "unresolved": 0,
+        "control_strict_passed": 69,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-edit-acceptance-2026-10-22.json"
+      }
+    },
+    "bash_contract": {
+      "status": "supported checkpoint verified with explicit cleanup/EOF safety exclusions; shared M-P acceptance pending",
+      "baseline_source": "6c346e4652dddaaffdd01477b8579063d22360e7",
+      "baseline_strict_passed": 2,
+      "baseline_total": 44,
+      "initial_final_updates_fail_first": 18,
+      "initial_final_updates_after": 18,
+      "spawn_cases_verified": 8,
+      "related_passed_before_coalescing_expansion": 139,
+      "detached_descendant_regression": {
+        "before_failed": 2,
+        "after_passed": 2,
+        "caller_cancellation": true,
+        "abort_bash": true,
+        "pinned_grandchild_at_settlement": "S",
+        "native_requirement": "terminate detached descendants before returning; stronger than pinned process-group-only cleanup",
+        "source_receipt": "docs/parity/fixtures/builtin-coding-tool-bash-processes-2026-10-22.json"
+      },
+      "remaining": [
+        "shared M-P provider, history and reliability acceptance"
+      ],
+      "stream_acceptance": {
+        "source": "b46aff69571749b11247b67bcf27e71d82cceab0",
+        "passed": 44,
+        "total": 44,
+        "control_passed": 44,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-bash-stream-acceptance-2026-10-22.json"
+      },
+      "session_environment": {
+        "fail_first": 2,
+        "model_selection": true,
+        "reasoning_selection": true,
+        "stale_inherited_values_removed": true,
+        "separate_sessions_verified": true,
+        "direct_bash_has_no_session_metadata": true,
+        "tests_after": 3,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-bash-environment-2026-10-22.json"
+      },
+      "shutdown": {
+        "before_failed": 2,
+        "before_passed": 1,
+        "after_passed": 3,
+        "native_exit_codes": {
+          "EOF": 0,
+          "SIGTERM": 143,
+          "SIGHUP": 129
+        },
+        "native_descendants_alive": 0,
+        "pinned_detached_grandchildren_alive": 3,
+        "eof_response_difference": "Native retains existing cancelled RPC completion response; pinned closes without a response. Explicitly outside strict equivalence."
+      },
+      "upstream_selected_bash_regressions": {
+        "files": 5,
+        "passed": 25,
+        "failed": 0,
+        "skipped": 0
+      },
+      "complete_acceptance": {
+        "source": "011728fb84e998b7dec0da3b056ea0c307c3af73",
+        "strict_passed": 44,
+        "total": 44,
+        "unresolved": 0,
+        "control_strict_passed": 44,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-bash-acceptance-2026-10-22.json"
+      },
+      "related_passed_after": 196
+    },
+    "grep_contract": {
+      "status": "supported Linux grep checkpoint verified with one explicit privacy exclusion; shared M-P acceptance pending",
+      "baseline_source": "bf9316fa",
+      "baseline_strict_passed": 39,
+      "baseline_total": 67,
+      "control_strict_passed": 67,
+      "regression_before_failed": 28,
+      "regression_before_passed": 39,
+      "first_adapter_passed": 64,
+      "first_adapter_total": 67,
+      "related_after": 427,
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-grep-results-2026-10-22.json",
+      "bounded_processing": "Incremental rg JSON projection skips large lines/submatch arrays, keeps 500 displayed characters and bounded head output; existing process lifetime owner handles cancellation.",
+      "file_order_evidence": "Eight unrestricted 24-CPU pinned executions produce the native alternate file order; two-CPU oracle profile produces the other observed order. Both full source-observed results retained; differential ordering comparisons remain exact.",
+      "remaining": [
+        "shared M-P provider, history and reliability acceptance"
+      ],
+      "protocol_fixture": "docs/parity/fixtures/builtin-coding-tool-grep-protocol-2026-10-22.json",
+      "protocol_first_before": {
+        "failed": 8,
+        "passed": 11,
+        "total": 19
+      },
+      "protocol_argument_before": {
+        "failed": 3,
+        "passed": 24,
+        "total": 27
+      },
+      "protocol_after": {
+        "passed": 27,
+        "total": 27
+      },
+      "chunk_boundary_selection": {
+        "passed": 84,
+        "note": "24 protocol cases plus 60 byte-chunk/Unicode/validation projections; later three argument-error cases are separately verified"
+      },
+      "real_rg_cancellation": {
+        "passed": 1,
+        "barrier": "FIFO writer open while data withheld",
+        "parallel_search_completed": true,
+        "process_states": [
+          "gone"
+        ],
+        "continuation": "verified"
+      },
+      "large_line_allocation": {
+        "passed": 1,
+        "input_bytes": 12582918,
+        "maximum_reader_allocated_bytes": 262144,
+        "displayed_characters": 500
+      },
+      "comparison_guards_passed": 21,
+      "complete_acceptance": {
+        "source": "6b0017d470c9927c366deb4c76fe93e1e9c1e554",
+        "strict_passed": 67,
+        "total": 68,
+        "intentional_safety_deviations": 1,
+        "unresolved": 0,
+        "control_strict_passed": 68,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-acceptance-2026-10-22.json"
+      }
+    },
+    "find_contract": {
+      "status": "verified_supported_linux_with_privacy_exclusion",
+      "baseline_source": "d27acc4e",
+      "baseline_strict_passed": 37,
+      "baseline_total": 61,
+      "control_strict_passed": 61,
+      "regression_before": {
+        "failed": 24,
+        "passed": 37,
+        "total": 61
+      },
+      "first_adapter": {
+        "passed": 128,
+        "scope": "67 grep and 61 find actual-function cases"
+      },
+      "legacy_selection_before_expectation_correction": {
+        "passed": 186,
+        "failed": 2,
+        "total": 188
+      },
+      "legacy_expectation_correction": "Both symlink-directory theory rows expected a slash; actual pinned find-symlink-directory preserves fd link spelling without a slash. Presence and no-follow assertions retained.",
+      "fixture": "docs/parity/fixtures/builtin-coding-tool-find-results-2026-10-22.json",
+      "remaining": [
+        "shared M-P acceptance"
+      ],
+      "process_protocol": {
+        "pinned_cases": 27,
+        "shared_grep_find_passed": 54,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-find-protocol-2026-10-22.json"
+      },
+      "real_fd_cancellation": {
+        "passed": true,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-find-cancellation-2026-10-22.json",
+        "barrier": "First actual fd output; observed live process, abort, bounded cleanup, unchanged inputs and successful continuation."
+      },
+      "preparation_cancellation": {
+        "before_failed": 2,
+        "after_passed": 2
+      },
+      "directory_symlink_privacy": {
+        "before_failed": 1,
+        "after_passed": 1,
+        "strict_equivalence": false,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-find-safety-2026-10-22.json"
+      },
+      "related_warning_as_error_passed": 276,
+      "comparison_guards_passed": 22,
+      "path_decoding_chunk_cases_passed": 60,
+      "complete_acceptance": {
+        "source": "99016879fabaee542c2b0265bb34864c98435516",
+        "strict_passed": 61,
+        "total": 62,
+        "intentional_safety_deviations": 1,
+        "unresolved": 0,
+        "control_strict_passed": 62,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-find-acceptance-2026-10-22.json"
+      }
+    },
+    "ls_contract": {
+      "status": "verified_supported_linux",
+      "baseline_source": "99016879",
+      "baseline_worktree_dirty": true,
+      "baseline_strict_passed": 29,
+      "baseline_total": 51,
+      "control_strict_passed": 51,
+      "fixture": "docs/parity/fixtures/builtin-coding-tool-ls-results-2026-10-22.json",
+      "confirmed_mismatches": [
+        "Unicode and stable case ordering",
+        "fractional/numeric limits",
+        "broken links and stat failures",
+        "shared path normalization",
+        "permission errors",
+        "pre-cancellation"
+      ],
+      "regression_before": {
+        "failed": 22,
+        "passed": 157,
+        "total": 179,
+        "scope": "51 ls plus existing 128 grep/find source-backed cases"
+      },
+      "additional_unicode_before": {
+        "passed": 1,
+        "total": 2,
+        "control_strict_passed": 2,
+        "source": "ac40d784",
+        "source_worktree_dirty": true
+      },
+      "first_correction_related_passed": 211,
+      "read_cancellation": {
+        "passed": true,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-ls-cancellation-2026-10-22.json",
+        "barrier": "Real names snapshot held before fulfillment; abort settles before release, independent listing and continuation succeed."
+      },
+      "legacy_selection_passed": 40,
+      "complete_acceptance": {
+        "source": "a68d365c4fcf6f43e4a8fcbdf01d150627f9770c",
+        "strict_passed": 53,
+        "total": 53,
+        "control_strict_passed": 53,
+        "unresolved": 0,
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-ls-acceptance-2026-10-22.json"
+      },
+      "remaining": [
+        "shared M-P acceptance"
+      ]
+    },
+    "tool_integration": {
+      "status": "verified_defined_maf_schema_selection_lifecycle_and_canonical_workflows",
+      "fixture": "docs/parity/fixtures/builtin-coding-tool-agent-workflow-2026-10-22.json",
+      "source_loop": "Actual pinned Agent and SessionManager save/open; deterministic stream provider",
+      "workflow_calls": 9,
+      "workflow_tools": 7,
+      "source_requests": 10,
+      "source_restored_results": 9,
+      "source_error_cases": 7,
+      "confirmed_mismatch": "Expected actionable failed-edit text; model received Error: Function failed.; native workflow stopped at request 7 under the strict provider assertion.",
+      "regression_before_failed": 1,
+      "remaining": [
+        "physical HTTP checkpoint N",
+        "final corpus and stress checkpoints O-P"
+      ],
+      "native_new_checks_passed": 15,
+      "source_selection": {
+        "files": 6,
+        "passed": 37,
+        "failed": 0,
+        "skipped": 0
+      },
+      "related_passed": 825,
+      "comparison_guards_passed": 22
+    },
+    "physical_providers": {
+      "status": "verified_supported_linux_with_private_creation_exclusion",
+      "source": "57a86f51",
+      "before_receipt": "docs/parity/fixtures/builtin-coding-tool-provider-before-2026-10-22.json",
+      "apis": [
+        "openai-responses",
+        "openai-completions",
+        "anthropic-messages"
+      ],
+      "per_product_per_api_requests": 11,
+      "calls_per_workflow": 9,
+      "actual_process_restarts_per_workflow": 1,
+      "confirmed_mismatches": [
+        "Live write confirmations acquire JSON quotes until restart on all three APIs",
+        "Chat declarations retain additionalProperties false for grep/find/ls",
+        "Responses declarations retain adapter object defaults",
+        "RPC history reports generic tool names and omits edit/search result details"
+      ],
+      "remaining": [
+        "final corpus and reliability checkpoints O-P"
+      ],
+      "fail_first": {
+        "failed": 9,
+        "passed": 0
+      },
+      "focused_after": {
+        "passed": 9,
+        "failed": 0
+      },
+      "first_broad_selection": {
+        "passed": 1017,
+        "failed": 1,
+        "total": 1018,
+        "regression": "JSON-string correction changed an extension hook representation. Scope narrowed to correlated built-in results; existing test retained."
+      },
+      "comparison_guards_passed": 27,
+      "extension_and_builtin_scope_passed": 21,
+      "related_final_passed": 1018,
+      "scoped_physical_comparisons": {
+        "supported_contract_passed": 3,
+        "strict_passed": 0,
+        "private_creation_exclusions": 3,
+        "unresolved": 0,
+        "source_worktree_dirty": true
+      },
+      "complete_acceptance": {
+        "source": "75e02e64e04db28da6480cccef39a8ad187add76",
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-provider-acceptance-2026-10-22.json",
+        "supported_contract_passed": 3,
+        "strict_filesystem_exclusions": 3,
+        "unresolved": 0,
+        "same_pi_strict_passed": 3
+      }
+    },
+    "complete_corpus": {
+      "status": "verified_defined_corpus_with_explicit_safety_exclusions",
+      "source": "75e02e64e04db28da6480cccef39a8ad187add76",
+      "source_worktree_dirty": false,
+      "first_run": {
+        "passed": 395,
+        "strict": 385,
+        "jpeg_equivalent": 10,
+        "safety_exclusions": 60,
+        "unresolved": 1,
+        "total": 456
+      },
+      "control_strict_passed": 456,
+      "unresolved_observation": "grep repository privacy case has identical permitted lines/metadata/files but a new native rg emission order. Complete actual source/native pair retained without sorting, still strict=false.",
+      "remaining": [
+        "stress and safety checkpoint P",
+        "refresh affected cases after any later product correction"
+      ],
+      "final_acceptance": {
+        "source": "acfbe782ae8d249a1f1659064fb94c8c3d6b9598",
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-corpus-acceptance-2026-10-22.json",
+        "passed": 395,
+        "total": 456,
+        "strictPassed": 385,
+        "jpegCodecEquivalent": 10,
+        "intentionalSafetyDeviations": 61,
+        "unresolved": 0,
+        "perTool": {
+          "read": 121,
+          "write": 39,
+          "edit": 69,
+          "bash": 44,
+          "grep": 68,
+          "find": 62,
+          "ls": 53
+        }
+      }
+    },
+    "stress_and_safety": {
+      "status": "verified_defined_acceptance",
+      "source_agent_fixture": "docs/parity/fixtures/builtin-coding-tool-concurrent-agent-2026-10-22.json",
+      "native_compaction_selection": {
+        "passed": 114,
+        "failed": 0,
+        "skipped": 0
+      },
+      "corrections": [
+        "RPC snapshots accept validated assistant compaction boundaries, matching the native planner and pinned history.",
+        "In-flight context estimation uses provider-projected results rather than presentation metadata; raw canonical outcomes are preserved."
+      ],
+      "regression_evidence": [
+        "The concurrent workflow fails before the RPC boundary correction.",
+        "The existing repeated-tool-loop regression and a focused presentation-details regression fail before the budget correction."
+      ],
+      "pending": [],
+      "initial_reliability_attempt": {
+        "passed": 258,
+        "failed": 4,
+        "abandoned_output_files": 0,
+        "classification": "Independent pinned observations confirm all four encounter-order alternatives; no product behavior changed.",
+        "source_witness": "docs/parity/fixtures/builtin-coding-tool-search-order-2026-10-22.json",
+        "distinct_existing_cases_observed": 5,
+        "repeated_source_observations": 640,
+        "search_regressions_after": 182
+      },
+      "receipt": "docs/parity/fixtures/builtin-coding-tool-safety-acceptance-2026-10-22.json",
+      "reliability": {
+        "source": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+        "repetitions": 5,
+        "checks_per_repetition": 271,
+        "total_passed": 1355,
+        "failed": 0,
+        "skipped": 0,
+        "abandoned_output_files": 0
+      }
+    },
+    "ownership_hardening": {
+      "status": "local_source_mode_checks_verified_actual_alternate_group_CI_gate_pending",
+      "pinned_fixture": "docs/parity/fixtures/builtin-coding-tool-mutation-ownership-2026-10-22.json",
+      "source_cases": 8,
+      "defined_contract": "Owner/group preservation and kernel-compatible set-ID mode changes; atomic inode replacement remains explicitly excluded.",
+      "before": {
+        "failed": 4,
+        "passed": 4,
+        "total": 8
+      },
+      "related_after": {
+        "passed": 138,
+        "failed": 0,
+        "skipped": 0
+      },
+      "local_alternate_group_limitation": {
+        "restricted_mapping_error": "EINVAL",
+        "expanded_mapping_error": "EPERM",
+        "ordinary_owner_handle_restoration": "verified"
+      },
+      "ci_acceptance": "Fresh pinned checkout/npm-ci/source-resolver oracle; Linux CI requires a genuinely assignable alternate group and passes its actual UID/GID observations into native tests.",
+      "cold_setup_reproduction": "Fresh pinned clone plus npm ci --ignore-scripts and the actual source oracle passed locally.",
+      "previous_full_validation": {
+        "source": "a865fd0b",
+        "passed": 3718,
+        "failed": 0,
+        "skipped": 0
+      },
+      "remaining": [
+        "Inspect actual alternate-group pinned/native CI artifact before completing T."
+      ]
+    },
+    "local_restart_test_synchronization": {
+      "product_source": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "full_before": {
+        "passed": 3725,
+        "failed": 1,
+        "skipped": 0,
+        "total": 3726
+      },
+      "failure": "The resumed startup already contained LOCAL_TOOL_OK before the test recorded its resumeMark; waiting only after that mark timed out.",
+      "correction": "Require the initial settled frame to contain both qwen and restored LOCAL_TOOL_OK, then mark the next prompt. No product changes or timeout increase.",
+      "focused_after": {
+        "passed": 1,
+        "failed": 0
+      },
+      "remaining": [],
+      "repeated_after": {
+        "passed": 5,
+        "failed": 0
+      }
+    },
+    "local_http_fixture_cleanup": {
+      "source": "52bba8a8ca7c9ec2e42dc4bd452cbe07faea71d6",
+      "full_before": {
+        "passed": 3725,
+        "failed": 1,
+        "skipped": 0,
+        "total": 3726
+      },
+      "failure": "HttpListener Stop followed by automatic Dispose re-enters endpoint removal and can bind the released port again.",
+      "independent_reproduction": {
+        "runtime": "10.0.13",
+        "stop_then_dispose": "Address already in use with the released port deliberately held by its next owner",
+        "close_then_dispose": "clean"
+      },
+      "primary_source": "https://github.com/dotnet/runtime/blob/v10.0.13/src/libraries/System.Net.HttpListener/src/System/Net/Managed/HttpEndPointManager.cs",
+      "correction": "Close the owned test listener once; automatic disposal is then idempotent. All product assertions and timeouts are retained.",
+      "focused_after": {
+        "passed": 1,
+        "failed": 0
+      },
+      "remaining": [],
+      "repeated_after": {
+        "passed": 5,
+        "failed": 0
+      }
+    },
+    "final_product_source": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
+    "final_local_validation_source": "3d0d7d6db783a036930b5c39edf0796d90fdd447",
+    "final_local_validation": "docs/parity/fixtures/builtin-coding-tool-local-validation-2026-10-22.json",
+    "incremental_record_policy": "Earlier nested status/remaining fields are chronological investigation snapshots. Current acceptance is defined by checkpoints, final_product_source, required_differential and linked final receipts; do not reinterpret historical gaps as current work.",
+    "corrected_corpus": {
+      "source": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
+      "supported": 399,
+      "strict": 389,
+      "jpeg_equivalent": 10,
+      "safety_exclusions": 61,
+      "total": 460,
+      "unresolved": 0,
+      "fd": "official 10.5.0",
+      "physical_provider_and_cancel_apis": 3,
+      "providerAcceptanceSource": "e152e686017f659141d1bd5a83ef8823627c5410"
+    },
+    "current_full_suite_receipt": "Final corrected publication head and fresh full-suite counters are authoritative in PR #22; prior source-specific local counters are retained.",
+    "review_followups": {
+      "grep_context_scanning": {
+        "status": "implemented_related_tests_pass; final publication gates in PR22",
+        "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-context-2026-10-22.json",
+        "source_control": {
+          "passed": 4,
+          "total": 4,
+          "pi_sharp_used": false
+        },
+        "before": {
+          "context_opens": 100,
+          "context_bytes": 3355553200
+        },
+        "after": {
+          "context_opens": 1,
+          "context_bytes": 33555532
+        },
+        "related_tests_passed": 270,
+        "source": "962cfa48d97a960149e1f0cc020f25bc302c1d48",
+        "full_corpus": {
+          "passed": 399,
+          "total": 460,
+          "strictPassed": 389,
+          "jpegCodecEquivalent": 10,
+          "intentionalSafetyDeviations": 61,
+          "unresolved": 0,
+          "perTool": {
+            "read": 121,
+            "write": 39,
+            "edit": 69,
+            "bash": 44,
+            "grep": 72,
+            "find": 62,
+            "ls": 53
+          }
+        },
+        "same_pi_control": {
+          "passed": 460,
+          "total": 460,
+          "earlier_order_difference": 459
+        }
+      }
+    }
+  },
   "plan_received": true,
   "source_note": "Bounded MCP + Codemode workflow milestone on milestone/mcp-codemode-workflows. Final product source 834927bfc984cdc003149b3f15223ecc13f24a2b is based on main 28f223c0c3b52ac9cd79a76c35a26c982999eee2; initial source 9ca5deb4640438893c3bc26a4bf16df3dd7eada7 predates the OAuth callback listener hardening. The listener binds only to the configured loopback authority while origin/path, Host, and remote-address checks remain in place. Configured localhost and 127.0.0.1 regression tests pass. Configured Pi remains pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. All 194 required IDs remain retained: 13 verified, 148 in progress, 33 not started. Only the explicitly closed MCP OAuth CIMD contract changed status; broader MCP and Codemode parity remains incomplete.",
   "feature_first_goal": {

@@ -4,10 +4,12 @@ using PiSharp.Core;
 namespace PiSharp.Runtime.Tools;
 
 /// <summary>Coordinates atomic writes and exact edits across facade instances.</summary>
-internal sealed class FileMutations(string workingDirectory)
+internal sealed class FileMutations(string workingDirectory, FileMutationQueue? mutationQueue = null,
+    Func<Task>? beforeCommit = null, Func<Task>? afterRead = null)
 {
     private static readonly FileMutationQueue s_mutations = new();
-    private string Resolve(string path) => Path.GetFullPath(path, workingDirectory);
+    private readonly FileMutationQueue _mutations = mutationQueue ?? s_mutations;
+    private string Resolve(string path) => CodingToolPaths.Resolve(path, workingDirectory);
 
     private static string? FindBlockingFileAncestor(string path)
     {
@@ -25,7 +27,7 @@ internal sealed class FileMutations(string workingDirectory)
 
     private static async Task<byte[]> ReadEditableFileAsync(string path, CancellationToken cancellationToken)
     {
-        await using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite,
+        await using var stream = new FileStream(path, FileMode.Open, OperatingSystem.IsLinux() ? FileAccess.Read : FileAccess.ReadWrite,
             FileShare.ReadWrite | FileShare.Delete, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
         using var content = new MemoryStream();
         await stream.CopyToAsync(content, cancellationToken);
@@ -41,8 +43,9 @@ internal sealed class FileMutations(string workingDirectory)
         var parent = Path.GetDirectoryName(absolute)!;
         try
         {
-            return await s_mutations.RunAsync(absolute, async () =>
+            return await _mutations.RunAsync(absolute, async () =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (FindBlockingFileAncestor(parent) is { } blockingFile)
                 {
                     var pathIsFile = string.Equals(blockingFile, parent,
@@ -56,12 +59,23 @@ internal sealed class FileMutations(string workingDirectory)
                 {
                     throw new ToolFailureException($"EACCES: permission denied, mkdir '{parent}'", inner: error);
                 }
+                cancellationToken.ThrowIfCancellationRequested();
                 if (Directory.Exists(absolute))
                     throw new ToolFailureException($"EISDIR: illegal operation on a directory, open '{absolute}'");
 
-                await AtomicFileWriter.ReplaceAsync(absolute, Encoding.UTF8.GetBytes(content), cancellationToken);
+                LinuxFileAccess.RequireWritableIfPresent(absolute);
+                await AtomicFileWriter.ReplaceAsync(absolute, Encoding.UTF8.GetBytes(content), cancellationToken, beforeCommit);
                 return $"Successfully wrote to {path}";
             }, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException("Operation aborted", cancellationToken);
+        }
+        catch (DirectoryNotFoundException error) when (OperatingSystem.IsLinux())
+        {
+            LinuxFileAccess.Require(absolute, 2, "open");
+            throw new ToolFailureException($"ENOENT: no such file or directory, open '{absolute}'", inner: error);
         }
         catch (UnauthorizedAccessException error)
         {
@@ -77,11 +91,15 @@ internal sealed class FileMutations(string workingDirectory)
         CancellationToken cancellationToken)
     {
         if (edits is null || edits.Count == 0) throw new ToolFailureException("Edit tool input is invalid. edits must contain at least one replacement.");
+        var absolute = Resolve(path);
         try
         {
-            var absolute = Resolve(path);
-            return await s_mutations.RunAsync(absolute, async () =>
+            return await _mutations.RunAsync(absolute, async () =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (LinuxFileAccess.AccessError(absolute, 6) is var error && error != 0)
+                    throw new ToolFailureException($"Could not edit file: {path}. Error code: {LinuxFileAccess.ErrorCode(error)}.");
+                if (OperatingSystem.IsLinux() && Directory.Exists(absolute)) throw LinuxFileAccess.Failure(21, "read");
                 byte[] bytes;
                 try { bytes = await ReadEditableFileAsync(absolute, cancellationToken); }
                 catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
@@ -92,21 +110,38 @@ internal sealed class FileMutations(string workingDirectory)
                 {
                     throw new ToolFailureException($"Could not edit file: {path}. Error code: EACCES.", inner: e);
                 }
+                if (afterRead is not null) await afterRead();
+                cancellationToken.ThrowIfCancellationRequested();
                 var bom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
-                var source = new UTF8Encoding(false, true).GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0));
+                var source = Encoding.UTF8.GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0));
                 var lf = source.IndexOf('\n');
                 var ending = lf > 0 && source[lf - 1] == '\r' ? "\r\n" : "\n";
                 var plan = FileEdits.Plan(source, edits, path);
+                cancellationToken.ThrowIfCancellationRequested();
                 var restored = ending == "\r\n" ? plan.NewContent.Replace("\n", "\r\n", StringComparison.Ordinal) : plan.NewContent;
                 var payload = Encoding.UTF8.GetBytes(restored);
                 if (bom) payload = [0xEF, 0xBB, 0xBF, .. payload];
                 var details = FileEditDiff.Create(path, plan.OriginalContent, plan.NewContent);
-                await AtomicFileWriter.ReplaceAsync(absolute, payload, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                await AtomicFileWriter.ReplaceAsync(absolute, payload, cancellationToken, beforeCommit);
                 return new EditToolOutput($"Successfully replaced {edits.Count} block(s) in {path}.",
                     details.Diff, details.Patch, details.FirstChangedLine);
             }, cancellationToken);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or DecoderFallbackException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException("Operation aborted", cancellationToken);
+        }
+        catch (DirectoryNotFoundException error) when (OperatingSystem.IsLinux())
+        {
+            LinuxFileAccess.Require(absolute, 2, "open");
+            throw new ToolFailureException($"ENOENT: no such file or directory, open '{absolute}'", inner: error);
+        }
+        catch (UnauthorizedAccessException error)
+        {
+            throw new ToolFailureException($"EACCES: permission denied, open '{absolute}'", inner: error);
+        }
+        catch (Exception e) when (e is IOException or ArgumentException)
         {
             throw new ToolFailureException(e.Message, inner: e);
         }

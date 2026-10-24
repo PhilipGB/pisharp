@@ -1,0 +1,4208 @@
+{
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1",
+  "capture": "edit-expanded-before/report.json",
+  "scope": "Full actual-function results/details and final file bytes. Inode/mode/ownership and hard-link/atomic-parent differences remain in the full differential and explicit safety receipts.",
+  "cases": [
+    {
+      "caseId": "edit-single",
+      "setup": {
+        "caseId": "edit-single",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "one",
+              "newText": "ONE"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "one\ntwo\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-single",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 one\n+1 ONE\n 2 two",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,2 @@\n-one\n+ONE\n two\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "c78a5ec2c28be893afb6225ef05c556ef289bb4b6b76e7fc358c29e791179123",
+          "base64": "T05FCnR3bwo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-batch-original-snapshot",
+      "setup": {
+        "caseId": "edit-batch-original-snapshot",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "foo\n",
+              "newText": "foo bar\n"
+            },
+            {
+              "oldText": "bar\n",
+              "newText": "BAR\n"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "foo\nbar\nbaz\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-batch-original-snapshot",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 2 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 foo\n-2 bar\n+1 foo bar\n+2 BAR\n 3 baz",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,3 +1,3 @@\n-foo\n-bar\n+foo bar\n+BAR\n baz\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 16,
+          "sha256": "46a4d002a861f3eafdcc7bb0c146306566cfaf94930c5120ec7ca58f0fb4b5a8",
+          "base64": "Zm9vIGJhcgpCQVIKYmF6Cg==",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-insert",
+      "setup": {
+        "caseId": "edit-insert",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha\n",
+              "newText": "alpha\ninserted\n"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\nbeta\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-insert",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": " 1 alpha\n+2 inserted\n 2 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,3 @@\n alpha\n+inserted\n beta\n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 20,
+          "sha256": "7427f3e9f95ac1f8eb287cf3b0be49c9ed1faba8653b50b4d5d3f121a30714c0",
+          "base64": "YWxwaGEKaW5zZXJ0ZWQKYmV0YQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-delete",
+      "setup": {
+        "caseId": "edit-delete",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha\n",
+              "newText": ""
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\nbeta\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-delete",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n 2 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,1 @@\n-alpha\n beta\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 5,
+          "sha256": "f2c82decdd7181cf98945929a62598db7e6b477e11f6e0eb0ae97020eff151ad",
+          "base64": "YmV0YQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-empty-file",
+      "setup": {
+        "caseId": "edit-empty-file",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "missing",
+              "newText": "new"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": ""
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-empty-file",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not find the exact text in file.txt. The old text must match exactly including all whitespace and newlines."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "base64": "",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-empty-old-text",
+      "setup": {
+        "caseId": "edit-empty-old-text",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "",
+              "newText": "bad"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "unchanged"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-empty-old-text",
+        "content": [
+          {
+            "type": "text",
+            "text": "oldText must not be empty in file.txt."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "aaa8d3c8d74ad3e8f6b1772aa9c7e0eaa528cb42fc93599ce2f125b00d4c424c",
+          "base64": "dW5jaGFuZ2Vk",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-ambiguous",
+      "setup": {
+        "caseId": "edit-ambiguous",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "repeat",
+              "newText": "bad"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "repeat repeat"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-ambiguous",
+        "content": [
+          {
+            "type": "text",
+            "text": "Found 2 occurrences of the text in file.txt. The text must be unique. Please provide more context to make it unique."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 13,
+          "sha256": "d7fbd4031de2b934a04e9f68b3643c477c875660d30ccc3c32524f4b4b653315",
+          "base64": "cmVwZWF0IHJlcGVhdA==",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-missing-match",
+      "setup": {
+        "caseId": "edit-missing-match",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "missing",
+              "newText": "bad"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "unchanged"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-missing-match",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not find the exact text in file.txt. The old text must match exactly including all whitespace and newlines."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "aaa8d3c8d74ad3e8f6b1772aa9c7e0eaa528cb42fc93599ce2f125b00d4c424c",
+          "base64": "dW5jaGFuZ2Vk",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-invalid-batch-atomic",
+      "setup": {
+        "caseId": "edit-invalid-batch-atomic",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            },
+            {
+              "oldText": "missing",
+              "newText": "bad"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\nbeta\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-invalid-batch-atomic",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not find edits[1] in file.txt. The oldText must match exactly including all whitespace and newlines."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 11,
+          "sha256": "e49c81e2d2f84e259d40e2fb8192f3bcd198b355184845d76d8f58807d0d78ee",
+          "base64": "YWxwaGEKYmV0YQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-overlap",
+      "setup": {
+        "caseId": "edit-overlap",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "one\ntwo",
+              "newText": "bad"
+            },
+            {
+              "oldText": "two\nthree",
+              "newText": "bad"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "one\ntwo\nthree\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-overlap",
+        "content": [
+          {
+            "type": "text",
+            "text": "edits[0] and edits[1] overlap in file.txt. Merge them into one edit or target disjoint regions."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 14,
+          "sha256": "b6285c57e8797db5d4c51c80d6f11938afda9b11c6a003549709189e9b4b92a2",
+          "base64": "b25lCnR3bwp0aHJlZQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-nearby",
+      "setup": {
+        "caseId": "edit-nearby",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            },
+            {
+              "oldText": "beta",
+              "newText": "BETA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\nbeta\ngamma\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-nearby",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 2 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n-2 beta\n+1 ALPHA\n+2 BETA\n 3 gamma",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,3 +1,3 @@\n-alpha\n-beta\n+ALPHA\n+BETA\n gamma\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 17,
+          "sha256": "ff1a4e7277374347db219110be7ad65a71be8b697ef7ef92522017a9ebc9346a",
+          "base64": "QUxQSEEKQkVUQQpnYW1tYQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-separated-hunks",
+      "setup": {
+        "caseId": "edit-separated-hunks",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "line 2\n",
+              "newText": "LINE 2\n"
+            },
+            {
+              "oldText": "line 29\n",
+              "newText": "LINE 29\n"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nline 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-separated-hunks",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 2 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "  1 line 1\n- 2 line 2\n+ 2 LINE 2\n  3 line 3\n  4 line 4\n  5 line 5\n  6 line 6\n    ...\n 25 line 25\n 26 line 26\n 27 line 27\n 28 line 28\n-29 line 29\n+29 LINE 29\n 30 line 30",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,6 +1,6 @@\n line 1\n-line 2\n+LINE 2\n line 3\n line 4\n line 5\n line 6\n@@ -25,6 +25,6 @@\n line 25\n line 26\n line 27\n line 28\n-line 29\n+LINE 29\n line 30\n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 231,
+          "sha256": "7118dd364faa386b7d5e4d2284d49e0e518cb58d44812a8472ec7a8b4001d258",
+          "base64": "bGluZSAxCkxJTkUgMgpsaW5lIDMKbGluZSA0CmxpbmUgNQpsaW5lIDYKbGluZSA3CmxpbmUgOApsaW5lIDkKbGluZSAxMApsaW5lIDExCmxpbmUgMTIKbGluZSAxMwpsaW5lIDE0CmxpbmUgMTUKbGluZSAxNgpsaW5lIDE3CmxpbmUgMTgKbGluZSAxOQpsaW5lIDIwCmxpbmUgMjEKbGluZSAyMgpsaW5lIDIzCmxpbmUgMjQKbGluZSAyNQpsaW5lIDI2CmxpbmUgMjcKbGluZSAyOApMSU5FIDI5CmxpbmUgMzAK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-crlf",
+      "setup": {
+        "caseId": "edit-crlf",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha\nbeta",
+              "newText": "ALPHA\nBETA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\r\nbeta\r\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-crlf",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n-2 beta\n+1 ALPHA\n+2 BETA",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,2 @@\n-alpha\n-beta\n+ALPHA\n+BETA\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 13,
+          "sha256": "7915208c28556d3d3a685542821f5491c168a4b81b1f2fdb3644945e59535b1c",
+          "base64": "QUxQSEENCkJFVEENCg==",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-bom",
+      "setup": {
+        "caseId": "edit-bom",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "\ufeffalpha\nbeta\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-bom",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 ALPHA\n 2 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,2 @@\n-alpha\n+ALPHA\n beta\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 14,
+          "sha256": "17ea5f99b64cc840e84a6bb5eaa1825d7c4788142abc04ad7e9f20854374529e",
+          "base64": "77u/QUxQSEEKYmV0YQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-unicode",
+      "setup": {
+        "caseId": "edit-unicode",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "caf\u00e9",
+              "newText": "\u30ab\u30d5\u30a7"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "\u65e5\u672c\u8a9e caf\u00e9 \ud83d\ude00\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-unicode",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 \u65e5\u672c\u8a9e caf\u00e9 \ud83d\ude00\n+1 \u65e5\u672c\u8a9e \u30ab\u30d5\u30a7 \ud83d\ude00",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-\u65e5\u672c\u8a9e caf\u00e9 \ud83d\ude00\n+\u65e5\u672c\u8a9e \u30ab\u30d5\u30a7 \ud83d\ude00\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 25,
+          "sha256": "7b900be2434156af41bdb571668b4a162b4e608ca3827499a4b6ce0850678beb",
+          "base64": "5pel5pys6KqeIOOCq+ODleOCpyDwn5iACg==",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-trailing-whitespace",
+      "setup": {
+        "caseId": "edit-trailing-whitespace",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha\n",
+              "newText": "ALPHA\n"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha  \nbeta\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-trailing-whitespace",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha  \n+1 ALPHA\n 2 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,2 @@\n-alpha  \n+ALPHA\n beta\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 11,
+          "sha256": "95bf16eedd9777373f37c55341fb87d46ed6d3c184953579dc313bc84e7e0834",
+          "base64": "QUxQSEEKYmV0YQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-blank-lines",
+      "setup": {
+        "caseId": "edit-blank-lines",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha\n\n",
+              "newText": "ALPHA\n\n"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n\nbeta\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-blank-lines",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 ALPHA\n 2 \n 3 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,3 +1,3 @@\n-alpha\n+ALPHA\n \n beta\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 12,
+          "sha256": "186f7791da8f584f194f30a2f7f138393712f55fb1130ef5d8984cff15854f74",
+          "base64": "QUxQSEEKCmJldGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-mixed-endings",
+      "setup": {
+        "caseId": "edit-mixed-endings",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "beta",
+              "newText": "BETA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\r\nbeta\ngamma\r"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-mixed-endings",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": " 1 alpha\n-2 beta\n+2 BETA\n 3 gamma",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,3 +1,3 @@\n alpha\n-beta\n+BETA\n gamma\n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 20,
+          "sha256": "72fa39f3d3bb0e2c918881aed6a6d77fc442337a8c188c2f235c45acd30dee9c",
+          "base64": "YWxwaGENCkJFVEENCmdhbW1hDQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-fuzzy-unchanged-lines",
+      "setup": {
+        "caseId": "edit-fuzzy-unchanged-lines",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "change \"this\"",
+              "newText": "changed"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "keep \u201csmart\u201d\nchange \u201cthis\u201d\nkeep caf\u00e9  \n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-fuzzy-unchanged-lines",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": " 1 keep \u201csmart\u201d\n-2 change \u201cthis\u201d\n+2 changed\n 3 keep caf\u00e9  ",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,3 +1,3 @@\n keep \u201csmart\u201d\n-change \u201cthis\u201d\n+changed\n keep caf\u00e9  \n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 38,
+          "sha256": "d29cb9b27a1ee2d9c90e38f291a8c080b48c1964ad90b3948eb745ad0d4f6551",
+          "base64": "a2VlcCDigJxzbWFydOKAnQpjaGFuZ2VkCmtlZXAgY2Fmw6kgIAo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-no-change",
+      "setup": {
+        "caseId": "edit-no-change",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "unchanged",
+              "newText": "unchanged"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "unchanged\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-no-change",
+        "content": [
+          {
+            "type": "text",
+            "text": "No changes made to file.txt. The replacement produced identical content. This might indicate an issue with special characters or the text not existing as expected."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 10,
+          "sha256": "1cd263f1102656dd6b6cf1d626d1a96f9eba0406af3cb2a52560d473d4801052",
+          "base64": "dW5jaGFuZ2VkCg==",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-readonly",
+      "setup": {
+        "caseId": "edit-readonly",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "bad"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        },
+        "modes": {
+          "file.txt": 292
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-readonly",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not edit file: file.txt. Error code: EACCES."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 292,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-symlink",
+      "setup": {
+        "caseId": "edit-symlink",
+        "tool": "edit",
+        "arguments": {
+          "path": "alias",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        },
+        "symlinks": {
+          "alias": "file.txt"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-symlink",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in alias."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 ALPHA",
+          "patch": "--- alias\n+++ alias\n@@ -1,1 +1,1 @@\n-alpha\n+ALPHA\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "file.txt"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "1921b918b15842c7fdb115078e610263fac85f159c1d8e0ecec3d89a0faa4005",
+          "base64": "QUxQSEEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-invalid-utf8",
+      "setup": {
+        "caseId": "edit-invalid-utf8",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": {
+            "base64": "YWxwaGH/Cg=="
+          }
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-invalid-utf8",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\ufffd\n+1 ALPHA\ufffd",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\ufffd\n+ALPHA\ufffd\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "17286d452a3ab6e371b2fe02d28ad86635d87db5d6ba89179ccb48f68ea3871d",
+          "base64": "QUxQSEHvv70K",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-missing-target",
+      "setup": {
+        "caseId": "edit-missing-target",
+        "tool": "edit",
+        "arguments": {
+          "path": "missing",
+          "edits": [
+            {
+              "oldText": "x",
+              "newText": "y"
+            }
+          ]
+        },
+        "files": {}
+      },
+      "expectedResult": {
+        "caseId": "edit-missing-target",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not edit file: missing. Error code: ENOENT."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-directory",
+      "setup": {
+        "caseId": "edit-directory",
+        "tool": "edit",
+        "arguments": {
+          "path": "dir",
+          "edits": [
+            {
+              "oldText": "x",
+              "newText": "y"
+            }
+          ]
+        },
+        "files": {},
+        "directories": {
+          "dir": 493
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-directory",
+        "content": [
+          {
+            "type": "text",
+            "text": "EISDIR: illegal operation on a directory, read"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "dir": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-empty-batch",
+      "setup": {
+        "caseId": "edit-empty-batch",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": []
+        },
+        "files": {
+          "file.txt": "unchanged"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-empty-batch",
+        "content": [
+          {
+            "type": "text",
+            "text": "Edit tool input is invalid. edits must contain at least one replacement."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "aaa8d3c8d74ad3e8f6b1772aa9c7e0eaa528cb42fc93599ce2f125b00d4c424c",
+          "base64": "dW5jaGFuZ2Vk",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-legacy-input",
+      "setup": {
+        "caseId": "edit-legacy-input",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "oldText": "alpha",
+          "newText": "ALPHA"
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-legacy-input",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 ALPHA",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+ALPHA\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "1921b918b15842c7fdb115078e610263fac85f159c1d8e0ecec3d89a0faa4005",
+          "base64": "QUxQSEEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-stringified-edits",
+      "setup": {
+        "caseId": "edit-stringified-edits",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": "[{\"oldText\":\"alpha\",\"newText\":\"ALPHA\"}]"
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-stringified-edits",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 ALPHA",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+ALPHA\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "1921b918b15842c7fdb115078e610263fac85f159c1d8e0ecec3d89a0faa4005",
+          "base64": "QUxQSEEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-single-object-edits",
+      "setup": {
+        "caseId": "edit-single-object-edits",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": {
+            "oldText": "alpha",
+            "newText": "ALPHA"
+          }
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-single-object-edits",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 ALPHA",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+ALPHA\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "1921b918b15842c7fdb115078e610263fac85f159c1d8e0ecec3d89a0faa4005",
+          "base64": "QUxQSEEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-missing-required",
+      "setup": {
+        "caseId": "edit-missing-required",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt"
+        },
+        "files": {
+          "file.txt": "unchanged"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-missing-required",
+        "content": [
+          {
+            "type": "text",
+            "text": "Validation failed for tool \"edit\":\n  - edits: must have required properties edits\n\nReceived arguments:\n{\n  \"path\": \"file.txt\"\n}"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "aaa8d3c8d74ad3e8f6b1772aa9c7e0eaa528cb42fc93599ce2f125b00d4c424c",
+          "base64": "dW5jaGFuZ2Vk",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-invalid-element-type",
+      "setup": {
+        "caseId": "edit-invalid-element-type",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            1
+          ]
+        },
+        "files": {
+          "file.txt": "unchanged"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-invalid-element-type",
+        "content": [
+          {
+            "type": "text",
+            "text": "Validation failed for tool \"edit\":\n  - edits.0: must be object\n\nReceived arguments:\n{\n  \"path\": \"file.txt\",\n  \"edits\": [\n    1\n  ]\n}"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "aaa8d3c8d74ad3e8f6b1772aa9c7e0eaa528cb42fc93599ce2f125b00d4c424c",
+          "base64": "dW5jaGFuZ2Vk",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-pre-cancelled",
+      "setup": {
+        "caseId": "edit-pre-cancelled",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "unchanged",
+              "newText": "bad"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "unchanged"
+        },
+        "preCancelled": true
+      },
+      "expectedResult": {
+        "caseId": "edit-pre-cancelled",
+        "content": [
+          {
+            "type": "text",
+            "text": "Operation aborted"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "aaa8d3c8d74ad3e8f6b1772aa9c7e0eaa528cb42fc93599ce2f125b00d4c424c",
+          "base64": "dW5jaGFuZ2Vk",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-overlapping-occurrences",
+      "setup": {
+        "caseId": "edit-overlapping-occurrences",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "aa",
+              "newText": "X"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "aaa"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-overlapping-occurrences",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 aaa\n+1 Xa",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-aaa\n\\ No newline at end of file\n+Xa\n\\ No newline at end of file\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 2,
+          "sha256": "eeb689906ed2c813f8d78a0d06048b56e98945aa433d3a8c55b0adccb18b8c94",
+          "base64": "WGE=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-non-overlap-duplicate-count",
+      "setup": {
+        "caseId": "edit-non-overlap-duplicate-count",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "aa",
+              "newText": "X"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "aaaaa"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-non-overlap-duplicate-count",
+        "content": [
+          {
+            "type": "text",
+            "text": "Found 2 occurrences of the text in file.txt. The text must be unique. Please provide more context to make it unique."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 5,
+          "sha256": "ed968e840d10d2d313a870bc131a4e2c311d7ad09bdf32b3418147221f51a6e2",
+          "base64": "YWFhYWE=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-normalized-duplicate-exact",
+      "setup": {
+        "caseId": "edit-normalized-duplicate-exact",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "\u201cx\u201d",
+              "newText": "bad"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "\u201cx\u201d\n\"x\"\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-normalized-duplicate-exact",
+        "content": [
+          {
+            "type": "text",
+            "text": "Found 2 occurrences of the text in file.txt. The text must be unique. Please provide more context to make it unique."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 12,
+          "sha256": "5ce060033e66dbb49e1c801fd88bad3c6012908c296a3126e19c39a3eb4c846f",
+          "base64": "4oCceOKAnQoieCIK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-normalized-duplicate-fuzzy",
+      "setup": {
+        "caseId": "edit-normalized-duplicate-fuzzy",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "\"x\"",
+              "newText": "bad"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "\u201cx\u201d\n\u201cx\u201d\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-normalized-duplicate-fuzzy",
+        "content": [
+          {
+            "type": "text",
+            "text": "Found 2 occurrences of the text in file.txt. The text must be unique. Please provide more context to make it unique."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 16,
+          "sha256": "561a93298b5b4af617447ee525d0bd8381c9be8266bd65b172cdaaae0903ccf1",
+          "base64": "4oCceOKAnQrigJx44oCdCg==",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-batch-normalized-duplicate",
+      "setup": {
+        "caseId": "edit-batch-normalized-duplicate",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "\u201cx\u201d",
+              "newText": "bad"
+            },
+            {
+              "oldText": "beta",
+              "newText": "BETA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "\u201cx\u201d\n\"x\"\nbeta\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-batch-normalized-duplicate",
+        "content": [
+          {
+            "type": "text",
+            "text": "Found 2 occurrences of edits[0] in file.txt. Each oldText must be unique. Please provide more context to make it unique."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 17,
+          "sha256": "34c20ff8d3b7f1e5c81a25c6ce33e903d9a2aaad58cf089ff5073a2d919b1c88",
+          "base64": "4oCceOKAnQoieCIKYmV0YQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-all-whitespace-old",
+      "setup": {
+        "caseId": "edit-all-whitespace-old",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": " ",
+              "newText": "X"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "ab"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-all-whitespace-old",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 ab\n+1 Xab",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-ab\n\\ No newline at end of file\n+Xab\n\\ No newline at end of file\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 3,
+          "sha256": "ea170effab0bfadc6830059f1d4ec193d8a9fdf3bd2346e2be17e7fac2f5c8b6",
+          "base64": "WGFi",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-empty-normalized-source",
+      "setup": {
+        "caseId": "edit-empty-normalized-source",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "\t",
+              "newText": "X"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": " "
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-empty-normalized-source",
+        "content": [
+          {
+            "type": "text",
+            "text": "Cannot preserve unchanged lines because the base content has a different line count."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 1,
+          "sha256": "36a9e7f1c95b82ffb99743e0c5c4ce95d83c9a430aac59f84ef3cbfab6145068",
+          "base64": "IA==",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-whitespace-duplicate-count",
+      "setup": {
+        "caseId": "edit-whitespace-duplicate-count",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": " ",
+              "newText": "X"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "a b"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-whitespace-duplicate-count",
+        "content": [
+          {
+            "type": "text",
+            "text": "Found 2 occurrences of the text in file.txt. The text must be unique. Please provide more context to make it unique."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 3,
+          "sha256": "c8687a08aa5d6ed2044328fa6a697ab8e96dc34291e8c2034ae8c38e6fcc6d65",
+          "base64": "YSBi",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-nfkc-unchanged-lines",
+      "setup": {
+        "caseId": "edit-nfkc-unchanged-lines",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "replace ffi",
+              "newText": "done"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "keep \ufb03\nreplace \ufb03\nkeep \u2460\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-nfkc-unchanged-lines",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": " 1 keep \ufb03\n-2 replace \ufb03\n+2 done\n 3 keep \u2460",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,3 +1,3 @@\n keep \ufb03\n-replace \ufb03\n+done\n keep \u2460\n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 23,
+          "sha256": "bc8a5ce41953fbcaa3a80e7023fec22b179295b1901dc91035bb21eebf75f0f7",
+          "base64": "a2VlcCDvrIMKZG9uZQprZWVwIOKRoAo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-multiple-fuzzy-one-line",
+      "setup": {
+        "caseId": "edit-multiple-fuzzy-one-line",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "\"alpha\"",
+              "newText": "A"
+            },
+            {
+              "oldText": "\"beta\"",
+              "newText": "B"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "\u201calpha\u201d then \u201cbeta\u201d\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-multiple-fuzzy-one-line",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 2 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 \u201calpha\u201d then \u201cbeta\u201d\n+1 A then B",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-\u201calpha\u201d then \u201cbeta\u201d\n+A then B\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "7c070316a7e69e444fd3e9b97f9a272452aa3904d54d1113dd28ef18d4f64ca5",
+          "base64": "QSB0aGVuIEIK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-adjacent-boundaries",
+      "setup": {
+        "caseId": "edit-adjacent-boundaries",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "abc",
+              "newText": "ABC"
+            },
+            {
+              "oldText": "DEF",
+              "newText": "def"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "abcDEFghi"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-adjacent-boundaries",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 2 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 abcDEFghi\n+1 ABCdefghi",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-abcDEFghi\n\\ No newline at end of file\n+ABCdefghi\n\\ No newline at end of file\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "4fea921c611193097a6a03f2b7a3c43d70b85a68834de5a300bd0930fe0fb6c2",
+          "base64": "QUJDZGVmZ2hp",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-newline-only-replacement",
+      "setup": {
+        "caseId": "edit-newline-only-replacement",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha\n",
+              "newText": "\n"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\nbeta\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-newline-only-replacement",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 \n 2 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,2 @@\n-alpha\n+\n beta\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "13474ab025a8a9764cb686d81e3f14d31920f1b7d28dca630800c43926241288",
+          "base64": "CmJldGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-invalid-utf8-before-match",
+      "setup": {
+        "caseId": "edit-invalid-utf8-before-match",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": {
+            "base64": "/2FscGhhCg=="
+          }
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-invalid-utf8-before-match",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 \ufffdalpha\n+1 \ufffdALPHA",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-\ufffdalpha\n+\ufffdALPHA\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 9,
+          "sha256": "45409e604fc2b91a2f521a0ed2545b67c41ada15909bbfdb48b0391182bcdcad",
+          "base64": "77+9QUxQSEEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-invalid-utf8-bom",
+      "setup": {
+        "caseId": "edit-invalid-utf8-bom",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": {
+            "base64": "77u/YWxwaGH/Cg=="
+          }
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-invalid-utf8-bom",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\ufffd\n+1 ALPHA\ufffd",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\ufffd\n+ALPHA\ufffd\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 12,
+          "sha256": "08c3453c158e3bbd924e044e6fe1d800a08684c2cc19f601f1896fa860f9dc00",
+          "base64": "77u/QUxQSEHvv70K",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-cr-only",
+      "setup": {
+        "caseId": "edit-cr-only",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "beta",
+              "newText": "BETA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\rbeta\r"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-cr-only",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": " 1 alpha\n-2 beta\n+2 BETA",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,2 @@\n alpha\n-beta\n+BETA\n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 11,
+          "sha256": "69726aa4696684f51191101c90b115e8cf6e01d6339e158d01b69ca692562fbf",
+          "base64": "YWxwaGEKQkVUQQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-mixed-leading-lf",
+      "setup": {
+        "caseId": "edit-mixed-leading-lf",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "beta",
+              "newText": "BETA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\nbeta\r\ngamma\r"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-mixed-leading-lf",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": " 1 alpha\n-2 beta\n+2 BETA\n 3 gamma",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,3 +1,3 @@\n alpha\n-beta\n+BETA\n gamma\n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 17,
+          "sha256": "b0d5fcac7492427d0767380786c6d7843c342299a8a447ac2ccc8deaa78ca153",
+          "base64": "YWxwaGEKQkVUQQpnYW1tYQo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-no-final-newline",
+      "setup": {
+        "caseId": "edit-no-final-newline",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "beta",
+              "newText": "BETA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\nbeta"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-no-final-newline",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": " 1 alpha\n-2 beta\n+2 BETA",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,2 @@\n alpha\n-beta\n\\ No newline at end of file\n+BETA\n\\ No newline at end of file\n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 10,
+          "sha256": "6221c2b549036d3c8096d93874dd8bdf1e232f3790530636c6e6f069fb4a6f0e",
+          "base64": "YWxwaGEKQkVUQQ==",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-final-newline-removed",
+      "setup": {
+        "caseId": "edit-final-newline-removed",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "beta\n",
+              "newText": "beta"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\nbeta\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-final-newline-removed",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": " 1 alpha\n-2 beta\n+2 beta",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,2 @@\n alpha\n-beta\n+beta\n\\ No newline at end of file\n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 10,
+          "sha256": "bbfb79e82216bd2db1ad2c507d44ddf80aeb12f64f9562056afe93aad43154d9",
+          "base64": "YWxwaGEKYmV0YQ==",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-whole-delete",
+      "setup": {
+        "caseId": "edit-whole-delete",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha\n",
+              "newText": ""
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-whole-delete",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +0,0 @@\n-alpha\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "base64": "",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-repeat-line-diff",
+      "setup": {
+        "caseId": "edit-repeat-line-diff",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "b\na\n",
+              "newText": "a\nb\n"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "a\nb\na\nc\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-repeat-line-diff",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": " 1 a\n-2 b\n 3 a\n+3 b\n 4 c",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,4 +1,4 @@\n a\n-b\n a\n+b\n c\n",
+          "firstChangedLine": 2
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "36a959690c3a34f68c8b017dbb05a7abc9d789dec7427b8ea931a32d84d2cd0b",
+          "base64": "YQphCmIKYwo=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-at-prefix",
+      "setup": {
+        "caseId": "edit-at-prefix",
+        "tool": "edit",
+        "arguments": {
+          "path": "@file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-at-prefix",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in @file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 ALPHA",
+          "patch": "--- @file.txt\n+++ @file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+ALPHA\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "1921b918b15842c7fdb115078e610263fac85f159c1d8e0ecec3d89a0faa4005",
+          "base64": "QUxQSEEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-file-url",
+      "setup": {
+        "caseId": "edit-file-url",
+        "tool": "edit",
+        "arguments": {
+          "path": "file://{WORKSPACE}/file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-file-url",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file://<workspace>/file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 ALPHA",
+          "patch": "--- file://<workspace>/file.txt\n+++ file://<workspace>/file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+ALPHA\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "1921b918b15842c7fdb115078e610263fac85f159c1d8e0ecec3d89a0faa4005",
+          "base64": "QUxQSEEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-nul-path",
+      "setup": {
+        "caseId": "edit-nul-path",
+        "tool": "edit",
+        "arguments": {
+          "path": "invalid\u0000path",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-nul-path",
+        "content": [
+          {
+            "type": "text",
+            "text": "The argument 'path' must be a string, Uint8Array, or URL without null bytes. Received '<workspace>/invalid\\x00path'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-long-name",
+      "setup": {
+        "caseId": "edit-long-name",
+        "tool": "edit",
+        "arguments": {
+          "path": "\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-long-name",
+        "content": [
+          {
+            "type": "text",
+            "text": "ENAMETOOLONG: name too long, realpath '<workspace>/\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0\u03c0'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-unreadable-file",
+      "setup": {
+        "caseId": "edit-unreadable-file",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        },
+        "modes": {
+          "file.txt": 0
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-unreadable-file",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not edit file: file.txt. Error code: EACCES."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 0,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-write-only-file",
+      "setup": {
+        "caseId": "edit-write-only-file",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        },
+        "modes": {
+          "file.txt": 128
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-write-only-file",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not edit file: file.txt. Error code: EACCES."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 128,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-existing-mode",
+      "setup": {
+        "caseId": "edit-existing-mode",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        },
+        "modes": {
+          "file.txt": 416
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-existing-mode",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 1 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 alpha\n+1 ALPHA",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,1 +1,1 @@\n-alpha\n+ALPHA\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 416,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "1921b918b15842c7fdb115078e610263fac85f159c1d8e0ecec3d89a0faa4005",
+          "base64": "QUxQSEEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-inaccessible-parent",
+      "setup": {
+        "caseId": "edit-inaccessible-parent",
+        "tool": "edit",
+        "arguments": {
+          "path": "secret/file",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "secret/file": "alpha\n"
+        },
+        "modes": {
+          "secret": 384
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-inaccessible-parent",
+        "content": [
+          {
+            "type": "text",
+            "text": "EACCES: permission denied, realpath '<workspace>/secret/file'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "secret": {
+          "mode": 384,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "secret/file": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-symlink-loop",
+      "setup": {
+        "caseId": "edit-symlink-loop",
+        "tool": "edit",
+        "arguments": {
+          "path": "alias",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        },
+        "symlinks": {
+          "alias": "alias"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-symlink-loop",
+        "content": [
+          {
+            "type": "text",
+            "text": "ELOOP: too many symbolic links encountered, realpath '<workspace>/alias'"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "alias"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-dangling-symlink",
+      "setup": {
+        "caseId": "edit-dangling-symlink",
+        "tool": "edit",
+        "arguments": {
+          "path": "alias",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        },
+        "symlinks": {
+          "alias": "missing"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-dangling-symlink",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not edit file: alias. Error code: ENOENT."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "missing"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-symlink-directory",
+      "setup": {
+        "caseId": "edit-symlink-directory",
+        "tool": "edit",
+        "arguments": {
+          "path": "alias",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        },
+        "symlinks": {
+          "alias": "dir"
+        },
+        "directories": {
+          "dir": 493
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-symlink-directory",
+        "content": [
+          {
+            "type": "text",
+            "text": "EISDIR: illegal operation on a directory, read"
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "dir"
+        },
+        "dir": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-symlink-readonly-target",
+      "setup": {
+        "caseId": "edit-symlink-readonly-target",
+        "tool": "edit",
+        "arguments": {
+          "path": "alias",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        },
+        "symlinks": {
+          "alias": "file.txt"
+        },
+        "modes": {
+          "file.txt": 292
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-symlink-readonly-target",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not edit file: alias. Error code: EACCES."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "alias": {
+          "mode": 511,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "symlink",
+          "target": "file.txt"
+        },
+        "file.txt": {
+          "mode": 292,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-file-parent",
+      "setup": {
+        "caseId": "edit-file-parent",
+        "tool": "edit",
+        "arguments": {
+          "path": "file/child",
+          "edits": [
+            {
+              "oldText": "x",
+              "newText": "y"
+            }
+          ]
+        },
+        "files": {
+          "file": "original"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-file-parent",
+        "content": [
+          {
+            "type": "text",
+            "text": "Could not edit file: file/child. Error code: ENOTDIR."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+          "base64": "b3JpZ2luYWw=",
+          "hardlinkPeers": []
+        }
+      },
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "385ac35d823711bcb1b74c0b95e9a33d02d3c5f1"
+    },
+    {
+      "caseId": "edit-batch-fuzzy-exact-space",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "d1046c7be4d85bd65c37b5334cb664d7f2b0cbd2",
+      "capture": "edit-fuzzy-range-before/report.json",
+      "setup": {
+        "caseId": "edit-batch-fuzzy-exact-space",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "\"x\"",
+              "newText": "X"
+            },
+            {
+              "oldText": "alpha ",
+              "newText": "A"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "\u201cx\u201d\nalpha tail\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-batch-fuzzy-exact-space",
+        "content": [
+          {
+            "type": "text",
+            "text": "Successfully replaced 2 block(s) in file.txt."
+          }
+        ],
+        "details": {
+          "diff": "-1 \u201cx\u201d\n-2 alpha tail\n+1 X\n+2 Atail",
+          "patch": "--- file.txt\n+++ file.txt\n@@ -1,2 +1,2 @@\n-\u201cx\u201d\n-alpha tail\n+X\n+Atail\n",
+          "firstChangedLine": 1
+        },
+        "structuredContent": null,
+        "isError": false,
+        "rejected": false,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 8,
+          "sha256": "d6ec0e01d2b6f8f9fc3acbd428f31f0d56ded75d7197326eb064857276a2dfd4",
+          "base64": "WApBdGFpbAo=",
+          "hardlinkPeers": []
+        }
+      }
+    },
+    {
+      "caseId": "edit-stable-overlap-index",
+      "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+      "piSharpBeforeSha": "9c23bd86e7fc683f95f60627e4925315e4013887",
+      "capture": "edit-stable-order-before/report.json",
+      "setup": {
+        "caseId": "edit-stable-overlap-index",
+        "tool": "edit",
+        "arguments": {
+          "path": "file.txt",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 0"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 1"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 2"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 3"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 4"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 5"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 6"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 7"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 8"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 9"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 10"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 11"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 12"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 13"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 14"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 15"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 16"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 17"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 18"
+            },
+            {
+              "oldText": "alpha",
+              "newText": "ALPHA 19"
+            }
+          ]
+        },
+        "files": {
+          "file.txt": "alpha\n"
+        }
+      },
+      "expectedResult": {
+        "caseId": "edit-stable-overlap-index",
+        "content": [
+          {
+            "type": "text",
+            "text": "edits[0] and edits[1] overlap in file.txt. Merge them into one edit or target disjoint regions."
+          }
+        ],
+        "details": null,
+        "structuredContent": null,
+        "isError": true,
+        "rejected": true,
+        "updateContract": {
+          "initial": null,
+          "final": null
+        }
+      },
+      "expectedFilesystem": {
+        ".": {
+          "mode": 493,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "directory"
+        },
+        "file.txt": {
+          "mode": 420,
+          "uid": 1000,
+          "gid": 1000,
+          "inodePreserved": true,
+          "kind": "file",
+          "size": 6,
+          "sha256": "b6a98d9ce9a2d9149288fa3df42d377c3e42737afdcdaf714e33c0a100b51060",
+          "base64": "YWxwaGEK",
+          "hardlinkPeers": []
+        }
+      }
+    }
+  ]
+}

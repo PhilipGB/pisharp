@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace PiSharp.Runtime.Tools;
 
 /// <summary>Bounded file discovery with managed ignore-rule handling.</summary>
-internal static class SearchInventory
+internal static partial class SearchInventory
 {
     private const int MaxEntries = 20_000;
 

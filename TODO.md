@@ -1,6 +1,34 @@
 # PiSharp capability parity
 
-## Active milestone — Terminal Rendering and Interaction Parity — 2026-10-22
+## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
+
+PR #21's actual merge `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a` is verified
+on `origin/main` and is the base of `milestone/builtin-coding-tool-parity`.
+Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+Local acceptance is **18 complete / 2 publication checkpoints remaining** at
+this documentation revision (fixed A–T denominator). The current S/T state,
+final head and exact-head push/PR CI are recorded in
+[PR #22](https://github.com/PhilipGB/pisharp/pull/22). Consult that live receipt
+before reporting subsequent progress. Keep #22 draft/unmerged; do not start #23.
+
+The defined corpus has 399 supported passes out of 460: 389 exact, ten JPEG
+codec equivalents and 61 explicit safety exclusions, with zero unresolved
+cases. The same-Pi control is 460/460. All seven tools have source-pinned
+filesystem/process/error/limit evidence, shared MAF invocation, three physical
+provider workflows and session restart. The final owner/mode hardening preserves
+metadata and clears executable privilege bits as pinned direct writes do;
+Linux CI independently captures its actual alternate-group oracle.
+
+Review hardening adds bounded per-file grep context readers. The 32 MiB late-match regression preserves pinned output while reducing context reads from 100 full scans to one. See the [context receipt](docs/parity/fixtures/builtin-coding-tool-grep-context-2026-10-22.json); final follow-up publication checks are recorded in PR #22.
+
+See the [milestone receipt](docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md),
+[acceptance inventory](docs/parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json)
+and [continuation rules](docs/continuation.md). Strict equivalence excludes the
+recorded safety differences and unexecuted platform/privileged cases. Global Pi
+parity remains `in_progress`.
+
+## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 
 PR #20 is verified merged at `5e1e5aa8ddc66a8e829a880604060b8483107284`.
 The implementation branch is `milestone/terminal-rendering-interaction-parity`,
@@ -22,7 +50,8 @@ Build, formatting, Node 24/24, Python 66/66 and MCP baseline checks pass. The fi
 color and nested math regressions. Documentation paths pass 150 documents / 582 references.
 Publication and exact-head push/PR CI evidence are recorded in
 [PR #21](https://github.com/PhilipGB/pisharp/pull/21).
-Keep PR #21 draft and unmerged; do not start PR #22. Broad Pi parity remains
+PR #21 was kept draft/unmerged through review and is now merged as recorded
+above. Broad Pi parity remains
 `in_progress`. See the
 [terminal parity receipt](docs/parity/fixtures/terminal-rendering-interaction-parity-2026-10-20.md).
 

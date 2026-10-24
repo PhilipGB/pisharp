@@ -1955,10 +1955,10 @@ public sealed partial class ConversationRun
             var updates = promptMessage is null
                 ? _agent.RunStreamingContinuationDurableAsync(_execution, cancellationToken, durable,
                     Observe, (first, token) => TakeSteeringForProviderAsync(first, retryContinuation, token), projectRequestContext,
-                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync)
+                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync, CreateBashSessionEnvironment)
                 : _agent.RunStreamingDurableAsync(promptMessage, _execution, cancellationToken, durable,
                     Observe, (first, token) => TakeSteeringForProviderAsync(first, retryContinuation, token), projectRequestContext,
-                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync);
+                    CreateBashSessionEnvironment(), codexSessionId, TakePendingProviderContextMessagesAsync, CreateBashSessionEnvironment);
             await foreach (var update in attemptStream.PumpAsync(updates, durable,
                 usage => Conversation.AppendUsage(attribution.Usage(usage)), cancellationToken))
                 yield return update;
@@ -2165,17 +2165,20 @@ public sealed partial class ConversationRun
 
     private IReadOnlyDictionary<string, string?> CreateBashSessionEnvironment()
     {
-        var environment = new Dictionary<string, string?>(StringComparer.Ordinal)
+        lock (_runtimeStateGate)
         {
-            ["PI_SESSION_ID"] = Conversation.Id,
-            ["PI_MODEL"] = Conversation.Model
-        };
-        var provider = _provider ?? Conversation.Provider;
-        if (provider is not null) environment["PI_PROVIDER"] = provider;
-        if (_sessionFile is not null) environment["PI_SESSION_FILE"] = _sessionFile;
-        var reasoningLevel = Volatile.Read(ref _reasoningLevel);
-        if (reasoningLevel is not null) environment["PI_REASONING_LEVEL"] = reasoningLevel;
-        return environment;
+            var environment = new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["PI_SESSION_ID"] = Conversation.Id,
+                ["PI_MODEL"] = Conversation.Model
+            };
+            var provider = _currentProvider ?? _provider ?? Conversation.Provider;
+            if (provider is not null) environment["PI_PROVIDER"] = provider;
+            if (_sessionFile is not null) environment["PI_SESSION_FILE"] = _sessionFile;
+            var reasoningLevel = Volatile.Read(ref _reasoningLevel);
+            if (reasoningLevel is not null) environment["PI_REASONING_LEVEL"] = reasoningLevel;
+            return environment;
+        }
     }
 
     private static AgentLifecycleEvent UsageEvent(UsageRecord usage) => new("usage",

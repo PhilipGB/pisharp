@@ -9,6 +9,33 @@ namespace PiSharp.Tests;
 
 public sealed class InteractiveTranscriptTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BashSnapshotsReplaceScreenContentAndKeepLegacyDeltas(bool useScreen)
+    {
+        using var output = new StringWriter();
+        using var status = new StringWriter();
+        using var screen = useScreen ? new TerminalScreen(output, status, () => 80, () => 20) : null;
+        var transcript = new InteractiveTranscript(screen?.Output ?? output, screen?.Error ?? status, screen: screen);
+        transcript.Render(new("tool_execution_started", Tool: "bash", OperationId: "snapshot")
+        {
+            ToolArguments = new Dictionary<string, object?> { ["command"] = "fixture" }
+        });
+        foreach (var (text, delta) in new[] { ("alpha\n", "alpha\n"), ("alpha\nbeta\n", "beta\n"), ("beta\ngamma\n", "gamma\n") })
+            transcript.Render(new("tool_execution_update", Text: text, Tool: "bash", OperationId: "snapshot")
+            {
+                OutputIsSnapshot = true,
+                OutputDelta = delta
+            });
+
+        var visible = useScreen ? TerminalOutputFrameReader.Read(output.ToString(), rows: 20, columns: 80)[^1].Screen : status.ToString();
+        Assert.Single(Regex.Matches(visible, "beta"));
+        Assert.Single(Regex.Matches(visible, "gamma"));
+        if (useScreen) Assert.Empty(Regex.Matches(visible, "alpha"));
+        else Assert.Single(Regex.Matches(visible, "alpha"));
+    }
+
     [Fact]
     public void TextModeOnlyUsesTheFinalProviderFinishReason()
     {

@@ -41,4 +41,22 @@ internal static class ProcessTestHelpers
 
     public static string ShellQuote(string value) => "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
 
+    public static IReadOnlyList<int> FindChildrenWithArgument(string argument)
+    {
+        var children = new HashSet<int>();
+        foreach (var task in Directory.GetDirectories("/proc/self/task"))
+        {
+            string text;
+            try { text = File.ReadAllText(Path.Combine(task, "children")); }
+            catch (IOException) { continue; }
+            foreach (var value in text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var child = int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+                try { if (File.ReadAllText($"/proc/{child}/cmdline").Contains(argument, StringComparison.Ordinal)) children.Add(child); }
+                catch (IOException) { }
+            }
+        }
+        return children.ToArray();
+    }
+
 }

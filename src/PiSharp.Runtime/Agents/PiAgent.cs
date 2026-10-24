@@ -153,6 +153,7 @@ public sealed class PiAgent
             () => Volatile.Read(ref _supportsImages) != 0);
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         _supportsImages = supportsImages ? 1 : 0;
+        _codingTools.SetReadModelSupportsImages(supportsImages);
         _reasoning = reasoning;
         _summarizer = new PiCompactionSummarizer(_routedChatClient);
         _toolCatalog = new AgentToolCatalog(tools, selectedTools, excludedTools, noTools, noBuiltinTools,
@@ -646,14 +647,18 @@ public sealed class PiAgent
         _chatClient.SetClient(client);
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         Volatile.Write(ref _supportsImages, supportsImages ? 1 : 0);
+        _codingTools.SetReadModelSupportsImages(supportsImages);
         _selectedImageResizeOptions = imageResizeOptions;
         _codingTools.SetImageResizeOptions(imageResizeOptions);
     }
 
     internal bool HasVirtualModelRouter => _routedChatClient.HasRouter;
 
-    internal void SetPhysicalImageLimits(ModelDescriptor? model) =>
+    internal void SetPhysicalImageLimits(ModelDescriptor? model)
+    {
         _codingTools.SetImageResizeOptions(model is null ? _selectedImageResizeOptions : model.InputLimits?.Images?.Resize);
+        _codingTools.SetReadModelSupportsImages(model?.Input?.Contains("image") ?? Volatile.Read(ref _supportsImages) != 0);
+    }
 
     internal void SetVirtualModelSession(ConversationSession session, string thinkingLevel,
         Func<CancellationToken, Task>? save) => _routedChatClient.SetSession(session, thinkingLevel, save);
@@ -715,9 +720,10 @@ public sealed class PiAgent
         Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
-        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null) =>
+        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
+        Func<IReadOnlyDictionary<string, string?>>? getBashSessionEnvironment = null) =>
         RunStreamingDurableAsync(new ChatMessage(ChatRole.User, prompt), session, cancellationToken, durable, onEvent,
-            takeSteering, projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync);
+            takeSteering, projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync, getBashSessionEnvironment);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableAsync(ChatMessage prompt, AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable,
@@ -725,18 +731,20 @@ public sealed class PiAgent
         Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
-        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null) =>
+        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
+        Func<IReadOnlyDictionary<string, string?>>? getBashSessionEnvironment = null) =>
         RunStreamingDurableCoreAsync(prompt, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync);
+            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync, getBashSessionEnvironment);
 
     internal IAsyncEnumerable<AgentResponseUpdate> RunStreamingContinuationDurableAsync(AgentSession session,
         CancellationToken cancellationToken, DurableExecution? durable, Action<AgentLifecycleEvent>? onEvent = null,
         Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering = null,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment = null, string? conversationSessionId = null,
-        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null) =>
+        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync = null,
+        Func<IReadOnlyDictionary<string, string?>>? getBashSessionEnvironment = null) =>
         RunStreamingDurableCoreAsync(null, session, cancellationToken, durable, onEvent, takeSteering,
-            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync);
+            projectContext, bashSessionEnvironment, conversationSessionId, takeContextMessagesForRequestAsync, getBashSessionEnvironment);
 
     private async IAsyncEnumerable<AgentResponseUpdate> RunStreamingDurableCoreAsync(ChatMessage? prompt,
         AgentSession session,
@@ -745,7 +753,8 @@ public sealed class PiAgent
         Func<bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeSteering,
         Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext,
         IReadOnlyDictionary<string, string?>? bashSessionEnvironment, string? conversationSessionId,
-        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync)
+        Func<CancellationToken, Task<IReadOnlyList<ChatMessage>>>? takeContextMessagesForRequestAsync,
+        Func<IReadOnlyDictionary<string, string?>>? getBashSessionEnvironment)
     {
         await _runGate.WaitAsync(cancellationToken);
         try
@@ -778,11 +787,14 @@ public sealed class PiAgent
                 chatOptions.AdditionalProperties = properties;
             }
             var runOptions = new ChatClientAgentRunOptions(chatOptions);
-            if (bashSessionEnvironment is { Count: > 0 })
+            if (bashSessionEnvironment is { Count: > 0 } || getBashSessionEnvironment is not null)
             {
                 var properties = new AdditionalPropertiesDictionary();
-                foreach (var (key, value) in bashSessionEnvironment)
-                    if (value is not null) properties[key] = value;
+                if (bashSessionEnvironment is not null)
+                    foreach (var (key, value) in bashSessionEnvironment)
+                        if (value is not null) properties[key] = value;
+                if (getBashSessionEnvironment is not null)
+                    properties[CodingTools.BashSessionEnvironmentContextKey] = getBashSessionEnvironment;
                 runOptions.AdditionalProperties = properties;
             }
             try
