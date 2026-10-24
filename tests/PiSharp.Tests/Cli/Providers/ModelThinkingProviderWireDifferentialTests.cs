@@ -89,6 +89,7 @@ public sealed class ModelThinkingProviderWireDifferentialTests
                 Name: modelSource.GetProperty("id").GetString(), MaxOutputTokens: modelSource.GetProperty("maxTokens").GetInt32(),
                 Input: ["text"], Api: api, BaseUrl: endpoint.AbsoluteUri,
                 Compatibility: ReadClone(modelSource, "compat"),
+                ThinkingLevelMap: ReadClone(modelSource, "thinkingLevelMap"),
                 SamplingParameters: ReadClone(modelSource, "samplingParams"),
                 SamplingParametersByThinkingLevel: ReadClone(modelSource, "samplingParamsByThinkingLevel"));
             var googleVertex = api == "google-vertex"

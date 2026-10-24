@@ -76,6 +76,7 @@ async function runCase(item) {
 		contextWindow: 32768,
 		maxTokens: item.model.maxTokens,
 		...(item.model.compat ? { compat: item.model.compat } : {}),
+		...(item.model.thinkingLevelMap ? { thinkingLevelMap: item.model.thinkingLevelMap } : {}),
 		...(item.model.samplingParams ? { samplingParams: item.model.samplingParams } : {}),
 		...(item.model.samplingParamsByThinkingLevel ? { samplingParamsByThinkingLevel: item.model.samplingParamsByThinkingLevel } : {}),
 	};

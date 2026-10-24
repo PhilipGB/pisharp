@@ -18,24 +18,25 @@ internal sealed class ProviderSamplingRequestHandler(SamplingParametersRequestCo
             if (JsonNode.Parse(body) is JsonObject requestBody)
             {
                 var changed = false;
+                var extendedReasoningEffort = GetExtendedReasoningEffort();
                 if (requestContext.Current is { ValueKind: JsonValueKind.Object } parameters)
                 {
                     foreach (var parameter in parameters.EnumerateObject())
                         requestBody[parameter.Name] = JsonNode.Parse(parameter.Value.GetRawText());
                     changed = true;
                 }
-                if (requestContext.ThinkingLevel is "xhigh" or "max" &&
+                if (extendedReasoningEffort is { } reasoningEffort &&
                     request.RequestUri?.AbsolutePath.EndsWith("/responses", StringComparison.Ordinal) == true &&
                     requestBody["reasoning"] is JsonObject reasoning)
                 {
-                    reasoning["effort"] = "high";
+                    reasoning["effort"] = reasoningEffort;
                     changed = true;
                 }
-                if (requestContext.ThinkingLevel is "xhigh" or "max" &&
+                if (extendedReasoningEffort is { } completionReasoningEffort &&
                     request.RequestUri?.AbsolutePath.EndsWith("/chat/completions", StringComparison.Ordinal) == true &&
                     requestBody.ContainsKey("reasoning_effort"))
                 {
-                    requestBody["reasoning_effort"] = "high";
+                    requestBody["reasoning_effort"] = completionReasoningEffort;
                     changed = true;
                 }
                 if (requestContext.ThinkingLevel == "off" && requestContext.Model is { Reasoning: true } model &&
@@ -72,6 +73,22 @@ internal sealed class ProviderSamplingRequestHandler(SamplingParametersRequestCo
             !map.TryGetProperty("off", out var value)) return "none";
         return value.ValueKind == JsonValueKind.Null ? null : value.ValueKind == JsonValueKind.String
             ? value.GetString() : "none";
+    }
+
+    private string? GetExtendedReasoningEffort()
+    {
+        var requestedLevel = requestContext.ThinkingLevel;
+        if (requestedLevel is not ("xhigh" or "max") ||
+            requestContext.Model is not { Reasoning: true } model)
+            return null;
+
+        var effectiveLevel = ThinkingLevels.ValidateForModel(requestedLevel, model.Reasoning,
+            model.ThinkingLevelMap);
+        if (effectiveLevel == "off") return null;
+        if (model.ThinkingLevelMap is { ValueKind: JsonValueKind.Object } map &&
+            map.TryGetProperty(effectiveLevel, out var mapped) && mapped.ValueKind == JsonValueKind.String)
+            return mapped.GetString();
+        return effectiveLevel;
     }
 
 }

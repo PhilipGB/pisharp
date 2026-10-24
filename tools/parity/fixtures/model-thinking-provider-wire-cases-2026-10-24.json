@@ -660,6 +660,308 @@
         "packages/ai/src/api/google-vertex.ts",
         "packages/ai/src/api/google-shared.ts"
       ]
+    },
+    {
+      "id": "wire-openai-responses-xhigh-native",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh"
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-responses-max-native",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh",
+          "max": "max"
+        }
+      },
+      "request": {
+        "reasoning": "max",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-responses-xhigh-lower-map",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "medium"
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-responses-max-lower-map",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh",
+          "max": "high"
+        }
+      },
+      "request": {
+        "reasoning": "max",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-responses-xhigh-disabled-falls-forward-to-max",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": null,
+          "max": "max"
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-responses-max-disabled-falls-back-to-xhigh",
+      "api": "openai-responses",
+      "model": {
+        "provider": "openai",
+        "id": "fixture-responses-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh",
+          "max": null
+        }
+      },
+      "request": {
+        "reasoning": "max",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-responses.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-xhigh-native",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-completions-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh"
+        },
+        "compat": {
+          "supportsReasoningEffort": true
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-max-native",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-completions-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh",
+          "max": "max"
+        },
+        "compat": {
+          "supportsReasoningEffort": true
+        }
+      },
+      "request": {
+        "reasoning": "max",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-xhigh-lower-map",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-completions-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "medium"
+        },
+        "compat": {
+          "supportsReasoningEffort": true
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-max-lower-map",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-completions-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh",
+          "max": "high"
+        },
+        "compat": {
+          "supportsReasoningEffort": true
+        }
+      },
+      "request": {
+        "reasoning": "max",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-xhigh-disabled-falls-forward-to-max",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-completions-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": null,
+          "max": "max"
+        },
+        "compat": {
+          "supportsReasoningEffort": true
+        }
+      },
+      "request": {
+        "reasoning": "xhigh",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
+    },
+    {
+      "id": "wire-openai-completions-max-disabled-falls-back-to-xhigh",
+      "api": "openai-completions",
+      "model": {
+        "provider": "fixture-openai-compatible",
+        "id": "fixture-completions-extended",
+        "reasoning": true,
+        "maxTokens": 8192,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh",
+          "max": null
+        },
+        "compat": {
+          "supportsReasoningEffort": true
+        }
+      },
+      "request": {
+        "reasoning": "max",
+        "maxTokens": 2048,
+        "includeTools": false
+      },
+      "sourceReferences": [
+        "packages/ai/src/api/openai-completions.ts",
+        "packages/ai/src/models.ts",
+        "packages/ai/src/api/simple-options.ts"
+      ]
     }
   ]
 }
