@@ -2,45 +2,29 @@
 
 ## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
-PR #21 merged at `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a` after its
-reviewed head and both exact-head workflows were verified. That actual merge
-is present on `origin/main` and is the base of
-`milestone/builtin-coding-tool-parity`. Pi remains pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+PR #21's actual merge `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a` is verified
+on `origin/main` and is the base of `milestone/builtin-coding-tool-parity`.
+Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-Stable mission checkpoints: **16 complete / 4 remaining** (A–T). A is the
-verified merge prerequisite; B is the fresh branch. C is the completed initial inventory of all seven
-tool definitions and implementations before product changes. D establishes the independent oracle.
-E completes common declarations/validation, truncation and read/Bash result metadata.
-F verifies the supported read contract (119/121, two explicit safety exclusions).
-G verifies write corrections with 20 strict passes and nineteen retained safety exclusions.
-H verifies edit behavior with 31 strict passes and thirty-eight explicit atomicity exclusions.
-I verifies supported Bash streams, metadata, process cleanup and current session environment.
-J verifies the supported grep contract (67 strict passes, one privacy exclusion).
-K verifies the supported find contract (61 strict passes, one privacy exclusion).
-L verifies supported ls behavior (53/53 strict comparisons).
-M verifies defined MAF/schema/selection/lifecycle/history workflows (825 related checks).
-N verifies three physical HTTP workflows with canonical CLI restart.
-O verifies 456 cases: 395 passes, 61 explicit exclusions, zero unresolved.
-P verifies five 263-check reliability repetitions and physical cancellation/restart.
-Q is in progress; Q–T cover validation,
-documentation, draft PR #22 and final-head CI. An inventory is not a parity claim.
+Local acceptance is **18 complete / 2 publication checkpoints remaining** at
+this documentation revision (fixed A–T denominator). The current S/T state,
+final head and exact-head push/PR CI are recorded in
+[PR #22](https://github.com/PhilipGB/pisharp/pull/22). Consult that live receipt
+before reporting subsequent progress. Keep #22 draft/unmerged; do not start #23.
 
-Bash now has 44 independent cases, with 2/44 strict matches before the update,
-decoding, stdin and spawn corrections. The related selection passes 157 tests,
-including deterministic 100 ms coalescing and detached-grandchild cleanup.
-Clean `b46aff69` now passes 44/44 with a 44/44 same-Pi control.
-The expanded environment/shutdown/extension selection passes 196 checks.
-Final Bash source `011728fb` passes 44/44 strict cases; shared integration remains pending.
+The defined corpus has 395 supported passes out of 456: 385 exact, ten JPEG
+codec equivalents and 61 explicit safety exclusions, with zero unresolved
+cases. The same-Pi control is 456/456. All seven tools have source-pinned
+filesystem/process/error/limit evidence, shared MAF invocation, three physical
+provider workflows and session restart. The final owner/mode hardening preserves
+metadata and clears executable privilege bits as pinned direct writes do;
+Linux CI independently captures its actual alternate-group oracle.
 
-Grep acceptance at `6b0017d4` has 67 strict passes, one explicit privacy
-exclusion, zero unresolved cases and a 68/68 same-Pi control. The 427-check
-related selection passes. Shared M–P acceptance remains pending.
-
-See the [tool milestone receipt](docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md)
-and [initial acceptance inventory](docs/parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json).
-Keep the new PR draft and unmerged. Do not start PR #23. Global parity remains
-`in_progress`.
+See the [milestone receipt](docs/parity/fixtures/builtin-coding-tool-parity-2026-10-22.md),
+[acceptance inventory](docs/parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json)
+and [continuation rules](docs/continuation.md). Strict equivalence excludes the
+recorded safety differences and unexecuted platform/privileged cases. Global Pi
+parity remains `in_progress`.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 

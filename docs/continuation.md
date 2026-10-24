@@ -2,212 +2,55 @@
 
 ## Active milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
-The new mission authorizes PR #21's merge and supersedes the previous
-publication hold. PR #21 is verified closed/merged with actual merge SHA
-`ebfeb24c9dd5e03592c3b388236f22a3a3a3299a`, present on fetched `origin/main`.
-The merge has parents `5e1e5aa8ddc66a8e829a880604060b8483107284` and reviewed
-head `64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. Both reviewed-head workflows
-passed 2,711 tests and both MCP jobs before the expected-head merge.
+PR #21 is merged at `ebfeb24c9dd5e03592c3b388236f22a3a3a3299a`, verified on
+fetched `origin/main` before product work. Its reviewed head was
+`64fc15b7317a2307b066bbba6ebb3ea630b19ee1`. The new branch
+`milestone/builtin-coding-tool-parity` starts from that actual merge. Pi remains
+at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-Branch `milestone/builtin-coding-tool-parity` starts from that actual merge.
-Pi stays at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. A–P are complete;
-Q (full validation) is in progress; R–T remain pending. Preserve this
-twenty-checkpoint denominator for progress reports. Tool and differential case
-counts are separate measures and must not be substituted for checkpoint counts.
+Local acceptance checkpoints A–R are complete: **18/20 at this documentation
+revision**. Publication (S) and exact-head CI (T) have a live receipt in
+[PR #22](https://github.com/PhilipGB/pisharp/pull/22). Read that description and
+current run metadata before reporting progress; do not mistake this frozen local
+checkpoint count for the later publication state. Keep the twenty-checkpoint
+denominator. Do not merge #22 or start #23.
 
+Product acceptance source is `3c2640e38b173117e5c8f8ee0406530bdca1f073`.
+The final publication head and push/PR workflow IDs are maintained in the PR
+description so the tested head does not change solely to record its CI result.
+The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md),
+[inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) and
+[corpus acceptance](parity/fixtures/builtin-coding-tool-corpus-acceptance-2026-10-22.json)
+record exact source revisions and scope.
 
-The first full Q suite passed 3,718/3,718 with zero failures/skips, but final
-ownership auditing found four executable set-ID mode mismatches. Eight new
-pinned observations and 138 related mutation checks verify the focused fix.
-Atomic publication now restores owner/group through its private handle and
-matches kernel privilege-bit clearing. Local group assignment is restricted
-(EINVAL in the narrow mapping, EPERM after expansion). CI now captures the real
-pinned oracle on its Linux runner, requires an assignable alternate group, and
-passes the actual observations into native tests. Fresh full gates, reliability
-and this physical CI receipt remain required. Progress stays 16/20; Q is open. The fresh full suite has 3,725 passes and one
-restart-test synchronization failure. The restored LOCAL_TOOL_OK frame is already
-visible before its output mark. The test now checks the initial settled frame
-before marking the next prompt; the focused run passes. Five physical repetitions
-pass. A subsequent full run passes the restart test but finds one HTTP fixture
-cleanup failure (3,725 pass / one fail). An independent .NET 10.0.13 probe shows
-Stop followed by Dispose can rebind a released port; Close followed by Dispose
-is clean. The test now closes its listener once, and the focused test passes.
-Five MCP repetitions and a fresh complete run remain required. No product or
-timeout change is involved.
+The 456-case corpus has 385 exact passes, ten calibrated JPEG equivalents,
+61 explicit safety exclusions and zero unresolved cases; the strict same-Pi
+control is 456/456 without PiSharp. Case counts are read121/write39/edit69/
+bash44/grep68/find62/ls53. Atomic/private mutations, image allocation bounds,
+repository privacy and stronger shutdown behavior remain clearly excluded from
+strict equivalence. Eight additional pinned owner/mode observations are facets,
+not eight extra strict whole-filesystem passes: inode replacement remains
+intentional.
 
-Bash investigation now has 44 direct pinned cases; clean pre-fix `6c346e46`
-passes 2/44 when initial/final update contracts are included. The correction
-adds cumulative raw snapshots, initial empty content, 100 ms coalescing, live
-truncation metadata, BOM-aware decoding and ignored stdin. Spawn failures and
-NUL arguments reject before shell execution. The expanded related selection
-passes 139 checks before the new virtual-clock checks. Two physical detached-
-grandchild checks fail before process cleanup is corrected, then pass; actual
-pinned Pi leaves its detached grandchild sleeping at tool settlement. Keep the
-stronger cleanup guarantee and document it separately from strict parity.
-Fresh clean-head differential, session environment, timeout/shutdown and shared
-integration/reliability acceptance remain open. I remains in progress.
+All seven tools run through MAF, three physical provider workflows and actual
+session restart. The Bash-abort workflow preserves exactly one appended byte
+after restart. Concurrent tool results survive persistent compaction and RPC
+history. Final validation and reliability results are in the receipt. The first
+full 3,718-test run preceded the late set-ID correction and is historical; use
+the later full suite, corpus, provider and repeat receipts.
 
-Clean `b46aff69` now passes 44/44 direct Bash cases and its strict same-Pi control.
-Two additional MAF regressions expose stale provider/model/reasoning environment
-values after selection; the per-execution resolver fixes both, and all three
-new environment checks pass. SIGTERM/SIGHUP originally leave child processes
-running; active-process tracking and CLI cleanup fix both, with EOF/TERM/HUP
-exit codes 0/143/129. All eight new environment/lifetime/shutdown checks pass; the expanded Bash,
-extension execution, selection and protocol selection passes 196/196.
-The real pinned CLI leaves its detached grandchild alive and emits no EOF
-response; native stronger cleanup and its retained cancelled EOF response are
-explicit strict-equivalence exclusions. Five upstream Bash regression files
-pass 25/25. Clean `011728fb` verifies final I evidence (44/44 direct and strict control;
-all three physical shutdown cases), recorded in the final Bash acceptance.
-Move to J; shared M–P acceptance stays open.
+CI checks out the same pinned Pi separately, installs its locked dependencies
+with scripts disabled, captures actual Linux owner/group/mode results and gives
+that oracle to the native tests. Both workflows retain the source JSON artifact.
+The Linux gate requires an assignable alternate group; inspect this artifact and
+the corresponding successful test job before closing T. Local group mapping
+restrictions are recorded, without claiming that the alternate-group case ran
+locally. Privileged and native Windows/macOS parity remain unverified.
 
-Grep is under active correction. Clean input source `bf9316fa` has 67 cases;
-control is 67/67 and baseline 39/67. All 28 mismatches reproduce in C#; the
-bounded rg adapter and compatibility guard now pass 95 related checks. Current
-worktree product changes are not yet committed. A new 68th source case captures
-the intentional stronger repository-local core.excludesFile privacy behavior.
-The CPU-profile file-order witness comes from eight actual pinned runs; no
-ordering normalization was added. Malformed rg output, Unicode chunk boundaries and process/argument errors are
-now source-captured: eight failures before the first correction and three more
-argument failures before their correction. All 27 process cases, 67 direct-input
-cases and real FIFO cancellation pass (95/95 selection). The FIFO proves real
-rg is blocked while another search completes, then cancelled/reaped with recovery.
-The 12 MiB reader allocation check stays below 256 KiB; comparison guards are
-21/21. Format and verify current changes, commit the correction and run fresh
-real-rg differentials before completing J. The 13:57:24–17:28:07 UTC
-interruption is recorded as inactive; do not count it toward active duration.
-
-Grep is now accepted at clean `6b0017d4`: 67 strict passes, one explicitly
-excluded privacy case, zero unresolved differences and 68/68 same-Pi controls.
-The privacy witness retains two complete actual pinned ordering observations;
-no sorting or relaxed ordinary comparisons were introduced. The 427-check
-related selection and 21 harness guards pass. Move to K (find), preserving the
-fixed 20-checkpoint denominator; broader M–P acceptance remains open.
-
-Find input source `d27acc4e` has 61 cases: control 61/61, old native 37/61.
-All 24 mismatches reproduce; the fd adapter now passes the 128-case shared
-search suite (67 grep + 61 find). Its changes are currently uncommitted. The
-old search/process selection passes 186/188; both failures assume a slash on
-directory symlinks, contradicted by the pinned find-symlink-directory fixture.
-Those source-backed expectations are corrected. Next verify fd process/protocol
-boundaries and real traversal cancellation, then commit and run fresh evidence.
-
-The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md) and
-[inventory](parity/fixtures/builtin-coding-tool-inventory-2026-10-22.json) were
-created before product changes. They explicitly list unverified contracts and
-source differences. The independent oracle has a 211/211 same-Pi control and
-11 passing harness tests. Clean baseline `a9ab1c09` passes 23/211. Product fix
-`f9f3fa56` restores ordinary search result text and truncation content, with
-seven fail-first regressions and a 54/84 pinned search subset. The next input
-declaration/validation/edit-preparation correction passes 31 new argument tests,
-64 related checks and 77 tool-selection/native-hook checks. The common result
-checkpoint is now complete; no whole tool is claimed complete.
-
-Primitive conversion now matches 93 captured/reproduced TypeBox vectors; two
-converted physical writes and two .NET representation cases pass. The expanded
-related selection passes 169/169. The forced writable-cache restore clears the
-earlier cached NuGet warnings. Shared truncation now matches 140 pinned vectors
-and 28 mapped head cases (five fail before the correction); the related selection
-passes 184/184. Read result metadata now has 13 captured pinned cases, 15 failures
-before the correction and 39/39 related passes after it. Text structured output
-and truncation details survive MAF/provider/native restart; the bounded streaming
-reader counts decoded UTF-8 bytes. Bash metadata and schemas now pass seven
-pinned process/artifact cases and seven registered schema/policy cases (11
-failures before correction). Related checks pass 201/201; selection/hooks/Codemode
-pass 60/60. JSON hid structured content via `JsonIgnore`; two wire tests fail
-before the additive correction, then 23/23 wire/session checks pass. The corrected
-native probe passes four selected empty/truncated read cases at clean source
-`35601464`. Read text/path/error corrections now pass 68 pinned actual-function
-cases (38 fail before); the related selection passes 230/230. Three bounded
-streaming/cancellation checks pass, including a 64 MiB single line with at most
-64 KiB read buffers. Read image sampling/orientation, broader image/provider
-acceptance and remaining hardening are next. Clean text source `600c151d` passes
-72/73 paired read cases. The expanded frozen-image baseline/control at `550d5f5c`
-passes 89/115 and 115/115 respectively. The first image correction reduces 26
-strict image failures to ten JPEG-related pixel differences; 36/46 image cases
-pass. Dimensions/MIME/notes match, and no pixel tolerance has been added. The
-related selection has 178 passes/10 failures; seventeen source-captured fixed
-number vectors pass. Keep these failures open and quantify raw JPEG differences
-before any acceptance-policy decision. Investigation found and corrected a real
-JPEG budget defect (native quality 80 versus pinned 40) by lossless standard
-Huffman coding. An explicit, calibrated native-JPEG envelope now verifies
-quantization, sampling and distortion while keeping all strict hashes/differences
-visible. The pre-encoding buffers are byte-exact; other PNGs stay exact. Image,
-budget and existing OpenAI wire checks pass 66/66; eighteen harness guards pass.
-Next verify fresh paired evidence, Anthropic images and canonical structured
-image persistence. Clean source `20d18a51` passes all 115 read contracts (105
-strict, ten reported JPEG equivalents); its control is 115/115 strict. Three
-provider regressions then expose missing canonical structured-image data; after
-the metadata/projection correction, 22 related checks pass, including all three
-seven-request image workflows. Four new context inputs cover non-vision notes
-and model profile precedence: clean `81d9a226` passes 1/4 before correction.
-Two MAF regressions fail before fixing the canonical note; the broader selection
-passes 83/83 afterward. An earlier lifecycle JSON image-byte leak is corrected
-without weakening its existing regression. Current/routed model capability now
-updates read behavior. Clean source `9ebd03b5` passes all four paired context cases. Two resource-boundary
-inputs establish two retained allocation-safety differences at `f33ffd1f`; they
-remain failed strict comparisons and are counted separately. A post-decode barrier
-reproduces delayed cancellation; the cancellable worker await fixes it, and 149
-related read checks pass. Two pinned pending-read abort cases are captured without
-inflating the direct corpus count. Complete read comparison/control is next. The supported read checkpoint is complete; broader M–P acceptance remains open.
-Clean `9f733919` passes 119/121 read cases: 109 strict and ten explicit JPEG
-equivalents. The two allocation safety cases stay failed strict comparisons and
-are separately excluded. The full same-Pi control is 121/121 strict. The committed
-read acceptance receipt retains both outputs, filesystem state, source SHAs and
-all differences. Continue with write permissions, path semantics and mutation
-serialization; retain private new-file modes and atomic replacement unless a
-change preserves their existing safety guarantees.
-Write baseline `509aab2d` passes 11/39; fourteen corrected fail-first
-regressions confirm paths, read-only replacement, realpath/cancellation errors
-and missing-file alias coordination. Corrections pass 52 related checks. The
-legacy permission assertion is corrected against an exact Pi reproduction and
-strengthened with an unchanged-directory check. Retain private modes and atomic
-replacement; classify their actual side-effect differences explicitly. Fresh
-paired write at `401a5b26` is 20/39 strict; nineteen explicit private/atomic
-safety witnesses preserve all failed comparisons. Four ordered mutation pairs
-now use actual Pi call results/final bytes. The existing cancelled-waiter timing
-difference is explicit: native settles promptly without releasing an active
-writer. Source queue regressions pass 7/7, related native checks pass 66/66, and
-focused coordination passes 7/7. Prepared temporary files are now private until
-commit (one fail-first regression); final target permissions remain intact.
-Clean `a420ce25` verifies 20/39 strict write comparisons and the nineteen
-explicit safety exclusions, with zero unresolved differences. Its same-Pi control
-is 39/39 strict. The supported write checkpoint is complete; continue edit
-decoding/permissions/batches and retain broader M–P acceptance gates.
-Edit baseline `385ac35d` is 21/67 strict; `d1046c7b` adds a confirmed fuzzy-batch
-range defect. Actual-function goldens cover 66 source cases, plus one explicit
-atomic parent-error regression. Sixteen product regressions fail before the
-correction; a seventeenth failure is a fixture-root comparison error, corrected
-without dropping metadata. UTF-8 decoding, ambiguity counting, exact ranges,
-directory/ancestor errors and cancellation now pass 327 related checks. The
-nullable cleanup warning is fixed. Fresh paired edit evidence and additional
-hardening find a further unstable large-batch overlap index, corrected against
-clean `9c23bd86`. Native checks pass 331/331, including prepared batched edit
-cancellation and failures. Clean `2250b589` has only thirty-eight explicit
-atomicity safety differences across its 68 cases; those complete observations
-are frozen separately and never counted as passing parity. Twenty harness guards
-pass. A deterministic post-read directory deletion reproduces stale-content
-resurrection by the shared atomic helper. Parent creation now belongs to write;
-edit matches the pinned ENOENT outcome, leaves the directory absent and recovers
-with another write. The fail-first regression then joins 332 passing related
-checks. Clean `00f91836` verifies 31/69 strict edit cases and thirty-eight explicit
-atomicity exclusions, with zero unexplained differences; control is 69/69 strict.
-The same fresh run rechecks write at 20 strict passes/nineteen exclusions. H is
-complete within the documented scope; I (Bash) is next. Preserve M–P acceptance.
-Corpus is 341 (edit 69).
-Do not count component vectors as tool cases.
-Do not treat declaration equality as complete callable-schema parity: numeric
-tool semantics still need correction. Required
-provider, MAF, filesystem, process, image, restart and safety evidence remains
-mandatory after direct function tests pass.
-
-Started at 2026-10-22 17:44:40 UTC; record active engineering duration truthfully,
-excluding interruptions/idle intervals. Raw work is ignored under
-`artifacts/parity/builtin-coding-tools-2026-10-22/`. Exclude the interval between
-2026-10-22 19:07:47 UTC and 2026-10-23 07:13:30 UTC from active duration. Never modify/stage/delete
-`test.pdf`; stage intended paths explicitly. Publish new draft PR #22 and
-verify final-head push and PR CI. Do not merge #22 or start #23. Global parity
-remains `in_progress`.
+Before resuming work, fetch PR #22 metadata and verify the published head, draft
+status, merge state and CI rather than repeating completed implementation. If
+final-head test/MCP/ownership gates pass, the milestone is complete within its
+recorded scope. Broader Pi parity remains `in_progress`.
 
 ## Previous milestone — Terminal Rendering and Interaction Parity — 2026-10-22
 

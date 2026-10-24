@@ -1,134 +1,124 @@
 {
   "schema": 1,
-  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "baselinePiSharpSha": "a9ab1c091d003396024685baca44d588bb0f1d31",
-  "source": "Pinned validateToolArguments at packages/ai/src/utils/validation.ts; captured by builtin-coding-tool-probe.mjs in the clean baseline.",
-  "cases": [
+  "productSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+  "fullSuiteSource": "3d0d7d6db783a036930b5c39edf0796d90fdd447",
+  "recordedAt": "2026-10-24T07:10:24.330092+00:00",
+  "fullDotnet": {
+    "total": "3726",
+    "executed": "3726",
+    "passed": "3726",
+    "failed": "0",
+    "error": "0",
+    "timeout": "0",
+    "aborted": "0",
+    "inconclusive": "0",
+    "passedButRunAborted": "0",
+    "notRunnable": "0",
+    "notExecuted": "0",
+    "disconnected": "0",
+    "warning": "0",
+    "completed": "0",
+    "inProgress": "0",
+    "pending": "0"
+  },
+  "architecture": [
+    "PiSharp.Tests.ArchitectureTests.PublicExtensionAbstractionsStayIndependentOfRuntimeAndTheFixtureUsesOnlyThatBoundary",
+    "PiSharp.Tests.ArchitectureTests.BoundaryScannerRecognizesFilesystemCallsInTheRepositoryReader",
+    "PiSharp.Tests.ArchitectureTests.CoreDoesNotCallTerminalFilesystemProcessOrNetworkApis",
+    "PiSharp.Tests.ArchitectureTests.ProductionProjectReferencesFollowDependencyDirection(project: \"PiSharp.Cli\", allowedReferences: \"PiSharp.Core,PiSharp.Runtime\")",
+    "PiSharp.Tests.ArchitectureTests.ProductionProjectReferencesFollowDependencyDirection(project: \"PiSharp.Core\", allowedReferences: \"\")",
+    "PiSharp.Tests.ArchitectureTests.ProductionProjectReferencesFollowDependencyDirection(project: \"PiSharp.Runtime\", allowedReferences: \"PiSharp.Core,PiSharp.Extensions.Abstractions\")",
+    "PiSharp.Tests.ArchitectureTests.CoreAndRuntimeKeepCliAndProviderSdksOut"
+  ],
+  "compiledExtensionTests": [
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.LoaderReportsMissingEntryTypeAndInvalidEntryContract",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.ManifestReaderBoundsSizeAndNestingDepth",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.LoaderUsesDeclaredEntryAndSharesHostApiIdentity",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.MissingMalformedAndUnsafeManifestEntriesAreRejected",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.ConstructorFailureReturnsDiagnosticAndUnloadsItsContext",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.IncompatibleApiVersionIsRejectedBeforeEntryConstruction",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.PrivateDependenciesResolveIndependentlyAndPackageContextsUnload",
+    "PiSharp.Tests.Runtime.Extensions.NativeExtensionPackageLoaderTests.IncompatibleSharedAssemblyIdentityIsRejectedBeforeEntryConstruction"
+  ],
+  "formatBuild": [
     {
-      "caseId": "read-missing-required",
-      "tool": "read",
-      "arguments": {},
-      "error": "Validation failed for tool \"read\":\n  - path: must have required properties path\n\nReceived arguments:\n{}"
+      "gate": "format",
+      "exitCode": 0,
+      "elapsedSeconds": 44.792
     },
     {
-      "caseId": "read-invalid-path-type",
-      "tool": "read",
-      "arguments": {
-        "path": []
-      },
-      "error": "Validation failed for tool \"read\":\n  - path: must be string\n\nReceived arguments:\n{\n  \"path\": []\n}"
-    },
-    {
-      "caseId": "read-invalid-offset-type",
-      "tool": "read",
-      "arguments": {
-        "path": "file.txt",
-        "offset": {}
-      },
-      "error": "Validation failed for tool \"read\":\n  - offset: must be number\n\nReceived arguments:\n{\n  \"path\": \"file.txt\",\n  \"offset\": {}\n}"
-    },
-    {
-      "caseId": "write-missing-content",
-      "tool": "write",
-      "arguments": {
-        "path": "file.txt"
-      },
-      "error": "Validation failed for tool \"write\":\n  - content: must have required properties content\n\nReceived arguments:\n{\n  \"path\": \"file.txt\"\n}"
-    },
-    {
-      "caseId": "write-invalid-content-type",
-      "tool": "write",
-      "arguments": {
-        "path": "file.txt",
-        "content": {}
-      },
-      "error": "Validation failed for tool \"write\":\n  - content: must be string\n\nReceived arguments:\n{\n  \"path\": \"file.txt\",\n  \"content\": {}\n}"
-    },
-    {
-      "caseId": "write-invalid-path-type",
-      "tool": "write",
-      "arguments": {
-        "path": [],
-        "content": "bad"
-      },
-      "error": "Validation failed for tool \"write\":\n  - path: must be string\n\nReceived arguments:\n{\n  \"path\": [],\n  \"content\": \"bad\"\n}"
-    },
-    {
-      "caseId": "edit-missing-required",
-      "tool": "edit",
-      "arguments": {
-        "path": "file.txt"
-      },
-      "error": "Validation failed for tool \"edit\":\n  - edits: must have required properties edits\n\nReceived arguments:\n{\n  \"path\": \"file.txt\"\n}"
-    },
-    {
-      "caseId": "edit-invalid-element-type",
-      "tool": "edit",
-      "arguments": {
-        "path": "file.txt",
-        "edits": [
-          1
-        ]
-      },
-      "error": "Validation failed for tool \"edit\":\n  - edits.0: must be object\n\nReceived arguments:\n{\n  \"path\": \"file.txt\",\n  \"edits\": [\n    1\n  ]\n}"
-    },
-    {
-      "caseId": "bash-missing-required",
-      "tool": "bash",
-      "arguments": {},
-      "error": "Validation failed for tool \"bash\":\n  - command: must have required properties command\n\nReceived arguments:\n{}"
-    },
-    {
-      "caseId": "bash-invalid-command-type",
-      "tool": "bash",
-      "arguments": {
-        "command": []
-      },
-      "error": "Validation failed for tool \"bash\":\n  - command: must be string\n\nReceived arguments:\n{\n  \"command\": []\n}"
-    },
-    {
-      "caseId": "grep-missing-required",
-      "tool": "grep",
-      "arguments": {},
-      "error": "Validation failed for tool \"grep\":\n  - pattern: must have required properties pattern\n\nReceived arguments:\n{}"
-    },
-    {
-      "caseId": "grep-invalid-pattern-type",
-      "tool": "grep",
-      "arguments": {
-        "pattern": []
-      },
-      "error": "Validation failed for tool \"grep\":\n  - pattern: must be string\n\nReceived arguments:\n{\n  \"pattern\": []\n}"
-    },
-    {
-      "caseId": "find-missing-required",
-      "tool": "find",
-      "arguments": {},
-      "error": "Validation failed for tool \"find\":\n  - pattern: must have required properties pattern\n\nReceived arguments:\n{}"
-    },
-    {
-      "caseId": "find-invalid-pattern-type",
-      "tool": "find",
-      "arguments": {
-        "pattern": []
-      },
-      "error": "Validation failed for tool \"find\":\n  - pattern: must be string\n\nReceived arguments:\n{\n  \"pattern\": []\n}"
-    },
-    {
-      "caseId": "ls-invalid-path-type",
-      "tool": "ls",
-      "arguments": {
-        "path": []
-      },
-      "error": "Validation failed for tool \"ls\":\n  - path: must be string\n\nReceived arguments:\n{\n  \"path\": []\n}"
-    },
-    {
-      "caseId": "ls-invalid-limit-type",
-      "tool": "ls",
-      "arguments": {
-        "limit": {}
-      },
-      "error": "Validation failed for tool \"ls\":\n  - limit: must be number\n\nReceived arguments:\n{\n  \"limit\": {}\n}"
+      "gate": "build",
+      "exitCode": 0,
+      "elapsedSeconds": 57.662
     }
-  ]
+  ],
+  "node": {
+    "passed": 24,
+    "failed": 0
+  },
+  "pythonTerminal": {
+    "passed": 66,
+    "failed": 0
+  },
+  "comparisonGuards": {
+    "passed": 27,
+    "failed": 0
+  },
+  "mcp": {
+    "passed": 261,
+    "classifiedBaselineFailures": 8,
+    "newFailures": 0
+  },
+  "earlierFullRun": {
+    "source": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+    "passed": 3725,
+    "failed": 1,
+    "skipped": 0,
+    "reason": "Restored TUI history already painted before the test marked its output; initial settled-frame synchronization corrected without product changes or timeout increases."
+  },
+  "httpFixtureCleanup": {
+    "source": "52bba8a8ca7c9ec2e42dc4bd452cbe07faea71d6",
+    "failure": "HttpListener Stop followed by disposal may rebind a released port. A standalone .NET 10.0.13 reproduction fails with Stop/Dispose and succeeds with Close/Dispose.",
+    "correction": "Close the owned fixture listener once; product assertions and timeouts unchanged.",
+    "physicalRepeatedRuns": [
+      {
+        "gate": "mcp-repeat-1",
+        "exitCode": 0,
+        "elapsedSeconds": 10.457
+      },
+      {
+        "gate": "mcp-repeat-2",
+        "exitCode": 0,
+        "elapsedSeconds": 11.049
+      },
+      {
+        "gate": "mcp-repeat-3",
+        "exitCode": 0,
+        "elapsedSeconds": 10.332
+      },
+      {
+        "gate": "mcp-repeat-4",
+        "exitCode": 0,
+        "elapsedSeconds": 10.028
+      },
+      {
+        "gate": "mcp-repeat-5",
+        "exitCode": 0,
+        "elapsedSeconds": 10.569
+      }
+    ]
+  },
+  "publicationReceipt": "https://github.com/PhilipGB/pisharp/pull/22",
+  "finalSuiteExecution": {
+    "startedAt": "2026-10-24T00:32:48.294761+00:00",
+    "finishedAt": "2026-10-24T00:45:08.246413+00:00",
+    "source": "3d0d7d6db783a036930b5c39edf0796d90fdd447",
+    "dirtyPaths": [],
+    "passed": true
+  },
+  "documentation": {
+    "documents": 151,
+    "references": 617,
+    "passed": true
+  }
 }

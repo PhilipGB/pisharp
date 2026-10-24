@@ -12,66 +12,80 @@
     "read": {
       "source": "9f73391992b60838a77d6c7c1126c063b4a1b919",
       "receipt": "docs/parity/fixtures/builtin-coding-tool-read-acceptance-2026-10-22.json",
-      "status": "supported read checkpoint verified; shared M–P acceptance pending",
+      "status": "verified_defined_supported_Linux_contract_with_explicit_exclusions",
       "passed": 119,
       "total": 121,
       "strict": 109,
       "jpeg_equivalent": 10,
       "intentional_safety_exclusions": 2,
-      "control_strict_passed": 121
+      "control_strict_passed": 121,
+      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "write": {
       "source": "a420ce25eb0e9e28f3ed92825d21fe5cb700acb8",
       "receipt": "docs/parity/fixtures/builtin-coding-tool-write-acceptance-2026-10-22.json",
-      "status": "supported checkpoint verified with explicit safety exclusions; shared M–P acceptance pending",
+      "status": "verified_defined_supported_Linux_contract_with_explicit_exclusions",
       "strict": 20,
       "total": 39,
       "intentional_safety_exclusions": 19,
-      "control_strict_passed": 39
+      "control_strict_passed": 39,
+      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "edit": {
       "source": "00f918365dffd8b6f27f89e02f649a0009815227",
       "receipt": "docs/parity/fixtures/builtin-coding-tool-edit-acceptance-2026-10-22.json",
-      "status": "supported checkpoint verified with explicit safety exclusions; shared M–P acceptance pending",
+      "status": "verified_defined_supported_Linux_contract_with_explicit_exclusions",
       "strict": 31,
       "total": 69,
       "intentional_safety_exclusions": 38,
-      "control_strict_passed": 69
+      "control_strict_passed": 69,
+      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "bash": {
       "source": "011728fb84e998b7dec0da3b056ea0c307c3af73",
       "receipt": "docs/parity/fixtures/builtin-coding-tool-bash-acceptance-2026-10-22.json",
-      "status": "supported Linux Bash checkpoint verified; shared M-P integration and reliability acceptance pending",
+      "status": "verified_defined_supported_Linux_contract_with_explicit_exclusions",
       "strict": 44,
       "total": 44,
       "control_strict_passed": 44,
-      "shutdown_intentional_safety_exclusions": 3
+      "shutdown_intentional_safety_exclusions": 3,
+      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "grep": {
       "source": "6b0017d470c9927c366deb4c76fe93e1e9c1e554",
       "receipt": "docs/parity/fixtures/builtin-coding-tool-grep-acceptance-2026-10-22.json",
-      "status": "supported Linux grep checkpoint verified with one explicit privacy exclusion; shared M-P acceptance pending",
+      "status": "verified_defined_supported_Linux_contract_with_explicit_exclusions",
       "strict": 67,
       "total": 68,
       "intentional_safety_exclusions": 1,
-      "control_strict_passed": 68
+      "control_strict_passed": 68,
+      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "find": {
       "source": "99016879fabaee542c2b0265bb34864c98435516",
       "receipt": "docs/parity/fixtures/builtin-coding-tool-find-acceptance-2026-10-22.json",
-      "status": "supported Linux find checkpoint verified with one explicit privacy exclusion; shared M-P acceptance pending",
+      "status": "verified_defined_supported_Linux_contract_with_explicit_exclusions",
       "strict": 61,
       "total": 62,
       "intentional_safety_exclusions": 1,
-      "control_strict_passed": 62
+      "control_strict_passed": 62,
+      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "ls": {
       "source": "a68d365c4fcf6f43e4a8fcbdf01d150627f9770c",
       "receipt": "docs/parity/fixtures/builtin-coding-tool-ls-acceptance-2026-10-22.json",
-      "status": "supported Linux ls checkpoint verified; shared M-P acceptance pending",
+      "status": "verified_defined_supported_Linux_contract_with_explicit_exclusions",
       "strict": 53,
       "total": 53,
-      "control_strict_passed": 53
+      "control_strict_passed": 53,
+      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     }
   },
   "tools": {
@@ -858,5 +872,8 @@
     "safetyReliability": false,
     "fullValidation": false,
     "publicationAndFinalHeadCi": false
-  }
+  },
+  "initialInventoryCommit": "9cfa97adab23433724ec41e4f4386d32cd7e53ad",
+  "publicationReceipt": "https://github.com/PhilipGB/pisharp/pull/22",
+  "platformLimitations": "Native Windows/macOS and privileged execution are unverified. Local alternate-group assignment is restricted; Linux CI compares its actual pinned/native observations before milestone completion."
 }

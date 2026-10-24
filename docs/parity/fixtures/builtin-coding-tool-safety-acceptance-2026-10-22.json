@@ -3,12 +3,13 @@
   "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "reliability": {
     "schema": 1,
-    "piSharpSha": "8fb933e7ea17def3bf6e36a17a15fe69e2ab64de",
+    "piSharpSha": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
     "dirtyPaths": [],
-    "startedAt": "2026-10-23T23:08:49.540894+00:00",
+    "startedAt": "2026-10-24T00:01:33.470595+00:00",
     "classes": [
       "FileMutationCoordinationTests",
       "FileMutationAliasTests",
+      "FileMutationOwnershipTests",
       "BashProcessLifetimeTests",
       "BuiltinBashResultParityTests",
       "BashToolUpdateParityTests",
@@ -27,13 +28,13 @@
     "iterations": [
       {
         "iteration": 1,
-        "elapsedSeconds": 11.593,
+        "elapsedSeconds": 24.181,
         "exitCode": 0,
         "timedOut": false,
         "counters": {
-          "total": "263",
-          "executed": "263",
-          "passed": "263",
+          "total": "271",
+          "executed": "271",
+          "passed": "271",
           "failed": "0",
           "error": "0",
           "timeout": "0",
@@ -53,13 +54,13 @@
       },
       {
         "iteration": 2,
-        "elapsedSeconds": 10.634,
+        "elapsedSeconds": 13.978,
         "exitCode": 0,
         "timedOut": false,
         "counters": {
-          "total": "263",
-          "executed": "263",
-          "passed": "263",
+          "total": "271",
+          "executed": "271",
+          "passed": "271",
           "failed": "0",
           "error": "0",
           "timeout": "0",
@@ -79,13 +80,13 @@
       },
       {
         "iteration": 3,
-        "elapsedSeconds": 9.821,
+        "elapsedSeconds": 12.042,
         "exitCode": 0,
         "timedOut": false,
         "counters": {
-          "total": "263",
-          "executed": "263",
-          "passed": "263",
+          "total": "271",
+          "executed": "271",
+          "passed": "271",
           "failed": "0",
           "error": "0",
           "timeout": "0",
@@ -105,13 +106,13 @@
       },
       {
         "iteration": 4,
-        "elapsedSeconds": 10.529,
+        "elapsedSeconds": 11.036,
         "exitCode": 0,
         "timedOut": false,
         "counters": {
-          "total": "263",
-          "executed": "263",
-          "passed": "263",
+          "total": "271",
+          "executed": "271",
+          "passed": "271",
           "failed": "0",
           "error": "0",
           "timeout": "0",
@@ -131,13 +132,13 @@
       },
       {
         "iteration": 5,
-        "elapsedSeconds": 9.488,
+        "elapsedSeconds": 10.455,
         "exitCode": 0,
         "timedOut": false,
         "counters": {
-          "total": "263",
-          "executed": "263",
-          "passed": "263",
+          "total": "271",
+          "executed": "271",
+          "passed": "271",
           "failed": "0",
           "error": "0",
           "timeout": "0",
@@ -156,7 +157,7 @@
         "passed": true
       }
     ],
-    "finishedAt": "2026-10-23T23:09:41.608419+00:00",
+    "finishedAt": "2026-10-24T00:02:45.167706+00:00",
     "passed": true
   },
   "initialReliabilityAttempt": {
@@ -199,10 +200,10 @@
     "skipped": 0
   },
   "physicalCancellation": {
-    "piSharpSha": "cdebf8ff662e636f2055ccf2c1bad8c7672108f9",
+    "piSharpSha": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
     "dirtyPaths": [],
-    "startedAt": "2026-10-23T23:03:20.559786+00:00",
-    "finishedAt": "2026-10-23T23:03:50.702769+00:00",
+    "startedAt": "2026-10-24T00:01:33.544568+00:00",
+    "finishedAt": "2026-10-24T00:02:02.728715+00:00",
     "barrier": "HTTP response headers sent after eight completed tools; hold continuation response body, RPC abort, settle, exit CLI, restart from actual session file.",
     "cases": {
       "openai-responses": {
@@ -281,5 +282,18 @@
         }
       }
     }
+  },
+  "ownershipFacet": {
+    "fixture": "docs/parity/fixtures/builtin-coding-tool-mutation-ownership-2026-10-22.json",
+    "cases": 8,
+    "before": {
+      "failed": 4,
+      "passed": 4
+    },
+    "relatedAfter": {
+      "passed": 138,
+      "failed": 0
+    },
+    "scope": "Owner/mode/text/details/bytes, with atomic inode replacement explicitly excluded. Actual alternate-group Pi/native comparison is a required Linux CI artifact."
   }
 }
