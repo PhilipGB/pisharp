@@ -1,0 +1,32 @@
+{
+  "assistant-b": {
+    "leafId": "assistant-b",
+    "branch": [
+      { "id": "shared-user", "parentId": null, "type": "message" },
+      { "id": "extension-state-b", "parentId": "shared-user", "type": "custom" },
+      { "id": "assistant-b", "parentId": "extension-state-b", "type": "message" }
+    ],
+    "extensionState": [
+      { "id": "extension-state-b", "customType": "fixture.counter", "data": { "branch": "b", "count": 2 } }
+    ],
+    "context": [
+      { "role": "user", "content": "shared prompt" },
+      { "role": "assistant", "content": "answer B" }
+    ]
+  },
+  "assistant-a": {
+    "leafId": "assistant-a",
+    "branch": [
+      { "id": "shared-user", "parentId": null, "type": "message" },
+      { "id": "extension-state-a", "parentId": "shared-user", "type": "custom" },
+      { "id": "assistant-a", "parentId": "extension-state-a", "type": "message" }
+    ],
+    "extensionState": [
+      { "id": "extension-state-a", "customType": "fixture.counter", "data": { "branch": "a", "count": 1 } }
+    ],
+    "context": [
+      { "role": "user", "content": "shared prompt" },
+      { "role": "assistant", "content": "answer A" }
+    ]
+  }
+}

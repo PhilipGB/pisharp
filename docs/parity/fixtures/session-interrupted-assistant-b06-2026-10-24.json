@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "caseId": "pinned-pi-session-jsonl-export-and-reopen",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "input": "docs/parity/fixtures/session-interrupted-assistant-b06-2026-10-24.jsonl",
+  "inputSha256": "283857880d2ab6c7af94104bd223fc766a9170041a8dddf66a485195a81fd622",
+  "source": "packages/coding-agent/src/core/session-manager.ts:SessionManager.open/getBranch/buildSessionContext; packages/coding-agent/src/core/session-export.ts:serializeSessionBranch",
+  "independentRuns": 2,
+  "samePiCalibration": true,
+  "semanticRoundTrip": true,
+  "result": {
+    "before": {
+      "sessionId": "interrupted-assistant-session",
+      "leafId": "interrupted-assistant",
+      "branch": [
+        {
+          "id": "interrupted-user",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "interrupted-assistant",
+          "parentId": "interrupted-user",
+          "type": "message"
+        }
+      ],
+      "entryRecords": [
+        {
+          "type": "message",
+          "id": "interrupted-user",
+          "parentId": null,
+          "timestamp": "2026-10-24T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": "interrupted prompt",
+            "timestamp": 1792800001000
+          }
+        },
+        {
+          "type": "message",
+          "id": "interrupted-assistant",
+          "parentId": "interrupted-user",
+          "timestamp": "2026-10-24T00:00:02.000Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "fixture-model",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "partial reasoning",
+                "thinkingSignature": "partial-signature"
+              },
+              {
+                "type": "text",
+                "text": "partial output"
+              }
+            ],
+            "usage": {
+              "input": 7,
+              "output": 3,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 10,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "aborted",
+            "errorMessage": "Request was aborted",
+            "timestamp": 1792800002000
+          }
+        }
+      ],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "interrupted prompt",
+            "timestamp": 1792800001000
+          },
+          {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "fixture-model",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "partial reasoning",
+                "thinkingSignature": "partial-signature"
+              },
+              {
+                "type": "text",
+                "text": "partial output"
+              }
+            ],
+            "usage": {
+              "input": 7,
+              "output": 3,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 10,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "aborted",
+            "errorMessage": "Request was aborted",
+            "timestamp": 1792800002000
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "fixture",
+          "modelId": "fixture-model"
+        }
+      }
+    },
+    "exportedEntries": [
+      {
+        "id": "interrupted-user",
+        "parentId": null,
+        "type": "message"
+      },
+      {
+        "id": "interrupted-assistant",
+        "parentId": "interrupted-user",
+        "type": "message"
+      }
+    ],
+    "after": {
+      "sessionId": "interrupted-assistant-session",
+      "leafId": "interrupted-assistant",
+      "branch": [
+        {
+          "id": "interrupted-user",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "interrupted-assistant",
+          "parentId": "interrupted-user",
+          "type": "message"
+        }
+      ]
+    },
+    "afterSemanticSha256": "53ba5377475150a9c9df8a00a24bbfa74ea841c0e3ca9af33a44f1befc9075c1",
+    "semanticRoundTrip": true
+  }
+}

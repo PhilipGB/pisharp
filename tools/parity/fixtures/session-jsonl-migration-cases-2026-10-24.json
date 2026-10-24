@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "cases": [
+    {
+      "id": "v1-compaction-and-hook-message",
+      "entries": [
+        { "type": "session", "id": "v1", "timestamp": "2026-10-24T00:00:00Z", "cwd": "/tmp" },
+        { "type": "message", "timestamp": "2026-10-24T00:00:01Z", "message": { "role": "user", "content": "kept" } },
+        { "type": "compaction", "timestamp": "2026-10-24T00:00:02Z", "summary": "summary", "firstKeptEntryIndex": 1, "tokensBefore": 50 },
+        { "type": "message", "timestamp": "2026-10-24T00:00:03Z", "message": { "role": "hookMessage", "content": "hook" } }
+      ]
+    },
+    {
+      "id": "v2-hook-message-conversion",
+      "entries": [
+        { "type": "session", "id": "v2", "version": 2, "timestamp": "2026-10-24T00:00:00Z", "cwd": "/tmp" },
+        { "type": "message", "id": "v2-user", "parentId": null, "message": { "role": "user", "content": "kept" } },
+        { "type": "message", "id": "v2-hook", "parentId": "v2-user", "message": { "role": "hookMessage", "content": "hook" } }
+      ]
+    },
+    {
+      "id": "v3-is-stable-and-preserves-hook-role",
+      "entries": [
+        { "type": "session", "id": "v3", "version": 3, "timestamp": "2026-10-24T00:00:00Z", "cwd": "/tmp" },
+        { "type": "message", "id": "v3-user", "parentId": null, "message": { "role": "user", "content": "kept" } },
+        { "type": "message", "id": "v3-hook", "parentId": "v3-user", "message": { "role": "hookMessage", "content": "preserve" } }
+      ]
+    },
+    {
+      "id": "future-v4-is-left-unchanged-by-migration-helper",
+      "entries": [
+        { "type": "session", "id": "v4", "version": 4, "timestamp": "2026-10-24T00:00:00Z", "cwd": "/tmp" },
+        { "type": "message", "id": "v4-user", "parentId": null, "message": { "role": "user", "content": "future" } }
+      ]
+    },
+    {
+      "id": "string-version-is-left-unchanged-by-migration-helper",
+      "entries": [
+        { "type": "session", "id": "string-version", "version": "3", "timestamp": "2026-10-24T00:00:00Z", "cwd": "/tmp" },
+        { "type": "message", "id": "string-user", "parentId": null, "message": { "role": "user", "content": "invalid header" } }
+      ]
+    },
+    {
+      "id": "v1-invalid-compaction-index-types-and-fields",
+      "entries": [
+        { "type": "session", "id": "invalid-indexes", "timestamp": "2026-10-24T00:00:00Z", "cwd": "/tmp" },
+        { "type": "message", "timestamp": 42, "message": { "role": "user", "content": "kept" }, "unknown": { "v": 1 } },
+        { "type": "compaction", "timestamp": "2026-10-24T00:00:02Z", "summary": "zero", "firstKeptEntryId": "legacy-message", "firstKeptEntryIndex": 0 },
+        { "type": "compaction", "timestamp": "2026-10-24T00:00:03Z", "summary": "negative", "firstKeptEntryId": "legacy-message", "firstKeptEntryIndex": -1 },
+        { "type": "compaction", "timestamp": "2026-10-24T00:00:04Z", "summary": "out-of-range", "firstKeptEntryId": "legacy-message", "firstKeptEntryIndex": 99 },
+        { "type": "compaction", "timestamp": "2026-10-24T00:00:05Z", "summary": "fractional", "firstKeptEntryId": "legacy-message", "firstKeptEntryIndex": 1.5 },
+        { "type": "compaction", "timestamp": "2026-10-24T00:00:06Z", "summary": "string", "firstKeptEntryId": "legacy-message", "firstKeptEntryIndex": "1" },
+        { "type": "compaction", "timestamp": "2026-10-24T00:00:07Z", "summary": "null", "firstKeptEntryId": "legacy-message", "firstKeptEntryIndex": null },
+        { "type": "compaction", "timestamp": "2026-10-24T00:00:08Z", "summary": "boolean", "firstKeptEntryId": "legacy-message", "firstKeptEntryIndex": false }
+      ]
+    },
+    {
+      "id": "v1-integral-floating-compaction-index",
+      "rawJsonl": "{\"type\":\"session\",\"id\":\"integral-float\",\"cwd\":\"/tmp\"}\n{\"type\":\"message\",\"timestamp\":\"2026-10-24T00:00:01Z\",\"message\":{\"role\":\"user\",\"content\":\"kept\"}}\n{\"type\":\"compaction\",\"timestamp\":\"2026-10-24T00:00:02Z\",\"summary\":\"summary\",\"firstKeptEntryId\":\"invalid-original\",\"firstKeptEntryIndex\":1.0}\n"
+    }
+  ]
+}

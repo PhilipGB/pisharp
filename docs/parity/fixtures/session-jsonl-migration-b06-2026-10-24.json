@@ -1,0 +1,240 @@
+{
+  "schema": 1,
+  "caseId": "jsonl-v1-v3-file-migration-and-reopen",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "inputSha256": "ed3be59f9ff0847e366d570f901ff05f58400f031332f6494738955dc3a2adba",
+  "source": "packages/coding-agent/src/core/session-manager.ts:SessionManager.open, _loadEntries, _rewriteFile, migrateV1ToV2, migrateV2ToV3, migrateToCurrentVersion",
+  "results": [
+    {
+      "id": "v1-compaction-and-hook-message",
+      "fileChangedByFirstOpen": true,
+      "secondOpenStable": true,
+      "secondOpenLeftFileUnchanged": true,
+      "state": {
+        "headerVersion": 3,
+        "leafId": "entry-2",
+        "entries": [
+          {
+            "type": "message",
+            "id": "entry-0",
+            "parentId": null,
+            "role": "user",
+            "content": "kept"
+          },
+          {
+            "type": "compaction",
+            "id": "entry-1",
+            "parentId": "entry-0",
+            "firstKeptEntryId": "entry-0",
+            "hasFirstKeptEntryIndex": false
+          },
+          {
+            "type": "message",
+            "id": "entry-2",
+            "parentId": "entry-1",
+            "role": "custom",
+            "content": "hook"
+          }
+        ]
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "v2-hook-message-conversion",
+      "fileChangedByFirstOpen": true,
+      "secondOpenStable": true,
+      "secondOpenLeftFileUnchanged": true,
+      "state": {
+        "headerVersion": 3,
+        "leafId": "entry-1",
+        "entries": [
+          {
+            "type": "message",
+            "id": "entry-0",
+            "parentId": null,
+            "role": "user",
+            "content": "kept"
+          },
+          {
+            "type": "message",
+            "id": "entry-1",
+            "parentId": "entry-0",
+            "role": "custom",
+            "content": "hook"
+          }
+        ]
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "v3-is-stable-and-preserves-hook-role",
+      "fileChangedByFirstOpen": false,
+      "secondOpenStable": true,
+      "secondOpenLeftFileUnchanged": true,
+      "state": {
+        "headerVersion": 3,
+        "leafId": "entry-1",
+        "entries": [
+          {
+            "type": "message",
+            "id": "entry-0",
+            "parentId": null,
+            "role": "user",
+            "content": "kept"
+          },
+          {
+            "type": "message",
+            "id": "entry-1",
+            "parentId": "entry-0",
+            "role": "hookMessage",
+            "content": "preserve"
+          }
+        ]
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "future-v4-is-left-unchanged-by-migration-helper",
+      "fileChangedByFirstOpen": false,
+      "secondOpenStable": true,
+      "secondOpenLeftFileUnchanged": true,
+      "state": {
+        "headerVersion": 4,
+        "leafId": "entry-0",
+        "entries": [
+          {
+            "type": "message",
+            "id": "entry-0",
+            "parentId": null,
+            "role": "user",
+            "content": "future"
+          }
+        ]
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "string-version-is-left-unchanged-by-migration-helper",
+      "fileChangedByFirstOpen": false,
+      "secondOpenStable": true,
+      "secondOpenLeftFileUnchanged": true,
+      "state": {
+        "headerVersion": "3",
+        "leafId": "entry-0",
+        "entries": [
+          {
+            "type": "message",
+            "id": "entry-0",
+            "parentId": null,
+            "role": "user",
+            "content": "invalid header"
+          }
+        ]
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "v1-invalid-compaction-index-types-and-fields",
+      "fileChangedByFirstOpen": true,
+      "secondOpenStable": true,
+      "secondOpenLeftFileUnchanged": true,
+      "state": {
+        "headerVersion": 3,
+        "leafId": "entry-7",
+        "entries": [
+          {
+            "type": "message",
+            "id": "entry-0",
+            "parentId": null,
+            "role": "user",
+            "content": "kept"
+          },
+          {
+            "type": "compaction",
+            "id": "entry-1",
+            "parentId": "entry-0",
+            "firstKeptEntryId": "legacy-message",
+            "hasFirstKeptEntryIndex": false
+          },
+          {
+            "type": "compaction",
+            "id": "entry-2",
+            "parentId": "entry-1",
+            "firstKeptEntryId": "legacy-message",
+            "hasFirstKeptEntryIndex": false
+          },
+          {
+            "type": "compaction",
+            "id": "entry-3",
+            "parentId": "entry-2",
+            "firstKeptEntryId": "legacy-message",
+            "hasFirstKeptEntryIndex": false
+          },
+          {
+            "type": "compaction",
+            "id": "entry-4",
+            "parentId": "entry-3",
+            "firstKeptEntryId": "legacy-message",
+            "hasFirstKeptEntryIndex": false
+          },
+          {
+            "type": "compaction",
+            "id": "entry-5",
+            "parentId": "entry-4",
+            "firstKeptEntryId": "legacy-message",
+            "hasFirstKeptEntryIndex": true
+          },
+          {
+            "type": "compaction",
+            "id": "entry-6",
+            "parentId": "entry-5",
+            "firstKeptEntryId": "legacy-message",
+            "hasFirstKeptEntryIndex": true
+          },
+          {
+            "type": "compaction",
+            "id": "entry-7",
+            "parentId": "entry-6",
+            "firstKeptEntryId": "legacy-message",
+            "hasFirstKeptEntryIndex": true
+          }
+        ]
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "v1-integral-floating-compaction-index",
+      "fileChangedByFirstOpen": true,
+      "secondOpenStable": true,
+      "secondOpenLeftFileUnchanged": true,
+      "state": {
+        "headerVersion": 3,
+        "leafId": "entry-1",
+        "entries": [
+          {
+            "type": "message",
+            "id": "entry-0",
+            "parentId": null,
+            "role": "user",
+            "content": "kept"
+          },
+          {
+            "type": "compaction",
+            "id": "entry-1",
+            "parentId": "entry-0",
+            "firstKeptEntryId": "entry-0",
+            "hasFirstKeptEntryIndex": false
+          }
+        ]
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    }
+  ]
+}

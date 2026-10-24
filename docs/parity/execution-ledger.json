@@ -1,5 +1,193 @@
 {
   "schema": 1,
+  "session_jsonl_persistence_recovery_parity_milestone": {
+    "status": "in_progress",
+    "phase": "publication_and_exact_head_ci",
+    "pr24_reviewed_head": "4972f6eaf8f5a0ca2c773048fa918ab6bc23e91c",
+    "pr24_actual_merge": "0d83418a31d84e530b099d98054739607fa3e3ad",
+    "branch": "milestone/session-jsonl-persistence-recovery-parity",
+    "branch_base_sha": "0d83418a31d84e530b099d98054739607fa3e3ad",
+    "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "inventory": "docs/parity/fixtures/session-jsonl-persistence-recovery-inventory-2026-10-24.json",
+    "receipt": "docs/parity/fixtures/session-jsonl-persistence-recovery-2026-10-24.md",
+    "confirmed_differences": [
+      {
+        "id": "legacy-v1-short-id-collision",
+        "classification": "intentional_safety_deviation",
+        "strict_match": false,
+        "pi_observation": "Pinned migrateV1ToV2 leaves its collision-check set empty; a deterministic duplicate short-ID source produces a self-parenting entry.",
+        "pisharp_correction": "Retry generated IDs so the canonical graph remains valid.",
+        "regression": "PiJsonlSessionInterchangeTests.LegacyV1MigrationRetriesGeneratedEntryIdCollisions"
+      },
+      {
+        "id": "generated-export-session-info-id-collision",
+        "classification": "PiSharp_interchange_safety_defect_corrected",
+        "strict_match": null,
+        "pi_observation": "Pinned Pi's entry-ID helper checks generated values against the existing entry index; PiSharp's synthetic export anchor had no collision check.",
+        "pisharp_correction": "Share bounded collision-safe ID generation between v1 migration and synthetic export anchors.",
+        "regression": "PiJsonlSessionInterchangeTests.ExportRetriesGeneratedSessionInfoIdCollisions"
+      },
+      {
+        "id": "jsonl-valid-non-header-before-header",
+        "classification": "compatible_rejection_with_diagnostic_difference",
+        "strict_match": null,
+        "pi_observation": "Pinned loadEntriesFromFile returns no entries when valid JSON scalar, array, or object without type precedes a valid session header.",
+        "pisharp_correction": "Validate the first successfully parsed JSON value before filtering body records; invalid header order raises InvalidDataException.",
+        "regression": "PiJsonlSessionInterchangeTests.ValidNonHeaderJsonBeforeSessionHeaderDoesNotCreateAValidSession",
+        "oracle": "docs/parity/fixtures/session-jsonl-header-order-b06-2026-10-24.json"
+      },
+      {
+        "id": "jsonl-line-ending-and-tail-recovery",
+        "classification": "source_verified_with_read_only_safety_difference",
+        "strict_match": null,
+        "pi_observation": "Pinned loader skips blank and malformed rows, accepts CRLF and valid unterminated records, ignores truncated final fragments, and appends a newline after a valid header.",
+        "pisharp_correction": "Reject valid non-header records before a session header; preserve read-only import and existing size limits.",
+        "regression": "PiJsonlSessionInterchangeTests.LineEndingsAndInterruptedJsonlTailsKeepValidRecordsWithoutChangingInput",
+        "oracle": "docs/parity/fixtures/session-jsonl-parser-differential-2026-10-24.json"
+      },
+      {
+        "id": "jsonl-record-size-boundary",
+        "classification": "intentional_resource_safety_deviation",
+        "strict_match": false,
+        "pi_observation": "Pinned loader accepts and retains an individual record larger than 16 MiB, including a following valid record.",
+        "pisharp_correction": "Preserve the 16 MiB per-entry bound; accept exactly 16 MiB and skip an oversized row without hiding later bounded entries.",
+        "regression": "PiJsonlSessionInterchangeTests.RecordAtMaximumEntrySizeIsAccepted; PiJsonlSessionInterchangeTests.OversizedRecordIsSkippedWithoutHidingFollowingValidRecords",
+        "oracle": "docs/parity/fixtures/session-jsonl-parser-differential-2026-10-24.json"
+      },
+      {
+        "id": "duplicate-and-cyclic-session-graph",
+        "classification": "intentional_graph_integrity_safety_deviation",
+        "strict_match": false,
+        "pi_observation": "Pinned loader indexes duplicate IDs with last-entry lookup and loads cyclic parent rows; cycle traversal is not run because its branch walk has no cycle guard.",
+        "pisharp_correction": "Reject duplicate IDs and cyclic parent links during import to preserve a bounded unambiguous canonical graph.",
+        "regression": "PiJsonlSessionInterchangeTests.DuplicateEntryIdsAreRejectedDuringPiJsonlImport; PiJsonlSessionInterchangeTests.ParentCyclesAreRejectedDuringPiJsonlImport",
+        "oracle": "docs/parity/fixtures/session-jsonl-graph-differential-2026-10-24.json"
+      },
+      {
+        "id": "jsonl-version-migration-and-header-validation",
+        "classification": "v1-v3_semantic_match_with_strict_header_safety_differences",
+        "strict_match": null,
+        "pi_observation": "Pinned file-backed migration rewrites v1/v2 entries to v3, assigns v1 IDs/parents, maps compaction indices, converts legacy hookMessage roles, leaves v3 records unchanged, accepts v4 and string version '3'.",
+        "pisharp_correction": "PiSharp matches supported v1-v3 entry migrations and reopen stability; it rejects unsupported versions and noninteger version fields rather than accepting ambiguous future data.",
+        "regression": "PiJsonlSessionInterchangeTests.LegacyV1AndV2SessionsMigrateToLinkedCurrentEntries; LegacyV1MigrationIsStableAfterCanonicalExportAndReimport; V3HookMessageRoleIsPreservedAndFutureVersionIsRejected",
+        "oracle": "docs/parity/fixtures/session-jsonl-migration-differential-2026-10-24.json"
+      },
+      {
+        "id": "provider-continuation-after-reopen",
+        "classification": "source-pinned_semantic_match",
+        "strict_match": null,
+        "pi_observation": "Pinned buildSessionContext plus direct streamSimple captures preserve the prior user message, assistant tool call, matching tool result, and continuation prompt on all three required provider APIs.",
+        "pisharp_correction": "No product correction was required; actual child-process restart tests verify complete tool-result history and unknown-outcome recovery without replay across those APIs.",
+        "regression": "CrashRecoveryProcessTests provider continuation theories",
+        "oracle": "docs/parity/fixtures/session-provider-continuation-differential-2026-10-24.json"
+      },
+      {
+        "id": "orphan-tool-provider-error-projection",
+        "classification": "source-pinned_provider_semantics_corrected",
+        "strict_match": null,
+        "pi_observation": "Pinned Pi synthesizes a provider-only 'No result provided' response for orphaned tool calls and marks Anthropic tool_result is_error=true.",
+        "pisharp_correction": "ObservedChatClient marks the synthetic provider-only result as ToolFailureException while keeping it out of durable conversation and RPC history.",
+        "regression": "CrashRecoveryProcessTests three-provider continuation theory",
+        "oracle": "docs/parity/fixtures/session-jsonl-orphan-tool-differential-2026-10-24.json"
+      },
+      {
+        "id": "configured-jsonl-discovery-and-stale-selection",
+        "classification": "project_filter_match_with_safety_strengthenings",
+        "strict_match": null,
+        "pi_observation": "At b06c1f2, configured-directory list, findById and findMostRecentSession include only sessions with an explicit matching nonempty cwd; malformed candidates are skipped. Pi exposes no listing fingerprint.",
+        "pisharp_correction": "Configured JSONL sessions are now listed, loaded and saved in place with project filtering; resume and fork paths carry a catalog fingerprint through the actual read. Corrupt catalog entries remain visible and stale snapshots are rejected.",
+        "regression": "SessionCatalogTests configured JSONL listing, shared-directory filtering, recent candidate, stale fingerprint, corrupt-file and ID/name case cases; PiSessionImportServiceTests and PiSessionStartupTargetTests stale import/fork fingerprint cases.",
+        "oracle": "docs/parity/fixtures/session-jsonl-discovery-differential-2026-10-24.json"
+      },
+      {
+        "id": "default-jsonl-discovery-without-persisted-cwd",
+        "classification": "source_pinned_default_directory_behavior_verified",
+        "strict_match": true,
+        "pi_observation": "At b06c1f2, default-directory list, exact-ID lookup and findMostRecentSession include a valid session with no persisted cwd because project filtering applies only to a distinct configured shared directory.",
+        "pisharp_correction": "No product correction was required; default ConversationStore discovery includes the session and resolves the absent JSONL cwd against the current store working directory.",
+        "regression": "SessionCatalogTests.DefaultDirectoryIncludesPiJsonlWithoutPersistedWorkingDirectory",
+        "oracle": "docs/parity/fixtures/session-jsonl-discovery-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-discovery-b06-2026-10-24.json"
+      },
+      {
+        "id": "case-sensitive-session-id-prefix",
+        "classification": "pinned_cli_identity_semantics_corrected",
+        "strict_match": true,
+        "pi_observation": "At b06c1f2, SessionManager.findById requires an exact case-sensitive ID; main.ts resolves partial IDs with startsWith, also case-sensitive. The interactive session selector separately uses case-insensitive fuzzy text search.",
+        "pisharp_correction": "SessionCatalog.Resolve now uses ordinal case-sensitive ID prefixes and preserves ordinal-ignore-case exact-name lookup. This follows the pinned ID contract while retaining PiSharp's /resume exact-name convenience.",
+        "regression": "SessionCatalogTests.ResolveUsesCaseSensitiveIdPrefixesAndCaseInsensitiveNames",
+        "oracle": "docs/parity/fixtures/session-jsonl-discovery-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-discovery-b06-2026-10-24.json"
+      },
+      {
+        "id": "v1-invalid-compaction-index-types",
+        "classification": "pinned_semantics_corrected_and_verified",
+        "strict_match": true,
+        "pi_observation": "Pinned v1 migration removes numeric firstKeptEntryIndex values after attempting lookup, including invalid integer and fractional values; nonnumeric string, null, and boolean values remain.",
+        "pisharp_correction": "PiSharp now removes only numeric legacy index fields, preserves nonnumeric values and existing firstKeptEntryId, and retains malformed timestamp/unknown fields.",
+        "regression": "PiJsonlSessionInterchangeTests.LegacyV1MigrationMatchesPinnedInvalidCompactionIndexHandling; LegacyV1MigrationPreservesMalformedTimestampTypeWithoutChangingTheBody",
+        "oracle": "docs/parity/fixtures/session-jsonl-migration-b06-2026-10-24.json"
+      },
+      {
+        "id": "read-only-legacy-jsonl-load",
+        "classification": "intentional_durability_and_safety_difference",
+        "strict_match": false,
+        "pi_observation": "Opening a v1/v2 Pi session file migrates and rewrites it to the current version.",
+        "pisharp_correction": "PiSharp migrates during read but preserves original bytes; a subsequent explicit save is atomic and guarded by the loaded hash.",
+        "regression": "PiJsonlSessionFileStoreTests.LoadingLegacyPiJsonlMigratesInMemoryWithoutRewritingTheSource",
+        "oracle": "docs/parity/fixtures/session-jsonl-migration-b06-2026-10-24.json"
+      }
+    ],
+    "validation_so_far": {
+      "pinned_pi_required_session_tests": "126/126 across 12 pinned session-manager, invalid-session, CWD, RPC JSONL, and share-export suites.",
+      "pisharp_jsonl_interchange_tests": "24/24 after the header-order correction",
+      "pisharp_jsonl_interchange_tests_latest": "52/52 in the final PiJsonlSessionInterchangeTests class, including parser boundaries, graph safety, v1-v3 migration, reasoning-signature export, rich content, aborted assistant reload, invalid compaction-index types, and integral floating-point index tokens.",
+      "pisharp_session_recovery_interchange_file_store_filter": "Historical focused run 76/76 before the final migration-index regression additions; the current focused interchange/file-store/catalog selection passes 73/73.",
+      "pinned_pi_context_oracle": "Both selected heads matched the expected fixture on two independent b06c1f2 runs.",
+      "pinned_pi_provider_continuation_oracle": "Three APIs captured twice each; same-Pi outputs match.",
+      "pisharp_provider_restart_continuation": "3/3 passed across OpenAI Responses, OpenAI Chat Completions, and Anthropic.",
+      "pisharp_crash_recovery_process_suite": "9/9 passed, including a child kill after durable tool_intent before wrapper invocation, after-side-effect/no-replay recovery on all three APIs, after-checkpoint recovery, and provider continuation.",
+      "pinned_pi_discovery_oracle": "Configured-directory filtering and default-directory inclusion of missing-CWD sessions, recent selection, exact/case-sensitive ID lookup, ID-prefix case behavior and case-insensitive name search were captured twice at the pinned SHA with stable normalized results.",
+      "pisharp_discovery_identity_regression": "SessionCatalogTests.ResolveUsesCaseSensitiveIdPrefixesAndCaseInsensitiveNames reproduced the earlier false acceptance before the resolver correction; DefaultDirectoryIncludesPiJsonlWithoutPersistedWorkingDirectory verifies default listing, recent selection and current-store CWD fallback. The full SessionCatalogTests group passes 13/13.",
+      "pisharp_discovery_startup_project_import_fork_filter": "48/48 after configured JSONL discovery and fingerprint-protected catalog, startup, project runtime, import and fork paths.",
+      "pinned_pi_cross_project_switch": "The pinned AgentSessionRuntime cross-CWD switch test passed twice at b06c1f2 with isolated PI_CODING_AGENT_DIR roots; the two runs were stable.",
+      "pisharp_cross_project_switch": "RpcSessionReplacementProcessTests.RpcSessionSwitchRebindsProjectWorkingDirectoryBeforeNextToolCall passed 2/2 across untrusted-to-trusted and trusted-to-untrusted switches; post-switch provider continuations verify target CWD, trust-scoped resources/settings and no source-private prompt leakage.",
+      "pisharp_discovery_durability_crash_filter": "83/83 after configured JSONL discovery, bounded oversized-file reads, atomic-publication failure cleanup, stale writer/lease, durable tool checkpoint, child-process recovery, and provider continuation cases; zero failures or skips.",
+      "pinned_pi_export_reopen_oracle": "The v3 selected branch export/reopen capture at b06c1f2 is stable across two independent runs and preserves active branch, context, and thinking state.",
+      "pisharp_pinned_v3_roundtrip_regression": "PinnedV3ContextFixtureRoundTripsItsSelectedBranchThroughNativeAndPiJsonl passes 1/1; the refreshed interchange class passes 39/39.",
+      "pinned_pi_reasoning_signature_roundtrip": "The committed reasoning-signature fixture preserves thinkingSignature in provider context across Pi export/reopen in two independent b06c1f2 runs; same-Pi calibration and semantic roundtrip both pass.",
+      "pisharp_native_reasoning_signature_export": "NativeReasoningSignatureSurvivesPiJsonlExportAndReimport failed first because generated message export omitted the signature; after the focused serializer correction, the test passes 1/1 through native save/reload, Pi JSONL export, and PiSharp reimport.",
+      "pinned_pi_rich_content_roundtrip": "The rich fixture passes Pi export/reopen and same-Pi calibration twice. The actual PiSharp native-session export opens at b06c1f2, exactly matches fixture entry records and provider context, and survives Pi export/reopen twice; see session-jsonl-rich-content-b06-2026-10-24.json.",
+      "pisharp_rich_content_native_roundtrip": "RichPinnedSessionFixtureRoundTripsThroughNativePersistenceAndPiJsonl passes 1/1 and the updated interchange class passes 39/39; the captured native export includes tool/image/reasoning/custom data and is separately checked by pinned Pi.",
+      "documentation_paths": "153 documents and 657 references passed python3 tools/validate_doc_paths.py.",
+      "python_parity": "27/27 passed.",
+      "node_terminal": "24/24 passed.",
+      "pisharp_session_recovery_import_rpc_filter": "114/114",
+      "format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed after all source and test changes.",
+      "warning_as_error_build": "dotnet build PiSharp.slnx --no-restore --warnaserror -m:1 /nodeReuse:false passed with 0 warnings and 0 errors.",
+      "full_dotnet_suite": "The previous TMPDIR=/tmp full run passed 3813/3813 in 6m11s with zero failures/skips before the reasoning-signature serializer and rich-content test changes. The interchange class now passes 39/39; the final full suite remains required.",
+      "mcp_conformance": "node tools/parity/mcp-conformance/run.mjs reports no regressions against the classified baseline; three known 2025-11-25 failures remain classified (elicitation sep1034, basic CIMD, scope retry limit).",
+      "pisharp_project_provider_catalog_rebinding": "ProjectRuntimeContextTests.SessionReplacementRebindsTrustedProjectProviderCatalogAndDropsItForUntrustedTarget passed 1/1; trusted target extension provider/model registration is present and an untrusted target drops it in favor of the global catalog.",
+      "pinned_pi_extension_branch_oracle": "At b06c1f2, two independent observations matched the expected projections for both branch heads; custom extension state remains branch-local and excluded from provider context, with stable same-Pi calibration.",
+      "pisharp_native_extension_branch_reload": "ExtensionSessionStateTests.NativeReloadRestoresOnlyExtensionStateOnTheSelectedBranch passed 1/1; both selected heads survive ConversationStore save/reload with branch-local extension state and only active-branch provider messages.",
+      "pinned_pi_interrupted_assistant_roundtrip": "The aborted-assistant JSONL fixture opened, exported, and reopened twice at b06c1f2 with stable same-Pi calibration, preserving partial text, reasoning signature, usage, abort metadata, selected head, and provider context.",
+      "pisharp_interrupted_assistant_native_reload": "PiJsonlSessionInterchangeTests.AbortedAssistantFromPinnedPiSurvivesNativeReloadAndPiExport passed 1/1 through native ConversationStore save/reload and Pi JSONL export/reimport.",
+      "pisharp_lease_wait_cancellation": "ConversationSessionTests.CancelledStoreSaveWaitingForLeaseKeepsPersistedSnapshotAndCleansNoTempFiles passed 1/1; cancellation preserves original session bytes and leaves no temporary snapshot.",
+      "pinned_pi_active_run_switch": "The pinned AgentSessionRuntime test settles an active blocked tool response before valid session replacement (1 passed, 11 unrelated focused-filter skips). The temporary checkout lacked generated model-data files; empty catalog placeholders were created there only, while the test used its registered faux provider.",
+      "pisharp_active_run_switch": "RpcSessionReplacementProcessTests.RpcValidSwitchSettlesBlockedProviderRunBeforeReplacingSession passed 1/1; turn_end(aborted), agent_end and agent_settled occur before successful switch response; a physical continuation request contains destination history and excludes source-run content.",
+      "pisharp_focused_parser_migration_file_store_catalog": "73/73 across PiJsonlSessionInterchangeTests, PiJsonlSessionFileStoreTests, and SessionCatalogTests; zero failures or skips.",
+      "pisharp_full_dotnet_suite": "3843/3843 passed in 6m23s with zero failures and zero skips.",
+      "python_terminal": "66/66 passed.",
+      "pinned_pi_migration_edge_oracle": "Seven file-backed migration cases, including integral floating-point index tokens (1.0 and 1e0), invalid numeric and nonnumeric compaction indices, and malformed unknown fields, were stable across two independent opens at b06c1f2; PiSharp matches the supported semantics.",
+      "pisharp_read_only_legacy_migration": "PiJsonlSessionFileStoreTests.LoadingLegacyPiJsonlMigratesInMemoryWithoutRewritingTheSource passed; source bytes remain unchanged on load.",
+      "pinned_pi_rpc_projection_oracle": "Two stable exact-pin CLI observations cover get_state, get_messages, get_entries, get_tree, and get_fork_messages; selected branch, latest label, entry identities and fork messages match the persisted fixture.",
+      "pisharp_macos_lease_job": "Dedicated macos-latest job runs native lease, alias, wait-cancellation, and cross-process locking tests; exact-head result is pending publication.",
+      "full_local_validation": "Final full .NET suite 3843/3843 in 6m23s with zero failures/skips; format and warning-as-error build pass; terminal Python 66/66, parity Python 27/27, Node terminal 24/24, documentation paths 153/657, MCP no-regression against the classified baseline with three known cases."
+    },
+    "remaining": [
+      "Commit and push the reviewed milestone branch, then create a new open draft PR targeting main.",
+      "Verify that the exact PR head passes push CI and PR CI, including the dedicated native macOS lease job; leave the PR unmerged."
+    ],
+    "inventory_baseline_head_sha": "0d83418a31d84e530b099d98054739607fa3e3ad"
+  },
   "builtin_coding_tool_parity_milestone": {
     "status": "local_acceptance_complete_publication_receipt_external",
     "started_at": "2026-10-22T17:44:40Z",

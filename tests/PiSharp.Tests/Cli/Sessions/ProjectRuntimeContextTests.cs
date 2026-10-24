@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using PiSharp.Cli;
 using PiSharp.Cli.Tui;
@@ -5,6 +7,7 @@ using PiSharp.Cli.Sessions;
 using PiSharp.ResourceDiscoveryExtension;
 using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
+using PiSharp.Runtime.Sessions;
 using Microsoft.Extensions.AI;
 
 namespace PiSharp.Tests;
@@ -12,6 +15,92 @@ namespace PiSharp.Tests;
 [Collection("Extension environment")]
 public sealed class ProjectRuntimeContextTests
 {
+    [Fact]
+    public async Task SessionReplacementRebindsTrustedProjectProviderCatalogAndDropsItForUntrustedTarget()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-project-provider-switch-" + Guid.NewGuid().ToString("N"));
+        var source = Path.Combine(root, "source");
+        var target = Path.Combine(root, "target");
+        var agent = Path.Combine(root, "agent");
+        var sourcePi = Path.Combine(source, ".pi");
+        var targetPi = Path.Combine(target, ".pi");
+        var extensionBuild = GetSettlementExtensionBuildDirectory();
+        Directory.CreateDirectory(sourcePi);
+        Directory.CreateDirectory(targetPi);
+        Directory.CreateDirectory(agent);
+        var packagePath = Path.Combine(root, "native-settlement.nupkg");
+        await CreateSettlementExtensionPackageAsync(extensionBuild, packagePath);
+        var packageStore = new NativeExtensionPackageStore(agent);
+        await packageStore.InstallAsync(source, packagePath, "project");
+        await packageStore.InstallAsync(target, packagePath, "project");
+        var packageConfiguration = JsonSerializer.Serialize(new[]
+        {
+            new { id = "PiSharp.TestExtensions.NativeSettlement", version = "1.0.0", source = packagePath }
+        });
+        foreach (var projectPi in new[] { sourcePi, targetPi })
+        {
+            await File.WriteAllTextAsync(Path.Combine(projectPi, "APPEND_SYSTEM.md"),
+                projectPi == sourcePi ? "SOURCE_TRUSTED_PROJECT_CONTEXT" : "TARGET_UNTRUSTED_PROJECT_CONTEXT");
+            var shellPrefix = projectPi == sourcePi ? "source-project" : "target-project";
+            await File.WriteAllTextAsync(Path.Combine(projectPi, "settings.json"),
+                $"{{\"shellCommandPrefix\":\"export PISHARP_PREFIX={shellPrefix}\",\"nativeExtensions\":{packageConfiguration}}}");
+        }
+        await File.WriteAllTextAsync(Path.Combine(agent, "settings.json"),
+            "{\"shellCommandPrefix\":\"export PISHARP_PREFIX=global-project\"}");
+        await File.WriteAllTextAsync(Path.Combine(agent, "models.json"), """
+            {"providers":{"fixture":{"baseUrl":"http://127.0.0.1:32199/v1","apiKeyEnv":"PISHARP_FIXTURE_KEY","models":[{"id":"fixture-model","api":"openai-completions"}]}}}
+            """);
+
+        var sourcePath = Path.Combine(source, "source.session.json");
+        var targetPath = Path.Combine(target, "target.session.json");
+        await File.WriteAllTextAsync(sourcePath,
+            new ConversationSession(source, "normal", null, "settlement_fixture").ToJson());
+        await File.WriteAllTextAsync(targetPath,
+            new ConversationSession(target, "fixture-model", "http://127.0.0.1:32199/v1", "fixture").ToJson());
+
+        var trust = new ProjectTrust(agent);
+        await trust.SetAsync(source, true);
+        await trust.SetAsync(target, false);
+        using var http = new HttpClient();
+        string? EnvironmentValue(string name) => name == "PISHARP_FIXTURE_KEY" ? "fixture-only-key" : null;
+        var models = await ProviderModelRuntime.CreateAsync(agent, includeLocal: false, EnvironmentValue, http,
+            offline: true);
+        var currentSelection = await models.ResolveAsync("fixture", "fixture-model");
+        var arguments = CliArguments.Parse(["--offline", "--no-context-files"]);
+        var factory = new ProjectSessionRuntimeFactory(agent, arguments, null, trust, models);
+        ProjectSessionRuntime? sourceRuntime = null;
+        ProjectSessionRuntime? targetRuntime = null;
+        try
+        {
+            sourceRuntime = await factory.OpenAsync(sourcePath, source, currentSelection, "off");
+            Assert.True(sourceRuntime.Project.Trusted);
+            Assert.Contains("SOURCE_TRUSTED_PROJECT_CONTEXT", sourceRuntime.Project.Prompts.Append,
+                StringComparison.Ordinal);
+            Assert.Equal("export PISHARP_PREFIX=source-project", sourceRuntime.Project.Settings.ShellCommandPrefix);
+            Assert.Equal("settlement_fixture", sourceRuntime.Selection.Provider.Id);
+            Assert.Contains(await models.ListModelsAsync("settlement_fixture"), model => model.Id == "normal");
+            sourceRuntime.CommitAdoption();
+
+            targetRuntime = await factory.OpenAsync(targetPath, target, currentSelection, "off");
+            Assert.False(targetRuntime.Project.Trusted);
+            Assert.DoesNotContain("SOURCE_TRUSTED_PROJECT_CONTEXT", targetRuntime.Project.Prompts.Append,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain("TARGET_UNTRUSTED_PROJECT_CONTEXT", targetRuntime.Project.Prompts.Append,
+                StringComparison.Ordinal);
+            Assert.Equal("export PISHARP_PREFIX=global-project", targetRuntime.Project.Settings.ShellCommandPrefix);
+            Assert.Equal("fixture", targetRuntime.Selection.Provider.Id);
+            Assert.Contains(await models.ListModelsAsync("fixture"), model => model.Id == "fixture-model");
+            Assert.Throws<ArgumentException>(() => models.GetProvider("settlement_fixture"));
+            targetRuntime.CommitAdoption();
+        }
+        finally
+        {
+            targetRuntime?.Dispose();
+            sourceRuntime?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public void OnlyToolReachDeclarationsAutoActivateCodemodeOrToolSearchNames()
     {
@@ -440,6 +529,35 @@ public sealed class ProjectRuntimeContextTests
         }
 
         public void Notify(string message, string type = "info") => Calls.Add($"notify:{type}:{message}");
+    }
+
+    private static string GetSettlementExtensionBuildDirectory()
+    {
+        var output = new DirectoryInfo(AppContext.BaseDirectory);
+        var configuration = output.Parent?.Name ?? throw new InvalidOperationException(
+            "Could not determine the test build configuration.");
+        var repository = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
+        return Path.Combine(repository, "tests", "fixtures", "NativeSettlementExtension", "bin",
+            configuration, "net10.0");
+    }
+
+    private static async Task CreateSettlementExtensionPackageAsync(string extensionBuild, string packagePath)
+    {
+        const string manifest = """
+            {"id":"PiSharp.TestExtensions.NativeSettlement","version":"1.0.0","apiVersion":1,"extensions":[{"assembly":"lib/net10.0/NativeSettlementExtension.dll","type":"PiSharp.TestExtensions.NativeSettlement.SettlementExtension"}]}
+            """;
+        await using var output = File.Create(packagePath);
+        using var archive = new ZipArchive(output, ZipArchiveMode.Create);
+        var manifestEntry = archive.CreateEntry("pisharp-extension.json");
+        await using (var writer = new StreamWriter(manifestEntry.Open()))
+            await writer.WriteAsync(manifest);
+        foreach (var file in new[] { "NativeSettlementExtension.dll", "NativeSettlementExtension.deps.json" })
+        {
+            var entry = archive.CreateEntry("lib/net10.0/" + file);
+            await using var entryStream = entry.Open();
+            await using var input = File.OpenRead(Path.Combine(extensionBuild, file));
+            await input.CopyToAsync(entryStream);
+        }
     }
 
     private static async Task WriteResourcesAsync(string project, string phase, string skillName,

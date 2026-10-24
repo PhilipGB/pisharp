@@ -58,10 +58,11 @@ public sealed class RpcExtensionControlAbortTests
             await client.FirstRequestCancelled.Task.WaitAsync(TimeSpan.FromSeconds(5));
             await WaitForAsync(output, "agent_settled");
 
+            var previousLineCount = output.LineCount;
             channel.Writer.TryWrite("{\"id\":\"second\",\"type\":\"prompt\",\"message\":\"recover\"}");
             await client.SecondRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
             await WaitForAsync(output, "\"id\":\"second\"");
-            await WaitForAsync(output, "agent_settled");
+            await output.WaitForLineAfterAsync("agent_settled", previousLineCount);
             channel.Writer.TryComplete();
             await serving.WaitAsync(TimeSpan.FromSeconds(5));
 

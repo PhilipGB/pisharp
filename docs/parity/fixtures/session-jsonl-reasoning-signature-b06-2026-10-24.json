@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "caseId": "pinned-pi-session-jsonl-export-and-reopen",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "input": "docs/parity/fixtures/session-jsonl-reasoning-signature-b06-2026-10-24.jsonl",
+  "inputSha256": "f0f1777d9a7be0a62f0e6258998c2044c64d986309628f952bb71de3f2a4f5b4",
+  "source": "packages/coding-agent/src/core/session-manager.ts:SessionManager.open/getBranch/buildSessionContext; packages/coding-agent/src/core/session-export.ts:serializeSessionBranch",
+  "independentRuns": 2,
+  "samePiCalibration": true,
+  "semanticRoundTrip": true,
+  "result": {
+    "before": {
+      "sessionId": "reasoning-signature-fixture",
+      "leafId": "reasoning-assistant",
+      "branch": [
+        {
+          "id": "reasoning-user",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "reasoning-assistant",
+          "parentId": "reasoning-user",
+          "type": "message"
+        }
+      ],
+      "entryRecords": [
+        {
+          "type": "message",
+          "id": "reasoning-user",
+          "parentId": null,
+          "timestamp": "2026-10-24T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": "Continue from saved reasoning."
+          }
+        },
+        {
+          "type": "message",
+          "id": "reasoning-assistant",
+          "parentId": "reasoning-user",
+          "timestamp": "2026-10-24T00:00:02.000Z",
+          "message": {
+            "role": "assistant",
+            "provider": "anthropic",
+            "model": "claude-fixture",
+            "api": "anthropic-messages",
+            "thinkingLevel": "high",
+            "stopReason": "stop",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "private reasoning",
+                "thinkingSignature": "opaque-reasoning-signature"
+              },
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ]
+          }
+        }
+      ],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Continue from saved reasoning."
+          },
+          {
+            "role": "assistant",
+            "provider": "anthropic",
+            "model": "claude-fixture",
+            "api": "anthropic-messages",
+            "thinkingLevel": "high",
+            "stopReason": "stop",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "private reasoning",
+                "thinkingSignature": "opaque-reasoning-signature"
+              },
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ]
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "anthropic",
+          "modelId": "claude-fixture"
+        }
+      }
+    },
+    "exportedEntries": [
+      {
+        "id": "reasoning-user",
+        "parentId": null,
+        "type": "message"
+      },
+      {
+        "id": "reasoning-assistant",
+        "parentId": "reasoning-user",
+        "type": "message"
+      }
+    ],
+    "after": {
+      "sessionId": "reasoning-signature-fixture",
+      "leafId": "reasoning-assistant",
+      "branch": [
+        {
+          "id": "reasoning-user",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "reasoning-assistant",
+          "parentId": "reasoning-user",
+          "type": "message"
+        }
+      ]
+    },
+    "afterSemanticSha256": "e54a93dc4425a3d10e8a3f2cf2ed10b29ea0c0ba8e22b19858151df7ebcc5d9a",
+    "semanticRoundTrip": true
+  }
+}

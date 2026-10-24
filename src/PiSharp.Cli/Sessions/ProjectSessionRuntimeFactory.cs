@@ -28,13 +28,19 @@ internal sealed class ProjectSessionRuntimeFactory(
 
     public async Task<ProjectSessionRuntime> OpenAsync(string sessionPath, string invocationDirectory,
         ModelSelection currentSelection, string currentThinking, bool keepSourceSessionDirectory = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, SessionListing? sessionListing = null)
     {
         var path = Path.GetFullPath(sessionPath, invocationDirectory);
+        if (sessionListing is not null &&
+            !string.Equals(path, Path.GetFullPath(sessionListing.Path),
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            throw new InvalidDataException("Session selection path changed after listing.");
         var targetExists = File.Exists(path);
         var workingDirectory = targetExists
             ? PiSessionStartupTarget.ReadWorkingDirectory(path, invocationDirectory)
             : Path.GetFullPath(invocationDirectory);
+        if (sessionListing is not null && !targetExists)
+            throw new InvalidDataException("Selected session was removed after listing; list sessions again before opening.");
         var configuration = await ProjectRuntimeConfiguration.LoadAsync(workingDirectory, agentDirectory, arguments,
             trustStore, interactiveTrust: false, TextReader.Null, TextWriter.Null, cancellationToken: cancellationToken,
             extensionUi: extensionUi, hasUserInterface: hasUserInterface);
@@ -56,8 +62,10 @@ internal sealed class ProjectSessionRuntimeFactory(
                 ? new ConversationSession(workingDirectory, currentSelection.Connection.Model,
                     currentSelection.Connection.Endpoint?.ToString(), currentSelection.Provider.Id)
                 : isPiJsonl
-                    ? project.SessionImport.ImportFile(path)
-                    : await project.Store.LoadAsync(path, cancellationToken);
+                    ? project.SessionImport.ImportFile(path, sessionListing?.Fingerprint)
+                    : sessionListing is not null
+                        ? await project.Store.LoadAsync(sessionListing, cancellationToken)
+                        : await project.Store.LoadAsync(path, cancellationToken);
             PiJsonlSessionInterchange.RestoreRegisteredVirtualModelSelection(conversation,
                 project.Extensions.Registration.VirtualModels);
             destinationPath = arguments.NoSession ? null : isPiJsonl

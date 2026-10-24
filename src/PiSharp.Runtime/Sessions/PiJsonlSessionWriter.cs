@@ -10,7 +10,7 @@ namespace PiSharp.Runtime.Sessions;
 internal static class PiJsonlSessionWriter
 {
     /// <summary>Serializes all branches as current Pi v3 JSONL; unknown imported records are preserved verbatim.</summary>
-    public static string Export(ConversationSession session)
+    public static string Export(ConversationSession session, Func<string>? generateEntryId = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         var output = new StringBuilder();
@@ -37,7 +37,8 @@ internal static class PiJsonlSessionWriter
         var needsHeadAnchor = orderedEntries.LastOrDefault()?.Id != session.Tree.HeadId;
         if (needsHeadAnchor || session.Name != representedName)
         {
-            var id = Guid.NewGuid().ToString("N")[..8];
+            var usedIds = orderedEntries.Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+            var id = PiJsonlEntryIdGenerator.GenerateUnique(usedIds, generateEntryId);
             var info = new JsonObject
             {
                 ["type"] = "session_info",

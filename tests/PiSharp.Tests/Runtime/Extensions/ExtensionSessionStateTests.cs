@@ -12,6 +12,48 @@ namespace PiSharp.Tests;
 public sealed class ExtensionSessionStateTests
 {
     [Fact]
+    public async Task NativeReloadRestoresOnlyExtensionStateOnTheSelectedBranch()
+    {
+        var workingDirectory = CreateWorkingDirectory();
+        try
+        {
+            var fixturePath = Path.Combine(FindRepositoryRoot(), "docs", "parity", "fixtures",
+                "session-extension-branches-b06-2026-10-24.jsonl");
+            var fixture = await File.ReadAllTextAsync(fixturePath);
+            var conversation = PiJsonlSessionInterchange.Import(fixture, workingDirectoryOverride: workingDirectory);
+            var store = new ConversationStore(workingDirectory, Path.Combine(workingDirectory, "sessions"));
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+
+            foreach (var (head, branch, answer) in new[]
+            {
+                ("assistant-b", "b", "answer B"),
+                ("assistant-a", "a", "answer A")
+            })
+            {
+                var loaded = await store.LoadAsync(path);
+                loaded.Tree.Select(head);
+                await store.SaveAsync(loaded, path);
+
+                var reloaded = await store.LoadAsync(path);
+                Assert.Equal(head, reloaded.Tree.HeadId);
+                Assert.Equal(["shared prompt", answer], reloaded.ContextMessages().Select(message => message.Text));
+
+                var run = await ConversationRun.OpenAsync(CreateAgent(new CompleteClient()), reloaded);
+                using var extensionSession = run.CreateExtensionSessionContext();
+                var extensionEntry = Assert.Single(extensionSession.Entries);
+                Assert.Equal("fixture.counter", extensionEntry.CustomType);
+                Assert.Equal(branch, extensionEntry.Data.GetProperty("branch").GetString());
+                Assert.Equal(branch == "a" ? 1 : 2, extensionEntry.Data.GetProperty("count").GetInt32());
+            }
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ExtensionEntriesPersistOnTheActiveBranchAndStayOutOfProviderContext()
     {
         var workingDirectory = CreateWorkingDirectory();
@@ -514,6 +556,13 @@ public sealed class ExtensionSessionStateTests
         var path = Path.Combine(Path.GetTempPath(), "pisharp-extension-session-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+            if (File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx"))) return directory.FullName;
+        throw new DirectoryNotFoundException("Could not locate PiSharp.slnx from the test output directory.");
     }
 
     private static PiAgent CreateAgent(IChatClient client, ExtensionRegistration? registration = null) =>

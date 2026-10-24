@@ -1,6 +1,51 @@
 # PiSharp capability parity
 
-## Active milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
+## Active milestone — Session JSONL Persistence and Crash Recovery Parity — 2026-10-25
+
+PR #24 is verified merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
+The fresh branch `milestone/session-jsonl-persistence-recovery-parity` is based
+on that post-merge main. The pinned Pi revision remains
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; the 12 required upstream suites
+pass 126/126.
+
+The source-pinned inventory and receipt cover parsing, migration, graph and
+context reconstruction, JSONL/native round-trip, discovery, atomic writes,
+leases, crash recovery, provider continuation, and CLI/RPC integration. Exact-pin
+captures cover parser boundaries, v1-v3 migration, graph selection, project
+discovery, RPC projections, extension state, interrupted assistants, and three
+process-kill boundaries. Physical continuation fixtures cover OpenAI Responses,
+OpenAI Chat Completions, and Anthropic Messages.
+
+Corrections include header-order rejection, generated-ID collision handling,
+Anthropic missing-tool-result error projection, reasoning-signature export,
+case-sensitive session ID prefixes, and v1 compaction-index handling. Pinned Pi
+maps integral numeric tokens `1.0` and `1e0` to the same entry as integer `1`;
+PiSharp now matches that behavior. Other numeric invalid indices are removed,
+while string, null, and boolean fields remain. PiSharp keeps legacy loads
+read-only and atomic. Duplicate/cycle rejection, future-version/header checks,
+resource limits, visible corrupt-file reporting, and stronger stale-writer
+fencing are classified safety differences; the inventory has no unexplained
+mandatory differences.
+
+The three pinned process-kill scenarios were each repeated twice and showed no
+automatic tool replay. PiSharp process tests verify no duplicate side effects,
+unknown outcomes, and correlated completed results. RPC evidence covers active
+branch state, labels, fork messages, new/resume/fork lifecycle ordering,
+blocked replacement/fork, and destination-only provider continuation.
+
+Final local validation passes: .NET 3,843/3,843 with zero failures or skips;
+format verification; warning-as-error build with zero warnings/errors; terminal
+Python 66/66; parity Python 27/27; terminal Node 24/24; and documentation links
+153 documents / 657 references. MCP conformance has no regressions against its
+classified baseline; three known scenarios remain classified. The dedicated
+macOS lease job is configured. Commit/push, draft PR publication, and exact-head
+Linux/macOS CI are the remaining publication steps; keep the new PR open, draft,
+and unmerged.
+
+See the [session persistence receipt](docs/parity/fixtures/session-jsonl-persistence-recovery-2026-10-24.md)
+and [capability inventory](docs/parity/fixtures/session-jsonl-persistence-recovery-inventory-2026-10-24.json).
+
+## Previous milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
 
 PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`.
 The branch `milestone/model-thinking-configuration-parity` started from that
@@ -30,7 +75,7 @@ and PR CI [40106026319](https://github.com/PhilipGB/pisharp/actions/runs/4010602
 passed; each full .NET suite passed 3,780/3,780 with zero failures or skips.
 Both runs also passed format, warning-as-error build, parity, documentation and
 MCP jobs. The fixture port race and repair are recorded in the PR description.
-Keep PR #24 open, draft and unmerged.
+PR #24 is merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
 
 Review follow-up: `ProviderSamplingRequestHandler` now resolves the effective
 model-supported thinking level and applies its explicit `thinkingLevelMap` value

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli;
@@ -66,6 +67,26 @@ public sealed class PiSessionStartupTargetTests
 
             Assert.Equal(invocation, target.WorkingDirectory);
             Assert.Equal(sourcePath, target.Arguments.ForkSource);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task CatalogForkSourceRejectsBytesChangedAfterSelection()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-stale-fork-source-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var path = Path.Combine(root, "source.jsonl");
+        await File.WriteAllTextAsync(path, SessionJsonl(root));
+        try
+        {
+            var fingerprint = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(path)));
+            await File.AppendAllTextAsync(path, "\n");
+
+            var error = await Assert.ThrowsAsync<InvalidDataException>(() =>
+                SessionForkFactory.CreateAsync(path, root, expectedFingerprint: fingerprint));
+
+            Assert.Contains("changed on disk", error.Message, StringComparison.Ordinal);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "caseId": "session-extension-state-selected-branch-native-reload",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "input": "docs/parity/fixtures/session-extension-branches-b06-2026-10-24.jsonl",
+  "inputSha256": "0dab4e7f82af4243fc5cf2302418175a06ff2d3b69bc77b1175fa886516f994d",
+  "source": "packages/coding-agent/src/core/session-manager.ts:SessionManager.open/branch/getBranch/buildSessionContext; packages/coding-agent/test/session-manager/save-entry.test.ts",
+  "independentRuns": 2,
+  "samePiCalibration": true,
+  "results": {
+    "assistant-b": {
+      "leafId": "assistant-b",
+      "branch": [
+        {
+          "id": "shared-user",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "extension-state-b",
+          "parentId": "shared-user",
+          "type": "custom"
+        },
+        {
+          "id": "assistant-b",
+          "parentId": "extension-state-b",
+          "type": "message"
+        }
+      ],
+      "extensionState": [
+        {
+          "id": "extension-state-b",
+          "customType": "fixture.counter",
+          "data": {
+            "branch": "b",
+            "count": 2
+          }
+        }
+      ],
+      "context": [
+        {
+          "role": "user",
+          "content": "shared prompt"
+        },
+        {
+          "role": "assistant",
+          "content": "answer B"
+        }
+      ]
+    },
+    "assistant-a": {
+      "leafId": "assistant-a",
+      "branch": [
+        {
+          "id": "shared-user",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "extension-state-a",
+          "parentId": "shared-user",
+          "type": "custom"
+        },
+        {
+          "id": "assistant-a",
+          "parentId": "extension-state-a",
+          "type": "message"
+        }
+      ],
+      "extensionState": [
+        {
+          "id": "extension-state-a",
+          "customType": "fixture.counter",
+          "data": {
+            "branch": "a",
+            "count": 1
+          }
+        }
+      ],
+      "context": [
+        {
+          "role": "user",
+          "content": "shared prompt"
+        },
+        {
+          "role": "assistant",
+          "content": "answer A"
+        }
+      ]
+    }
+  },
+  "allExpectedResultsMatched": true
+}

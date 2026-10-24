@@ -3,10 +3,19 @@ using System.Text;
 
 namespace PiSharp.Runtime.Sessions;
 
-public sealed class PiJsonlSessionFileStore(string path)
+public sealed class PiJsonlSessionFileStore
 {
-    private readonly string _path = Path.GetFullPath(path);
+    private readonly string _path;
     private string? _knownHash;
+    internal string? KnownHash => _knownHash;
+
+    public PiJsonlSessionFileStore(string path) : this(path, null) { }
+
+    internal PiJsonlSessionFileStore(string path, string? knownHash)
+    {
+        _path = Path.GetFullPath(path);
+        _knownHash = knownHash;
+    }
 
     public async Task SaveAsync(ConversationSession session, CancellationToken cancellationToken = default)
     {

@@ -3,6 +3,18 @@ on:
   push:
   pull_request:
 jobs:
+  macos-session-locks:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore tests/PiSharp.Tests/PiSharp.Tests.csproj
+      - name: Verify native macOS session leases
+        run: >-
+          dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore
+          --filter 'FullyQualifiedName~ConcurrentSessionLeasesInOneProcessWaitForTheCurrentWriter|FullyQualifiedName~ConcurrentSessionLeaseAliasesWaitForTheCurrentWriter|FullyQualifiedName~CancelledStoreSaveWaitingForLeaseKeepsPersistedSnapshotAndCleansNoTempFiles|FullyQualifiedName~ConcurrentProcessSaveWaitsForTheSessionLeaseAndPersistsTheToolOutcome'
   test:
     runs-on: ubuntu-latest
     steps:

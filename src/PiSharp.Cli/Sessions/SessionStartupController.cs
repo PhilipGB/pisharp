@@ -21,26 +21,35 @@ internal static class SessionStartupController
         var store = projectRuntime.Store;
         var connection = selection.Connection;
         ConversationSession conversation;
+        SessionListing? catalogListing = null;
         if (cli.SessionPath is not null && sessionPath is null)
-            sessionPath = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.SessionPath).Path;
+        {
+            catalogListing = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.SessionPath);
+            await store.ValidateListingUnchangedAsync(catalogListing);
+            sessionPath = catalogListing.Path;
+        }
         var resumesExistingSession = sessionPath is not null && File.Exists(sessionPath);
         if (cli.ForkSource is not null)
         {
-            var sourcePath = cli.ForkSource.Contains(Path.DirectorySeparatorChar) || cli.ForkSource.EndsWith(".session.json", StringComparison.Ordinal) ||
-                cli.ForkSource.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
-                ? Path.GetFullPath(cli.ForkSource)
-                : SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), cli.ForkSource).Path;
-            conversation = await SessionForkFactory.CreateAsync(sourcePath, currentDirectory);
+            var hasExplicitPath = cli.ForkSource.Contains(Path.DirectorySeparatorChar) ||
+                cli.ForkSource.EndsWith(".session.json", StringComparison.Ordinal) ||
+                cli.ForkSource.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase);
+            var forkListing = hasExplicitPath ? null : await ResolveCatalogSessionAsync(store, cli.ForkSource);
+            var sourcePath = hasExplicitPath ? Path.GetFullPath(cli.ForkSource) : forkListing!.Path;
+            conversation = await SessionForkFactory.CreateAsync(sourcePath, currentDirectory,
+                expectedFingerprint: forkListing?.Fingerprint);
         }
         else if (sessionPath is not null && sessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase))
         {
-            conversation = projectRuntime.SessionImport.ImportFile(sessionPath);
+            conversation = projectRuntime.SessionImport.ImportFile(sessionPath, catalogListing?.Fingerprint);
             sessionPath = store.NewPath(conversation);
             await store.SaveAsync(conversation, sessionPath);
         }
         else
             conversation = sessionPath is not null && File.Exists(sessionPath)
-                ? await store.LoadAsync(sessionPath)
+                ? catalogListing is not null
+                    ? await store.LoadAsync(catalogListing)
+                    : await store.LoadAsync(sessionPath)
                 : new ConversationSession(currentDirectory, connection.Model, connection.Endpoint?.ToString(), selection.Provider.Id);
         PiJsonlSessionInterchange.RestoreRegisteredVirtualModelSelection(conversation,
             projectRuntime.Extensions.Registration.VirtualModels);
@@ -53,6 +62,13 @@ internal static class SessionStartupController
             ? PiSharpExtensionSessionStartReason.Fork
             : resumesExistingSession ? PiSharpExtensionSessionStartReason.Resume : PiSharpExtensionSessionStartReason.Startup;
         return new(conversation, sessionPath, reason);
+    }
+
+    private static async Task<SessionListing> ResolveCatalogSessionAsync(ConversationStore store, string reference)
+    {
+        var listing = SessionCatalog.Resolve(await SessionCatalog.ListAsync(store), reference);
+        await store.ValidateListingUnchangedAsync(listing);
+        return listing;
     }
 
     public static async Task<StartupModelSelection> ResolveModelAsync(ConversationSession conversation,

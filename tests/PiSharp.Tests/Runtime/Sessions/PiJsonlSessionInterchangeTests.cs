@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using PiSharp.Cli.Protocols;
@@ -44,6 +45,118 @@ public sealed class PiJsonlSessionInterchangeTests
         using var header = JsonDocument.Parse(PiJsonlSessionInterchange.Export(imported)
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)[0]);
         Assert.Equal(parentPath, header.RootElement.GetProperty("parentSession").GetString());
+    }
+
+    [Fact]
+    public void NativeReasoningSignatureSurvivesPiJsonlExportAndReimport()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
+        session.Append(new ChatMessage(ChatRole.User, "prompt"));
+        session.Append(new ChatMessage(ChatRole.Assistant,
+        [
+            new TextReasoningContent("private reasoning") { ProtectedData = "opaque-reasoning-signature" },
+            new TextContent("answer")
+        ]));
+
+        var nativeReloaded = ConversationSession.Parse(session.ToJson());
+        var exported = PiJsonlSessionInterchange.Export(nativeReloaded);
+        using var assistantEntry = JsonDocument.Parse(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Single(line => line.Contains("\"role\":\"assistant\"", StringComparison.Ordinal)));
+        var reasoning = assistantEntry.RootElement.GetProperty("message").GetProperty("content")
+            .EnumerateArray().Single(item => item.GetProperty("type").GetString() == "thinking");
+
+        Assert.Equal("private reasoning", reasoning.GetProperty("thinking").GetString());
+        Assert.Equal("opaque-reasoning-signature", reasoning.GetProperty("thinkingSignature").GetString());
+
+        var imported = PiJsonlSessionInterchange.Import(exported);
+        var restoredReasoning = Assert.Single(Assert.Single(imported.ContextMessages(), message =>
+            message.Role == ChatRole.Assistant).Contents.OfType<TextReasoningContent>());
+        Assert.Equal("opaque-reasoning-signature", restoredReasoning.ProtectedData);
+    }
+
+    [Fact]
+    public async Task AbortedAssistantFromPinnedPiSurvivesNativeReloadAndPiExport()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-interrupted-session-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var fixturePath = Path.Combine(FindRepositoryRoot(), "docs", "parity", "fixtures",
+                "session-interrupted-assistant-b06-2026-10-24.jsonl");
+            var imported = PiJsonlSessionInterchange.Import(await File.ReadAllTextAsync(fixturePath),
+                workingDirectoryOverride: root);
+            var store = new ConversationStore(root, Path.Combine(root, "sessions"));
+            var path = store.NewPath(imported);
+            await store.SaveAsync(imported, path);
+
+            var reloaded = await store.LoadAsync(path);
+            Assert.Equal([ChatRole.User, ChatRole.Assistant], reloaded.ContextMessages().Select(message => message.Role));
+            Assert.Equal(["interrupted prompt", "partial output"], reloaded.ContextMessages().Select(message => message.Text));
+            var reasoning = Assert.Single(reloaded.ContextMessages()[1].Contents.OfType<TextReasoningContent>());
+            Assert.Equal("partial reasoning", reasoning.Text);
+            Assert.Equal("partial-signature", reasoning.ProtectedData);
+
+            var exported = PiJsonlSessionInterchange.Export(reloaded);
+            using var assistant = JsonDocument.Parse(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Single(line => line.Contains("\"id\":\"interrupted-assistant\"", StringComparison.Ordinal)));
+            var message = assistant.RootElement.GetProperty("message");
+            Assert.Equal("aborted", message.GetProperty("stopReason").GetString());
+            Assert.Equal("Request was aborted", message.GetProperty("errorMessage").GetString());
+            Assert.Equal("partial-signature", message.GetProperty("content").EnumerateArray()
+                .Single(content => content.GetProperty("type").GetString() == "thinking")
+                .GetProperty("thinkingSignature").GetString());
+
+            var roundTripped = PiJsonlSessionInterchange.Import(exported, workingDirectoryOverride: root);
+            Assert.Equal(reloaded.ContextMessages().Select(message => message.Role),
+                roundTripped.ContextMessages().Select(message => message.Role));
+            Assert.Equal(reloaded.ContextMessages().Select(message => message.Text),
+                roundTripped.ContextMessages().Select(message => message.Text));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RichPinnedSessionFixtureRoundTripsThroughNativePersistenceAndPiJsonl()
+    {
+        var fixturePath = Path.Combine(FindRepositoryRoot(), "docs", "parity", "fixtures",
+            "session-jsonl-rich-content-b06-2026-10-24.jsonl");
+        var imported = PiJsonlSessionInterchange.Import(File.ReadAllText(fixturePath));
+        AssertRichContentSession(imported);
+
+        var nativeReloaded = ConversationSession.Parse(imported.ToJson());
+        Assert.Equal(imported.Tree.Entries.Select(entry => entry.Id),
+            nativeReloaded.Tree.Entries.Select(entry => entry.Id));
+        Assert.Equal(imported.Tree.Entries.Select(entry => entry.ParentId),
+            nativeReloaded.Tree.Entries.Select(entry => entry.ParentId));
+        AssertRichContentSession(nativeReloaded);
+
+        var exported = PiJsonlSessionInterchange.Export(nativeReloaded);
+        var records = exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => JsonDocument.Parse(line).RootElement.Clone()).ToArray();
+        Assert.Equal(imported.Tree.Entries.Select(entry => entry.Id),
+            records.Skip(1).Select(entry => entry.GetProperty("id").GetString()));
+        var extensionRecord = Assert.Single(records,
+            entry => entry.GetProperty("id").GetString() == "rich-extension-state");
+        Assert.Equal("fixture.session-state", extensionRecord.GetProperty("customType").GetString());
+        Assert.Equal("must-not-enter-context", extensionRecord.GetProperty("data")
+            .GetProperty("extensionOnly").GetString());
+        var customMessageRecord = Assert.Single(records,
+            entry => entry.GetProperty("id").GetString() == "rich-custom-message");
+        Assert.Equal(7, customMessageRecord.GetProperty("details").GetProperty("revision").GetInt32());
+        Assert.False(customMessageRecord.GetProperty("display").GetBoolean());
+
+        if (Environment.GetEnvironmentVariable("PISHARP_SESSION_JSONL_ORACLE_EXPORT_PATH") is { Length: > 0 } exportPath)
+            File.WriteAllText(exportPath, exported);
+
+        var piSharpReloaded = PiJsonlSessionInterchange.Import(exported);
+        Assert.Equal(imported.Tree.Entries.Select(entry => entry.Id),
+            piSharpReloaded.Tree.Entries.Select(entry => entry.Id));
+        Assert.Equal(imported.Tree.Entries.Select(entry => entry.ParentId),
+            piSharpReloaded.Tree.Entries.Select(entry => entry.ParentId));
+        AssertRichContentSession(piSharpReloaded);
     }
 
     [Fact]
@@ -222,6 +335,42 @@ public sealed class PiJsonlSessionInterchangeTests
     }
 
     [Fact]
+    public void PinnedV3ContextFixtureRoundTripsItsSelectedBranchThroughNativeAndPiJsonl()
+    {
+        var fixturePath = Path.Combine(FindRepositoryRoot(), "docs", "parity", "fixtures", "session-v3-branch.jsonl");
+        var input = File.ReadAllText(fixturePath);
+        var imported = PiJsonlSessionInterchange.Import(input);
+        var expectedText = new[]
+        {
+            "instructions",
+            "alternate",
+            "The following is a summary of a branch that this conversation came back from:\n\n<summary>\nabandoned path\n</summary>",
+            "branch prompt"
+        };
+
+        Assert.Equal("12345678-1234-1234-1234-123456789abc", imported.Id);
+        Assert.Equal("daaaaaaa", imported.Tree.HeadId);
+        Assert.Equal(expectedText, imported.ContextMessages().Select(message => message.Text));
+        Assert.Equal("high", PiJsonlSessionInterchange.GetThinkingLevel(imported));
+
+        var nativeReloaded = ConversationSession.Parse(imported.ToJson());
+
+        Assert.Equal(imported.Id, nativeReloaded.Id);
+        Assert.Equal(imported.Tree.HeadId, nativeReloaded.Tree.HeadId);
+        Assert.Equal(imported.Tree.Entries.Select(entry => entry.Id), nativeReloaded.Tree.Entries.Select(entry => entry.Id));
+        Assert.Equal(expectedText, nativeReloaded.ContextMessages().Select(message => message.Text));
+        Assert.Equal("high", PiJsonlSessionInterchange.GetThinkingLevel(nativeReloaded));
+
+        var reloaded = PiJsonlSessionInterchange.Import(PiJsonlSessionInterchange.Export(nativeReloaded));
+
+        Assert.Equal(imported.Id, reloaded.Id);
+        Assert.Equal(imported.Tree.HeadId, reloaded.Tree.HeadId);
+        Assert.Equal(imported.Tree.Entries.Select(entry => entry.Id), reloaded.Tree.Entries.Select(entry => entry.Id));
+        Assert.Equal(expectedText, reloaded.ContextMessages().Select(message => message.Text));
+        Assert.Equal("high", PiJsonlSessionInterchange.GetThinkingLevel(reloaded));
+    }
+
+    [Fact]
     public void ImportedAssistantUsageContributesToActiveSessionStatistics()
     {
         var cwd = Path.GetFullPath(Path.GetTempPath());
@@ -260,6 +409,8 @@ public sealed class PiJsonlSessionInterchangeTests
         Assert.Equal(["hello", "legacy"], migratedV1.ContextMessages().Select(message => message.Text));
         Assert.Null(migratedV1.Tree.Entries[0].ParentId);
         Assert.Equal(migratedV1.Tree.Entries[0].Id, migratedV1.Tree.Entries[1].ParentId);
+        Assert.Equal("custom", PiJsonlSessionInterchange.ProjectEntries(migratedV1)[1]
+            .GetProperty("message").GetProperty("role").GetString());
         Assert.Equal(3, JsonDocument.Parse(PiJsonlSessionInterchange.Export(migratedV1).Split('\n')[0])
             .RootElement.GetProperty("version").GetInt32());
 
@@ -283,7 +434,144 @@ public sealed class PiJsonlSessionInterchangeTests
         var migratedV2 = PiJsonlSessionInterchange.Import(v2);
         Assert.Equal("after", migratedV2.Tree.HeadId);
         Assert.Equal("before", migratedV2.Tree.Entries[1].ParentId);
+        Assert.Equal("custom", PiJsonlSessionInterchange.ProjectEntries(migratedV2)[1]
+            .GetProperty("message").GetProperty("role").GetString());
         Assert.Equal("legacy", migratedV2.ActiveMessages()[1].Text);
+    }
+
+    [Fact]
+    public void LegacyV1MigrationIsStableAfterCanonicalExportAndReimport()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = $$$"""
+            {"type":"session","id":"legacy-v1-stable","timestamp":"2024-12-03T14:00:00.000Z","cwd":"{{{cwd}}}"}
+            {"type":"message","timestamp":"2024-12-03T14:00:01.000Z","message":{"role":"user","content":"kept boundary"}}
+            {"type":"compaction","timestamp":"2024-12-03T14:00:02.000Z","summary":"summary","firstKeptEntryIndex":1,"tokensBefore":50}
+            {"type":"message","timestamp":"2024-12-03T14:00:03.000Z","message":{"role":"hookMessage","content":"hook"}}
+            """;
+        var generated = new Queue<string>(["a1111111", "b2222222", "c3333333"]);
+
+        var first = PiJsonlSessionImporter.Import(input, generateEntryId: () => generated.Dequeue());
+        var exportedOnce = PiJsonlSessionInterchange.Export(first);
+        var reopened = PiJsonlSessionInterchange.Import(exportedOnce);
+        var exportedTwice = PiJsonlSessionInterchange.Export(reopened);
+        var records = exportedOnce.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => JsonDocument.Parse(line).RootElement.Clone()).ToArray();
+
+        Assert.Equal(exportedOnce.Split('\n', StringSplitOptions.RemoveEmptyEntries).Skip(1),
+            exportedTwice.Split('\n', StringSplitOptions.RemoveEmptyEntries).Skip(1));
+        Assert.Equal(3, records[0].GetProperty("version").GetInt32());
+        Assert.Equal(["a1111111", "b2222222", "c3333333"],
+            records.Skip(1).Select(entry => entry.GetProperty("id").GetString()));
+        Assert.Equal("a1111111", records[2].GetProperty("firstKeptEntryId").GetString());
+        Assert.False(records[2].TryGetProperty("firstKeptEntryIndex", out _));
+        Assert.Equal("custom", records[3].GetProperty("message").GetProperty("role").GetString());
+    }
+
+    [Fact]
+    public void V3HookMessageRoleIsPreservedAndFutureVersionIsRejected()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var v3 = $$$"""
+            {"type":"session","version":3,"id":"current-v3","timestamp":"2026-10-24T00:00:00Z","cwd":"{{{cwd}}}"}
+            {"type":"message","id":"hook","parentId":null,"message":{"role":"hookMessage","content":"preserve"}}
+            """;
+
+        var imported = PiJsonlSessionInterchange.Import(v3);
+        var exported = PiJsonlSessionInterchange.Export(imported);
+        using var hook = JsonDocument.Parse(exported.Split('\n', StringSplitOptions.RemoveEmptyEntries)[1]);
+
+        Assert.Equal("hookMessage", hook.RootElement.GetProperty("message").GetProperty("role").GetString());
+        Assert.Contains("not supported", Assert.Throws<InvalidDataException>(() =>
+            PiJsonlSessionInterchange.Import($"{{\"type\":\"session\",\"version\":4,\"id\":\"future\",\"cwd\":\"{cwd}\"}}\n")).Message);
+    }
+
+    [Fact]
+    public void LegacyV1MigrationRetriesGeneratedEntryIdCollisions()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        const string v1 = """
+            {"type":"session","id":"legacy-collision","timestamp":"2024-12-03T14:00:00.000Z","cwd":"CWD"}
+            {"type":"message","timestamp":"2024-12-03T14:00:01.000Z","message":{"role":"user","content":"first","timestamp":1733234401000}}
+            {"type":"message","timestamp":"2024-12-03T14:00:02.000Z","message":{"role":"user","content":"second","timestamp":1733234402000}}
+            """;
+        var generated = new Queue<string>(["deadbeef", "deadbeef", "cafebabe"]);
+
+        var imported = PiJsonlSessionImporter.Import(
+            v1.Replace("CWD", cwd, StringComparison.Ordinal),
+            generateEntryId: () => generated.Dequeue());
+
+        Assert.Equal(["deadbeef", "cafebabe"], imported.Tree.Entries.Select(entry => entry.Id));
+        Assert.Equal("deadbeef", imported.Tree.Entries[1].ParentId);
+    }
+
+    [Theory]
+    [InlineData("0", false)]
+    [InlineData("-1", false)]
+    [InlineData("99", false)]
+    [InlineData("1.5", false)]
+    [InlineData("\"1\"", true)]
+    [InlineData("null", true)]
+    [InlineData("false", true)]
+    public void LegacyV1MigrationMatchesPinnedInvalidCompactionIndexHandling(string indexJson, bool preserved)
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = $$$"""
+            {"type":"session","id":"invalid-compaction-index","cwd":"{{{cwd}}}"}
+            {"type":"message","timestamp":"2026-10-24T00:00:01Z","message":{"role":"user","content":"kept"}}
+            {"type":"compaction","timestamp":"2026-10-24T00:00:02Z","summary":"summary","firstKeptEntryId":"kept-entry","firstKeptEntryIndex":{{{indexJson}}}}
+            """;
+
+        var generated = new Queue<string>(["kept-entry", "compact-entry"]);
+        var imported = PiJsonlSessionImporter.Import(input, generateEntryId: () => generated.Dequeue());
+        var compaction = Assert.Single(imported.Tree.Entries, entry => entry.Type == "compaction");
+        var exported = PiJsonlSessionInterchange.ProjectEntries(imported)
+            .Single(entry => entry.GetProperty("type").GetString() == "compaction");
+
+        Assert.Equal(preserved, exported.TryGetProperty("firstKeptEntryIndex", out var migratedIndex));
+        if (preserved) Assert.Equal(indexJson, migratedIndex.GetRawText());
+        Assert.Equal("kept-entry", exported.GetProperty("firstKeptEntryId").GetString());
+        Assert.Equal("summary", compaction.Payload.GetProperty("summary").GetString());
+        Assert.Contains("kept", imported.ContextMessages().Select(message => message.Text));
+    }
+
+    [Theory]
+    [InlineData("1.0")]
+    [InlineData("1e0")]
+    public void LegacyV1MigrationTreatsIntegralJsonNumbersAsPinnedArrayIndices(string indexJson)
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = $$$"""
+            {"type":"session","id":"integral-compaction-index","cwd":"{{{cwd}}}"}
+            {"type":"message","timestamp":"2026-10-24T00:00:01Z","message":{"role":"user","content":"kept"}}
+            {"type":"compaction","timestamp":"2026-10-24T00:00:02Z","summary":"summary","firstKeptEntryId":"invalid-original","firstKeptEntryIndex":{{{indexJson}}}}
+            """;
+        var generated = new Queue<string>(["kept-entry", "compact-entry"]);
+
+        var imported = PiJsonlSessionImporter.Import(input, generateEntryId: () => generated.Dequeue());
+        var compaction = PiJsonlSessionInterchange.ProjectEntries(imported)
+            .Single(entry => entry.GetProperty("type").GetString() == "compaction");
+
+        Assert.Equal("kept-entry", compaction.GetProperty("firstKeptEntryId").GetString());
+        Assert.False(compaction.TryGetProperty("firstKeptEntryIndex", out _));
+    }
+
+    [Fact]
+    public void LegacyV1MigrationPreservesMalformedTimestampTypeWithoutChangingTheBody()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = $$$"""
+            {"type":"session","id":"legacy-malformed-field","cwd":"{{{cwd}}}"}
+            {"type":"message","timestamp":42,"message":{"role":"user","content":"kept"},"unknown":{"v":1}}
+            """;
+
+        var imported = PiJsonlSessionImporter.Import(input, generateEntryId: () => "a1111111");
+        var exported = PiJsonlSessionInterchange.ProjectEntries(imported);
+        var message = Assert.Single(exported);
+
+        Assert.Equal(42, message.GetProperty("timestamp").GetInt32());
+        Assert.Equal(1, message.GetProperty("unknown").GetProperty("v").GetInt32());
+        Assert.Equal("kept", imported.ContextMessages().Single().Text);
     }
 
     [Fact]
@@ -387,6 +675,23 @@ public sealed class PiJsonlSessionInterchangeTests
     }
 
     [Fact]
+    public void ExportRetriesGeneratedSessionInfoIdCollisions()
+    {
+        var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null);
+        session.Append(new ChatMessage(ChatRole.User, "hello"));
+        var existingId = session.Tree.HeadId!;
+        session.Rename("unrecorded title");
+        var generated = new Queue<string>([existingId, "cafebabe"]);
+
+        var jsonl = PiJsonlSessionWriter.Export(session, generateEntryId: () => generated.Dequeue());
+        var imported = PiJsonlSessionInterchange.Import(jsonl);
+
+        Assert.Equal([existingId, "cafebabe"], imported.Tree.Entries.Select(entry => entry.Id));
+        Assert.Equal("unrecorded title", imported.Name);
+        Assert.Equal(existingId, imported.Tree.Entries[^1].ParentId);
+    }
+
+    [Fact]
     public void ThinkingLevelChangesPersistAndRoundTripAsPiEntries()
     {
         var session = new ConversationSession(Path.GetTempPath(), "fixture-model", null, "fixture");
@@ -415,6 +720,174 @@ public sealed class PiJsonlSessionInterchangeTests
     }
 
     [Fact]
+    public void ThousandsOfJsonlEntriesAndMalformedRowsKeepTheLongActiveChain()
+    {
+        const int entryCount = 2048;
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = new StringBuilder();
+        input.AppendLine(JsonSerializer.Serialize(new { type = "session", version = 3, id = "long-chain", cwd }));
+        string? parentId = null;
+        for (var index = 0; index < entryCount; index++)
+        {
+            input.AppendLine($"not-json-{index}");
+            var id = $"entry-{index:D4}";
+            input.AppendLine(JsonSerializer.Serialize(new
+            {
+                type = "message",
+                id,
+                parentId,
+                message = new { role = index % 2 == 0 ? "user" : "assistant", content = $"message-{index:D4}", timestamp = index + 1 }
+            }));
+            parentId = id;
+        }
+
+        var imported = PiJsonlSessionInterchange.Import(input.ToString());
+
+        Assert.Equal(entryCount, imported.Tree.Entries.Count);
+        Assert.Equal(entryCount, imported.ActiveMessages().Count);
+        Assert.Equal($"message-{entryCount - 1:D4}", imported.ActiveMessages()[^1].Text);
+    }
+
+    [Fact]
+    public void LargeToolResultSurvivesNativeAndPiJsonlRoundTrip()
+    {
+        const string toolCallId = "call-large-result";
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var resultText = new string('r', 2 * 1024 * 1024);
+        var input = string.Join('\n',
+            JsonSerializer.Serialize(new { type = "session", version = 3, id = "large-tool-result", cwd }),
+            JsonSerializer.Serialize(new
+            {
+                type = "message",
+                id = "call",
+                parentId = (string?)null,
+                message = new
+                {
+                    role = "assistant",
+                    content = new[]
+                    {
+                        new { type = "toolCall", id = toolCallId, name = "read", arguments = new { path = "large.txt" } }
+                    }
+                }
+            }),
+            JsonSerializer.Serialize(new
+            {
+                type = "message",
+                id = "result",
+                parentId = "call",
+                message = new { role = "toolResult", toolCallId, toolName = "read", content = new[] { new { type = "text", text = resultText } }, isError = false }
+            }),
+            "");
+
+        var imported = PiJsonlSessionInterchange.Import(input);
+        var nativeReload = ConversationSession.Parse(imported.ToJson());
+        var exported = PiJsonlSessionInterchange.Export(nativeReload);
+        var resultLine = exported.Split('\n', StringSplitOptions.RemoveEmptyEntries).Single(line =>
+        {
+            using var record = JsonDocument.Parse(line);
+            return record.RootElement.TryGetProperty("message", out var message) &&
+                message.TryGetProperty("role", out var role) && role.GetString() == "toolResult";
+        });
+        using var result = JsonDocument.Parse(resultLine);
+
+        Assert.Equal(toolCallId, result.RootElement.GetProperty("message").GetProperty("toolCallId").GetString());
+        Assert.Equal(resultText, result.RootElement.GetProperty("message").GetProperty("content")[0].GetProperty("text").GetString());
+    }
+
+    [Theory]
+    [InlineData("42")]
+    [InlineData("[]")]
+    [InlineData("{}")]
+    public void ValidNonHeaderJsonBeforeSessionHeaderDoesNotCreateAValidSession(string firstRecord)
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var jsonl = $"{firstRecord}\n{{\"type\":\"session\",\"version\":3,\"id\":\"later-header\",\"cwd\":\"{cwd}\"}}\n";
+
+        Assert.Throws<InvalidDataException>(() => PiJsonlSessionInterchange.Import(jsonl));
+    }
+
+    [Fact]
+    public void LineEndingsAndInterruptedJsonlTailsKeepValidRecordsWithoutChangingInput()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var header = "{\"type\":\"session\",\"version\":3,\"id\":\"line-recovery\",\"cwd\":\"" + cwd + "\"}";
+        const string message = "{\"type\":\"message\",\"id\":\"valid-tail\",\"parentId\":null,\"message\":{\"role\":\"user\",\"content\":\"kept\",\"timestamp\":1}}";
+        var inputs = new (string Jsonl, string[] Messages)[]
+        {
+            ("not json\n" + header, []),
+            (header + "\r\n\r\nnot json\r\n" + message, ["kept"]),
+            (header + "\n" + message + "\n{\"type\":\"message\"", ["kept"])
+        };
+
+        foreach (var (input, expectedMessages) in inputs)
+        {
+            var imported = PiJsonlSessionInterchange.Import(input, workingDirectoryFallback: cwd);
+            Assert.Equal("line-recovery", imported.Id);
+            Assert.Equal(expectedMessages, imported.ActiveMessages().Select(message => message.Text));
+        }
+    }
+
+    [Fact]
+    public void OversizedRecordIsSkippedWithoutHidingFollowingValidRecords()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var header = JsonSerializer.Serialize(new { type = "session", version = 3, id = "oversized-record", cwd });
+        var oversized = JsonSerializer.Serialize(new
+        {
+            type = "message",
+            id = "large",
+            parentId = (string?)null,
+            message = new { role = "user", content = new string('x', 16 * 1024 * 1024 + 1), timestamp = 1 }
+        });
+        var following = "{\"type\":\"message\",\"id\":\"small\",\"parentId\":\"large\",\"message\":{\"role\":\"user\",\"content\":\"kept\",\"timestamp\":2}}";
+
+        var imported = PiJsonlSessionInterchange.Import($"{header}\n{oversized}\n{following}\n");
+
+        Assert.Equal(["kept"], imported.ActiveMessages().Select(message => message.Text));
+    }
+
+    [Fact]
+    public void RecordAtMaximumEntrySizeIsAccepted()
+    {
+        const int maximumEntryBytes = 16 * 1024 * 1024;
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        string MessageRecord(string content) => JsonSerializer.Serialize(new
+        {
+            type = "message",
+            id = "exact-limit",
+            parentId = (string?)null,
+            message = new { role = "user", content, timestamp = 1 }
+        });
+
+        var payload = new string('x', maximumEntryBytes - Encoding.UTF8.GetByteCount(MessageRecord(string.Empty)));
+        var entry = MessageRecord(payload);
+        Assert.Equal(maximumEntryBytes, Encoding.UTF8.GetByteCount(entry));
+        var header = JsonSerializer.Serialize(new { type = "session", version = 3, id = "entry-limit", cwd });
+
+        var imported = PiJsonlSessionInterchange.Import($"{header}\n{entry}\n");
+
+        Assert.Equal(payload.Length, Assert.Single(imported.ActiveMessages()).Text.Length);
+    }
+
+    [Fact]
+    public void Utf8BomBeforeSessionHeaderIsRejected()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = "\uFEFF" + $"{{\"type\":\"session\",\"version\":3,\"id\":\"bom\",\"cwd\":\"{cwd}\"}}\n";
+
+        Assert.Throws<InvalidDataException>(() => PiJsonlSessionInterchange.Import(input));
+    }
+
+    [Theory]
+    [InlineData("{\"type\":\"session\",\"version\":3,\"cwd\":\"/tmp\"}")]
+    [InlineData("{\"type\":\"session\",\"version\":3,\"id\":42,\"cwd\":\"/tmp\"}")]
+    [InlineData("{\"type\":\"session\",\"version\":3,\"id\":\" \",\"cwd\":\"/tmp\"}")]
+    public void InvalidSessionIdentityIsRejected(string header)
+    {
+        Assert.Throws<InvalidDataException>(() => PiJsonlSessionInterchange.Import(header));
+    }
+
+    [Fact]
     public void MalformedLineKeepsFollowingOrphanInTheActiveHistoryAndPreservesItsPiParent()
     {
         var cwd = Path.GetFullPath(Path.GetTempPath());
@@ -435,6 +908,8 @@ public sealed class PiJsonlSessionInterchangeTests
         Assert.Equal("entry-missing", orphan.RootElement.GetProperty("parentId").GetString());
         Assert.Equal(["survives as orphan"],
             PiJsonlSessionInterchange.Import(exported).ActiveMessages().Select(message => message.Text));
+        imported.Append(new ChatMessage(ChatRole.User, "continue orphan"));
+        Assert.Equal("entry-assistant", imported.Tree.Entries[^1].ParentId);
     }
 
     [Fact]
@@ -460,6 +935,52 @@ public sealed class PiJsonlSessionInterchangeTests
         var restored = ConversationSession.Parse(imported.ToJson());
         Assert.Equal(["child-first", "parent-later"], restored.Tree.Entries.Select(entry => entry.Id));
         Assert.Equal(parent.Id, Assert.Single(restored.Tree.Entries, entry => entry.Id == child.Id).ParentId);
+    }
+
+    [Fact]
+    public void LastPhysicalBranchIsSelectedAndSubsequentAppendUsesItAsParent()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = $$$"""
+            {"type":"session","version":3,"id":"session-selected-branch","timestamp":"2026-10-24T00:00:00Z","cwd":"{{{cwd}}}"}
+            {"type":"message","id":"root","parentId":null,"message":{"role":"user","content":"root"}}
+            {"type":"message","id":"old-branch","parentId":"root","message":{"role":"user","content":"old"}}
+            {"type":"message","id":"selected-branch","parentId":"root","message":{"role":"user","content":"selected"}}
+            """;
+
+        var imported = PiJsonlSessionInterchange.Import(input);
+
+        Assert.Equal(["root", "old-branch", "selected-branch"], imported.Tree.Entries.Select(entry => entry.Id));
+        Assert.Equal(["root", "selected"], imported.ActiveMessages().Select(message => message.Text));
+        imported.Append(new ChatMessage(ChatRole.User, "continued"));
+        Assert.Equal("selected-branch", imported.Tree.Entries[^1].ParentId);
+        Assert.Equal(["root", "selected", "continued"], imported.ActiveMessages().Select(message => message.Text));
+    }
+
+    [Fact]
+    public void DuplicateEntryIdsAreRejectedDuringPiJsonlImport()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = $$$"""
+            {"type":"session","version":3,"id":"session-duplicate","timestamp":"2026-10-24T00:00:00Z","cwd":"{{{cwd}}}"}
+            {"type":"message","id":"duplicate","parentId":null,"message":{"role":"user","content":"first"}}
+            {"type":"message","id":"duplicate","parentId":null,"message":{"role":"user","content":"last"}}
+            """;
+
+        Assert.Throws<InvalidDataException>(() => PiJsonlSessionInterchange.Import(input));
+    }
+
+    [Fact]
+    public void ParentCyclesAreRejectedDuringPiJsonlImport()
+    {
+        var cwd = Path.GetFullPath(Path.GetTempPath());
+        var input = $$$"""
+            {"type":"session","version":3,"id":"session-cycle","timestamp":"2026-10-24T00:00:00Z","cwd":"{{{cwd}}}"}
+            {"type":"message","id":"cycle-a","parentId":"cycle-b","message":{"role":"user","content":"a"}}
+            {"type":"message","id":"cycle-b","parentId":"cycle-a","message":{"role":"user","content":"b"}}
+            """;
+
+        Assert.Throws<InvalidDataException>(() => PiJsonlSessionInterchange.Import(input));
     }
 
     [Fact]
@@ -490,4 +1011,61 @@ public sealed class PiJsonlSessionInterchangeTests
         {"type":"model_change","id":"model-change","parentId":"edit-user","timestamp":"2024-12-03T14:00:09.000Z","provider":"anthropic","modelId":"claude-sonnet-4-5"}
         {"type":"message","id":"branch-user","parentId":"model-change","timestamp":"2024-12-03T14:00:10.000Z","message":{"role":"user","content":"branch prompt","timestamp":1733234410000}}
         """;
+
+    private static void AssertRichContentSession(ConversationSession session)
+    {
+        Assert.Equal("rich-content-session", session.Id);
+        Assert.Equal("fixture-gpt", session.Model);
+        Assert.Equal("rich-assistant-final", session.Tree.HeadId);
+        Assert.Equal("high", PiJsonlSessionInterchange.GetThinkingLevel(session));
+        Assert.Equal(
+            ["rich-user", "rich-thinking", "rich-assistant-call", "rich-tool-result", "rich-extension-state", "rich-custom-message", "rich-assistant-final"],
+            session.Tree.ActivePath().Select(entry => entry.Id));
+
+        var messages = session.ContextMessages();
+        Assert.Equal([ChatRole.User, ChatRole.Assistant, ChatRole.Tool, ChatRole.User, ChatRole.Assistant],
+            messages.Select(message => message.Role));
+
+        var userImage = Assert.Single(messages[0].Contents.OfType<DataContent>());
+        Assert.Equal("image/png", userImage.MediaType);
+        Assert.Equal(new byte[] { 1, 2, 3 }, userImage.Data.ToArray());
+
+        var reasoning = Assert.Single(messages[1].Contents.OfType<TextReasoningContent>());
+        Assert.Equal("I will read the invoice details.", reasoning.Text);
+        Assert.Equal("opaque-fixture-signature", reasoning.ProtectedData);
+        var toolCall = Assert.Single(messages[1].Contents.OfType<FunctionCallContent>());
+        Assert.Equal("call-rich-1", toolCall.CallId);
+        Assert.Equal("lookup_invoice", toolCall.Name);
+        var sourceArgument = toolCall.Arguments!["source"] is JsonElement sourceElement
+            ? sourceElement.GetString()
+            : Assert.IsType<string>(toolCall.Arguments["source"]);
+        Assert.Equal("image", sourceArgument);
+
+        var toolResult = Assert.Single(messages[2].Contents.OfType<FunctionResultContent>());
+        Assert.Equal("call-rich-1", toolResult.CallId);
+        var toolParts = Assert.IsAssignableFrom<IEnumerable<AIContent>>(toolResult.Result);
+        Assert.Equal("invoice number 42", Assert.IsType<TextContent>(toolParts.First()).Text);
+        var toolImage = Assert.IsType<DataContent>(toolParts.ElementAt(1));
+        Assert.Equal("image/jpeg", toolImage.MediaType);
+        Assert.Equal(new byte[] { 255, 0, 1 }, toolImage.Data.ToArray());
+
+        var customMessage = messages[3];
+        Assert.Equal("Visible to the model as extension context.", customMessage.Text);
+        Assert.Equal("fixture.session-note", Assert.IsType<string>(customMessage.AdditionalProperties!["pisharp.extension.customType"]));
+        Assert.False(Assert.IsType<bool>(customMessage.AdditionalProperties["pisharp.extension.display"]));
+        Assert.Equal(7, Assert.IsType<JsonElement>(customMessage.AdditionalProperties["pisharp.extension.details"])
+            .GetProperty("revision").GetInt32());
+        var customImage = Assert.Single(customMessage.Contents.OfType<DataContent>());
+        Assert.Equal("image/jpeg", customImage.MediaType);
+        Assert.Equal(new byte[] { 255, 0, 1 }, customImage.Data.ToArray());
+
+        Assert.DoesNotContain(messages, message => message.Text.Contains("must-not-enter-context", StringComparison.Ordinal));
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+            if (File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx"))) return directory.FullName;
+        throw new DirectoryNotFoundException("Could not locate PiSharp.slnx from the test output directory.");
+    }
 }

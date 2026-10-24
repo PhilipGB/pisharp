@@ -601,7 +601,9 @@ internal static class PiJsonlEntryCodec
                     content.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
                     break;
                 case TextReasoningContent reasoning:
-                    content.Add(new JsonObject { ["type"] = "thinking", ["thinking"] = reasoning.Text });
+                    var thinking = new JsonObject { ["type"] = "thinking", ["thinking"] = reasoning.Text };
+                    if (reasoning.ProtectedData is { } signature) thinking["thinkingSignature"] = signature;
+                    content.Add(thinking);
                     break;
                 case DataContent image:
                     content.Add(new JsonObject

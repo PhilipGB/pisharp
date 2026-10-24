@@ -1,0 +1,385 @@
+{
+  "schema": 1,
+  "goal": "Complete Session JSONL Persistence and Crash Recovery Parity",
+  "status": "local_acceptance_complete; publication_and_exact_head_ci_pending",
+  "repository": {
+    "pr24Head": "4972f6eaf8f5a0ca2c773048fa918ab6bc23e91c",
+    "pr24Merge": "0d83418a31d84e530b099d98054739607fa3e3ad",
+    "branch": "milestone/session-jsonl-persistence-recovery-parity",
+    "branchBase": "0d83418a31d84e530b099d98054739607fa3e3ad",
+    "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "workingHeadAtInventory": "0d83418a31d84e530b099d98054739607fa3e3ad"
+  },
+  "maf": {
+    "targetFramework": "net10.0",
+    "installedMicrosoftAgentsAI": "1.21.0",
+    "installedMicrosoftExtensionsAI": "10.10.0",
+    "architectureRule": "Keep ConversationSession and ConversationTree canonical; preserve MAF execution and do not treat opaque MAF AgentSession state as Pi JSONL."
+  },
+  "validation": {
+    "pinnedPiBuild": "npm run build:offline passed in /tmp/pi-pinned-source at the pinned SHA.",
+    "pinnedPiRequiredSuites": "126/126 across 12 required session, CWD, RPC JSONL, and share-export files.",
+    "pisharpInterchangeSuite": "52/52 after source-pinned parser, graph, migration, reasoning-signature, rich-content, interrupted-assistant, invalid compaction-index, and integral floating-point index regressions; zero failures or skips.",
+    "pisharpSessionRecoveryInterchangeFileStoreFilter": "Historical focused run 76/76 before the final migration-index regression additions; the current focused interchange/file-store/catalog selection passes 73/73 and the full .NET suite passes 3843/3843.",
+    "pisharpSessionRecoveryImportRpcFilter": "114/114.",
+    "pisharpDiscoveryStartupProjectImportForkFilter": "48/48 after configured Pi JSONL listing, shared-CWD filtering, stale catalog/import/fork fingerprints, JSONL-preserving save, and project-runtime/startup coverage; zero failures or skips.",
+    "pisharpDiscoveryDurabilityCrashFilter": "83/83 including configured Pi JSONL discovery, stale catalog/import/fork fencing, bounded oversized-file reads, failed atomic-publication cleanup, store/lease contention, durable tool checkpoints, child-process crash recovery, Anthropic orphan-result error semantics, and three-provider continuation; zero failures or skips.",
+    "pisharpCrashRecoveryProcessSuite": "9/9; a new actual child-process kill after persisted tool_intent and before wrapper invocation confirms no side effect and no replay after restart, alongside after-checkpoint and three-provider crash cases.",
+    "pinnedPiDiscoveryOracle": "The configured-directory list/findById/findMostRecentSession case ran twice at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6 with stable normalized results; strict project scoping matched. Corrupt-candidate handling and stale-selection semantics are documented as intentional differences. A 1,048,769-byte valid header appears in streaming list results, while findMostRecentSession skips it at the 1 MiB header-scan bound and chooses the next candidate; the two-run oracle is stable.",
+    "pinnedPiCrossProjectSwitch": "The pinned AgentSessionRuntime cross-CWD session replacement test passed twice at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6 using isolated PI_CODING_AGENT_DIR roots.",
+    "pisharpCrossProjectSwitch": "RpcSessionReplacementProcessTests.RpcSessionSwitchRebindsProjectWorkingDirectoryBeforeNextToolCall passed 1/1; the captured post-switch provider request contains the destination marker from the relative read tool and excludes the source marker.",
+    "pinnedPiOrphanToolOracle": "All three provider adapters captured stable orphan-tool continuation requests in two independent runs; Anthropic's is_error=true flag is asserted by the PiSharp child-process recovery regression.",
+    "pinnedPiContextOracle": "Both selected heads matched the expected fixture across two independent runs.",
+    "documentationPaths": "python3 tools/validate_doc_paths.py passed: 153 documents, 657 references.",
+    "format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed after all source and test changes.",
+    "warningAsErrorBuild": "Final dotnet build PiSharp.slnx --no-restore --warnaserror -m:1 /nodeReuse:false passed with 0 warnings and 0 errors.",
+    "fullRepositoryGates": "Final TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore -m:1 /nodeReuse:false passed 3843/3843 in 6m23s with zero failures/skips. dotnet format PiSharp.slnx --verify-no-changes --no-restore passed. Warning-as-error build passed with zero warnings/errors. Terminal Python passed 66/66, parity Python 27/27, Node terminal 24/24, and documentation paths 153 documents/657 references. MCP conformance reports no regressions against the classified baseline; three known scenarios remain classified. Exact-head Linux/macOS CI remains a post-publication requirement.",
+    "pinnedPiExtensionBranchOracle": "The custom extension-state fixture was projected through both selected branches in two independent observations at b06c1f2; the active branch contains only its own custom state and provider context excludes custom data. Same-Pi calibration and expected projections match.",
+    "pisharpNativeExtensionBranchReload": "ExtensionSessionStateTests.NativeReloadRestoresOnlyExtensionStateOnTheSelectedBranch passed 1/1; both branch heads survive native ConversationStore save/reload with only branch-local extension state and active message context.",
+    "pinnedPiInterruptedAssistantOracle": "The interrupted-assistant JSONL fixture opened, exported, and reopened twice at b06c1f2 with stable same-Pi calibration and semantic round-trip; partial text, reasoning signature, aborted stop reason, error message, usage, selected head, and provider context were retained.",
+    "pisharpInterruptedAssistantNativeReload": "PiJsonlSessionInterchangeTests.AbortedAssistantFromPinnedPiSurvivesNativeReloadAndPiExport passed 1/1; it checks native store save/reload and Pi export/reimport of the interrupted assistant projection.",
+    "pisharpLeaseWaitCancellation": "ConversationSessionTests.CancelledStoreSaveWaitingForLeaseKeepsPersistedSnapshotAndCleansNoTempFiles passed 1/1; cancellation while waiting on a held lease leaves the existing bytes intact and no publication temporary.",
+    "pinnedPiActiveSwitch": "AgentSessionRuntime.test.ts: settles the active response before session replacement passed 1/1 at b06c1f2; 11 focused-filter skips. Empty generated model catalog placeholder modules were used only in the temporary checkout because ignored generated files were absent; the test uses its own faux provider.",
+    "pisharpActiveSwitch": "RpcSessionReplacementProcessTests.RpcValidSwitchSettlesBlockedProviderRunBeforeReplacingSession passed 1/1 on Linux; abort settlement precedes successful replacement, and the next physical provider request contains destination history without source-run content.",
+    "pinnedPiProcessCrashOracle": "Each exact-pin process crash boundary ran twice at b06c1f2 with identical normalized results: before tool invocation after persisted assistant toolCall (0 side effects/0 toolResults), during tool execution after its side effect (1/0), and after the toolResult checkpoint before the next provider response (1/1). All three restart workers continued without automatic tool replay; after-result context retained the correlated toolResult. Empty generated model-catalog placeholders were used only in the disposable pinned checkout.",
+    "pisharpCrashRecoveryAndJsonlProcessSuites": "12/12 across CrashRecoveryProcessTests and PiJsonlSessionRecoveryProcessTests, zero skips; includes process kills before wrapper invocation, after side effect but before outcome checkpoint, and after the outcome checkpoint.",
+    "pisharpLargeJsonlAndAtomicReaderStress": "5/5 focused regressions passed: 2,048 linked Pi JSONL entries interleaved with 2,048 malformed rows; a 2 MiB tool result through native and Pi JSONL round-trip; 2,048-entry branch export/import and eight native reload cycles; 32 concurrent atomic read/write snapshots; and discovery across 128 project sessions.",
+    "pisharpLeaseTestsLinux": "4/4 focused lease, alias, wait-cancellation, and cross-process tool-outcome tests passed on Linux.",
+    "macosSessionLeaseCi": "A dedicated macos-latest job runs native lease, alias, cancellation, and cross-process locking tests; its exact-head result is pending publication.",
+    "pisharpLargeDiscoveryHeader": "SessionCatalogTests.ProjectDiscoveryAcceptsAHeaderLargerThanPiRecentScanLimitWithinImportBounds passed 1/1; PiSharp accepts a 1 MiB+ header within its 16 MiB record and 128 MiB file limits.",
+    "pinnedPiRpcProjectionOracle": "The exact-pin CLI was run twice without provider credentials against the selected-branch/label fixture; get_state, get_messages, get_entries, get_tree, and get_fork_messages had identical normalized results. Active messages exclude the inactive sibling, all entry IDs/parents and selected leaf are retained, the latest label is projected, and fork messages follow the selected user path. Model reports the expected unknown fallback.",
+    "pinnedPiSessionLifecycleEvents": "4/4 b06c1f2 AgentSessionRuntime lifecycle tests pass for new-session/resume ordering, switch cancellation, pre-invalidation/rebind ordering, and fork event/cancellation behavior.",
+    "pisharpRpcProjectionAndTransitions": "62/62 focused RpcReadCommandsProcessTests, RpcSessionEntryProjectorTests, RpcSessionReplacementProcessTests, and RpcModeTests passed with zero skips. Coverage includes persisted state/messages/entries/tree/fork projections, new session, valid and invalid switch during blocked work, fork during blocked work, and settled event ordering.",
+    "pinnedPiMigrationOracle": "Seven file-backed migration cases, including integral floating-point index tokens (1.0 and 1e0), other invalid compaction-index numeric and nonnumeric values, and malformed unknown fields, are stable across two independent open/reopen runs at the exact pin; PiSharp comparison regressions pass.",
+    "pisharpMigrationBoundaryTests": "The earlier focused boundary selection passed 12/12; the new 1.0/1e0 migration theory passed 2/2. The current interchange class passes 52/52 and the broader persistence selection passes 73/73.",
+    "pisharpAtomicFaultBoundaries": "Focused tests verify stale-writer rejection, target preservation and temp cleanup on publication conflict, cancellation while waiting for a lease, and 32 concurrent readers observing complete atomic snapshots; arbitrary storage-device faults are not simulated.",
+    "mcpConformance": "node tools/parity/mcp-conformance/run.mjs reports no regressions against the classified baseline. Three known failures remain classified: 2025-11-25 elicitation sep1034, basic CIMD, and scope retry limit.",
+    "fullDotnetSuite": "3843/3843 passed in 6m23s, zero failures and zero skips.",
+    "pisharpFinalFocusedPersistenceSelection": "73/73 across PiJsonlSessionInterchangeTests, PiJsonlSessionFileStoreTests, and SessionCatalogTests; 52/52 in the interchange class alone."
+  },
+  "families": [
+    {
+      "id": "jsonl-headers-and-record-parsing",
+      "capability": "Headers, malformed rows, truncation, encoding, resource limits, and read-only import behavior.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/session-manager.ts:loadEntriesFromFile",
+        "packages/coding-agent/test/session-manager/load-entries.test.ts",
+        "packages/coding-agent/test/session-file-invalid.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionImporter.cs:ParseRecords",
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionFileStore.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionFileStoreTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionRecoveryProcessTests.cs"
+      ],
+      "sourceContract": "Pinned Pi skips malformed JSONL rows, validates the first parsed header before repairing an unterminated tail, and may append a newline during load.",
+      "difference": "Source-pinned oracles confirm header order, CRLF/blank/malformed-line recovery, valid unterminated tails, malformed truncated tails, BOM rejection, read-side newline repair, and acceptance by pinned Pi of a 16 MiB+1 record with a valid descendant. A valid non-entry record before a later session header is rejected by PiSharp. PiSharp preserves source bytes and has 16 MiB record/128 MiB file limits. Exact discovery evidence confirms Pi list streams a 1,048,769-byte header while recent lookup skips it at its 1 MiB scan limit; PiSharp accepts it within its bounds. Direct and file-backed tests cover unsupported version and invalid header types. Corrupt recent candidates are skipped; explicit PiSharp catalog listing reports the path.",
+      "severity": "Safety and compatibility; measure supported outcomes against the exact pin.",
+      "proposedCorrection": "Retain non-mutating import and existing bounds unless a demonstrated supported-data mismatch requires a safe bounded adjustment.",
+      "oracleFixture": "docs/parity/fixtures/session-jsonl-parser-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-header-order-b06-2026-10-24.json.",
+      "regression": "PiJsonlSessionInterchangeTests header, identity, BOM, malformed-line, CRLF, tail, entry-size and large-chain cases; SessionCatalogTests large-header and file-backed invalid-header cases; file-store and recovery-process source-preservation tests.",
+      "status": "source_pinned_parser_and_file_operation_cases_verified; 2048_entry_and_2048_malformed_row_stress_verified; size and discovery bounds classified"
+    },
+    {
+      "id": "jsonl-v1-migration",
+      "capability": "Legacy linear entries, generated IDs, parent links, compaction indices, and collision handling.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/session-manager.ts:migrateV1ToV2",
+        "packages/coding-agent/test/session-manager/migration.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionImporter.cs:MigrateV1"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs:LegacyV1AndV2SessionsMigrateToLinkedCurrentEntries",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs:LegacyV1MigrationRetriesGeneratedEntryIdCollisions"
+      ],
+      "sourceContract": "V1 entries receive IDs and sequential parent links; compaction's legacy index maps to the kept entry.",
+      "difference": "Pinned migration assigns generated IDs and sequential parent links, maps valid compaction indices, deletes numeric invalid indices, and retains nonnumeric index fields. PiSharp matches those cases, preserves malformed timestamp/unknown fields, and keeps a read-only load from rewriting the source. Pinned Pi has a collision-check defect that can create duplicate IDs; PiSharp retries IDs to preserve a valid graph.",
+      "severity": "Correctness and graph safety.",
+      "proposedCorrection": "Keep the collision retry as an intentional safety-preserving divergence; do not report it as a strict match.",
+      "oracleFixture": "docs/parity/fixtures/session-jsonl-migration-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-migration-b06-2026-10-24.json; docs/parity/fixtures/session-v1-id-collision-b06-2026-10-24.json.",
+      "regression": "PiJsonlSessionInterchangeTests.LegacyV1AndV2SessionsMigrateToLinkedCurrentEntries; LegacyV1MigrationIsStableAfterCanonicalExportAndReimport; LegacyV1MigrationMatchesPinnedInvalidCompactionIndexHandling; LegacyV1MigrationPreservesMalformedTimestampTypeWithoutChangingTheBody; LegacyV1MigrationRetriesGeneratedEntryIdCollisions; PiJsonlSessionFileStoreTests.LoadingLegacyPiJsonlMigratesInMemoryWithoutRewritingTheSource.",
+      "status": "pinned supported v1 migration verified; invalid compaction-index type semantics verified; ID collision retry and read-only load are classified safety differences"
+    },
+    {
+      "id": "jsonl-v2-v3-migration",
+      "capability": "V2-to-v3 hookMessage conversion, existing V3 records, unknown fields, round-trip, and repeated migration.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/session-manager.ts:migrateV2ToV3",
+        "packages/coding-agent/test/session-manager/migration.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionImporter.cs",
+        "src/PiSharp.Runtime/Sessions/PiJsonlEntryCodec.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs"
+      ],
+      "sourceContract": "V2 hookMessage records become custom; V3 entries remain linked and stable.",
+      "difference": "File-backed pinned migration confirms v1 ID/parent assignment and compaction-index mapping, v2 hookMessage-to-custom conversion, stable v3 entries, repeated reopen behavior, and invalid compaction-index handling. PiSharp matches supported migration semantics. Pi accepts future version 4 and string version \"3\"; PiSharp rejects them before import.",
+      "severity": "Compatibility.",
+      "proposedCorrection": "Do not change behavior without a reproducible source-pinned mismatch.",
+      "oracleFixture": "docs/parity/fixtures/session-jsonl-migration-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-migration-b06-2026-10-24.json.",
+      "regression": "PiJsonlSessionInterchangeTests.LegacyV1AndV2SessionsMigrateToLinkedCurrentEntries; LegacyV1MigrationIsStableAfterCanonicalExportAndReimport; V3HookMessageRoleIsPreservedAndFutureVersionIsRejected; SessionCatalogTests.FileBackedOperationsRejectInvalidPiHeadersWithoutChangingTheSource.",
+      "status": "v1-v3 supported migration and idempotent reimport verified; future and noninteger header rejection classified as safety differences"
+    },
+    {
+      "id": "entry-graph-and-selected-leaf",
+      "capability": "Linear and branched records, parent order, selected leaf, append parent, duplicates, orphans, and cycles.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/session-manager.ts:buildSessionPath",
+        "packages/coding-agent/src/core/session-manager.ts:SessionManager._buildIndex",
+        "packages/coding-agent/src/core/session-manager.ts:SessionManager.getBranch",
+        "packages/coding-agent/test/session-manager/tree-traversal.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Core/ConversationTree.cs",
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionTreeBuilder.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/ConversationSessionTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionRecoveryProcessTests.cs"
+      ],
+      "sourceContract": "The last persisted entry is the active leaf; branch traversal follows parent IDs, including forward references.",
+      "difference": "The pinned graph oracle confirms last-physical-entry selection, forward-parent traversal, missing-parent orphan selection, and subsequent append parent. Exact-pin RPC projection covers nested sibling branches, selected leaf, latest label, active messages and fork messages. Pinned Pi indexes duplicate IDs using the last entry; PiSharp rejects duplicate IDs. Pinned Pi loads cyclic rows but its branch walk has no cycle guard; PiSharp rejects cycles.",
+      "severity": "Correctness and safety.",
+      "proposedCorrection": "Preserve bounded cycle/duplicate protection and verify ordinary, orphan, and forward-parent observable paths.",
+      "oracleFixture": "docs/parity/fixtures/session-jsonl-graph-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-graph-b06-2026-10-24.json.",
+      "regression": "PiJsonlSessionInterchangeTests selected branch, append parent, forward parent, orphan, duplicate-ID and cycle import cases; ConversationTreeTests cycle and identity guards; RpcSessionEntryProjectorTests and RpcReadCommandsProcessTests for nested branch and latest-label projection.",
+      "status": "ordinary and nested branch reconstruction, selected leaf, append parent, RPC labels, and invalid graph safety verified"
+    },
+    {
+      "id": "canonical-context-and-provider-projection",
+      "capability": "Active-path messages, context edits, compaction, model/thinking state, tool correlation, and restart continuation.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/session-manager.ts:buildSessionProjection",
+        "packages/coding-agent/src/core/session-manager.ts:buildSessionContext",
+        "packages/ai/src/api/transform-messages.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/ConversationSession.cs:ContextMessages",
+        "src/PiSharp.Runtime/Sessions/PiJsonlEntryCodec.cs",
+        "src/PiSharp.Runtime/Sessions/ProviderTurnHistoryReconciler.cs",
+        "src/PiSharp.Cli/Providers/ObservedChatClient.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/ConversationSessionTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs"
+      ],
+      "sourceContract": "Model context follows the selected parent path, context edits and compaction are applied in order, and incomplete tool calls receive provider-only recovery projection.",
+      "difference": "The b06c1f2 buildSessionContext and streamSimple oracles capture branch context, completed tool history, and orphan-tool recovery across OpenAI Responses, OpenAI Chat Completions, and Anthropic. The orphan oracle revealed Pi marks Anthropic's synthesized 'No result provided' tool_result as is_error=true; PiSharp originally omitted that flag. ObservedChatClient now marks its provider-only missing result as a ToolFailureException, and the process regression verifies the pinned error flag across the three-API recovery path. A two-run pinned Pi CLI capture now covers get_state, get_messages, get_entries, get_tree and get_fork_messages on a selected branch with sibling branches and labels; matching PiSharp RPC process and projector regressions pass.",
+      "severity": "Provider-visible correctness and no-replay safety.",
+      "proposedCorrection": "Keep provider-only synthetic missing-result semantics isolated from canonical history; retain the verified physical provider continuations for all three APIs and RPC persisted-state projections.",
+      "oracleFixture": "docs/parity/fixtures/session-v3-context-b06-2026-10-24.json; docs/parity/fixtures/session-provider-continuation-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-orphan-tool-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-orphan-tool-b06-2026-10-24.json.; docs/parity/fixtures/session-rpc-projection-b06-2026-10-24.json; tools/parity/session-rpc-projection-pi-oracle.mjs",
+      "regression": "CrashRecoveryProcessTests.CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool and CrashRecoveryProcessTests.ReopenedCompletedToolHistoryContinuesOnPhysicalProviderWithoutReplayingTool.",
+      "status": "provider_continuation_orphan_projection_and_representative_rpc_projections_verified"
+    },
+    {
+      "id": "jsonl-import-export-roundtrip",
+      "capability": "All branches, selected head, metadata, tool content, images/reasoning, custom/unknown records, interrupted messages, and safe file export.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/session-manager.ts:sessionEntryToContextMessages",
+        "packages/coding-agent/src/core/session-export.ts:serializeSessionBranch",
+        "packages/ai/src/types.ts:ThinkingContent.thinkingSignature",
+        "packages/coding-agent/test/export-jsonl-share.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionWriter.cs",
+        "src/PiSharp.Runtime/Sessions/PiJsonlEntryCodec.cs",
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionInterchange.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionInterchangeTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/SessionExportTests.cs"
+      ],
+      "sourceContract": "Import/export preserves Pi session identity and semantic active history, including opaque reasoning signatures needed for provider continuation; selected branch is restored by a parent-linked head anchor where required.",
+      "difference": "Exact-pin b06c1f2 export/reopen evidence covers selected branch, reasoning signatures, rich image/tool/custom content, hidden extension state and active model/thinking state. A separate two-branch fixture confirms extension state remains branch-local and outside provider context. An aborted-assistant fixture retains partial text, reasoning signature, usage, error/stop state and provider context through Pi round-trip; PiSharp native save/reload/export/reimport matches the supported state. Export safety remains guarded by non-overwrite, private-file, cancellation and cleanup tests.",
+      "severity": "Interoperability.",
+      "proposedCorrection": "Keep the collision-safe anchor, reasoning-signature preservation, branch-local extension state, interrupted assistant records, and guarded export guarantees.",
+      "oracleFixture": "docs/parity/fixtures/session-jsonl-pinned-export-reopen-b06-2026-10-24.json; docs/parity/fixtures/session-jsonl-rich-content-b06-2026-10-24.json; docs/parity/fixtures/session-extension-branch-b06-2026-10-24.json; docs/parity/fixtures/session-interrupted-assistant-b06-2026-10-24.json; docs/parity/fixtures/session-rpc-projection-b06-2026-10-24.json; tools/parity/session-jsonl-roundtrip-oracle.mjs.",
+      "regression": "PiJsonlSessionInterchangeTests.PinnedV3ContextFixtureRoundTripsItsSelectedBranchThroughNativeAndPiJsonl; NativeReasoningSignatureSurvivesPiJsonlExportAndReimport; RichPinnedSessionFixtureRoundTripsThroughNativePersistenceAndPiJsonl; ExportRetriesGeneratedSessionInfoIdCollisions; AbortedAssistantFromPinnedPiSurvivesNativeReloadAndPiExport; ExtensionSessionStateTests.NativeReloadRestoresOnlyExtensionStateOnTheSelectedBranch.",
+      "status": "selected-branch, rich-content, reasoning-signature, branch-local extension, and aborted-assistant round-trips verified; safety limits retained"
+    },
+    {
+      "id": "native-session-reload",
+      "capability": "Native document persistence of canonical tree, selection, metadata, tool outcomes, extensions, and interrupted state.",
+      "pinnedSource": [
+        "No Pi-native document format; compare observable state via session-manager contracts."
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/ConversationSession.cs",
+        "src/PiSharp.Runtime/Sessions/NativeSessionDocumentCodec.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationStore.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/ConversationSessionTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs",
+        "tests/PiSharp.Tests/Runtime/Extensions/ExtensionSessionStateTests.cs"
+      ],
+      "sourceContract": "Pi defines no native PiSharp document; verify equivalent observable state after restart rather than identical internal JSON.",
+      "difference": "Native save/reload preserves selected head, active provider context, model/thinking state, completed and interrupted tool outcomes, extension-only state and imported custom/compaction records. The codec validates malformed inactive chat, Bash, usage and checkpoint records rather than silently loading a partial document.",
+      "severity": "Durability.",
+      "proposedCorrection": "Retain canonical store and validate every persisted owner against provider-visible state.",
+      "oracleFixture": "docs/parity/fixtures/session-jsonl-rich-content-b06-2026-10-24.json; docs/parity/fixtures/session-extension-branch-b06-2026-10-24.json; docs/parity/fixtures/session-interrupted-assistant-b06-2026-10-24.json; docs/parity/fixtures/session-crash-recovery-pi-b06-2026-10-24.json.",
+      "regression": "ConversationSessionTests explicit-null head, invalid inactive usage/chat/Bash/checkpoint, completed tool restart and cancelled-turn resume; CrashRecoveryProcessTests; ExtensionSessionStateTests; PiJsonlSessionInterchangeTests rich and interrupted native round trips.",
+      "status": "selected branches, rich content, extension state, interruption and malformed inactive branches verified on native reload"
+    },
+    {
+      "id": "session-discovery-and-project-cwd",
+      "capability": "Project filtering, shared directories, corrupt candidates, sorting, IDs, CWD and runtime rebinding.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/session-manager.ts:getDefaultSessionDir",
+        "packages/coding-agent/src/core/session-cwd.ts",
+        "packages/coding-agent/src/cli/session-picker.ts",
+        "packages/coding-agent/test/session-cwd.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/SessionCatalog.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationStore.cs",
+        "src/PiSharp.Cli/Sessions/ProjectSessionRuntimeFactory.cs",
+        "src/PiSharp.Cli/Sessions/SessionStartupController.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/SessionCatalogTests.cs",
+        "tests/PiSharp.Tests/Cli/Sessions/ProjectRuntimeContextTests.cs",
+        "tests/PiSharp.Tests/Cli/Sessions/PiSessionImportServiceTests.cs"
+      ],
+      "sourceContract": "Session choices remain project-scoped and restore stored CWD where valid; malformed candidates are handled deterministically.",
+      "difference": "Exact-pin discovery covers configured/default list and lookup, case-sensitive ID prefixes, case-insensitive names and the 1 MiB recent-header scan bound. PiSharp keeps bounded complete parsing, rejects stale selections, surfaces corrupt catalog paths and restores project trust/resources/provider catalogs. Exact-pin lifecycle tests cover new/resume/fork ordering and cancellation; PiSharp process tests cover blocked switch/fork and destination-only physical provider continuation.",
+      "severity": "Project isolation and compatibility.",
+      "proposedCorrection": "Preserve bounded reads, visible corruption reporting, project isolation and stale-selection checks; the documented recent-header scan difference is intentional.",
+      "oracleFixture": "docs/parity/fixtures/session-jsonl-discovery-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-discovery-b06-2026-10-24.json; docs/parity/fixtures/session-cross-project-switch-b06-2026-10-24.json; docs/parity/fixtures/session-active-switch-b06-2026-10-24.json; docs/parity/fixtures/session-rpc-projection-b06-2026-10-24.json.",
+      "regression": "SessionCatalogTests configured/default Pi JSONL listing, missing-CWD fallback, load/save, stale fingerprint, shared-CWD recent selection, corrupt path, header boundary and case behavior; PiSessionStartupTargetTests cross-project startup/import/fork; RpcSessionReplacementProcessTests blocked switch/fork and cross-project continuation; ProjectRuntimeContextTests trusted/untrusted provider catalog rebinding.",
+      "status": "configured/default discovery, identity, project filters, header scan boundary, RPC lifecycle and cross-project provider continuation verified"
+    },
+    {
+      "id": "atomic-write-and-stale-writer-safety",
+      "capability": "Atomic snapshots, existing-file ownership, stale hash checks, cancellation and failure cleanup.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/session-manager.ts:file writes and append behavior",
+        "packages/coding-agent/test/session-manager/file-operations.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/AtomicSessionFileWriter.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationStore.cs",
+        "src/PiSharp.Runtime/Sessions/PiJsonlSessionFileStore.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionFileStoreTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/ConversationSessionTests.cs"
+      ],
+      "sourceContract": "Pi writes JSONL append-only and does not provide PiSharp's snapshot fencing contract.",
+      "difference": "PiSharp atomically publishes private snapshots and rejects stale writers; pinned Pi has no equivalent snapshot fence. A deterministic publication conflict leaves the target intact and removes the temporary file. Cancellation while waiting for the lease preserves the existing snapshot. This is a focused failure-boundary audit of defined publication and cancellation behavior, not a claim that arbitrary device-level failures were injected.",
+      "severity": "Durability and safety.",
+      "proposedCorrection": "No change unless a PiSharp failure is demonstrated; keep atomic, private, stale-writer and symlink guards.",
+      "oracleFixture": "Failure injection and reader/writer process probes; source differential classifies the stronger guarantee.",
+      "regression": "ConversationSessionTests.ConcurrentStoresRejectStaleWrites; FailedAtomicPublicationKeepsTargetAndCleansTemporarySnapshot; CancelledStoreSaveWaitingForLeaseKeepsPersistedSnapshotAndCleansNoTempFiles; 32 concurrent complete snapshot readers/writers.",
+      "status": "atomic publication, stale-writer fencing, cancellation, publication failure cleanup and concurrent snapshot reads verified; stronger safety than Pi classified"
+    },
+    {
+      "id": "writer-concurrency-and-leases",
+      "capability": "Same-process, cross-process, path alias, cancellation, crash release, and concurrent reads/writes.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/session-manager.ts:append and file operations",
+        "packages/coding-agent/test/session-manager/file-operations.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/SessionFileLease.cs",
+        "src/PiSharp.Runtime/Sessions/ConversationStore.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/ConversationSessionTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionFileStoreTests.cs"
+      ],
+      "sourceContract": "Pinned Pi does not offer a sibling writer lease or stale-snapshot fence for independently opened managers.",
+      "difference": "PiSharp serializes writers, fences stale snapshots, and passes focused Linux same-process, alias, wait-cancellation, and cross-process tests. The dedicated macOS exact-head workflow runs the corresponding native lock cases.",
+      "severity": "Durability and concurrency safety.",
+      "proposedCorrection": "Preserve existing coordination; rerun exact-pin same-Pi controls and required Linux process cases; report macOS as unverified.",
+      "oracleFixture": "Existing session-crash-recovery-baseline.md with source pin refreshed.",
+      "regression": "Session lease and store contention process tests.",
+      "status": "linux_process_and_cancellation_cases_verified; macOS coverage configured in exact-head CI"
+    },
+    {
+      "id": "crash-and-tool-outcome-recovery",
+      "capability": "Actual process interruption before/during/after tools and recovery without duplicate side effects.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/core/agent-session-runtime.ts",
+        "packages/coding-agent/test/session-manager/file-operations.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Runtime/Sessions/DurableExecution.cs",
+        "src/PiSharp.Runtime/Sessions/DurableToolFunction.cs",
+        "src/PiSharp.Runtime/Sessions/ProviderTurnJournal.cs",
+        "src/PiSharp.Runtime/Sessions/StoredToolResultReplay.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Runtime/Sessions/CrashRecoveryProcessTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/PiJsonlSessionRecoveryProcessTests.cs",
+        "tests/PiSharp.Tests/Runtime/Sessions/DurableExecutionTests.cs"
+      ],
+      "sourceContract": "An unknown tool outcome must not be treated as success or automatically replayed; completed results stay correlated in restored provider history.",
+      "difference": "PiSharp has actual child-process kills after durable tool intent but before wrapper invocation, during a tool after side effect but before outcome checkpoint, and after the tool outcome checkpoint; restart assertions verify unknown outcomes and no replay. A three-boundary, two-run exact-pin b06c1f2 runtime process oracle confirms ordinary Pi persists the assistant toolCall before invocation, leaves no toolResult after a kill during the side effect, and preserves the correlated toolResult when killed after that checkpoint. Pi does not automatically replay the tool in any of these cases. PiSharp's durable intent/outcome classifications are an intentional stronger-safety behavior, not an attempt to reproduce Pi's less detailed crash record.",
+      "severity": "Critical durability and no-replay safety.",
+      "proposedCorrection": "Retain durable tool intent/outcome journal and verify invocation counts at every crash boundary.",
+      "oracleFixture": "docs/parity/fixtures/session-crash-recovery-pi-b06-2026-10-24.json; docs/parity/fixtures/session-provider-continuation-differential-2026-10-24.json; docs/parity/fixtures/session-jsonl-orphan-tool-differential-2026-10-24.json.",
+      "regression": "CrashRecoveryProcessTests.ChildProcessKillAfterToolIntentBeforeInvocationDoesNotRunOrReplayTool; CrashRecoveryProcessTests.CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool; CrashRecoveryProcessTests.KilledCliKeepsToolCheckpointAndNeverClaimsTurnCompleted; DurableExecutionTests.",
+      "status": "verified_exact_pin_and_native_crash_boundaries_with_intentional_durable_outcome_difference"
+    },
+    {
+      "id": "cli-json-rpc-and-extension-integration",
+      "capability": "Create/save/resume/import/export/switch, active-run replacement, state projection and extension restoration.",
+      "pinnedSource": [
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/core/agent-session-runtime.ts",
+        "packages/coding-agent/src/cli/session-picker.ts",
+        "packages/coding-agent/test/rpc-jsonl.test.ts"
+      ],
+      "pisharpOwner": [
+        "src/PiSharp.Cli/Sessions/SessionStartupController.cs",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+        "src/PiSharp.Cli/Protocols/Rpc/RpcSessionEntryProjector.cs",
+        "src/PiSharp.Runtime/Extensions/ExtensionSessionState.cs"
+      ],
+      "existingTests": [
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcSessionReplacementProcessTests.cs",
+        "tests/PiSharp.Tests/Cli/Sessions/PiSessionImportServiceTests.cs",
+        "tests/PiSharp.Tests/Runtime/Extensions/ExtensionSessionStateTests.cs"
+      ],
+      "sourceContract": "A replacement session is preflighted before active work is cancelled; restored state and project bindings drive the next prompt.",
+      "difference": "Pinned b06c1f2 captures new/resume/fork lifecycle events and state/messages/entries/tree/fork projections twice. PiSharp process coverage verifies new session, valid/invalid switch during blocked work, fork during blocked work, extension restoration, and the next physical provider request after project replacement. The credential-free Pi RPC projection reports the expected unknown model fallback and is limited to persisted-state projection.",
+      "severity": "User-visible compatibility and project safety.",
+      "proposedCorrection": "Keep the existing transition owners and provider bindings; the pinned lifecycle/projection and local process evidence cover the required persistence boundary.",
+      "oracleFixture": "docs/parity/fixtures/session-cross-project-switch-b06-2026-10-24.json; docs/parity/fixtures/session-extension-branch-b06-2026-10-24.json; docs/parity/fixtures/session-active-switch-b06-2026-10-24.json; docs/parity/fixtures/session-crash-recovery-pi-b06-2026-10-24.json; docs/parity/fixtures/session-rpc-projection-b06-2026-10-24.json.",
+      "regression": "RpcSessionReplacementProcessTests blocked switch/fork and cross-project continuation; RpcSessionEntryProjectorTests; RpcReadCommandsProcessTests; ExtensionSessionStateTests.NativeReloadRestoresOnlyExtensionStateOnTheSelectedBranch; PiSessionImportServiceTests and startup target tests.",
+      "status": "pinned lifecycle and session projections, PiSharp RPC switch/fork, extension restoration and cross-project continuation verified"
+    },
+    {
+      "id": "bounded-reliability-and-platforms",
+      "capability": "Large logs, many sessions, long/cyclic chains, repeated save/restart, fault cleanup, and OS-specific locks.",
+      "pinnedSource": [
+        "Pinned session-manager parser/discovery and relevant tests."
+      ],
+      "pisharpOwner": [
+        "Session JSONL codecs, SessionCatalog, AtomicSessionFileWriter, SessionFileLease, DurableExecution."
+      ],
+      "existingTests": [
+        "Existing session filesystem and child-process fixture suites."
+      ],
+      "sourceContract": "Processing must remain bounded and cancellation-aware; no unbounded recursion, resource leaks, stale overwrites, or repeated side effects.",
+      "difference": "Linux evidence includes a 2,048-entry JSONL parent chain with 2,048 malformed rows, a 2 MiB tool result round-trip, 128 discovered files, 32 concurrent atomic snapshots, eight large-session save/reload cycles, 128 MiB read rejection and child-process crash tests. Native macOS lease, alias, cancellation and cross-process coverage runs in the dedicated exact-head job.",
+      "severity": "Reliability and safety.",
+      "proposedCorrection": "Exercise deterministic barriers and resource bounds without increasing limits or weakening assertions speculatively.",
+      "oracleFixture": "Add distinct hostile/large cases only where they establish a contract not already tested.",
+      "regression": "Existing process, file-store, catalog, recovery and lock tests.",
+      "status": "Linux resource, atomicity and crash stress verified; macOS native lease coverage configured in exact-head CI"
+    }
+  ],
+  "unresolvedMandatoryDifferences": []
+}

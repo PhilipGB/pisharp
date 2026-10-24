@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "caseId": "orphan-tool-call-provider-continuation",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "oracle": "session-jsonl-orphan-tool-b06-2026-10-24.json",
+  "pinnedPiSource": [
+    "packages/coding-agent/src/core/session-manager.ts:buildSessionContext",
+    "packages/ai/src/utils/transcript.ts:normalizeContext",
+    "packages/ai/src/api/openai-responses.ts",
+    "packages/ai/src/api/openai-completions.ts",
+    "packages/ai/src/api/anthropic-messages.ts"
+  ],
+  "result": [
+    {
+      "api": "openai-responses",
+      "pinnedPiRequest": "The persisted assistant function_call is followed by a function_call_output for the same call_id with output 'No result provided'.",
+      "piSharpRegression": "CrashRecoveryProcessTests.CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool asserts the same ordered call/output pair."
+    },
+    {
+      "api": "openai-completions",
+      "pinnedPiRequest": "The persisted assistant tool_calls entry is followed by a tool message for the same tool_call_id with content 'No result provided'.",
+      "piSharpRegression": "CrashRecoveryProcessTests.CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool asserts the same ordered call/result pair."
+    },
+    {
+      "api": "anthropic-messages",
+      "pinnedPiRequest": "The persisted assistant tool_use block is followed by a user tool_result for the same tool_use_id, content 'No result provided', and is_error true.",
+      "piSharpCorrection": "ObservedChatClient now marks the provider-only synthetic FunctionResultContent with ToolFailureException so Anthropic serializes is_error true.",
+      "piSharpRegression": "CrashRecoveryProcessTests.CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool now asserts is_error true; the focused three-API theory passes 3/3."
+    }
+  ],
+  "calibration": "All three provider requests were captured twice at the exact pinned revision with stable normalized results.",
+  "status": "provider semantic pairs match on all three APIs; Anthropic is_error discrepancy corrected"
+}

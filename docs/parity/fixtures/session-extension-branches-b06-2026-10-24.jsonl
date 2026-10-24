@@ -1,0 +1,6 @@
+{"type":"session","version":3,"id":"extension-branch-session","timestamp":"2026-10-24T00:00:00.000Z"}
+{"type":"message","id":"shared-user","parentId":null,"timestamp":"2026-10-24T00:00:01.000Z","message":{"role":"user","content":"shared prompt"}}
+{"type":"custom","customType":"fixture.counter","id":"extension-state-a","parentId":"shared-user","timestamp":"2026-10-24T00:00:02.000Z","data":{"branch":"a","count":1}}
+{"type":"message","id":"assistant-a","parentId":"extension-state-a","timestamp":"2026-10-24T00:00:03.000Z","message":{"role":"assistant","content":"answer A"}}
+{"type":"custom","customType":"fixture.counter","id":"extension-state-b","parentId":"shared-user","timestamp":"2026-10-24T00:00:04.000Z","data":{"branch":"b","count":2}}
+{"type":"message","id":"assistant-b","parentId":"extension-state-b","timestamp":"2026-10-24T00:00:05.000Z","message":{"role":"assistant","content":"answer B"}}

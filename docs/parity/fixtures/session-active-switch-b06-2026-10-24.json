@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "caseId": "active-provider-run-settles-before-session-replacement",
+  "capability": "A valid session replacement waits for the active provider/tool run to settle before the destination runtime is adopted.",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pinnedSource": [
+    "packages/coding-agent/src/core/agent-session-runtime.ts:AgentSessionRuntime.switchSession",
+    "packages/coding-agent/test/suite/agent-session-runtime.test.ts:settles the active response before session replacement"
+  ],
+  "pinnedPiExecution": {
+    "command": "npm exec --workspace=@earendil-works/pi-coding-agent -- vitest --run test/suite/agent-session-runtime.test.ts -t 'settles the active response before session replacement'",
+    "testResult": "Passed 1 test; 11 unrelated tests skipped by the focused filter.",
+    "testBehavior": "An extension tool blocks during an active response. switchSession aborts and settles the outgoing response before replacing the runtime; the persisted outgoing entries include the interrupted tool result.",
+    "temporaryCheckoutSetup": "The disposable exact-pin checkout did not contain generated packages/ai provider catalog JSON. Forty-two empty generated catalog modules and a minimal generated manifest were created only in that temporary checkout so module imports could resolve. The test registers and uses its own faux provider; no catalog content is asserted. Tracked pinned source files were not changed."
+  },
+  "piSharp": {
+    "owner": "src/PiSharp.Cli/Protocols/Rpc/RpcSessionCommandHandler.cs",
+    "test": "PiSharp.Tests.RpcSessionReplacementProcessTests.RpcValidSwitchSettlesBlockedProviderRunBeforeReplacingSession",
+    "result": "Passed 1/1 on Linux.",
+    "assertions": [
+      "A physical provider response is held after a partial assistant delta while switch_session targets a valid saved session.",
+      "The outgoing turn ends as aborted, followed by agent_end and agent_settled, before the switch response succeeds.",
+      "A prompt after replacement reaches the provider with destination history and without the outgoing partial text or prompt."
+    ]
+  },
+  "comparisonPolicy": "Compare replacement and settlement ordering plus the provider-visible active history; provider protocol details and internal session records remain implementation-specific.",
+  "strictMatch": true,
+  "acceptedDifference": null,
+  "limitations": [
+    "The pinned test exercises an extension tool blocked during a provider run, while the PiSharp process test holds a provider stream; both assert settlement before replacement.",
+    "This case does not cover cancellation during target loading, missing/corrupt targets beyond the existing PiSharp invalid-target regression, or every extension veto lifecycle."
+  ]
+}

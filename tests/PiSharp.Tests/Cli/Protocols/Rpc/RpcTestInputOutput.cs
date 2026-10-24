@@ -61,6 +61,24 @@ internal static class RpcTestInputOutput
             }
         }
 
+        public async Task WaitForLineAfterAsync(string fragment, int lineOffset)
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            while (true)
+            {
+                Task changed;
+                lock (_gate)
+                {
+                    var lines = ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                    if (lines.Skip(lineOffset).Any(line => line.Contains(fragment, StringComparison.Ordinal))) return;
+                    changed = _changed.Task;
+                }
+                await changed.WaitAsync(timeout.Token);
+            }
+        }
+
+        public int LineCount { get { lock (_gate) return ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries).Length; } }
+
         public string[] Lines() { lock (_gate) return ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries); }
     }
 

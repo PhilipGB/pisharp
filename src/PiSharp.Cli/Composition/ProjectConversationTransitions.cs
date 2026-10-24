@@ -146,14 +146,15 @@ internal sealed class ProjectConversationTransitions(string agentDirectory, stri
     }
 
     public async Task<bool> SwitchAsync(string sessionReference, Func<ProjectSessionRuntime, Task> adopt,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, SessionListing? sessionListing = null)
     {
         var targetPath = Path.GetFullPath(sessionReference, projectBinding.WorkingDirectory);
         var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (conversationBinding.Path is not null && Path.GetFullPath(conversationBinding.Path).Equals(targetPath, comparison)) return false;
         if (conversationBinding.Path is not null) await projectBinding.Store.SaveAsync(conversationBinding.Conversation, conversationBinding.Path, cancellationToken);
         using var replacement = await SessionFactory.OpenAsync(targetPath, projectBinding.WorkingDirectory,
-            modelBinding.Selection, modelBinding.Thinking, keepSourceSessionDirectory: true, cancellationToken: cancellationToken);
+            modelBinding.Selection, modelBinding.Thinking, keepSourceSessionDirectory: true, cancellationToken: cancellationToken,
+            sessionListing: sessionListing);
         await adopt(replacement);
         return false;
     }

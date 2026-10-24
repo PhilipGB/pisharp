@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "caseId": "configured-session-directory-and-identity-discovery",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "inputSha256": "da1948b4c1c4f197cfba7f5f0376fb491b34bc2358cd1a4f6cb43eb98015ce8d",
+  "source": "packages/coding-agent/src/core/session-manager.ts:getDefaultSessionDirPath, findMostRecentSession, SessionManager.continueRecent, SessionManager.findById, SessionManager.list, SessionManager.listAll, listSessionsFromDir, buildSessionInfo; packages/coding-agent/src/main.ts:resolveSessionPath; packages/coding-agent/src/modes/interactive/components/session-selector-search.ts:filterAndSortSessions",
+  "independentRuns": 2,
+  "samePiCalibration": true,
+  "result": {
+    "projectA": {
+      "list": [
+        {
+          "file": "local.jsonl",
+          "id": "discovery-local",
+          "cwd": "project-a",
+          "name": "Local notes",
+          "messageCount": 1
+        }
+      ],
+      "mostRecent": "local.jsonl",
+      "findLocal": "local.jsonl",
+      "findForeign": null,
+      "findMissingCwd": null
+    },
+    "projectB": {
+      "list": [
+        {
+          "file": "foreign.jsonl",
+          "id": "discovery-foreign",
+          "cwd": "project-b",
+          "name": "Foreign notes",
+          "messageCount": 1
+        }
+      ],
+      "mostRecent": "foreign.jsonl",
+      "findForeign": "foreign.jsonl"
+    },
+    "unfilteredCustomDirectory": [
+      {
+        "file": "missing-cwd.jsonl",
+        "id": "discovery-no-cwd",
+        "cwd": null,
+        "name": "Unscoped notes",
+        "messageCount": 1
+      },
+      {
+        "file": "local.jsonl",
+        "id": "discovery-local",
+        "cwd": "project-a",
+        "name": "Local notes",
+        "messageCount": 1
+      },
+      {
+        "file": "foreign.jsonl",
+        "id": "discovery-foreign",
+        "cwd": "project-b",
+        "name": "Foreign notes",
+        "messageCount": 1
+      }
+    ],
+    "identityResolution": {
+      "exactIdFound": true,
+      "changedCaseIdFound": false,
+      "exactIdPrefix": "AbC123def",
+      "changedCasePrefix": null,
+      "nameSearch": [
+        "AbC123def"
+      ]
+    },
+    "defaultDirectoryMissingCwd": {
+      "listed": true,
+      "findById": true,
+      "mostRecent": "default-missing-cwd.jsonl"
+    },
+    "discoveryResourceBoundary": {
+      "headerBytes": 1048769,
+      "headerScanLimitBytes": 1048576,
+      "largeHeaderListed": true,
+      "mostRecentFallback": "fallback.jsonl"
+    }
+  }
+}

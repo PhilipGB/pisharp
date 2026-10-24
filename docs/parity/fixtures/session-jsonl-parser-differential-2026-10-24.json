@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "caseId": "jsonl-record-recovery-and-newline-repair",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pinnedOracle": {
+    "report": "docs/parity/fixtures/session-jsonl-parser-b06-2026-10-24.json",
+    "caseInput": "tools/parity/fixtures/session-jsonl-parser-cases-2026-10-24.json",
+    "driver": "tools/parity/session-jsonl-parser-oracle.mjs",
+    "samePiCalibration": "All eight cases returned identical parsed entries and file-mutation observations on two independent runs."
+  },
+  "pisharp": {
+    "regressionTests": [
+      "PiJsonlSessionInterchangeTests.MalformedLinesAreSkippedAndInvalidSessionHeadersFailClosed",
+      "PiJsonlSessionInterchangeTests.ValidNonHeaderJsonBeforeSessionHeaderDoesNotCreateAValidSession",
+      "PiJsonlSessionInterchangeTests.LineEndingsAndInterruptedJsonlTailsKeepValidRecordsWithoutChangingInput",
+      "PiJsonlSessionInterchangeTests.OversizedRecordIsSkippedWithoutHidingFollowingValidRecords",
+      "PiJsonlSessionInterchangeTests.RecordAtMaximumEntrySizeIsAccepted",
+      "PiJsonlSessionInterchangeTests.Utf8BomBeforeSessionHeaderIsRejected",
+      "PiJsonlSessionInterchangeTests.InvalidSessionIdentityIsRejected",
+      "PiJsonlSessionFileStoreTests.SavesPiJsonlAndRejectsExternalChangesBeforeReplacingThem",
+      "PiJsonlSessionRecoveryProcessTests.RpcSessionKeepsValidDescendantAfterMalformedParentRow"
+    ],
+    "interchangeClassResult": "50/50 passed in the final PiJsonlSessionInterchangeTests class.",
+    "semanticOutcomes": {
+      "emptyAndBlankFiles": "The public Import API rejects an uninitialized file; pinned loadEntriesFromFile returns an empty entry list.",
+      "headerWithoutCwd": "Accepted when an invocation CWD fallback is supplied.",
+      "malformedPrefixBeforeHeader": "Malformed JSON is skipped and the valid header is accepted.",
+      "crlfBlankMalformedAndFinalValidRecord": "Valid session and message are retained.",
+      "truncatedFinalFragment": "Valid preceding records survive; malformed tail is ignored.",
+      "utf8BomHeader": "Rejected by both implementations.",
+      "oversizedRecordWithValidDescendant": "Pinned Pi retains both the 16 MiB+1 record and its descendant. PiSharp skips the oversized row under its 16 MiB per-entry bound and still imports the following valid descendant.",
+      "maximumSizedRecord": "PiSharp accepts a record whose UTF-8 size is exactly 16 MiB."
+    }
+  },
+  "acceptedDifferences": [
+    {
+      "id": "read-only-import-does-not-repair-tail",
+      "pinnedPi": "loadEntriesFromFile appends a newline after an unterminated final valid or malformed record once a valid header is established.",
+      "piSharp": "PiSharp's string importer leaves the input untouched; file-store tests preserve source bytes and use guarded atomic writes.",
+      "classification": "intentional_durability_and_safety_difference"
+    },
+    {
+      "id": "bounded-file-and-entry-sizes",
+      "pinnedPi": "The pinned line loader has no equivalent 128 MiB file or 16 MiB individual-record cap.",
+      "piSharp": "Import rejects files over 128 MiB and skips records over 16 MiB.",
+      "classification": "intentional_resource_safety_difference"
+    },
+    {
+      "id": "recent-session-header-scan-bound",
+      "pinnedPi": "findMostRecentSession scans at most 1 MiB for a usable header; a valid 1,048,769-byte header is visible to streaming list but skipped by recent lookup.",
+      "piSharp": "PiSharp parses the complete file within its 16 MiB record and 128 MiB file limits, so the same candidate remains available to recent lookup.",
+      "classification": "intentional_bounded_discovery_difference"
+    },
+    {
+      "id": "visible-corrupt-catalog-candidate",
+      "pinnedPi": "Recent-session discovery skips candidates that fail to load.",
+      "piSharp": "Recent-session discovery also skips invalid candidates, while explicit catalog listing reports the failing path so corruption is visible.",
+      "classification": "intentional_corrupt_catalog_visibility_difference"
+    },
+    {
+      "id": "strict-version-and-header-types",
+      "pinnedPi": "The pinned loader accepts future version 4 and string version \"3\" through JavaScript comparison/coercion.",
+      "piSharp": "PiSharp rejects unsupported versions and noninteger version fields in direct imports and file-backed list/load/recent operations.",
+      "classification": "intentional_header_validation_safety_difference"
+    }
+  ],
+  "unresolvedParsingCases": []
+}

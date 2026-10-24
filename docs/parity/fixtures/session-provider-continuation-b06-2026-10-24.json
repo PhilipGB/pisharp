@@ -1,0 +1,186 @@
+{
+  "schema": 1,
+  "caseId": "completed-tool-history-provider-continuation",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "inputSha256": "56a6124e4fe6287868d4c9fc686c137e91305964f23ec385368499a6e48cc742",
+  "source": [
+    "packages/coding-agent/src/core/session-manager.ts:buildSessionContext",
+    "packages/ai/src/api/openai-responses.ts",
+    "packages/ai/src/api/openai-completions.ts",
+    "packages/ai/src/api/anthropic-messages.ts"
+  ],
+  "savedContextRoles": [
+    "user",
+    "assistant",
+    "toolResult"
+  ],
+  "continuationPrompt": "continue",
+  "samePiCalibration": true,
+  "results": [
+    {
+      "api": "openai-responses",
+      "modelId": "gpt-4o",
+      "capture": {
+        "method": "POST",
+        "path": "/v1/responses",
+        "headers": {
+          "authorization": "<fixture-key>",
+          "content-type": "application/json"
+        },
+        "body": {
+          "model": "gpt-4o",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "run a command"
+                }
+              ]
+            },
+            {
+              "type": "function_call",
+              "call_id": "call-restart-history",
+              "name": "bash",
+              "arguments": "{\"command\":\"printf x >> /tmp/session-parity-marker\"}"
+            },
+            {
+              "type": "function_call_output",
+              "call_id": "call-restart-history",
+              "output": "x"
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "continue"
+                }
+              ]
+            }
+          ],
+          "stream": true,
+          "store": false,
+          "max_output_tokens": 4096
+        }
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "api": "openai-completions",
+      "modelId": "gpt-4o",
+      "capture": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "headers": {
+          "authorization": "<fixture-key>",
+          "content-type": "application/json"
+        },
+        "body": {
+          "model": "gpt-4o",
+          "messages": [
+            {
+              "role": "user",
+              "content": "run a command"
+            },
+            {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "id": "call-restart-history",
+                  "type": "function",
+                  "function": {
+                    "name": "bash",
+                    "arguments": "{\"command\":\"printf x >> /tmp/session-parity-marker\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "content": "x",
+              "tool_call_id": "call-restart-history"
+            },
+            {
+              "role": "user",
+              "content": "continue"
+            }
+          ],
+          "stream": true,
+          "stream_options": {
+            "include_usage": true
+          },
+          "store": false,
+          "max_completion_tokens": 4096,
+          "tools": []
+        }
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "api": "anthropic-messages",
+      "modelId": "claude-sonnet-4-5",
+      "capture": {
+        "method": "POST",
+        "path": "/v1/messages",
+        "headers": {
+          "anthropic-version": "2023-06-01",
+          "x-api-key": "<fixture-key>",
+          "content-type": "application/json"
+        },
+        "body": {
+          "model": "claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "user",
+              "content": "run a command"
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "tool_use",
+                  "id": "call-restart-history",
+                  "name": "bash",
+                  "input": {
+                    "command": "printf x >> /tmp/session-parity-marker"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "tool_result",
+                  "tool_use_id": "call-restart-history",
+                  "content": "x"
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "continue",
+                  "cache_control": {
+                    "type": "ephemeral"
+                  }
+                }
+              ]
+            }
+          ],
+          "max_tokens": 4096,
+          "stream": true
+        }
+      },
+      "independentRuns": 2,
+      "samePiCalibration": true
+    }
+  ]
+}

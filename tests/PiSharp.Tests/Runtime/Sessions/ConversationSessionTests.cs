@@ -206,6 +206,32 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public async Task FailedAtomicPublicationKeepsTargetAndCleansTemporarySnapshot()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-atomic-failure-" + Guid.NewGuid().ToString("N"));
+        var directory = Path.Combine(cwd, "sessions");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var target = Path.Combine(directory, "occupied.session.json");
+            Directory.CreateDirectory(target);
+            var sentinel = Path.Combine(target, "keep.txt");
+            await File.WriteAllTextAsync(sentinel, "unchanged");
+            var store = new ConversationStore(cwd, directory);
+
+            var failure = await Record.ExceptionAsync(() => store.SaveAsync(
+                new ConversationSession(cwd, "fixture", null), target));
+
+            Assert.NotNull(failure);
+            Assert.True(failure is IOException or UnauthorizedAccessException, failure.ToString());
+            Assert.True(Directory.Exists(target));
+            Assert.Equal("unchanged", await File.ReadAllTextAsync(sentinel));
+            Assert.Empty(Directory.EnumerateFiles(directory, ".pisharp-*.tmp"));
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
     public async Task ConcurrentSessionLeasesInOneProcessWaitForTheCurrentWriter()
     {
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-local-lease-" + Guid.NewGuid().ToString("N"));
@@ -236,9 +262,42 @@ public sealed class ConversationSessionTests
     }
 
     [Fact]
+    public async Task CancelledStoreSaveWaitingForLeaseKeepsPersistedSnapshotAndCleansNoTempFiles()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-cancelled-session-save-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        SessionFileLease? heldLease = null;
+        try
+        {
+            var directory = Path.Combine(cwd, "sessions");
+            var store = new ConversationStore(cwd, directory);
+            var conversation = new ConversationSession(cwd, "fixture-model", null);
+            var path = store.NewPath(conversation);
+            await store.SaveAsync(conversation, path);
+            var original = await File.ReadAllBytesAsync(path);
+            conversation.Append(new ChatMessage(ChatRole.User, "must not publish"));
+
+            heldLease = await SessionFileLease.AcquireAsync(path, CancellationToken.None);
+            using var cancellation = new CancellationTokenSource();
+            var pendingSave = store.SaveAsync(conversation, path, cancellation.Token);
+            Assert.False(pendingSave.IsCompleted);
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pendingSave);
+            Assert.Equal(original, await File.ReadAllBytesAsync(path));
+            Assert.Empty(Directory.EnumerateFiles(directory, ".pisharp-*.tmp"));
+        }
+        finally
+        {
+            if (heldLease is not null) await heldLease.DisposeAsync();
+            Directory.Delete(cwd, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ConcurrentSessionLeaseAliasesWaitForTheCurrentWriter()
     {
-        if (!OperatingSystem.IsLinux()) return;
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) return;
         var cwd = Path.Combine(Path.GetTempPath(), "pisharp-lease-alias-" + Guid.NewGuid().ToString("N"));
         var alias = Path.Combine(Path.GetTempPath(), "pisharp-lease-link-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(cwd);
@@ -350,6 +409,83 @@ public sealed class ConversationSessionTests
             Assert.DoesNotContain("abandoned", history);
             Assert.DoesNotContain("alternate", history);
             Assert.Equal(root, loaded.Tree.Entries[countBefore].ParentId);
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RepeatedLargeSessionSaveReloadKeepsSelectedBranchAndContextStable()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-repeated-session-reload-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var store = new ConversationStore(cwd, Path.Combine(cwd, "sessions"));
+            var session = new ConversationSession(cwd, "fixture-model", null);
+            for (var index = 0; index < 2048; index++)
+            {
+                var role = index % 2 == 0 ? ChatRole.User : ChatRole.Assistant;
+                session.Append(new ChatMessage(role, $"history-{index:D4}-" + new string('x', 96)));
+            }
+            var originalEntries = session.Tree.Entries.Count;
+            var branchPoint = session.Tree.Entries[1023].Id;
+            session.Tree.Select(branchPoint);
+            session.Append(new ChatMessage(ChatRole.User, "alternate branch prompt"));
+            session.Append(new ChatMessage(ChatRole.Assistant, "alternate branch response"));
+            var expectedHead = session.Tree.HeadId;
+            var expectedContext = session.ContextMessages().Select(message => message.Text).ToArray();
+            var piRoundTrip = PiJsonlSessionInterchange.Import(PiJsonlSessionInterchange.Export(session));
+            Assert.Equal(expectedContext, piRoundTrip.ContextMessages().Select(message => message.Text));
+            var path = store.NewPath(session);
+            await store.SaveAsync(session, path);
+
+            for (var restart = 0; restart < 8; restart++)
+            {
+                session = await store.LoadAsync(path);
+                Assert.Equal(expectedHead, session.Tree.HeadId);
+                Assert.Equal(originalEntries + 2, session.Tree.Entries.Count);
+                Assert.Equal(expectedContext, session.ContextMessages().Select(message => message.Text));
+                await store.SaveAsync(session, path);
+            }
+        }
+        finally { Directory.Delete(cwd, recursive: true); }
+    }
+
+    [Fact]
+    public async Task ConcurrentReadersObserveOnlyCompleteSessionSnapshotsDuringWrites()
+    {
+        var cwd = Path.Combine(Path.GetTempPath(), "pisharp-session-reader-writer-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(cwd);
+        try
+        {
+            var directory = Path.Combine(cwd, "sessions");
+            var writerStore = new ConversationStore(cwd, directory);
+            var readerStore = new ConversationStore(cwd, directory);
+            var session = new ConversationSession(cwd, "fixture-model", null);
+            var path = writerStore.NewPath(session);
+            await writerStore.SaveAsync(session, path);
+
+            for (var index = 0; index < 32; index++)
+            {
+                session.Append(new ChatMessage(index % 2 == 0 ? ChatRole.User : ChatRole.Assistant,
+                    $"snapshot-{index:D2}-" + new string('x', 16 * 1024)));
+                var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var save = Task.Run(async () =>
+                {
+                    await start.Task;
+                    await writerStore.SaveAsync(session, path);
+                });
+                var read = Task.Run(async () =>
+                {
+                    await start.Task;
+                    return await readerStore.LoadAsync(path);
+                });
+                start.SetResult();
+                await Task.WhenAll(save, read);
+                Assert.InRange((await read).ActiveMessages().Count, index, index + 1);
+            }
+
+            Assert.Equal(32, (await readerStore.LoadAsync(path)).ActiveMessages().Count);
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }
