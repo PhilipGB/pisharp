@@ -73,13 +73,7 @@ public sealed class ProviderOverflowLoopbackTests
         Directory.CreateDirectory(cwd);
         try
         {
-            using var reservation = new TcpListener(IPAddress.Loopback, 0);
-            reservation.Start();
-            var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
-            reservation.Stop();
-            using var listener = new HttpListener();
-            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-            listener.Start();
+            using var listener = StartLoopbackListener(out var port);
             using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(12));
             var bodies = new List<string>();
             var server = Task.Run(async () =>
