@@ -8,7 +8,7 @@ Dependabot update has since merged to `main` at
 `f4f57ca754662222d2c0162b2758778eb2999a57`; the milestone branch sync commit
 is `e828fa3965e9183671863635808aff36b29a0034`. The implementation source is on
 `milestone/model-thinking-configuration-parity` at
-`bacc756495b92788eb3e22f122317c16b095780e`. Pi remains pinned at
+`bdbf2de91a30614ca7a258f1eaaf5e13141784c7`. Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 This increment implements source-pinned model-reference selection, startup and
@@ -33,11 +33,13 @@ The independent direct-Pi behavior report contains 93 cases, all classified
 | CLI, TUI and RPC integration | 10 |
 | **Total** | **93** |
 
-The separate physical provider-wire report passes 23/23 local HTTP cases: five
-OpenAI Responses, five OpenAI Completions, five Anthropic Messages, four Google
-Generative AI and four Google Vertex. Each case records the captured request and
-paired PiSharp observation, pinned source references, synthetic credential
-identity, configuration and comparison policy. No live provider keys are used.
+The separate physical provider-wire report passes 35/35 local HTTP cases: eleven
+OpenAI Responses, eleven OpenAI Completions, five Anthropic Messages, four
+Google Generative AI and four Google Vertex. Twelve new pinned-Pi cases exercise
+explicit `xhigh`/`max` mappings, lower-level mappings, and null-disabled fallback
+for both OpenAI APIs. Each case records the captured request and paired PiSharp
+observation, pinned source references, synthetic credential identity,
+configuration and comparison policy. No live provider keys are used.
 
 The same-Pi control ran twice independently and produced the same normalized
 result digest after removing only invocation provenance. The provider-wire
@@ -65,13 +67,24 @@ Additional transition regressions now exercise model selection and an explicit
 thinking change during a blocked RPC tool call, then inspect the physical
 continuation request and persisted session entries. A Linux PTY settings journey
 also saves a per-model `high` default and verifies that the next OpenAI Responses
-request sends `reasoning.effort: high`. The refreshed 93-case behavior and
-23-case provider-wire reports both record implementation commit
-`bacc756495b92788eb3e22f122317c16b095780e` and pass in full.
+request sends `reasoning.effort: high`. The refreshed 93-case behavior report
+records implementation commit `bacc756495b92788eb3e22f122317c16b095780e`. The
+35-case provider-wire report records review correction commit
+`bdbf2de91a30614ca7a258f1eaaf5e13141784c7` and passes in full.
 
-Final local validation passes: format verification; warning-as-error build with
-zero warnings/errors; full .NET suite (3,780 passed, zero failed/skipped;
-6 m 23 s); Node terminal (24/24); Python terminal (66/66); parity guards
+The review correction resolves the selected logical level with
+`ThinkingLevels.ValidateForModel`, then uses the model's explicit
+`thinkingLevelMap` value in OpenAI Responses and Chat Completions requests. This
+retains explicitly supported extended values while respecting disabled levels
+and mappings to lower levels. The focused pinned-Pi wire differential passes
+1/1 across all 35 cases. Format verification and warning-as-error build pass.
+Two local full-suite runs each had one unrelated intermittent timing/port test
+failure; the stream-idle case passes 2/2 in isolation and the port-ownership
+case passes 1/1. Final exact-head CI results are maintained in the PR description.
+
+Prior full local validation passed format verification, warning-as-error build
+with zero warnings/errors, and the .NET suite (3,780 passed, zero failed/skipped;
+6 m 23 s). Node terminal (24/24); Python terminal (66/66); parity guards
 (27/27); documentation paths (152 documents / 627 references); and MCP
 conformance with no regression to the same eight classified failures across
 three scenarios. Focused active-run, settings-to-wire, and settings reliability

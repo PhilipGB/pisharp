@@ -3,15 +3,15 @@
 PR #22 is verified merged at `eefa89454a3c1cfd196894f94744b6f393c8e721`,
 which was the milestone branch's original base. Current `origin/main` includes
 the unrelated PR #23 merge `f4f57ca754662222d2c0162b2758778eb2999a57`; the
-milestone branch includes that sync. Pi is
-pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; implementation source is
-`bacc756495b92788eb3e22f122317c16b095780e` on
+milestone branch includes that sync. Pi is pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`; implementation source is
+`bdbf2de91a30614ca7a258f1eaaf5e13141784c7` on
 `milestone/model-thinking-configuration-parity`.
 
 The direct pinned-Pi corpus passes 93/93 strict cases: 25 model reference/CLI,
 18 scoped-model, 10 initial-selection, 10 thinking, 10 budget/sampling, 10
 settings and 10 CLI/TUI/RPC integration cases. A separate direct provider-wire
-oracle passes 23/23 local HTTP cases across OpenAI Responses, OpenAI
+oracle passes 35/35 local HTTP cases across OpenAI Responses, OpenAI
 Completions, Anthropic Messages, Google Generative AI and Vertex. Repeated
 same-Pi calibration is stable after removing only invocation provenance; it does
 not use PiSharp as the oracle. See the [inventory](fixtures/model-selection-thinking-configuration-inventory-2026-10-24.json),
@@ -33,18 +33,19 @@ retains a configured fallback identity when no provider is authenticated, while
 ordinary interactive startup preserves an empty model selection to match Pi's
 empty catalogue behavior.
 
-The paired reports are refreshed against implementation commit
-`bacc756495b92788eb3e22f122317c16b095780e`; all 93 behavior cases and 23
-provider-wire cases pass. Format verification and the warning-as-error build
-pass, and the full .NET suite passes 3,780/3,780 with zero failures/skips. Node
-terminal 24/24, Python terminal 66/66, parity guards 27/27, documentation paths
-(152 documents / 627 references), and MCP conformance pass; MCP retains the same
-eight classified baseline failures across three scenarios. Draft PR #24 remains
-open and unmerged. Exact-head push CI [40106023213](https://github.com/PhilipGB/pisharp/actions/runs/40106023213)
-and PR CI [40106026319](https://github.com/PhilipGB/pisharp/actions/runs/40106026319)
-passed on implementation head `683a485e43e9f07190d0b5cead56efaafd2a1a84`, with
-3,780/3,780 .NET tests and every other job green. The PR description tracks the
-published head and its current CI. Global Pi parity remains `in_progress`.
+The behavior report is refreshed against the original implementation commit
+`bacc756495b92788eb3e22f122317c16b095780e`; all 93 behavior cases pass. The
+provider-wire report is refreshed against review correction commit
+`bdbf2de91a30614ca7a258f1eaaf5e13141784c7`; all 35 cases pass, including the
+new mapped `xhigh`/`max` cases. Format verification and the warning-as-error
+build pass. The correction's focused provider-wire differential passes 1/1.
+Two full local suite attempts each had one unrelated timing/port failure; both
+failures pass in isolation. Exact-head CI results for the published correction
+are recorded in the PR description. Node terminal 24/24, Python terminal 66/66,
+parity guards 27/27, documentation paths (152 documents / 627 references), and
+MCP conformance pass; MCP retains the same eight classified baseline failures
+across three scenarios. Draft PR #24 remains open and unmerged. Global Pi parity
+remains `in_progress`.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 

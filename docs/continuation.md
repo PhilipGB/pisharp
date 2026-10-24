@@ -2,7 +2,7 @@
 
 ## Active milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
 
-The 93-case source-pinned behavior corpus and 23-case provider-wire corpus pass.
+The 93-case source-pinned behavior corpus and 35-case provider-wire corpus pass.
 The implementation covers model references, initial selection, scope matching
 and editing, thinking defaults/clamping, budgets and sampling, settings
 precedence/persistence, and CLI/TUI/RPC integration. The Linux PTY scoped-model
@@ -12,18 +12,25 @@ interleavings, and the retained RPC/session fallback identity when no provider
 is authenticated. See the [inventory](parity/fixtures/model-selection-thinking-configuration-inventory-2026-10-24.json)
 and [receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
-The paired reports pass 93/93 direct-Pi behavior cases and 23/23 physical
-provider-wire cases, both refreshed against implementation commit
-`bacc756495b92788eb3e22f122317c16b095780e`. Format verification and the
-warning-as-error build pass; the full .NET suite passes 3,780/3,780 with no
-failures or skips. Node terminal (24/24), Python terminal (66/66), parity guards
-(27/27), documentation paths (152 documents / 627 references), and MCP
-conformance also pass. Checkpoints A–V are complete for implementation head
+The paired reports pass 93/93 direct-Pi behavior cases and 35/35 physical
+provider-wire cases, refreshed against review correction commit
+`bdbf2de91a30614ca7a258f1eaaf5e13141784c7`. Format verification and the
+warning-as-error build pass. The prior implementation-head full .NET suite
+passed 3,780/3,780. Two local suite attempts after the correction each had one
+unrelated timing/port fixture race; both affected tests passed in isolation.
+Fresh correction-head exact CI results are tracked in the PR description. Node
+terminal (24/24), Python terminal (66/66), parity guards (27/27), documentation
+paths (152 documents / 627 references), and MCP conformance also pass.
+Checkpoints A–V are complete for implementation head
 `683a485e43e9f07190d0b5cead56efaafd2a1a84`. Exact-head push CI
 [40106023213](https://github.com/PhilipGB/pisharp/actions/runs/40106023213) and
 PR CI [40106026319](https://github.com/PhilipGB/pisharp/actions/runs/40106026319)
-passed; each full .NET suite passed 3,780/3,780 with zero failures or skips, and
-format, warning-as-error build, parity, documentation and MCP jobs passed.
+passed on the prior head; each full .NET suite passed 3,780/3,780 with zero
+failures or skips. A review correction adds model-mapped extended reasoning and
+12 direct-Pi wire cases; its focused differential passes. Two local full-suite
+attempts each hit one unrelated intermittent timing/port fixture failure, and
+both cases pass in isolation. Fresh correction-head CI results are recorded in
+the PR description.
 PR #23's unrelated Dependabot change has merged to `main` at
 `f4f57ca754662222d2c0162b2758778eb2999a57`; the milestone branch includes it
 through sync commit `e828fa3965e9183671863635808aff36b29a0034`. The PR description
@@ -46,7 +53,7 @@ the later PR #23 merge from current `origin/main` at
 `bacc756495b92788eb3e22f122317c16b095780e`.
 
 The refreshed pinned-Pi behavior report passes 93/93 and the provider-wire
-report passes 23/23 against this source. Local format, warning-as-error build,
+report passes 35/35 against this source. Local format, warning-as-error build,
 full .NET suite (3,780/3,780), Node, Python, parity guard, documentation-path and
 MCP checks pass. The previous exact-head push CI succeeded before the branch
 synced current `main`; draft PR #24 is open. Its PR CI found a loopback port
