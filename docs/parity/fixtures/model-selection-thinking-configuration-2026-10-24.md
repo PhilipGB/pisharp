@@ -91,7 +91,8 @@ counted as a strict oracle case.
 
 The project-wide parity status remains `in_progress`; this receipt covers only
 the defined model-selection, thinking and configuration increment. Checkpoints
-A–T are complete. The earlier push CI passed at `71ef645d` before syncing current
-`main`; final push CI, draft PR #24 and its exact-head PR CI remain. Keep the
-milestone PR draft and unmerged, and record final workflow evidence in its
-description.
+A–T are complete. Draft PR #24 is open. Its first push CI passed, while PR CI
+found a loopback port reservation race in a test fixture; the test now uses the
+existing bounded bind-retry helper and its focused regression passes. Final
+exact-head push and PR CI for the repair remain. Keep the milestone PR draft and
+unmerged, and record final workflow evidence in its description.

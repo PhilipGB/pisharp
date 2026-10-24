@@ -39,9 +39,10 @@ provider-wire cases pass. Format verification and the warning-as-error build
 pass, and the full .NET suite passes 3,780/3,780 with zero failures/skips. Node
 terminal 24/24, Python terminal 66/66, parity guards 27/27, documentation paths
 (152 documents / 627 references), and MCP conformance pass; MCP retains the same
-eight classified baseline failures across three scenarios. Prior push CI passed
-on `71ef645d` before synchronization with the updated base. Final push CI and
-draft PR #24's exact-head PR CI remain. Global Pi parity remains `in_progress`.
+eight classified baseline failures across three scenarios. Draft PR #24 is open.
+Its first push CI passed; PR CI exposed a loopback port reservation race, which
+is fixed and passes its focused regression. Final exact-head push and PR CI for
+the repair remain. Global Pi parity remains `in_progress`.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 

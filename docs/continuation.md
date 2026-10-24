@@ -23,8 +23,9 @@ are branch publication and exact-head CI. PR #23's unrelated Dependabot change
 has merged to `main` at `f4f57ca754662222d2c0162b2758778eb2999a57`; the milestone
 branch now contains it through sync commit
 `e828fa3965e9183671863635808aff36b29a0034`. The earlier push CI passed on
-`71ef645d`; the synchronized branch needs final push CI, then draft PR #24 and
-its exact-head PR CI.
+`71ef645d`. Draft PR #24 is open. Its first push CI passed and the PR CI found a
+loopback port reservation race; the fixture now retries the bind and the focused
+case passes. Final exact-head push and PR CI for the repair remain.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
@@ -45,9 +46,10 @@ the later PR #23 merge from current `origin/main` at
 The refreshed pinned-Pi behavior report passes 93/93 and the provider-wire
 report passes 23/23 against this source. Local format, warning-as-error build,
 full .NET suite (3,780/3,780), Node, Python, parity guard, documentation-path and
-MCP checks pass. The previous exact-head push CI succeeded at `71ef645d` before
-the branch synced current `main`; final push CI and draft PR #24 with its
-exact-head PR CI remain. See the active [model-selection milestone
+MCP checks pass. The previous exact-head push CI succeeded before the branch
+synced current `main`; draft PR #24 is open. Its PR CI found a loopback port
+reservation race, now fixed by using the existing bind-retry helper; the focused
+case passes. Final exact-head push and PR CI remain. See the active [model-selection milestone
 receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 Product acceptance source is `962cfa48d97a960149e1f0cc020f25bc302c1d48`.
@@ -1356,6 +1358,7 @@ possible busy-run interleaving; native Windows/macOS are not claimed, and the
 documented unauthenticated continuation fallback remains an adaptation.
 
 Checkpoints A–T are complete. The unrelated PR #23 Dependabot update has merged
-to `main`; the milestone branch was synchronized with its merge. Final push CI,
-draft PR #24 publication and exact-head PR CI remain. Keep the milestone PR in
-draft and do not merge it.
+to `main`; the milestone branch was synchronized with its merge. Draft PR #24 is
+open. A loopback listener race from PR CI was repaired and the focused case
+passes; final exact-head push and PR CI remain. Keep the milestone PR in draft
+and do not merge it.
