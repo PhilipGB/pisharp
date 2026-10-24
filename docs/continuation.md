@@ -15,7 +15,7 @@ current run metadata before reporting progress; do not mistake this frozen local
 checkpoint count for the later publication state. Keep the twenty-checkpoint
 denominator. Do not merge #22 or start #23.
 
-Product acceptance source is `3c2640e38b173117e5c8f8ee0406530bdca1f073`.
+Product acceptance source is `e152e686017f659141d1bd5a83ef8823627c5410`.
 The final publication head and push/PR workflow IDs are maintained in the PR
 description so the tested head does not change solely to record its CI result.
 The [receipt](parity/fixtures/builtin-coding-tool-parity-2026-10-22.md),

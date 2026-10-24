@@ -244,8 +244,11 @@ retained for the established tool contract; tests remove their own artifacts.
 
 ## Local validation and reproduction
 
-Product acceptance source is `3c2640e38b173117e5c8f8ee0406530bdca1f073`; the final full-suite source is
-`3d0d7d6db783a036930b5c39edf0796d90fdd447` (the intervening corrections change test synchronization and fixture cleanup only).
+Current differential and physical provider acceptance source is
+`e152e686017f659141d1bd5a83ef8823627c5410`. The last committed full-suite
+counter receipt below is from `3d0d7d6db783a036930b5c39edf0796d90fdd447`,
+before the final public-facade and fixture follow-up. The live PR description
+records the fresh corrected-head full suite and exact-head CI counters.
 
 | Gate | Result |
 | --- | --- |

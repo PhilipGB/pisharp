@@ -19,7 +19,7 @@
       "jpeg_equivalent": 10,
       "intentional_safety_exclusions": 2,
       "control_strict_passed": 121,
-      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "write": {
@@ -30,7 +30,7 @@
       "total": 39,
       "intentional_safety_exclusions": 19,
       "control_strict_passed": 39,
-      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "edit": {
@@ -41,7 +41,7 @@
       "total": 69,
       "intentional_safety_exclusions": 38,
       "control_strict_passed": 69,
-      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "bash": {
@@ -52,7 +52,7 @@
       "total": 44,
       "control_strict_passed": 44,
       "shutdown_intentional_safety_exclusions": 3,
-      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "grep": {
@@ -63,7 +63,7 @@
       "total": 68,
       "intentional_safety_exclusions": 1,
       "control_strict_passed": 68,
-      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "find": {
@@ -74,7 +74,7 @@
       "total": 62,
       "intentional_safety_exclusions": 1,
       "control_strict_passed": 62,
-      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     },
     "ls": {
@@ -84,7 +84,7 @@
       "strict": 53,
       "total": 53,
       "control_strict_passed": 53,
-      "finalCorpusSource": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+      "finalCorpusSource": "e152e686017f659141d1bd5a83ef8823627c5410",
       "sharedAcceptance": "MAF, physical Responses/Chat/Anthropic, canonical restart, concurrency and bounded reliability verified; final publication/CI receipt is PR #22."
     }
   },

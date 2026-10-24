@@ -184,5 +184,14 @@
       "classification": "Corrected selection, checksum-verified official fd 10.5, all original assertions retained."
     }
   ],
-  "currentPublicationValidation": "The final full-suite source/counters, corrected corpus and exact-head workflows are retained in the linked live PR #22 description and ignored raw reports; earlier counters above remain historical."
+  "currentPublicationValidation": "The final full-suite source/counters, corrected corpus and exact-head workflows are retained in the linked live PR #22 description and ignored raw reports; earlier counters above remain historical.",
+  "currentAcceptedProductSource": "e152e686017f659141d1bd5a83ef8823627c5410",
+  "correctedCorpus": {
+    "supported": 395,
+    "strict": 385,
+    "jpegEquivalent": 10,
+    "safetyExclusions": 61,
+    "total": 456,
+    "unresolved": 0
+  }
 }

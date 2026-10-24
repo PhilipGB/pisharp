@@ -200,10 +200,10 @@
     "skipped": 0
   },
   "physicalCancellation": {
-    "piSharpSha": "3c2640e38b173117e5c8f8ee0406530bdca1f073",
+    "piSharpSha": "e152e686017f659141d1bd5a83ef8823627c5410",
     "dirtyPaths": [],
-    "startedAt": "2026-10-24T00:01:33.544568+00:00",
-    "finishedAt": "2026-10-24T00:02:02.728715+00:00",
+    "startedAt": "2026-10-24T07:36:20.377389+00:00",
+    "finishedAt": "2026-10-24T07:36:33.781075+00:00",
     "barrier": "HTTP response headers sent after eight completed tools; hold continuation response body, RPC abort, settle, exit CLI, restart from actual session file.",
     "cases": {
       "openai-responses": {
