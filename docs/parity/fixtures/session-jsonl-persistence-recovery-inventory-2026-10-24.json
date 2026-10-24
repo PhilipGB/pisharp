@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "goal": "Complete Session JSONL Persistence and Crash Recovery Parity",
-  "status": "local_acceptance_complete; publication_and_exact_head_ci_pending",
+  "status": "local_acceptance_complete; PR #25 open draft; exact_head_ci_in_progress",
   "repository": {
     "pr24Head": "4972f6eaf8f5a0ca2c773048fa918ab6bc23e91c",
     "pr24Merge": "0d83418a31d84e530b099d98054739607fa3e3ad",
@@ -45,7 +45,7 @@
     "pisharpCrashRecoveryAndJsonlProcessSuites": "12/12 across CrashRecoveryProcessTests and PiJsonlSessionRecoveryProcessTests, zero skips; includes process kills before wrapper invocation, after side effect but before outcome checkpoint, and after the outcome checkpoint.",
     "pisharpLargeJsonlAndAtomicReaderStress": "5/5 focused regressions passed: 2,048 linked Pi JSONL entries interleaved with 2,048 malformed rows; a 2 MiB tool result through native and Pi JSONL round-trip; 2,048-entry branch export/import and eight native reload cycles; 32 concurrent atomic read/write snapshots; and discovery across 128 project sessions.",
     "pisharpLeaseTestsLinux": "4/4 focused lease, alias, wait-cancellation, and cross-process tool-outcome tests passed on Linux.",
-    "macosSessionLeaseCi": "A dedicated macos-latest job runs native lease, alias, cancellation, and cross-process locking tests; its exact-head result is pending publication.",
+    "macosSessionLeaseCi": "A dedicated macos-latest job runs native lease, alias, cancellation, and cross-process locking tests; the exact-head result is pending on draft PR #25.",
     "pisharpLargeDiscoveryHeader": "SessionCatalogTests.ProjectDiscoveryAcceptsAHeaderLargerThanPiRecentScanLimitWithinImportBounds passed 1/1; PiSharp accepts a 1 MiB+ header within its 16 MiB record and 128 MiB file limits.",
     "pinnedPiRpcProjectionOracle": "The exact-pin CLI was run twice without provider credentials against the selected-branch/label fixture; get_state, get_messages, get_entries, get_tree, and get_fork_messages had identical normalized results. Active messages exclude the inactive sibling, all entry IDs/parents and selected leaf are retained, the latest label is projected, and fork messages follow the selected user path. Model reports the expected unknown fallback.",
     "pinnedPiSessionLifecycleEvents": "4/4 b06c1f2 AgentSessionRuntime lifecycle tests pass for new-session/resume ordering, switch cancellation, pre-invalidation/rebind ordering, and fork event/cancellation behavior.",

@@ -1403,6 +1403,6 @@ Python 66/66; parity Python 27/27; terminal Node 24/24; documentation paths
 job is part of CI. Inventory and receipt record all accepted safety/resource
 differences; unexplained mandatory differences are empty.
 
-Next: stage the reviewed milestone files, commit and push this branch, create a
-new open draft PR, and verify its exact-head push and PR workflows, including
-the macOS lease job. Do not merge the new PR.
+Draft PR [#25](https://github.com/PhilipGB/pisharp/pull/25) is open and
+unmerged. Verify its exact-head push and PR workflows, including the macOS
+lease job; keep it in draft until all checks finish. Do not merge it.

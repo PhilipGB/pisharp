@@ -26,9 +26,10 @@ with stable no-replay outcomes. RPC projection evidence covers selected branch,
 inactive sibling exclusion, IDs/parents, latest labels and fork messages.
 Documentation and the [capability inventory](session-jsonl-persistence-recovery-inventory-2026-10-24.json)
 classify all accepted durability, resource and graph-safety differences; no
-unexplained mandatory difference remains. The new branch is ready for commit,
-push and draft PR publication. The exact-head push/PR results, including native
-macOS lease coverage, will be recorded in the PR checks and description.
+unexplained mandatory difference remains. Draft PR
+[#25](https://github.com/PhilipGB/pisharp/pull/25) is open and unmerged. Its
+exact-head push and PR checks, including native macOS lease coverage, are in
+progress; keep the PR in draft until they finish.
 
 ## Verified prerequisite and branch
 
@@ -239,7 +240,7 @@ source-pinned parity until refreshed against this exact Pi revision.
 - The aborted-assistant fixture round-trips at b06c1f2 across two observations with partial text, reasoning signature, usage, abort metadata and provider context intact. `PiJsonlSessionInterchangeTests.AbortedAssistantFromPinnedPiSurvivesNativeReloadAndPiExport` passes 1/1 through native file save/reload and Pi JSONL reimport.
 - `ConversationSessionTests.CancelledStoreSaveWaitingForLeaseKeepsPersistedSnapshotAndCleansNoTempFiles` passes 1/1; cancelling a save blocked on a held lease preserves the existing bytes and leaves no snapshot temporary.
 - Bounded stress regressions now cover a 2,048-entry Pi JSONL chain interleaved with 2,048 malformed rows, a 2 MiB correlated tool result through native and Pi JSONL round-trip, 2,048-entry selected-branch export/import with eight native save/reload cycles, 32 concurrent reads against atomic snapshot writes, and discovery across 128 project sessions. The combined five-case focused stress selection passes 5/5.
-- Linux lease verification passes 4/4 for same-process contention, symlink aliases, cancellation while waiting, and cross-process tool-outcome publication. The symlink-alias case now runs on macOS too. `.github/workflows/ci.yml` has a focused `macos-latest` job for native flock and cross-process lease behavior; its exact-head result remains pending publication.
+- Linux lease verification passes 4/4 for same-process contention, symlink aliases, cancellation while waiting, and cross-process tool-outcome publication. The symlink-alias case now runs on macOS too. `.github/workflows/ci.yml` has a focused `macos-latest` job for native flock and cross-process lease behavior; its exact-head result is pending on draft PR #25.
 - The current 83-case focused durability/recovery selection passes with zero
   failures or skips. It includes the new `FailedAtomicPublicationKeepsTargetAndCleansTemporarySnapshot`
   regression, bounded oversized-JSONL read rejection, same-process/cross-process stale-writer and lease cases, the
