@@ -20,12 +20,14 @@ pass 93/93 behavior cases and 23/23 provider-wire cases. Format verification,
 the warning-as-error build and the full .NET suite pass (3,780 passed, zero
 failed or skipped); terminal Node (24/24), Python (66/66), parity guards
 (27/27), documentation paths (152 documents / 627 references) and MCP
-conformance also pass. Checkpoints A–T are complete. Push and exact-head push CI,
-and draft PR #24 are complete. Its first push CI passed, while PR CI exposed a
-loopback port reservation race in `ProviderOverflowLoopbackTests`; the fixture
-now uses its existing bounded bind-retry helper, and the targeted regression
-passes 1/1. Final exact-head push and PR CI for the repair are pending. Keep PR
-#24 open, draft and unmerged.
+conformance also pass. Checkpoints A–V are complete for implementation head
+`683a485e43e9f07190d0b5cead56efaafd2a1a84`. Exact-head push
+CI [40106023213](https://github.com/PhilipGB/pisharp/actions/runs/40106023213)
+and PR CI [40106026319](https://github.com/PhilipGB/pisharp/actions/runs/40106026319)
+passed; each full .NET suite passed 3,780/3,780 with zero failures or skips.
+Both runs also passed format, warning-as-error build, parity, documentation and
+MCP jobs. The fixture port race and repair are recorded in the PR description.
+Keep PR #24 open, draft and unmerged.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
@@ -39,9 +41,11 @@ milestone is model selection, thinking and configuration parity on
 Implementation `bacc756495b92788eb3e22f122317c16b095780e` passes its refreshed
 93-case behavior and 23-case provider-wire reports; local validation passes at
 3,780 .NET tests. PR #23's unrelated Dependabot merge is now on `main`, and the
-milestone branch is synchronized with it. Draft PR #24 is open; a loopback bind
-race found in PR CI is repaired and its focused case passes. Final exact-head CI
-for the repair remains. See the [active milestone receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
+milestone branch is synchronized with it. Draft PR #24 is open and remains
+unmerged. Its repaired implementation head passed exact-head push and PR CI,
+including 3,780/3,780 .NET tests in both runs. The PR description records the
+published head and current workflow evidence. See the [active milestone
+receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 The defined corpus has 399 supported passes out of 460: 389 exact, ten JPEG
 codec equivalents and 61 explicit safety exclusions, with zero unresolved

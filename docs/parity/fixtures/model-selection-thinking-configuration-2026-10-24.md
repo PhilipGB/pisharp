@@ -91,8 +91,11 @@ counted as a strict oracle case.
 
 The project-wide parity status remains `in_progress`; this receipt covers only
 the defined model-selection, thinking and configuration increment. Checkpoints
-A–T are complete. Draft PR #24 is open. Its first push CI passed, while PR CI
-found a loopback port reservation race in a test fixture; the test now uses the
-existing bounded bind-retry helper and its focused regression passes. Final
-exact-head push and PR CI for the repair remain. Keep the milestone PR draft and
-unmerged, and record final workflow evidence in its description.
+A–V are complete for implementation head
+`683a485e43e9f07190d0b5cead56efaafd2a1a84`. Draft PR #24 remains open, draft and
+unmerged. Exact-head push CI [40106023213](https://github.com/PhilipGB/pisharp/actions/runs/40106023213)
+and PR CI [40106026319](https://github.com/PhilipGB/pisharp/actions/runs/40106026319)
+passed. Each full .NET suite passed 3,780/3,780 with zero failures or skips; all
+other jobs passed as well. The earlier loopback bind race and its fixture repair
+are recorded in the PR description, which tracks the published head and current
+workflow evidence.

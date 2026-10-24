@@ -13216,7 +13216,7 @@
     }
   },
   "model_thinking_configuration_parity_milestone": {
-    "status": "draft_open_final_ci_pending",
+    "status": "draft_open_exact_head_ci_passed",
     "started_at": "2026-10-24",
     "branch": "milestone/model-thinking-configuration-parity",
     "pr22_actual_merge": "eefa89454a3c1cfd196894f94744b6f393c8e721",
@@ -13229,7 +13229,7 @@
     "oracle": "docs/parity/fixtures/model-selection-thinking-configuration-oracle-2026-10-24.json",
     "provider_wire_oracle": "docs/parity/fixtures/model-selection-thinking-provider-wire-oracle-2026-10-24.json",
     "receipt": "docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md",
-    "checkpoint_policy": "Fixed 22 checkpoints A\u2013V; A\u2013T have implementation, acceptance, full validation and documentation evidence. U draft PR #24 publication and V exact-head push/PR CI are pending.",
+    "checkpoint_policy": "Fixed 22 checkpoints A\u2013V. A\u2013T are complete with implementation, acceptance, full validation and documentation evidence; U draft PR #24 publication is complete; V exact-head push and PR CI passed on 683a485e43e9f07190d0b5cead56efaafd2a1a84. The PR description is authoritative for the published head and current workflow evidence.",
     "differential": {
       "direct_pi_cases": 93,
       "direct_pi_passed": 93,
@@ -13267,7 +13267,7 @@
       "differential": "93/93 direct-Pi cases and 23/23 physical provider-wire cases refreshed against implementation commit bacc756495b92788eb3e22f122317c16b095780e"
     },
     "publication": {
-      "status": "draft_open_final_ci_pending",
+      "status": "draft_open_exact_head_ci_passed",
       "draft_pr": 24,
       "pr_url": "https://github.com/PhilipGB/pisharp/pull/24",
       "branch_head_with_loopback_fix": "5dd8f35c19716dbf0fc5a8b02ea9d76af061527f",
@@ -13277,13 +13277,18 @@
       "pr_ci_first_head": "8909914748d468cd6868f874bcbc66f203f0b4d6",
       "pr_ci_first_run": 40104949147,
       "pr_ci_first_result": "failure: ProviderOverflowLoopbackTests.RealCompletionsSdkDoesNotReplayCompletedWriteAfterPartialContinuationFails lost a TcpListener-reserved port race while binding HttpListener; 3,779 passed, 1 failed.",
-      "correction": "The failing fixture now uses the same bounded loopback bind-retry helper as other tests. The focused regression passes 1/1; exact-head checks for the repaired final branch head are pending.",
+      "correction": "The failing fixture now uses the same bounded loopback bind-retry helper as other tests. The focused regression passes 1/1. Exact-head push and PR CI both pass on checked implementation head 683a485e43e9f07190d0b5cead56efaafd2a1a84.",
       "prior_push_ci": {
         "head_sha": "71ef645d18305f2c3491bd05732f11ce06314946",
         "run_id": 40100015360,
         "result": "success",
-        "scope_note": "Passed before syncing the unrelated PR #23 merge; final synchronized head must receive fresh push and PR CI."
-      }
+        "scope_note": "Passed before syncing the unrelated PR #23 merge; the synchronized implementation head was later validated by final push run 40106023213 and PR run 40106026319."
+      },
+      "checked_implementation_head": "683a485e43e9f07190d0b5cead56efaafd2a1a84",
+      "push_ci_final_run": 40106023213,
+      "push_ci_final_result": "success; full .NET suite 3,780 passed, zero failed or skipped; format, build, parity, documentation and MCP jobs passed",
+      "pr_ci_final_run": 40106026319,
+      "pr_ci_final_result": "success; full .NET suite 3,780 passed, zero failed or skipped; format, build, parity, documentation and MCP jobs passed"
     }
   }
 }

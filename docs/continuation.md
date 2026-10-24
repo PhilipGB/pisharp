@@ -18,14 +18,16 @@ provider-wire cases, both refreshed against implementation commit
 warning-as-error build pass; the full .NET suite passes 3,780/3,780 with no
 failures or skips. Node terminal (24/24), Python terminal (66/66), parity guards
 (27/27), documentation paths (152 documents / 627 references), and MCP
-conformance also pass. Checkpoints A–T are complete. The remaining checkpoints
-are branch publication and exact-head CI. PR #23's unrelated Dependabot change
-has merged to `main` at `f4f57ca754662222d2c0162b2758778eb2999a57`; the milestone
-branch now contains it through sync commit
-`e828fa3965e9183671863635808aff36b29a0034`. The earlier push CI passed on
-`71ef645d`. Draft PR #24 is open. Its first push CI passed and the PR CI found a
-loopback port reservation race; the fixture now retries the bind and the focused
-case passes. Final exact-head push and PR CI for the repair remain.
+conformance also pass. Checkpoints A–V are complete for implementation head
+`683a485e43e9f07190d0b5cead56efaafd2a1a84`. Exact-head push CI
+[40106023213](https://github.com/PhilipGB/pisharp/actions/runs/40106023213) and
+PR CI [40106026319](https://github.com/PhilipGB/pisharp/actions/runs/40106026319)
+passed; each full .NET suite passed 3,780/3,780 with zero failures or skips, and
+format, warning-as-error build, parity, documentation and MCP jobs passed.
+PR #23's unrelated Dependabot change has merged to `main` at
+`f4f57ca754662222d2c0162b2758778eb2999a57`; the milestone branch includes it
+through sync commit `e828fa3965e9183671863635808aff36b29a0034`. The PR description
+tracks the published head and current CI evidence.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
@@ -49,7 +51,10 @@ full .NET suite (3,780/3,780), Node, Python, parity guard, documentation-path an
 MCP checks pass. The previous exact-head push CI succeeded before the branch
 synced current `main`; draft PR #24 is open. Its PR CI found a loopback port
 reservation race, now fixed by using the existing bind-retry helper; the focused
-case passes. Final exact-head push and PR CI remain. See the active [model-selection milestone
+case passes. Exact-head push and PR CI on implementation head
+`683a485e43e9f07190d0b5cead56efaafd2a1a84` both passed with 3,780/3,780 .NET
+tests and every other job green. The PR description tracks the published head
+and current workflow evidence. See the active [model-selection milestone
 receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 Product acceptance source is `962cfa48d97a960149e1f0cc020f25bc302c1d48`.

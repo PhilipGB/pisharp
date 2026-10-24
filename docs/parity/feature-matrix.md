@@ -39,10 +39,12 @@ provider-wire cases pass. Format verification and the warning-as-error build
 pass, and the full .NET suite passes 3,780/3,780 with zero failures/skips. Node
 terminal 24/24, Python terminal 66/66, parity guards 27/27, documentation paths
 (152 documents / 627 references), and MCP conformance pass; MCP retains the same
-eight classified baseline failures across three scenarios. Draft PR #24 is open.
-Its first push CI passed; PR CI exposed a loopback port reservation race, which
-is fixed and passes its focused regression. Final exact-head push and PR CI for
-the repair remain. Global Pi parity remains `in_progress`.
+eight classified baseline failures across three scenarios. Draft PR #24 remains
+open and unmerged. Exact-head push CI [40106023213](https://github.com/PhilipGB/pisharp/actions/runs/40106023213)
+and PR CI [40106026319](https://github.com/PhilipGB/pisharp/actions/runs/40106026319)
+passed on implementation head `683a485e43e9f07190d0b5cead56efaafd2a1a84`, with
+3,780/3,780 .NET tests and every other job green. The PR description tracks the
+published head and its current CI. Global Pi parity remains `in_progress`.
 
 ## Previous milestone — Complete Built-in Coding Tool Parity — 2026-10-22
 
