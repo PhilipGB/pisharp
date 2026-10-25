@@ -10,7 +10,10 @@ namespace PiSharp.Runtime.Sessions;
 internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLifecycleEvent> publish,
     Action<VirtualModelRequestRoute>? physicalResponse = null,
     NativeExtensionEventDispatcher? contextMutationDispatcher = null, bool directBlockImages = false,
-    Func<bool>? directSupportsImages = null)
+    Func<bool>? directSupportsImages = null,
+    Func<IReadOnlyList<ChatMessage>, ModelImageResizeOptions?, CancellationToken,
+        Task<IReadOnlyList<ChatMessage>>>? normalizeUserImages = null,
+    Func<ModelImageResizeOptions?>? getDirectImageResizeOptions = null)
     : DelegatingChatClient(inner), IProviderToolCallDeltaSource
 {
     private VirtualModelRequestRouter? _router;
@@ -98,6 +101,9 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
             Volatile.Write(ref _currentRoute, null);
             var (directMessages, directOptions) = await ApplyContextMutationsAsync(messages, options,
                 cancellationToken).ConfigureAwait(false);
+            if (normalizeUserImages is { } directNormalizer)
+                directMessages = await directNormalizer(directMessages, getDirectImageResizeOptions?.Invoke(),
+                    cancellationToken).ConfigureAwait(false);
             var filteredMessages = ObservedChatClient.FilterImagesForModel(directMessages, directBlockImages,
                 directSupportsImages?.Invoke() ?? true);
             return (null, filteredMessages, NativeContextMutationRequest.Strip(directOptions));
@@ -139,9 +145,12 @@ internal sealed class RoutedChatClient(MutableChatClient inner, Action<AgentLife
             messages = await prepare(messages, route, hint.ForceCompaction, cancellationToken).ConfigureAwait(false);
         var (contextMessages, contextOptions) = await ApplyContextMutationsAsync(messages, options,
             cancellationToken).ConfigureAwait(false);
+        if (normalizeUserImages is { } routeNormalizer)
+            contextMessages = await routeNormalizer(contextMessages, route.Model.InputLimits?.Images?.Resize,
+                cancellationToken).ConfigureAwait(false);
         if (hint?.Execution?.ToolCallCapture is { } capture)
             capture.Bind((route.ChatClient as IProviderToolCallDeltaSource)?.BeginToolCallDeltaCapture());
-        var routedMessages = ObservedChatClient.FilterImagesForModel(contextMessages, blockImages: false,
+        var routedMessages = ObservedChatClient.FilterImagesForModel(contextMessages, blockImages: directBlockImages,
             supportsImages: route.Model.Input?.Contains("image", StringComparer.Ordinal) != false);
         var physicalOptions = NativeContextMutationRequest.Strip(contextOptions);
         return (route, routedMessages, VirtualModelRequestHints.ForPhysicalModel(physicalOptions, route));

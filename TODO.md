@@ -1,6 +1,29 @@
 # PiSharp capability parity
 
-## Active milestone — Session JSONL Persistence and Crash Recovery Parity — 2026-10-25
+## Active milestone — Complete Multimodal User Input and Image Parity — 2026-10-25
+
+PR #25 is verified merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`.
+The fresh branch `milestone/multimodal-user-input-image-parity` starts from that
+merge. Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+Positional, interactive, JSON, RPC, clipboard, provider-wire and image-processing
+changes are in progress. The pinned image processor differential passes 3/3
+strict and 2/2 codec-equivalent cases; the paired file-argument/initial-message
+corpus passes 2/2, and the physical Responses, Chat Completions and Anthropic
+image-wire comparisons pass 3/3. The file differential reproduced and drove a
+fix for an extra blank line before the prompt. The selected-model canonical
+history mismatch is corrected; its PiSharp regression and the pinned
+`before_agent_start` test pass. The prior full suite passed 3,878/3,878 before
+the latest prompt-composition and native clipboard test changes; the fresh full
+suite now passes 3,879/3,879 with zero failures or skips. Current focused
+interface/clipboard tests pass 35/35, and format/build checks pass. Dedicated
+macOS and Windows native clipboard CI jobs are configured. Paired clipboard,
+JSON/RPC and saved-session continuation evidence, exact-head CI, and draft-PR
+publication remain outstanding.
+Keep the new PR open, draft and unmerged. See the [multimodal parity receipt](docs/parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
+and [inventory](docs/parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
+
+## Completed prerequisite — Session JSONL Persistence and Crash Recovery Parity — 2026-10-25
 
 PR #24 is verified merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
 The fresh branch `milestone/session-jsonl-persistence-recovery-parity` is based
@@ -42,11 +65,9 @@ terminal Node 24/24; and documentation links 153 documents / 657 references.
 The first full rerun hit one transient unrelated ephemeral-port collision; the
 isolated test passed and the following full run passed 3,845/3,845. MCP
 conformance has no regressions against its classified baseline; three known
-scenarios remain classified. Exact-head checks for the bounded-reader
-follow-up are tracked on PR #25. Draft PR
-[#25](https://github.com/PhilipGB/pisharp/pull/25) is open and intentionally
-unmerged. Its latest exact-head Linux, MCP, and macOS check results are tracked
-on the PR; keep it in draft.
+scenarios remain classified. PR #25 is merged at
+`897bc5778f87ed09ea42e48b260479ee6a6a218c`; the merge is the base of the
+active multimodal milestone above.
 
 See the [session persistence receipt](docs/parity/fixtures/session-jsonl-persistence-recovery-2026-10-24.md)
 and [capability inventory](docs/parity/fixtures/session-jsonl-persistence-recovery-inventory-2026-10-24.json).
@@ -104,8 +125,8 @@ milestone is model selection, thinking and configuration parity on
 Implementation `bdbf2de91a30614ca7a258f1eaaf5e13141784c7` passes its refreshed
 93-case behavior and 35-case provider-wire reports. PR #23's unrelated
 Dependabot merge is now on `main`, and the milestone branch is synchronized
-with it. Draft PR #24 is open and remains
-unmerged. Its repaired implementation head passed exact-head push and PR CI,
+with it. PR #24 later merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
+Its repaired implementation head passed exact-head push and PR CI,
 including 3,780/3,780 .NET tests in both runs. The PR description records the
 published head and current workflow evidence. See the [active milestone
 receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).

@@ -55,7 +55,8 @@ public sealed class ExtensionBeforeAgentStartTests
             var events = new List<AgentLifecycleEvent>();
 
             var prompt = new ChatMessage(ChatRole.User,
-                [new TextContent("hello"), new DataContent(new byte[] { 1, 2, 3 }, "image/png")]);
+                [new TextContent("hello"), new DataContent(Convert.FromBase64String(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="), "image/png")]);
             await foreach (var item in run.RunEventsAsync(prompt, "hello")) events.Add(item);
 
             Assert.NotNull(observedContext);

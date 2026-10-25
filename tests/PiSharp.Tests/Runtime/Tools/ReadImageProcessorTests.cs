@@ -20,6 +20,18 @@ public sealed class ReadImageProcessorTests
     }
 
     [Fact]
+    public void SupportedImageMimeParametersAreIgnoredLikePinnedPi()
+    {
+        var bytes = CreatePng(3, 2);
+
+        var output = ReadImageProcessor.Process(bytes, "IMAGE/PNG; charset=binary");
+
+        Assert.Equal("image/png", output.ImageMimeType);
+        Assert.Equal(bytes, Convert.FromBase64String(output.ImageDataBase64!));
+        Assert.Equal("Read image file [image/png]", output.Text);
+    }
+
+    [Fact]
     public void LargeDimensionsResizeWithCoordinateHint()
     {
         var bytes = CreatePng(2400, 20);
@@ -60,6 +72,21 @@ public sealed class ReadImageProcessorTests
         Assert.Equal("image/png", output.ImageMimeType);
         Assert.Contains("[Image converted from image/bmp to image/png.]", output.Text);
         Assert.Equal((1, 1), (decoded!.Width, decoded.Height));
+    }
+
+    [Fact]
+    public void DisablingAutoResizePreservesSupportedBytesButStillConvertsBmp()
+    {
+        var png = CreatePng(2400, 20);
+        var unresized = ReadImageProcessor.Process(png, "image/png", resizeOptions:
+            new ModelImageResizeOptions(MaxWidth: 20, MaxHeight: 20, MaxBytes: 100, JpegQuality: 10),
+            autoResizeImages: false);
+        var converted = ReadImageProcessor.Process(CreateBmp(), "image/bmp", autoResizeImages: false);
+
+        Assert.Equal(png, Convert.FromBase64String(unresized.ImageDataBase64!));
+        Assert.Equal("image/png", converted.ImageMimeType);
+        Assert.Contains("[Image converted from image/bmp to image/png.]", converted.Text);
+        Assert.DoesNotContain("displayed at", converted.Text);
     }
 
     [Fact]

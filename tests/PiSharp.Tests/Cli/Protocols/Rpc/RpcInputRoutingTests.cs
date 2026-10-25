@@ -10,6 +10,8 @@ using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime.Tools;
+using PiSharp.Runtime.Providers;
+using SkiaSharp;
 
 using static PiSharp.Tests.RpcTestInputOutput;
 
@@ -17,6 +19,45 @@ namespace PiSharp.Tests;
 
 public sealed class RpcInputRoutingTests
 {
+    [Fact]
+    public async Task RpcPromptImageUsesModelProfileAndStoresNormalizedCanonicalBytes()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-rpc-image-profile-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var original = CreatePng(80, 40);
+            var profile = new ModelImageResizeOptions(MaxWidth: 12, MaxHeight: 20, MaxBytes: 100_000, JpegQuality: 80);
+            var channel = Channel.CreateUnbounded<string>();
+            using var output = new LockedWriter();
+            var client = new RecordingClient();
+            var conversation = new ConversationSession(root, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client,
+                new CodingTools(root, imageResizeOptions: profile), noTools: true), conversation);
+            var serving = new RpcMode(new CommandReader(channel.Reader), output, run).ServeAsync();
+            channel.Writer.TryWrite(JsonSerializer.Serialize(new
+            {
+                id = "profile-image",
+                type = "prompt",
+                message = "describe image",
+                images = new[] { new { type = "image", data = Convert.ToBase64String(original), mimeType = "image/png" } }
+            }));
+
+            await WaitForSettlementCountAsync(output, 1);
+            channel.Writer.Complete();
+            await serving.WaitAsync(TimeSpan.FromSeconds(5));
+
+            var sent = Assert.Single(client.UserContentsByRequest.Single().OfType<DataContent>());
+            using var processed = SKBitmap.Decode(sent.Data.ToArray());
+            Assert.Equal((12, 6), (processed!.Width, processed.Height));
+            var stored = Assert.Single(conversation.ActiveMessages().Where(message => message.Role == ChatRole.User)
+                .SelectMany(message => message.Contents.OfType<DataContent>()));
+            using var storedImage = SKBitmap.Decode(stored.Data.ToArray());
+            Assert.Equal((12, 6), (storedImage!.Width, storedImage.Height));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task HandledIdlePromptSucceedsBeforePreflightAndRun()
     {
@@ -68,6 +109,8 @@ public sealed class RpcInputRoutingTests
         try
         {
             await File.WriteAllTextAsync(Path.Combine(prompts, "review.md"), "Review $1");
+            var validPng = CreatePng(1, 1);
+            var validPngBase64 = Convert.ToBase64String(validPng);
             var resources = await ResourceCatalog.LoadAsync(root, agentDirectory, false);
             var channel = Channel.CreateUnbounded<string>();
             using var output = new LockedWriter();
@@ -95,7 +138,7 @@ public sealed class RpcInputRoutingTests
                     : eventData.Text == "wire image"
                         ? PiSharpInputResult.Transform(transformed)
                         : PiSharpInputResult.Transform(transformed,
-                            [new DataContent(new byte[] { 1, 2, 3 }, "image/png")]));
+                            [new DataContent(validPng, "image/png")]));
             });
             adapter.Close();
             var client = new RecordingClient();
@@ -111,7 +154,7 @@ public sealed class RpcInputRoutingTests
             await WaitForAsync(output, "agent_settled");
             channel.Writer.TryWrite("{\"id\":\"slash\",\"type\":\"prompt\",\"message\":\"slash\"}");
             await WaitForSettlementCountAsync(output, 2);
-            channel.Writer.TryWrite("{\"id\":\"wire-image\",\"type\":\"prompt\",\"message\":\"wire image\",\"images\":[{\"type\":\"image\",\"data\":\"AQID\",\"mimeType\":\"image/png\"}]}");
+            channel.Writer.TryWrite($"{{\"id\":\"wire-image\",\"type\":\"prompt\",\"message\":\"wire image\",\"images\":[{{\"type\":\"image\",\"data\":\"{validPngBase64}\",\"mimeType\":\"image/png\"}}]}}");
             await WaitForSettlementCountAsync(output, 3);
             channel.Writer.Complete();
             await serving.WaitAsync(TimeSpan.FromSeconds(5));
@@ -121,7 +164,7 @@ public sealed class RpcInputRoutingTests
             Assert.All(client.UserContentsByRequest, contents =>
                 Assert.Contains(contents, content => content is DataContent { MediaType: "image/png" }));
             Assert.Equal(["expand", "slash", "wire image"], seen.Select(item => item.Text));
-            Assert.Equal(new byte[] { 1, 2, 3 }, seen.Last().Images.Single().Data.ToArray());
+            Assert.Equal(validPng, seen.Last().Images.Single().Data.ToArray());
             Assert.All(seen, item =>
             {
                 Assert.Equal(PiSharpInputSource.Rpc, item.Source);
@@ -138,6 +181,8 @@ public sealed class RpcInputRoutingTests
         using var output = new LockedWriter();
         var registration = new ExtensionRegistration();
         var adapter = new NativeExtensionRegistrationAdapter(registration);
+        var validPng = CreatePng(1, 1);
+        var validPngBase64 = Convert.ToBase64String(validPng);
         var seen = new ConcurrentQueue<PiSharpInputEvent>();
         adapter.AddCommand("send", async (_, context, cancellationToken) =>
         {
@@ -159,7 +204,7 @@ public sealed class RpcInputRoutingTests
             };
             return ValueTask.FromResult<PiSharpInputResult?>(transformed is null
                 ? PiSharpInputResult.Continue : PiSharpInputResult.Transform(transformed,
-                    [new DataContent(new byte[] { 4, 5, 6 }, "image/png")]));
+                    [new DataContent(validPng, "image/png")]));
         });
         adapter.Close();
         var client = new BlockingRecordingClient();
@@ -170,13 +215,13 @@ public sealed class RpcInputRoutingTests
 
         channel.Writer.TryWrite("{\"id\":\"first\",\"type\":\"prompt\",\"message\":\"first\"}");
         await client.FirstRequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        channel.Writer.TryWrite("{\"id\":\"consumed\",\"type\":\"prompt\",\"message\":\"consume\",\"streamingBehavior\":\"steer\",\"images\":[{\"type\":\"image\",\"data\":\"BwgJ\",\"mimeType\":\"image/jpeg\"}]}");
+        channel.Writer.TryWrite($"{{\"id\":\"consumed\",\"type\":\"prompt\",\"message\":\"consume\",\"streamingBehavior\":\"steer\",\"images\":[{{\"type\":\"image\",\"data\":\"{validPngBase64}\",\"mimeType\":\"image/png\"}}]}}");
         await WaitForAsync(output, "\"id\":\"consumed\"");
-        channel.Writer.TryWrite("{\"id\":\"prompt-steer\",\"type\":\"prompt\",\"message\":\"prompt steer\",\"streamingBehavior\":\"steer\",\"images\":[{\"type\":\"image\",\"data\":\"BwgJ\",\"mimeType\":\"image/jpeg\"}]}");
+        channel.Writer.TryWrite($"{{\"id\":\"prompt-steer\",\"type\":\"prompt\",\"message\":\"prompt steer\",\"streamingBehavior\":\"steer\",\"images\":[{{\"type\":\"image\",\"data\":\"{validPngBase64}\",\"mimeType\":\"image/png\"}}]}}");
         await WaitForAsync(output, "\"id\":\"prompt-steer\"");
-        channel.Writer.TryWrite("{\"id\":\"steer\",\"type\":\"steer\",\"message\":\"explicit steer\",\"images\":[{\"type\":\"image\",\"data\":\"BwgJ\",\"mimeType\":\"image/jpeg\"}]}");
+        channel.Writer.TryWrite($"{{\"id\":\"steer\",\"type\":\"steer\",\"message\":\"explicit steer\",\"images\":[{{\"type\":\"image\",\"data\":\"{validPngBase64}\",\"mimeType\":\"image/png\"}}]}}");
         await WaitForAsync(output, "\"id\":\"steer\"");
-        channel.Writer.TryWrite("{\"id\":\"follow\",\"type\":\"follow_up\",\"message\":\"explicit follow\",\"images\":[{\"type\":\"image\",\"data\":\"BwgJ\",\"mimeType\":\"image/jpeg\"}]}");
+        channel.Writer.TryWrite($"{{\"id\":\"follow\",\"type\":\"follow_up\",\"message\":\"explicit follow\",\"images\":[{{\"type\":\"image\",\"data\":\"{validPngBase64}\",\"mimeType\":\"image/png\"}}]}}");
         await WaitForAsync(output, "\"id\":\"follow\"");
         channel.Writer.TryWrite("{\"id\":\"extension\",\"type\":\"prompt\",\"message\":\"/send\"}");
         await WaitForAsync(output, "\"id\":\"extension\"");
@@ -193,7 +238,7 @@ public sealed class RpcInputRoutingTests
         Assert.All(seen.Where(item => item.Source == PiSharpInputSource.Rpc), item =>
         {
             if (item.Text == "prompt steer" || item.Text == "explicit steer" || item.Text == "explicit follow" || item.Text == "consume")
-                Assert.Equal(new byte[] { 7, 8, 9 }, item.Images.Single().Data.ToArray());
+                Assert.Equal(validPng, item.Images.Single().Data.ToArray());
         });
         using (var handled = JsonDocument.Parse(Assert.Single(output.Lines(), line =>
             line.Contains("\"id\":\"consumed\"", StringComparison.Ordinal))))
@@ -236,6 +281,15 @@ public sealed class RpcInputRoutingTests
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
+    }
+
+    private static byte[] CreatePng(int width, int height)
+    {
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.CornflowerBlue);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        return encoded.ToArray();
     }
 
     private static async Task WaitForSettlementCountAsync(LockedWriter output, int expected)

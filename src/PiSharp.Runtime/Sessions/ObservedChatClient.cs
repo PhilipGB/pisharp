@@ -11,7 +11,6 @@ namespace PiSharp.Runtime.Sessions;
 /// <summary>Observes every actual provider request, including subsequent tool-loop model calls.</summary>
 internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycleEvent> publish,
     ProviderRetryPolicy retryPolicy, Func<IEnumerable<ChatMessage>, CancellationToken, Task<IReadOnlyList<ChatMessage>>> takeSteering,
-    bool blockImages = false,
     Func<IReadOnlyList<ChatMessage>, bool, CancellationToken, Task<IReadOnlyList<ChatMessage>>>? projectContext = null,
     bool supportsImages = true, Func<ReasoningOptions?>? getReasoning = null,
     Func<bool>? getSupportsImages = null, IProviderToolCallDeltaSource? toolCallDeltaSource = null,
@@ -320,7 +319,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
             ? messages : await projectContext(messages, force, cancellationToken);
         if (transformContext is not null)
             projected = await transformContext(projected, cancellationToken);
-        return FilterImages(AttachReadImages(AddMissingFunctionResults(projected))).ToArray();
+        return AttachReadImages(AddMissingFunctionResults(projected)).ToArray();
     }
 
     private async Task<IReadOnlyList<ChatMessage>?> RecoverOverflowAsync(IReadOnlyList<ChatMessage> original,
@@ -338,7 +337,7 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         publish(new("model_context_overflow_recovery", Text: "Retrying the model request once with a shortened context."));
         if (transformContext is not null)
             compacted = await transformContext(compacted, cancellationToken);
-        return FilterImages(AttachReadImages(AddMissingFunctionResults(compacted))).ToArray();
+        return AttachReadImages(AddMissingFunctionResults(compacted)).ToArray();
     }
 
     // Keep uncertain tool outcomes out of canonical history, but close incomplete calls in the
@@ -453,11 +452,8 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         ? VirtualModelRequestHints.WithHint(options, new(reason, routedChatClient.SelectedThinkingLevel, failed, new VirtualModelRequestExecution(), ForceCompaction: forceCompaction))
         : options;
 
-    // Filter at the final provider boundary, including persisted history and subsequent tool-loop requests.
-    // Never mutate the canonical messages: disabled images remain available if settings change later.
-    private IEnumerable<ChatMessage> FilterImages(IEnumerable<ChatMessage> messages) =>
-        FilterImagesForModel(messages, blockImages, getSupportsImages?.Invoke() ?? supportsImages);
-
+    // Filter after routed image normalization, at the physical provider boundary.
+    // Never mutate the canonical messages: blocked images remain available if settings change later.
     internal static IReadOnlyList<ChatMessage> FilterImagesForModel(IEnumerable<ChatMessage> messages,
         bool blockImages, bool supportsImages)
     {

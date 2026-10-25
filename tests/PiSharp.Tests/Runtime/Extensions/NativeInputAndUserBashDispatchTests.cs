@@ -135,7 +135,9 @@ public sealed class NativeInputAndUserBashDispatchTests
                     liveExtensionRegistration: registration,
                     extensionLifecycleHandlers: registration.RegisteredLifecycleHandlers),
                 new ConversationSession(cwd, "test-model", null));
-            var originalImage = new DataContent(new byte[] { 1, 2, 3 }, "image/png") { Name = "prior-image" };
+            var imageBytes = Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==");
+            var originalImage = new DataContent(imageBytes, "image/png") { Name = "prior-image" };
             var result = await run.InterceptInputAsync("raw", [originalImage],
                 NativeExtensions.PiSharpInputSource.Interactive, null);
 
@@ -145,7 +147,7 @@ public sealed class NativeInputAndUserBashDispatchTests
             Assert.NotNull(laterImage);
             Assert.Equal("prior-image", laterImage.Name);
             Assert.Equal("image/png", laterImage.MediaType);
-            Assert.Equal(new byte[] { 1, 2, 3 }, laterImage.Data.ToArray());
+            Assert.Equal(imageBytes, laterImage.Data.ToArray());
             Assert.Single(diagnostics);
             var diagnostic = Assert.Single(diagnostics, item => item.Type == "extension_error");
             var details = System.Text.Json.JsonSerializer.Serialize(diagnostic.Details);
@@ -161,7 +163,7 @@ public sealed class NativeInputAndUserBashDispatchTests
             var processed = Assert.Single(client.UserMessages);
             Assert.Equal("raw-after-a", processed.Text);
             Assert.Contains(processed.Contents, content => content is DataContent
-            { MediaType: "image/png", Name: "prior-image" });
+            { MediaType: "image/png" });
         }
         finally { Directory.Delete(cwd, recursive: true); }
     }

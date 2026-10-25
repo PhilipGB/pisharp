@@ -1,6 +1,27 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
+## Active milestone — Complete Multimodal User Input and Image Parity — 2026-10-25
+
+PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; the working
+branch `milestone/multimodal-user-input-image-parity` is based on that commit.
+Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+The five-case prompt-image processor differential passes 3/3 strict cases and
+2/2 codec-equivalent cases. The paired positional file/initial-message corpus
+passes 2/2, and paired physical image requests pass for OpenAI Responses, Chat
+Completions and Anthropic (3/3). The file comparison exposed an extra blank line
+before the prompt; PiSharp now follows pinned `buildInitialMessage` concatenation.
+Pinned Pi's selected-model `before_agent_start` normalization test passes 1/1.
+PiSharp normalizes accepted image prompts before canonical persistence. The
+focused PiSharp interface/clipboard selection passes 35/35; pinned Pi
+clipboard/print/prompt selections pass 51/51. The fresh full .NET suite passes
+3,879/3,879, and current format/build checks pass. Dedicated macOS and Windows
+native clipboard CI jobs are configured; paired clipboard/JSON/RPC and
+saved-session image continuation evidence, exact-head CI and draft PR
+publication remain. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
+and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
+
+## Previous milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
 
 The 93-case source-pinned behavior corpus and 35-case provider-wire corpus pass.
 The implementation covers model references, initial selection, scope matching
@@ -1376,7 +1397,7 @@ listener race from PR CI was repaired, and the focused case passed. Final head
 `4972f6eaf8f5a0ca2c773048fa918ab6bc23e91c` passed exact-head push and PR CI,
 then PR #24 merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
 
-## Active milestone — Session JSONL Persistence and Crash Recovery Parity
+## Completed prerequisite — Session JSONL Persistence and Crash Recovery Parity
 
 PR #24 is verified merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
 The branch `milestone/session-jsonl-persistence-recovery-parity` starts from
@@ -1403,6 +1424,5 @@ Python 66/66; parity Python 27/27; terminal Node 24/24; documentation paths
 job is part of CI. Inventory and receipt record all accepted safety/resource
 differences; unexplained mandatory differences are empty.
 
-Draft PR [#25](https://github.com/PhilipGB/pisharp/pull/25) is open and
-intentionally unmerged. Its latest exact-head push and PR check results,
-including the macOS lease job, are tracked on the PR. Keep it in draft.
+PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; that merge is
+the base of the active multimodal milestone above.

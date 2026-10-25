@@ -6,7 +6,7 @@ namespace PiSharp.Tests;
 public sealed class PreparedModelRuntimeSettingsTests
 {
     [Fact]
-    public void AutoResizeImageSettingControlsPreparedModelResizeOptions()
+    public void AutoResizeSettingDoesNotDiscardTheSelectedModelProfile()
     {
         var resize = new ModelImageResizeOptions(MaxWidth: 1200, MaxHeight: 900, MaxBytes: 4_000_000);
         var model = new ModelDescriptor("fixture-model", "Fixture", 32_000, "configured",
@@ -23,6 +23,7 @@ public sealed class PreparedModelRuntimeSettingsTests
         var disabled = enabled with { AutoResizeImages = false };
 
         Assert.Equal(resize, enabled.ImageResizeOptions);
-        Assert.Null(disabled.ImageResizeOptions);
+        Assert.Equal(resize, disabled.ImageResizeOptions);
+        Assert.False(disabled.AutoResizeImages);
     }
 }

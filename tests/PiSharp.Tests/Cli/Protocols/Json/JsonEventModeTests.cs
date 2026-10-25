@@ -6,11 +6,57 @@ using PiSharp.Cli.Protocols;
 using PiSharp.Runtime;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
+using PiSharp.Runtime.Providers;
+using SkiaSharp;
 
 namespace PiSharp.Tests;
 
 public sealed class JsonEventModeTests
 {
+    [Fact]
+    public async Task JsonInitialImageFileUsesSharedDispatchProfileAndStoresNormalizedSessionImage()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-json-image-file-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var original = CreatePng(80, 40);
+            await File.WriteAllBytesAsync(Path.Combine(root, "diagram.png"), original);
+            var profile = new ModelImageResizeOptions(MaxWidth: 12, MaxHeight: 20, MaxBytes: 100_000, JpegQuality: 80);
+            var client = new ImageCaptureClient();
+            var conversation = new ConversationSession(root, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client,
+                new CodingTools(root, imageResizeOptions: profile), noTools: true), conversation);
+            var resources = await ResourceCatalog.LoadAsync(root, root, trusted: false, discoverSkills: false,
+                discoverPrompts: false);
+            var cli = CliArguments.Parse(["--mode", "json", "--", "@diagram.png"]);
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+
+            await JsonPromptMode.RunAsync(conversation, run, new ConversationStore(root, Path.Combine(root, "sessions")),
+                null, resources, cli.Prompt, "", cli, root, output, error);
+
+            using var processed = SKBitmap.Decode(Assert.Single(client.RequestImages));
+            Assert.Equal((12, 6), (processed!.Width, processed.Height));
+            Assert.Empty(error.ToString());
+            var records = output.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => JsonDocument.Parse(line)).ToArray();
+            try
+            {
+                Assert.Contains(records, record => record.RootElement.TryGetProperty("data", out var data) &&
+                    data.TryGetProperty("Type", out var type) && type.GetString() == "prompt_accepted" &&
+                    data.GetProperty("Text").GetString()!.Contains(
+                        "<file name=\"" + Path.Combine(root, "diagram.png") + "\"></file>", StringComparison.Ordinal));
+            }
+            finally { foreach (var record in records) record.Dispose(); }
+            var stored = Assert.Single(conversation.ActiveMessages().Where(message => message.Role == ChatRole.User)
+                .SelectMany(message => message.Contents.OfType<DataContent>()));
+            using var storedImage = SKBitmap.Decode(stored.Data.ToArray());
+            Assert.Equal((12, 6), (storedImage!.Width, storedImage.Height));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task FailedSkillReadIsReportedOnStderrAndOriginalInputStillSettles()
     {
@@ -194,5 +240,34 @@ public sealed class JsonEventModeTests
         }
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
+    }
+
+    private sealed class ImageCaptureClient : IChatClient
+    {
+        public List<byte[]> RequestImages { get; } = [];
+
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+            ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            RequestImages.AddRange(messages.SelectMany(message => message.Contents).OfType<DataContent>()
+                .Select(content => content.Data.ToArray()));
+            yield return new ChatResponseUpdate(ChatRole.Assistant, "image received");
+            await Task.CompletedTask;
+        }
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+        public void Dispose() { }
+    }
+
+    private static byte[] CreatePng(int width, int height)
+    {
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.CornflowerBlue);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        return encoded.ToArray();
     }
 }

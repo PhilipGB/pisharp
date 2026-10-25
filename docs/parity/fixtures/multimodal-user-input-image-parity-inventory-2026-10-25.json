@@ -1,0 +1,161 @@
+{
+  "goal": "Complete Multimodal User Input and Image Parity",
+  "status": "in_progress",
+  "pinnedPi": {
+    "repository": "https://github.com/earendil-works/pi",
+    "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "sourceFiles": [
+      "packages/coding-agent/src/cli/file-processor.ts",
+      "packages/coding-agent/src/core/agent-session.ts",
+      "packages/coding-agent/src/utils/image-process.ts",
+      "packages/coding-agent/src/utils/image-resize-core.ts",
+      "packages/coding-agent/src/utils/clipboard-image.ts"
+    ]
+  },
+  "prerequisite": {
+    "pr": 25,
+    "state": "merged",
+    "mergeCommit": "897bc5778f87ed09ea42e48b260479ee6a6a218c"
+  },
+  "branch": {
+    "name": "milestone/multimodal-user-input-image-parity",
+    "baseSha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
+    "published": false
+  },
+  "differential": {
+    "report": "multimodal-image-differential-2026-10-25.json",
+    "strict": { "passed": 3, "total": 3 },
+    "codecEquivalent": { "passed": 2, "total": 2 },
+    "samePiCalibration": { "runs": 2, "stable": true },
+    "scope": "processImage prompt normalization only",
+    "fileArguments": {
+      "report": "multimodal-file-argument-differential-2026-10-25.json",
+      "passed": 2,
+      "total": 2,
+      "samePiCalibration": { "runs": 2, "stable": true },
+      "scope": "Pinned processFileArguments plus buildInitialMessage versus PiSharp CliFileArguments.ProcessFilesAsync"
+    },
+    "providerWire": {
+      "report": "multimodal-provider-wire-differential-2026-10-25.json",
+      "passed": 3,
+      "total": 3,
+      "protocols": ["openai-responses", "openai-completions", "anthropic-messages"],
+      "samePiCalibration": { "runs": 2, "stable": true }
+    }
+  },
+  "pinnedPiSuiteRun": {
+    "filesPassed": 12,
+    "testsPassed": 96,
+    "sha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "environmentNote": "The temporary exact-pin checkout used empty generated model-catalog placeholders because catalog files were unavailable; this run does not validate catalog contents."
+  },
+  "capabilities": [
+    {
+      "id": "positional-image-detection-and-conversion",
+      "classification": "implemented_partial",
+      "upstream": "packages/coding-agent/src/cli/file-processor.ts:processFileArguments",
+      "pisharp": "src/PiSharp.Cli/Startup/CliFileArguments.cs:ProcessFilesAsync",
+      "inputs": ["PNG", "JPEG", "GIF", "WebP", "BMP", "truncated image", "extension/content mismatch"],
+      "evidence": [
+        "tests/PiSharp.Tests/Cli/Startup/CliFileArgumentsImageTests.cs",
+        "tests/PiSharp.Tests/Runtime/Agents/MultimodalRuntimeTests.cs",
+        "tools/parity/multimodal-image-differential.py",
+        "multimodal-file-argument-differential-2026-10-25.json"
+      ],
+      "difference": "The paired application corpus covers mixed UTF-8 text, Unicode/spaced paths, content-sniffed PNG, duplicate/empty files, BMP conversion and prompt composition. Relative/absolute/home expansion, symlink, JPEG/GIF/WebP, malformed input, cancellation and resource-limit behavior still need distinct paired cases."
+    },
+    {
+      "id": "shared-image-processing",
+      "classification": "source_pinned_differential_pass",
+      "upstream": "packages/coding-agent/src/utils/image-process.ts:processImage",
+      "pisharp": "src/PiSharp.Runtime/Tools/ReadImageProcessor.cs:Process",
+      "inputs": ["pass-through PNG", "model-limited PNG resize", "resize disabled", "BMP conversion", "truncated PNG"],
+      "evidence": ["multimodal-image-differential-2026-10-25.json"],
+      "difference": "PNG resize and BMP encoded bytes are codec-equivalent by MIME, decoded dimensions and hints; encoded bytes are intentionally not compared."
+    },
+    {
+      "id": "model-specific-limits-and-selected-model",
+      "classification": "implemented_verified_focused",
+      "upstream": "packages/coding-agent/src/core/agent-session.ts:_prepareRun and _normalizePromptImages",
+      "pisharp": "src/PiSharp.Runtime/Agents/PiAgent.cs:NormalizeAcceptedPromptImagesAsync; src/PiSharp.Runtime/Sessions/ConversationRun.cs:RunEventsCoreAsync",
+      "inputs": ["model resize profile", "before_agent_start model runtime change"],
+      "evidence": [
+        "pinned packages/coding-agent/test/suite/agent-session-prompt.test.ts: uses the model selected by before_agent_start for image normalization",
+        "tests/PiSharp.Tests/Runtime/Agents/MultimodalRuntimeTests.cs: BeforeAgentStartModelSelectionControlsCanonicalPromptImageNormalization"
+      ],
+      "difference": "Physical virtual-model routing remains additionally projected at the provider boundary; complete parity for every virtual-route interleaving remains to be documented."
+    },
+    {
+      "id": "interactive-json-rpc-and-print-input",
+      "classification": "implemented_verified_focused",
+      "upstream": "packages/coding-agent/src/modes/interactive/interactive-mode.ts; packages/coding-agent/src/cli/file-processor.ts",
+      "pisharp": "src/PiSharp.Cli/Tui/Commands/InteractivePromptExecution.cs; src/PiSharp.Cli/Startup/PrintPromptMode.cs; src/PiSharp.Cli/Protocols/Json/JsonPromptMode.cs; src/PiSharp.Cli/Protocols/Rpc/RpcMode.cs",
+      "evidence": [
+        "tests/PiSharp.Tests/Cli/Tui/InteractivePromptExecutionInputTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Json/JsonEventModeTests.cs",
+        "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcInputRoutingTests.cs",
+        "tests/PiSharp.Tests/Cli/Startup/PrintModeMultimodalProcessTests.cs"
+      ],
+      "difference": "Focused local print, JSON, RPC and interactive coverage exists, including 35/35 current interface/clipboard checks. Pinned Pi print and prompt tests pass, but paired JSON/RPC workflow and clipboard acquisition evidence remain open."
+    },
+    {
+      "id": "provider-wire-image-serialization",
+      "classification": "source_pinned_differential_pass",
+      "upstream": "packages/ai/src/providers/openai/*; packages/ai/src/providers/anthropic/*",
+      "pisharp": "src/PiSharp.Cli/Providers/; tests/PiSharp.Tests/Cli/Providers/ProviderChatClientFactoryTests.cs",
+      "inputs": ["OpenAI Responses", "OpenAI Chat Completions", "Anthropic Messages"],
+      "evidence": [
+        "tests/PiSharp.Tests/Cli/Providers/ProviderChatClientFactoryTests.cs:AgentAppliesPinnedImageProfileBeforeProviderWireProjection",
+        "multimodal-provider-wire-differential-2026-10-25.json"
+      ],
+      "difference": "The three supported provider image requests match pinned physical boundaries for ordered text/image parts and exact PNG bytes; blocked-image and image-bearing continuation wire cases remain outside this focused report."
+    },
+    {
+      "id": "clipboard-image-and-path-precedence",
+      "classification": "implemented_partial",
+      "upstream": "packages/coding-agent/src/utils/clipboard-image.ts",
+      "pisharp": "src/PiSharp.Cli/Tui/Clipboard/TerminalClipboard.cs; src/PiSharp.Cli/Tui/Clipboard/TerminalClipboardActions.cs",
+      "evidence": ["tests/PiSharp.Tests/Cli/Tui/Clipboard/TerminalClipboardTests.cs"],
+      "difference": "Empty clipboard and backend errors are distinguished; focused PiSharp clipboard tests pass and the pinned clipboard corpus passes 51/51 with print/prompt tests. A direct paired acquisition report is still open; dedicated native macOS and Windows clipboard CI jobs remain to be run on the published head."
+    },
+    {
+      "id": "image-blocking-and-capability-restrictions",
+      "classification": "implemented_verified_existing_coverage",
+      "upstream": "packages/coding-agent/test/block-images.test.ts",
+      "pisharp": "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs; src/PiSharp.Runtime/Sessions/RoutedChatClient.cs",
+      "evidence": ["tests/PiSharp.Tests/Runtime/Agents/MultimodalRuntimeTests.cs", "tests/PiSharp.Tests/Runtime/VirtualModels/VirtualModelRoutingTests.cs"],
+      "difference": "No new discrepancy recorded in the focused review."
+    },
+    {
+      "id": "canonical-history-persistence-and-continuation",
+      "classification": "corrected_focused_regression_pass",
+      "upstream": "packages/coding-agent/src/core/agent-session.ts:_prepareRun",
+      "pisharp": "src/PiSharp.Runtime/Agents/PiAgent.cs; src/PiSharp.Runtime/Sessions/ConversationRun.cs",
+      "evidence": ["tests/PiSharp.Tests/Runtime/Agents/MultimodalRuntimeTests.cs", "tests/PiSharp.Tests/Cli/Protocols/Json/JsonEventModeTests.cs", "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcInputRoutingTests.cs"],
+      "difference": "PiSharp previously stored raw prompt image bytes while Pi stores normalized bytes; accepted-input normalization now occurs after before_agent_start selection and before canonical persistence. The full .NET suite passes; saved-session restart with image-bearing provider continuation remains open."
+    },
+    {
+      "id": "reliability-cancellation-and-resource-bounds",
+      "classification": "implemented_partial",
+      "upstream": "packages/coding-agent/src/cli/file-processor.ts; packages/coding-agent/src/utils/image-process.ts",
+      "pisharp": "src/PiSharp.Cli/Startup/CliFileArguments.cs; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs",
+      "evidence": ["tests/PiSharp.Tests/Cli/Startup/CliFileArgumentsImageTests.cs", "tests/PiSharp.Tests/Runtime/Tools/ReadImageProcessorTests.cs"],
+      "difference": "Bounded image read and growth behavior are covered locally; full malformed, cancellation and memory-bound acceptance remains pending."
+    },
+    {
+      "id": "native-platform-clipboard",
+      "classification": "platform_unverified",
+      "upstream": "packages/coding-agent/test/clipboard-image-native-errors.test.ts",
+      "pisharp": "src/PiSharp.Cli/Tui/Clipboard/TerminalClipboard.cs",
+      "evidence": ["Linux focused clipboard tests"],
+      "difference": "Native clipboard process verification is configured in dedicated macOS and Windows CI jobs; exact-head results are pending."
+    }
+  ],
+  "remaining": [
+    "Complete paired clipboard acquisition, JSON/RPC workflow and image-bearing session-continuation evidence, including saved-session restart.",
+    "Expand paired reliability evidence for adversarial image counts, limits, cancellation and malformed inputs.",
+    "Run applicable macOS and Windows platform CI and inspect all exact-head checks.",
+    "Update the feature matrix, execution ledger, continuation and TODO receipts.",
+    "Commit, push and publish a new open draft PR; verify exact-head push and PR CI."
+  ]
+}

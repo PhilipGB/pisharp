@@ -132,7 +132,7 @@ internal sealed class ModelRuntimeController(
             prepared.Connection.Endpoint?.ToString(), prepared.Selection.Provider.Id,
             prepared.Pricing, prepared.ContextPolicy, prepared.KeepRecentTokens, prepared.Thinking, prepared.ReasoningOptions,
             () => activeAgent.SetModelRuntime(prepared.ChatClient, prepared.SupportsImages, prepared.ImageResizeOptions,
-                prepared.VirtualModelRouter), providerApi: ProviderChatClientFactory.ResolveProtocol(prepared.Selection),
+                prepared.VirtualModelRouter, autoResizeImages: prepared.AutoResizeImages), providerApi: ProviderChatClientFactory.ResolveProtocol(prepared.Selection),
             notifyAfterActivation: notifyAfterActivation is null ? null : token =>
                 notifyAfterActivation(prepared, token), updateSelectionOwner: () => updateCurrent(prepared)))
         {
@@ -149,6 +149,6 @@ internal sealed record PreparedModelRuntime(ModelSelection Selection, string Thi
     bool AutoResizeImages = true)
 {
     public bool SupportsImages => Selection.Model.Input?.Contains("image", StringComparer.Ordinal) != false;
-    public ModelImageResizeOptions? ImageResizeOptions => AutoResizeImages ? Selection.Model.InputLimits?.Images?.Resize : null;
+    public ModelImageResizeOptions? ImageResizeOptions => Selection.Model.InputLimits?.Images?.Resize;
     public ReasoningOptions? ReasoningOptions => ThinkingLevels.ToOptions(Thinking, Selection.Model.ThinkingLevelMap);
 }

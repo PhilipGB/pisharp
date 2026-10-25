@@ -8,13 +8,15 @@ internal static class ReadImageProcessor
 {
     private const int MaxDimension = 2000;
     internal const int MaxBase64Bytes = 4_718_592;
+    internal const int MaxInputBytes = 20 * 1024 * 1024;
 
     public static ReadToolOutput Process(byte[] input, string sourceMimeType,
         CancellationToken cancellationToken = default, ModelImageResizeOptions? resizeOptions = null,
-        Action? imageDecoded = null)
+        Action? imageDecoded = null, bool autoResizeImages = true)
     {
-        var normalizedMimeType = NormalizeMimeType(sourceMimeType);
-        var convertedFrom = normalizedMimeType is null ? sourceMimeType : null;
+        var baseMimeType = sourceMimeType.Split(';', 2)[0].Trim().ToLowerInvariant();
+        var normalizedMimeType = NormalizeMimeType(baseMimeType);
+        var convertedFrom = normalizedMimeType is null ? baseMimeType : null;
         var maxWidth = resizeOptions?.MaxWidth ?? MaxDimension;
         var maxHeight = resizeOptions?.MaxHeight ?? MaxDimension;
         var maxBase64Bytes = resizeOptions?.MaxBytes ?? MaxBase64Bytes;
@@ -22,6 +24,8 @@ internal static class ReadImageProcessor
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (input.Length > MaxInputBytes)
+                return Omitted(sourceMimeType, conversionFailed: false, resizeFailed: true);
             using var encodedStream = new MemoryStream(input, writable: false);
             using var codec = SKCodec.Create(encodedStream);
             if (codec is null) return Omitted(sourceMimeType, convertedFrom is not null);
@@ -50,6 +54,14 @@ internal static class ReadImageProcessor
 
             var originalWidth = original.Width;
             var originalHeight = original.Height;
+            if (!autoResizeImages)
+            {
+                if (imageBytes.Length > MaxInputBytes)
+                    return Omitted(sourceMimeType, conversionFailed: false, resizeFailed: true);
+                var payloadLimit = checked((int)Base64Length(imageBytes.Length) + 1);
+                return CreateOutput(imageBytes, imageMimeType, originalWidth, originalHeight,
+                    originalWidth, originalHeight, wasResized: false, convertedFrom, payloadLimit);
+            }
             var payloadLength = Base64Length(imageBytes.Length);
             var wasResized = originalWidth > maxWidth || originalHeight > maxHeight || payloadLength >= maxBase64Bytes;
             if (!wasResized)

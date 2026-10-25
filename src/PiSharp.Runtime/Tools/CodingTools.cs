@@ -18,18 +18,21 @@ public sealed class CodingTools
     private readonly ShellExecution _shell;
 
     public CodingTools(string workingDirectory, string? shellPath = null,
-        ModelImageResizeOptions? imageResizeOptions = null, string? shellCommandPrefix = null)
+        ModelImageResizeOptions? imageResizeOptions = null, string? shellCommandPrefix = null,
+        bool autoResizeImages = true)
     {
         _cwd = Path.GetFullPath(workingDirectory);
-        _reader = new FileReader(_cwd, imageResizeOptions);
+        _reader = new FileReader(_cwd, imageResizeOptions, autoResizeImages: autoResizeImages);
         _mutations = new FileMutations(_cwd);
         _shell = new ShellExecution(_cwd, shellPath, shellCommandPrefix);
     }
 
     internal ModelImageResizeOptions? ImageResizeOptions => _reader.ImageResizeOptions;
+    internal bool AutoResizeImages => _reader.AutoResizeImages;
     internal string WorkingDirectory => _cwd;
 
     public void SetImageResizeOptions(ModelImageResizeOptions? options) => _reader.SetImageResizeOptions(options);
+    public void SetAutoResizeImages(bool enabled) => _reader.SetAutoResizeImages(enabled);
     internal void SetReadModelSupportsImages(bool supportsImages) => _reader.SetModelSupportsImages(supportsImages);
 
     public IList<AITool> Create(IReadOnlyList<string>? requested = null, IReadOnlyList<string>? excluded = null, bool noTools = false)
