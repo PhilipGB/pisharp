@@ -15,7 +15,7 @@ jobs:
         run: >-
           dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore
           --filter 'FullyQualifiedName~ConcurrentSessionLeasesInOneProcessWaitForTheCurrentWriter|FullyQualifiedName~ConcurrentSessionLeaseAliasesWaitForTheCurrentWriter|FullyQualifiedName~CancelledStoreSaveWaitingForLeaseKeepsPersistedSnapshotAndCleansNoTempFiles|FullyQualifiedName~ConcurrentProcessSaveWaitsForTheSessionLeaseAndPersistsTheToolOutcome'
-  macos-native-clipboard:
+  macos-clipboard-contracts:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +23,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore tests/PiSharp.Tests/PiSharp.Tests.csproj
-      - name: Verify native macOS image and file clipboard input
-        run: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter 'FullyQualifiedName~NativeClipboardProcessTests|FullyQualifiedName~TerminalClipboardTests'
-  windows-native-clipboard:
+      - name: Verify macOS AppleScript and clipboard contracts
+        run: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter FullyQualifiedName~TerminalClipboardTests
+  windows-clipboard-contracts:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,8 +33,8 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore tests/PiSharp.Tests/PiSharp.Tests.csproj
-      - name: Verify native Windows image clipboard input
-        run: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter 'FullyQualifiedName~NativeClipboardProcessTests|FullyQualifiedName~TerminalClipboardTests'
+      - name: Verify Windows clipboard script and cleanup contracts
+        run: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter FullyQualifiedName~TerminalClipboardTests
   test:
     runs-on: ubuntu-latest
     steps:
@@ -82,6 +82,8 @@ jobs:
           python3 tools/parity/multimodal-file-argument-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/file-arguments.json
           python3 tools/parity/multimodal-provider-wire-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/provider-wire.json
           python3 tools/parity/multimodal-session-continuation-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/session-continuation.json
+          python3 tools/parity/multimodal-clipboard-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/clipboard.json
+          python3 tools/parity/multimodal-protocol-image-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/protocol-images.json
       - run: |
           mkdir -p artifacts/parity/builtin-ownership
           PI_OFFLINE=1 node tools/parity/builtin-coding-tool-probe.mjs artifacts/parity/pi-ownership-oracle /dev/null artifacts/parity/builtin-ownership/pinned.json --mutation-ownership-only

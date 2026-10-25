@@ -10,17 +10,20 @@ Positional, interactive, JSON, RPC, clipboard, provider-wire and image-processin
 changes are in progress. The pinned image processor differential passes 3/3
 strict and 2/2 codec-equivalent cases; the paired file-argument/initial-message
 corpus passes 2/2, and the physical Responses, Chat Completions and Anthropic
-image-wire comparisons pass 3/3. The file differential reproduced and drove a
-fix for an extra blank line before the prompt. The selected-model canonical
-history mismatch is corrected; its PiSharp regression and the pinned
-`before_agent_start` test pass. The prior full suite passed 3,878/3,878 before
-the latest prompt-composition and native clipboard test changes; the fresh full
-suite now passes 3,879/3,879 with zero failures or skips. Current focused
-interface/clipboard tests pass 35/35, and format/build checks pass. Dedicated
-macOS and Windows native clipboard CI jobs are configured. Paired clipboard,
-JSON/RPC workflow evidence, physical provider-wire continuation after saved
-session restart, broader adversarial cases, and exact-head CI remain outstanding.
-The saved-session canonical/provider-context comparison passes 3/3 strict cases.
+image-wire comparisons pass 3/3. New paired Linux clipboard cases pass 3/3;
+JSON-mode and RPC prompt comparisons pass 2/2, all stable across two pinned Pi
+runs. The file differential reproduced and drove a fix for an extra blank line
+before the prompt. The selected-model canonical history mismatch is corrected;
+its PiSharp regression and the pinned `before_agent_start` test pass. The fresh
+full suite passes 3,881/3,881; format and warning-as-error build pass. Python
+parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. The paired
+JSON-mode probe includes a malformed PNG followed by a valid PNG and matches
+the pinned omission note and remaining image. macOS and Windows CI now verify
+native clipboard scripts and cleanup contracts; live clipboard access is not
+available on hosted runners. Physical provider-wire continuation after saved
+session restart, broader adversarial cases, documentation-path revalidation,
+and exact-head CI remain open. The saved-session canonical/provider-context
+comparison passes 3/3 strict cases.
 Draft PR #26 is open, draft and unmerged.
 Keep the new PR open, draft and unmerged. See the [multimodal parity receipt](docs/parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](docs/parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).

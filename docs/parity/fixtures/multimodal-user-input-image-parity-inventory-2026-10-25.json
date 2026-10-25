@@ -22,7 +22,7 @@
     "baseSha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
     "published": true,
     "draftPr": "https://github.com/PhilipGB/pisharp/pull/26",
-    "currentHead": "6b43565dd3efa9a9c2931215caac47437914b158"
+    "currentHead": "73cdce52f5f911bf04f800af20dffd98c4c5fcf4"
   },
   "differential": {
     "report": "multimodal-image-differential-2026-10-25.json",
@@ -51,12 +51,28 @@
     "samePiCalibration": { "runs": 2, "stable": true },
     "scope": "Initial provider content, restored canonical user content, and continuation provider content after reopening a saved session"
   },
+  "clipboardAcquisition": {
+    "report": "multimodal-clipboard-differential-2026-10-25.json",
+    "strict": { "passed": 3, "total": 3 },
+    "samePiCalibration": { "runs": 2, "stable": true },
+    "scope": "Linux Wayland MIME preference, empty clipboard behavior, and X11 fallback; exact PNG bytes and command sequence"
+  },
+  "protocolImages": {
+    "report": "multimodal-protocol-image-differential-2026-10-25.json",
+    "strict": { "passed": 2, "total": 2 },
+    "samePiCalibration": { "runs": 2, "stable": true },
+    "scope": "Provider-visible JSON-mode file input containing a malformed image followed by valid PNG, plus an RPC image prompt"
+  },
   "localVerification": {
-    "fullDotnet": { "passed": 3879, "failed": 0, "skipped": 0 },
+    "fullDotnet": { "passed": 3881, "failed": 0, "skipped": 0 },
     "focusedInputClipboardJsonRpcPrint": { "passed": 35, "failed": 0, "skipped": 0 },
     "savedSessionContinuationRegression": { "passed": 1, "failed": 0, "skipped": 0 },
     "format": "passed",
     "warningAsErrorBuild": "passed",
+    "terminalClipboardFocused": { "passed": 30, "failed": 0, "skipped": 0 },
+    "pythonParity": { "passed": 27, "failed": 0 },
+    "terminalPython": { "passed": 66, "failed": 0 },
+    "terminalNode": { "passed": 24, "failed": 0 },
     "documentationPaths": { "documents": 153, "references": 657, "result": "passed" }
   },
   "pinnedPiSuiteRun": {
@@ -168,10 +184,9 @@
     }
   ],
   "remaining": [
-    "Complete paired clipboard acquisition and JSON/RPC workflow evidence.",
     "Verify physical provider-wire continuation after saved-session restart and image behavior on active/inactive branches.",
     "Expand paired reliability evidence for adversarial image counts, limits, cancellation and malformed inputs.",
-    "Run applicable macOS and Windows platform CI and inspect all exact-head checks.",
+    "Run macOS and Windows script/cleanup contract CI and inspect all exact-head checks; live desktop clipboard access is not available on hosted runners.",
     "Update the feature matrix, execution ledger, continuation and TODO receipts.",
     "Commit, push and publish a new open draft PR; verify exact-head push and PR CI."
   ]

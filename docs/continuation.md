@@ -12,15 +12,20 @@ passes 2/2, and paired physical image requests pass for OpenAI Responses, Chat
 Completions and Anthropic (3/3). The file comparison exposed an extra blank line
 before the prompt; PiSharp now follows pinned `buildInitialMessage` concatenation.
 Pinned Pi's selected-model `before_agent_start` normalization test passes 1/1.
-PiSharp normalizes accepted image prompts before canonical persistence. The
-focused PiSharp interface/clipboard selection passes 35/35; pinned Pi
-clipboard/print/prompt selections pass 51/51. A saved-session restart and
+PiSharp normalizes accepted image prompts before canonical persistence. Pinned
+Pi clipboard/print/prompt selections pass 51/51. Paired Linux clipboard
+acquisition passes 3/3, and JSON-mode plus RPC prompt content passes 2/2; both
+reports are stable across two pinned Pi runs. A saved-session restart and
 provider-continuation differential passes 3/3 strict comparisons and is stable
-across two pinned Pi runs. The fresh full .NET suite passes 3,879/3,879, and
-current format/build checks pass. Dedicated macOS and Windows native clipboard
-CI jobs are configured; paired clipboard/JSON/RPC evidence, physical provider
-wire continuation after restart, exact-head CI and remaining draft PR follow-up
-remain. Draft PR #26 is open at its current head. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
+across two pinned Pi runs. The JSON probe includes a truncated image followed by
+a valid image and matches PiSharp's omission note and surviving image. The fresh
+full .NET suite passes 3,881/3,881; format and warning-as-error build pass.
+Python parity passes 27/27, terminal Python 66/66, and terminal Node 24/24.
+Dedicated macOS and Windows jobs verify clipboard script syntax and cleanup
+contracts, not live desktop clipboard access. Physical provider-wire
+continuation after restart, broader adversarial cases, documentation-path
+revalidation and exact-head CI remain. Draft PR #26 stays open, draft and
+unmerged. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 
 ## Previous milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24

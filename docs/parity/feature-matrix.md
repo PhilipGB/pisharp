@@ -5,13 +5,15 @@ branch milestone/multimodal-user-input-image-parity is based on that commit;
 Pi remains pinned at b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6. Pinned image
 processing passes 3/3 strict and 2/2 codec-equivalent cases; paired positional
 file/initial-message cases pass 2/2; physical image-wire requests pass for all
-three supported protocols. The prior full suite passed 3,878/3,878 before the
-latest prompt-composition and native clipboard test changes; the fresh full
-suite now passes 3,879/3,879 with zero failures or skips. The current focused
-interface/clipboard selection passes 35/35, and current build/format checks
-pass. Dedicated macOS and Windows clipboard jobs are configured. Paired
-clipboard, JSON/RPC and session-continuation evidence, and exact-head CI remain
-open. See the multimodal receipt and inventory.
+three supported protocols. Paired Linux clipboard acquisition passes 3/3 and
+JSON/RPC provider-visible prompt content passes 2/2, including malformed-image
+omission followed by a valid attachment; each report is stable across two Pi
+runs. Saved-session continuation passes 3/3. The fresh full .NET suite passes
+3,881/3,881; format, warning-as-error build, Python parity (27/27), terminal
+Python (66/66), and terminal Node (24/24) pass. macOS and Windows jobs verify
+native clipboard script/cleanup contracts. Physical provider-wire continuation
+after restart, broader adversarial coverage, documentation-path revalidation and
+exact-head CI remain open. See the multimodal receipt and inventory.
 
 ## Completed prerequisite — Session JSONL Persistence and Crash Recovery Parity — 2026-10-25
 

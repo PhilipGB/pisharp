@@ -170,6 +170,74 @@ public sealed class TerminalClipboardTests
     }
 
     [Fact]
+    public async Task WindowsClipboardImageUsesStaPowerShellAndRemovesItsTemporaryPng()
+    {
+        var png = CreatePng();
+        string? temporaryPath = null;
+        var commands = new FakeCommands((name, arguments, _) =>
+        {
+            Assert.Equal("powershell.exe", name);
+            Assert.Equal("-STA", arguments[1]);
+            var script = arguments[3];
+            const string marker = "$path = '";
+            var pathStart = script.IndexOf(marker, StringComparison.Ordinal) + marker.Length;
+            var pathEnd = script.IndexOf("';", pathStart, StringComparison.Ordinal);
+            Assert.True(pathStart >= marker.Length && pathEnd > pathStart);
+            temporaryPath = script[pathStart..pathEnd].Replace("''", "'", StringComparison.Ordinal);
+            File.WriteAllBytes(temporaryPath, png);
+            return new(0, Encoding.UTF8.GetBytes("ok"));
+        });
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.Windows);
+
+        var image = await clipboard.ReadImageAsync();
+
+        Assert.Equal("image/png", image?.MimeType);
+        Assert.Equal(png, image?.Bytes);
+        Assert.False(File.Exists(temporaryPath));
+        Assert.Single(commands.Invocations);
+        Assert.Equal("-STA", commands.Invocations[0].Arguments[1]);
+    }
+
+    [Fact]
+    public async Task WindowsClipboardPowerShellScriptCompilesOnWindows()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var png = CreatePng();
+        string? script = null;
+        var commands = new FakeCommands((_, arguments, _) =>
+        {
+            script = arguments[3];
+            const string marker = "$path = '";
+            var pathStart = script.IndexOf(marker, StringComparison.Ordinal) + marker.Length;
+            var pathEnd = script.IndexOf("';", pathStart, StringComparison.Ordinal);
+            var path = script[pathStart..pathEnd].Replace("''", "'", StringComparison.Ordinal);
+            File.WriteAllBytes(path, png);
+            return new(0, Encoding.UTF8.GetBytes("ok"));
+        });
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.Windows);
+        Assert.NotNull(await clipboard.ReadImageAsync());
+        Assert.NotNull(script);
+
+        var command = "$null = [scriptblock]::Create('" + script.Replace("'", "''", StringComparison.Ordinal) + "')";
+        var start = new ProcessStartInfo("powershell.exe")
+        {
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true
+        };
+        start.ArgumentList.Add("-NoProfile");
+        start.ArgumentList.Add("-NonInteractive");
+        start.ArgumentList.Add("-EncodedCommand");
+        start.ArgumentList.Add(Convert.ToBase64String(Encoding.Unicode.GetBytes(command)));
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start PowerShell.");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var error = process.StandardError.ReadToEndAsync(timeout.Token);
+        await process.WaitForExitAsync(timeout.Token);
+        Assert.True(process.ExitCode == 0, await error);
+    }
+
+    [Fact]
     public async Task MacClipboardFilePathsAreReadAsBoundedJson()
     {
         var paths = new[] { "/tmp/screenshot.png", "/tmp/My Photos/photo.png" };
