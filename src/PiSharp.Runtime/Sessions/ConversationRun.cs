@@ -694,12 +694,15 @@ public sealed partial class ConversationRun
                             customStart);
                     var acceptedMessages = turn.Messages.Concat(injectedMessages.Select(
                         PiSharpCustomMessageProjection.ToChatMessage)).ToArray();
+                    acceptedMessages = (await _agent.NormalizeAcceptedPromptImagesAsync(acceptedMessages,
+                        linked.Token).ConfigureAwait(false)).ToArray();
                     outcome = await _retryController.RunTurnAsync(
                         (continuation, observeAttempt) => continuation || turn.Continuation
                             ? RunStreamingContinuationAsync(turn.Text, linked.Token, observeAttempt)
                             : turn.SkipBeforeAgentStart || customStart is not null || injectedMessages.Count > 0 || acceptedMessages.Length > 1
                                 ? RunStreamingAcceptedMessagesAsync(acceptedMessages, turn.Text, linked.Token, observeAttempt)
-                                : RunStreamingAsync(currentMessage!, turn.Texts[0], linked.Token, observeAttempt),
+                                : RunStreamingAttemptAsync(acceptedMessages[0], turn.Texts[0], false,
+                                    linked.Token, observeAttempt),
                         item =>
                         {
                             if (item.Type == "prompt_accepted") accepted = true;
@@ -1401,9 +1404,16 @@ public sealed partial class ConversationRun
         CancellationToken cancellationToken = default, Action<AgentLifecycleEvent>? onEvent = null) =>
         RunStreamingAsync(new ChatMessage(ChatRole.User, prompt), prompt, cancellationToken, onEvent);
 
-    public IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(ChatMessage promptMessage, string prompt,
-        CancellationToken cancellationToken = default, Action<AgentLifecycleEvent>? onEvent = null) =>
-        RunStreamingAttemptAsync(promptMessage, prompt, false, cancellationToken, onEvent);
+    public async IAsyncEnumerable<AgentResponseUpdate> RunStreamingAsync(ChatMessage promptMessage, string prompt,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default,
+        Action<AgentLifecycleEvent>? onEvent = null)
+    {
+        var normalizedMessages = await _agent.NormalizeAcceptedPromptImagesAsync([promptMessage], cancellationToken)
+            .ConfigureAwait(false);
+        await foreach (var update in RunStreamingAttemptAsync(normalizedMessages[0], prompt, false,
+            cancellationToken, onEvent).WithCancellation(cancellationToken).ConfigureAwait(false))
+            yield return update;
+    }
 
     private IAsyncEnumerable<AgentResponseUpdate> RunStreamingAcceptedMessagesAsync(
         IReadOnlyList<ChatMessage> promptMessages, string prompt, CancellationToken cancellationToken,

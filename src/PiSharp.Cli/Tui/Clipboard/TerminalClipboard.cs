@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Cli.Tui;
@@ -13,8 +14,27 @@ internal sealed class TerminalClipboard
     private const int MaximumOsc52EncodedLength = 100_000;
     private const int MaximumImageBytes = 20 * 1024 * 1024;
     private const int MaximumClipboardTypeBytes = 16 * 1024;
+    private const int MaximumClipboardPathBytes = 1024 * 1024;
     private static readonly string[] s_preferredImageTypes = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-    private const string MacImageScript = "on run argv\ntry\nset imageData to the clipboard as «class PNGf»\nset imagePath to item 1 of argv\nset imageFile to open for access (POSIX file imagePath) with write permission\nset eof of imageFile to 0\nwrite imageData to imageFile\nclose access imageFile\nreturn \"ok\"\non error\ntry\nclose access imageFile\nend try\nreturn \"empty\"\nend try\nend run";
+    internal const string MacFilePathsScript = """
+        use framework "AppKit"
+        use framework "Foundation"
+        use scripting additions
+        set pasteboard to current application's NSPasteboard's generalPasteboard()
+        set urlClasses to current application's NSArray's arrayWithObject:(current application's NSURL)
+        set options to current application's NSDictionary's dictionaryWithObject:(current application's NSNumber's numberWithBool:true) forKey:(current application's NSPasteboardURLReadingFileURLsOnlyKey)
+        set urls to pasteboard's readObjectsForClasses:urlClasses options:options
+        set paths to current application's NSMutableArray's array()
+        if urls is not missing value then
+            repeat with fileUrl in urls
+                paths's addObject:(fileUrl's |path|())
+            end repeat
+        end if
+        set jsonData to current application's NSJSONSerialization's dataWithJSONObject:paths options:0 |error|:(missing value)
+        set jsonText to current application's NSString's alloc()'s initWithData:jsonData encoding:(current application's NSUTF8StringEncoding)
+        return jsonText as text
+        """;
+    internal const string MacImageScript = "on run argv\ntry\nset clipboardTypes to clipboard info\nif clipboardTypes does not contain «class PNGf» and clipboardTypes does not contain «class TIFF» then return \"empty\"\nset imageData to the clipboard as «class PNGf»\nif (count of imageData) > 20971520 then return \"large\"\nset imagePath to item 1 of argv\nset imageFile to open for access (POSIX file imagePath) with write permission\nset eof of imageFile to 0\nwrite imageData to imageFile\nclose access imageFile\nreturn \"ok\"\non error errorMessage number errorNumber\ntry\nclose access imageFile\nend try\nreturn \"error:\" & errorNumber & \":\" & errorMessage\nend try\nend run";
     private readonly IClipboardCommandRunner _commands;
     private readonly Func<string, string?> _environment;
     private readonly Action<string> _writeTerminalControl;
@@ -87,10 +107,33 @@ internal sealed class TerminalClipboard
         }
 
         if (image is null || image.Bytes.Length == 0 || image.Bytes.Length > MaximumImageBytes) return null;
-        var processed = ReadImageProcessor.Process(image.Bytes, image.MimeType, cancellationToken);
+        var processed = ReadImageProcessor.Process(image.Bytes, image.MimeType, cancellationToken,
+            autoResizeImages: false);
         if (processed.ImageMimeType is not { } mimeType || processed.ImageDataBase64 is not { Length: > 0 } encoded)
             return null;
         return new(Convert.FromBase64String(encoded), mimeType);
+    }
+
+    public async Task<string[]?> ReadFilePathsAsync(CancellationToken cancellationToken = default)
+    {
+        if (_platform != ClipboardPlatform.MacOS) return null;
+        var result = await _commands.RunAsync("osascript", ["-e", MacFilePathsScript], input: null,
+            maximumOutputBytes: MaximumClipboardPathBytes, timeout: TimeSpan.FromSeconds(5), cancellationToken);
+        if (result is not { ExitCode: 0 })
+            throw new IOException("Could not read file paths from the macOS clipboard.");
+
+        try
+        {
+            var paths = JsonSerializer.Deserialize<string[]>(result.Output);
+            if (paths is null || paths.Length == 0) return null;
+            if (paths.Length > 4096 || paths.Any(string.IsNullOrWhiteSpace))
+                throw new InvalidDataException("Clipboard returned invalid file paths.");
+            return paths;
+        }
+        catch (JsonException error)
+        {
+            throw new InvalidDataException("Clipboard returned invalid file paths.", error);
+        }
     }
 
     public async Task CopyTextAsync(string text, CancellationToken cancellationToken = default)
@@ -173,9 +216,17 @@ internal sealed class TerminalClipboard
         {
             var result = await _commands.RunAsync("osascript", ["-e", MacImageScript, path], input: null,
                 maximumOutputBytes: 1024, timeout: TimeSpan.FromSeconds(5), cancellationToken);
-            return result is { ExitCode: 0 } && DecodeText(result.Output)?.Trim() == "ok"
-                ? await ReadTemporaryImageAsync(path, "image/png", cancellationToken)
-                : null;
+            if (result is not { ExitCode: 0 })
+                throw new IOException("Could not read an image from the macOS clipboard.");
+
+            var status = DecodeText(result.Output)?.Trim();
+            return status switch
+            {
+                "empty" => null,
+                "large" => throw new InvalidDataException("Clipboard image exceeds the 20 MiB limit."),
+                "ok" => await ReadTemporaryImageAsync(path, "image/png", cancellationToken),
+                _ => throw new IOException($"macOS clipboard image read failed: {status ?? "no status"}.")
+            };
         }
         finally { TryDelete(path); }
     }
@@ -197,16 +248,30 @@ internal sealed class TerminalClipboard
 
             var escapedPath = commandPath.Replace("'", "''", StringComparison.Ordinal);
             var script = "Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; " +
-                $"$path = '{escapedPath}'; $img = [System.Windows.Forms.Clipboard]::GetImage(); " +
-                "if ($img -and (($img.Width * $img.Height) -le 32000000)) { " +
-                "$img.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); " +
-                "if ((Get-Item $path).Length -le 20971520) { 'ok' } else { Remove-Item -Force $path; 'large' } " +
-                "} else { 'empty' }";
+                $"$path = '{escapedPath}'; $ErrorActionPreference = 'Stop'; " +
+                "try { $img = [System.Windows.Forms.Clipboard]::GetImage(); " +
+                "if (-not $img) { 'empty' } " +
+                "elseif (($img.Width * $img.Height) -gt 32000000) { 'large' } " +
+                "else { $img.Save($path, [System.Drawing.Imaging.ImageFormat]::Png); " +
+                "if ((Get-Item $path).Length -le 20971520) { 'ok' } else { Remove-Item -Force $path; 'large' } } " +
+                "} catch { [Console]::Error.WriteLine($_.Exception.Message); exit 1 }";
             var result = await _commands.RunAsync("powershell.exe", ["-NoProfile", "-STA", "-Command", script], input: null,
                 maximumOutputBytes: 1024, timeout: TimeSpan.FromSeconds(5), cancellationToken);
-            return result is { ExitCode: 0 } && DecodeText(result.Output)?.Trim() == "ok"
-                ? await ReadTemporaryImageAsync(path, "image/png", cancellationToken)
-                : null;
+            if (result is not { ExitCode: 0 })
+            {
+                if (wsl) return null;
+                throw new IOException("Could not read an image from the Windows clipboard.");
+            }
+
+            var status = DecodeText(result.Output)?.Trim();
+            return status switch
+            {
+                "empty" => null,
+                "large" => throw new InvalidDataException("Clipboard image exceeds the 20 MiB limit."),
+                "ok" => await ReadTemporaryImageAsync(path, "image/png", cancellationToken),
+                _ when wsl => null,
+                _ => throw new IOException($"Windows clipboard image read failed: {status ?? "no status"}.")
+            };
         }
         finally { TryDelete(path); }
     }
@@ -214,9 +279,27 @@ internal sealed class TerminalClipboard
     private async Task<TerminalClipboardImage?> ReadTemporaryImageAsync(string path, string mimeType,
         CancellationToken cancellationToken)
     {
-        var info = new FileInfo(path);
-        if (!info.Exists || info.Length is <= 0 or > MaximumImageBytes) return null;
-        return new(await File.ReadAllBytesAsync(path, cancellationToken), mimeType);
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
+            bufferSize: 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        if (stream.Length == 0)
+            throw new InvalidDataException("Clipboard image data is empty.");
+        if (stream.Length > MaximumImageBytes)
+            throw new InvalidDataException("Clipboard image exceeds the 20 MiB limit.");
+        using var image = new MemoryStream();
+        var buffer = new byte[81920];
+        while (true)
+        {
+            var remaining = MaximumImageBytes + 1L - image.Length;
+            if (remaining <= 0)
+                throw new InvalidDataException("Clipboard image exceeds the 20 MiB limit.");
+            var count = (int)Math.Min(buffer.Length, remaining);
+            var read = await stream.ReadAsync(buffer.AsMemory(0, count), cancellationToken);
+            if (read == 0) break;
+            await image.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+            if (image.Length > MaximumImageBytes)
+                throw new InvalidDataException("Clipboard image exceeds the 20 MiB limit.");
+        }
+        return new(image.ToArray(), mimeType);
     }
 
     private bool IsWsl()

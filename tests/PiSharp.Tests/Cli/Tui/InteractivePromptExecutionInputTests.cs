@@ -7,11 +7,46 @@ using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Resources;
 using PiSharp.Runtime.Sessions;
+using SkiaSharp;
 
 namespace PiSharp.Tests;
 
 public sealed class InteractivePromptExecutionInputTests
 {
+    [Fact]
+    public async Task InteractiveSubmissionUsesTheCurrentModelImageProfile()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-tui-image-profile-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var original = CreatePng(80, 40);
+            var profile = new ModelImageResizeOptions(MaxWidth: 12, MaxHeight: 20, MaxBytes: 100_000, JpegQuality: 80);
+            var client = new RecordingClient();
+            var session = new ConversationSession(root, "fixture", null);
+            var run = await ConversationRun.OpenAsync(new PiAgent(client,
+                new CodingTools(root, imageResizeOptions: profile), noTools: true), session);
+            var resources = await ResourceCatalog.LoadAsync(root, root, trusted: false, discoverSkills: false);
+            var selection = CreateSelection(authenticated: true);
+            using var execution = new InteractivePromptExecution(null, null, () => TextWriter.Null,
+                () => resources, () => run, (_, _) => "", () => selection, () => new UserSettings(),
+                (_, _, _) => Task.CompletedTask, _ => Task.CompletedTask, null, null);
+            using var cancellation = new CancellationTokenSource();
+            var transcript = new InteractiveTranscript(TextWriter.Null, TextWriter.Null, interactive: false);
+
+            await execution.ExecuteAsync("inspect", [new DataContent(original, "image/png")], selection,
+                new UserSettings(), transcript, cancellation);
+
+            using var processed = SKBitmap.Decode(Assert.Single(client.RequestImages));
+            Assert.Equal((12, 6), (processed!.Width, processed.Height));
+            var stored = Assert.Single(session.ActiveMessages().Where(message => message.Role == ChatRole.User)
+                .SelectMany(message => message.Contents.OfType<DataContent>()));
+            using var storedImage = SKBitmap.Decode(stored.Data.ToArray());
+            Assert.Equal((12, 6), (storedImage!.Width, storedImage.Height));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     public async Task ActiveInputInterceptionTransformsSteeringAndFollowUpAndConsumesHandledInput()
     {
@@ -144,7 +179,7 @@ public sealed class InteractivePromptExecutionInputTests
             foreach (var input in new[] { "preserve", "clear" })
             {
                 using var cancellation = new CancellationTokenSource();
-                await execution.ExecuteAsync(input, [new DataContent(new byte[] { 1, 2, 3 }, "image/png")],
+                await execution.ExecuteAsync(input, [new DataContent(CreatePng(1, 1), "image/png")],
                     selection, new UserSettings(), transcript, cancellation);
             }
 
@@ -167,6 +202,8 @@ public sealed class InteractivePromptExecutionInputTests
 
     private sealed class RecordingClient : IChatClient
     {
+        public List<byte[]> RequestImages { get; } = [];
+
         public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
@@ -174,12 +211,23 @@ public sealed class InteractivePromptExecutionInputTests
             ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation]
             CancellationToken cancellationToken = default)
         {
+            RequestImages.AddRange(messages.SelectMany(message => message.Contents).OfType<DataContent>()
+                .Select(content => content.Data.ToArray()));
             yield return new ChatResponseUpdate(ChatRole.Assistant, "reply");
             await Task.CompletedTask;
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose() { }
+    }
+
+    private static byte[] CreatePng(int width, int height)
+    {
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.CornflowerBlue);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        return encoded.ToArray();
     }
 
     private sealed class BlockingClient : IChatClient

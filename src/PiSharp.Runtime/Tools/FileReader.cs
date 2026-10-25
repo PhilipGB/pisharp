@@ -6,12 +6,15 @@ namespace PiSharp.Runtime.Tools;
 
 /// <summary>Reads bounded text or images using the current model's image limits.</summary>
 internal sealed class FileReader(string workingDirectory, ModelImageResizeOptions? imageResizeOptions,
-    Action? imageDecoded = null)
+    Action? imageDecoded = null, bool autoResizeImages = true)
 {
     private ModelImageResizeOptions? _imageResizeOptions = imageResizeOptions;
+    private int _autoResizeImages = autoResizeImages ? 1 : 0;
     private int _supportsImages = 1;
     public ModelImageResizeOptions? ImageResizeOptions => Volatile.Read(ref _imageResizeOptions);
+    public bool AutoResizeImages => Volatile.Read(ref _autoResizeImages) != 0;
     public void SetImageResizeOptions(ModelImageResizeOptions? options) => Volatile.Write(ref _imageResizeOptions, options);
+    public void SetAutoResizeImages(bool enabled) => Volatile.Write(ref _autoResizeImages, enabled ? 1 : 0);
     public void SetModelSupportsImages(bool supportsImages) => Volatile.Write(ref _supportsImages, supportsImages ? 1 : 0);
 
     public async Task<ReadToolOutput> ReadAsync(string path, double offset, double? limit, CancellationToken cancellationToken)
@@ -35,7 +38,8 @@ internal sealed class FileReader(string workingDirectory, ModelImageResizeOption
                 var bytes = new byte[checked((int)length)];
                 await stream.ReadExactlyAsync(bytes, cancellationToken);
                 var resizeOptions = Volatile.Read(ref _imageResizeOptions);
-                var image = await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken, resizeOptions, imageDecoded), cancellationToken)
+                var image = await Task.Run(() => ReadImageProcessor.Process(bytes, mimeType, cancellationToken,
+                        resizeOptions, imageDecoded, Volatile.Read(ref _autoResizeImages) != 0), cancellationToken)
                     .WaitAsync(cancellationToken);
                 cancellationToken.ThrowIfCancellationRequested();
                 return WithModelNote(image, supportsImages);

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Diagnostics;
 using PiSharp.Cli.Tui;
 using SkiaSharp;
 
@@ -6,6 +7,41 @@ namespace PiSharp.Tests;
 
 public sealed class TerminalClipboardTests
 {
+    [Fact]
+    public async Task MacClipboardScriptsCompileOnMacOS()
+    {
+        if (!OperatingSystem.IsMacOS()) return;
+        var directory = Path.Combine(Path.GetTempPath(), "pisharp-osascript-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var scripts = new[] { TerminalClipboard.MacFilePathsScript, TerminalClipboard.MacImageScript };
+            for (var index = 0; index < scripts.Length; index++)
+            {
+                var input = Path.Combine(directory, $"clipboard-{index}.applescript");
+                var output = Path.Combine(directory, $"clipboard-{index}.scpt");
+                await File.WriteAllTextAsync(input, scripts[index]);
+                var start = new ProcessStartInfo("osacompile")
+                {
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
+                start.ArgumentList.Add("-o");
+                start.ArgumentList.Add(output);
+                start.ArgumentList.Add(input);
+                using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start osacompile.");
+                var standardError = process.StandardError.ReadToEndAsync();
+                var standardOutput = process.StandardOutput.ReadToEndAsync();
+                await process.WaitForExitAsync();
+                Assert.True(process.ExitCode == 0,
+                    $"osacompile failed: {await standardError}{await standardOutput}");
+                Assert.True(File.Exists(output));
+            }
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
     [Theory]
     [InlineData((int)ClipboardPlatform.MacOS, "pbcopy")]
     [InlineData((int)ClipboardPlatform.Windows, "clip")]
@@ -134,6 +170,193 @@ public sealed class TerminalClipboardTests
     }
 
     [Fact]
+    public async Task WindowsClipboardImageUsesStaPowerShellAndRemovesItsTemporaryPng()
+    {
+        var png = CreatePng();
+        string? temporaryPath = null;
+        var commands = new FakeCommands((name, arguments, _) =>
+        {
+            Assert.Equal("powershell.exe", name);
+            Assert.Equal("-STA", arguments[1]);
+            var script = arguments[3];
+            const string marker = "$path = '";
+            var pathStart = script.IndexOf(marker, StringComparison.Ordinal) + marker.Length;
+            var pathEnd = script.IndexOf("';", pathStart, StringComparison.Ordinal);
+            Assert.True(pathStart >= marker.Length && pathEnd > pathStart);
+            temporaryPath = script[pathStart..pathEnd].Replace("''", "'", StringComparison.Ordinal);
+            File.WriteAllBytes(temporaryPath, png);
+            return new(0, Encoding.UTF8.GetBytes("ok"));
+        });
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.Windows);
+
+        var image = await clipboard.ReadImageAsync();
+
+        Assert.Equal("image/png", image?.MimeType);
+        Assert.Equal(png, image?.Bytes);
+        Assert.False(File.Exists(temporaryPath));
+        Assert.Single(commands.Invocations);
+        Assert.Equal("-STA", commands.Invocations[0].Arguments[1]);
+    }
+
+    [Fact]
+    public async Task WindowsClipboardPowerShellScriptCompilesOnWindows()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var png = CreatePng();
+        string? script = null;
+        var commands = new FakeCommands((_, arguments, _) =>
+        {
+            script = arguments[3];
+            const string marker = "$path = '";
+            var pathStart = script.IndexOf(marker, StringComparison.Ordinal) + marker.Length;
+            var pathEnd = script.IndexOf("';", pathStart, StringComparison.Ordinal);
+            var path = script[pathStart..pathEnd].Replace("''", "'", StringComparison.Ordinal);
+            File.WriteAllBytes(path, png);
+            return new(0, Encoding.UTF8.GetBytes("ok"));
+        });
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.Windows);
+        Assert.NotNull(await clipboard.ReadImageAsync());
+        Assert.NotNull(script);
+
+        var command = "$null = [scriptblock]::Create('" + script.Replace("'", "''", StringComparison.Ordinal) + "')";
+        var start = new ProcessStartInfo("powershell.exe")
+        {
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true
+        };
+        start.ArgumentList.Add("-NoProfile");
+        start.ArgumentList.Add("-NonInteractive");
+        start.ArgumentList.Add("-EncodedCommand");
+        start.ArgumentList.Add(Convert.ToBase64String(Encoding.Unicode.GetBytes(command)));
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("Could not start PowerShell.");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var error = process.StandardError.ReadToEndAsync(timeout.Token);
+        await process.WaitForExitAsync(timeout.Token);
+        Assert.True(process.ExitCode == 0, await error);
+    }
+
+    [Fact]
+    public async Task MacClipboardFilePathsAreReadAsBoundedJson()
+    {
+        var paths = new[] { "/tmp/screenshot.png", "/tmp/My Photos/photo.png" };
+        var commands = new FakeCommands((_, _, _) => new(0, Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(paths))));
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.MacOS);
+
+        Assert.Equal(paths, await clipboard.ReadFilePathsAsync());
+        var invocation = Assert.Single(commands.Invocations);
+        Assert.Equal("osascript", invocation.Command);
+        Assert.Equal("-e", invocation.Arguments[0]);
+        Assert.Contains("NSPasteboardURLReadingFileURLsOnlyKey", invocation.Arguments[1]);
+    }
+
+    [Fact]
+    public async Task ClipboardFilePathsTakePrecedenceOverTheirIconImage()
+    {
+        var paths = new[] { "/tmp/screenshot.png", "/tmp/My Photos/photo.png" };
+        var commands = new FakeCommands((_, _, _) => new(0, Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(paths))));
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.MacOS);
+        var editor = new TerminalEditor();
+        editor.Prefill("Review:");
+
+        await TerminalClipboardActions.PasteImageAsync(clipboard, editor);
+
+        Assert.Equal("Review: /tmp/screenshot.png\n/tmp/My Photos/photo.png", editor.Draft);
+        Assert.Single(commands.Invocations);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MacClipboardFilePathBackendFailureStopsPasteFallback(bool nonzeroExit)
+    {
+        var commands = new FakeCommands((_, _, _) => nonzeroExit ? new(1, []) : null);
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.MacOS);
+        var editor = new TerminalEditor();
+
+        await Assert.ThrowsAsync<IOException>(() => TerminalClipboardActions.PasteImageAsync(clipboard, editor));
+
+        Assert.Empty(editor.Draft);
+        Assert.Single(commands.Invocations);
+        Assert.Equal("osascript", commands.Invocations[0].Command);
+    }
+
+    [Fact]
+    public async Task MacClipboardImageBackendFailureStopsTextFallback()
+    {
+        var commands = new FakeCommands((_, arguments, _) => arguments.Count > 1 && arguments[0] == "-e" && arguments[1] == TerminalClipboard.MacFilePathsScript
+            ? new(0, Encoding.UTF8.GetBytes("[]"))
+            : null);
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.MacOS);
+        var editor = new TerminalEditor();
+
+        await Assert.ThrowsAsync<IOException>(() => TerminalClipboardActions.PasteImageAsync(clipboard, editor));
+
+        Assert.Empty(editor.Draft);
+        Assert.Equal(2, commands.Invocations.Count);
+        Assert.All(commands.Invocations, invocation => Assert.Equal("osascript", invocation.Command));
+    }
+
+    [Fact]
+    public async Task MacClipboardEmptyImageFallsThroughToText()
+    {
+        var commands = new FakeCommands((_, arguments, _) => arguments.Count > 1 && arguments[0] == "-e"
+            ? arguments[1] == TerminalClipboard.MacFilePathsScript
+                ? new(0, Encoding.UTF8.GetBytes("[]"))
+                : new(0, Encoding.UTF8.GetBytes("empty"))
+            : new(0, []));
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.MacOS);
+        var editor = new TerminalEditor();
+
+        await TerminalClipboardActions.PasteImageAsync(clipboard, editor);
+
+        Assert.Empty(editor.Draft);
+        Assert.Equal(3, commands.Invocations.Count);
+        Assert.Equal("pbpaste", commands.Invocations[2].Command);
+    }
+
+    [Fact]
+    public async Task MacClipboardOversizedImageStopsTextFallback()
+    {
+        var commands = new FakeCommands((_, arguments, _) => arguments.Count > 1 && arguments[0] == "-e" && arguments[1] == TerminalClipboard.MacFilePathsScript
+            ? new(0, Encoding.UTF8.GetBytes("[]"))
+            : new(0, Encoding.UTF8.GetBytes("large")));
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.MacOS);
+        var editor = new TerminalEditor();
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => TerminalClipboardActions.PasteImageAsync(clipboard, editor));
+
+        Assert.Empty(editor.Draft);
+        Assert.Equal(2, commands.Invocations.Count);
+    }
+
+    [Fact]
+    public async Task ClipboardFilePathsWithControlCharactersAreRejectedBeforeImageFallback()
+    {
+        var paths = new[] { "/tmp/photo\u001b]0;unsafe\u0007.png" };
+        var commands = new FakeCommands((_, _, _) => new(0, Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(paths))));
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.MacOS);
+        var editor = new TerminalEditor();
+
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() => TerminalClipboardActions.PasteImageAsync(clipboard, editor));
+
+        Assert.Contains("control characters", error.Message);
+        Assert.Empty(editor.Draft);
+        Assert.Single(commands.Invocations);
+    }
+
+    [Fact]
+    public async Task NonMacClipboardHasNoFilePathReader()
+    {
+        var commands = new FakeCommands((_, _, _) => throw new InvalidOperationException("No command expected."));
+        var clipboard = new TerminalClipboard(commands, platform: ClipboardPlatform.Linux);
+
+        Assert.Null(await clipboard.ReadFilePathsAsync());
+        Assert.Empty(commands.Invocations);
+    }
+
+    [Fact]
     public async Task WaylandImageReadPrefersPngAndReturnsValidatedImageBytes()
     {
         var png = CreatePng();
@@ -249,6 +472,23 @@ public sealed class TerminalClipboardTests
                 Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path));
         }
         finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task ClipboardImageStoreDeletesPartialFileWhenWriteIsCanceled()
+    {
+        var before = Directory.GetFiles(Path.GetTempPath(), "pisharp-clipboard-*")
+            .ToHashSet(StringComparer.Ordinal);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ClipboardImageStore.SaveAsync(
+            new TerminalClipboardImage(CreatePng(), "image/png"), cancellation.Token));
+
+        var after = Directory.GetFiles(Path.GetTempPath(), "pisharp-clipboard-*")
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(before.OrderBy(path => path, StringComparer.Ordinal),
+            after.OrderBy(path => path, StringComparer.Ordinal));
     }
 
     private static Func<string, string?> Env(params (string Name, string Value)[] values)

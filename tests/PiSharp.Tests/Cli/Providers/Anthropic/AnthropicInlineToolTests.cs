@@ -16,16 +16,18 @@ public sealed class AnthropicInlineToolTests
     [InlineData(false)]
     public async Task LiveStructuredToolResultsOmitOnlyErrorImagesAtTheAnthropicBoundary(bool isError)
     {
+        var imageBytes = Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==");
         var session = new ConversationSession(Path.GetTempPath(), "fixture", null);
         session.Append(new ChatMessage(ChatRole.User,
         [
             new TextContent("before"),
-            new DataContent(Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aL1cAAAAASUVORK5CYII="), "image/png")
+            new DataContent(imageBytes, "image/png")
         ]));
         session.Append(new ChatMessage(ChatRole.Assistant,
             [new FunctionCallContent("call_image", "read", new Dictionary<string, object?> { ["path"] = "image.png" })]));
         var result = new PiSharpToolResult("tool text", IsError: isError,
-            Images: [new PiSharpToolImage("image/png", "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aL1cAAAAASUVORK5CYII=")]);
+            Images: [new PiSharpToolImage("image/png", Convert.ToBase64String(imageBytes))]);
         session.Append(new ChatMessage(ChatRole.Tool, [new FunctionResultContent("call_image", result)]));
 
         var (payload, _) = await Capture([], false, false, streaming: true, invoke: async (client, token) =>

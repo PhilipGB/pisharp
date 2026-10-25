@@ -1,6 +1,7 @@
 using System.Security;
 using System.Text;
 using Microsoft.Extensions.AI;
+using PiSharp.Runtime.Tools;
 
 namespace PiSharp.Cli;
 
@@ -15,6 +16,7 @@ public static class CliFileArguments
         if (files is null || files.Count == 0) return new(prompt, []);
         var content = new StringBuilder();
         var images = new List<DataContent>();
+        const int maxImageBytes = 20 * 1024 * 1024;
         foreach (var file in files)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -22,18 +24,48 @@ public static class CliFileArguments
             var info = new FileInfo(path);
             if (!info.Exists) throw new FileNotFoundException($"File not found: {path}", path);
             if (info.Length == 0) continue;
-            var mediaType = GetImageMediaType(path);
+
+            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
+                bufferSize: 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var mediaType = await ReadImageDetector.DetectAsync(stream, cancellationToken);
             if (mediaType is not null)
             {
-                const int maxImageBytes = 20 * 1024 * 1024;
-                if (info.Length > maxImageBytes) throw new InvalidDataException($"Image attachment exceeds 20MB: {path}");
-                var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
-                if (!HasImageSignature(bytes, mediaType)) throw new InvalidDataException($"Image attachment is invalid or does not match its extension: {path}");
-                images.Add(new DataContent(bytes, mediaType));
-                content.Append("<image name=\"").Append(SecurityElement.Escape(path)).Append("\" />\n");
+                if (stream.Length > maxImageBytes)
+                {
+                    AppendImageOmission(content, path, "[Image omitted: exceeds the 20 MiB input limit.]");
+                    continue;
+                }
+                byte[] bytes;
+                try
+                {
+                    bytes = await ReadBoundedImageAsync(stream, maxImageBytes, path, cancellationToken);
+                }
+                catch (InvalidDataException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    AppendImageOmission(content, path, "[Image omitted: exceeds the 20 MiB input limit.]");
+                    continue;
+                }
+                if (mediaType == "image/bmp")
+                {
+                    var converted = ReadImageProcessor.Process(bytes, mediaType, cancellationToken, autoResizeImages: false);
+                    if (converted.ImageMimeType is { } convertedMime && converted.ImageDataBase64 is { } encoded)
+                        images.Add(new DataContent(Convert.FromBase64String(encoded), convertedMime));
+                    var hintStart = converted.Text.IndexOf('\n');
+                    var hints = hintStart < 0 ? "" : converted.Text[(hintStart + 1)..];
+                    content.Append("<file name=\"").Append(SecurityElement.Escape(path)).Append("\">")
+                        .Append(hints).Append("</file>\n");
+                }
+                else
+                {
+                    images.Add(new DataContent(bytes, mediaType));
+                    content.Append("<file name=\"").Append(SecurityElement.Escape(path)).Append("\"></file>\n");
+                }
                 continue;
             }
-            var bytesText = await File.ReadAllBytesAsync(path, cancellationToken);
+            stream.Position = 0;
+            using var textContent = new MemoryStream();
+            await stream.CopyToAsync(textContent, cancellationToken);
+            var bytesText = textContent.ToArray();
             try
             {
                 var text = new UTF8Encoding(false, true).GetString(bytesText).TrimStart('\uFEFF');
@@ -47,11 +79,14 @@ public static class CliFileArguments
         }
         if (!string.IsNullOrWhiteSpace(prompt))
         {
-            if (content.Length > 0) content.Append('\n');
             content.Append(prompt);
         }
         return new(content.ToString(), images);
     }
+
+    private static void AppendImageOmission(StringBuilder content, string path, string note) =>
+        content.Append("<file name=\"").Append(SecurityElement.Escape(path)).Append("\">")
+            .Append(note).Append("</file>\n");
 
     public static async Task<string> AppendTextFilesAsync(string prompt, IReadOnlyList<string>? files,
         string workingDirectory, CancellationToken cancellationToken = default)
@@ -89,21 +124,21 @@ public static class CliFileArguments
         return Path.GetFullPath(expanded, workingDirectory);
     }
 
-    private static bool HasImageSignature(ReadOnlySpan<byte> data, string mediaType) => mediaType switch
+    internal static async Task<byte[]> ReadBoundedImageAsync(Stream stream, int maxBytes, string path,
+        CancellationToken cancellationToken)
     {
-        "image/png" => data.Length >= 8 && data[..8].SequenceEqual(new byte[] { 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a }),
-        "image/jpeg" => data.Length >= 3 && data[0] == 0xff && data[1] == 0xd8 && data[2] == 0xff,
-        "image/gif" => data.StartsWith("GIF87a"u8) || data.StartsWith("GIF89a"u8),
-        "image/webp" => data.Length >= 12 && data[..4].SequenceEqual("RIFF"u8) && data[8..12].SequenceEqual("WEBP"u8),
-        _ => false
-    };
-
-    private static string? GetImageMediaType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
-    {
-        ".png" => "image/png",
-        ".jpg" or ".jpeg" => "image/jpeg",
-        ".gif" => "image/gif",
-        ".webp" => "image/webp",
-        _ => null
-    };
+        using var output = new MemoryStream();
+        var buffer = new byte[81920];
+        while (true)
+        {
+            var remaining = maxBytes + 1L - output.Length;
+            if (remaining <= 0) throw new InvalidDataException($"Image attachment exceeds 20MB: {path}");
+            var count = (int)Math.Min(buffer.Length, remaining);
+            var read = await stream.ReadAsync(buffer.AsMemory(0, count), cancellationToken);
+            if (read == 0) break;
+            output.Write(buffer, 0, read);
+            if (output.Length > maxBytes) throw new InvalidDataException($"Image attachment exceeds 20MB: {path}");
+        }
+        return output.ToArray();
+    }
 }

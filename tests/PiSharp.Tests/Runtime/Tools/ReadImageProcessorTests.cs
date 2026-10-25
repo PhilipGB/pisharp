@@ -20,6 +20,18 @@ public sealed class ReadImageProcessorTests
     }
 
     [Fact]
+    public void SupportedImageMimeParametersAreIgnoredLikePinnedPi()
+    {
+        var bytes = CreatePng(3, 2);
+
+        var output = ReadImageProcessor.Process(bytes, "IMAGE/PNG; charset=binary");
+
+        Assert.Equal("image/png", output.ImageMimeType);
+        Assert.Equal(bytes, Convert.FromBase64String(output.ImageDataBase64!));
+        Assert.Equal("Read image file [image/png]", output.Text);
+    }
+
+    [Fact]
     public void LargeDimensionsResizeWithCoordinateHint()
     {
         var bytes = CreatePng(2400, 20);
@@ -63,6 +75,21 @@ public sealed class ReadImageProcessorTests
     }
 
     [Fact]
+    public void DisablingAutoResizePreservesSupportedBytesButStillConvertsBmp()
+    {
+        var png = CreatePng(2400, 20);
+        var unresized = ReadImageProcessor.Process(png, "image/png", resizeOptions:
+            new ModelImageResizeOptions(MaxWidth: 20, MaxHeight: 20, MaxBytes: 100, JpegQuality: 10),
+            autoResizeImages: false);
+        var converted = ReadImageProcessor.Process(CreateBmp(), "image/bmp", autoResizeImages: false);
+
+        Assert.Equal(png, Convert.FromBase64String(unresized.ImageDataBase64!));
+        Assert.Equal("image/png", converted.ImageMimeType);
+        Assert.Contains("[Image converted from image/bmp to image/png.]", converted.Text);
+        Assert.DoesNotContain("displayed at", converted.Text);
+    }
+
+    [Fact]
     public void CorruptDetectedImageProducesOmissionTextInsteadOfSendingBadBytes()
     {
         var output = ReadImageProcessor.Process([0x89, 0x50, 0x4e, 0x47], "image/png");
@@ -78,6 +105,30 @@ public sealed class ReadImageProcessorTests
         cancelled.Cancel();
 
         Assert.Throws<OperationCanceledException>(() => ReadImageProcessor.Process([0x89, 0x50], "image/png", cancelled.Token));
+    }
+
+    [Fact]
+    public void CancellationAfterPixelDecodeIsObservedBeforeResizeOutput()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var bytes = CreatePng(2400, 20);
+
+        Assert.Throws<OperationCanceledException>(() => ReadImageProcessor.Process(bytes, "image/png",
+            cancellation.Token, resizeOptions: new ModelImageResizeOptions(MaxWidth: 2000),
+            imageDecoded: cancellation.Cancel));
+    }
+
+    [Fact]
+    public void WebpWithRiffLengthBeyondAvailableBytesIsSafelyOmitted()
+    {
+        var bytes = Convert.FromBase64String(
+            "UklGRjgAAABXRUJQVlA4ICwAAAAwAQCdASoCAAIAAgA0JaAAA3AA/vBsr//8lP/vK/13bhv//hWv5Wv5WrfAAA==");
+        Array.Fill(bytes, (byte)0xff, 4, 4);
+
+        var output = ReadImageProcessor.Process(bytes, "image/webp");
+
+        Assert.Null(output.ImageDataBase64);
+        Assert.Contains("[Image omitted: could not be resized below the inline image size limit.]", output.Text);
     }
 
     [Fact]

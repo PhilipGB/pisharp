@@ -42,6 +42,26 @@ internal static class TerminalClipboardActions
 
     public static async Task PasteImageAsync(TerminalClipboard clipboard, TerminalEditor? editor)
     {
+        var filePaths = await clipboard.ReadFilePathsAsync();
+        if (filePaths is { Length: > 0 })
+        {
+            if (filePaths.Any(path => path.Any(char.IsControl)))
+                throw new InvalidDataException("Clipboard file path contains control characters.");
+            if (editor is not null)
+            {
+                var snapshot = editor.CaptureDraftState();
+                var beforeLine = snapshot.Cursor > 0
+                    ? snapshot.Text[..snapshot.Cursor].Split('\n')[^1]
+                    : string.Empty;
+                var afterText = snapshot.Text[snapshot.Cursor..];
+                var afterLine = afterText.Split('\n')[0];
+                var leadingSpace = beforeLine.Length > 0 && !char.IsWhiteSpace(beforeLine[^1]) ? " " : "";
+                var trailingSpace = afterLine.Length > 0 && !char.IsWhiteSpace(afterLine[0]) ? " " : "";
+                editor.InsertTextAtCursor(leadingSpace + string.Join(Environment.NewLine, filePaths) + trailingSpace);
+            }
+            return;
+        }
+
         var image = await clipboard.ReadImageAsync();
         if (image is not null)
         {

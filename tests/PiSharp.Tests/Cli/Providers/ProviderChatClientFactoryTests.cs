@@ -5,6 +5,7 @@ using PiSharp.Cli;
 using PiSharp.Runtime.Providers;
 using PiSharp.Runtime.Sessions;
 using PiSharp.Runtime;
+using SkiaSharp;
 
 namespace PiSharp.Tests;
 
@@ -1172,6 +1173,82 @@ public sealed class ProviderChatClientFactoryTests
     }
 
     [Theory]
+    [InlineData("openai-responses")]
+    [InlineData("openai-completions")]
+    [InlineData("anthropic-messages")]
+    public async Task AgentAppliesPinnedImageProfileBeforeProviderWireProjection(string protocol)
+    {
+        using var listener = StartLoopbackListener(out var port);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+        string? requestBody = null;
+        var server = Task.Run(async () =>
+        {
+            var request = await listener.GetContextAsync().WaitAsync(deadline.Token);
+            using var reader = new StreamReader(request.Request.InputStream);
+            requestBody = await reader.ReadToEndAsync(deadline.Token);
+            request.Response.ContentType = "text/event-stream";
+            request.Response.SendChunked = true;
+            await using var writer = new StreamWriter(request.Response.OutputStream);
+            var events = protocol switch
+            {
+                "openai-responses" =>
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_image\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"in_progress\",\"output\":[]}}\n\n" +
+                    "data: {\"type\":\"response.output_text.delta\",\"item_id\":\"msg_image\",\"output_index\":0,\"content_index\":0,\"delta\":\"seen\"}\n\n" +
+                    "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_image\",\"object\":\"response\",\"created_at\":1,\"model\":\"fixture-model\",\"status\":\"completed\",\"output\":[]}}\n\ndata: [DONE]\n\n",
+                "openai-completions" =>
+                    "data: {\"id\":\"chatcmpl_image\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"seen\"},\"finish_reason\":null}]}\n\n" +
+                    "data: {\"id\":\"chatcmpl_image\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n",
+                _ =>
+                    "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_image\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\n" +
+                    "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n" +
+                    "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"seen\"}}\n\n" +
+                    "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n" +
+                    "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":1}}\n\n" +
+                    "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+            };
+            await writer.WriteAsync(events);
+            await writer.FlushAsync();
+            request.Response.Close();
+        });
+
+        var endpoint = protocol == "anthropic-messages"
+            ? $"http://127.0.0.1:{port}" : $"http://127.0.0.1:{port}/v1";
+        var baseSelection = Selection("fixture", endpoint, protocol);
+        var imageLimits = new ModelInputLimits(new ModelImageInputLimits(
+            Resize: new ModelImageResizeOptions(MaxWidth: 12, MaxHeight: 20, MaxBytes: 100_000, JpegQuality: 80)));
+        var selection = baseSelection with
+        {
+            Model = baseSelection.Model with { Input = ["text", "image"], InputLimits = imageLimits }
+        };
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-provider-image-wire-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var agent = new PiAgent(ProviderChatClientFactory.Create(selection),
+                new CodingTools(root, imageResizeOptions: imageLimits.Images!.Resize), noTools: true);
+            var session = await agent.CreateSessionAsync(deadline.Token);
+            await File.WriteAllBytesAsync(Path.Combine(root, "diagram.png"), CreatePng(80, 40), deadline.Token);
+            var promptFiles = await CliFileArguments.ProcessFilesAsync("describe image", ["diagram.png"], root, deadline.Token);
+            var promptContents = new List<Microsoft.Extensions.AI.AIContent>
+                { new Microsoft.Extensions.AI.TextContent(promptFiles.Text) };
+            promptContents.AddRange(promptFiles.Images);
+            var prompt = new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.User, promptContents);
+            var answer = new System.Text.StringBuilder();
+            await foreach (var update in agent.RunStreamingAsync(prompt, session, deadline.Token))
+                answer.Append(update.Text);
+            await server.WaitAsync(deadline.Token);
+
+            Assert.Contains("seen", answer.ToString());
+            using var body = JsonDocument.Parse(requestBody!);
+            var (encodedImage, text) = ExtractUserImageAndText(body.RootElement, protocol);
+            using var processed = SKBitmap.Decode(Convert.FromBase64String(encodedImage));
+            Assert.Equal((12, 6), (processed!.Width, processed.Height));
+            Assert.Contains("original 80x40, displayed at 12x6", text, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Theory]
     [InlineData("claude-sonnet-4-6", "adaptive")]
     [InlineData("claude-opus-4-6", "adaptive")]
     [InlineData("claude-haiku-4-5", "enabled")]
@@ -1613,6 +1690,33 @@ public sealed class ProviderChatClientFactoryTests
         }
         finally { Directory.Delete(root, true); }
     }
+    private static (string ImageBase64, string Text) ExtractUserImageAndText(JsonElement root, string protocol)
+    {
+        var messages = root.GetProperty(protocol == "openai-responses" ? "input" : "messages");
+        var user = messages.EnumerateArray().Last(item =>
+            item.TryGetProperty("role", out var role) && role.GetString() == "user");
+        var contents = user.GetProperty("content").EnumerateArray().ToArray();
+        var text = string.Join("\n", contents.Where(item => item.TryGetProperty("text", out _))
+            .Select(item => item.GetProperty("text").GetString()));
+        var image = contents.Single(item => item.GetProperty("type").GetString() is "input_image" or "image_url" or "image");
+        var encoded = protocol switch
+        {
+            "openai-responses" => image.GetProperty("image_url").GetString()!.Split(',', 2)[1],
+            "openai-completions" => image.GetProperty("image_url").GetProperty("url").GetString()!.Split(',', 2)[1],
+            _ => image.GetProperty("source").GetProperty("data").GetString()!
+        };
+        return (encoded, text);
+    }
+
+    private static byte[] CreatePng(int width, int height)
+    {
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.CornflowerBlue);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        return encoded.ToArray();
+    }
+
     private static HttpListener StartLoopbackListener(out int port)
     {
         for (var attempt = 0; attempt < 10; attempt++)

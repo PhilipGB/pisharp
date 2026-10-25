@@ -1,0 +1,165 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "scope": "processFileArguments versus CliFileArguments.ProcessFilesAsync for shared positional-file corpus",
+  "samePiCalibration": {
+    "runs": 2,
+    "stable": true
+  },
+  "cases": [
+    {
+      "id": "text-png-duplicate-unicode-paths",
+      "textMatch": true,
+      "imagesMatch": true,
+      "imageCount": 2,
+      "imageSequence": [
+        {
+          "mimeType": "image/png",
+          "dimensions": [
+            3,
+            2
+          ],
+          "classification": "strict",
+          "match": true,
+          "count": 2
+        }
+      ],
+      "text": "<file name=\"<ROOT>/notes λ.txt\">\nnotes: café\nsecond line\n</file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\nreview these"
+    },
+    {
+      "id": "many-images-preserve-order-256",
+      "textMatch": true,
+      "imagesMatch": true,
+      "imageCount": 256,
+      "imageSequence": [
+        {
+          "mimeType": "image/png",
+          "dimensions": [
+            3,
+            2
+          ],
+          "classification": "strict",
+          "match": true,
+          "count": 256
+        }
+      ],
+      "text": "<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\n<file name=\"<ROOT>/diagram one.data\"></file>\nreview all images"
+    },
+    {
+      "id": "empty-and-bmp-conversion",
+      "textMatch": true,
+      "imagesMatch": true,
+      "imageCount": 1,
+      "imageSequence": [
+        {
+          "mimeType": "image/png",
+          "dimensions": [
+            1,
+            1
+          ],
+          "classification": "codec-equivalent",
+          "match": true,
+          "count": 1
+        }
+      ],
+      "text": "<file name=\"<ROOT>/photo two.bmp\">[Image converted from image/bmp to image/png.]</file>\ncontinue"
+    },
+    {
+      "id": "supported-image-format-passthrough",
+      "textMatch": true,
+      "imagesMatch": true,
+      "imageCount": 3,
+      "imageSequence": [
+        {
+          "mimeType": "image/jpeg",
+          "dimensions": [
+            null,
+            null
+          ],
+          "classification": "strict",
+          "match": true,
+          "count": 1
+        },
+        {
+          "mimeType": "image/gif",
+          "dimensions": [
+            null,
+            null
+          ],
+          "classification": "strict",
+          "match": true,
+          "count": 1
+        },
+        {
+          "mimeType": "image/webp",
+          "dimensions": [
+            null,
+            null
+          ],
+          "classification": "strict",
+          "match": true,
+          "count": 1
+        }
+      ],
+      "text": "<file name=\"<ROOT>/photo.jpg\"></file>\n<file name=\"<ROOT>/animation.gif\"></file>\n<file name=\"<ROOT>/picture.webp\"></file>\nread these formats"
+    },
+    {
+      "id": "absolute-image-path",
+      "textMatch": true,
+      "imagesMatch": true,
+      "imageCount": 1,
+      "imageSequence": [
+        {
+          "mimeType": "image/png",
+          "dimensions": [
+            4,
+            3
+          ],
+          "classification": "strict",
+          "match": true,
+          "count": 1
+        }
+      ],
+      "text": "<file name=\"<ROOT>/absolute image.png\"></file>\nread absolute"
+    },
+    {
+      "id": "symlinked-relative-image-path",
+      "textMatch": true,
+      "imagesMatch": true,
+      "imageCount": 1,
+      "imageSequence": [
+        {
+          "mimeType": "image/png",
+          "dimensions": [
+            5,
+            2
+          ],
+          "classification": "strict",
+          "match": true,
+          "count": 1
+        }
+      ],
+      "text": "<file name=\"<ROOT>/symlink image.png\"></file>\nread symlink"
+    },
+    {
+      "id": "home-expanded-image-path",
+      "textMatch": true,
+      "imagesMatch": true,
+      "imageCount": 1,
+      "imageSequence": [
+        {
+          "mimeType": "image/png",
+          "dimensions": [
+            2,
+            4
+          ],
+          "classification": "strict",
+          "match": true,
+          "count": 1
+        }
+      ],
+      "text": "<file name=\"<ROOT>/home/home image.png\"></file>\nread home"
+    }
+  ],
+  "passed": 7,
+  "total": 7
+}

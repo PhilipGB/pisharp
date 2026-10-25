@@ -1,0 +1,168 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "scope": "Linux clipboard image acquisition plus native file-path precedence over image/text fallbacks",
+  "samePiCalibration": {
+    "runs": 2,
+    "stable": true
+  },
+  "comparisons": {
+    "wayland-prefers-png": true,
+    "wayland-empty-does-not-use-stale-x11": true,
+    "wayland-failure-falls-back-to-x11": true,
+    "clipboard-file-path-precedence": true
+  },
+  "pinnedPi": [
+    {
+      "id": "wayland-prefers-png",
+      "mimeType": "image/png",
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+      "calls": [
+        [
+          "wl-paste",
+          [
+            "--list-types"
+          ]
+        ],
+        [
+          "wl-paste",
+          [
+            "--type",
+            "image/png",
+            "--no-newline"
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "wayland-empty-does-not-use-stale-x11",
+      "mimeType": null,
+      "data": null,
+      "calls": [
+        [
+          "wl-paste",
+          [
+            "--list-types"
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "wayland-failure-falls-back-to-x11",
+      "mimeType": "image/png",
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+      "calls": [
+        [
+          "wl-paste",
+          [
+            "--list-types"
+          ]
+        ],
+        [
+          "xclip",
+          [
+            "-selection",
+            "clipboard",
+            "-t",
+            "TARGETS",
+            "-o"
+          ]
+        ],
+        [
+          "xclip",
+          [
+            "-selection",
+            "clipboard",
+            "-t",
+            "image/png",
+            "-o"
+          ]
+        ]
+      ]
+    }
+  ],
+  "samePiFilePathCalibration": {
+    "runs": 2,
+    "stable": true
+  },
+  "pinnedPiFilePathPrecedence": {
+    "draft": "Review: /tmp/screenshot.png\n/tmp/My Photos/photo.png",
+    "imageFallbackReached": false,
+    "textFallbackReached": false
+  },
+  "pisharp": [
+    {
+      "id": "wayland-prefers-png",
+      "mimeType": "image/png",
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+      "calls": [
+        [
+          "wl-paste",
+          [
+            "--list-types"
+          ]
+        ],
+        [
+          "wl-paste",
+          [
+            "--type",
+            "image/png",
+            "--no-newline"
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "wayland-empty-does-not-use-stale-x11",
+      "mimeType": null,
+      "data": null,
+      "calls": [
+        [
+          "wl-paste",
+          [
+            "--list-types"
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "wayland-failure-falls-back-to-x11",
+      "mimeType": "image/png",
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+      "calls": [
+        [
+          "wl-paste",
+          [
+            "--list-types"
+          ]
+        ],
+        [
+          "xclip",
+          [
+            "-selection",
+            "clipboard",
+            "-t",
+            "TARGETS",
+            "-o"
+          ]
+        ],
+        [
+          "xclip",
+          [
+            "-selection",
+            "clipboard",
+            "-t",
+            "image/png",
+            "-o"
+          ]
+        ]
+      ]
+    }
+  ],
+  "pisharpFilePathPrecedence": {
+    "draft": "Review: /tmp/screenshot.png\n/tmp/My Photos/photo.png",
+    "imageFallbackReached": false,
+    "textFallbackReached": false
+  },
+  "passed": 4,
+  "total": 4
+}

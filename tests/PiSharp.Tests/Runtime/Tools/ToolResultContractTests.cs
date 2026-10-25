@@ -71,7 +71,8 @@ public sealed class ToolResultContractTests
             using var document = JsonDocument.Parse("""{"count":2,"ok":false}""");
             using var schemaDocument = JsonDocument.Parse("""{"type":"object","required":["count"],"properties":{"count":{"type":"integer"}}}""");
             var structured = document.RootElement.Clone();
-            var image = new PiSharpToolImage("image/png", Convert.ToBase64String([137, 80, 78, 71]));
+            var image = new PiSharpToolImage("image/png",
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==");
             var usage = new UsageDetails { InputTokenCount = 3, OutputTokenCount = 5, TotalTokenCount = 8 };
             var leaf = AIFunctionFactory.Create(() => new PiSharpToolResult("leaf text", new { source = "leaf" },
                 structured, Images: [image], Usage: usage), name: "leaf");

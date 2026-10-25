@@ -54,6 +54,7 @@ public sealed class PiAgent
     private int _providerRequestIndex;
     private int _firstRequestSteeringIndex;
     private int _supportsImages;
+    private int _autoResizeImages = 1;
     private ModelImageResizeOptions? _selectedImageResizeOptions;
     private long _systemMessageTimestamp;
     private ToolLoadout? _currentToolLoadout;
@@ -146,11 +147,13 @@ public sealed class PiAgent
         _projectInstructions = contextInstructions;
         _getSkillInstructions = getSkillInstructions;
         _selectedImageResizeOptions = tools.ImageResizeOptions;
+        _autoResizeImages = tools.AutoResizeImages ? 1 : 0;
         _toolHooks = new PiSharpToolHookPipeline(extensionToolCallHooks, extensionToolResultHooks);
         _chatClient = new MutableChatClient(client);
         _routedChatClient = new RoutedChatClient(_chatClient, PublishEvent,
             route => SetPhysicalImageLimits(route.Model), _extensionEvents, blockImages,
-            () => Volatile.Read(ref _supportsImages) != 0);
+            () => Volatile.Read(ref _supportsImages) != 0, NormalizeUserImagesAsync,
+            () => Volatile.Read(ref _selectedImageResizeOptions));
         _routedChatClient.SetRouter(virtualModelRequestRouter);
         _supportsImages = supportsImages ? 1 : 0;
         _codingTools.SetReadModelSupportsImages(supportsImages);
@@ -178,7 +181,7 @@ public sealed class PiAgent
         var initialSystemInstructions = BuildSystemPrompt(initialLoadout.Declared,
             initialLoadout.ActiveToolNames).Text;
         _agent = new ChatClientAgent(new ObservedChatClient(_routedChatClient, PublishEvent,
-            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, blockImages, ProjectForRequestAsync,
+            retryPolicy ?? ProviderRetryPolicy.Default, TakeSteeringForRequest, ProjectForRequestAsync,
             supportsImages, () => Volatile.Read(ref _reasoning), () => _routedChatClient.HasRouter || Volatile.Read(ref _supportsImages) != 0,
             _routedChatClient, GetToolsForRequest, _routedChatClient, GetAdditionalSystemInstructionsForCurrentTurn,
             _contextTransforms.ApplyAsync, (messages, options) =>
@@ -642,7 +645,8 @@ public sealed class PiAgent
     public void SetReasoningOptions(ReasoningOptions? reasoning) => Volatile.Write(ref _reasoning, reasoning);
 
     public void SetModelRuntime(IChatClient client, bool supportsImages, ModelImageResizeOptions? imageResizeOptions,
-        VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null)
+        VirtualModelRequestRouter? virtualModelRequestRouter = null, ICodemodeModels? codemodeModels = null,
+        bool autoResizeImages = true)
     {
         _chatClient.SetClient(client);
         _routedChatClient.SetRouter(virtualModelRequestRouter);
@@ -650,6 +654,8 @@ public sealed class PiAgent
         _codingTools.SetReadModelSupportsImages(supportsImages);
         _selectedImageResizeOptions = imageResizeOptions;
         _codingTools.SetImageResizeOptions(imageResizeOptions);
+        Volatile.Write(ref _autoResizeImages, autoResizeImages ? 1 : 0);
+        _codingTools.SetAutoResizeImages(autoResizeImages);
     }
 
     internal bool HasVirtualModelRouter => _routedChatClient.HasRouter;
@@ -659,6 +665,83 @@ public sealed class PiAgent
         _codingTools.SetImageResizeOptions(model is null ? _selectedImageResizeOptions : model.InputLimits?.Images?.Resize);
         _codingTools.SetReadModelSupportsImages(model?.Input?.Contains("image") ?? Volatile.Read(ref _supportsImages) != 0);
     }
+
+    private async Task<IReadOnlyList<ChatMessage>> NormalizeUserImagesAsync(
+        IReadOnlyList<ChatMessage> messages, ModelImageResizeOptions? resizeOptions,
+        CancellationToken cancellationToken)
+    {
+        var normalizedMessages = new List<ChatMessage>(messages.Count);
+        foreach (var message in messages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (message.Role != ChatRole.User || !message.Contents.OfType<DataContent>().Any(IsImage))
+            {
+                normalizedMessages.Add(message);
+                continue;
+            }
+
+            var contents = new List<AIContent>(message.Contents.Count);
+            var hints = new List<string>();
+            foreach (var content in message.Contents)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (content is not DataContent image || !IsImage(image))
+                {
+                    contents.Add(content);
+                    continue;
+                }
+                if (image.Data.Length > ReadImageProcessor.MaxInputBytes)
+                {
+                    hints.Add("[Image omitted: could not be resized below the inline image size limit.]");
+                    continue;
+                }
+
+                var input = image.Data.ToArray();
+                var processed = await Task.Run(() => ReadImageProcessor.Process(input, image.MediaType,
+                    cancellationToken, resizeOptions, autoResizeImages: Volatile.Read(ref _autoResizeImages) != 0),
+                    cancellationToken).ConfigureAwait(false);
+                var newline = processed.Text.IndexOf('\n');
+                if (newline >= 0 && newline + 1 < processed.Text.Length)
+                    hints.Add(processed.Text[(newline + 1)..]);
+                if (processed.ImageDataBase64 is { Length: > 0 } data && processed.ImageMimeType is { } mediaType)
+                    contents.Add(new DataContent(Convert.FromBase64String(data), mediaType));
+            }
+
+            if (hints.Count > 0)
+            {
+                var firstText = contents.FindIndex(content => content is TextContent);
+                var hintText = string.Join('\n', hints);
+                if (firstText < 0) contents.Insert(0, new TextContent(hintText));
+                else
+                {
+                    var text = ((TextContent)contents[firstText]).Text;
+                    contents[firstText] = new TextContent(string.IsNullOrWhiteSpace(text)
+                        ? hintText : text + "\n\n" + hintText);
+                }
+            }
+
+            if (contents.Count == message.Contents.Count && contents.Zip(message.Contents).All(pair =>
+                ReferenceEquals(pair.First, pair.Second)))
+            {
+                normalizedMessages.Add(message);
+                continue;
+            }
+
+            var normalized = new ChatMessage(message.Role, contents)
+            {
+                AdditionalProperties = message.AdditionalProperties?.Clone()
+            };
+            normalizedMessages.Add(normalized);
+        }
+        return normalizedMessages;
+    }
+
+    internal Task<IReadOnlyList<ChatMessage>> NormalizeAcceptedPromptImagesAsync(
+        IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken) =>
+        NormalizeUserImagesAsync(messages, Volatile.Read(ref _selectedImageResizeOptions), cancellationToken);
+
+    private static bool IsImage(DataContent content) =>
+        content.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
 
     internal void SetVirtualModelSession(ConversationSession session, string thinkingLevel,
         Func<CancellationToken, Task>? save) => _routedChatClient.SetSession(session, thinkingLevel, save);

@@ -1,0 +1,476 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "scope": "Pinned processImage prompt normalization across PNG, JPEG, GIF and WebP pass-through, model-limited resize, EXIF orientation, BMP conversion and malformed/truncated-input handling; provider wire, clipboard acquisition and full session lifecycle have separate reports",
+  "samePiCalibration": {
+    "runs": 2,
+    "stable": true,
+    "comparison": "Exact processImage result, including output bytes, MIME and hints."
+  },
+  "strictPasses": 13,
+  "strictTotal": 13,
+  "codecEquivalentPasses": 6,
+  "codecEquivalentTotal": 6,
+  "acceptedSafetyDifferences": 1,
+  "unexplainedMismatches": [],
+  "cases": [
+    {
+      "id": "png-no-resize",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 4,
+        "height": 2,
+        "hints": [],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 4,
+        "height": 2,
+        "hints": [],
+        "message": null
+      }
+    },
+    {
+      "id": "png-model-resize",
+      "classification": "codec-equivalent",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 12,
+        "height": 6,
+        "hints": [
+          "[Image: original 80x40, displayed at 12x6. Multiply coordinates by 6.67 to map to original image.]"
+        ],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 12,
+        "height": 6,
+        "hints": [
+          "[Image: original 80x40, displayed at 12x6. Multiply coordinates by 6.67 to map to original image.]"
+        ],
+        "message": null
+      }
+    },
+    {
+      "id": "png-auto-resize-disabled",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 80,
+        "height": 40,
+        "hints": [],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 80,
+        "height": 40,
+        "hints": [],
+        "message": null
+      }
+    },
+    {
+      "id": "bmp-to-png",
+      "classification": "codec-equivalent",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 1,
+        "height": 1,
+        "hints": [
+          "[Image converted from image/bmp to image/png.]"
+        ],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 1,
+        "height": 1,
+        "hints": [
+          "[Image converted from image/bmp to image/png.]"
+        ],
+        "message": null
+      }
+    },
+    {
+      "id": "truncated-png",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": null,
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      },
+      "pisharp": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": [
+          "[Image omitted: could not be resized below the inline image size limit.]"
+        ],
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      }
+    },
+    {
+      "id": "truncated-jpeg",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": null,
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      },
+      "pisharp": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": [
+          "[Image omitted: could not be resized below the inline image size limit.]"
+        ],
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      }
+    },
+    {
+      "id": "truncated-gif",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": null,
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      },
+      "pisharp": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": [
+          "[Image omitted: could not be resized below the inline image size limit.]"
+        ],
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      }
+    },
+    {
+      "id": "truncated-webp",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": null,
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      },
+      "pisharp": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": [
+          "[Image omitted: could not be resized below the inline image size limit.]"
+        ],
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      }
+    },
+    {
+      "id": "malformed-png-crc",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 2,
+        "height": 2,
+        "hints": [],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 2,
+        "height": 2,
+        "hints": [],
+        "message": null
+      }
+    },
+    {
+      "id": "malformed-jpeg-marker",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": null,
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      },
+      "pisharp": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": [
+          "[Image omitted: could not be resized below the inline image size limit.]"
+        ],
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      }
+    },
+    {
+      "id": "malformed-gif-screen",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": null,
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      },
+      "pisharp": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": [
+          "[Image omitted: could not be resized below the inline image size limit.]"
+        ],
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      }
+    },
+    {
+      "id": "malformed-webp-riff-size",
+      "classification": "accepted-safety-difference",
+      "match": false,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/webp",
+        "width": 2,
+        "height": 2,
+        "hints": [],
+        "message": null
+      },
+      "pisharp": {
+        "ok": false,
+        "mimeType": null,
+        "width": null,
+        "height": null,
+        "hints": [
+          "[Image omitted: could not be resized below the inline image size limit.]"
+        ],
+        "message": "[Image omitted: could not be resized below the inline image size limit.]"
+      },
+      "safetyRationale": "Pinned Pi's Photon decoder accepts and forwards a WebP whose RIFF length field exceeds the available bytes; PiSharp's Skia decoder rejects it and emits the normal omission note. The stricter rejection avoids forwarding malformed data."
+    },
+    {
+      "id": "corrupt-webp-payload",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/webp",
+        "width": 2,
+        "height": 2,
+        "hints": [],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/webp",
+        "width": 2,
+        "height": 2,
+        "hints": [],
+        "message": null
+      }
+    },
+    {
+      "id": "jpeg-pass-through",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/jpeg",
+        "width": 2,
+        "height": 2,
+        "hints": [],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/jpeg",
+        "width": 2,
+        "height": 2,
+        "hints": [],
+        "message": null
+      }
+    },
+    {
+      "id": "gif-pass-through",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/gif",
+        "width": null,
+        "height": null,
+        "hints": [],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/gif",
+        "width": null,
+        "height": null,
+        "hints": [],
+        "message": null
+      }
+    },
+    {
+      "id": "webp-pass-through",
+      "classification": "strict",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/webp",
+        "width": null,
+        "height": null,
+        "hints": [],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/webp",
+        "width": null,
+        "height": null,
+        "hints": [],
+        "message": null
+      }
+    },
+    {
+      "id": "jpeg-model-resize",
+      "classification": "codec-equivalent",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 1,
+        "height": 1,
+        "hints": [
+          "[Image: original 2x2, displayed at 1x1. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 1,
+        "height": 1,
+        "hints": [
+          "[Image: original 2x2, displayed at 1x1. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      }
+    },
+    {
+      "id": "gif-model-resize",
+      "classification": "codec-equivalent",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 1,
+        "height": 1,
+        "hints": [
+          "[Image: original 2x2, displayed at 1x1. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 1,
+        "height": 1,
+        "hints": [
+          "[Image: original 2x2, displayed at 1x1. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      }
+    },
+    {
+      "id": "webp-model-resize",
+      "classification": "codec-equivalent",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 1,
+        "height": 1,
+        "hints": [
+          "[Image: original 2x2, displayed at 1x1. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 1,
+        "height": 1,
+        "hints": [
+          "[Image: original 2x2, displayed at 1x1. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      }
+    },
+    {
+      "id": "jpeg-exif-orientation-resize",
+      "classification": "codec-equivalent",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 2,
+        "height": 4,
+        "hints": [
+          "[Image: original 4x8, displayed at 2x4. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 2,
+        "height": 4,
+        "hints": [
+          "[Image: original 4x8, displayed at 2x4. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      }
+    }
+  ]
+}

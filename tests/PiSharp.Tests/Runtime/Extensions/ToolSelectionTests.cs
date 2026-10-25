@@ -4,6 +4,7 @@ using PiSharp.Runtime.Extensions;
 using PiSharp.Runtime.Sessions;
 using Microsoft.Extensions.AI;
 using PiSharp.Extensions.Abstractions;
+using SkiaSharp;
 
 namespace PiSharp.Tests;
 
@@ -59,22 +60,23 @@ public sealed class ToolSelectionTests
     }
 
     [Fact]
-    public async Task CliAtFileArgumentsCreateImageContentAndRejectMismatchedSignatures()
+    public async Task CliAtFileArgumentsDetectImagesByContentAndRejectIncompleteSignatures()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-at-image-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         try
         {
-            var image = Path.Combine(root, "diagram.png");
-            await File.WriteAllBytesAsync(image, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-            var prompt = await CliFileArguments.ProcessFilesAsync("Describe it", ["diagram.png"], root);
-            Assert.Equal($"<image name=\"{System.Security.SecurityElement.Escape(image)}\" />\n\nDescribe it", prompt.Text);
+            var image = Path.Combine(root, "diagram.jpg");
+            var bytes = CreatePng(2, 1);
+            await File.WriteAllBytesAsync(image, bytes);
+            var prompt = await CliFileArguments.ProcessFilesAsync("Describe it", ["diagram.jpg"], root);
+            Assert.Equal($"<file name=\"{System.Security.SecurityElement.Escape(image)}\"></file>\nDescribe it", prompt.Text);
             Assert.Single(prompt.Images);
             Assert.Equal("image/png", prompt.Images[0].MediaType);
-            Assert.Equal(new byte[] { 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a }, prompt.Images[0].Data.ToArray());
+            Assert.Equal(bytes, prompt.Images[0].Data.ToArray());
 
-            await File.WriteAllBytesAsync(image, [0xff, 0x00]);
-            await Assert.ThrowsAsync<InvalidDataException>(() => CliFileArguments.ProcessFilesAsync("", ["diagram.png"], root));
+            await File.WriteAllBytesAsync(image, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+            await Assert.ThrowsAsync<InvalidDataException>(() => CliFileArguments.ProcessFilesAsync("", ["diagram.jpg"], root));
         }
         finally { Directory.Delete(root, true); }
     }
@@ -489,5 +491,14 @@ public sealed class ToolSelectionTests
         Assert.True(CliArguments.Parse(["--no-builtin-tools"]).NoBuiltinTools);
         Assert.True(CliArguments.Parse(["-nbt", "--tools", "read"]).NoBuiltinTools);
         Assert.Throws<ArgumentException>(() => CliArguments.Parse(["--tools"]));
+    }
+
+    private static byte[] CreatePng(int width, int height)
+    {
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul));
+        bitmap.Erase(SKColors.CornflowerBlue);
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
     }
 }

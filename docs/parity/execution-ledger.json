@@ -2283,18 +2283,20 @@
       "id": "feature-multimodal-input-and-inline-images",
       "title": "Multimodal / input and inline images",
       "status": "in_progress",
-      "source": "docs/parity/feature-matrix.md:17",
+      "source": "docs/parity/feature-matrix.md:565",
       "acceptance": [
         "@image, clipboard, read image, compatible terminal rendering",
         "reject unsupported image/provider safely",
         "Verify through application workflow and compare docs/usage.md; packages/coding-agent/src/utils/image-process.ts; packages/tui/src/terminal-image.ts; DataContent, terminal capability checks",
-        "Remaining: WSL text clipboard interop, live native macOS/Windows clipboard verification, EXIF orientation, Lanczos3 sampling, partial-viewport image cropping, queried pixel-cell dimensions, broad provider-specific transport, model-specific image limits and pinned image request/result differential evidence."
+        "Current multimodal milestone: source-pinned processImage differential passes 3/3 strict and 2/2 codec-equivalent cases; paired file-argument/initial-message corpus passes 2/2; physical Responses, Chat Completions and Anthropic image-wire comparisons pass 3/3. Saved-session image restoration and provider continuation pass 3/3 strict comparisons, stable across two pinned Pi runs. The paired file run exposed and corrected an extra blank line before the initial prompt. The fresh PiSharp full suite passes 3,881/3,881 with zero failures or skips; current format/build checks pass. Focused interface/clipboard tests pass 35/35; pinned Pi clipboard/print/prompt selections pass 51/51. Paired clipboard and JSON/RPC reports pass 3/3 and 2/2; post-restart branched-image provider-wire passes 3/3 protocols and excludes the inactive image. The first exact-head CI exposed a Windows newline assertion and missing generated Pi catalogs in the disposable checkout; both corrections are in progress. Remaining: broader adversarial cases, documentation-path validation and fresh exact-head CI. Draft PR #26 is published open/draft/unmerged."
       ],
       "implementation": [
         "src/PiSharp.Cli/Startup/CliFileArguments.cs: positional @file PNG/JPEG/GIF/WebP signature/size validation and DataContent; src/PiSharp.Cli/Program.cs: model modality refusal and prompt assembly",
         "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: read-image attachment expansion plus images.blockImages provider-boundary filtering while retaining canonical session images; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs: SkiaSharp decode, BMP conversion and bounded resize",
         "src/PiSharp.Cli/Tui/Clipboard/TerminalClipboard.cs, ClipboardImageStore.cs and Program.cs: bounded image-first clipboard paste validates/normalizes through the Skia read pipeline, saves a private temporary file, inserts its path for the read tool, and falls back to text; Linux Wayland/X11 and WSL PowerShell image paths are covered.",
-        "src/PiSharp.Cli/Tui/Rendering/TerminalImageCapabilities.cs, TerminalImageLayout.cs, TerminalImageRenderer.cs, TerminalScreen.cs and TerminalScreenCompositor.cs: accepted prompt and read-tool DataContent images use conservative Kitty/iTerm2 detection, Pi #8938 distortion-aware sizing, bounded transcript-safe markers and byte/raster budgets, redraw placement, cleanup and safe text fallback."
+        "src/PiSharp.Cli/Tui/Rendering/TerminalImageCapabilities.cs, TerminalImageLayout.cs, TerminalImageRenderer.cs, TerminalScreen.cs and TerminalScreenCompositor.cs: accepted prompt and read-tool DataContent images use conservative Kitty/iTerm2 detection, Pi #8938 distortion-aware sizing, bounded transcript-safe markers and byte/raster budgets, redraw placement, cleanup and safe text fallback.",
+        "Current multimodal branch: CliFileArguments detects image content, bounds reads against concurrent growth, converts BMP, and records omission notes for oversized images. PiAgent normalizes accepted prompt images after before-agent-start handlers and before canonical persistence, using the selected resize profile and autoResizeImages setting; RoutedChatClient retains physical-model provider projection. Paired saved-session provider-wire continuation verifies the active image is present and inactive-branch image absent after restart for OpenAI Responses, Chat Completions and Anthropic (3/3 protocols; two-run Pi calibration).",
+        "Current multimodal branch: clipboard success-empty and native-backend errors have separate outcomes; failed image/path reads do not silently fall through to text. Interactive, JSON, RPC and direct streaming prompt paths share accepted-image normalization."
       ],
       "evidence": [
         "tests/PiSharp.Tests/Runtime/Agents/MultimodalRuntimeTests.cs: fake-provider image request and session round-trip/blocking; tests/PiSharp.Tests/Cli/Providers/ProviderChatClientFactoryTests.cs: loopback Responses request transports PNG DataContent as input_image data URL, not plain text",
@@ -2302,7 +2304,9 @@
         "TerminalClipboardTests cover successful empty Wayland reads, X11 fallback, OS helper selection, remote/headless OSC 52, Unicode text and the size limit; TerminalPtyTests.ClipboardShortcutsPasteTextAndCopyLastAssistantThroughLinuxPty covers clipboard text insertion.",
         "Commit d331d7d714a5548add83b19c40d0f84da4efba7c passed local format, warnings-as-errors build and 447/447 tests, but Linux CI run 36149550761 failed one existing BashCancellationAndTimeoutKillTheProcessGroup test because /proc/<pid>/stat disappeared between File.Exists and ReadAllText. The process-tree assertion remains intact; ProcessTestHelpers now treats procfs disappearance during the read as process exit, and the working tree passes format, build and all 447 tests. Follow-up exact-head CI is pending. Follow-up commit b27a4b7bb8b3e9333a398e770b9e1801c675da46 updates ProcessTestHelpers to treat procfs disappearance after File.Exists as process exit while preserving the process-tree assertion; exact-head Linux CI run 36150182304 passed format verification, warnings-as-errors build and all 447 tests.",
         "TerminalClipboardTests cover Wayland MIME selection, stale-X11 avoidance, X11 fallback, BMP normalization, WSL PowerShell path escaping and mode-0600 storage; TerminalPtyTests.ClipboardImagePasteInsertsPrivateImagePathThroughLinuxPty verifies inserted path and file contents. Exact code commit 17d682c2d7206a052b8a65ca24cf9c514166e39e passed local format verification, warnings-as-errors build and all 480 tests; Linux CI run 36166108417 passed the same checks on exact head.",
-        "Current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/tui/src/terminal-image.ts, components/image.ts, tui-alt-screen.ts and tests were inspected; renderer tests copy #8938 sizing vectors. AgentIntegrationTests.ReadImageToolLifecycleExposesValidatedImageInProcessOnly and TerminalScreenTests cover prompt/read images, captured-text and event serialization privacy. Commit ff301f231d80b0ec81f093cf8d09d5b5b45b821c passes local format verification, warnings-as-errors build and 491/491 tests; Linux CI run 36172481288 passed restore, format verification, warnings-as-errors build and all 491 tests on exact head."
+        "Current Pi main d6af72e1857cfb10b41d8ff8e69f0d72b4cf6d31 packages/tui/src/terminal-image.ts, components/image.ts, tui-alt-screen.ts and tests were inspected; renderer tests copy #8938 sizing vectors. AgentIntegrationTests.ReadImageToolLifecycleExposesValidatedImageInProcessOnly and TerminalScreenTests cover prompt/read images, captured-text and event serialization privacy. Commit ff301f231d80b0ec81f093cf8d09d5b5b45b821c passes local format verification, warnings-as-errors build and 491/491 tests; Linux CI run 36172481288 passed restore, format verification, warnings-as-errors build and all 491 tests on exact head.",
+        "Pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6 processor differential: 3/3 strict pass-through/invalid cases, 2/2 calibrated resize/conversion cases, and exact output stability across two repeated Pi runs; report docs/parity/fixtures/multimodal-image-differential-2026-10-25.json.",
+        "Pinned Pi packages/coding-agent/test/suite/agent-session-prompt.test.ts test 'uses the model selected by before_agent_start for image normalization' passes 1/1; related pinned suites pass 96/96, and focused pinned clipboard/print/prompt suites pass 51/51. Paired file application report: 2/2; paired provider physical-wire report: 3/3; saved-session continuation report: 3/3 strict comparisons with two-run Pi calibration. Print-mode process test passes 1/1; saved-session PiSharp regression passes 1/1; current focused PiSharp interface/clipboard selection passes 35/35; full .NET suite passes 3,879/3,879 with zero failures or skips. Current build and format checks pass. Python parity 27/27, terminal Python 66/66, terminal Node 24/24, documentation paths 153/657 and MCP baseline are recorded. Paired clipboard and JSON/RPC evidence, physical provider-wire continuation after restart, platform CI and exact-head CI remain open."
       ],
       "dependencies": [],
       "handover_review": {
@@ -13007,7 +13011,7 @@
     "preflight": "Passed specialist probes, external worktree/branch create/remove, isolated profile application, and initial checkpoint commit/fast-forward push.",
     "ssh_workaround": "Per-command GIT_SSH_COMMAND=ssh -F /dev/null; system SSH configuration untouched",
     "ci_access": "Unauthenticated public GitHub REST API; gh has no credentials",
-    "latest_exact_head_ci": {
+    "previous_passing_exact_head_ci": {
       "run": 38789357300,
       "sha": "1cdb57f7cfd2723152a3d45b0dd1498052995231",
       "conclusion": "success",
@@ -13493,5 +13497,100 @@
       "dotnet_build_warnaserror": "passed; zero warnings/errors",
       "full_dotnet_suite_local": "Two runs each had one unrelated failure: first a 758 ms stream-idle timing assertion (isolated 2/2 passed), second a reused-port collision in AnthropicStrictHttpFixtureTests (isolated 1/1 passed). Each run otherwise passed 3,779/3,780 tests; final exact-head CI result is recorded in PR #24 description."
     }
+  },
+  "multimodal_user_input_image_parity_milestone": {
+    "status": "in_progress",
+    "phase": "adversarial_and_fresh_exact_head_ci",
+    "prerequisite_merge": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
+    "branch": "milestone/multimodal-user-input-image-parity",
+    "branch_base_sha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
+    "draft_pr": "https://github.com/PhilipGB/pisharp/pull/26",
+    "published_head_before_current_followup": "bacbdc47bba64e599beaff3ff51976cbe7b63738",
+    "previous_passing_exact_head_ci": {
+      "head": "bacbdc47bba64e599beaff3ff51976cbe7b63738",
+      "push_run": "40196652776",
+      "pull_request_run": "40196656515",
+      "result": "Both exact-head workflows passed, including Linux build/tests, macOS and Windows clipboard contracts, macOS session locks and MCP conformance.",
+      "local_correction": "The protocol runner uses temporary_empty_model_catalogs; its pinned differential passes 2/2. This was the previous passing exact-head before expanded positional-file comparisons, image cases, clipboard path-precedence comparisons and cancellation cleanup regressions were published."
+    },
+    "previous_failed_exact_head_ci": {
+      "head": "86c31d5d5dbe9cb13e80baa3a8aa64198596a30",
+      "push_run": "40200887907",
+      "pull_request_run": "40200892194",
+      "result": "Both exact-head workflows failed in the clipboard path oracle because pinned Pi's generated amazon-bedrock model JSON was absent from the disposable checkout. The positional-file timeout is fixed and those cases passed; all platform, MCP, build, Python and docs checks passed. The .NET suite was skipped after the differential failure.",
+      "local_correction": "The clipboard runner now uses temporary_empty_model_catalogs around both pinned captures, matching the protocol and session oracles; local clipboard differential passes 4/4."
+    },
+    "latest_exact_head_ci": {
+      "head": "87d00fe13ce1b2d2f16b450780d8381ab9b3983e",
+      "push_run": "40201444374",
+      "pull_request_run": "40201446454",
+      "result": "Both exact-head workflows passed, including the complete 3,886-test .NET suite with zero failures/skips, all pinned differentials, format, warnings-as-errors build, Python/docs checks, macOS/Windows clipboard contracts, macOS session locks and MCP conformance.",
+      "local_correction": "The clipboard differential uses temporary_empty_model_catalogs around both pinned captures; local clipboard comparison passes 4/4."
+    },
+    "last_implementation_commit": "4c3eba8c",
+    "current_unpublished_followup": {
+      "status": "locally_verified_pending_commit_and_fresh_exact_head_ci",
+      "source_change": "Text-only model provider requests now use Pi's distinct exact omission placeholders for user images and tool-result images; the block-images setting notice remains unchanged.",
+      "provider_wire_differential": "12/12 paired physical cases across Responses, Chat Completions and Anthropic, including ordered PNG/JPEG/GIF/WebP, image-only prompts and text-only-model omission; stable two-run Pi calibration.",
+      "image_processing_differential": "13/13 strict and 6/6 codec-equivalent cases, including EXIF orientation; one documented stricter malformed-WebP rejection.",
+      "tool_result_image_differential": "Pinned Anthropic success/error tool-result image projection matches 2/2 cases; canonical history remains unchanged.",
+      "focused_dotnet": "ReadImageToolTests plus MultimodalRuntimeTests passed 16/16; Python compilation and git diff checks passed. A full local run did not complete cleanly; the exact-head CI suite remains the required full-suite gate.",
+      "remaining": "Commit and publish the follow-up, then verify exact-head push and PR workflows. Keep PR #26 open, draft and unmerged."
+    },
+    "current_head_tracking": "PR description is authoritative for the final published source head and exact-head CI run IDs.",
+    "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+    "clipboard_differential": {
+      "report": "docs/parity/fixtures/multimodal-clipboard-differential-2026-10-25.json",
+      "strict": "4/4",
+      "same_pi_calibration": "two identical pinned-Pi runs",
+      "path_precedence_calibration": "two identical pinned-Pi runs",
+      "scope": "Wayland PNG preference, empty Wayland clipboard behavior, X11 fallback, native file-path precedence over image/text fallback"
+    },
+    "protocol_differential": {
+      "report": "docs/parity/fixtures/multimodal-protocol-image-differential-2026-10-25.json",
+      "strict": "2/2",
+      "same_pi_calibration": "two identical pinned-Pi runs",
+      "scope": "JSON-mode malformed-image omission followed by valid PNG and RPC image prompt provider-visible content"
+    },
+    "positional_file_recovery_differential": {
+      "report": "docs/parity/fixtures/multimodal-file-recovery-differential-2026-10-25.json",
+      "strict": "1/1",
+      "same_pi_calibration": "two stable pinned-Pi runs",
+      "scope": "With early resize disabled, selected-model normalization omits a truncated positional PNG and preserves a following valid PNG at provider context",
+      "mode_alignment": "Matches Pi's CLI print/JSON/RPC deferred path, which passes autoResizeImages=false during file expansion and normalizes after model selection."
+    },
+    "session_provider_wire_differential": {
+      "report": "docs/parity/fixtures/multimodal-session-provider-wire-differential-2026-10-25.json",
+      "protocols": "3/3",
+      "same_pi_calibration": "two stable pinned-Pi runs",
+      "scope": "After saved-session restart, selected-branch image reaches Responses, Chat Completions and Anthropic request bodies; inactive-branch image is absent"
+    },
+    "platform_ci_adjustment": "Hosted macOS/Windows runners do not provide a live interactive clipboard; platform jobs now compile native scripts and verify deterministic cleanup/script contracts.",
+    "local_validation": {
+      "dotnet_full": "3,886 passed, zero failed or skipped after current additions",
+      "positional_image_file_tests": "8 passed, zero failed or skipped",
+      "listener_virtual_model_timer_tests": "4 passed, zero failed or skipped; manual clock removes elapsed-time flakiness and shared listener startup serializes ephemeral-port allocation",
+      "positional_recovery_focused": "1/1 deferred-normalization comparison passed, stable over two pinned-Pi runs",
+      "focused_clipboard": "30 passed",
+      "clipboard_partial_file_cancellation": "1 passed",
+      "dotnet_format": "passed",
+      "dotnet_build_warnaserror": "passed; zero warnings/errors",
+      "python_parity": "27 passed",
+      "terminal_python": "66 passed",
+      "terminal_node": "24 passed",
+      "documentation_paths": "154 documents and 674 references verified",
+      "mcp_conformance": "No regressions against the classified baseline; three known failures remain classified"
+    },
+    "first_exact_head_ci_findings": [
+      "Windows clipboard contract test expected CRLF while TerminalEditor stores LF; assertion now matches the stable editor representation and both exact-head workflows on bacbdc47 pass.",
+      "Pinned continuation oracle could not import absent generated model-catalog JSON; session differential runners now create temporary empty catalog modules for faux-provider-only probes and remove them after each run; paired continuation differentials pass locally.",
+      "The next exact-head runs found the same absent generated-catalog issue in the protocol image runner. The shared temporary catalog helper corrected it; the 2/2 pinned differential passes locally, and both exact-head workflows pass on bacbdc47.",
+      "Push run 40200397739 and PR run 40200401449 timed out at Vitest's 30-second positional-file test limit while decoding identical images repeatedly for dimension reporting. No parity mismatch was reported. Platform, MCP, build, Python and docs checks passed; the .NET suite was skipped after the differential failure. Commit 86c31d5d caches decoded dimensions while preserving the 256-image comparison.",
+      "Push run 40200887907 and PR run 40200892194 passed the image, file, session and provider-wire probes, then failed in the clipboard path oracle because generated model JSON was absent from the disposable Pi checkout. The clipboard runner now uses temporary_empty_model_catalogs around both pinned captures; local differential passes 4/4."
+    ],
+    "remaining": [
+      "Keep PR #26 open, draft and unmerged; its description is authoritative for the current head and exact-head CI results.",
+      "Broader malformed-input, combined/request-limit and resource-bound cases remain outside the focused acceptance evidence."
+    ]
   }
 }

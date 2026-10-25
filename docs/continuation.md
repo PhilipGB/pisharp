@@ -1,6 +1,61 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
+## Active milestone — Complete Multimodal User Input and Image Parity — 2026-10-25
+
+PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; the working
+branch `milestone/multimodal-user-input-image-parity` is based on that commit.
+Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+The prompt-image processor differential passes 13/13 strict cases and 5/5
+codec-equivalent cases, covering valid PNG/JPEG/GIF/WebP pass-through and
+model-limited resizing, BMP conversion, and malformed/truncated inputs. It
+records one accepted safety difference: Pi accepts a WebP with an oversized RIFF
+length field that PiSharp rejects. The paired positional file/initial-message corpus
+passes 7/7, including 256 images, JPEG/GIF/WebP pass-through and
+relative, absolute, home-expanded and symlinked image paths. Paired physical image requests pass
+for OpenAI Responses, Chat
+Completions and Anthropic (3/3). The file comparison exposed an extra blank line
+before the prompt; PiSharp now follows pinned `buildInitialMessage` concatenation.
+Pinned Pi's selected-model `before_agent_start` normalization test passes 1/1.
+PiSharp normalizes accepted image prompts before canonical persistence. Pinned
+Pi clipboard/print/prompt selections pass 51/51. Paired clipboard acquisition
+and file-path precedence pass 4/4, and JSON-mode plus RPC prompt content passes
+2/2; reports are stable across two pinned Pi runs. A saved-session restart and
+provider-context differential passes 3/3 strict comparisons and is stable
+across two pinned Pi runs. A separate post-restart physical provider-wire
+differential passes 3/3 across the three supported APIs; it verifies the active
+branch image is retained and the inactive branch image is omitted. The JSON
+probe includes a truncated image followed by a valid image and matches
+PiSharp's omission note and surviving image. A separate positional-file
+differential follows Pi's deferred selected-model normalization path and passes
+1/1 with two-run calibration, preserving the following valid image. The full
+.NET suite passes 3,886/3,886; format and warning-as-error build pass. Python
+parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. MCP has no
+new regressions against its classified baseline. Documentation paths pass for
+154 documents and 672 references.
+Dedicated macOS and Windows jobs verify clipboard script syntax and cleanup
+contracts, not live desktop clipboard access. Push run `40196042863` and PR run
+`40196046840` on head `f734c0c8` failed in the protocol image oracle because it
+did not create generated catalog data in the disposable Pi checkout; platform
+and MCP jobs passed. The protocol runner now uses the temporary catalog helper
+and its local differential passes 2/2. Correction `bacbdc47` is published and
+passes exact-head runs `40196652776` and `40196656515`. The expanded file/image
+corpus and partial-file cancellation regression are published. Push run
+`40200397739` and PR run `40200401449` on `0ab5007e` timed out because the
+positional-file oracle decoded identical images repeatedly to report dimensions;
+the pinned comparisons themselves did not mismatch, and platform/MCP/build
+checks passed. The probe now caches those dimensions and retains the 256-image
+ordering/count comparison. Its local differential passes 7/7 in under one
+second. Commit `87d00fe1` adds the shared temporary-catalog helper to the
+clipboard oracle; its local differential passes 4/4. Exact-head push and PR
+runs `40201444374` and `40201446454` passed on this implementation head,
+including all 3,886 .NET tests, pinned differentials, platform clipboard jobs
+and MCP conformance.
+Broader format, limits and resource-bound cases remain. Draft PR #26 stays
+open, draft and unmerged. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
+and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
+
+## Previous milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
 
 The 93-case source-pinned behavior corpus and 35-case provider-wire corpus pass.
 The implementation covers model references, initial selection, scope matching
@@ -1376,7 +1431,7 @@ listener race from PR CI was repaired, and the focused case passed. Final head
 `4972f6eaf8f5a0ca2c773048fa918ab6bc23e91c` passed exact-head push and PR CI,
 then PR #24 merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
 
-## Active milestone — Session JSONL Persistence and Crash Recovery Parity
+## Completed prerequisite — Session JSONL Persistence and Crash Recovery Parity
 
 PR #24 is verified merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
 The branch `milestone/session-jsonl-persistence-recovery-parity` starts from
@@ -1403,6 +1458,5 @@ Python 66/66; parity Python 27/27; terminal Node 24/24; documentation paths
 job is part of CI. Inventory and receipt record all accepted safety/resource
 differences; unexplained mandatory differences are empty.
 
-Draft PR [#25](https://github.com/PhilipGB/pisharp/pull/25) is open and
-intentionally unmerged. Its latest exact-head push and PR check results,
-including the macOS lease job, are tracked on the PR. Keep it in draft.
+PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; that merge is
+the base of the active multimodal milestone above.

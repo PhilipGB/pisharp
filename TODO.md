@@ -1,6 +1,43 @@
 # PiSharp capability parity
 
-## Active milestone — Session JSONL Persistence and Crash Recovery Parity — 2026-10-25
+## Active milestone — Complete Multimodal User Input and Image Parity — 2026-10-25
+
+PR #25 is verified merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`.
+The fresh branch `milestone/multimodal-user-input-image-parity` starts from that
+merge. Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
+
+Positional, interactive, JSON, RPC, clipboard, provider-wire and image-processing
+changes are implemented. The pinned image processor differential passes 13/13
+strict and 5/5 codec-equivalent cases across PNG/JPEG/GIF/WebP pass-through and
+model-limited processing plus BMP conversion, with one documented stricter
+malformed-WebP rejection; the paired file-argument/initial-message corpus
+passes 7/7, including a 256-image sequence, JPEG/GIF/WebP pass-through, and
+relative, absolute, home-expanded and symlinked image paths. Physical Responses,
+Chat Completions and Anthropic image-wire comparisons pass 3/3. Paired clipboard
+acquisition and file-path precedence pass 4/4; JSON-mode and RPC prompt
+comparisons pass 2/2, all stable across two pinned Pi runs. The selected-model
+canonical history mismatch and prompt separator mismatch are corrected. The
+full suite passes 3,886/3,886; format and warning-as-error build pass. Python
+parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. The
+truncated-image recovery differential passes 1/1; branched saved-session
+provider requests pass 3/3. Exact-head push and PR runs 40200397739 and
+40200401449 on `0ab5007e` timed out in the positional-file oracle's 30-second
+test limit; the image differential and all build, platform, Python, docs, and
+MCP checks passed, while .NET tests did not run after the oracle failure. The
+oracle now caches dimensions for identical image payloads while retaining the
+256-image order/count comparison. Its local differential passes 7/7 in under
+one second. Commit `87d00fe1` adds the shared temporary-catalog helper to the
+clipboard oracle; its local differential passes 4/4. Exact-head push and PR
+runs 40201444374 and 40201446454 passed on this implementation head, including
+3,886/3,886 .NET tests, all pinned differentials, platform clipboard checks and
+MCP conformance. Broader malformed-input, combined-limit and resource-bound
+cases remain. Documentation paths pass for
+154 documents and 672 references. Draft PR #26 remains open, draft and
+unmerged.
+Keep the new PR open, draft and unmerged. See the [multimodal parity receipt](docs/parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
+and [inventory](docs/parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
+
+## Completed prerequisite — Session JSONL Persistence and Crash Recovery Parity — 2026-10-25
 
 PR #24 is verified merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
 The fresh branch `milestone/session-jsonl-persistence-recovery-parity` is based
@@ -42,11 +79,9 @@ terminal Node 24/24; and documentation links 153 documents / 657 references.
 The first full rerun hit one transient unrelated ephemeral-port collision; the
 isolated test passed and the following full run passed 3,845/3,845. MCP
 conformance has no regressions against its classified baseline; three known
-scenarios remain classified. Exact-head checks for the bounded-reader
-follow-up are tracked on PR #25. Draft PR
-[#25](https://github.com/PhilipGB/pisharp/pull/25) is open and intentionally
-unmerged. Its latest exact-head Linux, MCP, and macOS check results are tracked
-on the PR; keep it in draft.
+scenarios remain classified. PR #25 is merged at
+`897bc5778f87ed09ea42e48b260479ee6a6a218c`; the merge is the base of the
+active multimodal milestone above.
 
 See the [session persistence receipt](docs/parity/fixtures/session-jsonl-persistence-recovery-2026-10-24.md)
 and [capability inventory](docs/parity/fixtures/session-jsonl-persistence-recovery-inventory-2026-10-24.json).
@@ -104,8 +139,8 @@ milestone is model selection, thinking and configuration parity on
 Implementation `bdbf2de91a30614ca7a258f1eaaf5e13141784c7` passes its refreshed
 93-case behavior and 35-case provider-wire reports. PR #23's unrelated
 Dependabot merge is now on `main`, and the milestone branch is synchronized
-with it. Draft PR #24 is open and remains
-unmerged. Its repaired implementation head passed exact-head push and PR CI,
+with it. PR #24 later merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
+Its repaired implementation head passed exact-head push and PR CI,
 including 3,780/3,780 .NET tests in both runs. The PR description records the
 published head and current workflow evidence. See the [active milestone
 receipt](docs/parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
