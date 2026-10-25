@@ -39,8 +39,8 @@ terminal Node 24/24; and documentation links 153 documents / 657 references.
 The first full rerun hit one transient unrelated ephemeral-port collision; the
 isolated test passed and the following full run passed 3,845/3,845. MCP
 conformance has no regressions against its classified baseline; three known
-scenarios remain classified. Fresh exact-head CI for the bounded-reader change
-is pending. Draft PR
+scenarios remain classified. Exact-head checks for the bounded-reader
+follow-up are tracked on PR #25. Draft PR
 [#25](https://github.com/PhilipGB/pisharp/pull/25) is open and intentionally
 unmerged. Its latest exact-head Linux, MCP, and macOS check results are tracked
 on the PR; keep it in draft.

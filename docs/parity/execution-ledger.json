@@ -186,7 +186,7 @@
       "pisharp_bounded_session_file_reads": "BoundedSessionFileReaderTests passes 2/2 for sync and async growth after the length snapshot. PiSessionImportService.ImportFile, SessionForkFactory.CreateAsync and PiSessionStartupTarget.ReadWorkingDirectory use the shared bounded reader; the focused import/fork/startup selection passes 12/12."
     },
     "remaining": [
-      "Verify that the exact PR #25 head passes push CI and PR CI, including the dedicated native macOS lease job; keep the PR open and in draft, and leave it unmerged."
+      "Keep PR #25 open, in draft, and unmerged pending maintainer disposition."
     ],
     "inventory_baseline_head_sha": "0d83418a31d84e530b099d98054739607fa3e3ad"
   },

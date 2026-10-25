@@ -10,8 +10,8 @@ format verification, warning-as-error build (zero warnings/errors), terminal
 Python 66/66, parity Python 27/27, terminal Node 24/24, and documentation
 validation (153 documents / 657 references). The focused import/fork/startup
 reader tests pass 12/12. MCP conformance has no regression against its
-classified baseline; three known scenarios remain classified. Fresh exact-head
-CI for the bounded-reader follow-up is pending.
+classified baseline; three known scenarios remain classified. Exact-head
+checks for the bounded-reader follow-up are tracked on PR #25.
 
 The current interchange class passes 52/52. The focused parser, migration,
 file-store, and catalog group passes 73/73. The exact-pin v1 migration oracle
