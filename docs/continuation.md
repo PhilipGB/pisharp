@@ -29,11 +29,13 @@ parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. MCP has no
 new regressions against its classified baseline. Documentation paths pass for
 154 documents and 672 references.
 Dedicated macOS and Windows jobs verify clipboard script syntax and cleanup
-contracts, not live desktop clipboard access. The first exact-head CI run found
-a Windows line-ending expectation and missing generated catalog data in the
-disposable Pi checkout; both have focused corrections in the worktree. Broader
-corrupt-format, limits, cancellation and resource-bound cases, plus fresh
-exact-head CI, remain. Draft PR #26
+contracts, not live desktop clipboard access. Push run `40196042863` and PR run
+`40196046840` on head `f734c0c8` failed in the protocol image oracle because it
+did not create generated catalog data in the disposable Pi checkout; platform
+and MCP jobs passed. The protocol runner now uses the temporary catalog helper
+and its local differential passes 2/2. This correction is uncommitted; fresh
+exact-head CI and broader corrupt-format, limits, cancellation and resource-
+bound cases remain. Draft PR #26
 stays open, draft and unmerged. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 

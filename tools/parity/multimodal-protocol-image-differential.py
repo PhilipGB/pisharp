@@ -8,7 +8,7 @@ import pathlib
 import subprocess
 import tempfile
 
-from pi_reference import verify_pi_checkout
+from pi_reference import temporary_empty_model_catalogs, verify_pi_checkout
 
 
 PNG = base64.b64decode(
@@ -59,16 +59,17 @@ def main():
         oracle.write_text((probe_dir / "multimodal-protocol-image-probe.pi.test.ts").read_text())
         try:
             pi_captures = []
-            for index in range(2):
-                capture_path = work / f"pi-{index}.json"
-                pi_environment = dict(environment)
-                pi_environment["PISHARP_PROTOCOL_INPUT_DIR"] = str(input_dir)
-                pi_environment["PISHARP_PROTOCOL_OUTPUT"] = str(capture_path)
-                pi_environment["PI_CODING_AGENT_DIR"] = str(work / f"pi-profile-{index}")
-                run(["node", str(pi / "node_modules/vitest/vitest.mjs"), "run", "--config",
-                     str(pi / "packages/coding-agent/vitest.config.ts"), str(oracle), "--reporter=dot"],
-                    cwd=pi, env=pi_environment, timeout=180)
-                pi_captures.append(json.loads(capture_path.read_text()))
+            with temporary_empty_model_catalogs(pi):
+                for index in range(2):
+                    capture_path = work / f"pi-{index}.json"
+                    pi_environment = dict(environment)
+                    pi_environment["PISHARP_PROTOCOL_INPUT_DIR"] = str(input_dir)
+                    pi_environment["PISHARP_PROTOCOL_OUTPUT"] = str(capture_path)
+                    pi_environment["PI_CODING_AGENT_DIR"] = str(work / f"pi-profile-{index}")
+                    run(["node", str(pi / "node_modules/vitest/vitest.mjs"), "run", "--config",
+                         str(pi / "packages/coding-agent/vitest.config.ts"), str(oracle), "--reporter=dot"],
+                        cwd=pi, env=pi_environment, timeout=180)
+                    pi_captures.append(json.loads(capture_path.read_text()))
         finally:
             oracle.unlink(missing_ok=True)
 

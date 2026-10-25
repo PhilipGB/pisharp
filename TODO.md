@@ -27,13 +27,15 @@ native clipboard scripts and cleanup contracts; live clipboard access is not
 available on hosted runners. A branched saved-session differential verifies
 the selected image reaches post-restart physical requests and the inactive
 branch image is excluded for Responses, Chat Completions and Anthropic (3/3,
-stable over two pinned Pi runs). The first exact-head CI run exposed a Windows
-line-ending expectation and absent generated catalog files in the disposable
-Pi checkout; both have focused corrections in the worktree. Broader corrupt-
-format, limits, cancellation and resource-bound cases, and fresh exact-head CI
-remain open. Documentation paths pass for 154 documents and 672 references. The
-saved-session canonical/provider-context comparison passes 3/3 strict cases.
-Draft PR #26 is open, draft and unmerged.
+stable over two pinned Pi runs). Exact-head push run 40196042863 and PR run
+40196046840 on head f734c0c8 failed in the protocol oracle because generated
+catalog JSON was absent in the disposable Pi checkout; platform and MCP jobs
+passed. The runner now uses the temporary-catalog helper and its pinned
+differential passes 2/2 locally; this correction is uncommitted. Broader
+corrupt-format, limits, cancellation and resource-bound cases, and fresh
+exact-head CI remain open. Documentation paths pass for 154 documents and 672
+references. The saved-session canonical/provider-context comparison passes
+3/3 strict cases. Draft PR #26 is open, draft and unmerged.
 Keep the new PR open, draft and unmerged. See the [multimodal parity receipt](docs/parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](docs/parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 

@@ -4,12 +4,9 @@
 
 The upstream reference is Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; this milestone
-branch is based on that commit. Draft PR #26 is open and unmerged. The previous
-published head before this clipboard/protocol follow-up was
-`73cdce52f5f911bf04f800af20dffd98c4c5fcf4`; implementation commit
-`4c3eba8c` adds the paired cases. After publication, PR #26's description is
-the source of truth for its current head and exact-head CI run IDs. The Pi pin
-has not moved.
+branch is based on that commit. Draft PR #26 is open and unmerged. Its latest
+published head is `f734c0c8d793fa829f2457a1a645cda776c1392c`; the Pi pin has
+not moved.
 
 ## Current evidence
 
@@ -142,13 +139,14 @@ excessive image counts, combined/request limits, decode bounds, cancellation
 during processing and temporary-file failure/cleanup still need distinct
 acceptance cases. macOS and Windows CI compile their native clipboard scripts
 and exercise platform-specific cleanup contracts; live desktop clipboard access
-is unavailable on hosted runners and is not claimed. The first exact-head CI
-run exposed a Windows-only line-ending expectation and missing generated
-catalog files in the disposable Pi checkout; both focused corrections are now
-in the worktree. The final PR description update, publishing the follow-up, and
-fresh exact-head CI remain pending. The earlier exact-head run was on head
-`8e68607aa8df1f49f436f8750dcfbaeaf7c795fe`; fresh checks must cover the new
-published head.
+is unavailable on hosted runners and is not claimed. The published head's push
+run `40196042863` and PR run `40196046840` both failed in the protocol image
+oracle because that runner did not create generated model-catalog files in the
+disposable Pi checkout; platform and MCP jobs passed. The protocol runner now
+uses the same temporary catalog helper as the other pinned oracles, and its
+local differential passes 2/2. That focused correction and this receipt update
+are not yet committed. Fresh exact-head CI, the final PR description update and
+broader adversarial acceptance cases remain.
 
 Overall Pi feature parity remains `in_progress`. This receipt will be updated
 with the published draft PR and exact-head workflow results after the remaining

@@ -13505,7 +13505,14 @@
     "branch": "milestone/multimodal-user-input-image-parity",
     "branch_base_sha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
     "draft_pr": "https://github.com/PhilipGB/pisharp/pull/26",
-    "published_head_before_current_followup": "8e68607aa8df1f49f436f8750dcfbaeaf7c795fe",
+    "published_head_before_current_followup": "f734c0c8d793fa829f2457a1a645cda776c1392c",
+    "latest_exact_head_ci": {
+      "head": "f734c0c8d793fa829f2457a1a645cda776c1392c",
+      "push_run": "40196042863",
+      "pull_request_run": "40196046840",
+      "result": "Both Linux CI runs failed in the pinned protocol image differential because its temporary Pi checkout lacked generated model-catalog JSON; platform and MCP jobs passed.",
+      "local_correction": "The protocol runner now uses temporary_empty_model_catalogs; its pinned differential passes 2/2 locally. Follow-up is uncommitted and fresh exact-head CI is pending."
+    },
     "last_implementation_commit": "4c3eba8c",
     "current_head_tracking": "PR description is authoritative for the final published source head and exact-head CI run IDs.",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -13551,13 +13558,14 @@
     },
     "first_exact_head_ci_findings": [
       "Windows clipboard contract test expected CRLF while TerminalEditor stores LF; assertion updated to the stable editor representation; fresh exact-head CI pending.",
-      "Pinned continuation oracle could not import absent generated model-catalog JSON; session differential runners now create temporary empty catalog modules for faux-provider-only probes and remove them after each run; paired continuation differentials pass locally."
+      "Pinned continuation oracle could not import absent generated model-catalog JSON; session differential runners now create temporary empty catalog modules for faux-provider-only probes and remove them after each run; paired continuation differentials pass locally.",
+      "The next exact-head runs found the same absent generated-catalog issue in the protocol image runner. The runner now uses the temporary catalog helper, and its 2/2 pinned differential passes locally; this correction is not yet committed or published."
     ],
     "remaining": [
-      "Broader corrupt-format, path, image-count, combined/request-limit, decoding-bound, cancellation and temporary-file failure/cleanup evidence",
       "Clipboard file-path precedence and final native macOS/Windows contract jobs",
-      "Fresh exact-head CI after publishing; local quality gates and 154/672 documentation-path validation are green",
-      "Commit and push the follow-up and docs, update PR description, and verify exact-head push/PR CI while leaving PR #26 open and draft"
+      "Commit and publish the protocol-oracle correction and receipt updates, then verify fresh exact-head push/PR CI",
+      "Broader corrupt-format, file-path, image-count, combined/request-limit, decode-bound, cancellation and temporary-file failure/cleanup acceptance cases",
+      "Update the PR description with current evidence and remaining limitations while leaving PR #26 open and draft"
     ]
   }
 }
