@@ -181,7 +181,7 @@
       "pinned_pi_migration_edge_oracle": "Seven file-backed migration cases, including integral floating-point index tokens (1.0 and 1e0), invalid numeric and nonnumeric compaction indices, and malformed unknown fields, were stable across two independent opens at b06c1f2; PiSharp matches the supported semantics.",
       "pisharp_read_only_legacy_migration": "PiJsonlSessionFileStoreTests.LoadingLegacyPiJsonlMigratesInMemoryWithoutRewritingTheSource passed; source bytes remain unchanged on load.",
       "pinned_pi_rpc_projection_oracle": "Two stable exact-pin CLI observations cover get_state, get_messages, get_entries, get_tree, and get_fork_messages; selected branch, latest label, entry identities and fork messages match the persisted fixture.",
-      "pisharp_macos_lease_job": "Dedicated macos-latest job runs native lease, alias, wait-cancellation, and cross-process locking tests; exact-head result is pending on draft PR #25.",
+      "pisharp_macos_lease_job": "Dedicated macos-latest job runs native lease, alias, wait-cancellation, and cross-process locking tests; exact-head results are tracked on draft PR #25.",
       "full_local_validation": "Final full .NET suite 3843/3843 in 6m23s with zero failures/skips; format and warning-as-error build pass; terminal Python 66/66, parity Python 27/27, Node terminal 24/24, documentation paths 153/657, MCP no-regression against the classified baseline with three known cases."
     },
     "remaining": [

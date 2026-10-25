@@ -35,11 +35,11 @@ Final local validation passes: .NET 3,843/3,843 with zero failures or skips;
 format verification; warning-as-error build with zero warnings/errors; terminal
 Python 66/66; parity Python 27/27; terminal Node 24/24; and documentation links
 153 documents / 657 references. MCP conformance has no regressions against its
-classified baseline; three known scenarios remain classified. The macOS lease
-job is configured, and the branch is committed and pushed.
-Draft PR [#25](https://github.com/PhilipGB/pisharp/pull/25) is open; its exact-head
-Linux, MCP, and macOS checks are in progress. Keep it in draft until they finish;
-do not merge it.
+classified baseline; three known scenarios remain classified. The branch is
+committed and pushed. Draft PR
+[#25](https://github.com/PhilipGB/pisharp/pull/25) is open and intentionally
+unmerged. Its latest exact-head Linux, MCP, and macOS check results are tracked
+on the PR; keep it in draft.
 
 See the [session persistence receipt](fixtures/session-jsonl-persistence-recovery-2026-10-24.md)
 and [capability inventory](fixtures/session-jsonl-persistence-recovery-inventory-2026-10-24.json).

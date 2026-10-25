@@ -1404,5 +1404,5 @@ job is part of CI. Inventory and receipt record all accepted safety/resource
 differences; unexplained mandatory differences are empty.
 
 Draft PR [#25](https://github.com/PhilipGB/pisharp/pull/25) is open and
-unmerged. Verify its exact-head push and PR workflows, including the macOS
-lease job; keep it in draft until all checks finish. Do not merge it.
+intentionally unmerged. Its latest exact-head push and PR check results,
+including the macOS lease job, are tracked on the PR. Keep it in draft.
