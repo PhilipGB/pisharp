@@ -46,11 +46,11 @@ positional-file oracle decoded identical images repeatedly to report dimensions;
 the pinned comparisons themselves did not mismatch, and platform/MCP/build
 checks passed. The probe now caches those dimensions and retains the 256-image
 ordering/count comparison. Its local differential passes 7/7 in under one
-second. Fix `86c31d5d` is published. Runs `40200887907` and `40200892194`
-advanced past the positional-file cases,
-then failed when the clipboard path oracle imported absent generated catalog
-JSON. The clipboard runner now uses the shared temporary-catalog helper; its
-local differential passes 4/4. Fresh exact-head CI for this fix is pending.
+second. Commit `87d00fe1` adds the shared temporary-catalog helper to the
+clipboard oracle; its local differential passes 4/4. Exact-head push and PR
+runs `40201444374` and `40201446454` passed on this implementation head,
+including all 3,886 .NET tests, pinned differentials, platform clipboard jobs
+and MCP conformance.
 Broader format, limits and resource-bound cases remain. Draft PR #26 stays
 open, draft and unmerged. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).

@@ -13513,12 +13513,19 @@
       "result": "Both exact-head workflows passed, including Linux build/tests, macOS and Windows clipboard contracts, macOS session locks and MCP conformance.",
       "local_correction": "The protocol runner uses temporary_empty_model_catalogs; its pinned differential passes 2/2. This was the previous passing exact-head before expanded positional-file comparisons, image cases, clipboard path-precedence comparisons and cancellation cleanup regressions were published."
     },
-    "latest_exact_head_ci": {
+    "previous_failed_exact_head_ci": {
       "head": "86c31d5d5dbe9cb13e80baa3a8aa64198596a30",
       "push_run": "40200887907",
       "pull_request_run": "40200892194",
       "result": "Both exact-head workflows failed in the clipboard path oracle because pinned Pi's generated amazon-bedrock model JSON was absent from the disposable checkout. The positional-file timeout is fixed and those cases passed; all platform, MCP, build, Python and docs checks passed. The .NET suite was skipped after the differential failure.",
       "local_correction": "The clipboard runner now uses temporary_empty_model_catalogs around both pinned captures, matching the protocol and session oracles; local clipboard differential passes 4/4."
+    },
+    "latest_exact_head_ci": {
+      "head": "87d00fe13ce1b2d2f16b450780d8381ab9b3983e",
+      "push_run": "40201444374",
+      "pull_request_run": "40201446454",
+      "result": "Both exact-head workflows passed, including the complete 3,886-test .NET suite with zero failures/skips, all pinned differentials, format, warnings-as-errors build, Python/docs checks, macOS/Windows clipboard contracts, macOS session locks and MCP conformance.",
+      "local_correction": "The clipboard differential uses temporary_empty_model_catalogs around both pinned captures; local clipboard comparison passes 4/4."
     },
     "last_implementation_commit": "4c3eba8c",
     "current_head_tracking": "PR description is authoritative for the final published source head and exact-head CI run IDs.",
@@ -13573,8 +13580,8 @@
       "Push run 40200887907 and PR run 40200892194 passed the image, file, session and provider-wire probes, then failed in the clipboard path oracle because generated model JSON was absent from the disposable Pi checkout. The clipboard runner now uses temporary_empty_model_catalogs around both pinned captures; local differential passes 4/4."
     ],
     "remaining": [
-      "Update the PR description with the verified counts, accepted safety difference, current head and exact-head CI results",
-      "Verify fresh exact-head push and PR CI, including macOS/Windows clipboard contracts, while leaving PR #26 open, draft and unmerged"
+      "Keep PR #26 open, draft and unmerged; its description is authoritative for the current head and exact-head CI results.",
+      "Broader malformed-input, combined/request-limit and resource-bound cases remain outside the focused acceptance evidence."
     ]
   }
 }

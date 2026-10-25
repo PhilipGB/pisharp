@@ -4,10 +4,10 @@
 
 The upstream reference is Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; this milestone
-branch is based on that commit. Draft PR #26 is open and unmerged. Previous passing head
-`bacbdc47bba64e599beaff3ff51976cbe7b63738` remains recorded below; the current
-published follow-up is `86c31d5d5dbe9cb13e80baa3a8aa64198596a30`. The Pi pin
-has not moved.
+branch is based on that commit. Draft PR #26 is open and unmerged. The
+implementation head `87d00fe13ce1b2d2f16b450780d8381ab9b3983e` passed exact-head
+push and PR CI; the PR description is authoritative for the latest branch head
+and CI run IDs. The Pi pin has not moved.
 
 ## Current evidence
 
@@ -169,13 +169,17 @@ repeatedly only to report dimensions. The parity comparison did not report a
 mismatch, and platform/MCP/build checks passed; the .NET job was skipped after
 the differential failed. The probe now caches dimensions by image payload,
 keeping all 256 images in the ordering/count comparison. Its local differential
-passes 7/7 in under one second. Fix `86c31d5d` is published, and fresh exact-head
-push/PR runs `40200887907` and `40200892194` advanced past the positional-file
-cases, then failed when the clipboard path oracle imported absent generated
-catalog JSON. The clipboard runner now uses the shared temporary-catalog
-helper, and its local differential passes 4/4. Fresh exact-head CI for this
-correction is pending. Broader adversarial acceptance cases remain.
+passes 7/7 in under one second. The clipboard runner also uses the shared
+temporary-catalog helper, and its local differential passes 4/4. Exact-head
+push run `40201444374` and PR run `40201446454` passed on implementation head
+`87d00fe1`; the full .NET suite passed 3,886/3,886 with zero failures or skips,
+and image, positional-file, clipboard, platform and MCP checks passed. Earlier
+exact-head failures were limited to the positional-file timeout and absent
+generated Pi catalog fixtures; both harness issues are corrected. Broader
+adversarial acceptance cases remain.
 
-Overall Pi feature parity remains `in_progress`. This receipt will be updated
-with the published draft PR and exact-head workflow results after the remaining
-acceptance gates pass.
+This focused milestone has passed its implementation, differential, local test
+and exact-head CI gates. Broader Pi feature parity remains `in_progress`, with
+additional malformed-input, combined-limit and resource-bound evidence outside
+this milestone still open. The PR description is authoritative for the current
+branch head and exact-head workflow results.

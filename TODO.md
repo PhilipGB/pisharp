@@ -26,13 +26,12 @@ test limit; the image differential and all build, platform, Python, docs, and
 MCP checks passed, while .NET tests did not run after the oracle failure. The
 oracle now caches dimensions for identical image payloads while retaining the
 256-image order/count comparison. Its local differential passes 7/7 in under
-one second. The fix is published at `86c31d5d`; fresh exact-head push and PR
-runs 40200887907 and 40200892194 progressed past the positional-file cases but
-failed when the clipboard path oracle imported absent generated catalog JSON.
-The clipboard runner now uses the shared temporary-catalog helper; its local
-differential passes 4/4. Fresh exact-head CI for this correction is required.
-Broader malformed-input,
-combined-limit and resource-bound cases remain. Documentation paths pass for
+one second. Commit `87d00fe1` adds the shared temporary-catalog helper to the
+clipboard oracle; its local differential passes 4/4. Exact-head push and PR
+runs 40201444374 and 40201446454 passed on this implementation head, including
+3,886/3,886 .NET tests, all pinned differentials, platform clipboard checks and
+MCP conformance. Broader malformed-input, combined-limit and resource-bound
+cases remain. Documentation paths pass for
 154 documents and 672 references. Draft PR #26 remains open, draft and
 unmerged.
 Keep the new PR open, draft and unmerged. See the [multimodal parity receipt](docs/parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)

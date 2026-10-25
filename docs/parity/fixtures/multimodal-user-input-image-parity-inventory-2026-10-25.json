@@ -209,16 +209,17 @@
     }
   ],
   "exactHeadCi": {
-    "head": "86c31d5d5dbe9cb13e80baa3a8aa64198596a30",
-    "pushRun": "40200887907",
-    "pullRequestRun": "40200892194",
-    "status": "failed",
-    "previousFollowupFailure": "Runs 40200397739 and 40200401449 on 0ab5007e hit Vitest's 30-second limit while decoding identical images repeatedly for dimension reporting. No parity mismatch was reported. Platform, MCP, build, Python and docs jobs passed; .NET tests were skipped after the oracle failure. Commit 86c31d5d caches dimensions while preserving all 256 images; the local differential passes 7/7 in under one second.",
-    "latestFailure": "Runs 40200887907 and 40200892194 passed image, file, session and provider-wire probes, then failed because the clipboard path oracle imported absent generated amazon-bedrock model JSON from the disposable Pi checkout. The clipboard differential now uses temporary_empty_model_catalogs around both pinned captures and passes 4/4 locally; fresh exact-head CI is pending."
+    "head": "87d00fe13ce1b2d2f16b450780d8381ab9b3983e",
+    "pushRun": "40201444374",
+    "pullRequestRun": "40201446454",
+    "status": "passed",
+    "result": "Both exact-head workflows passed: 3,886/3,886 .NET tests with zero failures/skips, all pinned differentials, format, warning-as-error build, Python/docs checks, macOS/Windows clipboard contracts, macOS session locks and MCP.",
+    "priorFailures": [
+      "Runs 40200397739 and 40200401449 on 0ab5007e hit Vitest's 30-second limit while decoding identical images repeatedly for dimensions. No parity mismatch was reported; commit 86c31d5d caches dimensions and retains all 256 images.",
+      "Runs 40200887907 and 40200892194 passed the image, file, session and provider-wire probes, then failed because the clipboard path oracle imported absent generated amazon-bedrock model JSON. Commit 87d00fe1 adds temporary_empty_model_catalogs around both pinned captures; local clipboard comparison passes 4/4."
+    ]
   },
   "remaining": [
-    "Update the PR description with the verified counts, accepted safety difference, current head and exact-head CI results.",
-    "Verify fresh exact-head push and PR CI, including macOS/Windows clipboard contracts, while keeping PR #26 open and draft.",
     "Hosted clipboard jobs verify native scripts and cleanup contracts; live desktop clipboard access is unavailable on hosted runners.",
     "Broader malformed-input, combined/request-limit and resource-bound cases remain outside the focused acceptance evidence."
   ]

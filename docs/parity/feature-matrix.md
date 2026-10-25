@@ -21,12 +21,12 @@ file/image evidence and clipboard cleanup regression are published. Exact-head
 runs 40200397739 and 40200401449 on `0ab5007e` timed out at the positional-file
 oracle's 30-second test limit; the 256-image ordering/count check remains intact
 and repeated dimension decoding is now cached. The local file differential
-passes 7/7 in under one second. Fresh exact-head CI is running for `86c31d5d`.
-That head's push and PR runs advanced past the positional-file cases, then
-failed when the clipboard path oracle imported absent generated catalog JSON.
-The clipboard runner now uses the shared temporary-catalog helper, and the
-local clipboard differential passes 4/4. Fresh exact-head CI for this fix is
-pending. The deferred truncated-image recovery differential passes 1/1. Broader
+passes 7/7 in under one second. Commit `87d00fe1` adds the shared
+temporary-catalog helper to the clipboard oracle; its local differential passes
+4/4. Exact-head push and PR runs 40201444374 and 40201446454 passed on this
+implementation head, including 3,886/3,886 .NET tests, all pinned
+differentials, platform clipboard checks and MCP conformance. The deferred
+truncated-image recovery differential passes 1/1. Broader
 adversarial coverage remains open. Documentation paths pass (154 documents,
 672 references). See the multimodal receipt and inventory.
 
