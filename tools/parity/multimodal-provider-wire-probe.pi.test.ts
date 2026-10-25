@@ -6,17 +6,13 @@ import { stream as streamCompletions } from "../src/api/openai-completions.ts";
 import { stream as streamAnthropic } from "../src/api/anthropic-messages.ts";
 import { normalizeContext } from "../src/utils/transcript.ts";
 
+type ScenarioPart =
+	| { type: "text"; text: string }
+	| { type: "image"; mimeType: string; data: string };
+type Scenario = { id: string; parts: ScenarioPart[]; modelInput?: ("text" | "image")[] };
+
 test("captures pinned Pi physical image provider requests", async () => {
-	const image = process.env.PISHARP_PROVIDER_IMAGE!;
-	const user: Message = {
-		role: "user",
-		content: [
-			{ type: "text", text: "describe λ" },
-			{ type: "image", mimeType: "image/png", data: image },
-		],
-		timestamp: 0,
-	};
-	const context = normalizeContext({ messages: [user] });
+	const scenarios = JSON.parse(process.env.PISHARP_PROVIDER_CASES!) as Scenario[];
 	const responsesSse =
 		"data: {\"type\":\"response.created\",\"response\":{\"id\":\"resp_wire\"}}\n\n" +
 		"data: {\"type\":\"response.output_text.delta\",\"item_id\":\"item_wire\",\"output_index\":0,\"content_index\":0,\"delta\":\"ok\"}\n\n" +
@@ -37,36 +33,48 @@ test("captures pinned Pi physical image provider requests", async () => {
 		{ api: "openai-completions", provider: "openai", modelId: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1", run: streamCompletions, sse: completionsSse },
 		{ api: "anthropic-messages", provider: "anthropic", modelId: "claude-sonnet-4-6", baseUrl: "https://api.anthropic.com", run: streamAnthropic, sse: anthropicSse },
 	] as const) {
-		const model = {
-			id: entry.modelId,
-			name: entry.modelId,
-			api: entry.api,
-			provider: entry.provider,
-			baseUrl: entry.baseUrl,
-			input: ["text", "image"],
-			reasoning: false,
-			contextWindow: 128000,
-			maxTokens: 4096,
-			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-		} as Model<typeof entry.api>;
-		const capture = async () => {
-			let captured: { path: string; payload: Record<string, unknown> } | undefined;
-			const fetchMock = async (url: string | URL | Request, init?: RequestInit) => {
-				captured = { path: new URL(String(url)).pathname, payload: JSON.parse(String(init?.body)) };
-				return new Response(entry.sse, { status: 200, headers: { "content-type": "text/event-stream" } });
+		for (const scenario of scenarios) {
+			const user: Message = {
+				role: "user",
+				content: scenario.parts.map((part) => part.type === "text"
+					? { type: "text" as const, text: part.text }
+					: { type: "image" as const, mimeType: part.mimeType, data: part.data }),
+				timestamp: 0,
 			};
-			const answer = await entry.run(model as never, context, {
-				apiKey: "fixture-key",
-				fetch: fetchMock as typeof globalThis.fetch,
-			} as never).result();
-			if (answer.stopReason === "error") throw new Error(`${entry.api}: ${answer.errorMessage}`);
-			if (!captured) throw new Error(`${entry.api}: provider request was not captured`);
-			return captured;
-		};
-		const first = await capture();
-		const second = await capture();
-		if (JSON.stringify(first) !== JSON.stringify(second)) throw new Error(`${entry.api}: request changed across calibration runs`);
-		result.push({ api: entry.api, model: entry.modelId, first, second });
+			const context = normalizeContext({ messages: [user] });
+			const model = {
+				id: entry.modelId,
+				name: entry.modelId,
+				api: entry.api,
+				provider: entry.provider,
+				baseUrl: entry.baseUrl,
+				input: scenario.modelInput ?? ["text", "image"],
+				reasoning: false,
+				contextWindow: 128000,
+				maxTokens: 4096,
+				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+			} as Model<typeof entry.api>;
+			const capture = async () => {
+				let captured: { path: string; payload: Record<string, unknown> } | undefined;
+				const fetchMock = async (url: string | URL | Request, init?: RequestInit) => {
+					captured = { path: new URL(String(url)).pathname, payload: JSON.parse(String(init?.body)) };
+					return new Response(entry.sse, { status: 200, headers: { "content-type": "text/event-stream" } });
+				};
+				const answer = await entry.run(model as never, context, {
+					apiKey: "fixture-key",
+					fetch: fetchMock as typeof globalThis.fetch,
+				} as never).result();
+				if (answer.stopReason === "error") throw new Error(`${entry.api}/${scenario.id}: ${answer.errorMessage}`);
+				if (!captured) throw new Error(`${entry.api}/${scenario.id}: provider request was not captured`);
+				return captured;
+			};
+			const first = await capture();
+			const second = await capture();
+			if (JSON.stringify(first) !== JSON.stringify(second)) {
+				throw new Error(`${entry.api}/${scenario.id}: request changed across calibration runs`);
+			}
+			result.push({ api: entry.api, model: entry.modelId, scenario: scenario.id, first, second });
+		}
 	}
 	writeFileSync(process.env.PISHARP_PROVIDER_OUTPUT!, JSON.stringify(result));
 });

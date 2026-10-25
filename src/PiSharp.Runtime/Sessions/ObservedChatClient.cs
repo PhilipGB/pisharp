@@ -457,13 +457,17 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
     internal static IReadOnlyList<ChatMessage> FilterImagesForModel(IEnumerable<ChatMessage> messages,
         bool blockImages, bool supportsImages)
     {
-        if (!blockImages && supportsImages) return messages.ToArray();
+        var filterImages = blockImages || !supportsImages;
         return messages.Select(message =>
         {
+            var isToolImageAttachment =
+                message.AdditionalProperties?.ContainsKey(ToolResultMessageProjection.ToolImageAttachmentKey) == true;
             if (message.Role != ChatRole.User && message.Role != ChatRole.Tool ||
-                !message.Contents.OfType<DataContent>().Any(IsImage)) return message;
-            var notice = blockImages ? "Image reading is disabled." :
-                "Current model does not support images. The image will be omitted from this request.";
+                !message.Contents.OfType<DataContent>().Any(IsImage) || !filterImages)
+                return isToolImageAttachment ? WithoutToolImageAttachmentMarker(message) : message;
+            var notice = blockImages ? "Image reading is disabled." : isToolImageAttachment
+                ? "(tool image omitted: model does not support images)"
+                : "(image omitted: model does not support images)";
             var contents = new List<AIContent>();
             foreach (var content in message.Contents)
             {
@@ -474,8 +478,24 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
                 }
                 else contents.Add(content);
             }
-            return new ChatMessage(message.Role, contents);
+            return WithoutToolImageAttachmentMarker(message, contents);
         }).ToArray();
+    }
+
+    private static ChatMessage WithoutToolImageAttachmentMarker(ChatMessage message,
+        IList<AIContent>? contents = null)
+    {
+        var hasMarker =
+            message.AdditionalProperties?.ContainsKey(ToolResultMessageProjection.ToolImageAttachmentKey) == true;
+        if (!hasMarker && contents is null)
+            return message;
+        var additionalProperties = message.AdditionalProperties?.Clone();
+        if (hasMarker)
+            additionalProperties!.Remove(ToolResultMessageProjection.ToolImageAttachmentKey);
+        return new ChatMessage(message.Role, contents ?? message.Contents)
+        {
+            AdditionalProperties = additionalProperties is { Count: > 0 } ? additionalProperties : null
+        };
     }
 
     private static bool IsImage(DataContent content) =>

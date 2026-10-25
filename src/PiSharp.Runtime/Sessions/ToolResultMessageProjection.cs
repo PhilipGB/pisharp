@@ -9,6 +9,7 @@ internal static class ToolResultMessageProjection
     // Request-only attribution lets provider adapters apply their error-result image rules.
     internal const string ErrorImageCountKey = "pisharp.errorToolImageCount";
     internal const string ErrorImageIndexesKey = "pisharp.errorToolImageIndexes";
+    internal const string ToolImageAttachmentKey = "pisharp.toolImageAttachment";
 
     public static IReadOnlyList<ChatMessage> Expand(IReadOnlyList<ChatMessage> messages, bool supportsImages,
         bool flattenStructuredResults)
@@ -121,14 +122,19 @@ internal static class ToolResultMessageProjection
             }
 
             if (attachments.Count > 0)
+            {
+                var additionalProperties = new AdditionalPropertiesDictionary
+                {
+                    [ToolImageAttachmentKey] = true
+                };
+                if (errorImageIndexes.Count > 0)
+                    additionalProperties[ErrorImageIndexesKey] = errorImageIndexes.ToArray();
                 expanded.Add(new ChatMessage(ChatRole.User,
                     [new TextContent("Attached image(s) from tool result:"), .. attachments])
                 {
-                    AdditionalProperties = errorImageIndexes.Count == 0 ? null : new()
-                    {
-                        [ErrorImageIndexesKey] = errorImageIndexes.ToArray()
-                    }
+                    AdditionalProperties = additionalProperties
                 });
+            }
         }
         return expanded;
     }

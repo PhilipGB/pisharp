@@ -11,13 +11,14 @@ and CI run IDs. The Pi pin has not moved.
 
 ## Current evidence
 
-The direct `processImage` differential passes **13/13 strict cases** and **5/5
+The direct `processImage` differential passes **13/13 strict cases** and **6/6
 codec-equivalent cases**, with one documented safety difference. Pinned Pi
 output is stable across two runs, including encoded bytes. Strict cases cover
 PNG pass-through, resize-disabled pass-through, valid JPEG/GIF/WebP pass-through,
 and malformed/truncated PNG/JPEG/GIF/WebP inputs. Calibrated cases cover
-model-limited PNG/JPEG/GIF/WebP resize and BMP-to-PNG conversion; they compare
-MIME, decoded dimensions and processing hints rather than codec bytes. Pi accepts
+model-limited PNG/JPEG/GIF/WebP resize, EXIF-oriented JPEG resize and BMP-to-PNG
+conversion; they compare MIME, decoded dimensions and processing hints rather
+than codec bytes. Pi accepts
 a WebP whose RIFF length exceeds available data while Skia rejects it; PiSharp
 omits this malformed input rather than forwarding it. See the [machine-readable report](multimodal-image-differential-2026-10-25.json)
 and its [reproducible runner](../../../tools/parity/multimodal-image-differential.py).
@@ -43,12 +44,22 @@ has a different hint placement, but it is not the CLI print/JSON/RPC path under
 test here. See the [recovery report](multimodal-file-recovery-differential-2026-10-25.json)
 and [runner](../../../tools/parity/multimodal-file-recovery-differential.py).
 
-Physical provider-wire comparisons pass **3/3 protocols**: OpenAI Responses,
-OpenAI Chat Completions and Anthropic Messages. Each comparison uses a pinned Pi
-provider stream and a PiSharp MAF `ChatClient` HTTP boundary; path, text/image
-ordering, MIME and encoded image data match, and each Pi request is stable over
-two runs. See the [provider-wire report](multimodal-provider-wire-differential-2026-10-25.json)
+Physical provider-wire comparisons pass **12/12 cases across 3/3 protocols**:
+OpenAI Responses, OpenAI Chat Completions and Anthropic Messages. Cases cover a
+single PNG after text, interleaved PNG/JPEG/GIF/WebP parts, image-only prompts,
+and text-only models replacing adjacent images with Pi's omission placeholder.
+Each comparison uses a pinned Pi provider stream and a PiSharp MAF `ChatClient`
+HTTP boundary; path, ordered text/image parts, MIME and encoded data match, and
+each Pi request is stable over two runs. See the
+[provider-wire report](multimodal-provider-wire-differential-2026-10-25.json)
 and [runner](../../../tools/parity/multimodal-provider-wire-differential.py).
+
+An additional pinned differential verifies successful and failed Anthropic
+tool-result image projection, including the exact error-image omission note and
+unchanged canonical tool history. This uses the provider adapter with a local
+HTTP response; it does not claim full conversation-wire equivalence. See the
+[tool-result report](multimodal-tool-result-image-differential-2026-10-25.json)
+and [runner](../../../tools/parity/anthropic-error-image-differential.py).
 
 Saved-session continuation passes **3/3 strict comparisons** against pinned Pi:
 initial provider content, restored canonical user content and continuation
@@ -118,7 +129,7 @@ warning-as-error build pass with zero warnings and errors. Python parity tests
 pass 27/27; terminal Python passes 66/66; terminal Node passes 24/24.
 MCP conformance reports no regressions against its classified baseline; three
 pre-existing cases remain classified. Documentation paths pass for 154
-documents and 672 references.
+documents and 674 references.
 
 ## Corrections recorded
 
@@ -137,6 +148,9 @@ documents and 672 references.
 - Deferred selected-model normalization omits a truncated positional image and
   preserves a following valid image at provider context, matching the pinned
   CLI path.
+- Text-only model requests now use Pi's exact user-image or tool-image omission
+  placeholder at the physical provider boundary; the separate block-images
+  setting keeps its explicit disabled-image notice.
 
 ## Limits and remaining work
 
@@ -158,9 +172,10 @@ local differential passes 2/2. The correction is published at `bacbdc47` and
 passes exact-head push and PR runs `40196652776` and `40196656515`. The expanded
 file differential passes 7/7 locally, including a 256-image sequence,
 JPEG/GIF/WebP pass-through and relative, absolute, home-expanded and symlinked
-paths. The processor differential passes 13/13 strict and 5/5 codec-equivalent
+paths. The processor differential passes 13/13 strict and 6/6 codec-equivalent
 cases, covering pass-through and model-limited processing for PNG/JPEG/GIF/WebP,
-malformed-format handling, and one documented stricter WebP rejection. The
+EXIF orientation, malformed-format handling, and one documented stricter WebP
+rejection. The
 partial-file cancellation
 test passes 1/1. These changes are published. Exact-head runs `40200397739`
 and `40200401449` on `0ab5007e` timed out at Vitest's 30-second limit in the

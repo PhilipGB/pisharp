@@ -157,7 +157,7 @@ public sealed class ReadImageToolTests
             var textOnlyBody = requests[3].RootElement.GetRawText();
             Assert.DoesNotContain("input_image", textOnlyBody, StringComparison.Ordinal);
             Assert.DoesNotContain("image_url", textOnlyBody, StringComparison.Ordinal);
-            Assert.Contains("Current model does not support images. The image will be omitted from this request.", textOnlyBody, StringComparison.Ordinal);
+            Assert.Contains("(tool image omitted: model does not support images)", textOnlyBody, StringComparison.Ordinal);
             Assert.DoesNotContain("\"type\":\"image\"", textOnlyBody, StringComparison.Ordinal);
             var blockedBody = requests[4].RootElement.GetRawText();
             Assert.DoesNotContain("input_image", blockedBody, StringComparison.Ordinal);

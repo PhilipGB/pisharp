@@ -1,6 +1,6 @@
 {
   "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
-  "scope": "Pinned processImage prompt normalization across PNG, JPEG, GIF and WebP pass-through, model-limited resize, BMP conversion and malformed/truncated-input handling; provider wire, clipboard acquisition and full session lifecycle have separate reports",
+  "scope": "Pinned processImage prompt normalization across PNG, JPEG, GIF and WebP pass-through, model-limited resize, EXIF orientation, BMP conversion and malformed/truncated-input handling; provider wire, clipboard acquisition and full session lifecycle have separate reports",
   "samePiCalibration": {
     "runs": 2,
     "stable": true,
@@ -8,8 +8,8 @@
   },
   "strictPasses": 13,
   "strictTotal": 13,
-  "codecEquivalentPasses": 5,
-  "codecEquivalentTotal": 5,
+  "codecEquivalentPasses": 6,
+  "codecEquivalentTotal": 6,
   "acceptedSafetyDifferences": 1,
   "unexplainedMismatches": [],
   "cases": [
@@ -443,6 +443,31 @@
         "height": 1,
         "hints": [
           "[Image: original 2x2, displayed at 1x1. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      }
+    },
+    {
+      "id": "jpeg-exif-orientation-resize",
+      "classification": "codec-equivalent",
+      "match": true,
+      "pinned": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 2,
+        "height": 4,
+        "hints": [
+          "[Image: original 4x8, displayed at 2x4. Multiply coordinates by 2.00 to map to original image.]"
+        ],
+        "message": null
+      },
+      "pisharp": {
+        "ok": true,
+        "mimeType": "image/png",
+        "width": 2,
+        "height": 4,
+        "hints": [
+          "[Image: original 4x8, displayed at 2x4. Multiply coordinates by 2.00 to map to original image.]"
         ],
         "message": null
       }

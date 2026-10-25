@@ -29,10 +29,10 @@
   "differential": {
     "report": "multimodal-image-differential-2026-10-25.json",
     "strict": { "passed": 13, "total": 13 },
-    "codecEquivalent": { "passed": 5, "total": 5 },
+    "codecEquivalent": { "passed": 6, "total": 6 },
     "acceptedSafetyDifferences": 1,
     "samePiCalibration": { "runs": 2, "stable": true },
-    "scope": "processImage prompt normalization across PNG/JPEG/GIF/WebP pass-through and model-limited resize, BMP conversion, malformed/truncated inputs, and one stricter WebP rejection",
+    "scope": "processImage prompt normalization across PNG/JPEG/GIF/WebP pass-through and model-limited resize, EXIF orientation, BMP conversion, malformed/truncated inputs, and one stricter WebP rejection",
     "fileArguments": {
       "report": "multimodal-file-argument-differential-2026-10-25.json",
       "passed": 7,
@@ -44,9 +44,18 @@
       "report": "multimodal-provider-wire-differential-2026-10-25.json",
       "passed": 3,
       "total": 3,
+      "casesPassed": 12,
+      "casesTotal": 12,
       "protocols": ["openai-responses", "openai-completions", "anthropic-messages"],
-      "samePiCalibration": { "runs": 2, "stable": true }
+      "samePiCalibration": { "runs": 2, "stable": true },
+      "scope": "Single image, interleaved PNG/JPEG/GIF/WebP, image-only, and text-only-model omission placeholder prompts"
     }
+  },
+  "toolResultImageProjection": {
+    "report": "multimodal-tool-result-image-differential-2026-10-25.json",
+    "passed": 2,
+    "total": 2,
+    "scope": "Pinned Anthropic success/error tool-result image projection, exact omission note, and canonical-history preservation; adapter request comparison only"
   },
   "sessionContinuation": {
     "report": "multimodal-session-continuation-differential-2026-10-25.json",
@@ -84,7 +93,7 @@
   "localVerification": {
     "fullDotnet": { "passed": 3886, "failed": 0, "skipped": 0 },
     "fileArgumentPathDifferential": { "passed": 7, "total": 7, "samePiCalibration": { "runs": 2, "stable": true } },
-    "imageProcessingDifferential": { "strictPassed": 13, "strictTotal": 13, "codecEquivalentPassed": 5, "codecEquivalentTotal": 5, "acceptedSafetyDifferences": 1, "samePiCalibration": { "runs": 2, "stable": true } },
+    "imageProcessingDifferential": { "strictPassed": 13, "strictTotal": 13, "codecEquivalentPassed": 6, "codecEquivalentTotal": 6, "acceptedSafetyDifferences": 1, "samePiCalibration": { "runs": 2, "stable": true } },
     "readImageProcessorFocused": { "passed": 11, "failed": 0, "skipped": 0 },
     "clipboardPartialFileCancellation": { "passed": 1, "failed": 0, "skipped": 0 },
     "focusedInputClipboardJsonRpcPrint": { "passed": 35, "failed": 0, "skipped": 0 },
@@ -97,7 +106,7 @@
     "pythonParity": { "passed": 27, "failed": 0 },
     "terminalPython": { "passed": 66, "failed": 0 },
     "terminalNode": { "passed": 24, "failed": 0 },
-    "documentationPaths": { "documents": 154, "references": 672, "result": "passed" }
+    "documentationPaths": { "documents": 154, "references": 674, "result": "passed" }
   },
   "pinnedPiSuiteRun": {
     "filesPassed": 12,
@@ -126,9 +135,9 @@
       "classification": "source_pinned_differential_pass_with_accepted_safety_difference",
       "upstream": "packages/coding-agent/src/utils/image-process.ts:processImage",
       "pisharp": "src/PiSharp.Runtime/Tools/ReadImageProcessor.cs:Process",
-      "inputs": ["PNG/JPEG/GIF/WebP pass-through", "model-limited PNG/JPEG/GIF/WebP resize", "resize disabled", "BMP conversion", "truncated and malformed PNG/JPEG/GIF/WebP"],
+      "inputs": ["PNG/JPEG/GIF/WebP pass-through", "model-limited PNG/JPEG/GIF/WebP resize", "EXIF orientation", "resize disabled", "BMP conversion", "truncated and malformed PNG/JPEG/GIF/WebP"],
       "evidence": ["multimodal-image-differential-2026-10-25.json"],
-      "difference": "PNG/JPEG/GIF/WebP resizing and BMP encoded bytes are codec-equivalent by MIME, decoded dimensions and hints; encoded bytes are intentionally not compared. Supported-format pass-through is strict. Malformed/truncated JPEG, GIF and WebP payload cases match omission; one RIFF-size-mismatched WebP is accepted by Pi's Photon decoder but rejected by Skia, a documented stricter safety exclusion."
+      "difference": "PNG/JPEG/GIF/WebP resizing, EXIF-oriented JPEG resizing and BMP encoded bytes are codec-equivalent by MIME, decoded dimensions and hints; encoded bytes are intentionally not compared. Supported-format pass-through is strict. Malformed/truncated JPEG, GIF and WebP payload cases match omission; one RIFF-size-mismatched WebP is accepted by Pi's Photon decoder but rejected by Skia, a documented stricter safety exclusion."
     },
     {
       "id": "model-specific-limits-and-selected-model",
@@ -160,12 +169,13 @@
       "classification": "source_pinned_differential_pass",
       "upstream": "packages/ai/src/providers/openai/*; packages/ai/src/providers/anthropic/*",
       "pisharp": "src/PiSharp.Cli/Providers/; tests/PiSharp.Tests/Cli/Providers/ProviderChatClientFactoryTests.cs",
-      "inputs": ["OpenAI Responses", "OpenAI Chat Completions", "Anthropic Messages"],
+      "inputs": ["OpenAI Responses", "OpenAI Chat Completions", "Anthropic Messages", "interleaved PNG/JPEG/GIF/WebP", "image-only prompt", "text-only model omission placeholder"],
       "evidence": [
         "tests/PiSharp.Tests/Cli/Providers/ProviderChatClientFactoryTests.cs:AgentAppliesPinnedImageProfileBeforeProviderWireProjection",
-        "multimodal-provider-wire-differential-2026-10-25.json"
+        "multimodal-provider-wire-differential-2026-10-25.json",
+        "multimodal-tool-result-image-differential-2026-10-25.json"
       ],
-      "difference": "The three supported provider image requests match pinned physical boundaries for ordered text/image parts and exact PNG bytes; blocked-image wire projection remains outside this focused report. Post-restart branched image continuation is separately verified by multimodal-session-provider-wire-differential-2026-10-25.json."
+      "difference": "Twelve paired physical provider requests pass across the three supported protocols, covering a single PNG, ordered interleaved PNG/JPEG/GIF/WebP, image-only prompts and the exact text-only-model omission placeholder. The independent block-images setting is covered by focused runtime regressions and the pinned block-images suite; post-restart branched image continuation is separately verified by multimodal-session-provider-wire-differential-2026-10-25.json."
     },
     {
       "id": "clipboard-image-and-path-precedence",

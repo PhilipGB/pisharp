@@ -128,7 +128,7 @@ public sealed class MultimodalRuntimeTests
             Assert.Empty(client.RequestImages);
             var text = string.Join('\n', client.RequestContents.Single().OfType<TextContent>().Select(content => content.Text));
             Assert.Contains("original 80x40, displayed at 12x6", text, StringComparison.Ordinal);
-            Assert.Contains("Current model does not support images", text, StringComparison.Ordinal);
+            Assert.Contains("(image omitted: model does not support images)", text, StringComparison.Ordinal);
             var stored = Assert.Single(conversation.ActiveMessages().Single(message => message.Role == ChatRole.User)
                 .Contents.OfType<DataContent>());
             using var storedBitmap = SKBitmap.Decode(stored.Data.ToArray());

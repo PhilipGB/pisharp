@@ -13528,6 +13528,15 @@
       "local_correction": "The clipboard differential uses temporary_empty_model_catalogs around both pinned captures; local clipboard comparison passes 4/4."
     },
     "last_implementation_commit": "4c3eba8c",
+    "current_unpublished_followup": {
+      "status": "locally_verified_pending_commit_and_fresh_exact_head_ci",
+      "source_change": "Text-only model provider requests now use Pi's distinct exact omission placeholders for user images and tool-result images; the block-images setting notice remains unchanged.",
+      "provider_wire_differential": "12/12 paired physical cases across Responses, Chat Completions and Anthropic, including ordered PNG/JPEG/GIF/WebP, image-only prompts and text-only-model omission; stable two-run Pi calibration.",
+      "image_processing_differential": "13/13 strict and 6/6 codec-equivalent cases, including EXIF orientation; one documented stricter malformed-WebP rejection.",
+      "tool_result_image_differential": "Pinned Anthropic success/error tool-result image projection matches 2/2 cases; canonical history remains unchanged.",
+      "focused_dotnet": "ReadImageToolTests plus MultimodalRuntimeTests passed 16/16; Python compilation and git diff checks passed. A full local run did not complete cleanly; the exact-head CI suite remains the required full-suite gate.",
+      "remaining": "Commit and publish the follow-up, then verify exact-head push and PR workflows. Keep PR #26 open, draft and unmerged."
+    },
     "current_head_tracking": "PR description is authoritative for the final published source head and exact-head CI run IDs.",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "clipboard_differential": {
@@ -13569,7 +13578,7 @@
       "python_parity": "27 passed",
       "terminal_python": "66 passed",
       "terminal_node": "24 passed",
-      "documentation_paths": "154 documents and 672 references verified",
+      "documentation_paths": "154 documents and 674 references verified",
       "mcp_conformance": "No regressions against the classified baseline; three known failures remain classified"
     },
     "first_exact_head_ci_findings": [

@@ -34,11 +34,20 @@ def bmp_1x1():
     return bytes(data)
 
 
+def jpeg_exif_orientation(data, orientation):
+    tiff = (b"II\x2a\x00\x08\x00\x00\x00" + b"\x01\x00" +
+            b"\x12\x01\x03\x00\x01\x00\x00\x00" +
+            struct.pack("<H", orientation) + b"\x00\x00" + b"\x00\x00\x00\x00")
+    payload = b"Exif\x00\x00" + tiff
+    return data[:2] + b"\xff\xe1" + struct.pack(">H", len(payload) + 2) + payload + data[2:]
+
+
 JPEG_2X2 = base64.b64decode(
     "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAACAAIDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAABv/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJ+AZiz/2Q=="
 )
 GIF_2X2 = base64.b64decode("R0lGODdhAgACAIAAAAAAAAAAACwAAAAAAgACAAAIBgABCAQQEAA7")
 WEBP_2X2 = base64.b64decode("UklGRjgAAABXRUJQVlA4ICwAAAAwAQCdASoCAAIAAgA0JaAAA3AA/vBsr//8lP/vK/13bhv//hWv5Wv5WrfAAA==")
+JPEG_8X4 = base64.b64decode("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAEAAgDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABgf/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwC0AqYY/9k=")
 
 
 def scenarios():
@@ -74,6 +83,9 @@ def scenarios():
          "resize": {"maxWidth": 1, "maxHeight": 1, "maxBytes": 100000, "jpegQuality": 80}},
         {"id": "webp-model-resize", "mimeType": "image/webp", "data": WEBP_2X2.hex(),
          "resize": {"maxWidth": 1, "maxHeight": 1, "maxBytes": 100000, "jpegQuality": 80}},
+        {"id": "jpeg-exif-orientation-resize", "mimeType": "image/jpeg",
+         "data": jpeg_exif_orientation(JPEG_8X4, 6).hex(),
+         "resize": {"maxWidth": 4, "maxHeight": 4, "maxBytes": 100000, "jpegQuality": 80}},
     ]
 
 
@@ -161,7 +173,7 @@ def main():
 
     unexplained_mismatches = [row["id"] for row in rows
                               if not row["match"] and row["classification"] != "accepted-safety-difference"]
-    report = {"piSha": pin, "scope": "Pinned processImage prompt normalization across PNG, JPEG, GIF and WebP pass-through, model-limited resize, BMP conversion and malformed/truncated-input handling; provider wire, clipboard acquisition and full session lifecycle have separate reports",
+    report = {"piSha": pin, "scope": "Pinned processImage prompt normalization across PNG, JPEG, GIF and WebP pass-through, model-limited resize, EXIF orientation, BMP conversion and malformed/truncated-input handling; provider wire, clipboard acquisition and full session lifecycle have separate reports",
               "samePiCalibration": {"runs": 2, "stable": same_pi_stable,
                                    "comparison": "Exact processImage result, including output bytes, MIME and hints."},
               "strictPasses": sum(row["classification"] == "strict" and row["match"] for row in rows),
