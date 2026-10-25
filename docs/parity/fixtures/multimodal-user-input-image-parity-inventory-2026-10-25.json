@@ -20,7 +20,9 @@
   "branch": {
     "name": "milestone/multimodal-user-input-image-parity",
     "baseSha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
-    "published": false
+    "published": true,
+    "draftPr": "https://github.com/PhilipGB/pisharp/pull/26",
+    "currentHead": "6b43565dd3efa9a9c2931215caac47437914b158"
   },
   "differential": {
     "report": "multimodal-image-differential-2026-10-25.json",
@@ -42,6 +44,20 @@
       "protocols": ["openai-responses", "openai-completions", "anthropic-messages"],
       "samePiCalibration": { "runs": 2, "stable": true }
     }
+  },
+  "sessionContinuation": {
+    "report": "multimodal-session-continuation-differential-2026-10-25.json",
+    "strict": { "passed": 3, "total": 3 },
+    "samePiCalibration": { "runs": 2, "stable": true },
+    "scope": "Initial provider content, restored canonical user content, and continuation provider content after reopening a saved session"
+  },
+  "localVerification": {
+    "fullDotnet": { "passed": 3879, "failed": 0, "skipped": 0 },
+    "focusedInputClipboardJsonRpcPrint": { "passed": 35, "failed": 0, "skipped": 0 },
+    "savedSessionContinuationRegression": { "passed": 1, "failed": 0, "skipped": 0 },
+    "format": "passed",
+    "warningAsErrorBuild": "passed",
+    "documentationPaths": { "documents": 153, "references": 657, "result": "passed" }
   },
   "pinnedPiSuiteRun": {
     "filesPassed": 12,
@@ -132,7 +148,7 @@
       "upstream": "packages/coding-agent/src/core/agent-session.ts:_prepareRun",
       "pisharp": "src/PiSharp.Runtime/Agents/PiAgent.cs; src/PiSharp.Runtime/Sessions/ConversationRun.cs",
       "evidence": ["tests/PiSharp.Tests/Runtime/Agents/MultimodalRuntimeTests.cs", "tests/PiSharp.Tests/Cli/Protocols/Json/JsonEventModeTests.cs", "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcInputRoutingTests.cs"],
-      "difference": "PiSharp previously stored raw prompt image bytes while Pi stores normalized bytes; accepted-input normalization now occurs after before_agent_start selection and before canonical persistence. The full .NET suite passes; saved-session restart with image-bearing provider continuation remains open."
+      "difference": "PiSharp previously stored raw prompt image bytes while Pi stores normalized bytes; accepted-input normalization now occurs after before_agent_start selection and before canonical persistence. A pinned differential passes 3/3 strict comparisons for initial provider content, restored canonical image and continuation provider content after saved-session reopen. Physical provider-wire continuation after restart, inactive-branch coverage and broader branch behavior remain open."
     },
     {
       "id": "reliability-cancellation-and-resource-bounds",
@@ -152,7 +168,8 @@
     }
   ],
   "remaining": [
-    "Complete paired clipboard acquisition, JSON/RPC workflow and image-bearing session-continuation evidence, including saved-session restart.",
+    "Complete paired clipboard acquisition and JSON/RPC workflow evidence.",
+    "Verify physical provider-wire continuation after saved-session restart and image behavior on active/inactive branches.",
     "Expand paired reliability evidence for adversarial image counts, limits, cancellation and malformed inputs.",
     "Run applicable macOS and Windows platform CI and inspect all exact-head checks.",
     "Update the feature matrix, execution ledger, continuation and TODO receipts.",

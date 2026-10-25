@@ -45,7 +45,8 @@ public sealed class NativeClipboardProcessTests
         ? RunAsync("osascript", ["-e", "on run argv\nset imageData to (read (POSIX file (item 1 of argv)) as «class PNGf»)\nset the clipboard to imageData\nend run", path])
         : RunAsync("powershell.exe", ["-NoProfile", "-STA", "-Command",
             "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; " +
-            "$image=[System.Drawing.Image]::FromFile($args[0]); try { [System.Windows.Forms.Clipboard]::SetImage($image) } finally { $image.Dispose() }", path]);
+            $"$image=[System.Drawing.Image]::FromFile('{path.Replace("'", "''", StringComparison.Ordinal)}'); " +
+            "try { [System.Windows.Forms.Clipboard]::SetImage($image) } finally { $image.Dispose() }"]);
 
     private static Task SetClipboardFilePathAsync(string path) =>
         RunAsync("osascript", ["-e", "on run argv\nset the clipboard to (POSIX file (item 1 of argv))\nend run", path]);

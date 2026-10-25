@@ -24,7 +24,7 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore tests/PiSharp.Tests/PiSharp.Tests.csproj
       - name: Verify native macOS image and file clipboard input
-        run: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter FullyQualifiedName~NativeClipboardProcessTests
+        run: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter 'FullyQualifiedName~NativeClipboardProcessTests|FullyQualifiedName~TerminalClipboardTests'
   windows-native-clipboard:
     runs-on: windows-latest
     steps:
@@ -34,7 +34,7 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore tests/PiSharp.Tests/PiSharp.Tests.csproj
       - name: Verify native Windows image clipboard input
-        run: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter FullyQualifiedName~NativeClipboardProcessTests
+        run: dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter 'FullyQualifiedName~NativeClipboardProcessTests|FullyQualifiedName~TerminalClipboardTests'
   test:
     runs-on: ubuntu-latest
     steps:
@@ -75,12 +75,13 @@ jobs:
           persist-credentials: false
           clean: false
       - run: npm ci --prefix artifacts/parity/pi-ownership-oracle --ignore-scripts --no-audit --no-fund
-      - name: Run pinned multimodal image differentials
+      - name: Run pinned multimodal image and session differentials
         run: |
           mkdir -p artifacts/parity/multimodal-differential
           python3 tools/parity/multimodal-image-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/image-processing.json
           python3 tools/parity/multimodal-file-argument-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/file-arguments.json
           python3 tools/parity/multimodal-provider-wire-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/provider-wire.json
+          python3 tools/parity/multimodal-session-continuation-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/session-continuation.json
       - run: |
           mkdir -p artifacts/parity/builtin-ownership
           PI_OFFLINE=1 node tools/parity/builtin-coding-tool-probe.mjs artifacts/parity/pi-ownership-oracle /dev/null artifacts/parity/builtin-ownership/pinned.json --mutation-ownership-only

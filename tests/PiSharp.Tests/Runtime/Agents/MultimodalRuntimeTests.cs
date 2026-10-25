@@ -248,6 +248,43 @@ public sealed class MultimodalRuntimeTests
     }
 
     [Fact]
+    public async Task SavedImageSessionRestoresImageOnceForProviderContinuation()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-image-resume-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var store = new ConversationStore(root, Path.Combine(root, "sessions"));
+            var conversation = new ConversationSession(root, "fixture", null);
+            var sessionPath = store.NewPath(conversation);
+            var imageBytes = CreatePng(2, 2);
+            var firstClient = new ImageAwareClient();
+            var firstRun = await ConversationRun.OpenAsync(
+                new PiAgent(firstClient, new CodingTools(root), noTools: true), conversation);
+            await foreach (var _ in firstRun.RunStreamingAsync(new ChatMessage(ChatRole.User,
+                [new TextContent("look"), new DataContent(imageBytes, "image/png")]), "look")) { }
+            await store.SaveAsync(conversation, sessionPath);
+
+            var resumedConversation = await store.LoadAsync(sessionPath);
+            var persistedImage = Assert.Single(resumedConversation.ActiveMessages()
+                .Where(message => message.Role == ChatRole.User).SelectMany(message => message.Contents.OfType<DataContent>()));
+            Assert.Equal(imageBytes, persistedImage.Data.ToArray());
+
+            var continuationClient = new ImageAwareClient();
+            var resumedRun = await ConversationRun.OpenAsync(
+                new PiAgent(continuationClient, new CodingTools(root), noTools: true), resumedConversation);
+            await foreach (var _ in resumedRun.RunStreamingAsync("continue")) { }
+
+            var continuedImage = Assert.Single(continuationClient.RequestImages);
+            Assert.Equal("image/png", continuedImage.MediaType);
+            Assert.Equal(imageBytes, continuedImage.Bytes);
+            Assert.Contains(continuationClient.RequestContents.Single().OfType<TextContent>(),
+                content => content.Text == "look");
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task BlockImagesFiltersEveryProviderRequestWithoutErasingSessionHistory()
     {
         var root = Path.Combine(Path.GetTempPath(), "pisharp-block-images-" + Guid.NewGuid().ToString("N"));

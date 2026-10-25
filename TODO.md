@@ -18,8 +18,10 @@ the latest prompt-composition and native clipboard test changes; the fresh full
 suite now passes 3,879/3,879 with zero failures or skips. Current focused
 interface/clipboard tests pass 35/35, and format/build checks pass. Dedicated
 macOS and Windows native clipboard CI jobs are configured. Paired clipboard,
-JSON/RPC and saved-session continuation evidence, exact-head CI, and draft-PR
-publication remain outstanding.
+JSON/RPC workflow evidence, physical provider-wire continuation after saved
+session restart, broader adversarial cases, and exact-head CI remain outstanding.
+The saved-session canonical/provider-context comparison passes 3/3 strict cases.
+Draft PR #26 is open, draft and unmerged.
 Keep the new PR open, draft and unmerged. See the [multimodal parity receipt](docs/parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](docs/parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 

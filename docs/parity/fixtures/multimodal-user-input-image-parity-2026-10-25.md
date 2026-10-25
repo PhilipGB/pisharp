@@ -4,8 +4,8 @@
 
 The upstream reference is Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; this milestone
-branch is based on that commit. The new PR has not been published. The Pi pin
-has not moved.
+branch is based on that commit. Draft PR #26 is open and unmerged; its current
+head is `6b43565dd3efa9a9c2931215caac47437914b158`. The Pi pin has not moved.
 
 ## Current evidence
 
@@ -33,6 +33,14 @@ ordering, MIME and encoded image data match, and each Pi request is stable over
 two runs. See the [provider-wire report](multimodal-provider-wire-differential-2026-10-25.json)
 and [runner](../../../tools/parity/multimodal-provider-wire-differential.py).
 
+Saved-session continuation passes **3/3 strict comparisons** against pinned Pi:
+initial provider content, restored canonical user content and continuation
+provider content preserve ordered text and exact image MIME/data after reopening
+the session. Pinned Pi is stable across two independent runs. This uses a local
+provider stub and does not claim physical HTTP wire verification after restart.
+See the [session report](multimodal-session-continuation-differential-2026-10-25.json)
+and [runner](../../../tools/parity/multimodal-session-continuation-differential.py).
+
 Pinned Pi's `AgentSession` test
 `agent-session-prompt.test.ts: uses the model selected by before_agent_start
 for image normalization` passes 1/1. The pinned test verifies that the selected
@@ -50,7 +58,8 @@ image processing, interactive input, JSON and RPC prompts, provider loopback
 serialization, clipboard fallbacks, image blocking and session continuation. A
 CLI process test verifies that print mode sends an `@file` image and prompt text
 in the same provider request. The current focused input/clipboard/JSON/RPC/print
-selection passed 35/35 with zero skips. Pinned Pi's clipboard, clipboard BMP,
+selection passed 35/35 with zero skips; the saved-session continuation
+regression passed 1/1. Pinned Pi's clipboard, clipboard BMP,
 print-mode and agent-session prompt selections passed 51/51 at the configured
 SHA. An exploratory RPC semantics batch had 8 setup failures because the
 temporary checkout has no generated model-catalog entries; those failures
@@ -76,9 +85,9 @@ current warning-as-error build and format verification passed.
 ## Limits and remaining work
 
 The paired file and provider reports do not establish complete application
-parity. Paired clipboard acquisition, JSON/RPC workflow, image-bearing provider
-continuation after a saved-session restart, and additional adversarial cases
-remain open. Native clipboard process coverage has been added to macOS and
+parity. Paired clipboard acquisition and JSON/RPC workflow remain open, as do
+physical provider-wire continuation after restart and additional adversarial
+cases. Native clipboard process coverage has been added to macOS and
 Windows CI jobs, which have not run yet. Exact-head CI is pending; Python,
 terminal Python/Node, documentation and MCP checks have passed on the current
 tree.

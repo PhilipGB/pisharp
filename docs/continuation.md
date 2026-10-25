@@ -14,11 +14,13 @@ before the prompt; PiSharp now follows pinned `buildInitialMessage` concatenatio
 Pinned Pi's selected-model `before_agent_start` normalization test passes 1/1.
 PiSharp normalizes accepted image prompts before canonical persistence. The
 focused PiSharp interface/clipboard selection passes 35/35; pinned Pi
-clipboard/print/prompt selections pass 51/51. The fresh full .NET suite passes
-3,879/3,879, and current format/build checks pass. Dedicated macOS and Windows
-native clipboard CI jobs are configured; paired clipboard/JSON/RPC and
-saved-session image continuation evidence, exact-head CI and draft PR
-publication remain. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
+clipboard/print/prompt selections pass 51/51. A saved-session restart and
+provider-continuation differential passes 3/3 strict comparisons and is stable
+across two pinned Pi runs. The fresh full .NET suite passes 3,879/3,879, and
+current format/build checks pass. Dedicated macOS and Windows native clipboard
+CI jobs are configured; paired clipboard/JSON/RPC evidence, physical provider
+wire continuation after restart, exact-head CI and remaining draft PR follow-up
+remain. Draft PR #26 is open at its current head. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 
 ## Previous milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
