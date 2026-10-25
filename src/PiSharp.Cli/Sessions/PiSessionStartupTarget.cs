@@ -4,8 +4,6 @@ namespace PiSharp.Cli.Sessions;
 
 internal sealed record PiSessionStartupTarget(string WorkingDirectory, CliArguments Arguments)
 {
-    private const long MaximumSessionBytes = 128L * 1024 * 1024;
-
     public static PiSessionStartupTarget Resolve(string invocationDirectory, CliArguments arguments)
     {
         var invocationPath = Path.GetFullPath(invocationDirectory);
@@ -41,11 +39,8 @@ internal sealed record PiSessionStartupTarget(string WorkingDirectory, CliArgume
     internal static string ReadWorkingDirectory(string sessionPath, string invocationPath)
     {
         if (!File.Exists(sessionPath)) return invocationPath;
-        var file = new FileInfo(sessionPath);
-        if (file.Length > MaximumSessionBytes)
-            throw new InvalidDataException("Session exceeds the 128 MiB startup inspection limit.");
-
-        var content = File.ReadAllText(sessionPath);
+        var content = BoundedSessionFileReader.ReadAllText(sessionPath,
+            "Session exceeds the 128 MiB startup inspection limit.", "Session changed while it was being inspected.");
         var session = sessionPath.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
             ? PiJsonlSessionInterchange.Import(content, workingDirectoryFallback: invocationPath)
             : ConversationSession.Parse(content);

@@ -24,8 +24,10 @@ PiSharp now matches that behavior. Other numeric invalid indices are removed,
 while string, null, and boolean fields remain. PiSharp keeps legacy loads
 read-only and atomic. Duplicate/cycle rejection, future-version/header checks,
 resource limits, visible corrupt-file reporting, and stronger stale-writer
-fencing are classified safety differences; the inventory has no unexplained
-mandatory differences.
+fencing are classified safety differences. A review found that import, fork and
+startup inspection used pre-read size checks followed by unbounded reads. Those
+entry points now share a bounded reader that rejects growth after its length
+snapshot; synchronous and asynchronous growth regressions pass 2/2.
 
 The three pinned process-kill scenarios were each repeated twice and showed no
 automatic tool replay. PiSharp process tests verify no duplicate side effects,
@@ -33,12 +35,15 @@ unknown outcomes, and correlated completed results. RPC evidence covers active
 branch state, labels, fork messages, new/resume/fork lifecycle ordering,
 blocked replacement/fork, and destination-only provider continuation.
 
-Final local validation passes: .NET 3,843/3,843 with zero failures or skips;
-format verification; warning-as-error build with zero warnings/errors; terminal
-Python 66/66; parity Python 27/27; terminal Node 24/24; and documentation links
-153 documents / 657 references. MCP conformance has no regressions against its
-classified baseline; three known scenarios remain classified. The branch is
-committed and pushed. Draft PR
+Final local validation passes: .NET 3,845/3,845 with zero failures or skips;
+the affected session tests pass 12/12; format verification; warning-as-error
+build with zero warnings/errors; terminal Python 66/66; parity Python 27/27;
+terminal Node 24/24; and documentation links 153 documents / 657 references.
+The first full rerun hit one transient unrelated ephemeral-port collision; the
+isolated test passed and the following full run passed 3,845/3,845. MCP
+conformance has no regressions against its classified baseline; three known
+scenarios remain classified. Fresh exact-head CI for the bounded-reader change
+is pending. Draft PR
 [#25](https://github.com/PhilipGB/pisharp/pull/25) is open and intentionally
 unmerged. Its latest exact-head Linux, MCP, and macOS check results are tracked
 on the PR; keep it in draft.

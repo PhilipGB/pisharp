@@ -20,7 +20,7 @@
     "pinnedPiBuild": "npm run build:offline passed in /tmp/pi-pinned-source at the pinned SHA.",
     "pinnedPiRequiredSuites": "126/126 across 12 required session, CWD, RPC JSONL, and share-export files.",
     "pisharpInterchangeSuite": "52/52 after source-pinned parser, graph, migration, reasoning-signature, rich-content, interrupted-assistant, invalid compaction-index, and integral floating-point index regressions; zero failures or skips.",
-    "pisharpSessionRecoveryInterchangeFileStoreFilter": "Historical focused run 76/76 before the final migration-index regression additions; the current focused interchange/file-store/catalog selection passes 73/73 and the full .NET suite passes 3843/3843.",
+    "pisharpSessionRecoveryInterchangeFileStoreFilter": "Historical focused run 76/76 before the final migration-index regression additions; the current focused interchange/file-store/catalog selection passes 73/73 and the full .NET suite passes 3845/3845.",
     "pisharpSessionRecoveryImportRpcFilter": "114/114.",
     "pisharpDiscoveryStartupProjectImportForkFilter": "48/48 after configured Pi JSONL listing, shared-CWD filtering, stale catalog/import/fork fingerprints, JSONL-preserving save, and project-runtime/startup coverage; zero failures or skips.",
     "pisharpDiscoveryDurabilityCrashFilter": "83/83 including configured Pi JSONL discovery, stale catalog/import/fork fencing, bounded oversized-file reads, failed atomic-publication cleanup, store/lease contention, durable tool checkpoints, child-process crash recovery, Anthropic orphan-result error semantics, and three-provider continuation; zero failures or skips.",
@@ -33,7 +33,7 @@
     "documentationPaths": "python3 tools/validate_doc_paths.py passed: 153 documents, 657 references.",
     "format": "dotnet format PiSharp.slnx --verify-no-changes --no-restore passed after all source and test changes.",
     "warningAsErrorBuild": "Final dotnet build PiSharp.slnx --no-restore --warnaserror -m:1 /nodeReuse:false passed with 0 warnings and 0 errors.",
-    "fullRepositoryGates": "Final TMPDIR=/tmp dotnet test PiSharp.slnx --no-build --no-restore -m:1 /nodeReuse:false passed 3843/3843 in 6m23s with zero failures/skips. dotnet format PiSharp.slnx --verify-no-changes --no-restore passed. Warning-as-error build passed with zero warnings/errors. Terminal Python passed 66/66, parity Python 27/27, Node terminal 24/24, and documentation paths 153 documents/657 references. MCP conformance reports no regressions against the classified baseline; three known scenarios remain classified. Exact-head Linux/macOS CI remains a post-publication requirement.",
+    "fullRepositoryGates": "Final local dotnet test PiSharp.slnx --no-build --no-restore passed 3845/3845 in 6m25s with zero failures/skips. An earlier full run had one unrelated ephemeral-port collision in RpcExtensionContextProcessTests; the isolated test passed and the subsequent full run passed. dotnet format PiSharp.slnx --verify-no-changes --no-restore passed. Warning-as-error build passed with zero warnings/errors. Terminal Python passed 66/66, parity Python 27/27, Node terminal 24/24, and documentation paths 153 documents/657 references. MCP conformance reports no regressions against the classified baseline; three known scenarios remain classified. Exact-head Linux/macOS CI for the bounded-reader follow-up remains a post-publication requirement.",
     "pinnedPiExtensionBranchOracle": "The custom extension-state fixture was projected through both selected branches in two independent observations at b06c1f2; the active branch contains only its own custom state and provider context excludes custom data. Same-Pi calibration and expected projections match.",
     "pisharpNativeExtensionBranchReload": "ExtensionSessionStateTests.NativeReloadRestoresOnlyExtensionStateOnTheSelectedBranch passed 1/1; both branch heads survive native ConversationStore save/reload with only branch-local extension state and active message context.",
     "pinnedPiInterruptedAssistantOracle": "The interrupted-assistant JSONL fixture opened, exported, and reopened twice at b06c1f2 with stable same-Pi calibration and semantic round-trip; partial text, reasoning signature, aborted stop reason, error message, usage, selected head, and provider context were retained.",
@@ -54,8 +54,9 @@
     "pisharpMigrationBoundaryTests": "The earlier focused boundary selection passed 12/12; the new 1.0/1e0 migration theory passed 2/2. The current interchange class passes 52/52 and the broader persistence selection passes 73/73.",
     "pisharpAtomicFaultBoundaries": "Focused tests verify stale-writer rejection, target preservation and temp cleanup on publication conflict, cancellation while waiting for a lease, and 32 concurrent readers observing complete atomic snapshots; arbitrary storage-device faults are not simulated.",
     "mcpConformance": "node tools/parity/mcp-conformance/run.mjs reports no regressions against the classified baseline. Three known failures remain classified: 2025-11-25 elicitation sep1034, basic CIMD, and scope retry limit.",
-    "fullDotnetSuite": "3843/3843 passed in 6m23s, zero failures and zero skips.",
-    "pisharpFinalFocusedPersistenceSelection": "73/73 across PiJsonlSessionInterchangeTests, PiJsonlSessionFileStoreTests, and SessionCatalogTests; 52/52 in the interchange class alone."
+    "fullDotnetSuite": "3845/3845 passed in 6m25s, zero failures and zero skips.",
+    "pisharpFinalFocusedPersistenceSelection": "73/73 across PiJsonlSessionInterchangeTests, PiJsonlSessionFileStoreTests, and SessionCatalogTests; 52/52 in the interchange class alone.",
+    "pisharpBoundedSessionFileReads": "BoundedSessionFileReaderTests passes 2/2 for synchronous and asynchronous file growth after the length snapshot. The import, fork and startup paths share this reader; their combined focused selection passes 12/12."
   },
   "families": [
     {

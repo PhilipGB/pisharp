@@ -5,11 +5,13 @@
 PR #24 merged at `0d83418a31d84e530b099d98054739607fa3e3ad`; the new branch is
 based on that commit and Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Required pinned Pi suites pass
-126/126. Current local gates pass: .NET 3,843/3,843 (zero failures/skips),
+126/126. Current local gates pass: .NET 3,845/3,845 (zero failures/skips),
 format verification, warning-as-error build (zero warnings/errors), terminal
 Python 66/66, parity Python 27/27, terminal Node 24/24, and documentation
-validation (153 documents / 657 references). MCP conformance has no regression
-against its classified baseline; three known scenarios remain classified.
+validation (153 documents / 657 references). The focused import/fork/startup
+reader tests pass 12/12. MCP conformance has no regression against its
+classified baseline; three known scenarios remain classified. Fresh exact-head
+CI for the bounded-reader follow-up is pending.
 
 The current interchange class passes 52/52. The focused parser, migration,
 file-store, and catalog group passes 73/73. The exact-pin v1 migration oracle
@@ -30,6 +32,15 @@ unexplained mandatory difference remains. Draft PR
 [#25](https://github.com/PhilipGB/pisharp/pull/25) is open and intentionally
 unmerged. Its latest exact-head push and PR results, including native macOS
 lease coverage, are tracked on the PR; keep it in draft.
+
+A review identified a time-of-check/time-of-use gap in the 128 MiB checks for
+PiSessionImportService.ImportFile, SessionForkFactory.CreateAsync, and startup
+working-directory inspection. These paths now share BoundedSessionFileReader:
+it opens the file before checking length, allocates only for the observed
+bounded length, reads exactly that snapshot, then probes one byte to reject
+growth. Deterministic stream tests exercise growth after the length snapshot
+for both synchronous and asynchronous callers; they confirm the reader consumes
+at most the observed bound plus one sentinel byte and rejects the changed file.
 
 ## Verified prerequisite and branch
 
