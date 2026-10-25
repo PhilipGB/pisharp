@@ -6,16 +6,21 @@ PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; the working
 branch `milestone/multimodal-user-input-image-parity` is based on that commit.
 Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
-The five-case prompt-image processor differential passes 3/3 strict cases and
-2/2 codec-equivalent cases. The paired positional file/initial-message corpus
-passes 2/2, and paired physical image requests pass for OpenAI Responses, Chat
+The prompt-image processor differential passes 13/13 strict cases and 5/5
+codec-equivalent cases, covering valid PNG/JPEG/GIF/WebP pass-through and
+model-limited resizing, BMP conversion, and malformed/truncated inputs. It
+records one accepted safety difference: Pi accepts a WebP with an oversized RIFF
+length field that PiSharp rejects. The paired positional file/initial-message corpus
+passes 7/7, including 256 images, JPEG/GIF/WebP pass-through and
+relative, absolute, home-expanded and symlinked image paths. Paired physical image requests pass
+for OpenAI Responses, Chat
 Completions and Anthropic (3/3). The file comparison exposed an extra blank line
 before the prompt; PiSharp now follows pinned `buildInitialMessage` concatenation.
 Pinned Pi's selected-model `before_agent_start` normalization test passes 1/1.
 PiSharp normalizes accepted image prompts before canonical persistence. Pinned
-Pi clipboard/print/prompt selections pass 51/51. Paired Linux clipboard
-acquisition passes 3/3, and JSON-mode plus RPC prompt content passes 2/2; both
-reports are stable across two pinned Pi runs. A saved-session restart and
+Pi clipboard/print/prompt selections pass 51/51. Paired clipboard acquisition
+and file-path precedence pass 4/4, and JSON-mode plus RPC prompt content passes
+2/2; reports are stable across two pinned Pi runs. A saved-session restart and
 provider-context differential passes 3/3 strict comparisons and is stable
 across two pinned Pi runs. A separate post-restart physical provider-wire
 differential passes 3/3 across the three supported APIs; it verifies the active
@@ -24,7 +29,7 @@ probe includes a truncated image followed by a valid image and matches
 PiSharp's omission note and surviving image. A separate positional-file
 differential follows Pi's deferred selected-model normalization path and passes
 1/1 with two-run calibration, preserving the following valid image. The full
-.NET suite passes 3,883/3,883; format and warning-as-error build pass. Python
+.NET suite passes 3,886/3,886; format and warning-as-error build pass. Python
 parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. MCP has no
 new regressions against its classified baseline. Documentation paths pass for
 154 documents and 672 references.
@@ -33,9 +38,10 @@ contracts, not live desktop clipboard access. Push run `40196042863` and PR run
 `40196046840` on head `f734c0c8` failed in the protocol image oracle because it
 did not create generated catalog data in the disposable Pi checkout; platform
 and MCP jobs passed. The protocol runner now uses the temporary catalog helper
-and its local differential passes 2/2. This correction is uncommitted; fresh
-exact-head CI and broader corrupt-format, limits, cancellation and resource-
-bound cases remain. Draft PR #26
+and its local differential passes 2/2. Correction `bacbdc47` is published and
+passes exact-head runs `40196652776` and `40196656515`. The expanded file/image
+corpus and partial-file cancellation regression are uncommitted and need fresh
+exact-head CI. Broader format, limits and resource-bound cases remain. Draft PR #26
 stays open, draft and unmerged. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 

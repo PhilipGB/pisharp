@@ -21,7 +21,7 @@ foreach (var scenario in input.RootElement.EnumerateArray())
     var successful = result.ImageDataBase64 is { Length: > 0 };
     int? decodedWidth = null;
     int? decodedHeight = null;
-    if (successful)
+    if (successful && scenario.GetProperty("id").GetString() is not ("gif-pass-through" or "webp-pass-through"))
     {
         using var decoded = SKBitmap.Decode(Convert.FromBase64String(result.ImageDataBase64!));
         if (decoded is not null)

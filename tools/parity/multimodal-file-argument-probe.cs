@@ -12,6 +12,17 @@ foreach (var scenario in input.RootElement.EnumerateArray())
     var images = new List<object>();
     foreach (var image in processed.Images)
     {
+        if (scenario.GetProperty("id").GetString() == "supported-image-format-passthrough")
+        {
+            images.Add(new
+            {
+                mimeType = image.MediaType,
+                data = Convert.ToBase64String(image.Data.ToArray()),
+                width = (int?)null,
+                height = (int?)null
+            });
+            continue;
+        }
         using var bitmap = SKBitmap.Decode(image.Data.ToArray());
         images.Add(new
         {

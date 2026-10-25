@@ -34,8 +34,21 @@ def bmp_1x1():
     return bytes(data)
 
 
+JPEG_2X2 = base64.b64decode(
+    "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAACAAIDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAABv/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJ+AZiz/2Q=="
+)
+GIF_2X2 = base64.b64decode("R0lGODdhAgACAIAAAAAAAAAAACwAAAAAAgACAAAIBgABCAQQEAA7")
+WEBP_2X2 = base64.b64decode("UklGRjgAAABXRUJQVlA4ICwAAAAwAQCdASoCAAIAAgA0JaAAA3AA/vBsr//8lP/vK/13bhv//hWv5Wv5WrfAAA==")
+
+
 def scenarios():
     profile = {"maxWidth": 12, "maxHeight": 20, "maxBytes": 100000, "jpegQuality": 80}
+    malformed_png = bytearray(png(2, 2))
+    malformed_png[-1] ^= 0xff
+    malformed_webp = bytearray(WEBP_2X2)
+    struct.pack_into("<I", malformed_webp, 4, 0xffffffff)
+    corrupt_webp_payload = bytearray(WEBP_2X2)
+    corrupt_webp_payload[40] ^= 0xff
     return [
         {"id": "png-no-resize", "mimeType": "image/png", "data": png(4, 2).hex(), "resize": profile},
         {"id": "png-model-resize", "mimeType": "image/png", "data": png(80, 40).hex(), "resize": profile},
@@ -44,6 +57,23 @@ def scenarios():
          "autoResizeImages": False},
         {"id": "bmp-to-png", "mimeType": "image/bmp", "data": bmp_1x1().hex(), "autoResizeImages": False},
         {"id": "truncated-png", "mimeType": "image/png", "data": bytes.fromhex("89504e470d0a1a0a").hex()},
+        {"id": "truncated-jpeg", "mimeType": "image/jpeg", "data": bytes.fromhex("ffd8ffe0").hex()},
+        {"id": "truncated-gif", "mimeType": "image/gif", "data": bytes.fromhex("474946383961").hex()},
+        {"id": "truncated-webp", "mimeType": "image/webp", "data": bytes.fromhex("524946460000000057454250").hex()},
+        {"id": "malformed-png-crc", "mimeType": "image/png", "data": bytes(malformed_png).hex()},
+        {"id": "malformed-jpeg-marker", "mimeType": "image/jpeg", "data": bytes.fromhex("ffd8ff00").hex()},
+        {"id": "malformed-gif-screen", "mimeType": "image/gif", "data": bytes.fromhex("47494638396100000000000000").hex()},
+        {"id": "malformed-webp-riff-size", "mimeType": "image/webp", "data": bytes(malformed_webp).hex()},
+        {"id": "corrupt-webp-payload", "mimeType": "image/webp", "data": bytes(corrupt_webp_payload).hex()},
+        {"id": "jpeg-pass-through", "mimeType": "image/jpeg", "data": JPEG_2X2.hex(), "resize": profile},
+        {"id": "gif-pass-through", "mimeType": "image/gif", "data": GIF_2X2.hex(), "resize": profile},
+        {"id": "webp-pass-through", "mimeType": "image/webp", "data": WEBP_2X2.hex(), "resize": profile},
+        {"id": "jpeg-model-resize", "mimeType": "image/jpeg", "data": JPEG_2X2.hex(),
+         "resize": {"maxWidth": 1, "maxHeight": 1, "maxBytes": 100000, "jpegQuality": 80}},
+        {"id": "gif-model-resize", "mimeType": "image/gif", "data": GIF_2X2.hex(),
+         "resize": {"maxWidth": 1, "maxHeight": 1, "maxBytes": 100000, "jpegQuality": 80}},
+        {"id": "webp-model-resize", "mimeType": "image/webp", "data": WEBP_2X2.hex(),
+         "resize": {"maxWidth": 1, "maxHeight": 1, "maxBytes": 100000, "jpegQuality": 80}},
     ]
 
 
@@ -104,7 +134,11 @@ def main():
         case_id = case["id"]
         upstream = pi_by_id[case_id]
         local = pisharp_by_id[case_id]
-        strict = case_id in {"png-no-resize", "png-auto-resize-disabled", "truncated-png"}
+        safety_difference = case_id == "malformed-webp-riff-size"
+        strict = case_id in {"png-no-resize", "png-auto-resize-disabled", "truncated-png",
+                             "truncated-jpeg", "truncated-gif", "truncated-webp", "malformed-png-crc", "malformed-jpeg-marker",
+                             "malformed-gif-screen", "corrupt-webp-payload", "jpeg-pass-through",
+                             "gif-pass-through", "webp-pass-through"}
         expected_match = upstream.get("ok") == local.get("ok")
         if upstream.get("ok"):
             expected_match = expected_match and upstream.get("mimeType") == local.get("mimeType")
@@ -115,26 +149,35 @@ def main():
                 expected_match = expected_match and upstream.get("data") == local.get("data")
         else:
             expected_match = expected_match and upstream.get("message") == local.get("message")
-        rows.append({"id": case_id, "classification": "strict" if strict else "codec-equivalent",
-                     "match": expected_match, "pinned": {key: upstream.get(key) for key in
-                     ("ok", "mimeType", "width", "height", "hints", "message")},
-                     "pisharp": {key: local.get(key) for key in
-                     ("ok", "mimeType", "width", "height", "hints", "message")}})
+        classification = "accepted-safety-difference" if safety_difference else "strict" if strict else "codec-equivalent"
+        row = {"id": case_id, "classification": classification,
+               "match": expected_match, "pinned": {key: upstream.get(key) for key in
+               ("ok", "mimeType", "width", "height", "hints", "message")},
+               "pisharp": {key: local.get(key) for key in
+               ("ok", "mimeType", "width", "height", "hints", "message")}}
+        if safety_difference:
+            row["safetyRationale"] = "Pinned Pi's Photon decoder accepts and forwards a WebP whose RIFF length field exceeds the available bytes; PiSharp's Skia decoder rejects it and emits the normal omission note. The stricter rejection avoids forwarding malformed data."
+        rows.append(row)
 
-    report = {"piSha": pin, "scope": "processImage prompt normalization only; provider wire, clipboard acquisition, and full session lifecycle have separate tests",
+    unexplained_mismatches = [row["id"] for row in rows
+                              if not row["match"] and row["classification"] != "accepted-safety-difference"]
+    report = {"piSha": pin, "scope": "Pinned processImage prompt normalization across PNG, JPEG, GIF and WebP pass-through, model-limited resize, BMP conversion and malformed/truncated-input handling; provider wire, clipboard acquisition and full session lifecycle have separate reports",
               "samePiCalibration": {"runs": 2, "stable": same_pi_stable,
                                    "comparison": "Exact processImage result, including output bytes, MIME and hints."},
               "strictPasses": sum(row["classification"] == "strict" and row["match"] for row in rows),
               "strictTotal": sum(row["classification"] == "strict" for row in rows),
               "codecEquivalentPasses": sum(row["classification"] == "codec-equivalent" and row["match"] for row in rows),
               "codecEquivalentTotal": sum(row["classification"] == "codec-equivalent" for row in rows),
+              "acceptedSafetyDifferences": sum(row["classification"] == "accepted-safety-difference" for row in rows),
+              "unexplainedMismatches": unexplained_mismatches,
               "cases": rows}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
-    if not same_pi_stable or not all(row["match"] for row in rows):
+    if not same_pi_stable or unexplained_mismatches:
         raise SystemExit(f"Image differential failed; report: {args.output}")
     print(f"Matched {report['strictPasses']}/{report['strictTotal']} strict and "
-          f"{report['codecEquivalentPasses']}/{report['codecEquivalentTotal']} codec-equivalent image cases.")
+          f"{report['codecEquivalentPasses']}/{report['codecEquivalentTotal']} codec-equivalent image cases; "
+          f"accepted {report['acceptedSafetyDifferences']} documented safety difference(s).")
 
 
 if __name__ == "__main__":

@@ -108,6 +108,30 @@ public sealed class ReadImageProcessorTests
     }
 
     [Fact]
+    public void CancellationAfterPixelDecodeIsObservedBeforeResizeOutput()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var bytes = CreatePng(2400, 20);
+
+        Assert.Throws<OperationCanceledException>(() => ReadImageProcessor.Process(bytes, "image/png",
+            cancellation.Token, resizeOptions: new ModelImageResizeOptions(MaxWidth: 2000),
+            imageDecoded: cancellation.Cancel));
+    }
+
+    [Fact]
+    public void WebpWithRiffLengthBeyondAvailableBytesIsSafelyOmitted()
+    {
+        var bytes = Convert.FromBase64String(
+            "UklGRjgAAABXRUJQVlA4ICwAAAAwAQCdASoCAAIAAgA0JaAAA3AA/vBsr//8lP/vK/13bhv//hWv5Wv5WrfAAA==");
+        Array.Fill(bytes, (byte)0xff, 4, 4);
+
+        var output = ReadImageProcessor.Process(bytes, "image/webp");
+
+        Assert.Null(output.ImageDataBase64);
+        Assert.Contains("[Image omitted: could not be resized below the inline image size limit.]", output.Text);
+    }
+
+    [Fact]
     public void ExcessiveDimensionsAreRejectedBeforePixelDecode()
     {
         var bytes = CreateBmp();

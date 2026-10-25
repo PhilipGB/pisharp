@@ -22,22 +22,23 @@
     "baseSha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
     "published": true,
     "draftPr": "https://github.com/PhilipGB/pisharp/pull/26",
-    "lastPublishedHead": "73cdce52f5f911bf04f800af20dffd98c4c5fcf4",
+    "previousPublishedHead": "bacbdc47bba64e599beaff3ff51976cbe7b63738",
     "lastImplementationCommit": "4c3eba8c",
     "currentHeadTracking": "PR #26 description is authoritative for the current published head and exact-head CI run IDs."
   },
   "differential": {
     "report": "multimodal-image-differential-2026-10-25.json",
-    "strict": { "passed": 3, "total": 3 },
-    "codecEquivalent": { "passed": 2, "total": 2 },
+    "strict": { "passed": 13, "total": 13 },
+    "codecEquivalent": { "passed": 5, "total": 5 },
+    "acceptedSafetyDifferences": 1,
     "samePiCalibration": { "runs": 2, "stable": true },
-    "scope": "processImage prompt normalization only",
+    "scope": "processImage prompt normalization across PNG/JPEG/GIF/WebP pass-through and model-limited resize, BMP conversion, malformed/truncated inputs, and one stricter WebP rejection",
     "fileArguments": {
       "report": "multimodal-file-argument-differential-2026-10-25.json",
-      "passed": 2,
-      "total": 2,
+      "passed": 7,
+      "total": 7,
       "samePiCalibration": { "runs": 2, "stable": true },
-      "scope": "Pinned processFileArguments plus buildInitialMessage versus PiSharp CliFileArguments.ProcessFilesAsync"
+      "scope": "Pinned processFileArguments plus buildInitialMessage versus PiSharp CliFileArguments.ProcessFilesAsync, covering 256-image preservation, JPEG/GIF/WebP pass-through, and relative, absolute, home-expanded and symlinked image paths"
     },
     "providerWire": {
       "report": "multimodal-provider-wire-differential-2026-10-25.json",
@@ -62,9 +63,10 @@
   },
   "clipboardAcquisition": {
     "report": "multimodal-clipboard-differential-2026-10-25.json",
-    "strict": { "passed": 3, "total": 3 },
+    "strict": { "passed": 4, "total": 4 },
     "samePiCalibration": { "runs": 2, "stable": true },
-    "scope": "Linux Wayland MIME preference, empty clipboard behavior, and X11 fallback; exact PNG bytes and command sequence"
+    "samePiFilePathCalibration": { "runs": 2, "stable": true },
+    "scope": "Linux Wayland MIME preference, empty clipboard behavior, X11 fallback, and native file-path precedence over image/text fallbacks"
   },
   "protocolImages": {
     "report": "multimodal-protocol-image-differential-2026-10-25.json",
@@ -80,7 +82,11 @@
     "mode": "Matches Pi's CLI print/JSON/RPC deferred path, which passes autoResizeImages=false during file expansion and normalizes after model selection."
   },
   "localVerification": {
-    "fullDotnet": { "passed": 3883, "failed": 0, "skipped": 0 },
+    "fullDotnet": { "passed": 3886, "failed": 0, "skipped": 0 },
+    "fileArgumentPathDifferential": { "passed": 7, "total": 7, "samePiCalibration": { "runs": 2, "stable": true } },
+    "imageProcessingDifferential": { "strictPassed": 13, "strictTotal": 13, "codecEquivalentPassed": 5, "codecEquivalentTotal": 5, "acceptedSafetyDifferences": 1, "samePiCalibration": { "runs": 2, "stable": true } },
+    "readImageProcessorFocused": { "passed": 11, "failed": 0, "skipped": 0 },
+    "clipboardPartialFileCancellation": { "passed": 1, "failed": 0, "skipped": 0 },
     "focusedInputClipboardJsonRpcPrint": { "passed": 35, "failed": 0, "skipped": 0 },
     "savedSessionContinuationRegression": { "passed": 1, "failed": 0, "skipped": 0 },
     "positionalImageFileTests": { "passed": 8, "failed": 0, "skipped": 0 },
@@ -105,7 +111,7 @@
       "classification": "implemented_partial",
       "upstream": "packages/coding-agent/src/cli/file-processor.ts:processFileArguments",
       "pisharp": "src/PiSharp.Cli/Startup/CliFileArguments.cs:ProcessFilesAsync",
-      "inputs": ["PNG", "JPEG", "GIF", "WebP", "BMP", "truncated image", "extension/content mismatch"],
+      "inputs": ["PNG", "JPEG", "GIF", "WebP", "BMP", "truncated image", "extension/content mismatch", "256 images", "relative, absolute, home-expanded and symlink paths"],
       "evidence": [
         "tests/PiSharp.Tests/Cli/Startup/CliFileArgumentsImageTests.cs",
         "tests/PiSharp.Tests/Runtime/Agents/MultimodalRuntimeTests.cs",
@@ -113,16 +119,16 @@
         "multimodal-file-argument-differential-2026-10-25.json",
         "multimodal-file-recovery-differential-2026-10-25.json"
       ],
-        "difference": "The paired application corpus covers mixed UTF-8 text, Unicode/spaced paths, content-sniffed PNG, duplicate/empty files, BMP conversion, hints, image order and prompt composition. A provider-visible differential confirms deferred selected-model normalization omits a truncated PNG and preserves a following valid image. Relative/absolute/home expansion, symlink, JPEG/GIF/WebP, cancellation and resource-limit behavior still need distinct paired cases."
+      "difference": "The paired application corpus covers mixed UTF-8 text, Unicode/spaced paths, content-sniffed PNG, duplicate/empty files, BMP conversion, valid JPEG/GIF/WebP pass-through, 256 images without truncation, hints, image order, prompt composition, and relative, absolute, home-expanded and symlinked paths. A provider-visible differential confirms deferred selected-model normalization omits a truncated PNG and preserves a following valid image. Additional file-path malformed/cancellation cases and input-growth limits are covered by local regressions rather than this paired corpus."
     },
     {
       "id": "shared-image-processing",
-      "classification": "source_pinned_differential_pass",
+      "classification": "source_pinned_differential_pass_with_accepted_safety_difference",
       "upstream": "packages/coding-agent/src/utils/image-process.ts:processImage",
       "pisharp": "src/PiSharp.Runtime/Tools/ReadImageProcessor.cs:Process",
-      "inputs": ["pass-through PNG", "model-limited PNG resize", "resize disabled", "BMP conversion", "truncated PNG"],
+      "inputs": ["PNG/JPEG/GIF/WebP pass-through", "model-limited PNG/JPEG/GIF/WebP resize", "resize disabled", "BMP conversion", "truncated and malformed PNG/JPEG/GIF/WebP"],
       "evidence": ["multimodal-image-differential-2026-10-25.json"],
-      "difference": "PNG resize and BMP encoded bytes are codec-equivalent by MIME, decoded dimensions and hints; encoded bytes are intentionally not compared."
+      "difference": "PNG/JPEG/GIF/WebP resizing and BMP encoded bytes are codec-equivalent by MIME, decoded dimensions and hints; encoded bytes are intentionally not compared. Supported-format pass-through is strict. Malformed/truncated JPEG, GIF and WebP payload cases match omission; one RIFF-size-mismatched WebP is accepted by Pi's Photon decoder but rejected by Skia, a documented stricter safety exclusion."
     },
     {
       "id": "model-specific-limits-and-selected-model",
@@ -167,7 +173,7 @@
       "upstream": "packages/coding-agent/src/utils/clipboard-image.ts",
       "pisharp": "src/PiSharp.Cli/Tui/Clipboard/TerminalClipboard.cs; src/PiSharp.Cli/Tui/Clipboard/TerminalClipboardActions.cs",
       "evidence": ["tests/PiSharp.Tests/Cli/Tui/Clipboard/TerminalClipboardTests.cs"],
-      "difference": "Empty clipboard and backend errors are distinguished; focused PiSharp clipboard tests pass, pinned clipboard/print/prompt selections pass 51/51, and a paired Linux acquisition report passes 3/3 with stable same-Pi calibration. Clipboard file-path precedence and fresh native macOS/Windows contract jobs remain to be verified on the final published head."
+      "difference": "Empty clipboard and backend errors are distinguished; focused PiSharp clipboard tests pass, including file-path precedence, pinned clipboard/print/prompt selections pass 51/51, and the paired acquisition/path-precedence report passes 4/4 with stable same-Pi calibration. Fresh native macOS/Windows contract jobs remain to be verified on the final published head."
     },
     {
       "id": "image-blocking-and-capability-restrictions",
@@ -191,7 +197,7 @@
       "upstream": "packages/coding-agent/src/cli/file-processor.ts; packages/coding-agent/src/utils/image-process.ts",
       "pisharp": "src/PiSharp.Cli/Startup/CliFileArguments.cs; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs",
       "evidence": ["tests/PiSharp.Tests/Cli/Startup/CliFileArgumentsImageTests.cs", "tests/PiSharp.Tests/Runtime/Tools/ReadImageProcessorTests.cs"],
-    "difference": "A paired provider-visible deferred-normalization case verifies recovery after a truncated image. Bounded file reads and local malformed handling are covered, but corrupt-format breadth, image counts, combined/request limits, decode bounds, cancellation during processing and temporary-file failure/cleanup still need distinct acceptance cases."
+      "difference": "Paired cases cover malformed/truncated image handling and 256 image attachments without truncation. Local tests cover 20 MiB file bounds, read-time growth rejection, pixel-count rejection before decode, cancellation before and after pixel decode, and clipboard-file cleanup on cancellation. Pinned Pi reads image resize limits in its processing path; maxPerMessage, maxPerRequest and maxRequestBytes appear as model metadata and have no enforcement path in the pinned runtime. The clipboard writer catches all write/flush failures and deletes the created path; ordinary disk-write failure is source-reviewed, while cancellation exercises that cleanup branch."
     },
     {
       "id": "native-platform-clipboard",
@@ -203,10 +209,8 @@
     }
   ],
   "remaining": [
-    "Expand paired reliability evidence for corrupt formats, image counts, prompt/request limits, cancellation, decoding resource bounds and temporary-file failures.",
-    "Verify clipboard file-path precedence and rerun macOS and Windows script/cleanup contract CI on the final published head. Live desktop clipboard access is unavailable on hosted runners.",
-    "Run fresh full local quality gates and documentation-path validation after the current correction.",
-    "Update the final receipt, inventory, ledger, feature matrix, continuation and PR description.",
-    "Commit and push the correction, then verify exact-head push and PR CI while keeping PR #26 open and draft."
+    "Commit and publish the current evidence follow-up, then update the PR description with the verified counts and accepted safety difference.",
+    "Verify fresh exact-head push and PR CI, including macOS/Windows clipboard contracts, while keeping PR #26 open and draft.",
+    "Hosted clipboard jobs verify native scripts and cleanup contracts; live desktop clipboard access is unavailable on hosted runners."
   ]
 }

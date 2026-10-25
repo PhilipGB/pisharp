@@ -474,6 +474,23 @@ public sealed class TerminalClipboardTests
         finally { File.Delete(path); }
     }
 
+    [Fact]
+    public async Task ClipboardImageStoreDeletesPartialFileWhenWriteIsCanceled()
+    {
+        var before = Directory.GetFiles(Path.GetTempPath(), "pisharp-clipboard-*")
+            .ToHashSet(StringComparer.Ordinal);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ClipboardImageStore.SaveAsync(
+            new TerminalClipboardImage(CreatePng(), "image/png"), cancellation.Token));
+
+        var after = Directory.GetFiles(Path.GetTempPath(), "pisharp-clipboard-*")
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(before.OrderBy(path => path, StringComparer.Ordinal),
+            after.OrderBy(path => path, StringComparer.Ordinal));
+    }
+
     private static Func<string, string?> Env(params (string Name, string Value)[] values)
     {
         var map = values.ToDictionary(value => value.Name, value => value.Value, StringComparer.Ordinal);

@@ -4,27 +4,34 @@
 
 The upstream reference is Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; this milestone
-branch is based on that commit. Draft PR #26 is open and unmerged. Its latest
-published head is `f734c0c8d793fa829f2457a1a645cda776c1392c`; the Pi pin has
+branch is based on that commit. Draft PR #26 is open and unmerged. Its previous
+published head before the current evidence follow-up is
+`bacbdc47bba64e599beaff3ff51976cbe7b63738`; the current head is tracked in the
+PR description. The Pi pin has
 not moved.
 
 ## Current evidence
 
-The direct `processImage` differential passes **3/3 strict cases** and **2/2
-codec-equivalent cases**. Pinned Pi output is stable across two runs, including
-encoded bytes. Strict cases cover unchanged PNG pass-through, resize-disabled
-pass-through and a truncated PNG omission. Calibrated cases cover model-limited
-PNG resize and BMP-to-PNG conversion; they compare MIME, decoded dimensions and
-processing hints rather than codec bytes. See the [machine-readable report](multimodal-image-differential-2026-10-25.json)
+The direct `processImage` differential passes **13/13 strict cases** and **5/5
+codec-equivalent cases**, with one documented safety difference. Pinned Pi
+output is stable across two runs, including encoded bytes. Strict cases cover
+PNG pass-through, resize-disabled pass-through, valid JPEG/GIF/WebP pass-through,
+and malformed/truncated PNG/JPEG/GIF/WebP inputs. Calibrated cases cover
+model-limited PNG/JPEG/GIF/WebP resize and BMP-to-PNG conversion; they compare
+MIME, decoded dimensions and processing hints rather than codec bytes. Pi accepts
+a WebP whose RIFF length exceeds available data while Skia rejects it; PiSharp
+omits this malformed input rather than forwarding it. See the [machine-readable report](multimodal-image-differential-2026-10-25.json)
 and its [reproducible runner](../../../tools/parity/multimodal-image-differential.py).
 
 The pinned `processFileArguments` plus `buildInitialMessage` differential passes
-2/2 application cases with stable two-run Pi output. It checks mixed UTF-8 text,
+7/7 application cases with stable two-run Pi output. It checks mixed UTF-8 text,
 Unicode and spaced paths, content-sniffed PNG under a `.data` suffix, duplicates,
-empty files, BMP conversion, hints, image order and prompt composition. Its first
-run reproduced an extra blank line before the prompt in PiSharp; removing that
-separator now matches pinned Pi. PNG bytes match strictly; BMP conversion is
-compared by MIME and decoded dimensions. See the [file-input report](multimodal-file-argument-differential-2026-10-25.json)
+empty files, BMP conversion, JPEG/GIF/WebP pass-through, a 256-image sequence,
+hints, image order, prompt composition, and relative, absolute, home-expanded
+and symlinked image paths. Its first run reproduced an
+extra blank line before the prompt in PiSharp; removing that separator now
+matches pinned Pi. PNG bytes match strictly; BMP conversion is compared by MIME
+and decoded dimensions. See the [file-input report](multimodal-file-argument-differential-2026-10-25.json)
 and [runner](../../../tools/parity/multimodal-file-argument-differential.py).
 
 A separate provider-context recovery differential passes **1/1** and is stable
@@ -60,11 +67,12 @@ The session probes use temporary empty generated model-catalog files only when
 the pinned checkout lacks them. The sessions register a faux provider; catalog
 contents and catalog behavior are not under test.
 
-Linux clipboard acquisition passes **3/3 strict comparisons** against pinned
-Pi with stable two-run calibration. The cases cover Wayland PNG preference over
-JPEG, an empty Wayland clipboard avoiding stale X11 contents, and Wayland
-failure falling back to X11. Command order, selected MIME and exact PNG bytes
-match. This does not exercise a live desktop clipboard. See the
+Clipboard behavior passes **4/4 comparisons** against pinned Pi with stable
+two-run calibration. Three cases cover Wayland PNG preference over JPEG, an
+empty Wayland clipboard avoiding stale X11 contents, and Wayland failure
+falling back to X11; the fourth confirms native file paths take precedence over
+image and text fallback. Command order, selected MIME, path insertion and exact
+PNG bytes match. This does not exercise a live desktop clipboard. See the
 [clipboard report](multimodal-clipboard-differential-2026-10-25.json) and
 [runner](../../../tools/parity/multimodal-clipboard-differential.py).
 
@@ -100,7 +108,7 @@ print-mode and agent-session prompt selections passed 51/51 at the configured
 SHA. An exploratory RPC semantics batch had 8 setup failures because the
 temporary checkout has no generated model-catalog entries; those failures
 occurred before image handling and are not counted as acceptance evidence.
-The current full .NET suite passes **3,883/3,883** with zero failures or skips.
+The current full .NET suite passes **3,886/3,886** with zero failures or skips.
 It includes the deferred image-file regression, a concurrent loopback-listener
 allocation regression, and deterministic clock injection for an existing
 terminal elapsed-time assertion. The focused image-file class passes 8/8, and
@@ -134,19 +142,30 @@ documents and 672 references.
 ## Limits and remaining work
 
 The paired file, provider, clipboard and protocol reports do not establish
-complete application parity. Corrupt-format breadth, file path variants,
-excessive image counts, combined/request limits, decode bounds, cancellation
-during processing and temporary-file failure/cleanup still need distinct
-acceptance cases. macOS and Windows CI compile their native clipboard scripts
-and exercise platform-specific cleanup contracts; live desktop clipboard access
-is unavailable on hosted runners and is not claimed. The published head's push
+complete application parity. Corrupt-format variants beyond the tested
+malformed and truncated cases, combined/request limits and non-cancellation
+temporary-write failures remain outside the focused evidence. The paired file
+corpus preserves 256 image attachments without truncation. Local tests reject
+excessive decoded dimensions before pixel allocation and observe cancellation
+before decoding and after pixel decoding. A focused test confirms cancellation
+deletes a partially written clipboard image. macOS and Windows CI compile
+native clipboard scripts and exercise platform-specific cleanup contracts; live desktop clipboard access
+is unavailable on hosted runners and is not claimed. Previous head `f734c0c8`'s push
 run `40196042863` and PR run `40196046840` both failed in the protocol image
 oracle because that runner did not create generated model-catalog files in the
 disposable Pi checkout; platform and MCP jobs passed. The protocol runner now
 uses the same temporary catalog helper as the other pinned oracles, and its
-local differential passes 2/2. That focused correction and this receipt update
-are not yet committed. Fresh exact-head CI, the final PR description update and
-broader adversarial acceptance cases remain.
+local differential passes 2/2. The correction is published at `bacbdc47` and
+passes exact-head push and PR runs `40196652776` and `40196656515`. The expanded
+file differential passes 7/7 locally, including a 256-image sequence,
+JPEG/GIF/WebP pass-through and relative, absolute, home-expanded and symlinked
+paths. The processor differential passes 13/13 strict and 5/5 codec-equivalent
+cases, covering pass-through and model-limited processing for PNG/JPEG/GIF/WebP,
+malformed-format handling, and one documented stricter WebP rejection. The
+partial-file cancellation
+test passes 1/1. These extensions are still in the worktree. Fresh exact-head CI
+after publishing them,
+the final PR description update and broader adversarial acceptance cases remain.
 
 Overall Pi feature parity remains `in_progress`. This receipt will be updated
 with the published draft PR and exact-head workflow results after the remaining

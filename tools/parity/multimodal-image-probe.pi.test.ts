@@ -23,6 +23,11 @@ test("captures pinned Pi prompt-image processing", async () => {
 				results.push({ id: scenario.id, ok: false, message: result.message });
 				continue;
 			}
+			if (["gif-pass-through", "webp-pass-through"].includes(scenario.id)) {
+				results.push({ id: scenario.id, ok: true, mimeType: result.mimeType, data: result.data,
+					width: null, height: null, hints: result.hints });
+				continue;
+			}
 			const decoded = await resizeImage(Buffer.from(result.data, "base64"), result.mimeType, {
 				maxWidth: 10000,
 				maxHeight: 10000,

@@ -17,6 +17,10 @@ test("captures pinned Pi positional-file processing", async () => {
 			const initial = buildInitialMessage({ parsed, fileText: processed.text, fileImages: processed.images });
 			const images = [];
 			for (const image of initial.initialImages ?? []) {
+				if (scenario.id === "supported-image-format-passthrough") {
+					images.push({ mimeType: image.mimeType, data: image.data, width: null, height: null });
+					continue;
+				}
 				const decoded = await resizeImage(Buffer.from(image.data, "base64"), image.mimeType, {
 					maxWidth: 10000,
 					maxHeight: 10000,

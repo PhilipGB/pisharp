@@ -26,7 +26,22 @@ await CaptureAsync("wayland-failure-falls-back-to-x11", (name, arguments) =>
     return name == "xclip" ? new(0, png) : null;
 });
 
-await File.WriteAllTextAsync(args[0], JsonSerializer.Serialize(results));
+string[] filePaths = ["/tmp/screenshot.png", "/tmp/My Photos/photo.png"];
+var pathCommands = new CapturingCommandRunner((name, _) => name == "osascript"
+    ? new(0, System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(filePaths)))
+    : new(1, []));
+var macClipboard = new TerminalClipboard(pathCommands, platform: ClipboardPlatform.MacOS);
+var editor = new TerminalEditor();
+editor.Prefill("Review:");
+await TerminalClipboardActions.PasteImageAsync(macClipboard, editor);
+var pathPrecedence = new
+{
+    draft = editor.Draft,
+    imageFallbackReached = pathCommands.Calls.Count != 1,
+    textFallbackReached = pathCommands.Calls.Count != 1 || pathCommands.Calls[0].Command != "osascript"
+};
+
+await File.WriteAllTextAsync(args[0], JsonSerializer.Serialize(new { acquisitions = results, filePathPrecedence = pathPrecedence }));
 
 async Task CaptureAsync(string id, Func<string, IReadOnlyList<string>, ClipboardCommandResult?> response)
 {
