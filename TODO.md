@@ -15,15 +15,24 @@ JSON-mode and RPC prompt comparisons pass 2/2, all stable across two pinned Pi
 runs. The file differential reproduced and drove a fix for an extra blank line
 before the prompt. The selected-model canonical history mismatch is corrected;
 its PiSharp regression and the pinned `before_agent_start` test pass. The fresh
-full suite passes 3,881/3,881; format and warning-as-error build pass. Python
-parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. The paired
+full suite passes 3,883/3,883; format and warning-as-error build pass. Python
+parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. A flaky
+terminal elapsed-time assertion now uses a manual clock, and the shared loopback
+listener serializes concurrent ephemeral-port allocation. The paired
 JSON-mode probe includes a malformed PNG followed by a valid PNG and matches
-the pinned omission note and remaining image. macOS and Windows CI now verify
+the pinned omission note and remaining image. A separate paired positional-file
+differential verifies deferred selected-model normalization of a truncated
+image followed by a valid image (1/1, stable across two Pi runs). macOS and Windows CI now verify
 native clipboard scripts and cleanup contracts; live clipboard access is not
-available on hosted runners. Physical provider-wire continuation after saved
-session restart, broader adversarial cases, documentation-path revalidation,
-and exact-head CI remain open. The saved-session canonical/provider-context
-comparison passes 3/3 strict cases.
+available on hosted runners. A branched saved-session differential verifies
+the selected image reaches post-restart physical requests and the inactive
+branch image is excluded for Responses, Chat Completions and Anthropic (3/3,
+stable over two pinned Pi runs). The first exact-head CI run exposed a Windows
+line-ending expectation and absent generated catalog files in the disposable
+Pi checkout; both have focused corrections in the worktree. Broader corrupt-
+format, limits, cancellation and resource-bound cases, and fresh exact-head CI
+remain open. Documentation paths pass for 154 documents and 672 references. The
+saved-session canonical/provider-context comparison passes 3/3 strict cases.
 Draft PR #26 is open, draft and unmerged.
 Keep the new PR open, draft and unmerged. See the [multimodal parity receipt](docs/parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](docs/parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).

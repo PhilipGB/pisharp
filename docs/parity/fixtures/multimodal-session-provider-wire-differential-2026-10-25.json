@@ -1,0 +1,198 @@
+{
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "scope": "physical provider request after reopening a branched image session; active branch retained and inactive branch image excluded",
+  "samePiCalibration": {
+    "runs": 2,
+    "stable": true
+  },
+  "protocolsPassed": 3,
+  "protocolsTotal": 3,
+  "cases": [
+    {
+      "api": "openai-responses",
+      "model": "gpt-5.4",
+      "pathMatch": true,
+      "orderedUserTurnsMatch": true,
+      "expectedTurnShape": true,
+      "inactiveBranchImageAbsent": true,
+      "pisharpInactiveBranchImageWasSent": true,
+      "pisharpSelectedBranchImageWasSent": true,
+      "pinnedUserTurns": [
+        [
+          {
+            "type": "text",
+            "text": "base"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "inspect \u03bb"
+          },
+          {
+            "type": "image",
+            "mimeType": "image/png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAYAAACddGYaAAAAEUlEQVR4nGOQi1rwH4YZkDkAmmEMi2HS8LcAAAAASUVORK5CYII="
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "continue"
+          }
+        ]
+      ],
+      "pisharpUserTurns": [
+        [
+          {
+            "type": "text",
+            "text": "base"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "inspect \u03bb"
+          },
+          {
+            "type": "image",
+            "mimeType": "image/png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAYAAACddGYaAAAAEUlEQVR4nGOQi1rwH4YZkDkAmmEMi2HS8LcAAAAASUVORK5CYII="
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "continue"
+          }
+        ]
+      ],
+      "initialPisharpPath": "/v1/responses",
+      "samePiStable": true
+    },
+    {
+      "api": "openai-completions",
+      "model": "gpt-4o-mini",
+      "pathMatch": true,
+      "orderedUserTurnsMatch": true,
+      "expectedTurnShape": true,
+      "inactiveBranchImageAbsent": true,
+      "pisharpInactiveBranchImageWasSent": true,
+      "pisharpSelectedBranchImageWasSent": true,
+      "pinnedUserTurns": [
+        [
+          {
+            "type": "text",
+            "text": "base"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "inspect \u03bb"
+          },
+          {
+            "type": "image",
+            "mimeType": "image/png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAYAAACddGYaAAAAEUlEQVR4nGOQi1rwH4YZkDkAmmEMi2HS8LcAAAAASUVORK5CYII="
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "continue"
+          }
+        ]
+      ],
+      "pisharpUserTurns": [
+        [
+          {
+            "type": "text",
+            "text": "base"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "inspect \u03bb"
+          },
+          {
+            "type": "image",
+            "mimeType": "image/png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAYAAACddGYaAAAAEUlEQVR4nGOQi1rwH4YZkDkAmmEMi2HS8LcAAAAASUVORK5CYII="
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "continue"
+          }
+        ]
+      ],
+      "initialPisharpPath": "/v1/chat/completions",
+      "samePiStable": true
+    },
+    {
+      "api": "anthropic-messages",
+      "model": "claude-sonnet-4-6",
+      "pathMatch": true,
+      "orderedUserTurnsMatch": true,
+      "expectedTurnShape": true,
+      "inactiveBranchImageAbsent": true,
+      "pisharpInactiveBranchImageWasSent": true,
+      "pisharpSelectedBranchImageWasSent": true,
+      "pinnedUserTurns": [
+        [
+          {
+            "type": "text",
+            "text": "base"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "inspect \u03bb"
+          },
+          {
+            "type": "image",
+            "mimeType": "image/png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAYAAACddGYaAAAAEUlEQVR4nGOQi1rwH4YZkDkAmmEMi2HS8LcAAAAASUVORK5CYII="
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "continue"
+          }
+        ]
+      ],
+      "pisharpUserTurns": [
+        [
+          {
+            "type": "text",
+            "text": "base"
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "inspect \u03bb"
+          },
+          {
+            "type": "image",
+            "mimeType": "image/png",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAYAAACddGYaAAAAEUlEQVR4nGOQi1rwH4YZkDkAmmEMi2HS8LcAAAAASUVORK5CYII="
+          }
+        ],
+        [
+          {
+            "type": "text",
+            "text": "continue"
+          }
+        ]
+      ],
+      "initialPisharpPath": "/v1/messages",
+      "samePiStable": true
+    }
+  ]
+}

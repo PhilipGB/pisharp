@@ -80,8 +80,10 @@ jobs:
           mkdir -p artifacts/parity/multimodal-differential
           python3 tools/parity/multimodal-image-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/image-processing.json
           python3 tools/parity/multimodal-file-argument-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/file-arguments.json
+          python3 tools/parity/multimodal-file-recovery-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/file-recovery.json
           python3 tools/parity/multimodal-provider-wire-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/provider-wire.json
           python3 tools/parity/multimodal-session-continuation-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/session-continuation.json
+          python3 tools/parity/multimodal-session-wire-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/session-provider-wire.json
           python3 tools/parity/multimodal-clipboard-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/clipboard.json
           python3 tools/parity/multimodal-protocol-image-differential.py --pi artifacts/parity/pi-ownership-oracle --output artifacts/parity/multimodal-differential/protocol-images.json
       - run: |

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Acquire and verify the repository's single current Pi parity reference."""
 import argparse
+from contextlib import contextmanager
 from pathlib import Path
 import re
 import subprocess
@@ -50,6 +51,39 @@ def verify_pi_checkout(checkout):
         raise PiReferenceError(f'Pi checkout has tracked changes or cannot be inspected at {checkout}. '
                                'Parity requires unchanged source at the configured SHA.')
     return actual
+
+
+@contextmanager
+def temporary_empty_model_catalogs(checkout):
+    """Fill absent generated catalog JSON only while a faux-provider oracle runs."""
+    checkout = Path(checkout).resolve()
+    generated = checkout / 'packages/ai/src/models.generated.ts'
+    if not generated.is_file():
+        raise PiReferenceError(f'Cannot locate generated model imports in pinned Pi checkout: {generated}')
+    providers = re.findall(r'from "\./providers/([^"/]+)\.models\.ts";', generated.read_text())
+    data_dir = checkout / 'packages/ai/src/providers/data'
+    data_dir_existed = data_dir.exists()
+    data_dir.mkdir(parents=True, exist_ok=True)
+    created = []
+    try:
+        for provider in providers:
+            path = data_dir / f'{provider}.json'
+            if not path.exists():
+                path.write_text('{}\n')
+                created.append(path)
+        manifest = data_dir / '.manifest.json'
+        if not manifest.exists():
+            manifest.write_text('{"generatedAt":"temporary faux-provider oracle"}\n')
+            created.append(manifest)
+        yield
+    finally:
+        for path in created:
+            path.unlink(missing_ok=True)
+        if not data_dir_existed:
+            try:
+                data_dir.rmdir()
+            except OSError:
+                pass
 
 
 def obtain_pi_checkout(destination):

@@ -30,6 +30,16 @@ separator now matches pinned Pi. PNG bytes match strictly; BMP conversion is
 compared by MIME and decoded dimensions. See the [file-input report](multimodal-file-argument-differential-2026-10-25.json)
 and [runner](../../../tools/parity/multimodal-file-argument-differential.py).
 
+A separate provider-context recovery differential passes **1/1** and is stable
+across two pinned Pi runs. It follows Pi's deferred path (`autoResizeImages`
+disabled during file expansion, then image normalization after model selection)
+for a truncated PNG followed by a valid PNG. Both sides omit the truncated image
+with the same diagnostic and preserve the later image with matching MIME and
+bytes. This mode alignment matters: direct file expansion with early resizing
+has a different hint placement, but it is not the CLI print/JSON/RPC path under
+test here. See the [recovery report](multimodal-file-recovery-differential-2026-10-25.json)
+and [runner](../../../tools/parity/multimodal-file-recovery-differential.py).
+
 Physical provider-wire comparisons pass **3/3 protocols**: OpenAI Responses,
 OpenAI Chat Completions and Anthropic Messages. Each comparison uses a pinned Pi
 provider stream and a PiSharp MAF `ChatClient` HTTP boundary; path, text/image
@@ -40,10 +50,18 @@ and [runner](../../../tools/parity/multimodal-provider-wire-differential.py).
 Saved-session continuation passes **3/3 strict comparisons** against pinned Pi:
 initial provider content, restored canonical user content and continuation
 provider content preserve ordered text and exact image MIME/data after reopening
-the session. Pinned Pi is stable across two independent runs. This uses a local
-provider stub and does not claim physical HTTP wire verification after restart.
-See the [session report](multimodal-session-continuation-differential-2026-10-25.json)
-and [runner](../../../tools/parity/multimodal-session-continuation-differential.py).
+the session. Pinned Pi is stable across two independent runs. A separate
+post-restart physical provider-wire differential passes **3/3 protocols** and
+is stable over two pinned Pi runs. It branches after a base turn, verifies the
+selected branch's image reaches OpenAI Responses, Chat Completions and Anthropic
+after saving/reopening, and verifies an image on the inactive branch is absent.
+See the [session report](multimodal-session-continuation-differential-2026-10-25.json),
+[provider-wire report](multimodal-session-provider-wire-differential-2026-10-25.json),
+and [runners](../../../tools/parity/multimodal-session-continuation-differential.py).
+
+The session probes use temporary empty generated model-catalog files only when
+the pinned checkout lacks them. The sessions register a faux provider; catalog
+contents and catalog behavior are not under test.
 
 Linux clipboard acquisition passes **3/3 strict comparisons** against pinned
 Pi with stable two-run calibration. The cases cover Wayland PNG preference over
@@ -80,16 +98,23 @@ serialization, clipboard fallbacks, image blocking and session continuation. A
 CLI process test verifies that print mode sends an `@file` image and prompt text
 in the same provider request. The current focused input/clipboard/JSON/RPC/print
 selection passed 35/35 with zero skips; the saved-session continuation
-regression passed 1/1. Pinned Pi's clipboard, clipboard BMP,
+regression and deferred positional recovery test pass 1/1 each. Pinned Pi's clipboard, clipboard BMP,
 print-mode and agent-session prompt selections passed 51/51 at the configured
 SHA. An exploratory RPC semantics batch had 8 setup failures because the
 temporary checkout has no generated model-catalog entries; those failures
 occurred before image handling and are not counted as acceptance evidence.
-The fresh .NET suite passes **3,881/3,881** with zero failures or skips.
+The current full .NET suite passes **3,883/3,883** with zero failures or skips.
+It includes the deferred image-file regression, a concurrent loopback-listener
+allocation regression, and deterministic clock injection for an existing
+terminal elapsed-time assertion. The focused image-file class passes 8/8, and
+the combined listener/virtual-model/timer selection passes 4/4.
 `TerminalClipboardTests` passes 30/30 on Linux, including a fake-runner check of
 the Windows STA command and temporary-file cleanup. Format verification and a
 warning-as-error build pass with zero warnings and errors. Python parity tests
 pass 27/27; terminal Python passes 66/66; terminal Node passes 24/24.
+MCP conformance reports no regressions against its classified baseline; three
+pre-existing cases remain classified. Documentation paths pass for 154
+documents and 672 references.
 
 ## Corrections recorded
 
@@ -105,17 +130,25 @@ pass 27/27; terminal Python passes 66/66; terminal Node passes 24/24.
   pinned `buildInitialMessage` contract, without an extra blank separator.
 - Model image resize settings and `autoResizeImages` reach prompt and image-tool
   processing.
+- Deferred selected-model normalization omits a truncated positional image and
+  preserves a following valid image at provider context, matching the pinned
+  CLI path.
 
 ## Limits and remaining work
 
 The paired file, provider, clipboard and protocol reports do not establish
-complete application parity. Physical provider-wire continuation after
-restart, active/inactive branch checks and additional adversarial cases remain
-open. macOS and Windows CI compile their native clipboard scripts and exercise
-platform-specific cleanup contracts; live desktop clipboard access is
-unavailable on hosted runners and is not claimed. Exact-head CI and final
-documentation-path validation are pending; Python, terminal Python/Node,
-format, build and full .NET checks have passed locally.
+complete application parity. Corrupt-format breadth, file path variants,
+excessive image counts, combined/request limits, decode bounds, cancellation
+during processing and temporary-file failure/cleanup still need distinct
+acceptance cases. macOS and Windows CI compile their native clipboard scripts
+and exercise platform-specific cleanup contracts; live desktop clipboard access
+is unavailable on hosted runners and is not claimed. The first exact-head CI
+run exposed a Windows-only line-ending expectation and missing generated
+catalog files in the disposable Pi checkout; both focused corrections are now
+in the worktree. The final PR description update, publishing the follow-up, and
+fresh exact-head CI remain pending. The earlier exact-head run was on head
+`8e68607aa8df1f49f436f8750dcfbaeaf7c795fe`; fresh checks must cover the new
+published head.
 
 Overall Pi feature parity remains `in_progress`. This receipt will be updated
 with the published draft PR and exact-head workflow results after the remaining

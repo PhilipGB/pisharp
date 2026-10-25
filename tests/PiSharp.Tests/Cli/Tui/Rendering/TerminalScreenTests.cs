@@ -913,9 +913,10 @@ public sealed class TerminalScreenTests
     {
         using var output = new StringWriter();
         using var error = new StringWriter();
+        var clock = new ManualTimeProvider();
         var theme = TerminalThemeCatalog.LoadBuiltIn("dark", TerminalColorMode.TrueColor);
         var screen = new TerminalScreen(output, error, () => 80, () => 24, new TerminalImageRenderer(),
-            theme, queryTerminalColors: false);
+            theme, queryTerminalColors: false, timeProvider: clock);
         var transcript = new InteractiveTranscript(screen.Output, screen.Error, screen: screen);
         transcript.Render(new AgentLifecycleEvent("tool_execution_started", Tool: "bash", OperationId: "bash-1")
         {

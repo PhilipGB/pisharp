@@ -2288,14 +2288,14 @@
         "@image, clipboard, read image, compatible terminal rendering",
         "reject unsupported image/provider safely",
         "Verify through application workflow and compare docs/usage.md; packages/coding-agent/src/utils/image-process.ts; packages/tui/src/terminal-image.ts; DataContent, terminal capability checks",
-        "Current multimodal milestone: source-pinned processImage differential passes 3/3 strict and 2/2 codec-equivalent cases; paired file-argument/initial-message corpus passes 2/2; physical Responses, Chat Completions and Anthropic image-wire comparisons pass 3/3. Saved-session image restoration and provider continuation pass 3/3 strict comparisons, stable across two pinned Pi runs. The paired file run exposed and corrected an extra blank line before the initial prompt. The fresh PiSharp full suite passes 3,879/3,879 with zero failures or skips; current format/build checks pass. Focused interface/clipboard tests pass 35/35; pinned Pi clipboard/print/prompt selections pass 51/51. Remaining: paired clipboard and JSON/RPC evidence; physical provider-wire continuation after restart; dedicated macOS/Windows clipboard CI; broader adversarial cases; exact-head CI. Draft PR #26 is published open/draft/unmerged."
+        "Current multimodal milestone: source-pinned processImage differential passes 3/3 strict and 2/2 codec-equivalent cases; paired file-argument/initial-message corpus passes 2/2; physical Responses, Chat Completions and Anthropic image-wire comparisons pass 3/3. Saved-session image restoration and provider continuation pass 3/3 strict comparisons, stable across two pinned Pi runs. The paired file run exposed and corrected an extra blank line before the initial prompt. The fresh PiSharp full suite passes 3,881/3,881 with zero failures or skips; current format/build checks pass. Focused interface/clipboard tests pass 35/35; pinned Pi clipboard/print/prompt selections pass 51/51. Paired clipboard and JSON/RPC reports pass 3/3 and 2/2; post-restart branched-image provider-wire passes 3/3 protocols and excludes the inactive image. The first exact-head CI exposed a Windows newline assertion and missing generated Pi catalogs in the disposable checkout; both corrections are in progress. Remaining: broader adversarial cases, documentation-path validation and fresh exact-head CI. Draft PR #26 is published open/draft/unmerged."
       ],
       "implementation": [
         "src/PiSharp.Cli/Startup/CliFileArguments.cs: positional @file PNG/JPEG/GIF/WebP signature/size validation and DataContent; src/PiSharp.Cli/Program.cs: model modality refusal and prompt assembly",
         "src/PiSharp.Runtime/Sessions/ObservedChatClient.cs: read-image attachment expansion plus images.blockImages provider-boundary filtering while retaining canonical session images; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs: SkiaSharp decode, BMP conversion and bounded resize",
         "src/PiSharp.Cli/Tui/Clipboard/TerminalClipboard.cs, ClipboardImageStore.cs and Program.cs: bounded image-first clipboard paste validates/normalizes through the Skia read pipeline, saves a private temporary file, inserts its path for the read tool, and falls back to text; Linux Wayland/X11 and WSL PowerShell image paths are covered.",
         "src/PiSharp.Cli/Tui/Rendering/TerminalImageCapabilities.cs, TerminalImageLayout.cs, TerminalImageRenderer.cs, TerminalScreen.cs and TerminalScreenCompositor.cs: accepted prompt and read-tool DataContent images use conservative Kitty/iTerm2 detection, Pi #8938 distortion-aware sizing, bounded transcript-safe markers and byte/raster budgets, redraw placement, cleanup and safe text fallback.",
-        "Current multimodal branch: CliFileArguments detects image content, bounds reads against concurrent growth, converts BMP, and records omission notes for oversized images. PiAgent normalizes accepted prompt images after before-agent-start handlers and before canonical persistence, using the selected resize profile and autoResizeImages setting; RoutedChatClient retains physical-model provider projection.",
+        "Current multimodal branch: CliFileArguments detects image content, bounds reads against concurrent growth, converts BMP, and records omission notes for oversized images. PiAgent normalizes accepted prompt images after before-agent-start handlers and before canonical persistence, using the selected resize profile and autoResizeImages setting; RoutedChatClient retains physical-model provider projection. Paired saved-session provider-wire continuation verifies the active image is present and inactive-branch image absent after restart for OpenAI Responses, Chat Completions and Anthropic (3/3 protocols; two-run Pi calibration).",
         "Current multimodal branch: clipboard success-empty and native-backend errors have separate outcomes; failed image/path reads do not silently fall through to text. Interactive, JSON, RPC and direct streaming prompt paths share accepted-image normalization."
       ],
       "evidence": [
@@ -13500,12 +13500,12 @@
   },
   "multimodal_user_input_image_parity_milestone": {
     "status": "in_progress",
-    "phase": "restart_wire_and_adversarial_differentials",
+    "phase": "adversarial_and_fresh_exact_head_ci",
     "prerequisite_merge": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
     "branch": "milestone/multimodal-user-input-image-parity",
     "branch_base_sha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
     "draft_pr": "https://github.com/PhilipGB/pisharp/pull/26",
-    "published_head_before_clipboard_followup": "73cdce52f5f911bf04f800af20dffd98c4c5fcf4",
+    "published_head_before_current_followup": "8e68607aa8df1f49f436f8750dcfbaeaf7c795fe",
     "last_implementation_commit": "4c3eba8c",
     "current_head_tracking": "PR description is authoritative for the final published source head and exact-head CI run IDs.",
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
@@ -13521,21 +13521,43 @@
       "same_pi_calibration": "two identical pinned-Pi runs",
       "scope": "JSON-mode malformed-image omission followed by valid PNG and RPC image prompt provider-visible content"
     },
+    "positional_file_recovery_differential": {
+      "report": "docs/parity/fixtures/multimodal-file-recovery-differential-2026-10-25.json",
+      "strict": "1/1",
+      "same_pi_calibration": "two stable pinned-Pi runs",
+      "scope": "With early resize disabled, selected-model normalization omits a truncated positional PNG and preserves a following valid PNG at provider context",
+      "mode_alignment": "Matches Pi's CLI print/JSON/RPC deferred path, which passes autoResizeImages=false during file expansion and normalizes after model selection."
+    },
+    "session_provider_wire_differential": {
+      "report": "docs/parity/fixtures/multimodal-session-provider-wire-differential-2026-10-25.json",
+      "protocols": "3/3",
+      "same_pi_calibration": "two stable pinned-Pi runs",
+      "scope": "After saved-session restart, selected-branch image reaches Responses, Chat Completions and Anthropic request bodies; inactive-branch image is absent"
+    },
     "platform_ci_adjustment": "Hosted macOS/Windows runners do not provide a live interactive clipboard; platform jobs now compile native scripts and verify deterministic cleanup/script contracts.",
     "local_validation": {
-      "dotnet_full": "3,881 passed, zero failed or skipped",
+      "dotnet_full": "3,883 passed, zero failed or skipped after current additions",
+      "positional_image_file_tests": "8 passed, zero failed or skipped",
+      "listener_virtual_model_timer_tests": "4 passed, zero failed or skipped; manual clock removes elapsed-time flakiness and shared listener startup serializes ephemeral-port allocation",
+      "positional_recovery_focused": "1/1 deferred-normalization comparison passed, stable over two pinned-Pi runs",
       "focused_clipboard": "30 passed",
       "dotnet_format": "passed",
       "dotnet_build_warnaserror": "passed; zero warnings/errors",
       "python_parity": "27 passed",
       "terminal_python": "66 passed",
-      "terminal_node": "24 passed"
+      "terminal_node": "24 passed",
+      "documentation_paths": "154 documents and 672 references verified",
+      "mcp_conformance": "No regressions against the classified baseline; three known failures remain classified"
     },
+    "first_exact_head_ci_findings": [
+      "Windows clipboard contract test expected CRLF while TerminalEditor stores LF; assertion updated to the stable editor representation; fresh exact-head CI pending.",
+      "Pinned continuation oracle could not import absent generated model-catalog JSON; session differential runners now create temporary empty catalog modules for faux-provider-only probes and remove them after each run; paired continuation differentials pass locally."
+    ],
     "remaining": [
-      "Physical provider-wire continuation after saved-session restart and active/inactive branch checks",
-      "Broader adversarial image cases",
-      "Fresh full local validation and exact-head push/PR CI",
-      "Update final receipt, inventory, and PR description"
+      "Broader corrupt-format, path, image-count, combined/request-limit, decoding-bound, cancellation and temporary-file failure/cleanup evidence",
+      "Clipboard file-path precedence and final native macOS/Windows contract jobs",
+      "Fresh exact-head CI after publishing; local quality gates and 154/672 documentation-path validation are green",
+      "Commit and push the follow-up and docs, update PR description, and verify exact-head push/PR CI while leaving PR #26 open and draft"
     ]
   }
 }

@@ -53,6 +53,13 @@
     "samePiCalibration": { "runs": 2, "stable": true },
     "scope": "Initial provider content, restored canonical user content, and continuation provider content after reopening a saved session"
   },
+  "sessionProviderWire": {
+    "report": "multimodal-session-provider-wire-differential-2026-10-25.json",
+    "protocolsPassed": 3,
+    "protocolsTotal": 3,
+    "samePiCalibration": { "runs": 2, "stable": true },
+    "scope": "Provider request serialization after reopening a branched image session; selected-branch image retained and inactive-branch image excluded for OpenAI Responses, Chat Completions and Anthropic"
+  },
   "clipboardAcquisition": {
     "report": "multimodal-clipboard-differential-2026-10-25.json",
     "strict": { "passed": 3, "total": 3 },
@@ -65,17 +72,26 @@
     "samePiCalibration": { "runs": 2, "stable": true },
     "scope": "Provider-visible JSON-mode file input containing a malformed image followed by valid PNG, plus an RPC image prompt"
   },
+  "fileRecoveryDifferential": {
+    "report": "multimodal-file-recovery-differential-2026-10-25.json",
+    "strict": { "passed": 1, "total": 1 },
+    "samePiCalibration": { "runs": 2, "stable": true },
+    "scope": "With early resize disabled, selected-model normalization omits a truncated positional PNG and preserves a following valid PNG at provider context",
+    "mode": "Matches Pi's CLI print/JSON/RPC deferred path, which passes autoResizeImages=false during file expansion and normalizes after model selection."
+  },
   "localVerification": {
-    "fullDotnet": { "passed": 3881, "failed": 0, "skipped": 0 },
+    "fullDotnet": { "passed": 3883, "failed": 0, "skipped": 0 },
     "focusedInputClipboardJsonRpcPrint": { "passed": 35, "failed": 0, "skipped": 0 },
     "savedSessionContinuationRegression": { "passed": 1, "failed": 0, "skipped": 0 },
+    "positionalImageFileTests": { "passed": 8, "failed": 0, "skipped": 0 },
+    "listenerVirtualModelAndTimerTests": { "passed": 4, "failed": 0, "skipped": 0 },
     "format": "passed",
     "warningAsErrorBuild": "passed",
     "terminalClipboardFocused": { "passed": 30, "failed": 0, "skipped": 0 },
     "pythonParity": { "passed": 27, "failed": 0 },
     "terminalPython": { "passed": 66, "failed": 0 },
     "terminalNode": { "passed": 24, "failed": 0 },
-    "documentationPaths": { "documents": 154, "references": 669, "result": "passed" }
+    "documentationPaths": { "documents": 154, "references": 672, "result": "passed" }
   },
   "pinnedPiSuiteRun": {
     "filesPassed": 12,
@@ -94,9 +110,10 @@
         "tests/PiSharp.Tests/Cli/Startup/CliFileArgumentsImageTests.cs",
         "tests/PiSharp.Tests/Runtime/Agents/MultimodalRuntimeTests.cs",
         "tools/parity/multimodal-image-differential.py",
-        "multimodal-file-argument-differential-2026-10-25.json"
+        "multimodal-file-argument-differential-2026-10-25.json",
+        "multimodal-file-recovery-differential-2026-10-25.json"
       ],
-      "difference": "The paired application corpus covers mixed UTF-8 text, Unicode/spaced paths, content-sniffed PNG, duplicate/empty files, BMP conversion and prompt composition. Relative/absolute/home expansion, symlink, JPEG/GIF/WebP, malformed input, cancellation and resource-limit behavior still need distinct paired cases."
+        "difference": "The paired application corpus covers mixed UTF-8 text, Unicode/spaced paths, content-sniffed PNG, duplicate/empty files, BMP conversion, hints, image order and prompt composition. A provider-visible differential confirms deferred selected-model normalization omits a truncated PNG and preserves a following valid image. Relative/absolute/home expansion, symlink, JPEG/GIF/WebP, cancellation and resource-limit behavior still need distinct paired cases."
     },
     {
       "id": "shared-image-processing",
@@ -130,7 +147,7 @@
         "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcInputRoutingTests.cs",
         "tests/PiSharp.Tests/Cli/Startup/PrintModeMultimodalProcessTests.cs"
       ],
-      "difference": "Focused local print, JSON, RPC and interactive coverage exists, including 35/35 current interface/clipboard checks. Pinned Pi print and prompt tests pass, but paired JSON/RPC workflow and clipboard acquisition evidence remain open."
+      "difference": "Focused local print, JSON, RPC and interactive coverage exists. Paired JSON-mode and RPC provider-visible prompt cases pass 2/2 with stable same-Pi calibration; print and interactive workflow evidence is focused local coverage rather than a paired full application journey."
     },
     {
       "id": "provider-wire-image-serialization",
@@ -142,7 +159,7 @@
         "tests/PiSharp.Tests/Cli/Providers/ProviderChatClientFactoryTests.cs:AgentAppliesPinnedImageProfileBeforeProviderWireProjection",
         "multimodal-provider-wire-differential-2026-10-25.json"
       ],
-      "difference": "The three supported provider image requests match pinned physical boundaries for ordered text/image parts and exact PNG bytes; blocked-image and image-bearing continuation wire cases remain outside this focused report."
+      "difference": "The three supported provider image requests match pinned physical boundaries for ordered text/image parts and exact PNG bytes; blocked-image wire projection remains outside this focused report. Post-restart branched image continuation is separately verified by multimodal-session-provider-wire-differential-2026-10-25.json."
     },
     {
       "id": "clipboard-image-and-path-precedence",
@@ -150,7 +167,7 @@
       "upstream": "packages/coding-agent/src/utils/clipboard-image.ts",
       "pisharp": "src/PiSharp.Cli/Tui/Clipboard/TerminalClipboard.cs; src/PiSharp.Cli/Tui/Clipboard/TerminalClipboardActions.cs",
       "evidence": ["tests/PiSharp.Tests/Cli/Tui/Clipboard/TerminalClipboardTests.cs"],
-      "difference": "Empty clipboard and backend errors are distinguished; focused PiSharp clipboard tests pass and the pinned clipboard corpus passes 51/51 with print/prompt tests. A direct paired acquisition report is still open; dedicated native macOS and Windows clipboard CI jobs remain to be run on the published head."
+      "difference": "Empty clipboard and backend errors are distinguished; focused PiSharp clipboard tests pass, pinned clipboard/print/prompt selections pass 51/51, and a paired Linux acquisition report passes 3/3 with stable same-Pi calibration. Clipboard file-path precedence and fresh native macOS/Windows contract jobs remain to be verified on the final published head."
     },
     {
       "id": "image-blocking-and-capability-restrictions",
@@ -166,7 +183,7 @@
       "upstream": "packages/coding-agent/src/core/agent-session.ts:_prepareRun",
       "pisharp": "src/PiSharp.Runtime/Agents/PiAgent.cs; src/PiSharp.Runtime/Sessions/ConversationRun.cs",
       "evidence": ["tests/PiSharp.Tests/Runtime/Agents/MultimodalRuntimeTests.cs", "tests/PiSharp.Tests/Cli/Protocols/Json/JsonEventModeTests.cs", "tests/PiSharp.Tests/Cli/Protocols/Rpc/RpcInputRoutingTests.cs"],
-      "difference": "PiSharp previously stored raw prompt image bytes while Pi stores normalized bytes; accepted-input normalization now occurs after before_agent_start selection and before canonical persistence. A pinned differential passes 3/3 strict comparisons for initial provider content, restored canonical image and continuation provider content after saved-session reopen. Physical provider-wire continuation after restart, inactive-branch coverage and broader branch behavior remain open."
+      "difference": "PiSharp previously stored raw prompt image bytes while Pi stores normalized bytes; accepted-input normalization now occurs after before_agent_start selection and before canonical persistence. A pinned differential passes 3/3 strict comparisons for initial provider content, restored canonical image and continuation provider content after saved-session reopen. A separate physical-wire differential passes 3/3 protocols after branch selection and restart, retaining the selected image and excluding the inactive image. Broader branch behavior remains open."
     },
     {
       "id": "reliability-cancellation-and-resource-bounds",
@@ -174,7 +191,7 @@
       "upstream": "packages/coding-agent/src/cli/file-processor.ts; packages/coding-agent/src/utils/image-process.ts",
       "pisharp": "src/PiSharp.Cli/Startup/CliFileArguments.cs; src/PiSharp.Runtime/Tools/ReadImageProcessor.cs",
       "evidence": ["tests/PiSharp.Tests/Cli/Startup/CliFileArgumentsImageTests.cs", "tests/PiSharp.Tests/Runtime/Tools/ReadImageProcessorTests.cs"],
-      "difference": "Bounded image read and growth behavior are covered locally; full malformed, cancellation and memory-bound acceptance remains pending."
+    "difference": "A paired provider-visible deferred-normalization case verifies recovery after a truncated image. Bounded file reads and local malformed handling are covered, but corrupt-format breadth, image counts, combined/request limits, decode bounds, cancellation during processing and temporary-file failure/cleanup still need distinct acceptance cases."
     },
     {
       "id": "native-platform-clipboard",
@@ -186,10 +203,10 @@
     }
   ],
   "remaining": [
-    "Verify physical provider-wire continuation after saved-session restart and image behavior on active/inactive branches.",
-    "Expand paired reliability evidence for adversarial image counts, limits, cancellation and malformed inputs.",
-    "Run macOS and Windows script/cleanup contract CI and inspect all exact-head checks; live desktop clipboard access is not available on hosted runners.",
-    "Update the feature matrix, execution ledger, continuation and TODO receipts.",
-    "Commit, push and publish a new open draft PR; verify exact-head push and PR CI."
+    "Expand paired reliability evidence for corrupt formats, image counts, prompt/request limits, cancellation, decoding resource bounds and temporary-file failures.",
+    "Verify clipboard file-path precedence and rerun macOS and Windows script/cleanup contract CI on the final published head. Live desktop clipboard access is unavailable on hosted runners.",
+    "Run fresh full local quality gates and documentation-path validation after the current correction.",
+    "Update the final receipt, inventory, ledger, feature matrix, continuation and PR description.",
+    "Commit and push the correction, then verify exact-head push and PR CI while keeping PR #26 open and draft."
   ]
 }

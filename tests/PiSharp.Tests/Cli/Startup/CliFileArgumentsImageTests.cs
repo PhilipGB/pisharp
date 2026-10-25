@@ -44,6 +44,33 @@ public sealed class CliFileArgumentsImageTests
     }
 
     [Fact]
+    public async Task PositionalTruncatedImageIsPreservedForSelectedModelNormalization()
+    {
+        var root = CreateDirectory();
+        try
+        {
+            var broken = new byte[]
+            {
+                0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+                0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52
+            };
+            var valid = CreatePng(3, 2);
+            await File.WriteAllBytesAsync(Path.Combine(root, "broken.png"), broken);
+            await File.WriteAllBytesAsync(Path.Combine(root, "valid.png"), valid);
+
+            var prompt = await CliFileArguments.ProcessFilesAsync("inspect", ["broken.png", "valid.png"], root);
+
+            Assert.Equal(2, prompt.Images.Count);
+            Assert.Equal(broken, prompt.Images[0].Data.ToArray());
+            Assert.Equal(valid, prompt.Images[1].Data.ToArray());
+            Assert.Contains($"<file name=\"{Path.Combine(root, "broken.png")}\"></file>", prompt.Text);
+            Assert.Contains($"<file name=\"{Path.Combine(root, "valid.png")}\"></file>", prompt.Text);
+            Assert.EndsWith("inspect", prompt.Text, StringComparison.Ordinal);
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
     public async Task OversizedPositionalImageIsOmittedAndPromptContinues()
     {
         var root = CreateDirectory();

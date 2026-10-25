@@ -262,7 +262,7 @@ public sealed class TerminalClipboardTests
 
         await TerminalClipboardActions.PasteImageAsync(clipboard, editor);
 
-        Assert.Equal("Review: /tmp/screenshot.png" + Environment.NewLine + "/tmp/My Photos/photo.png", editor.Draft);
+        Assert.Equal("Review: /tmp/screenshot.png\n/tmp/My Photos/photo.png", editor.Draft);
         Assert.Single(commands.Invocations);
     }
 

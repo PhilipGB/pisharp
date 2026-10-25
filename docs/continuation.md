@@ -16,16 +16,25 @@ PiSharp normalizes accepted image prompts before canonical persistence. Pinned
 Pi clipboard/print/prompt selections pass 51/51. Paired Linux clipboard
 acquisition passes 3/3, and JSON-mode plus RPC prompt content passes 2/2; both
 reports are stable across two pinned Pi runs. A saved-session restart and
-provider-continuation differential passes 3/3 strict comparisons and is stable
-across two pinned Pi runs. The JSON probe includes a truncated image followed by
-a valid image and matches PiSharp's omission note and surviving image. The fresh
-full .NET suite passes 3,881/3,881; format and warning-as-error build pass.
-Python parity passes 27/27, terminal Python 66/66, and terminal Node 24/24.
+provider-context differential passes 3/3 strict comparisons and is stable
+across two pinned Pi runs. A separate post-restart physical provider-wire
+differential passes 3/3 across the three supported APIs; it verifies the active
+branch image is retained and the inactive branch image is omitted. The JSON
+probe includes a truncated image followed by a valid image and matches
+PiSharp's omission note and surviving image. A separate positional-file
+differential follows Pi's deferred selected-model normalization path and passes
+1/1 with two-run calibration, preserving the following valid image. The full
+.NET suite passes 3,883/3,883; format and warning-as-error build pass. Python
+parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. MCP has no
+new regressions against its classified baseline. Documentation paths pass for
+154 documents and 672 references.
 Dedicated macOS and Windows jobs verify clipboard script syntax and cleanup
-contracts, not live desktop clipboard access. Physical provider-wire
-continuation after restart, broader adversarial cases, documentation-path
-revalidation and exact-head CI remain. Draft PR #26 stays open, draft and
-unmerged. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
+contracts, not live desktop clipboard access. The first exact-head CI run found
+a Windows line-ending expectation and missing generated catalog data in the
+disposable Pi checkout; both have focused corrections in the worktree. Broader
+corrupt-format, limits, cancellation and resource-bound cases, plus fresh
+exact-head CI, remain. Draft PR #26
+stays open, draft and unmerged. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 
 ## Previous milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24
