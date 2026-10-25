@@ -4,9 +4,12 @@
 
 The upstream reference is Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; this milestone
-branch is based on that commit. Draft PR #26 is open and unmerged; current
-published head is `73cdce52f5f911bf04f800af20dffd98c4c5fcf4` before the focused
-clipboard follow-up is committed. The Pi pin has not moved.
+branch is based on that commit. Draft PR #26 is open and unmerged. The previous
+published head before this clipboard/protocol follow-up was
+`73cdce52f5f911bf04f800af20dffd98c4c5fcf4`; implementation commit
+`4c3eba8c` adds the paired cases. After publication, PR #26's description is
+the source of truth for its current head and exact-head CI run IDs. The Pi pin
+has not moved.
 
 ## Current evidence
 

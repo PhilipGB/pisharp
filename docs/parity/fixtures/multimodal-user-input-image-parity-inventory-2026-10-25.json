@@ -22,7 +22,9 @@
     "baseSha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
     "published": true,
     "draftPr": "https://github.com/PhilipGB/pisharp/pull/26",
-    "currentHead": "73cdce52f5f911bf04f800af20dffd98c4c5fcf4"
+    "lastPublishedHead": "73cdce52f5f911bf04f800af20dffd98c4c5fcf4",
+    "lastImplementationCommit": "4c3eba8c",
+    "currentHeadTracking": "PR #26 description is authoritative for the current published head and exact-head CI run IDs."
   },
   "differential": {
     "report": "multimodal-image-differential-2026-10-25.json",
@@ -73,7 +75,7 @@
     "pythonParity": { "passed": 27, "failed": 0 },
     "terminalPython": { "passed": 66, "failed": 0 },
     "terminalNode": { "passed": 24, "failed": 0 },
-    "documentationPaths": { "documents": 153, "references": 657, "result": "passed" }
+    "documentationPaths": { "documents": 154, "references": 669, "result": "passed" }
   },
   "pinnedPiSuiteRun": {
     "filesPassed": 12,
