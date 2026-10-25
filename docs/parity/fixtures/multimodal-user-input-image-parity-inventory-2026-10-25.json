@@ -205,12 +205,21 @@
       "upstream": "packages/coding-agent/test/clipboard-image-native-errors.test.ts",
       "pisharp": "src/PiSharp.Cli/Tui/Clipboard/TerminalClipboard.cs",
       "evidence": ["Linux focused clipboard tests"],
-      "difference": "Native clipboard process verification is configured in dedicated macOS and Windows CI jobs; exact-head results are pending."
+      "difference": "Native clipboard process verification is configured in dedicated macOS and Windows CI jobs; previous exact-head jobs passed. Fresh CI for this follow-up remains pending."
     }
   ],
+  "exactHeadCi": {
+    "head": "86c31d5d5dbe9cb13e80baa3a8aa64198596a30",
+    "pushRun": "40200887907",
+    "pullRequestRun": "40200892194",
+    "status": "failed",
+    "previousFollowupFailure": "Runs 40200397739 and 40200401449 on 0ab5007e hit Vitest's 30-second limit while decoding identical images repeatedly for dimension reporting. No parity mismatch was reported. Platform, MCP, build, Python and docs jobs passed; .NET tests were skipped after the oracle failure. Commit 86c31d5d caches dimensions while preserving all 256 images; the local differential passes 7/7 in under one second.",
+    "latestFailure": "Runs 40200887907 and 40200892194 passed image, file, session and provider-wire probes, then failed because the clipboard path oracle imported absent generated amazon-bedrock model JSON from the disposable Pi checkout. The clipboard differential now uses temporary_empty_model_catalogs around both pinned captures and passes 4/4 locally; fresh exact-head CI is pending."
+  },
   "remaining": [
-    "Commit and publish the current evidence follow-up, then update the PR description with the verified counts and accepted safety difference.",
+    "Update the PR description with the verified counts, accepted safety difference, current head and exact-head CI results.",
     "Verify fresh exact-head push and PR CI, including macOS/Windows clipboard contracts, while keeping PR #26 open and draft.",
-    "Hosted clipboard jobs verify native scripts and cleanup contracts; live desktop clipboard access is unavailable on hosted runners."
+    "Hosted clipboard jobs verify native scripts and cleanup contracts; live desktop clipboard access is unavailable on hosted runners.",
+    "Broader malformed-input, combined/request-limit and resource-bound cases remain outside the focused acceptance evidence."
   ]
 }

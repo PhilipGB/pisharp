@@ -15,12 +15,20 @@ branched-image wire differential passes 3/3 provider protocols with inactive
 branch-image exclusion. The latest full .NET suite passes 3,886/3,886; format,
 warning-as-error build, Python parity (27/27), terminal
 Python (66/66), and terminal Node (24/24) pass. macOS and Windows jobs verify
-native clipboard script/cleanup contracts. Exact-head push and PR CI on bacbdc47 pass, including the macOS and Windows
-clipboard contract jobs. Expanded file/image evidence and a clipboard cleanup
-regression are locally green and await publication and fresh exact-head CI. The
-deferred truncated-image recovery differential passes 1/1. Broader adversarial
-coverage remains open. Documentation paths pass (154 documents, 672 references);
-fresh exact-head CI for the current follow-up remains open. See the multimodal receipt and inventory.
+native clipboard script/cleanup contracts. Exact-head push and PR CI on bacbdc47
+pass, including the macOS and Windows clipboard contract jobs. The expanded
+file/image evidence and clipboard cleanup regression are published. Exact-head
+runs 40200397739 and 40200401449 on `0ab5007e` timed out at the positional-file
+oracle's 30-second test limit; the 256-image ordering/count check remains intact
+and repeated dimension decoding is now cached. The local file differential
+passes 7/7 in under one second. Fresh exact-head CI is running for `86c31d5d`.
+That head's push and PR runs advanced past the positional-file cases, then
+failed when the clipboard path oracle imported absent generated catalog JSON.
+The clipboard runner now uses the shared temporary-catalog helper, and the
+local clipboard differential passes 4/4. Fresh exact-head CI for this fix is
+pending. The deferred truncated-image recovery differential passes 1/1. Broader
+adversarial coverage remains open. Documentation paths pass (154 documents,
+672 references). See the multimodal receipt and inventory.
 
 ## Completed prerequisite — Session JSONL Persistence and Crash Recovery Parity — 2026-10-25
 

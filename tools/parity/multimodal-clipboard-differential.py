@@ -7,7 +7,7 @@ import pathlib
 import subprocess
 import tempfile
 
-from pi_reference import verify_pi_checkout
+from pi_reference import temporary_empty_model_catalogs, verify_pi_checkout
 
 
 def run(command, *, cwd, env, timeout):
@@ -52,18 +52,19 @@ def main():
         try:
             pi_captures = []
             path_captures = []
-            for index in range(2):
-                capture_path = work / f"pi-{index}.json"
-                path_capture_path = work / f"pi-paths-{index}.json"
-                pi_environment = dict(environment)
-                pi_environment["PISHARP_CLIPBOARD_OUTPUT"] = str(capture_path)
-                pi_environment["PISHARP_CLIPBOARD_PATH_OUTPUT"] = str(path_capture_path)
-                pi_environment["PI_CODING_AGENT_DIR"] = str(work / f"pi-profile-{index}")
-                run(["node", str(pi / "node_modules/vitest/vitest.mjs"), "run", "--config",
-                     str(pi / "packages/coding-agent/vitest.config.ts"), str(oracle), str(path_oracle), "--reporter=dot"],
-                    cwd=pi, env=pi_environment, timeout=180)
-                pi_captures.append(json.loads(capture_path.read_text()))
-                path_captures.append(json.loads(path_capture_path.read_text()))
+            with temporary_empty_model_catalogs(pi):
+                for index in range(2):
+                    capture_path = work / f"pi-{index}.json"
+                    path_capture_path = work / f"pi-paths-{index}.json"
+                    pi_environment = dict(environment)
+                    pi_environment["PISHARP_CLIPBOARD_OUTPUT"] = str(capture_path)
+                    pi_environment["PISHARP_CLIPBOARD_PATH_OUTPUT"] = str(path_capture_path)
+                    pi_environment["PI_CODING_AGENT_DIR"] = str(work / f"pi-profile-{index}")
+                    run(["node", str(pi / "node_modules/vitest/vitest.mjs"), "run", "--config",
+                         str(pi / "packages/coding-agent/vitest.config.ts"), str(oracle), str(path_oracle), "--reporter=dot"],
+                        cwd=pi, env=pi_environment, timeout=180)
+                    pi_captures.append(json.loads(capture_path.read_text()))
+                    path_captures.append(json.loads(path_capture_path.read_text()))
         finally:
             oracle.unlink(missing_ok=True)
             path_oracle.unlink(missing_ok=True)

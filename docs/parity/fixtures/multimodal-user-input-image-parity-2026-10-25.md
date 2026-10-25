@@ -4,11 +4,10 @@
 
 The upstream reference is Pi `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; this milestone
-branch is based on that commit. Draft PR #26 is open and unmerged. Its previous
-published head before the current evidence follow-up is
-`bacbdc47bba64e599beaff3ff51976cbe7b63738`; the current head is tracked in the
-PR description. The Pi pin has
-not moved.
+branch is based on that commit. Draft PR #26 is open and unmerged. Previous passing head
+`bacbdc47bba64e599beaff3ff51976cbe7b63738` remains recorded below; the current
+published follow-up is `86c31d5d5dbe9cb13e80baa3a8aa64198596a30`. The Pi pin
+has not moved.
 
 ## Current evidence
 
@@ -163,9 +162,19 @@ paths. The processor differential passes 13/13 strict and 5/5 codec-equivalent
 cases, covering pass-through and model-limited processing for PNG/JPEG/GIF/WebP,
 malformed-format handling, and one documented stricter WebP rejection. The
 partial-file cancellation
-test passes 1/1. These extensions are still in the worktree. Fresh exact-head CI
-after publishing them,
-the final PR description update and broader adversarial acceptance cases remain.
+test passes 1/1. These changes are published. Exact-head runs `40200397739`
+and `40200401449` on `0ab5007e` timed out at Vitest's 30-second limit in the
+positional-file capture: the 256-image case decoded identical payloads
+repeatedly only to report dimensions. The parity comparison did not report a
+mismatch, and platform/MCP/build checks passed; the .NET job was skipped after
+the differential failed. The probe now caches dimensions by image payload,
+keeping all 256 images in the ordering/count comparison. Its local differential
+passes 7/7 in under one second. Fix `86c31d5d` is published, and fresh exact-head
+push/PR runs `40200887907` and `40200892194` advanced past the positional-file
+cases, then failed when the clipboard path oracle imported absent generated
+catalog JSON. The clipboard runner now uses the shared temporary-catalog
+helper, and its local differential passes 4/4. Fresh exact-head CI for this
+correction is pending. Broader adversarial acceptance cases remain.
 
 Overall Pi feature parity remains `in_progress`. This receipt will be updated
 with the published draft PR and exact-head workflow results after the remaining

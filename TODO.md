@@ -7,41 +7,34 @@ The fresh branch `milestone/multimodal-user-input-image-parity` starts from that
 merge. Pi remains pinned at `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 Positional, interactive, JSON, RPC, clipboard, provider-wire and image-processing
-changes are in progress. The pinned image processor differential passes 12/12
+changes are implemented. The pinned image processor differential passes 13/13
 strict and 5/5 codec-equivalent cases across PNG/JPEG/GIF/WebP pass-through and
 model-limited processing plus BMP conversion, with one documented stricter
-malformed-WebP rejection; the paired file-argument/initial-message
-corpus passes 7/7, including a 256-image sequence, JPEG/GIF/WebP pass-through,
-and relative, absolute, home-expanded and symlinked image paths. Physical
-Responses, Chat Completions and Anthropic image-wire comparisons pass 3/3.
-Paired clipboard acquisition and file-path precedence pass 4/4;
-JSON-mode and RPC prompt comparisons pass 2/2, all stable across two pinned Pi
-runs. The file differential reproduced and drove a fix for an extra blank line
-before the prompt. The selected-model canonical history mismatch is corrected;
-its PiSharp regression and the pinned `before_agent_start` test pass. The fresh
+malformed-WebP rejection; the paired file-argument/initial-message corpus
+passes 7/7, including a 256-image sequence, JPEG/GIF/WebP pass-through, and
+relative, absolute, home-expanded and symlinked image paths. Physical Responses,
+Chat Completions and Anthropic image-wire comparisons pass 3/3. Paired clipboard
+acquisition and file-path precedence pass 4/4; JSON-mode and RPC prompt
+comparisons pass 2/2, all stable across two pinned Pi runs. The selected-model
+canonical history mismatch and prompt separator mismatch are corrected. The
 full suite passes 3,886/3,886; format and warning-as-error build pass. Python
-parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. A flaky
-terminal elapsed-time assertion now uses a manual clock, and the shared loopback
-listener serializes concurrent ephemeral-port allocation. The paired
-JSON-mode probe includes a malformed PNG followed by a valid PNG and matches
-the pinned omission note and remaining image. A separate paired positional-file
-differential verifies deferred selected-model normalization of a truncated
-image followed by a valid image (1/1, stable across two Pi runs). macOS and Windows CI now verify
-native clipboard scripts and cleanup contracts; live clipboard access is not
-available on hosted runners. A branched saved-session differential verifies
-the selected image reaches post-restart physical requests and the inactive
-branch image is excluded for Responses, Chat Completions and Anthropic (3/3,
-stable over two pinned Pi runs). Exact-head push run 40196042863 and PR run
-40196046840 on head f734c0c8 failed in the protocol oracle because generated
-catalog JSON was absent in the disposable Pi checkout; platform and MCP jobs
-passed. The runner now uses the temporary-catalog helper and its pinned
-differential passes 2/2 locally; the correction is published at bacbdc47 and
-both exact-head workflows pass (40196652776, 40196656515). Expanded positional
-and malformed-image evidence plus the partial-file cancellation test are
-unpublished and require fresh CI. Broader format, limits and resource-bound cases remain.
-exact-head CI remain open. Documentation paths pass for 154 documents and 672
-references. The saved-session canonical/provider-context comparison passes
-3/3 strict cases. Draft PR #26 is open, draft and unmerged.
+parity passes 27/27, terminal Python 66/66, and terminal Node 24/24. The
+truncated-image recovery differential passes 1/1; branched saved-session
+provider requests pass 3/3. Exact-head push and PR runs 40200397739 and
+40200401449 on `0ab5007e` timed out in the positional-file oracle's 30-second
+test limit; the image differential and all build, platform, Python, docs, and
+MCP checks passed, while .NET tests did not run after the oracle failure. The
+oracle now caches dimensions for identical image payloads while retaining the
+256-image order/count comparison. Its local differential passes 7/7 in under
+one second. The fix is published at `86c31d5d`; fresh exact-head push and PR
+runs 40200887907 and 40200892194 progressed past the positional-file cases but
+failed when the clipboard path oracle imported absent generated catalog JSON.
+The clipboard runner now uses the shared temporary-catalog helper; its local
+differential passes 4/4. Fresh exact-head CI for this correction is required.
+Broader malformed-input,
+combined-limit and resource-bound cases remain. Documentation paths pass for
+154 documents and 672 references. Draft PR #26 remains open, draft and
+unmerged.
 Keep the new PR open, draft and unmerged. See the [multimodal parity receipt](docs/parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](docs/parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 

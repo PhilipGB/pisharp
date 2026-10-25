@@ -13011,7 +13011,7 @@
     "preflight": "Passed specialist probes, external worktree/branch create/remove, isolated profile application, and initial checkpoint commit/fast-forward push.",
     "ssh_workaround": "Per-command GIT_SSH_COMMAND=ssh -F /dev/null; system SSH configuration untouched",
     "ci_access": "Unauthenticated public GitHub REST API; gh has no credentials",
-    "latest_exact_head_ci": {
+    "previous_passing_exact_head_ci": {
       "run": 38789357300,
       "sha": "1cdb57f7cfd2723152a3d45b0dd1498052995231",
       "conclusion": "success",
@@ -13506,12 +13506,19 @@
     "branch_base_sha": "897bc5778f87ed09ea42e48b260479ee6a6a218c",
     "draft_pr": "https://github.com/PhilipGB/pisharp/pull/26",
     "published_head_before_current_followup": "bacbdc47bba64e599beaff3ff51976cbe7b63738",
-    "latest_exact_head_ci": {
+    "previous_passing_exact_head_ci": {
       "head": "bacbdc47bba64e599beaff3ff51976cbe7b63738",
       "push_run": "40196652776",
       "pull_request_run": "40196656515",
       "result": "Both exact-head workflows passed, including Linux build/tests, macOS and Windows clipboard contracts, macOS session locks and MCP conformance.",
-      "local_correction": "The protocol runner uses temporary_empty_model_catalogs; its pinned differential passes 2/2. The unpublished follow-up adds 7/7 positional-file comparisons with 256-image preservation, 13/13 strict plus 5/5 codec-equivalent image cases and one documented malformed-WebP safety difference, 4/4 clipboard acquisition/path-precedence comparisons, and cancellation cleanup regressions before and after image decode; fresh exact-head CI is pending."
+      "local_correction": "The protocol runner uses temporary_empty_model_catalogs; its pinned differential passes 2/2. This was the previous passing exact-head before expanded positional-file comparisons, image cases, clipboard path-precedence comparisons and cancellation cleanup regressions were published."
+    },
+    "latest_exact_head_ci": {
+      "head": "86c31d5d5dbe9cb13e80baa3a8aa64198596a30",
+      "push_run": "40200887907",
+      "pull_request_run": "40200892194",
+      "result": "Both exact-head workflows failed in the clipboard path oracle because pinned Pi's generated amazon-bedrock model JSON was absent from the disposable checkout. The positional-file timeout is fixed and those cases passed; all platform, MCP, build, Python and docs checks passed. The .NET suite was skipped after the differential failure.",
+      "local_correction": "The clipboard runner now uses temporary_empty_model_catalogs around both pinned captures, matching the protocol and session oracles; local clipboard differential passes 4/4."
     },
     "last_implementation_commit": "4c3eba8c",
     "current_head_tracking": "PR description is authoritative for the final published source head and exact-head CI run IDs.",
@@ -13561,11 +13568,12 @@
     "first_exact_head_ci_findings": [
       "Windows clipboard contract test expected CRLF while TerminalEditor stores LF; assertion now matches the stable editor representation and both exact-head workflows on bacbdc47 pass.",
       "Pinned continuation oracle could not import absent generated model-catalog JSON; session differential runners now create temporary empty catalog modules for faux-provider-only probes and remove them after each run; paired continuation differentials pass locally.",
-      "The next exact-head runs found the same absent generated-catalog issue in the protocol image runner. The shared temporary catalog helper corrected it; the 2/2 pinned differential passes locally, and both exact-head workflows pass on bacbdc47."
+      "The next exact-head runs found the same absent generated-catalog issue in the protocol image runner. The shared temporary catalog helper corrected it; the 2/2 pinned differential passes locally, and both exact-head workflows pass on bacbdc47.",
+      "Push run 40200397739 and PR run 40200401449 timed out at Vitest's 30-second positional-file test limit while decoding identical images repeatedly for dimension reporting. No parity mismatch was reported. Platform, MCP, build, Python and docs checks passed; the .NET suite was skipped after the differential failure. Commit 86c31d5d caches decoded dimensions while preserving the 256-image comparison.",
+      "Push run 40200887907 and PR run 40200892194 passed the image, file, session and provider-wire probes, then failed in the clipboard path oracle because generated model JSON was absent from the disposable Pi checkout. The clipboard runner now uses temporary_empty_model_catalogs around both pinned captures; local differential passes 4/4."
     ],
     "remaining": [
-      "Commit and publish the expanded image/file evidence and cancellation regressions",
-      "Update the PR description with current evidence and the accepted malformed-WebP safety difference",
+      "Update the PR description with the verified counts, accepted safety difference, current head and exact-head CI results",
       "Verify fresh exact-head push and PR CI, including macOS/Windows clipboard contracts, while leaving PR #26 open, draft and unmerged"
     ]
   }
