@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "caseId": "jsonl-v1-v3-file-migration-and-reopen",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pinnedOracle": {
+    "report": "docs/parity/fixtures/session-jsonl-migration-b06-2026-10-24.json",
+    "caseInput": "tools/parity/fixtures/session-jsonl-migration-cases-2026-10-24.json",
+    "driver": "tools/parity/session-jsonl-migration-oracle.mjs",
+    "samePiCalibration": "All six file-backed migration cases produced identical normalized records over two independent open/reopen runs.",
+    "caseCount": 6
+  },
+  "pisharp": {
+    "regressionTests": [
+      "PiJsonlSessionInterchangeTests.LegacyV1AndV2SessionsMigrateToLinkedCurrentEntries",
+      "PiJsonlSessionInterchangeTests.LegacyV1MigrationIsStableAfterCanonicalExportAndReimport",
+      "PiJsonlSessionInterchangeTests.V3HookMessageRoleIsPreservedAndFutureVersionIsRejected",
+      "PiJsonlSessionInterchangeTests.LegacyV1MigrationRetriesGeneratedEntryIdCollisions",
+      "PiJsonlSessionInterchangeTests.LegacyV1MigrationMatchesPinnedInvalidCompactionIndexHandling",
+      "PiJsonlSessionInterchangeTests.LegacyV1MigrationPreservesMalformedTimestampTypeWithoutChangingTheBody",
+      "PiJsonlSessionFileStoreTests.LoadingLegacyPiJsonlMigratesInMemoryWithoutRewritingTheSource",
+      "SessionCatalogTests.FileBackedOperationsRejectInvalidPiHeadersWithoutChangingTheSource"
+    ],
+    "interchangeClassResult": "50/50 passed in the final PiJsonlSessionInterchangeTests class.",
+    "strictComparisons": {
+      "v1LinearCompactionAndHookMessage": "Generated IDs are linked in physical order, firstKeptEntryIndex maps past the session header, the index field is removed, the hook role becomes custom, and canonical export/reimport leaves entry records stable.",
+      "v2HookMessage": "Existing IDs and parent links are retained while hookMessage becomes custom.",
+      "v3": "Existing IDs and parent links remain stable; hookMessage is preserved because the version-3 file does not run legacy migration.",
+      "v1InvalidCompactionFields": "Pinned Pi deletes numeric firstKeptEntryIndex fields after attempting integer-index lookup, including zero, negative, out-of-range and fractional values; it preserves string, null and boolean values. PiSharp now matches this distinction. A numeric malformed timestamp and unknown field remain intact through migration and export.",
+      "readOnlyFileBackedMigration": "Pi migrates and rewrites v1/v2 files when opened. PiSharp LoadAsync migrates in memory and preserves original file bytes until an explicit guarded save."
+    }
+  },
+  "acceptedDifferences": [
+    {
+      "id": "future-session-version",
+      "pinnedPi": "The current pinned loader accepts a version-4 header and leaves its entries unchanged.",
+      "piSharp": "The importer rejects versions above 3 before constructing a canonical session.",
+      "classification": "intentional_forward_compatibility_safety_difference"
+    },
+    {
+      "id": "noninteger-session-version",
+      "pinnedPi": "The current loader accepts a string version \"3\" and does not migrate it because JavaScript numeric comparison coerces the value.",
+      "piSharp": "The importer requires an integer JSON number and rejects the header.",
+      "classification": "intentional_header_validation_safety_difference"
+    },
+    {
+      "id": "read-only-file-backed-migration",
+      "pinnedPi": "Opening v1/v2 session files migrates entries and rewrites the file to the current version.",
+      "piSharp": "Loading migrates in memory; changing the source requires a later explicit atomic save guarded by the loaded content hash.",
+      "classification": "intentional_durability_and_safety_difference"
+    }
+  ],
+  "unresolvedMigrationCases": []
+}

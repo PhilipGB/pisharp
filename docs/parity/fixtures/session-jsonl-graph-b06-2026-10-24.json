@@ -1,0 +1,145 @@
+{
+  "schema": 1,
+  "caseId": "jsonl-session-graph-and-selected-leaf",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "inputSha256": "fc8e854314da76f9435f3066348ca478a396b60188e8b990989d5d0d08d8049b",
+  "source": "packages/coding-agent/src/core/session-manager.ts:loadEntriesFromFile, SessionManager._buildIndex, SessionManager.getBranch",
+  "results": [
+    {
+      "id": "last-physical-branch-selected-and-appended",
+      "entryCount": 3,
+      "indexedEntryCount": 3,
+      "physicalEntries": [
+        {
+          "id": "root",
+          "parentId": null
+        },
+        {
+          "id": "old-branch",
+          "parentId": "root"
+        },
+        {
+          "id": "selected-branch",
+          "parentId": "root"
+        }
+      ],
+      "leafId": "selected-branch",
+      "branch": [
+        {
+          "id": "root",
+          "parentId": null,
+          "content": "root"
+        },
+        {
+          "id": "selected-branch",
+          "parentId": "root",
+          "content": "selected"
+        }
+      ],
+      "traversal": "completed",
+      "appendedParentId": "selected-branch",
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "forward-parent-last-physical-entry-selected",
+      "entryCount": 2,
+      "indexedEntryCount": 2,
+      "physicalEntries": [
+        {
+          "id": "child-first",
+          "parentId": "parent-later"
+        },
+        {
+          "id": "parent-later",
+          "parentId": null
+        }
+      ],
+      "leafId": "parent-later",
+      "branch": [
+        {
+          "id": "parent-later",
+          "parentId": null,
+          "content": "parent"
+        }
+      ],
+      "traversal": "completed",
+      "appendedParentId": "parent-later",
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "missing-parent-entry-is-active-orphan",
+      "entryCount": 2,
+      "indexedEntryCount": 2,
+      "physicalEntries": [
+        {
+          "id": "root",
+          "parentId": null
+        },
+        {
+          "id": "orphan",
+          "parentId": "absent"
+        }
+      ],
+      "leafId": "orphan",
+      "branch": [
+        {
+          "id": "orphan",
+          "parentId": "absent",
+          "content": "orphan"
+        }
+      ],
+      "traversal": "completed",
+      "appendedParentId": "orphan",
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "duplicate-id-index-selects-last-physical-entry",
+      "entryCount": 2,
+      "indexedEntryCount": 1,
+      "physicalEntries": [
+        {
+          "id": "duplicate",
+          "parentId": null
+        },
+        {
+          "id": "duplicate",
+          "parentId": null
+        }
+      ],
+      "leafId": "duplicate",
+      "branch": [
+        {
+          "id": "duplicate",
+          "parentId": null,
+          "content": "last"
+        }
+      ],
+      "traversal": "completed",
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "cycle-loads-without-traversing",
+      "entryCount": 2,
+      "indexedEntryCount": 2,
+      "physicalEntries": [
+        {
+          "id": "cycle-a",
+          "parentId": "cycle-b"
+        },
+        {
+          "id": "cycle-b",
+          "parentId": "cycle-a"
+        }
+      ],
+      "leafId": "cycle-b",
+      "branch": null,
+      "traversal": "skipped-to-avoid-unbounded-cycle-walk",
+      "independentRuns": 2,
+      "samePiCalibration": true
+    }
+  ]
+}

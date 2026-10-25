@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "caseId": "pinned-pi-process-crash-during-tool-lifecycle",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "independentRunsPerScenario": 2,
+  "samePiCalibration": true,
+  "source": "packages/coding-agent/src/core/agent-session.ts:tool-call persistence and execution; packages/coding-agent/src/core/session-manager.ts:SessionManager.open/buildSessionContext",
+  "observations": {
+    "before-tool-invocation": {
+      "samePiCalibration": true,
+      "result": {
+        "scenario": "before-tool-invocation",
+        "crashBoundary": "tool-call-hook",
+        "crashProcessExit": {
+          "code": null,
+          "signal": "SIGKILL"
+        },
+        "restartProcessExit": {
+          "code": 0,
+          "signal": null
+        },
+        "crashSnapshot": {
+          "assistantToolCallPersistedBeforeKill": true,
+          "toolResultCount": 0,
+          "entryTypes": [
+            "model_change",
+            "thinking_level_change",
+            "message",
+            "message",
+            "message"
+          ]
+        },
+        "afterRestart": {
+          "sideEffectCount": 0,
+          "automaticToolReplayObserved": false,
+          "providerContext": [
+            {
+              "role": "system"
+            },
+            {
+              "role": "user",
+              "text": "trigger one checkpoint tool"
+            },
+            {
+              "role": "assistant",
+              "stopReason": "toolUse",
+              "toolCalls": [
+                {
+                  "name": "checkpoint"
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "text": "continue after restart"
+            }
+          ],
+          "continued": true
+        }
+      }
+    },
+    "during-tool-after-side-effect": {
+      "samePiCalibration": true,
+      "result": {
+        "scenario": "during-tool-after-side-effect",
+        "crashBoundary": "tool-side-effect",
+        "crashProcessExit": {
+          "code": null,
+          "signal": "SIGKILL"
+        },
+        "restartProcessExit": {
+          "code": 0,
+          "signal": null
+        },
+        "crashSnapshot": {
+          "assistantToolCallPersistedBeforeKill": true,
+          "toolResultCount": 0,
+          "entryTypes": [
+            "model_change",
+            "thinking_level_change",
+            "message",
+            "message",
+            "message"
+          ]
+        },
+        "afterRestart": {
+          "sideEffectCount": 1,
+          "automaticToolReplayObserved": false,
+          "providerContext": [
+            {
+              "role": "system"
+            },
+            {
+              "role": "user",
+              "text": "trigger one checkpoint tool"
+            },
+            {
+              "role": "assistant",
+              "stopReason": "toolUse",
+              "toolCalls": [
+                {
+                  "name": "checkpoint"
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "text": "continue after restart"
+            }
+          ],
+          "continued": true
+        }
+      }
+    },
+    "after-tool-result": {
+      "samePiCalibration": true,
+      "result": {
+        "scenario": "after-tool-result",
+        "crashBoundary": "next-provider-request",
+        "crashProcessExit": {
+          "code": null,
+          "signal": "SIGKILL"
+        },
+        "restartProcessExit": {
+          "code": 0,
+          "signal": null
+        },
+        "crashSnapshot": {
+          "assistantToolCallPersistedBeforeKill": true,
+          "toolResultCount": 1,
+          "entryTypes": [
+            "model_change",
+            "thinking_level_change",
+            "message",
+            "message",
+            "message",
+            "message"
+          ]
+        },
+        "afterRestart": {
+          "sideEffectCount": 1,
+          "automaticToolReplayObserved": false,
+          "providerContext": [
+            {
+              "role": "system"
+            },
+            {
+              "role": "user",
+              "text": "trigger one checkpoint tool"
+            },
+            {
+              "role": "assistant",
+              "stopReason": "toolUse",
+              "toolCalls": [
+                {
+                  "name": "checkpoint"
+                }
+              ]
+            },
+            {
+              "role": "toolResult",
+              "toolName": "checkpoint",
+              "callIdCorrelated": true,
+              "isError": false,
+              "text": "checkpoint result"
+            },
+            {
+              "role": "user",
+              "text": "continue after restart"
+            }
+          ],
+          "continued": true
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Each boundary uses two separate Pi worker processes and a third process to reopen the same JSONL session; the parent sends SIGKILL only after a deterministic filesystem marker.",
+    "The before-invocation boundary blocks in Pi's tool_call hook after the assistant toolCall is persisted; the during-tool boundary kills after a side effect and before a toolResult; the after-result boundary kills when the next provider request begins, after the toolResult was persisted.",
+    "This establishes ordinary Pi JSONL crash behavior and automatic replay behavior. It does not claim Pi has PiSharp's durable intent/outcome journal or unknown-outcome classification.",
+    "Generated model catalogs were absent from the disposable exact-pin checkout; empty catalog modules were used only to resolve imports. Workers register and use a faux provider, and no static catalog behavior is asserted."
+  ]
+}

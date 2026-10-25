@@ -22,9 +22,10 @@ internal sealed class TerminalSessionNavigation(ActiveProjectRuntime projectBind
             return;
         }
 
+        await projectBinding.Store.ValidateListingUnchangedAsync(listing, CancellationToken.None);
         await projectTransitions.BeforeSessionSwitchAsync(PiSharpExtensionSessionSwitchReason.Resume,
             listing.Path, CancellationToken.None);
-        await projectTransitions.SwitchAsync(listing.Path, adoptProjectSession, CancellationToken.None);
+        await projectTransitions.SwitchAsync(listing.Path, adoptProjectSession, CancellationToken.None, listing);
         Console.WriteLine($"Resumed {conversationBinding.Conversation.Id[..12]} · {conversationBinding.Conversation.Name ?? "(unnamed)"}");
     }
 

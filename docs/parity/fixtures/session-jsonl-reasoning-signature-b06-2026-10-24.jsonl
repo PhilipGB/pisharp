@@ -1,0 +1,3 @@
+{"type":"session","version":3,"id":"reasoning-signature-fixture","timestamp":"2026-10-24T00:00:00.000Z","cwd":"/tmp/pisharp-reasoning-signature"}
+{"type":"message","id":"reasoning-user","parentId":null,"timestamp":"2026-10-24T00:00:01.000Z","message":{"role":"user","content":"Continue from saved reasoning."}}
+{"type":"message","id":"reasoning-assistant","parentId":"reasoning-user","timestamp":"2026-10-24T00:00:02.000Z","message":{"role":"assistant","provider":"anthropic","model":"claude-fixture","api":"anthropic-messages","thinkingLevel":"high","stopReason":"stop","content":[{"type":"thinking","thinking":"private reasoning","thinkingSignature":"opaque-reasoning-signature"},{"type":"text","text":"answer"}]}}

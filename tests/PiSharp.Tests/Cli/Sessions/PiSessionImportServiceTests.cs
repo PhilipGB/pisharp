@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Security.Cryptography;
 using PiSharp.Cli;
 using PiSharp.Runtime.Sessions;
 
@@ -50,6 +51,27 @@ public sealed class PiSessionImportServiceTests
             var mismatch = Assert.Throws<InvalidDataException>(() => service.ImportFile(input));
             Assert.Contains("differs from this project", mismatch.Message, StringComparison.Ordinal);
             Assert.Throws<FileNotFoundException>(() => service.ImportFile(Path.Combine(root, "missing.jsonl")));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RejectsPiJsonlChangedAfterCatalogFingerprintWasCaptured()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-pi-import-stale-" + Guid.NewGuid().ToString("N"));
+        var project = Path.Combine(root, "project");
+        Directory.CreateDirectory(project);
+        var input = Path.Combine(root, "pi-session.jsonl");
+        await File.WriteAllTextAsync(input, SessionJsonl(project));
+        try
+        {
+            var fingerprint = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(input)));
+            await File.AppendAllTextAsync(input, "\n");
+            var service = new PiSessionImportService(new ConversationStore(project), project, noSession: false);
+
+            var error = Assert.Throws<InvalidDataException>(() => service.ImportFile(input, fingerprint));
+
+            Assert.Contains("changed on disk", error.Message, StringComparison.Ordinal);
         }
         finally { Directory.Delete(root, recursive: true); }
     }

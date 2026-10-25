@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "caseId": "configured-session-directory-and-identity-discovery",
+  "files": [
+    {
+      "name": "local.jsonl",
+      "id": "discovery-local",
+      "cwd": "project-a",
+      "sessionName": "Local notes",
+      "message": "local transcript",
+      "minutesAgo": 3
+    },
+    {
+      "name": "foreign.jsonl",
+      "id": "discovery-foreign",
+      "cwd": "project-b",
+      "sessionName": "Foreign notes",
+      "message": "foreign transcript",
+      "minutesAgo": 2
+    },
+    {
+      "name": "missing-cwd.jsonl",
+      "id": "discovery-no-cwd",
+      "cwd": null,
+      "sessionName": "Unscoped notes",
+      "message": "unscoped transcript",
+      "minutesAgo": 1
+    },
+    {
+      "name": "invalid.jsonl",
+      "invalidHeader": true,
+      "minutesAgo": 0
+    }
+  ],
+  "queries": [
+    "project-a",
+    "project-b"
+  ],
+  "identity": {
+    "id": "AbC123def",
+    "exactPrefix": "AbC123",
+    "changedCasePrefix": "abc123",
+    "name": "Project Notes",
+    "nameQuery": "project notes"
+  },
+  "defaultDirectory": {
+    "fileName": "default-missing-cwd.jsonl",
+    "id": "default-directory-no-cwd"
+  },
+  "resourceBoundary": {
+    "headerScanLimitBytes": 1048576,
+    "paddingBytes": 1048576
+  }
+}

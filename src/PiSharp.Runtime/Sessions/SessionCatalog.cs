@@ -11,7 +11,7 @@ public static class SessionCatalog
     {
         if (!Directory.Exists(store.DirectoryPath)) return [];
         var listings = new List<SessionListing>();
-        foreach (var path in Directory.EnumerateFiles(store.DirectoryPath, "*.session.json"))
+        foreach (var path in Directory.EnumerateFiles(store.DirectoryPath).Where(ConversationStore.IsSessionFilePath))
         {
             cancellationToken.ThrowIfCancellationRequested();
             ConversationSession session;
@@ -20,9 +20,11 @@ public static class SessionCatalog
             {
                 if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
                     throw new InvalidDataException("Session path is a symbolic link.");
-                var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
-                session = ConversationSession.Parse(System.Text.Encoding.UTF8.GetString(bytes));
+                var bytes = await ConversationStore.ReadSessionFileAsync(path, cancellationToken);
+                session = ConversationStore.ParseSessionFile(path, bytes, store.WorkingDirectory);
                 hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
+                if (ConversationStore.IsPiJsonlSessionPath(path) && store.FiltersForeignWorkingDirectories &&
+                    !ConversationStore.HasPersistedWorkingDirectory(session)) continue;
                 if (!ConversationStore.WorkingDirectoriesMatch(session.WorkingDirectory, store.WorkingDirectory))
                 {
                     if (store.FiltersForeignWorkingDirectories) continue;
@@ -45,7 +47,7 @@ public static class SessionCatalog
     public static SessionListing Resolve(IReadOnlyList<SessionListing> listings, string prefix)
     {
         if (string.IsNullOrWhiteSpace(prefix)) throw new ArgumentException("Specify a session ID prefix from /sessions.");
-        var matches = listings.Where(item => item.Id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+        var matches = listings.Where(item => item.Id.StartsWith(prefix, StringComparison.Ordinal) ||
             item.Name?.Equals(prefix, StringComparison.OrdinalIgnoreCase) == true).ToArray();
         return matches.Length == 1 ? matches[0] : throw new ArgumentException(matches.Length == 0 ?
             "No matching session in this project." : "Session prefix is ambiguous; use a longer ID.");

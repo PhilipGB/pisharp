@@ -1,0 +1,177 @@
+{
+  "schema": 1,
+  "caseId": "orphan-tool-call-provider-continuation",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "inputSha256": "41a9488f65b689a2db4b7fbc19d6187bc7522f4303da46adf7af7d3c4eb2e661",
+  "source": [
+    "packages/coding-agent/src/core/session-manager.ts:buildSessionContext",
+    "packages/ai/src/utils/transcript.ts:normalizeContext",
+    "packages/ai/src/api/openai-responses.ts",
+    "packages/ai/src/api/openai-completions.ts",
+    "packages/ai/src/api/anthropic-messages.ts"
+  ],
+  "contextRoles": [
+    "user",
+    "assistant"
+  ],
+  "continuationPrompt": "continue after restart",
+  "samePiCalibration": true,
+  "results": [
+    {
+      "api": "openai-responses",
+      "modelId": "gpt-4o",
+      "capture": {
+        "method": "POST",
+        "path": "/v1/responses",
+        "body": {
+          "model": "gpt-4o",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "run a command"
+                }
+              ]
+            },
+            {
+              "type": "function_call",
+              "call_id": "call-orphan-restart",
+              "name": "bash",
+              "arguments": "{\"command\":\"printf x >> /tmp/orphan-tool-marker\"}"
+            },
+            {
+              "type": "function_call_output",
+              "call_id": "call-orphan-restart",
+              "output": "No result provided"
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "continue after restart"
+                }
+              ]
+            }
+          ],
+          "stream": true,
+          "store": false,
+          "max_output_tokens": 4096
+        }
+      },
+      "streamError": null,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "api": "openai-completions",
+      "modelId": "gpt-4o",
+      "capture": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "body": {
+          "model": "gpt-4o",
+          "messages": [
+            {
+              "role": "user",
+              "content": "run a command"
+            },
+            {
+              "role": "assistant",
+              "content": null,
+              "tool_calls": [
+                {
+                  "id": "call-orphan-restart",
+                  "type": "function",
+                  "function": {
+                    "name": "bash",
+                    "arguments": "{\"command\":\"printf x >> /tmp/orphan-tool-marker\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "content": "No result provided",
+              "tool_call_id": "call-orphan-restart"
+            },
+            {
+              "role": "user",
+              "content": "continue after restart"
+            }
+          ],
+          "stream": true,
+          "stream_options": {
+            "include_usage": true
+          },
+          "store": false,
+          "max_completion_tokens": 4096,
+          "tools": []
+        }
+      },
+      "streamError": null,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "api": "anthropic-messages",
+      "modelId": "claude-sonnet-4-5",
+      "capture": {
+        "method": "POST",
+        "path": "/v1/messages",
+        "body": {
+          "model": "claude-sonnet-4-5",
+          "messages": [
+            {
+              "role": "user",
+              "content": "run a command"
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "tool_use",
+                  "id": "call-orphan-restart",
+                  "name": "bash",
+                  "input": {
+                    "command": "printf x >> /tmp/orphan-tool-marker"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "tool_result",
+                  "tool_use_id": "call-orphan-restart",
+                  "content": "No result provided",
+                  "is_error": true
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "continue after restart",
+                  "cache_control": {
+                    "type": "ephemeral"
+                  }
+                }
+              ]
+            }
+          ],
+          "max_tokens": 4096,
+          "stream": true
+        }
+      },
+      "streamError": null,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    }
+  ]
+}

@@ -1,0 +1,439 @@
+{
+  "schema": 1,
+  "caseId": "pinned-pi-session-jsonl-export-and-reopen",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "input": "docs/parity/fixtures/session-jsonl-rich-content-b06-2026-10-24.jsonl",
+  "inputSha256": "02757a55f6a0372abfaa3e3fc3091e1ba44551e7b9257a01145e83a53ec73ead",
+  "source": "packages/coding-agent/src/core/session-manager.ts:SessionManager.open/getBranch/buildSessionContext; packages/coding-agent/src/core/session-export.ts:serializeSessionBranch",
+  "independentRuns": 2,
+  "samePiCalibration": true,
+  "semanticRoundTrip": true,
+  "result": {
+    "before": {
+      "sessionId": "rich-content-session",
+      "leafId": "rich-assistant-final",
+      "branch": [
+        {
+          "id": "rich-user",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "rich-thinking",
+          "parentId": "rich-user",
+          "type": "thinking_level_change"
+        },
+        {
+          "id": "rich-assistant-call",
+          "parentId": "rich-thinking",
+          "type": "message"
+        },
+        {
+          "id": "rich-tool-result",
+          "parentId": "rich-assistant-call",
+          "type": "message"
+        },
+        {
+          "id": "rich-extension-state",
+          "parentId": "rich-tool-result",
+          "type": "custom"
+        },
+        {
+          "id": "rich-custom-message",
+          "parentId": "rich-extension-state",
+          "type": "custom_message"
+        },
+        {
+          "id": "rich-assistant-final",
+          "parentId": "rich-custom-message",
+          "type": "message"
+        }
+      ],
+      "entryRecords": [
+        {
+          "type": "message",
+          "id": "rich-user",
+          "parentId": null,
+          "timestamp": "2026-10-24T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Inspect this image and find its invoice number."
+              },
+              {
+                "type": "image",
+                "data": "AQID",
+                "mimeType": "image/png"
+              }
+            ],
+            "timestamp": 1792800001000
+          }
+        },
+        {
+          "type": "thinking_level_change",
+          "id": "rich-thinking",
+          "parentId": "rich-user",
+          "timestamp": "2026-10-24T00:00:02.000Z",
+          "thinkingLevel": "high"
+        },
+        {
+          "type": "message",
+          "id": "rich-assistant-call",
+          "parentId": "rich-thinking",
+          "timestamp": "2026-10-24T00:00:03.000Z",
+          "message": {
+            "role": "assistant",
+            "provider": "openai",
+            "model": "fixture-gpt",
+            "api": "openai-responses",
+            "thinkingLevel": "high",
+            "stopReason": "toolUse",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "I will read the invoice details.",
+                "thinkingSignature": "opaque-fixture-signature"
+              },
+              {
+                "type": "toolCall",
+                "id": "call-rich-1",
+                "name": "lookup_invoice",
+                "arguments": {
+                  "source": "image",
+                  "limit": 1
+                }
+              }
+            ],
+            "timestamp": 1792800003000
+          }
+        },
+        {
+          "type": "message",
+          "id": "rich-tool-result",
+          "parentId": "rich-assistant-call",
+          "timestamp": "2026-10-24T00:00:04.000Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "call-rich-1",
+            "toolName": "lookup_invoice",
+            "content": [
+              {
+                "type": "text",
+                "text": "invoice number 42"
+              },
+              {
+                "type": "image",
+                "data": "/wAB",
+                "mimeType": "image/jpeg"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1792800004000
+          }
+        },
+        {
+          "type": "custom",
+          "id": "rich-extension-state",
+          "parentId": "rich-tool-result",
+          "timestamp": "2026-10-24T00:00:05.000Z",
+          "customType": "fixture.session-state",
+          "data": {
+            "version": 1,
+            "extensionOnly": "must-not-enter-context",
+            "preferences": {
+              "compact": true
+            }
+          }
+        },
+        {
+          "type": "custom_message",
+          "id": "rich-custom-message",
+          "parentId": "rich-extension-state",
+          "timestamp": "2026-10-24T00:00:06.000Z",
+          "customType": "fixture.session-note",
+          "content": [
+            {
+              "type": "text",
+              "text": "Visible to the model as extension context."
+            },
+            {
+              "type": "image",
+              "data": "/wAB",
+              "mimeType": "image/jpeg"
+            }
+          ],
+          "display": false,
+          "details": {
+            "source": "fixture",
+            "revision": 7
+          }
+        },
+        {
+          "type": "message",
+          "id": "rich-assistant-final",
+          "parentId": "rich-custom-message",
+          "timestamp": "2026-10-24T00:00:07.000Z",
+          "message": {
+            "role": "assistant",
+            "provider": "openai",
+            "model": "fixture-gpt",
+            "api": "openai-responses",
+            "thinkingLevel": "high",
+            "stopReason": "stop",
+            "content": [
+              {
+                "type": "text",
+                "text": "The invoice number is 42."
+              }
+            ],
+            "timestamp": 1792800007000
+          }
+        }
+      ],
+      "context": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Inspect this image and find its invoice number."
+              },
+              {
+                "type": "image",
+                "data": "AQID",
+                "mimeType": "image/png"
+              }
+            ],
+            "timestamp": 1792800001000
+          },
+          {
+            "role": "assistant",
+            "provider": "openai",
+            "model": "fixture-gpt",
+            "api": "openai-responses",
+            "thinkingLevel": "high",
+            "stopReason": "toolUse",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "I will read the invoice details.",
+                "thinkingSignature": "opaque-fixture-signature"
+              },
+              {
+                "type": "toolCall",
+                "id": "call-rich-1",
+                "name": "lookup_invoice",
+                "arguments": {
+                  "source": "image",
+                  "limit": 1
+                }
+              }
+            ],
+            "timestamp": 1792800003000
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "call-rich-1",
+            "toolName": "lookup_invoice",
+            "content": [
+              {
+                "type": "text",
+                "text": "invoice number 42"
+              },
+              {
+                "type": "image",
+                "data": "/wAB",
+                "mimeType": "image/jpeg"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1792800004000
+          },
+          {
+            "role": "custom",
+            "customType": "fixture.session-note",
+            "content": [
+              {
+                "type": "text",
+                "text": "Visible to the model as extension context."
+              },
+              {
+                "type": "image",
+                "data": "/wAB",
+                "mimeType": "image/jpeg"
+              }
+            ],
+            "display": false,
+            "details": {
+              "source": "fixture",
+              "revision": 7
+            },
+            "timestamp": 1792800006000
+          },
+          {
+            "role": "assistant",
+            "provider": "openai",
+            "model": "fixture-gpt",
+            "api": "openai-responses",
+            "thinkingLevel": "high",
+            "stopReason": "stop",
+            "content": [
+              {
+                "type": "text",
+                "text": "The invoice number is 42."
+              }
+            ],
+            "timestamp": 1792800007000
+          }
+        ],
+        "thinkingLevel": "high",
+        "model": {
+          "provider": "openai",
+          "modelId": "fixture-gpt"
+        }
+      }
+    },
+    "exportedEntries": [
+      {
+        "id": "rich-user",
+        "parentId": null,
+        "type": "message"
+      },
+      {
+        "id": "rich-thinking",
+        "parentId": "rich-user",
+        "type": "thinking_level_change"
+      },
+      {
+        "id": "rich-assistant-call",
+        "parentId": "rich-thinking",
+        "type": "message"
+      },
+      {
+        "id": "rich-tool-result",
+        "parentId": "rich-assistant-call",
+        "type": "message"
+      },
+      {
+        "id": "rich-extension-state",
+        "parentId": "rich-tool-result",
+        "type": "custom"
+      },
+      {
+        "id": "rich-custom-message",
+        "parentId": "rich-extension-state",
+        "type": "custom_message"
+      },
+      {
+        "id": "rich-assistant-final",
+        "parentId": "rich-custom-message",
+        "type": "message"
+      }
+    ],
+    "after": {
+      "sessionId": "rich-content-session",
+      "leafId": "rich-assistant-final",
+      "branch": [
+        {
+          "id": "rich-user",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "rich-thinking",
+          "parentId": "rich-user",
+          "type": "thinking_level_change"
+        },
+        {
+          "id": "rich-assistant-call",
+          "parentId": "rich-thinking",
+          "type": "message"
+        },
+        {
+          "id": "rich-tool-result",
+          "parentId": "rich-assistant-call",
+          "type": "message"
+        },
+        {
+          "id": "rich-extension-state",
+          "parentId": "rich-tool-result",
+          "type": "custom"
+        },
+        {
+          "id": "rich-custom-message",
+          "parentId": "rich-extension-state",
+          "type": "custom_message"
+        },
+        {
+          "id": "rich-assistant-final",
+          "parentId": "rich-custom-message",
+          "type": "message"
+        }
+      ]
+    },
+    "afterSemanticSha256": "be6d2a2a0b892d56ee24ad9a3d6abe2f87a37e64d02b7c69578147cb832cc9f7",
+    "semanticRoundTrip": true
+  },
+  "piSharpExport": {
+    "input": "native session export captured by PiJsonlSessionInterchangeTests.RichPinnedSessionFixtureRoundTripsThroughNativePersistenceAndPiJsonl",
+    "inputSha256": "8c5a7493710a62f04d062e9b9e8a2fe5c31eefa1e1eb9604702cf110b6736152",
+    "independentRuns": 2,
+    "samePiCalibration": true,
+    "matchesPinnedFixture": true,
+    "semanticRoundTrip": true,
+    "result": {
+      "sessionId": "rich-content-session",
+      "leafId": "rich-assistant-final",
+      "branch": [
+        {
+          "id": "rich-user",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "rich-thinking",
+          "parentId": "rich-user",
+          "type": "thinking_level_change"
+        },
+        {
+          "id": "rich-assistant-call",
+          "parentId": "rich-thinking",
+          "type": "message"
+        },
+        {
+          "id": "rich-tool-result",
+          "parentId": "rich-assistant-call",
+          "type": "message"
+        },
+        {
+          "id": "rich-extension-state",
+          "parentId": "rich-tool-result",
+          "type": "custom"
+        },
+        {
+          "id": "rich-custom-message",
+          "parentId": "rich-extension-state",
+          "type": "custom_message"
+        },
+        {
+          "id": "rich-assistant-final",
+          "parentId": "rich-custom-message",
+          "type": "message"
+        }
+      ],
+      "contextMessageRoles": [
+        "user",
+        "assistant",
+        "toolResult",
+        "custom",
+        "assistant"
+      ],
+      "contextSha256": "d2da6bd007e733ac22cdb03f135561ab67083e60e74248630f4cd1180a5d5ff5",
+      "entryRecordsSha256": "210e7c26e098feeffecfdf41c94c76d67983d157b7cce53cd88b314501104084",
+      "afterSemanticSha256": "be6d2a2a0b892d56ee24ad9a3d6abe2f87a37e64d02b7c69578147cb832cc9f7"
+    }
+  }
+}

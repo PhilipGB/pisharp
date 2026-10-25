@@ -56,12 +56,13 @@ The refreshed pinned-Pi behavior report passes 93/93 and the provider-wire
 report passes 35/35 against this source. Local format, warning-as-error build,
 full .NET suite (3,780/3,780), Node, Python, parity guard, documentation-path and
 MCP checks pass. The previous exact-head push CI succeeded before the branch
-synced current `main`; draft PR #24 is open. Its PR CI found a loopback port
+synced current `main`; draft PR #24 was open. Its PR CI found a loopback port
 reservation race, now fixed by using the existing bind-retry helper; the focused
 case passes. Exact-head push and PR CI on implementation head
 `683a485e43e9f07190d0b5cead56efaafd2a1a84` both passed with 3,780/3,780 .NET
 tests and every other job green. The PR description tracks the published head
-and current workflow evidence. See the active [model-selection milestone
+and current workflow evidence. PR #24 later merged at
+`0d83418a31d84e530b099d98054739607fa3e3ad`. See the [model-selection milestone
 receipt](parity/fixtures/model-selection-thinking-configuration-2026-10-24.md).
 
 Product acceptance source is `962cfa48d97a960149e1f0cc020f25bc302c1d48`.
@@ -1347,7 +1348,7 @@ comparisons and zero unresolved cases. Strict same-Pi control passes 456/456.
 Progress is 15/20 complete; P reliability is in progress. Any later product
 correction requires affected corpus revalidation before final publication.
 
-## Model and thinking configuration milestone
+## Previous milestone — Model and thinking configuration
 
 On branch `milestone/model-thinking-configuration-parity`, the previously
 reported 20/22 workflow checkpoints are complete, but they do not mean the
@@ -1369,8 +1370,39 @@ passing local acceptance and validation. The 93-case corpus does not model every
 possible busy-run interleaving; native Windows/macOS are not claimed, and the
 documented unauthenticated continuation fallback remains an adaptation.
 
-Checkpoints A–T are complete. The unrelated PR #23 Dependabot update has merged
-to `main`; the milestone branch was synchronized with its merge. Draft PR #24 is
-open. A loopback listener race from PR CI was repaired and the focused case
-passes; final exact-head push and PR CI remain. Keep the milestone PR in draft
-and do not merge it.
+Checkpoints A–T are complete. The unrelated PR #23 Dependabot update merged to
+`main`; the milestone branch was synchronized with its merge. A loopback
+listener race from PR CI was repaired, and the focused case passed. Final head
+`4972f6eaf8f5a0ca2c773048fa918ab6bc23e91c` passed exact-head push and PR CI,
+then PR #24 merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
+
+## Active milestone — Session JSONL Persistence and Crash Recovery Parity
+
+PR #24 is verified merged at `0d83418a31d84e530b099d98054739607fa3e3ad`.
+The branch `milestone/session-jsonl-persistence-recovery-parity` starts from
+that merge commit. The source checkout `/tmp/pi-pinned-session-parity` and
+`tools/parity/pi-reference.txt` confirm the unchanged Pi pin
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. Required pinned Pi suites pass
+126/126.
+
+Two-run exact-pin evidence covers parsing/discovery boundaries, v1-v3
+migration, graph/selected-leaf behavior, canonical context, three provider
+continuations, rich-content/reasoning/extension round-trips, interrupted
+assistant state, RPC projections, and three process-kill boundaries. The
+migration oracle includes malformed compaction-index types and unknown fields;
+it exposed a PiSharp mismatch, which is now corrected and covered by local
+tests. Integral numeric tokens `1.0` and `1e0` now map to the same entry as
+integer `1`, matching pinned Pi. PiSharp also preserves legacy JSONL bytes
+during load.
+
+Full local validation is complete: .NET 3,843/3,843, zero failures/skips;
+format verification; warning-as-error build with zero warnings/errors; terminal
+Python 66/66; parity Python 27/27; terminal Node 24/24; documentation paths
+153/657. MCP conformance reports no regression against its classified baseline
+(three known scenarios remain classified). The dedicated macOS native lease
+job is part of CI. Inventory and receipt record all accepted safety/resource
+differences; unexplained mandatory differences are empty.
+
+Draft PR [#25](https://github.com/PhilipGB/pisharp/pull/25) is open and
+intentionally unmerged. Its latest exact-head push and PR check results,
+including the macOS lease job, are tracked on the PR. Keep it in draft.

@@ -10,6 +10,59 @@ namespace PiSharp.Tests;
 public sealed class CrashRecoveryProcessTests
 {
     [Fact]
+    public async Task ChildProcessKillAfterToolIntentBeforeInvocationDoesNotRunOrReplayTool()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-crash-before-tool-" + Guid.NewGuid().ToString("N"));
+        var workingDirectory = Path.Combine(root, "project");
+        var sessionPath = Path.Combine(root, "sessions", "before-tool.session.json");
+        Directory.CreateDirectory(workingDirectory);
+        Directory.CreateDirectory(Path.GetDirectoryName(sessionPath)!);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var helperPath = ResolveSessionResumeHelperPath();
+        Process? child = null;
+        try
+        {
+            child = StartSessionResumeHelper(helperPath, "pause-after-intent", workingDirectory, sessionPath);
+            var output = child.StandardOutput.ReadToEndAsync();
+            var error = child.StandardError.ReadToEndAsync();
+            await ProcessTestHelpers.WaitForFileAsync(sessionPath + ".intent-ready", timeout.Token);
+            Assert.False(File.Exists(Path.Combine(workingDirectory, "tool-result.txt")));
+            child.Kill(entireProcessTree: true);
+            await child.WaitForExitAsync(timeout.Token);
+            _ = await output.WaitAsync(timeout.Token);
+            _ = await error.WaitAsync(timeout.Token);
+
+            var store = new ConversationStore(workingDirectory, Path.GetDirectoryName(sessionPath));
+            var interrupted = await store.LoadAsync(sessionPath, timeout.Token);
+            Assert.Contains(interrupted.Tree.ActivePath(), node => node.Type == "tool_intent");
+            Assert.DoesNotContain(interrupted.Tree.ActivePath(), node => node.Type == "tool_outcome");
+
+            using var recovered = StartSessionResumeHelper(helperPath, "recover-no-replay", workingDirectory, sessionPath);
+            var recoveredOutput = recovered.StandardOutput.ReadToEndAsync();
+            var recoveredError = recovered.StandardError.ReadToEndAsync();
+            await recovered.WaitForExitAsync(timeout.Token);
+
+            Assert.Equal(0, recovered.ExitCode);
+            Assert.Equal(string.Empty, await recoveredError.WaitAsync(timeout.Token));
+            Assert.Contains("recovered-no-replay", await recoveredOutput.WaitAsync(timeout.Token), StringComparison.Ordinal);
+            Assert.False(File.Exists(Path.Combine(workingDirectory, "tool-result.txt")));
+            var final = await store.LoadAsync(sessionPath, timeout.Token);
+            Assert.Contains(final.Tree.ActivePath(), node => node.Type == "run_recovered");
+        }
+        finally
+        {
+            if (child is { HasExited: false })
+            {
+                child.Kill(entireProcessTree: true);
+                await child.WaitForExitAsync();
+            }
+            child?.Dispose();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task KilledCliKeepsToolCheckpointAndNeverClaimsTurnCompleted()
     {
         if (!OperatingSystem.IsLinux()) return;
@@ -113,8 +166,11 @@ public sealed class CrashRecoveryProcessTests
         }
     }
 
-    [Fact]
-    public async Task CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool()
+    [Theory]
+    [InlineData("openai-responses")]
+    [InlineData("openai-completions")]
+    [InlineData("anthropic-messages")]
+    public async Task CrashAfterToolSideEffectBeforeOutcomeCheckpointRecoversWithoutReplayingTool(string api)
     {
         if (!OperatingSystem.IsLinux()) return;
         var root = Path.Combine(Path.GetTempPath(), "pisharp-crash-tool-outcome-" + Guid.NewGuid().ToString("N"));
@@ -127,15 +183,16 @@ public sealed class CrashRecoveryProcessTests
         reservation.Start();
         var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
         reservation.Stop();
+        var baseUrl = api == "anthropic-messages" ? $"http://127.0.0.1:{port}" : $"http://127.0.0.1:{port}/v1";
         await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), JsonSerializer.Serialize(new
         {
             providers = new
             {
                 fixture = new
                 {
-                    baseUrl = $"http://127.0.0.1:{port}/v1",
+                    baseUrl,
                     apiKeyEnv = "PISHARP_FIXTURE_KEY",
-                    models = new[] { new { id = "crash-window-fixture", api = "openai-completions" } }
+                    models = new[] { new { id = "crash-window-fixture", api } }
                 }
             }
         }));
@@ -151,25 +208,12 @@ public sealed class CrashRecoveryProcessTests
         {
             var first = await listener.GetContextAsync().WaitAsync(timeout.Token);
             var command = await crashCommand.Task.WaitAsync(timeout.Token);
-            await WriteSseResponseAsync(first, "crash-window-tool", new
-            {
-                role = "assistant",
-                tool_calls = new[]
-                {
-                    new
-                    {
-                        index = 0,
-                        id = "call-crash-window",
-                        type = "function",
-                        function = new { name = "bash", arguments = JsonSerializer.Serialize(new { command }) }
-                    }
-                }
-            }, "tool_calls");
+            await WriteProviderToolCallResponseAsync(first, api, "call-crash-window", command);
 
             var second = await listener.GetContextAsync().WaitAsync(timeout.Token);
             using (var reader = new StreamReader(second.Request.InputStream))
                 continuationRequest.TrySetResult(await reader.ReadToEndAsync(timeout.Token));
-            await WriteSseResponseAsync(second, "crash-window-recovered", new { role = "assistant", content = "resumed safely" }, "stop");
+            await WriteProviderTextResponseAsync(second, api, "resumed safely");
         }, timeout.Token);
 
         try
@@ -228,19 +272,8 @@ public sealed class CrashRecoveryProcessTests
             await ReadRpcUntilAsync(recovered, lines, record => record.GetProperty("type").GetString() == "agent_settled", timeout.Token);
             using (var request = JsonDocument.Parse(await continuationRequest.Task.WaitAsync(timeout.Token)))
             {
-                var messages = request.RootElement.GetProperty("messages").EnumerateArray().ToArray();
-                var assistantIndex = Array.FindIndex(messages, message => message.GetProperty("role").GetString() == "assistant" &&
-                    message.TryGetProperty("tool_calls", out var calls) && calls.EnumerateArray().Any(call =>
-                        call.GetProperty("id").GetString() == "call-crash-window"));
-                Assert.True(assistantIndex >= 0, "The recovered provider request omitted the persisted assistant tool call.");
-                Assert.True(assistantIndex + 1 < messages.Length, "The recovered provider request ended after an incomplete tool call.");
-                var toolResult = messages[assistantIndex + 1];
-                Assert.Equal("tool", toolResult.GetProperty("role").GetString());
-                Assert.Equal("call-crash-window", toolResult.GetProperty("tool_call_id").GetString());
-                Assert.Contains("No result provided", toolResult.GetProperty("content").GetString(), StringComparison.Ordinal);
-                Assert.Contains(messages, message => message.GetProperty("role").GetString() == "user" &&
-                    message.TryGetProperty("content", out var content) && ReadMessageText(content).Contains(
-                        "Outcome UNKNOWN for bash", StringComparison.Ordinal));
+                AssertProviderRecoveryPair(request.RootElement, api, "call-crash-window", "No result provided");
+                Assert.Contains("Outcome UNKNOWN for bash", request.RootElement.GetRawText(), StringComparison.Ordinal);
             }
             var idle = false;
             for (var attempt = 0; attempt < 100 && !idle; attempt++)
@@ -291,6 +324,124 @@ public sealed class CrashRecoveryProcessTests
                 process?.Dispose();
             }
             Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("openai-responses")]
+    [InlineData("openai-completions")]
+    [InlineData("anthropic-messages")]
+    public async Task ReopenedCompletedToolHistoryContinuesOnPhysicalProviderWithoutReplayingTool(string api)
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-session-provider-restart-" + Guid.NewGuid().ToString("N"));
+        var agentDirectory = Path.Combine(root, "agent");
+        Directory.CreateDirectory(agentDirectory);
+        var sessionPath = Path.Combine(root, "reopened.session.jsonl");
+        var sideEffectPath = Path.Combine(root, "side-effects");
+        await File.WriteAllTextAsync(sideEffectPath, "x");
+        using var reservation = new TcpListener(IPAddress.Loopback, 0);
+        reservation.Start();
+        var port = ((IPEndPoint)reservation.LocalEndpoint).Port;
+        reservation.Stop();
+        var baseUrl = api == "anthropic-messages" ? $"http://127.0.0.1:{port}" : $"http://127.0.0.1:{port}/v1";
+        await File.WriteAllTextAsync(Path.Combine(agentDirectory, "models.json"), JsonSerializer.Serialize(new
+        {
+            providers = new
+            {
+                fixture = new
+                {
+                    baseUrl,
+                    apiKeyEnv = "PISHARP_FIXTURE_KEY",
+                    models = new[] { new { id = "restart-history-fixture", api } }
+                }
+            }
+        }));
+
+        const string callId = "call-restart-history";
+        var command = $"printf x >> {ProcessTestHelpers.ShellQuote(sideEffectPath)}";
+        var records = new[]
+        {
+            JsonSerializer.Serialize(new { type = "session", version = 3, id = "restart-history", timestamp = "2026-10-24T12:00:00Z", cwd = root }),
+            JsonSerializer.Serialize(new { type = "message", id = "prior-user", parentId = (string?)null, timestamp = "2026-10-24T12:00:01Z", message = new { role = "user", content = "run a command", timestamp = 1792843201000L } }),
+            JsonSerializer.Serialize(new { type = "message", id = "prior-call", parentId = "prior-user", timestamp = "2026-10-24T12:00:02Z", message = new { role = "assistant", content = new[] { new { type = "toolCall", id = callId, name = "bash", arguments = new { command } } }, provider = "fixture", model = "restart-history-fixture", api, timestamp = 1792843202000L } }),
+            JsonSerializer.Serialize(new { type = "message", id = "prior-result", parentId = "prior-call", timestamp = "2026-10-24T12:00:03Z", message = new { role = "toolResult", toolCallId = callId, toolName = "bash", content = new[] { new { type = "text", text = "x" } }, timestamp = 1792843203000L } })
+        };
+        await File.WriteAllTextAsync(sessionPath, string.Join('\n', records) + "\n");
+
+        using var listener = new HttpListener();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+        var capturedRequest = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync().WaitAsync(timeout.Token);
+            var expectedPath = api switch
+            {
+                "openai-responses" => "/v1/responses",
+                "openai-completions" => "/v1/chat/completions",
+                "anthropic-messages" => "/v1/messages",
+                _ => throw new ArgumentOutOfRangeException(nameof(api))
+            };
+            Assert.Equal(expectedPath, context.Request.Url?.AbsolutePath);
+            using (var reader = new StreamReader(context.Request.InputStream))
+                capturedRequest.TrySetResult(await reader.ReadToEndAsync(timeout.Token));
+            await WriteProviderTextResponseAsync(context, api, "continued after reload");
+        }, timeout.Token);
+
+        Process? process = null;
+        try
+        {
+            process = StartCli(root, agentDirectory, true, "--mode", "rpc", "--session", sessionPath,
+                "--session-dir", Path.Combine(root, "sessions"),
+                "--tools", "bash", "--offline");
+            var error = process.StandardError.ReadToEndAsync();
+            var lines = new List<string>();
+            await WriteRpcCommandAsync(process, new { id = "restart-history-prompt", type = "prompt", message = "continue" }, timeout.Token);
+            try
+            {
+                await ReadRpcUntilAsync(process, lines, record => record.GetProperty("type").GetString() == "agent_settled", timeout.Token);
+            }
+            catch (EndOfStreamException errorEvent)
+            {
+                throw new InvalidOperationException($"RPC ended before provider continuation. stderr: {await error}", errorEvent);
+            }
+
+            using (var request = JsonDocument.Parse(await capturedRequest.Task.WaitAsync(timeout.Token)))
+            {
+                AssertProviderRecoveryPair(request.RootElement, api, callId, "x", command);
+                var body = request.RootElement.GetRawText();
+                var priorPromptIndex = body.IndexOf("run a command", StringComparison.Ordinal);
+                var callIndex = body.IndexOf(callId, StringComparison.Ordinal);
+                var continuationIndex = body.LastIndexOf("continue", StringComparison.Ordinal);
+                Assert.True(priorPromptIndex >= 0 && priorPromptIndex < callIndex,
+                    "The reopened provider request omitted or reordered the prior user prompt.");
+                Assert.True(continuationIndex > callIndex,
+                    "The new user prompt must follow the restored tool call in provider history.");
+                Assert.DoesNotContain("Outcome UNKNOWN", body, StringComparison.Ordinal);
+            }
+
+            process.StandardInput.Close();
+            await process.WaitForExitAsync(timeout.Token);
+            await server;
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(string.Empty, await error.WaitAsync(timeout.Token));
+            Assert.Equal("x", await File.ReadAllTextAsync(sideEffectPath, timeout.Token));
+        }
+        finally
+        {
+            timeout.Cancel();
+            listener.Close();
+            try { await server; }
+            catch (Exception error) when (error is OperationCanceledException or HttpListenerException or ObjectDisposedException or IOException) { }
+            if (process is { HasExited: false })
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+            process?.Dispose();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }
 
@@ -464,6 +615,155 @@ public sealed class CrashRecoveryProcessTests
         throw new EndOfStreamException("RPC process exited before the expected recovery event.");
     }
 
+    private static void AssertProviderRecoveryPair(JsonElement request, string api, string callId, string expectedResult,
+        string? expectedCommand = null)
+    {
+        if (api == "openai-responses")
+        {
+            var input = request.GetProperty("input").EnumerateArray().ToArray();
+            var callIndex = Array.FindIndex(input, item => item.TryGetProperty("type", out var type) &&
+                type.GetString() == "function_call" && item.GetProperty("call_id").GetString() == callId);
+            Assert.True(callIndex >= 0, "The Responses request omitted the persisted function call.");
+            Assert.Equal("bash", input[callIndex].GetProperty("name").GetString());
+            AssertToolCallArguments(input[callIndex].GetProperty("arguments").GetString(), expectedCommand);
+            var result = Assert.Single(input.Skip(callIndex + 1), item =>
+                item.TryGetProperty("type", out var type) && type.GetString() == "function_call_output" &&
+                item.GetProperty("call_id").GetString() == callId);
+            Assert.Contains(expectedResult, result.GetProperty("output").GetString(), StringComparison.Ordinal);
+            return;
+        }
+
+        var messages = request.GetProperty("messages").EnumerateArray().ToArray();
+        if (api == "openai-completions")
+        {
+            var callIndex = Array.FindIndex(messages, message => message.GetProperty("role").GetString() == "assistant" &&
+                message.TryGetProperty("tool_calls", out var calls) && calls.EnumerateArray().Any(call =>
+                    call.GetProperty("id").GetString() == callId));
+            Assert.True(callIndex >= 0, "The Chat Completions request omitted the persisted tool call.");
+            var toolCall = messages[callIndex].GetProperty("tool_calls").EnumerateArray()
+                .Single(call => call.GetProperty("id").GetString() == callId);
+            Assert.Equal("bash", toolCall.GetProperty("function").GetProperty("name").GetString());
+            AssertToolCallArguments(toolCall.GetProperty("function").GetProperty("arguments").GetString(), expectedCommand);
+            var result = Assert.Single(messages.Skip(callIndex + 1), message =>
+                message.GetProperty("role").GetString() == "tool" &&
+                message.GetProperty("tool_call_id").GetString() == callId);
+            Assert.Contains(expectedResult, result.GetProperty("content").GetString(), StringComparison.Ordinal);
+            return;
+        }
+
+        var anthropicCall = messages.SelectMany((message, index) => message.GetProperty("content").ValueKind == JsonValueKind.Array
+                ? message.GetProperty("content").EnumerateArray().Select(block => (message, block, index))
+                : [])
+            .FirstOrDefault(item => item.message.GetProperty("role").GetString() == "assistant" &&
+                item.block.TryGetProperty("type", out var type) && type.GetString() == "tool_use" &&
+                item.block.GetProperty("id").GetString() == callId);
+        Assert.NotEqual(default, anthropicCall);
+        Assert.Equal("bash", anthropicCall.block.GetProperty("name").GetString());
+        if (expectedCommand is not null)
+            Assert.Equal(expectedCommand, anthropicCall.block.GetProperty("input").GetProperty("command").GetString());
+        var anthropicResult = messages.Skip(anthropicCall.index + 1).SelectMany(message =>
+                message.GetProperty("content").ValueKind == JsonValueKind.Array
+                    ? message.GetProperty("content").EnumerateArray().Select(block => (message, block))
+                    : [])
+            .Single(item => item.message.GetProperty("role").GetString() == "user" &&
+                item.block.TryGetProperty("type", out var type) && type.GetString() == "tool_result" &&
+                item.block.GetProperty("tool_use_id").GetString() == callId);
+        Assert.Contains(expectedResult, anthropicResult.block.GetProperty("content").GetString(), StringComparison.Ordinal);
+        if (expectedResult == "No result provided")
+            Assert.True(anthropicResult.block.GetProperty("is_error").GetBoolean(),
+                "Pinned Pi marks a missing result for an orphaned tool call as an error.");
+    }
+
+    private static void AssertToolCallArguments(string? arguments, string? expectedCommand)
+    {
+        if (expectedCommand is null) return;
+        using var parsed = JsonDocument.Parse(arguments ?? throw new InvalidDataException("Tool arguments were omitted."));
+        Assert.Equal(expectedCommand, parsed.RootElement.GetProperty("command").GetString());
+    }
+
+    private static Task WriteProviderToolCallResponseAsync(HttpListenerContext context, string api, string callId,
+        string command)
+    {
+        var arguments = JsonSerializer.Serialize(new { command });
+        var events = api switch
+        {
+            "openai-responses" => new[]
+            {
+                DataEvent(new { type = "response.created", response = new { id = "resp_crash_tool", @object = "response", created_at = 1, model = "crash-window-fixture", status = "in_progress", output = Array.Empty<object>() } }),
+                DataEvent(new { type = "response.output_item.added", output_index = 0, item = new { id = "fc_crash_tool", type = "function_call", call_id = callId, name = "bash", arguments = "" } }),
+                DataEvent(new { type = "response.function_call_arguments.done", output_index = 0, item_id = "fc_crash_tool", arguments }),
+                DataEvent(new { type = "response.output_item.done", output_index = 0, item = new { id = "fc_crash_tool", type = "function_call", call_id = callId, name = "bash", arguments } }),
+                DataEvent(new { type = "response.completed", response = new { id = "resp_crash_tool", @object = "response", created_at = 1, model = "crash-window-fixture", status = "completed", output = Array.Empty<object>() } }),
+                "data: [DONE]\n\n"
+            },
+            "openai-completions" => new[]
+            {
+                DataEvent(new { id = "chatcmpl_crash_tool", @object = "chat.completion.chunk", created = 1, model = "crash-window-fixture", choices = new[] { new { index = 0, delta = new { role = "assistant", tool_calls = new[] { new { index = 0, id = callId, type = "function", function = new { name = "bash", arguments } } } }, finish_reason = (string?)null } } }),
+                DataEvent(new { id = "chatcmpl_crash_tool", @object = "chat.completion.chunk", created = 1, model = "crash-window-fixture", choices = new[] { new { index = 0, delta = new { }, finish_reason = "tool_calls" } } }),
+                "data: [DONE]\n\n"
+            },
+            "anthropic-messages" => new[]
+            {
+                AnthropicEvent("message_start", new { type = "message_start", message = new { id = "msg_crash_tool", type = "message", role = "assistant", model = "crash-window-fixture", content = Array.Empty<object>(), stop_reason = (string?)null, stop_sequence = (string?)null, usage = new { input_tokens = 1, output_tokens = 0 } } }),
+                AnthropicEvent("content_block_start", new { type = "content_block_start", index = 0, content_block = new { type = "tool_use", id = callId, name = "bash", input = new { } } }),
+                AnthropicEvent("content_block_delta", new { type = "content_block_delta", index = 0, delta = new { type = "input_json_delta", partial_json = arguments } }),
+                AnthropicEvent("content_block_stop", new { type = "content_block_stop", index = 0 }),
+                AnthropicEvent("message_delta", new { type = "message_delta", delta = new { stop_reason = "tool_use", stop_sequence = (string?)null }, usage = new { output_tokens = 1 } }),
+                AnthropicEvent("message_stop", new { type = "message_stop" })
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(api), api, "Unsupported provider API.")
+        };
+        return WriteEventStreamAsync(context, events);
+    }
+
+    private static Task WriteProviderTextResponseAsync(HttpListenerContext context, string api, string text)
+    {
+        var events = api switch
+        {
+            "openai-responses" => new[]
+            {
+                DataEvent(new { type = "response.created", response = new { id = "resp_crash_recovered", @object = "response", created_at = 1, model = "crash-window-fixture", status = "in_progress", output = Array.Empty<object>() } }),
+                DataEvent(new { type = "response.output_text.delta", item_id = "msg_recovered", output_index = 0, content_index = 0, delta = text }),
+                DataEvent(new { type = "response.completed", response = new { id = "resp_crash_recovered", @object = "response", created_at = 1, model = "crash-window-fixture", status = "completed", output = Array.Empty<object>() } }),
+                "data: [DONE]\n\n"
+            },
+            "openai-completions" => new[]
+            {
+                DataEvent(new { id = "chatcmpl_crash_recovered", @object = "chat.completion.chunk", created = 1, model = "crash-window-fixture", choices = new[] { new { index = 0, delta = new { role = "assistant", content = text }, finish_reason = (string?)null } } }),
+                DataEvent(new { id = "chatcmpl_crash_recovered", @object = "chat.completion.chunk", created = 1, model = "crash-window-fixture", choices = new[] { new { index = 0, delta = new { }, finish_reason = "stop" } } }),
+                "data: [DONE]\n\n"
+            },
+            "anthropic-messages" => new[]
+            {
+                AnthropicEvent("message_start", new { type = "message_start", message = new { id = "msg_crash_recovered", type = "message", role = "assistant", model = "crash-window-fixture", content = Array.Empty<object>(), stop_reason = (string?)null, stop_sequence = (string?)null, usage = new { input_tokens = 1, output_tokens = 0 } } }),
+                AnthropicEvent("content_block_start", new { type = "content_block_start", index = 0, content_block = new { type = "text", text = "" } }),
+                AnthropicEvent("content_block_delta", new { type = "content_block_delta", index = 0, delta = new { type = "text_delta", text } }),
+                AnthropicEvent("content_block_stop", new { type = "content_block_stop", index = 0 }),
+                AnthropicEvent("message_delta", new { type = "message_delta", delta = new { stop_reason = "end_turn", stop_sequence = (string?)null }, usage = new { output_tokens = 1 } }),
+                AnthropicEvent("message_stop", new { type = "message_stop" })
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(api), api, "Unsupported provider API.")
+        };
+        return WriteEventStreamAsync(context, events);
+    }
+
+    private static string DataEvent(object value) => $"data: {JsonSerializer.Serialize(value)}\n\n";
+
+    private static string AnthropicEvent(string name, object value) =>
+        $"event: {name}\ndata: {JsonSerializer.Serialize(value)}\n\n";
+
+    private static async Task WriteEventStreamAsync(HttpListenerContext context, IEnumerable<string> events)
+    {
+        context.Response.StatusCode = (int)HttpStatusCode.OK;
+        context.Response.ContentType = "text/event-stream";
+        await using (var writer = new StreamWriter(context.Response.OutputStream))
+        {
+            foreach (var item in events) await writer.WriteAsync(item);
+            await writer.FlushAsync();
+        }
+        context.Response.Close();
+    }
+
     private static async Task WriteSseResponseAsync(HttpListenerContext context, string id, object delta, string finishReason)
     {
         context.Response.StatusCode = (int)HttpStatusCode.OK;
@@ -492,5 +792,36 @@ public sealed class CrashRecoveryProcessTests
             await writer.FlushAsync();
         }
         context.Response.Close();
+    }
+
+    private static string ResolveSessionResumeHelperPath()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx")))
+            directory = directory.Parent;
+        if (directory is null) throw new DirectoryNotFoundException("Could not locate repository root.");
+#if DEBUG
+        const string configuration = "Debug";
+#else
+        const string configuration = "Release";
+#endif
+        return Path.Combine(directory.FullName, "tests", "fixtures", "SessionResumeProcess", "bin",
+            configuration, "net10.0", "SessionResumeProcess.dll");
+    }
+
+    private static Process StartSessionResumeHelper(string helperPath, string mode, string workingDirectory,
+        string sessionPath)
+    {
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add(helperPath);
+        start.ArgumentList.Add(mode);
+        start.ArgumentList.Add(workingDirectory);
+        start.ArgumentList.Add(sessionPath);
+        return Process.Start(start) ?? throw new IOException("Could not start session recovery helper.");
     }
 }

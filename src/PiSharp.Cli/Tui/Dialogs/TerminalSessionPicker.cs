@@ -59,7 +59,7 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
 
         var conversation = PathsEqual(listing.Path, currentPath) && currentConversation?.Id == listing.Id
             ? currentConversation
-            : await store.LoadAsync(listing.Path, cancellationToken);
+            : await store.LoadAsync(listing, cancellationToken);
         using (var nameChange = conversation.BeginSessionNameChange(entered[0]))
         {
             await store.SaveAsync(conversation, listing.Path, cancellationToken);
@@ -112,7 +112,7 @@ internal sealed class TerminalSessionPicker(ConversationStore store, TerminalEdi
             }
             try
             {
-                var conversation = await store.LoadAsync(listing.Path, cancellationToken);
+                var conversation = await store.LoadAsync(listing, cancellationToken);
                 result.Add(listing.Path, SessionPickerBranchHeads.From(conversation));
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)

@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "caseId": "jsonl-record-recovery-and-newline-repair",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "inputSha256": "5479ee725c57641de07accad706bb5d41afd061cbc15e410aeda027059332337",
+  "source": "packages/coding-agent/src/core/session-manager.ts:loadEntriesFromFile",
+  "results": [
+    {
+      "id": "empty-file",
+      "entries": [],
+      "error": null,
+      "inputBytes": 0,
+      "inputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "appendedNewline": false,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "blank-lines-only",
+      "entries": [],
+      "error": null,
+      "inputBytes": 5,
+      "inputSha256": "e4c3c1a3c5501f3bfc50b6c96dbeebc4b5adadd7746a749aa15c5cde8f08b88f",
+      "outputSha256": "e4c3c1a3c5501f3bfc50b6c96dbeebc4b5adadd7746a749aa15c5cde8f08b88f",
+      "appendedNewline": false,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "header-without-cwd",
+      "entries": [
+        {
+          "type": "session",
+          "id": "no-cwd"
+        }
+      ],
+      "error": null,
+      "inputBytes": 45,
+      "inputSha256": "ad2059f4cc64ae7fa2cbbd74be85a9951b4582afcb38471fc38eab8b370adacc",
+      "outputSha256": "ad2059f4cc64ae7fa2cbbd74be85a9951b4582afcb38471fc38eab8b370adacc",
+      "appendedNewline": false,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "malformed-prefix-and-valid-unterminated-header",
+      "entries": [
+        {
+          "type": "session",
+          "id": "after-malformed"
+        }
+      ],
+      "error": null,
+      "inputBytes": 62,
+      "inputSha256": "36ef14c8f2cf72cf1bcd5905e9515a03894e0062ce19ec32c89bc49e72295050",
+      "outputSha256": "b56a95696266d8978c850bf8d1470313cd01d33e86b1ab93035f51f9418fb4c5",
+      "appendedNewline": true,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "crlf-blank-malformed-and-final-valid-entry",
+      "entries": [
+        {
+          "type": "session",
+          "id": "crlf"
+        },
+        {
+          "type": "message",
+          "id": "valid-tail"
+        }
+      ],
+      "error": null,
+      "inputBytes": 178,
+      "inputSha256": "d90b6bd79d7087bc9410581672e3993d0af0e4925a967f2f8079c520a43775d2",
+      "outputSha256": "faf435351adfeb85a8ac8745049279103ad3b3bad0d63058dea691a671eb140a",
+      "appendedNewline": true,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "truncated-final-fragment",
+      "entries": [
+        {
+          "type": "session",
+          "id": "truncated"
+        },
+        {
+          "type": "message",
+          "id": "valid"
+        }
+      ],
+      "error": null,
+      "inputBytes": 183,
+      "inputSha256": "30aa0506665e5b2d7fbc0e0f48f056ba71782e193a1d282c31a12bceb38d57fc",
+      "outputSha256": "9f3df465109e6d3512c3ca3b6e157c16d9ffdc71a3ab904dbb9f4d536eafbefc",
+      "appendedNewline": true,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "utf8-bom-header",
+      "entries": [],
+      "error": null,
+      "inputBytes": 58,
+      "inputSha256": "4755fef385b2dc65c2110fb23e8e698a841b43c02515adbffe55b06a82554299",
+      "outputSha256": "4755fef385b2dc65c2110fb23e8e698a841b43c02515adbffe55b06a82554299",
+      "appendedNewline": false,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    },
+    {
+      "id": "oversized-record-with-valid-descendant",
+      "entries": [
+        {
+          "type": "session",
+          "id": "oversized"
+        },
+        {
+          "type": "message",
+          "id": "large"
+        },
+        {
+          "type": "message",
+          "id": "small"
+        }
+      ],
+      "error": null,
+      "inputBytes": 16777484,
+      "inputSha256": "76f0fff001e25b78fff44534948ad66f76b216c5e393d1fc1522bef5858e785d",
+      "outputSha256": "76f0fff001e25b78fff44534948ad66f76b216c5e393d1fc1522bef5858e785d",
+      "appendedNewline": false,
+      "independentRuns": 2,
+      "samePiCalibration": true
+    }
+  ]
+}

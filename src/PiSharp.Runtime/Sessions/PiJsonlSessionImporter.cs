@@ -13,7 +13,7 @@ internal static class PiJsonlSessionImporter
 
     /// <summary>Imports Pi v1-v3 JSONL, migrating legacy links and retaining original Pi records for export.</summary>
     public static ConversationSession Import(string jsonl, string? workingDirectoryOverride = null,
-        string? workingDirectoryFallback = null)
+        string? workingDirectoryFallback = null, Func<string>? generateEntryId = null)
     {
         ArgumentNullException.ThrowIfNull(jsonl);
         if (Encoding.UTF8.GetByteCount(jsonl) > MaximumFileBytes)
@@ -39,8 +39,13 @@ internal static class PiJsonlSessionImporter
         if (version is < 1 or > 3)
             throw new InvalidDataException($"Pi session version {version} is not supported.");
 
-        var entries = records.Skip(1).Select(record => JsonNode.Parse(record.GetRawText())!.AsObject()).ToArray();
-        if (version == 1) MigrateV1(entries);
+        // Pi's file loader requires the first successfully parsed JSON value to be the session header.
+        // Keep that ordering check even though non-entry values in the body are discarded safely here.
+        var entries = records.Skip(1)
+            .Where(record => record.ValueKind == JsonValueKind.Object && TryProperty(record, "type", out _))
+            .Select(record => JsonNode.Parse(record.GetRawText())!.AsObject())
+            .ToArray();
+        if (version == 1) MigrateV1(entries, generateEntryId);
         if (version < 3)
             foreach (var entry in entries) MigrateHookMessage(entry);
 
@@ -90,19 +95,19 @@ internal static class PiJsonlSessionImporter
             try
             {
                 using var document = JsonDocument.Parse(line);
-                if (document.RootElement.ValueKind == JsonValueKind.Object &&
-                    TryProperty(document.RootElement, "type", out _))
-                    records.Add(document.RootElement.Clone());
+                records.Add(document.RootElement.Clone());
             }
             catch (JsonException) { }
         }
         return records;
     }
 
-    private static void MigrateV1(JsonObject[] entries)
+    private static void MigrateV1(JsonObject[] entries, Func<string>? generateEntryId)
     {
+        // Keep this set populated so a short-ID collision cannot create a self-parenting canonical graph.
+        var generatedIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var entry in entries)
-            entry["id"] = Guid.NewGuid().ToString("N")[..8];
+            entry["id"] = PiJsonlEntryIdGenerator.GenerateUnique(generatedIds, generateEntryId);
 
         string? previous = null;
         foreach (var entry in entries)
@@ -113,10 +118,14 @@ internal static class PiJsonlSessionImporter
 
         foreach (var entry in entries)
         {
-            if (NodeString(entry, "type") == "compaction" && entry["firstKeptEntryIndex"] is JsonValue indexNode &&
-                indexNode.TryGetValue<int>(out var firstKeptIndex) && firstKeptIndex > 0 && firstKeptIndex <= entries.Length)
-                entry["firstKeptEntryId"] = NodeString(entries[firstKeptIndex - 1], "id");
-            if (NodeString(entry, "type") == "compaction") entry.Remove("firstKeptEntryIndex");
+            if (NodeString(entry, "type") != "compaction" || entry["firstKeptEntryIndex"] is not JsonNode indexNode ||
+                indexNode.GetValueKind() != JsonValueKind.Number) continue;
+
+            if (indexNode is JsonValue scalar && scalar.TryGetValue<double>(out var numericIndex) &&
+                double.IsFinite(numericIndex) && numericIndex == Math.Truncate(numericIndex) &&
+                numericIndex > 0 && numericIndex <= entries.Length)
+                entry["firstKeptEntryId"] = NodeString(entries[(int)numericIndex - 1], "id");
+            entry.Remove("firstKeptEntryIndex");
         }
     }
 

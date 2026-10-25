@@ -50,4 +50,27 @@ public sealed class PiJsonlSessionFileStoreTests
         }
         finally { Directory.Delete(root, recursive: true); }
     }
+
+    [Fact]
+    public async Task LoadingLegacyPiJsonlMigratesInMemoryWithoutRewritingTheSource()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-pi-jsonl-v1-readonly-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var path = Path.Combine(root, "legacy.jsonl");
+            var jsonl = $$$"""
+                {"type":"session","id":"legacy-read-only","timestamp":"2026-10-24T00:00:00Z","cwd":"{{{root}}}"}
+                {"type":"message","timestamp":"2026-10-24T00:00:01Z","message":{"role":"user","content":"legacy message"}}
+                """ + "\n";
+            var original = System.Text.Encoding.UTF8.GetBytes(jsonl);
+            await File.WriteAllBytesAsync(path, original);
+
+            var loaded = await new ConversationStore(root, root).LoadAsync(path);
+
+            Assert.Equal("legacy message", Assert.Single(loaded.ContextMessages()).Text);
+            Assert.Equal(original, await File.ReadAllBytesAsync(path));
+        }
+        finally { Directory.Delete(root, recursive: true); }
+    }
 }

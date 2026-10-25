@@ -12,8 +12,9 @@ internal sealed class InteractiveSessionController(
         SessionListing listing, string currentModel, string? currentEndpoint, string currentProvider)
     {
         if (listing.Path == currentPath) return null;
+        await store.ValidateListingUnchangedAsync(listing);
         if (currentPath is not null) await store.SaveAsync(current, currentPath);
-        var resumed = await store.LoadAsync(listing.Path);
+        var resumed = await store.LoadAsync(listing);
         if (resumed.Model != currentModel || resumed.Endpoint != currentEndpoint ||
             resumed.Provider is not null && !resumed.Provider.Equals(currentProvider, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Session uses another provider, model, or endpoint; open it directly with --session.");

@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "caseId": "configured-session-directory-and-identity-discovery",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "oracle": "session-jsonl-discovery-b06-2026-10-24.json",
+  "cases": [
+    {
+      "id": "configured-directory-project-a",
+      "pinnedPi": {
+        "listed": [
+          "discovery-local"
+        ],
+        "mostRecentFile": "local.jsonl",
+        "findLocalFile": "local.jsonl",
+        "findForeign": false,
+        "findMissingCwd": false
+      },
+      "piSharpRegression": "SessionCatalogTests.ConfiguredCatalogListsLoadsAndSafelySavesProjectScopedPiJsonlSessions; SessionCatalogTests.MostRecentConfiguredPiJsonlSessionFiltersSharedDirectoryByProject",
+      "comparison": "matches; the project-scoped catalog exposes only the persisted matching CWD, recent selection skips newer foreign and missing-CWD candidates, and listing-based load validates identity before the JSONL-preserving save"
+    },
+    {
+      "id": "configured-directory-project-b",
+      "pinnedPi": {
+        "listed": [
+          "discovery-foreign"
+        ],
+        "mostRecentFile": "foreign.jsonl",
+        "findForeignFile": "foreign.jsonl"
+      },
+      "piSharpRegression": "SessionCatalogTests.MostRecentConfiguredPiJsonlSessionFiltersSharedDirectoryByProject",
+      "comparison": "matches; the second project sees its own session and selects its own most recent file"
+    },
+    {
+      "id": "modified-after-listing",
+      "pinnedPi": "No listing fingerprint is exposed; opening reads the current file contents.",
+      "piSharpRegression": "SessionCatalogTests.ModifiedPiJsonlSessionIsRejectedAfterCatalogListing",
+      "comparison": "intentional durability strengthening; PiSharp rejects a stale picker snapshot by content hash before opening"
+    },
+    {
+      "id": "corrupt-jsonl-candidate",
+      "pinnedPi": "Discovery skips malformed and non-session candidates.",
+      "piSharpRegression": "SessionCatalogTests.InvalidPiJsonlCandidateIsReportedWithItsPath",
+      "comparison": "intentional diagnostic difference; PiSharp surfaces the corrupt path as an actionable catalog error instead of silently hiding the file"
+    },
+    {
+      "id": "case-sensitive-id-prefix-and-case-insensitive-name-search",
+      "pinnedPi": {
+        "exactIdFound": true,
+        "changedCaseIdFound": false,
+        "exactIdPrefix": "AbC123def",
+        "changedCasePrefix": null,
+        "nameSearch": [
+          "AbC123def"
+        ]
+      },
+      "piSharpRegression": "SessionCatalogTests.ResolveUsesCaseSensitiveIdPrefixesAndCaseInsensitiveNames",
+      "comparison": "matches after correction; SessionCatalog ID-prefix resolution now follows the pinned case-sensitive startsWith contract while name lookup remains case-insensitive"
+    },
+    {
+      "id": "default-directory-session-without-persisted-cwd",
+      "pinnedPi": {
+        "listed": true,
+        "findById": true,
+        "mostRecentFile": "default-missing-cwd.jsonl"
+      },
+      "piSharpRegression": "SessionCatalogTests.DefaultDirectoryIncludesPiJsonlWithoutPersistedWorkingDirectory",
+      "comparison": "matches; default-directory discovery includes a header without cwd and PiSharp resolves its project working directory from the current store context"
+    },
+    {
+      "id": "header-larger-than-pinned-recent-scan-bound",
+      "pinnedPi": {
+        "headerBytes": 1048769,
+        "headerScanLimitBytes": 1048576,
+        "listedByStreamingList": true,
+        "mostRecentFallback": "fallback.jsonl"
+      },
+      "piSharpRegression": "SessionCatalogTests.ProjectDiscoveryAcceptsAHeaderLargerThanPiRecentScanLimitWithinImportBounds",
+      "comparison": "intentional bounded-read difference; pinned Pi lists the streamed file but findMostRecentSession skips its header beyond 1 MiB and selects the next valid candidate, while PiSharp accepts this 1 MiB+ header within its 16 MiB per-entry and 128 MiB whole-file limits."
+    }
+  ],
+  "samePiCalibration": "The pinned oracle ran twice in independent temporary directories and produced identical normalized results.",
+  "limitsAndSafetyDifferences": [
+    "Pinned Pi findMostRecentSession scans at most a 1 MiB header prefix and list streams candidate files. PiSharp discovery imports bounded whole files and rejects files above its 128 MiB import limit; this is a documented resource-safety difference, not a strict match for arbitrarily large sessions.",
+    "Configured/shared Pi directories require an explicit nonempty persisted cwd for project-scoped list, findById and recent selection. The PiSharp regression verifies the same filter, including exclusion of a JSONL header with no cwd.",
+    "Pinned direct CLI resolution accepts case-sensitive exact ID and ID prefixes; the interactive selector performs case-insensitive fuzzy text search over ID, name, first-message text and CWD. PiSharp's /resume exact-name lookup is an added convenience; its tested ID-prefix behavior now matches Pi. Default-directory discovery includes sessions without stored cwd; PiSharp uses the current store's working directory fallback. Project-context rebinding is covered separately by the cross-project RPC process fixture. Reverse trust transitions and provider-catalog rebinding remain open.",
+    "The exact-pin oracle confirms Pi list streams a valid 1,048,769-byte header while findMostRecentSession ignores that candidate after its 1 MiB header scan and falls back to the next session. PiSharp accepts that header within its stricter 16 MiB record and 128 MiB whole-file bounds; this API-specific bounded-read difference is explicitly classified, not counted as a strict match."
+  ],
+  "validation": {
+    "piSharpCommand": "dotnet test tests/PiSharp.Tests/PiSharp.Tests.csproj --no-restore --filter FullyQualifiedName~SessionCatalogTests -m:1 /nodeReuse:false",
+    "result": "SessionCatalogTests focused discovery selection passes; see inventory for exact focused counts."
+  },
+  "status": "partial; configured/default discovery, project filtering, identity, stale-selection safety, and bounded header behavior are verified; active-run and broader discovery cases remain open"
+}

@@ -1,0 +1,172 @@
+{
+  "schema": 1,
+  "caseId": "pinned-pi-session-jsonl-export-and-reopen",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "input": "docs/parity/fixtures/session-v3-branch.jsonl",
+  "inputSha256": "bb50213dfcfc835e792f78833e68799f947333521289a35f1e9483f006167d02",
+  "source": "packages/coding-agent/src/core/session-manager.ts:SessionManager.open/getBranch/buildSessionContext; packages/coding-agent/src/core/session-export.ts:serializeSessionBranch",
+  "independentRuns": 2,
+  "samePiCalibration": true,
+  "semanticRoundTrip": true,
+  "result": {
+    "before": {
+      "sessionId": "12345678-1234-1234-1234-123456789abc",
+      "leafId": "daaaaaaa",
+      "branch": [
+        {
+          "id": "a1111111",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "b2222222",
+          "parentId": "a1111111",
+          "type": "message"
+        },
+        {
+          "id": "a7777777",
+          "parentId": "b2222222",
+          "type": "branch_summary"
+        },
+        {
+          "id": "b8888888",
+          "parentId": "a7777777",
+          "type": "context_edit"
+        },
+        {
+          "id": "c9999999",
+          "parentId": "b8888888",
+          "type": "thinking_level_change"
+        },
+        {
+          "id": "daaaaaaa",
+          "parentId": "c9999999",
+          "type": "message"
+        }
+      ],
+      "context": {
+        "messages": [
+          {
+            "role": "system",
+            "content": "instructions",
+            "timestamp": 1733234401000
+          },
+          {
+            "role": "user",
+            "content": "alternate",
+            "timestamp": 1733234402000
+          },
+          {
+            "role": "branchSummary",
+            "summary": "abandoned path",
+            "fromId": "f6666666",
+            "timestamp": 1733234407000
+          },
+          {
+            "role": "user",
+            "content": "branch prompt",
+            "timestamp": 1733234410000
+          }
+        ],
+        "thinkingLevel": "high",
+        "model": null
+      }
+    },
+    "exportedEntries": [
+      {
+        "id": "a1111111",
+        "parentId": null,
+        "type": "message"
+      },
+      {
+        "id": "b2222222",
+        "parentId": "a1111111",
+        "type": "message"
+      },
+      {
+        "id": "a7777777",
+        "parentId": "b2222222",
+        "type": "branch_summary"
+      },
+      {
+        "id": "b8888888",
+        "parentId": "a7777777",
+        "type": "context_edit"
+      },
+      {
+        "id": "c9999999",
+        "parentId": "b8888888",
+        "type": "thinking_level_change"
+      },
+      {
+        "id": "daaaaaaa",
+        "parentId": "c9999999",
+        "type": "message"
+      }
+    ],
+    "after": {
+      "sessionId": "12345678-1234-1234-1234-123456789abc",
+      "leafId": "daaaaaaa",
+      "branch": [
+        {
+          "id": "a1111111",
+          "parentId": null,
+          "type": "message"
+        },
+        {
+          "id": "b2222222",
+          "parentId": "a1111111",
+          "type": "message"
+        },
+        {
+          "id": "a7777777",
+          "parentId": "b2222222",
+          "type": "branch_summary"
+        },
+        {
+          "id": "b8888888",
+          "parentId": "a7777777",
+          "type": "context_edit"
+        },
+        {
+          "id": "c9999999",
+          "parentId": "b8888888",
+          "type": "thinking_level_change"
+        },
+        {
+          "id": "daaaaaaa",
+          "parentId": "c9999999",
+          "type": "message"
+        }
+      ],
+      "context": {
+        "messages": [
+          {
+            "role": "system",
+            "content": "instructions",
+            "timestamp": 1733234401000
+          },
+          {
+            "role": "user",
+            "content": "alternate",
+            "timestamp": 1733234402000
+          },
+          {
+            "role": "branchSummary",
+            "summary": "abandoned path",
+            "fromId": "f6666666",
+            "timestamp": 1733234407000
+          },
+          {
+            "role": "user",
+            "content": "branch prompt",
+            "timestamp": 1733234410000
+          }
+        ],
+        "thinkingLevel": "high",
+        "model": null
+      }
+    },
+    "semanticRoundTrip": true
+  }
+}

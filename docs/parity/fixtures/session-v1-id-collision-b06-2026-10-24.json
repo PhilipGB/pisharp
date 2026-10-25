@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "caseId": "session-v1-generated-short-id-collision",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pisharpBaseSha": "0d83418a31d84e530b099d98054739607fa3e3ad",
+  "input": {
+    "format": "Pi JSONL v1",
+    "entryCount": 2,
+    "generatedIdSequence": ["deadbeef", "deadbeef", "cafebabe"]
+  },
+  "oracle": {
+    "method": "Call pinned migrateSessionEntries() with crypto.randomUUID deterministically replaced before importing the module.",
+    "source": "packages/coding-agent/src/core/session-manager.ts:migrateV1ToV2",
+    "output": {
+      "version": 3,
+      "ids": ["deadbeef", "deadbeef"],
+      "parents": [null, "deadbeef"]
+    },
+    "result": "The second entry is self-parenting because the migration never inserts prior generated IDs into its collision-check Set."
+  },
+  "piSharp": {
+    "implementation": "PiJsonlSessionImporter.MigrateV1 retries IDs already generated for this import.",
+    "regressionTest": "PiJsonlSessionInterchangeTests.LegacyV1MigrationRetriesGeneratedEntryIdCollisions",
+    "observed": {
+      "ids": ["deadbeef", "cafebabe"],
+      "parents": [null, "deadbeef"]
+    },
+    "result": "The import retains a valid linear graph and active message history."
+  },
+  "classification": "intentional_safety_deviation",
+  "strictMatch": false,
+  "samePiCalibration": "Not applicable to this constructed collision vector; broader independent same-Pi controls remain pending."
+}

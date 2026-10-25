@@ -373,7 +373,10 @@ internal sealed class ObservedChatClient(IChatClient inner, Action<AgentLifecycl
         {
             foreach (var callId in pendingCallIds)
                 projected.Add(new ChatMessage(ChatRole.Tool,
-                    [new FunctionResultContent(callId, "No result provided")]));
+                    [new FunctionResultContent(callId, "No result provided")
+                    {
+                        Exception = new ToolFailureException("No result provided")
+                    }]));
             pendingCallIds.Clear();
             pendingCallSet.Clear();
         }

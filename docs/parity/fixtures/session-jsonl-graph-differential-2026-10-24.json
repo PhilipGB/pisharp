@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "caseId": "jsonl-session-graph-and-selected-leaf",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "pinnedOracle": {
+    "report": "docs/parity/fixtures/session-jsonl-graph-b06-2026-10-24.json",
+    "caseInput": "tools/parity/fixtures/session-jsonl-graph-cases-2026-10-24.json",
+    "driver": "tools/parity/session-jsonl-graph-oracle.mjs",
+    "samePiCalibration": "All five graph cases returned identical normalized entry, leaf, branch, and append-parent observations on two independent runs. Cycle traversal was deliberately skipped because pinned getBranch has no cycle guard.",
+    "companionEvidence": "Nested selected branches, repeated labels, selected leaf and active messages are covered by the exact-pin RPC projection oracle in session-rpc-projection-b06-2026-10-24.json; native selected-branch round-trip is covered by session-jsonl-pinned-export-reopen-b06-2026-10-24.json and the matching PiSharp regressions."
+  },
+  "pisharp": {
+    "regressionTests": [
+      "PiJsonlSessionInterchangeTests.LastPhysicalBranchIsSelectedAndSubsequentAppendUsesItAsParent",
+      "PiJsonlSessionInterchangeTests.ForwardParentEntryBuildsTheSameTreeShapeAndKeepsPhysicalEntryOrder",
+      "PiJsonlSessionInterchangeTests.MalformedLineKeepsFollowingOrphanInTheActiveHistoryAndPreservesItsPiParent",
+      "PiJsonlSessionInterchangeTests.DuplicateEntryIdsAreRejectedDuringPiJsonlImport",
+      "PiJsonlSessionInterchangeTests.ParentCyclesAreRejectedDuringPiJsonlImport"
+    ],
+    "interchangeClassResult": "50/50 passed in the final PiJsonlSessionInterchangeTests class.",
+    "strictComparisons": {
+      "lastPhysicalBranchAndAppendParent": "The last persisted leaf selects only its ancestor path; the next append uses that leaf as parent.",
+      "forwardParentAndPhysicalOrder": "Physical order is retained while selected history follows the last physical entry's parent chain.",
+      "missingParentAndAppendParent": "The missing-parent entry remains the active orphan and the next append uses it as parent; PiSharp also preserves the imported Pi parent string for export.",
+      "nestedBranchesLabelsAndRpcProjection": "The direct pinned RPC capture confirms sibling ordering, selected leaf, active-path messages, all persisted entry IDs/parents, latest label and fork messages. Local RPC projector/process tests cover the corresponding projection and selected branch."
+    }
+  },
+  "acceptedDifferences": [
+    {
+      "id": "duplicate-entry-ids",
+      "pinnedPi": "The loader keeps duplicate physical entries while its ID map selects the last entry for branch lookup.",
+      "piSharp": "Import rejects duplicate entry IDs to prevent an ambiguous canonical graph.",
+      "classification": "intentional_graph_integrity_safety_difference"
+    },
+    {
+      "id": "parent-cycles",
+      "pinnedPi": "The loader indexes cyclic entries; the source oracle skips getBranch traversal because the pinned parent walk has no cycle guard.",
+      "piSharp": "Import rejects cyclic parent links with InvalidDataException.",
+      "classification": "intentional_graph_integrity_safety_difference"
+    }
+  ],
+  "unresolvedGraphCases": []
+}

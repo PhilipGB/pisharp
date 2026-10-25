@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "caseId": "pinned-pi-rpc-session-state-entry-tree-and-fork-projection",
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "source": "packages/coding-agent/src/modes/rpc/rpc-mode.ts:get_state/get_messages/get_entries/get_tree/get_fork_messages; packages/coding-agent/src/core/session-manager.ts:getEntries/getTree/buildSessionContext",
+  "independentRuns": 2,
+  "samePiCalibration": true,
+  "fixture": {
+    "sessionId": "rpc-session-projection",
+    "entryIds": [
+      "root",
+      "later",
+      "selected",
+      "label-one",
+      "label-two",
+      "thinking-off"
+    ],
+    "selectedLeaf": "thinking-off",
+    "branchLabel": "latest label"
+  },
+  "result": {
+    "get_state": {
+      "modelId": "unknown",
+      "provider": "unknown",
+      "thinkingLevel": "off",
+      "isStreaming": false,
+      "isCompacting": false,
+      "sessionId": "rpc-session-projection",
+      "messageCount": 2,
+      "pendingMessageCount": 0
+    },
+    "get_messages": [
+      {
+        "role": "user",
+        "text": "root prompt"
+      },
+      {
+        "role": "user",
+        "text": "selected branch"
+      }
+    ],
+    "get_entries": {
+      "leafId": "thinking-off",
+      "entries": [
+        {
+          "id": "root",
+          "parentId": null,
+          "type": "message",
+          "role": "user",
+          "text": "root prompt"
+        },
+        {
+          "id": "later",
+          "parentId": "root",
+          "type": "message",
+          "role": "assistant",
+          "text": "later branch"
+        },
+        {
+          "id": "selected",
+          "parentId": "root",
+          "type": "message",
+          "role": "user",
+          "text": "selected branch"
+        },
+        {
+          "id": "label-one",
+          "parentId": "selected",
+          "type": "label",
+          "targetId": "selected",
+          "label": "checkpoint"
+        },
+        {
+          "id": "label-two",
+          "parentId": "label-one",
+          "type": "label",
+          "targetId": "selected",
+          "label": "latest label"
+        },
+        {
+          "id": "thinking-off",
+          "parentId": "label-two",
+          "type": "thinking_level_change",
+          "thinkingLevel": "off"
+        }
+      ]
+    },
+    "get_tree": {
+      "leafId": "thinking-off",
+      "tree": [
+        {
+          "id": "root",
+          "type": "message",
+          "label": null,
+          "labelTimestamp": null,
+          "children": [
+            {
+              "id": "selected",
+              "type": "message",
+              "label": "latest label",
+              "labelTimestamp": "2025-01-01T00:00:05.000Z",
+              "children": [
+                {
+                  "id": "label-one",
+                  "type": "label",
+                  "label": null,
+                  "labelTimestamp": null,
+                  "children": [
+                    {
+                      "id": "label-two",
+                      "type": "label",
+                      "label": null,
+                      "labelTimestamp": null,
+                      "children": [
+                        {
+                          "id": "thinking-off",
+                          "type": "thinking_level_change",
+                          "label": null,
+                          "labelTimestamp": null,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "later",
+              "type": "message",
+              "label": null,
+              "labelTimestamp": null,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "get_fork_messages": {
+      "messages": [
+        {
+          "entryId": "root",
+          "text": "root prompt"
+        },
+        {
+          "entryId": "selected",
+          "text": "selected branch"
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "The CLI is queried without provider credentials; get_state therefore reports Pi's unknown model fallback. The capture verifies persisted session state and RPC projections, not provider transport."
+  ]
+}

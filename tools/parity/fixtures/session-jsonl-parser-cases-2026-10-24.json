@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "cases": [
+    {
+      "id": "empty-file",
+      "content": ""
+    },
+    {
+      "id": "blank-lines-only",
+      "content": "\r\n  \n"
+    },
+    {
+      "id": "header-without-cwd",
+      "content": "{\"type\":\"session\",\"version\":3,\"id\":\"no-cwd\"}\n"
+    },
+    {
+      "id": "malformed-prefix-and-valid-unterminated-header",
+      "content": "not json\n{\"type\":\"session\",\"version\":3,\"id\":\"after-malformed\"}"
+    },
+    {
+      "id": "crlf-blank-malformed-and-final-valid-entry",
+      "content": "{\"type\":\"session\",\"version\":3,\"id\":\"crlf\",\"cwd\":\"/tmp\"}\r\n\r\nnot json\r\n{\"type\":\"message\",\"id\":\"valid-tail\",\"parentId\":null,\"message\":{\"role\":\"user\",\"content\":\"kept\",\"timestamp\":1}}"
+    },
+    {
+      "id": "truncated-final-fragment",
+      "content": "{\"type\":\"session\",\"version\":3,\"id\":\"truncated\",\"cwd\":\"/tmp\"}\n{\"type\":\"message\",\"id\":\"valid\",\"parentId\":null,\"message\":{\"role\":\"user\",\"content\":\"kept\",\"timestamp\":1}}\n{\"type\":\"message\""
+    },
+    {
+      "id": "utf8-bom-header",
+      "content": "﻿{\"type\":\"session\",\"version\":3,\"id\":\"bom\",\"cwd\":\"/tmp\"}\n"
+    },
+    {
+      "id": "oversized-record-with-valid-descendant",
+      "generatedContent": "oversizedRecord",
+      "payloadBytes": 16777217
+    }
+  ]
+}

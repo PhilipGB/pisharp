@@ -69,6 +69,39 @@ if (mode == "resume")
     return 0;
 }
 
+if (mode == "pause-after-intent")
+{
+    var conversation = new ConversationSession(workingDirectory, "session-resume-process", null);
+    var provider = new ToolCallClient(withToolCall: true);
+    async Task SaveAndPause(CancellationToken cancellationToken)
+    {
+        await store.SaveAsync(conversation, sessionPath, cancellationToken);
+        if (conversation.Tree.ActivePath().LastOrDefault()?.Type != "tool_intent") return;
+        await File.WriteAllTextAsync(sessionPath + ".intent-ready", "intent persisted");
+        await Task.Delay(Timeout.InfiniteTimeSpan);
+    }
+
+    var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(workingDirectory),
+        retryPolicy: ProviderRetryPolicy.None), conversation, save: SaveAndPause);
+    await foreach (var _ in run.RunStreamingAsync("write once")) { }
+    return 10;
+}
+
+if (mode == "recover-no-replay")
+{
+    var conversation = await store.LoadAsync(sessionPath);
+    var provider = new ToolCallClient(withToolCall: false);
+    var run = await ConversationRun.OpenAsync(new PiAgent(provider, new CodingTools(workingDirectory),
+        retryPolicy: ProviderRetryPolicy.None), conversation,
+        save: cancellationToken => store.SaveAsync(conversation, sessionPath, cancellationToken));
+    await foreach (var _ in run.RunStreamingAsync("report recovery")) { }
+    if (provider.ToolCalls != 0 || File.Exists(Path.Combine(workingDirectory, "tool-result.txt"))) return 11;
+    if (!conversation.ActiveMessages().Any(message => message.Text?.Contains("Outcome UNKNOWN for write", StringComparison.Ordinal) == true))
+        return 12;
+    Console.WriteLine("recovered-no-replay");
+    return 0;
+}
+
 return 9;
 
 internal sealed class DeterministicClient : IChatClient
@@ -85,6 +118,33 @@ internal sealed class DeterministicClient : IChatClient
         cancellationToken.ThrowIfCancellationRequested();
         Requests.Add(messages.ToArray());
         yield return new ChatResponseUpdate(ChatRole.Assistant, "deterministic response");
+        await Task.CompletedTask;
+    }
+
+    public object? GetService(Type serviceType, object? serviceKey = null) => null;
+    public void Dispose() { }
+}
+
+internal sealed class ToolCallClient(bool withToolCall) : IChatClient
+{
+    public int ToolCalls { get; private set; }
+
+    public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
+        CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
+        ChatOptions? options = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (withToolCall)
+        {
+            ToolCalls++;
+            yield return new ChatResponseUpdate(ChatRole.Assistant,
+                [new FunctionCallContent("call-before-invocation", "write",
+                    new Dictionary<string, object?> { ["path"] = "tool-result.txt", ["content"] = "should not be written" })]);
+        }
+        else yield return new ChatResponseUpdate(ChatRole.Assistant, "recovered safely");
         await Task.CompletedTask;
     }
 
