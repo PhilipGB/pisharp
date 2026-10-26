@@ -63,14 +63,11 @@ unclassified mismatches in the accepted corpus.
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. The
-latest local exact-source artifact passes all 23 checkpoints through quality
-and all 211 executed cases with zero failures or skips. The committed evidence
-bundle has been regenerated for source
-`965b3a248369c7daabdf8f7739933465a719e8c4`; its seven committed-evidence cases
-await a fresh checkpoint after these evidence and receipt changes are committed.
-That brings the core total to 24/27 checkpoints and 218/240 cases when verified.
-The remaining 22 cases are in CI integration, draft publication, and exact-head
-CI. The compact
+latest local exact-source artifact passes 24/27 checkpoints and 218/240
+executed cases with zero failures or skips. The committed-evidence checkpoint
+passes locally against the committed bundle for source
+`965b3a248369c7daabdf8f7739933465a719e8c4`. The remaining 22 cases are in CI
+integration, draft publication, and exact-head CI. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the
 core corpus and its exact required IDs and classifications.
@@ -125,10 +122,9 @@ mismatches.
 
 This receipt is bounded to the committed 15-family inventory and 240 required
 cases; it does not claim broader package-manager or platform parity outside those
-cases. The committed-evidence bundle is refreshed for the current source SHA;
-its fresh checkpoint run, CI integration, and draft PR publication remain
-pending. The new PR must remain open, draft, and unmerged. Its automated GitHub
-Actions will run on publication; exact-head workflow results remain pending.
+cases. CI integration and draft PR publication remain pending. The new PR must
+remain open, draft, and unmerged. Its automated GitHub Actions will run on
+publication; exact-head workflow results remain pending.
 
 ## Local quality results
 
