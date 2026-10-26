@@ -42,12 +42,10 @@ def _stable_value(value: Any, *, repository: str, evidence_root: str,
                               case_id=case_id, git_ids=git_ids) for item in value]
     if isinstance(value, str):
         normalized = value.replace(evidence_root, '<EVIDENCE>')
-        try:
-            relative = Path(evidence_root).relative_to(repository)
-            obfuscated = str(Path(repository).parent / '<app>' / relative)
-            normalized = normalized.replace(obfuscated, '<EVIDENCE>')
-        except ValueError:
-            pass
+        # The CLI output normalizer replaces every standalone pi/pisharp token,
+        # including repeated repository directory names in CI checkout paths.
+        obfuscated = re.sub(r'\b(?:pi|pisharp)\b', '<app>', evidence_root)
+        normalized = normalized.replace(obfuscated, '<EVIDENCE>')
         normalized = normalized.replace(repository, '<REPOSITORY>')
         normalized = re.sub(r'/tmp/[^/\s]+', '/tmp/<TEMP>', normalized)
         normalized = re.sub(r'(?<=127\.0\.0\.1):\d+', ':<PORT>', normalized)

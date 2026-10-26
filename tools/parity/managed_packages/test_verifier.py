@@ -380,6 +380,21 @@ class ManagedPackageVerifierTests(unittest.TestCase):
             'git.install-url-shorthands', 'actual', second, repository='/repo',
             evidence_root='/repo/artifacts/run-two'))
 
+    def test_committed_cli_paths_normalize_repeated_checkout_names(self) -> None:
+        local = {'state': 'Removed npm:x@file:/home/dev/Projects/<app>/artifacts/parity/run/profile/x.tgz'}
+        remote = {'state': 'Removed npm:x@file:/home/runner/work/<app>/<app>/artifacts/parity/run/profile/x.tgz'}
+        local_digest = evidence_artifacts._case_side_digest(
+            'cli.remove', 'actual', local, repository='/home/dev/Projects/pisharp',
+            evidence_root='/home/dev/Projects/pisharp/artifacts/parity/run')
+        remote_digest = evidence_artifacts._case_side_digest(
+            'cli.remove', 'actual', remote, repository='/home/runner/work/pisharp/pisharp',
+            evidence_root='/home/runner/work/pisharp/pisharp/artifacts/parity/run')
+        self.assertEqual(local_digest, remote_digest)
+        remote['state'] = remote['state'].replace('x.tgz', 'other.tgz')
+        self.assertNotEqual(local_digest, evidence_artifacts._case_side_digest(
+            'cli.remove', 'actual', remote, repository='/home/runner/work/pisharp/pisharp',
+            evidence_root='/home/runner/work/pisharp/pisharp/artifacts/parity/run'))
+
     def test_committed_fixture_git_normalization_preserves_equality_relationships(self) -> None:
         def digest(state):
             return evidence_artifacts._case_side_digest(
