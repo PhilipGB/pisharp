@@ -1,0 +1,780 @@
+{
+  "capabilities": [
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "cli",
+      "classifications": {
+        "equivalent": 2,
+        "intentional-safety-difference": 0,
+        "strict": 10
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify package command behavior, usage and source/path handling.",
+      "passedCases": 12,
+      "requiredCaseIds": [
+        "cli.install",
+        "cli.remove",
+        "cli.list",
+        "cli.update",
+        "cli.missing-source",
+        "cli.invalid-option",
+        "cli.conflicting-options",
+        "cli.local-scope",
+        "cli.trust-options",
+        "cli.help",
+        "cli.spaces-unicode-path",
+        "cli.invalid-package-spec"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Cli/Packages/ResourcePackageCommand.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "Parse",
+            "RunAsync",
+            "PrintListAsync"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/package-manager-cli.ts",
+          "repository": "pi",
+          "symbols": [
+            "handlePackageCommand"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ],
+      "verifiedCases": 12
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "npm-install",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 0,
+        "strict": 17
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify npm package installation and failure behavior with real npm processes.",
+      "passedCases": 17,
+      "requiredCaseIds": [
+        "npm.install-exact",
+        "npm.install-range",
+        "npm.install-latest",
+        "npm.install-scoped",
+        "npm.install-dependencies",
+        "npm.install-idempotent",
+        "npm.install-invalid",
+        "npm.install-script-failure",
+        "npm.install-cancelled",
+        "npm.install-unscoped",
+        "npm.install-implicit",
+        "npm.install-prerelease",
+        "npm.install-peer-dependencies",
+        "npm.install-lifecycle-scripts",
+        "npm.install-existing",
+        "npm.install-reinstall",
+        "npm.install-unavailable-version"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/docs/packages.md",
+          "repository": "pi",
+          "symbols": []
+        }
+      ],
+      "verifiedCases": 17
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "npm-update",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 2,
+        "strict": 9
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify pinned, ranged and floating npm updates, failure recovery, and repeated updates.",
+      "passedCases": 11,
+      "requiredCaseIds": [
+        "npm.update-pinned",
+        "npm.update-range",
+        "npm.update-latest",
+        "npm.update-no-change",
+        "npm.update-failure",
+        "npm.update-cancelled",
+        "npm.update-repeat",
+        "npm.update-unpinned",
+        "npm.update-prerelease",
+        "npm.update-registry-change",
+        "npm.update-interrupted"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.Git.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "InstallAsync",
+            "UpdateAsync",
+            "GetUpdateTargets",
+            "AcquireGitAsync"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/docs/packages.md",
+          "repository": "pi",
+          "symbols": []
+        }
+      ],
+      "verifiedCases": 11
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "package-managers",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 1,
+        "strict": 8
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify configured npmCommand selection and exact process invocation.",
+      "passedCases": 9,
+      "requiredCaseIds": [
+        "pm.default",
+        "pm.npm",
+        "pm.pnpm",
+        "pm.yarn",
+        "pm.bun",
+        "pm.custom-arguments",
+        "pm.missing-executable",
+        "pm.failure",
+        "pm.cancellation"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/settings-manager.ts",
+          "repository": "pi",
+          "symbols": []
+        }
+      ],
+      "verifiedCases": 9
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "legacy-global",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 0,
+        "strict": 8
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify read-only legacy global package lookup, fallback and precedence.",
+      "passedCases": 8,
+      "requiredCaseIds": [
+        "legacy.npm",
+        "legacy.pnpm",
+        "legacy.yarn",
+        "legacy.bun",
+        "legacy.missing",
+        "legacy.malformed",
+        "legacy.managed-precedence",
+        "legacy.read-only"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/docs/packages.md",
+          "repository": "pi",
+          "symbols": []
+        }
+      ],
+      "verifiedCases": 8
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "git-install",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 0,
+        "strict": 10
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify Git package installation for refs, failures and cancellation.",
+      "passedCases": 10,
+      "requiredCaseIds": [
+        "git.install-branch",
+        "git.install-tag",
+        "git.install-commit",
+        "git.install-floating",
+        "git.install-invalid-ref",
+        "git.install-failure",
+        "git.install-cancelled",
+        "git.install-url-shorthands",
+        "git.install-existing",
+        "git.install-missing-dependencies"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ManagedGitSource.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "TryParse",
+            "Identity"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/docs/packages.md",
+          "repository": "pi",
+          "symbols": []
+        }
+      ],
+      "verifiedCases": 10
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "git-update",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 1,
+        "strict": 11
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify Git update resolution, atomicity, recovery and observable output.",
+      "passedCases": 12,
+      "requiredCaseIds": [
+        "git.update-moving",
+        "git.update-no-change",
+        "git.update-pinned",
+        "git.update-failed-fetch",
+        "git.update-failed-checkout",
+        "git.update-dependency-failure",
+        "git.update-cancelled",
+        "git.update-recovery",
+        "git.update-pinned-tag",
+        "git.update-pinned-commit",
+        "git.update-changed-remote",
+        "git.update-deleted-branch"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.Git.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "InstallAsync",
+            "UpdateAsync",
+            "GetUpdateTargets",
+            "AcquireGitAsync"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ],
+      "verifiedCases": 12
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "identity",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 0,
+        "strict": 8
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify package identity, deduplication, scope precedence and autoload behavior.",
+      "passedCases": 8,
+      "requiredCaseIds": [
+        "identity.npm",
+        "identity.git",
+        "identity.local",
+        "identity.duplicate",
+        "identity.scope-override",
+        "identity.autoload-delta",
+        "identity.user-project-duplicates",
+        "identity.local-symlink"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/settings-manager.ts",
+          "repository": "pi",
+          "symbols": []
+        }
+      ],
+      "verifiedCases": 8
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "removal-listing",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 0,
+        "strict": 10
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify npm, Git and local removal and package listing by scope.",
+      "passedCases": 10,
+      "requiredCaseIds": [
+        "remove.npm",
+        "remove.git",
+        "remove.local",
+        "remove.missing",
+        "remove.scope-isolation",
+        "list.empty",
+        "list.mixed-scopes",
+        "list.filtered",
+        "list.missing-install",
+        "list.paths-filter-indicators"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Cli/Packages/ResourcePackageCommand.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "Parse",
+            "RunAsync",
+            "PrintListAsync"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/package-manager-cli.ts",
+          "repository": "pi",
+          "symbols": [
+            "handlePackageCommand"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ],
+      "verifiedCases": 10
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "bulk-updates",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 1,
+        "strict": 6
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify selective and bulk updates, target selection, partial failure and cancellation.",
+      "passedCases": 7,
+      "requiredCaseIds": [
+        "bulk.selective",
+        "bulk.extensions",
+        "bulk.mixed-sources",
+        "bulk.pinned",
+        "bulk.partial-failure",
+        "bulk.cancelled",
+        "bulk.trust"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Cli/Packages/ResourcePackageCommand.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "Parse",
+            "RunAsync",
+            "PrintListAsync"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/package-manager-cli.ts",
+          "repository": "pi",
+          "symbols": [
+            "handlePackageCommand"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ],
+      "verifiedCases": 7
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "configuration-trust",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 1,
+        "strict": 9
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify settings persistence, trust gates, atomic writes, concurrency and restart.",
+      "passedCases": 10,
+      "requiredCaseIds": [
+        "config.user",
+        "config.project",
+        "config.relative-source",
+        "config.filters",
+        "config.disabled",
+        "config.trust-denied",
+        "config.trust-approved",
+        "config.failed-write",
+        "config.concurrent-change",
+        "config.restart"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Cli/Configuration/PackageSettingsReader.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "ReadNpmCommand",
+            "Read",
+            "ReadNativeExtensions"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/settings-manager.ts",
+          "repository": "pi",
+          "symbols": []
+        },
+        {
+          "path": "packages/coding-agent/src/cli/project-trust.ts",
+          "repository": "pi",
+          "symbols": []
+        },
+        {
+          "path": "packages/coding-agent/docs/packages.md",
+          "repository": "pi",
+          "symbols": []
+        }
+      ],
+      "verifiedCases": 10
+    },
+    {
+      "baselineCorrectionsRequired": [
+        "Add temporary npm/Git package resolution to the existing startup/package-store path; preserve one-invocation scope and leave settings unchanged."
+      ],
+      "baselineStatus": "gap-confirmed",
+      "capabilityId": "resource-distribution",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 0,
+        "strict": 17
+      },
+      "confirmedBaselineDifferences": [
+        "temporary-managed-package-source"
+      ],
+      "description": "Verify package skills, prompts, themes and native extensions through real CLI/RPC paths.",
+      "passedCases": 17,
+      "requiredCaseIds": [
+        "distribution.local",
+        "distribution.npm",
+        "distribution.git",
+        "distribution.skill",
+        "distribution.prompt",
+        "distribution.theme",
+        "distribution.native-extension",
+        "distribution.manifest",
+        "distribution.filters",
+        "distribution.invalid-resource",
+        "distribution.conventional-directories",
+        "distribution.exclusions",
+        "distribution.disabled",
+        "distribution.source-metadata",
+        "distribution.temporary-npm-package",
+        "distribution.temporary-git-package",
+        "distribution.temporary-source-order"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ResourcePackageFiles.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "Load"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/docs/packages.md",
+          "repository": "pi",
+          "symbols": []
+        },
+        {
+          "path": "packages/coding-agent/src/core/resource-loader.ts",
+          "repository": "pi",
+          "symbols": [
+            "resolveExtensionSources"
+          ]
+        }
+      ],
+      "verifiedCases": 17
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "startup-reload",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 0,
+        "strict": 8
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify install/restart/invoke/update/reload/remove resource lifecycle snapshots.",
+      "passedCases": 8,
+      "requiredCaseIds": [
+        "reload.local",
+        "reload.npm",
+        "reload.git",
+        "reload.updated-resource",
+        "reload.removed-resource",
+        "reload.disabled-resource",
+        "reload.trust-revoked",
+        "reload.no-duplicate-registration"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "ProjectRuntimeConfiguration",
+            "LoadAsync"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/docs/packages.md",
+          "repository": "pi",
+          "symbols": []
+        }
+      ],
+      "verifiedCases": 8
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "failure-recovery",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 4,
+        "strict": 7
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify atomic failure recovery for installs, updates, settings and cancellation.",
+      "passedCases": 11,
+      "requiredCaseIds": [
+        "failure.registry",
+        "failure.git-remote",
+        "failure.invalid-archive",
+        "failure.lifecycle-script",
+        "failure.dependency-install",
+        "failure.settings-publication",
+        "failure.permission",
+        "failure.cancelled-install",
+        "failure.cancelled-update",
+        "failure.interrupted-staging",
+        "failure.restart-recovery"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ],
+      "verifiedCases": 11
+    },
+    {
+      "baselineCorrectionsRequired": [],
+      "baselineStatus": "implemented-unverified",
+      "capabilityId": "concurrency",
+      "classifications": {
+        "equivalent": 0,
+        "intentional-safety-difference": 1,
+        "strict": 8
+      },
+      "confirmedBaselineDifferences": [],
+      "description": "Verify bounded terminal outcomes and durable integrity under concurrent package operations.",
+      "passedCases": 9,
+      "requiredCaseIds": [
+        "concurrent.same-npm-install",
+        "concurrent.same-git-install",
+        "concurrent.install-remove",
+        "concurrent.update-remove",
+        "concurrent.two-process-update",
+        "concurrent.update-discovery",
+        "concurrent.cancelled-lock",
+        "concurrent.crashed-writer",
+        "concurrent.external-settings-change"
+      ],
+      "sourceOwners": [
+        {
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity",
+            "AcquireProcessInstallLockAsync"
+          ]
+        },
+        {
+          "path": "src/PiSharp.Cli/Packages/ResourcePackageCommand.cs",
+          "repository": "pisharp",
+          "symbols": [
+            "AcquirePackageMutationLeaseAsync"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "repository": "pi",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "path": "packages/coding-agent/src/core/settings-manager.ts",
+          "repository": "pi",
+          "symbols": []
+        }
+      ],
+      "verifiedCases": 9
+    }
+  ],
+  "inventoryBaseSha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "repository": "PhilipGB/pisharp",
+  "schemaVersion": 1
+}

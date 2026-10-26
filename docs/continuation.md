@@ -1,6 +1,22 @@
 # Continuation — PiSharp capability parity
 
-## Active milestone — Complete Multimodal User Input and Image Parity — 2026-10-25
+## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-26
+
+PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
+this branch is based on that merge, and Pi remains pinned at
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The source-pinned managed-package
+corpus passes 23/27 checkpoints and 211/240 required cases, with zero failures
+or skips. The final local quality run passes 3,898/3,898 .NET tests, focused
+package tests 113/113, architecture tests 7/7, Python 119/119 across three
+suites, Node 24/24, MCP conformance, format, warnings-as-errors build, docs, and
+all 18 differential rechecks. Twenty-nine cases remain across committed
+evidence, CI integration, draft publication, and exact-head CI. The corrected
+resource-distribution path covers temporary npm/Git package roots through
+startup and reload without persisting invocation-only settings. See the
+[receipt](parity/fixtures/managed-package-lifecycle-parity.md) and
+[inventory](parity/fixtures/managed-package-lifecycle-parity/inventory.json).
+
+## Completed prerequisite — Complete Multimodal User Input and Image Parity — 2026-10-25
 
 PR #25 is merged at `897bc5778f87ed09ea42e48b260479ee6a6a218c`; the working
 branch `milestone/multimodal-user-input-image-parity` is based on that commit.
@@ -51,8 +67,9 @@ clipboard oracle; its local differential passes 4/4. Exact-head push and PR
 runs `40201444374` and `40201446454` passed on this implementation head,
 including all 3,886 .NET tests, pinned differentials, platform clipboard jobs
 and MCP conformance.
-Broader format, limits and resource-bound cases remain. Draft PR #26 stays
-open, draft and unmerged. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
+Broader format, limits and resource-bound cases remain. PR #26 was subsequently
+merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`; this managed-package
+milestone is based on that verified merge. See the [receipt](parity/fixtures/multimodal-user-input-image-parity-2026-10-25.md)
 and [inventory](parity/fixtures/multimodal-user-input-image-parity-inventory-2026-10-25.json).
 
 ## Previous milestone — Complete Model Selection, Thinking and Configuration Parity — 2026-10-24

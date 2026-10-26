@@ -1,0 +1,410 @@
+{
+  "checkpoints": [
+    {
+      "checkpointId": "p0-prerequisite-merge",
+      "requiredCaseIds": [
+        "p0.pr-metadata",
+        "p0.review-state",
+        "p0.exact-head-workflows",
+        "p0.merge-ancestry"
+      ]
+    },
+    {
+      "checkpointId": "p1-milestone-branch",
+      "requiredCaseIds": [
+        "p1.branch-base",
+        "p1.pin",
+        "p1.clean-start"
+      ]
+    },
+    {
+      "checkpointId": "verification-infrastructure",
+      "requiredCaseIds": [
+        "v0.schema-valid",
+        "v0.contract-complete",
+        "v0.exit-contract",
+        "v0.runtime-provenance"
+      ]
+    },
+    {
+      "checkpointId": "verifier-negative-controls",
+      "requiredCaseIds": [
+        "v1.control-01",
+        "v1.control-02",
+        "v1.control-03",
+        "v1.control-04",
+        "v1.control-05",
+        "v1.control-06",
+        "v1.control-07",
+        "v1.control-08",
+        "v1.control-09",
+        "v1.control-10",
+        "v1.control-11",
+        "v1.control-12",
+        "v1.control-13",
+        "v1.control-14",
+        "v1.control-15",
+        "v1.control-16",
+        "v1.control-17",
+        "v1.control-18",
+        "v1.valid-control"
+      ]
+    },
+    {
+      "checkpointId": "source-inventory",
+      "requiredCaseIds": [
+        "inventory.pisharp",
+        "inventory.pi",
+        "inventory.source-links",
+        "inventory.case-coverage"
+      ]
+    },
+    {
+      "checkpointId": "baseline",
+      "requiredCaseIds": [
+        "baseline.package-cli",
+        "baseline.managed-npm",
+        "baseline.git",
+        "baseline.settings",
+        "baseline.resource-integration"
+      ]
+    },
+    {
+      "checkpointId": "cli",
+      "requiredCaseIds": [
+        "cli.install",
+        "cli.remove",
+        "cli.list",
+        "cli.update",
+        "cli.missing-source",
+        "cli.invalid-option",
+        "cli.conflicting-options",
+        "cli.local-scope",
+        "cli.trust-options",
+        "cli.help",
+        "cli.spaces-unicode-path",
+        "cli.invalid-package-spec"
+      ]
+    },
+    {
+      "checkpointId": "npm-install",
+      "requiredCaseIds": [
+        "npm.install-exact",
+        "npm.install-range",
+        "npm.install-latest",
+        "npm.install-scoped",
+        "npm.install-dependencies",
+        "npm.install-idempotent",
+        "npm.install-invalid",
+        "npm.install-script-failure",
+        "npm.install-cancelled",
+        "npm.install-unscoped",
+        "npm.install-implicit",
+        "npm.install-prerelease",
+        "npm.install-peer-dependencies",
+        "npm.install-lifecycle-scripts",
+        "npm.install-existing",
+        "npm.install-reinstall",
+        "npm.install-unavailable-version"
+      ]
+    },
+    {
+      "checkpointId": "npm-update",
+      "requiredCaseIds": [
+        "npm.update-pinned",
+        "npm.update-range",
+        "npm.update-latest",
+        "npm.update-no-change",
+        "npm.update-failure",
+        "npm.update-cancelled",
+        "npm.update-repeat",
+        "npm.update-unpinned",
+        "npm.update-prerelease",
+        "npm.update-registry-change",
+        "npm.update-interrupted"
+      ]
+    },
+    {
+      "checkpointId": "package-managers",
+      "requiredCaseIds": [
+        "pm.default",
+        "pm.npm",
+        "pm.pnpm",
+        "pm.yarn",
+        "pm.bun",
+        "pm.custom-arguments",
+        "pm.missing-executable",
+        "pm.failure",
+        "pm.cancellation"
+      ]
+    },
+    {
+      "checkpointId": "legacy-global",
+      "requiredCaseIds": [
+        "legacy.npm",
+        "legacy.pnpm",
+        "legacy.yarn",
+        "legacy.bun",
+        "legacy.missing",
+        "legacy.malformed",
+        "legacy.managed-precedence",
+        "legacy.read-only"
+      ]
+    },
+    {
+      "checkpointId": "git-install",
+      "requiredCaseIds": [
+        "git.install-branch",
+        "git.install-tag",
+        "git.install-commit",
+        "git.install-floating",
+        "git.install-invalid-ref",
+        "git.install-failure",
+        "git.install-cancelled",
+        "git.install-url-shorthands",
+        "git.install-existing",
+        "git.install-missing-dependencies"
+      ]
+    },
+    {
+      "checkpointId": "git-update",
+      "requiredCaseIds": [
+        "git.update-moving",
+        "git.update-no-change",
+        "git.update-pinned",
+        "git.update-failed-fetch",
+        "git.update-failed-checkout",
+        "git.update-dependency-failure",
+        "git.update-cancelled",
+        "git.update-recovery",
+        "git.update-pinned-tag",
+        "git.update-pinned-commit",
+        "git.update-changed-remote",
+        "git.update-deleted-branch"
+      ]
+    },
+    {
+      "checkpointId": "identity",
+      "requiredCaseIds": [
+        "identity.npm",
+        "identity.git",
+        "identity.local",
+        "identity.duplicate",
+        "identity.scope-override",
+        "identity.autoload-delta",
+        "identity.user-project-duplicates",
+        "identity.local-symlink"
+      ]
+    },
+    {
+      "checkpointId": "removal-listing",
+      "requiredCaseIds": [
+        "remove.npm",
+        "remove.git",
+        "remove.local",
+        "remove.missing",
+        "remove.scope-isolation",
+        "list.empty",
+        "list.mixed-scopes",
+        "list.filtered",
+        "list.missing-install",
+        "list.paths-filter-indicators"
+      ]
+    },
+    {
+      "checkpointId": "bulk-updates",
+      "requiredCaseIds": [
+        "bulk.selective",
+        "bulk.extensions",
+        "bulk.mixed-sources",
+        "bulk.pinned",
+        "bulk.partial-failure",
+        "bulk.cancelled",
+        "bulk.trust"
+      ]
+    },
+    {
+      "checkpointId": "configuration-trust",
+      "requiredCaseIds": [
+        "config.user",
+        "config.project",
+        "config.relative-source",
+        "config.filters",
+        "config.disabled",
+        "config.trust-denied",
+        "config.trust-approved",
+        "config.failed-write",
+        "config.concurrent-change",
+        "config.restart"
+      ]
+    },
+    {
+      "checkpointId": "resource-distribution",
+      "requiredCaseIds": [
+        "distribution.local",
+        "distribution.npm",
+        "distribution.git",
+        "distribution.skill",
+        "distribution.prompt",
+        "distribution.theme",
+        "distribution.native-extension",
+        "distribution.manifest",
+        "distribution.filters",
+        "distribution.invalid-resource",
+        "distribution.conventional-directories",
+        "distribution.exclusions",
+        "distribution.disabled",
+        "distribution.source-metadata",
+        "distribution.temporary-npm-package",
+        "distribution.temporary-git-package",
+        "distribution.temporary-source-order"
+      ]
+    },
+    {
+      "checkpointId": "startup-reload",
+      "requiredCaseIds": [
+        "reload.local",
+        "reload.npm",
+        "reload.git",
+        "reload.updated-resource",
+        "reload.removed-resource",
+        "reload.disabled-resource",
+        "reload.trust-revoked",
+        "reload.no-duplicate-registration"
+      ]
+    },
+    {
+      "checkpointId": "failure-recovery",
+      "requiredCaseIds": [
+        "failure.registry",
+        "failure.git-remote",
+        "failure.invalid-archive",
+        "failure.lifecycle-script",
+        "failure.dependency-install",
+        "failure.settings-publication",
+        "failure.permission",
+        "failure.cancelled-install",
+        "failure.cancelled-update",
+        "failure.interrupted-staging",
+        "failure.restart-recovery"
+      ]
+    },
+    {
+      "checkpointId": "concurrency",
+      "requiredCaseIds": [
+        "concurrent.same-npm-install",
+        "concurrent.same-git-install",
+        "concurrent.install-remove",
+        "concurrent.update-remove",
+        "concurrent.two-process-update",
+        "concurrent.update-discovery",
+        "concurrent.cancelled-lock",
+        "concurrent.crashed-writer",
+        "concurrent.external-settings-change"
+      ]
+    },
+    {
+      "checkpointId": "differential-acceptance",
+      "requiredCaseIds": [
+        "d0.same-pi-package-cli",
+        "d0.same-pi-npm",
+        "d0.same-pi-git",
+        "d0.negative-control"
+      ]
+    },
+    {
+      "checkpointId": "quality",
+      "requiredCaseIds": [
+        "quality.format",
+        "quality.build",
+        "quality.dotnet-suite",
+        "quality.focused-tests",
+        "quality.python-parity",
+        "quality.node-terminal",
+        "quality.mcp",
+        "quality.docs",
+        "quality.differentials"
+      ]
+    },
+    {
+      "checkpointId": "committed-evidence",
+      "requiredCaseIds": [
+        "evidence.feature-matrix",
+        "evidence.execution-ledger",
+        "evidence.continuation",
+        "evidence.todo",
+        "evidence.receipt",
+        "evidence.case-coverage",
+        "evidence.source-links"
+      ]
+    },
+    {
+      "checkpointId": "ci-integration",
+      "requiredCaseIds": [
+        "ci.pinned-pi",
+        "ci.execute-all",
+        "ci.check-all",
+        "ci.negative-controls",
+        "ci.push-head",
+        "ci.pr-head-base",
+        "ci.upload-on-failure"
+      ]
+    },
+    {
+      "checkpointId": "draft-publication",
+      "requiredCaseIds": [
+        "publication.repository",
+        "publication.branch",
+        "publication.base",
+        "publication.head",
+        "publication.open",
+        "publication.draft",
+        "publication.unmerged"
+      ]
+    },
+    {
+      "checkpointId": "exact-head-ci",
+      "requiredCaseIds": [
+        "ci1.push-exact-head",
+        "ci1.pr-exact-head-base",
+        "ci1.required-jobs",
+        "ci1.package-gate",
+        "ci1.tests",
+        "ci1.mcp",
+        "ci1.no-skipped-jobs",
+        "ci1.pr-still-draft"
+      ]
+    }
+  ],
+  "requiredCaseCount": 240,
+  "requiredCheckpointIds": [
+    "p0-prerequisite-merge",
+    "p1-milestone-branch",
+    "verification-infrastructure",
+    "verifier-negative-controls",
+    "source-inventory",
+    "baseline",
+    "cli",
+    "npm-install",
+    "npm-update",
+    "package-managers",
+    "legacy-global",
+    "git-install",
+    "git-update",
+    "identity",
+    "removal-listing",
+    "bulk-updates",
+    "configuration-trust",
+    "resource-distribution",
+    "startup-reload",
+    "failure-recovery",
+    "concurrency",
+    "differential-acceptance",
+    "quality",
+    "committed-evidence",
+    "ci-integration",
+    "draft-publication",
+    "exact-head-ci"
+  ],
+  "schemaVersion": 1
+}

@@ -1,0 +1,134 @@
+{
+  "assertions": {
+    "quality.build": true,
+    "quality.differentials": true,
+    "quality.docs": true,
+    "quality.dotnet-suite": true,
+    "quality.focused-tests": true,
+    "quality.format": true,
+    "quality.mcp": true,
+    "quality.node-terminal": true,
+    "quality.python-parity": true
+  },
+  "differentialCheckpoints": [
+    {
+      "checkpointId": "source-inventory",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "baseline",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "cli",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "npm-install",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "npm-update",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "package-managers",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "legacy-global",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "git-install",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "git-update",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "identity",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "removal-listing",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "bulk-updates",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "configuration-trust",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "resource-distribution",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "startup-reload",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "failure-recovery",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "concurrency",
+      "exitCode": 0
+    },
+    {
+      "checkpointId": "differential-acceptance",
+      "exitCode": 0
+    }
+  ],
+  "docsExitCode": 0,
+  "focusedDotnetTests": {
+    "architecture": {
+      "discovered": 7,
+      "failed": 0,
+      "passed": 7,
+      "skipped": 0
+    },
+    "package": {
+      "discovered": 113,
+      "failed": 0,
+      "passed": 113,
+      "skipped": 0
+    }
+  },
+  "fullDotnetSuite": {
+    "discovered": 3898,
+    "failed": 0,
+    "passed": 3898,
+    "skipped": 0
+  },
+  "match": true,
+  "mcp": {
+    "buildExitCode": 0,
+    "runExitCode": 0
+  },
+  "nodeTests": {
+    "discovered": 24,
+    "failed": 0,
+    "passed": 24,
+    "skipped": 0
+  },
+  "pythonTests": [
+    {
+      "exitCode": 0,
+      "testsRun": 26
+    },
+    {
+      "exitCode": 0,
+      "testsRun": 66
+    },
+    {
+      "exitCode": 0,
+      "testsRun": 27
+    }
+  ],
+  "schemaVersion": 1
+}

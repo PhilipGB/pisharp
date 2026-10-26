@@ -1,0 +1,36 @@
+{
+  "calibrations": {
+    "managed-git-install": {
+      "baselineCaseCount": 10,
+      "fixture": "managed-git-install",
+      "normalizedOracleEqual": true,
+      "normalizedOracleSha256": "0b0ef3f51b1f9f9d96df86572bdc9fe35635ccf4ed5e50d5d3b4f72476a203bf",
+      "repeatCaseCount": 10
+    },
+    "managed-npm": {
+      "baselineCaseCount": 6,
+      "fixture": "managed-npm",
+      "normalizedOracleEqual": true,
+      "normalizedOracleSha256": "b5acf68e56c6e4a9fbb2502f857e90b45b03dd407c777ad5dc22cba29eca8e20",
+      "repeatCaseCount": 6
+    },
+    "package-cli": {
+      "baselineCaseCount": 53,
+      "fixture": "package-cli",
+      "normalizedOracleEqual": true,
+      "normalizedOracleSha256": "8d295f7bc7ce1898c3ba6abc82edf2dc810aa40d75a5fdbd8c0c0084d41cbb83",
+      "repeatCaseCount": 53
+    }
+  },
+  "caseCount": 4,
+  "match": true,
+  "negativeControl": {
+    "detectedMismatch": true,
+    "executed": true,
+    "mutatedComparisonEqual": false,
+    "mutatedField": "head",
+    "originalComparisonEqual": true
+  },
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "schemaVersion": 1
+}
