@@ -18,7 +18,7 @@
       "baselineCaseCount": 53,
       "fixture": "package-cli",
       "normalizedOracleEqual": true,
-      "normalizedOracleSha256": "128b30494171af6f2418a2ef3c22f8655a7f7f7cfbd9d1e44247fea7823d7548",
+      "normalizedOracleSha256": "3810238c4c9d7261984e498a54dde19129e2db4750ffdb5486cf7ee6b90ee04e",
       "repeatCaseCount": 53
     }
   },

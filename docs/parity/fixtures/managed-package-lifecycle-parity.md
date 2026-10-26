@@ -10,7 +10,7 @@ resource loading, startup/reload, failure recovery, and concurrency.
 - Actual PR #26 merge SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - New branch base SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - Branch: `milestone/managed-package-lifecycle-parity`.
-- Implementation source SHA: `d00c55f6f87e790515ed914c3ac421491040daf1`.
+- Implementation source SHA: `71b167f92417614e0eef515b105a5841487eb8fb`.
 - Pinned Pi SHA: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 The reviewed source inventory records 15 capability families and the Pi/PiSharp
@@ -63,11 +63,11 @@ unclassified mismatches in the accepted corpus.
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. The
-latest local exact-source artifact passes 24/27 checkpoints and 218/240
+latest local exact-source artifact passes 23/27 checkpoints and 211/240
 executed cases with zero failures or skips. The committed-evidence checkpoint
-passed against the committed bundle for source
-`d00c55f6f87e790515ed914c3ac421491040daf1`. The remaining 22 cases are in CI integration, draft publication, and
-exact-head CI. The compact
+will be rerun after committing the regenerated bundle for source
+`71b167f92417614e0eef515b105a5841487eb8fb`. The remaining 29 cases are in
+committed evidence, CI integration, draft publication, and exact-head CI. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the
 core corpus and its exact required IDs and classifications.
@@ -107,12 +107,17 @@ settings failures. The `pm.cancellation` case also records a reproduced SIGINT
 delivery race: pinned Pi exits 130 and may leave the interrupted package,
 while PiSharp exits 1 or 130 only when cancellation is observed, settings remain
 unchanged, and the partial package is removed. Any other exit or state fails.
-These accepted differences are limited to the exact cases
-listed in the checkpoint contract: `npm.update-cancelled`,
+The current run records differences in these cases: `npm.update-cancelled`,
 `npm.update-interrupted`, `pm.cancellation`, `git.update-dependency-failure`,
 `bulk.cancelled`, `config.failed-write`, `failure.cancelled-install`,
 `failure.settings-publication`, `failure.interrupted-staging`,
 `failure.restart-recovery`, and `concurrent.update-discovery`.
+
+The contract also allows the observed concurrent npm target race and Git clone
+races when they occur. Concurrent Git installation can produce a clone
+destination collision and a missing template file in pinned Pi; PiSharp
+publishes one valid package. The verifier requires both specific errors and a
+valid PiSharp final state.
 
 The contract classifies 198 cases as strict matches, 2 as equivalent, and 11 as
 intentional safety differences. It records no exclusions or unclassified
@@ -122,17 +127,17 @@ mismatches.
 
 This receipt is bounded to the committed 15-family inventory and 240 required
 cases; it does not claim broader package-manager or platform parity outside those
-cases. CI integration and publication verification remain pending. The new PR must
-remain open, draft, and unmerged. Its automated GitHub Actions will run on
+cases. Committed evidence, CI integration, and publication verification remain
+pending. The new PR must remain open, draft, and unmerged. Its automated GitHub Actions will run on
 publication; exact-head workflow results remain pending.
 
 ## Local quality results
 
 The local quality checkpoint at source SHA
-`d00c55f6f87e790515ed914c3ac421491040daf1` passed formatting, a
+`71b167f92417614e0eef515b105a5841487eb8fb` passed formatting, a
 warnings-as-errors build, all 3,898 .NET tests with zero failures/skips, focused
 package tests 113/113, architecture tests 7/7, managed-package Python tests
-39/39, terminal Python 66/66, built-in differential Python tests 27/27, terminal
+42/42, terminal Python 66/66, built-in differential Python tests 27/27, terminal
 Node tests 24/24, MCP conformance, documentation path validation, and all 18
 lifecycle differential rechecks. A prior push run also passed this quality gate
 at an earlier source SHA but stopped at its stale committed-evidence fixture.
