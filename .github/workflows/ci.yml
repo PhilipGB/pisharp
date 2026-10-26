@@ -39,6 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Verify managed-package evidence controls
         run: python3 tools/parity/managed_packages/test_verifier.py
       - uses: actions/setup-dotnet@v4
