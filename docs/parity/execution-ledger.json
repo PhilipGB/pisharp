@@ -13595,11 +13595,11 @@
   },
   "managed_package_lifecycle_parity_milestone": {
     "status": "in_progress",
-    "phase": "ci_integration",
+    "phase": "committed_evidence",
     "actual_pr26_merge_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
     "branch": "milestone/managed-package-lifecycle-parity",
     "branch_base_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
-    "implementation_source_sha": "b5255197db45fa0a34dc7861d013c201bf247dcd",
+    "implementation_source_sha": "9a36a7bd0f7c6c90670213a490a3ec602615e030",
     "quality_push_run_id": null,
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "receipt": "docs/parity/fixtures/managed-package-lifecycle-parity.md",
@@ -13609,9 +13609,9 @@
     "quality_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/quality-summary.json",
     "differential_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/differential-summary.json",
     "required_checkpoints": 27,
-    "passed_checkpoints_current": 24,
+    "passed_checkpoints_current": 23,
     "required_cases": 240,
-    "executed_cases_current": 218,
+    "executed_cases_current": 211,
     "failed_cases": 0,
     "skipped_cases": 0,
     "case_classifications": {
@@ -13620,10 +13620,10 @@
       "intentional-safety-difference": 11
     },
     "local_quality": {
-      "dotnet_full": "3898 passed, 0 failed, 0 skipped with DOTNET_PROCESSOR_COUNT=2; earlier attempts had timeout failures",
+      "dotnet_full": "3898 passed, 0 failed, 0 skipped with DOTNET_PROCESSOR_COUNT=2; previous source had timeout failures",
       "focused_package": "113 passed, 0 failed, 0 skipped",
       "architecture": "7 passed, 0 failed, 0 skipped",
-      "python": "139 passed across managed-package, terminal, and built-in differential suites",
+      "python": "140 passed across managed-package, terminal, and built-in differential suites",
       "node_terminal": "24 passed, 0 failed, 0 skipped",
       "mcp_conformance": "passed",
       "format": "passed",
@@ -13631,8 +13631,9 @@
       "documentation_paths": "passed",
       "differential_rechecks": "18 passed"
     },
-    "committed_evidence_checkpoint": "passed locally",
+    "committed_evidence_checkpoint": "regenerated; verification pending",
     "remaining_checkpoints": [
+      "committed-evidence",
       "ci-integration",
       "draft-publication",
       "exact-head-ci"
