@@ -4430,6 +4430,33 @@ def _required_workflow_jobs(workflow: str) -> list[str]:
     return names
 
 
+def _workflow_step_block(workflow: str, step_name: str) -> str:
+    lines = workflow.splitlines()
+    marker = f'      - name: {step_name}'
+    matches = [index for index, line in enumerate(lines) if line == marker]
+    if len(matches) != 1:
+        return ''
+    start = matches[0]
+    end = next((index for index in range(start + 1, len(lines))
+                if lines[index].startswith('      - ')), len(lines))
+    return '\n'.join(lines[start:end])
+
+
+def _workflow_has_required_steps(workflow: str, pinned_pi_sha: str) -> bool:
+    corpus_step = _workflow_step_block(workflow, 'Run managed-package parity corpus')
+    return all(marker in workflow for marker in (
+        'python3 tools/parity/managed_packages/verify.py execute --all',
+        'python3 tools/parity/managed_packages/verify.py check --all',
+        'python3 tools/parity/managed_packages/test_verifier.py',
+        'npm --prefix artifacts/parity/pi-ownership-oracle run hydrate:model-data',
+        'npm --prefix artifacts/parity/pi-ownership-oracle run build:offline',
+        'PULL_REQUEST_HEAD_SHA:', 'PULL_REQUEST_BASE_SHA:',
+        'git merge-base --is-ancestor', 'if: always()', 'actions/upload-artifact@v4',
+        pinned_pi_sha,
+    )) and ('PISHARP_TEST_OWNERSHIP_ORACLE: ${{ github.workspace }}/artifacts/parity/builtin-ownership/pinned.json'
+            in corpus_step) and 'continue-on-error:' not in workflow and '|| true' not in workflow
+
+
 def _workflow_gate_state(jobs: list[dict[str, Any]], required_jobs: list[str]) -> dict[str, Any]:
     by_name = {item.get('name'): item for item in jobs if isinstance(item, dict)}
     required_present = all(name in by_name for name in required_jobs)
@@ -4495,16 +4522,7 @@ def execute_ci_integration(output: Path) -> int:
             event_payload = {}
 
     pinned_ok = pi_sha == contract['upstream']['revision'] == report['provenance']['piSha']
-    workflow_has_required_steps = all(marker in workflow for marker in (
-        'python3 tools/parity/managed_packages/verify.py execute --all',
-        'python3 tools/parity/managed_packages/verify.py check --all',
-        'python3 tools/parity/managed_packages/test_verifier.py',
-        'npm --prefix artifacts/parity/pi-ownership-oracle run hydrate:model-data',
-        'npm --prefix artifacts/parity/pi-ownership-oracle run build:offline',
-        'PULL_REQUEST_HEAD_SHA:', 'PULL_REQUEST_BASE_SHA:',
-        'git merge-base --is-ancestor', 'if: always()', 'actions/upload-artifact@v4',
-        contract['upstream']['revision'],
-    )) and 'continue-on-error:' not in workflow and '|| true' not in workflow
+    workflow_has_required_steps = _workflow_has_required_steps(workflow, contract['upstream']['revision'])
 
     core_checkpoint_ids = []
     for item in contract['checkpoints']:

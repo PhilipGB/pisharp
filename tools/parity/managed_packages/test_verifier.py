@@ -295,6 +295,19 @@ class ManagedPackageVerifierTests(unittest.TestCase):
 
     def test_exact_head_workflow_gate_rejects_missing_or_skipped_jobs(self) -> None:
         workflow = (verify.ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+        corpus_step = verify._workflow_step_block(workflow, 'Run managed-package parity corpus')
+        self.assertIn(
+            'PISHARP_TEST_OWNERSHIP_ORACLE: ${{ github.workspace }}/artifacts/parity/builtin-ownership/pinned.json',
+            corpus_step)
+        without_oracle = corpus_step.replace(
+            '          PISHARP_TEST_OWNERSHIP_ORACLE: ${{ github.workspace }}/artifacts/parity/builtin-ownership/pinned.json\n',
+            '')
+        self.assertNotIn('PISHARP_TEST_OWNERSHIP_ORACLE:', without_oracle)
+        without_oracle_workflow = workflow.replace(corpus_step, without_oracle, 1)
+        self.assertFalse(verify._workflow_has_required_steps(
+            without_oracle_workflow, verify.load_contract()['upstream']['revision']))
+        self.assertTrue(verify._workflow_has_required_steps(
+            workflow, verify.load_contract()['upstream']['revision']))
         required = verify._required_workflow_jobs(workflow)
         self.assertEqual({'macos-session-locks', 'macos-clipboard-contracts', 'windows-clipboard-contracts',
                           'managed-package-verifier', 'mcp-conformance'}, set(required))

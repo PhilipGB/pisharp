@@ -114,6 +114,8 @@ jobs:
             test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           fi
       - name: Run managed-package parity corpus
+        env:
+          PISHARP_TEST_OWNERSHIP_ORACLE: ${{ github.workspace }}/artifacts/parity/builtin-ownership/pinned.json
         run: >-
           python3 tools/parity/managed_packages/verify.py execute --all
           --pi artifacts/parity/pi-ownership-oracle
