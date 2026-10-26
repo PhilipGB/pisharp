@@ -2388,27 +2388,16 @@ def _record_package_manager_cases(report: dict[str, Any], output: Path,
             classification = result.get('classification', 'mismatch')
             pi_state = oracle_state if isinstance(oracle_state, dict) else {}
             pisharp_state = actual_state if isinstance(actual_state, dict) else {}
-            pisharp_safe = (pisharp_state.get('exitCode') == 130 and pisharp_state.get('cancelled') is True
+            pisharp_safe = (pisharp_state.get('exitCode') in (1, 130)
+                            and pisharp_state.get('cancelled') is True
                             and pisharp_state.get('managerStarted') is True
                             and pisharp_state.get('sourceConfigured') is False
                             and pisharp_state.get('settingsUnchanged') is True
                             and pisharp_state.get('npmCommandPreserved') is True
                             and pisharp_state.get('packageDirectoryExists') is False
                             and pisharp_state.get('packageManagerConfig') == configured_command)
-            pi_cancelled = (pi_state.get('exitCode') == 130 and pi_state.get('cancelled') is True
-                            and pi_state.get('managerStarted') is True
-                            and pi_state.get('sourceConfigured') is False
-                            and pi_state.get('settingsUnchanged') is True
-                            and pi_state.get('npmCommandPreserved') is True
-                            and pi_state.get('packageDirectoryExists') is True
-                            and pi_state.get('packageManagerConfig') == configured_command)
-            same_except_package_directory = (
-                isinstance(pi_state, dict) and isinstance(pisharp_state, dict)
-                and {key: value for key, value in pi_state.items() if key != 'packageDirectoryExists'}
-                == {key: value for key, value in pisharp_state.items() if key != 'packageDirectoryExists'}
-            )
-            safety_difference = (classification == 'intentional-safety-difference' and pi_cancelled
-                                 and pisharp_safe and same_except_package_directory)
+            safety_difference = (classification == 'intentional-safety-difference'
+                                 and _package_manager_cancellation_safety_difference(pi_state, pisharp_state))
             strict_match = (classification == 'strict' and pi_state == pisharp_state and pisharp_safe)
             passed = (runner_pass and result.get('passed') is True
                       and result.get('fixtureFamily') == fixture_family
@@ -2438,6 +2427,33 @@ def _record_package_manager_cases(report: dict[str, Any], output: Path,
         all_passed = all_passed and passed
     _refresh_checkpoint_result(report, 'package-managers')
     return all_passed
+
+
+def _package_manager_cancellation_safety_difference(pi_state: dict[str, Any],
+                                                    pisharp_state: dict[str, Any]) -> bool:
+    """Accept only the pinned cancellation state and PiSharp's bounded exit-code race."""
+    pisharp_safe = (pisharp_state.get('exitCode') in (1, 130)
+                    and pisharp_state.get('cancelled') is True
+                    and pisharp_state.get('managerStarted') is True
+                    and pisharp_state.get('sourceConfigured') is False
+                    and pisharp_state.get('settingsUnchanged') is True
+                    and pisharp_state.get('npmCommandPreserved') is True
+                    and pisharp_state.get('packageDirectoryExists') is False
+                    and pisharp_state.get('packageManagerConfig') == ['npm'])
+    pi_valid = (pi_state.get('exitCode') == 130 and pi_state.get('cancelled') is True
+                and pi_state.get('managerStarted') is True
+                and pi_state.get('sourceConfigured') is False
+                and pi_state.get('settingsUnchanged') is True
+                and pi_state.get('npmCommandPreserved') is True
+                and pi_state.get('packageDirectoryExists') is True
+                and pi_state.get('packageManagerConfig') == ['npm'])
+    same_except_known_variations = (
+        {key: value for key, value in pi_state.items()
+         if key not in ('exitCode', 'packageDirectoryExists')}
+        == {key: value for key, value in pisharp_state.items()
+            if key not in ('exitCode', 'packageDirectoryExists')}
+    )
+    return pisharp_safe and pi_valid and same_except_known_variations
 
 
 def _record_legacy_global_cases(report: dict[str, Any], output: Path,

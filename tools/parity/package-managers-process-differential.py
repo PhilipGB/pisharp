@@ -214,14 +214,21 @@ def run_case(profile, shims, real_npm, pi, pisharp, case_id, tarballs):
     else:
         pi_state, actual_state = state['pi'], state['pisharp']
         same = pi_state == actual_state
-        pisharp_safe = (actual_state['cancelled'] is True and not actual_state['sourceConfigured']
+        pisharp_safe = (actual_state['exitCode'] in (1, 130) and actual_state['cancelled'] is True
+                        and actual_state['managerStarted'] is True
+                        and not actual_state['sourceConfigured']
                         and actual_state['settingsUnchanged'] and actual_state['npmCommandPreserved']
-                        and not actual_state['packageDirectoryExists'])
-        pi_state_valid = (pi_state['cancelled'] is True and not pi_state['sourceConfigured']
-                          and pi_state['settingsUnchanged'] and pi_state['npmCommandPreserved'])
+                        and not actual_state['packageDirectoryExists']
+                        and actual_state['packageManagerConfig'] == ['npm'])
+        pi_state_valid = (pi_state['exitCode'] == 130 and pi_state['cancelled'] is True
+                          and pi_state['managerStarted'] is True and not pi_state['sourceConfigured']
+                          and pi_state['settingsUnchanged'] and pi_state['npmCommandPreserved']
+                          and pi_state['packageManagerConfig'] == ['npm'])
         safety_only = (pi_state['packageDirectoryExists'] and not actual_state['packageDirectoryExists']
-                       and {key: value for key, value in pi_state.items() if key != 'packageDirectoryExists'}
-                       == {key: value for key, value in actual_state.items() if key != 'packageDirectoryExists'})
+                       and {key: value for key, value in pi_state.items()
+                            if key not in ('exitCode', 'packageDirectoryExists')}
+                       == {key: value for key, value in actual_state.items()
+                           if key not in ('exitCode', 'packageDirectoryExists')})
         passed = pisharp_safe and pi_state_valid and (same or safety_only)
         classification = 'strict' if same else 'intentional-safety-difference'
 

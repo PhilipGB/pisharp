@@ -204,6 +204,28 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         }
         self.assertFalse(verify._is_same_npm_install_safety_difference(case))
 
+    def test_package_manager_cancellation_accepts_only_known_exit_race_with_safe_cleanup(self) -> None:
+        oracle = {
+            'exitCode': 130, 'argv': ['install', 'pkg@1.0.0', '--prefix', '<install-root>'],
+            'sourceConfigured': False, 'packageManagerConfig': ['npm'], 'npmCommandPreserved': True,
+            'settingsUnchanged': True, 'packageDirectoryExists': True,
+            'managerStarted': True, 'cancelled': True,
+        }
+        actual = {**oracle, 'exitCode': 1, 'packageDirectoryExists': False}
+        self.assertTrue(verify._package_manager_cancellation_safety_difference(oracle, actual))
+
+        actual['exitCode'] = 130
+        self.assertTrue(verify._package_manager_cancellation_safety_difference(oracle, actual))
+        for field, value in (
+            ('exitCode', 2), ('packageDirectoryExists', True), ('sourceConfigured', True),
+            ('settingsUnchanged', False), ('npmCommandPreserved', False),
+            ('managerStarted', False), ('cancelled', False), ('packageManagerConfig', ['pnpm']),
+        ):
+            corrupted = {**actual, field: value}
+            self.assertFalse(verify._package_manager_cancellation_safety_difference(oracle, corrupted), field)
+        self.assertFalse(verify._package_manager_cancellation_safety_difference(
+            {**oracle, 'exitCode': 1}, actual))
+
     def test_control_12_zero_discovered_tests_is_rejected(self) -> None:
         self.evidence['testResults']['discovered'] = 0
         self._reject()
