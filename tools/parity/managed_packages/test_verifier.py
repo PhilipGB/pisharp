@@ -292,6 +292,24 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         second_digest = evidence_artifacts._case_digest(second, repository='/repo', evidence_root='/evidence')
         self.assertEqual(first_digest, second_digest)
 
+    def test_committed_cancellation_digest_normalizes_only_the_bounded_exit_race(self) -> None:
+        first = {'exitCode': 0, 'state': {'exitCode': 1, 'cancelled': True,
+                                          'packageDirectoryExists': False}}
+        second = {'exitCode': 0, 'state': {'exitCode': 130, 'cancelled': True,
+                                           'packageDirectoryExists': False}}
+        first_digest = evidence_artifacts._case_side_digest(
+            'pm.cancellation', 'actual', first, repository='/repo', evidence_root='/evidence')
+        second_digest = evidence_artifacts._case_side_digest(
+            'pm.cancellation', 'actual', second, repository='/repo', evidence_root='/evidence')
+        self.assertEqual(first_digest, second_digest)
+
+        unsafe = {'exitCode': 0, 'state': {'exitCode': 2, 'cancelled': True,
+                                           'packageDirectoryExists': False}}
+        self.assertNotEqual(first_digest, evidence_artifacts._case_side_digest(
+            'pm.cancellation', 'actual', unsafe, repository='/repo', evidence_root='/evidence'))
+        self.assertNotEqual(first_digest, evidence_artifacts._case_side_digest(
+            'pm.failure', 'actual', second, repository='/repo', evidence_root='/evidence'))
+
     def test_committed_case_coverage_is_exactly_the_contract_inventory(self) -> None:
         contract = verify.load_contract()
         coverage = evidence_artifacts.build_case_coverage(contract)

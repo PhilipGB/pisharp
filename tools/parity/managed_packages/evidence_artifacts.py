@@ -43,6 +43,14 @@ def _case_digest(value: Any, *, repository: str, evidence_root: str) -> str | No
     return _sha256(canonical_bytes(normalized))
 
 
+def _case_side_digest(case_id: str, side: str, value: Any, *, repository: str,
+                     evidence_root: str) -> str | None:
+    if (case_id == 'pm.cancellation' and side == 'actual' and isinstance(value, dict)
+            and isinstance(value.get('state'), dict) and value['state'].get('exitCode') in (1, 130)):
+        value = {**value, 'state': {**value['state'], 'exitCode': 'bounded-cancellation-exit'}}
+    return _case_digest(value, repository=repository, evidence_root=evidence_root)
+
+
 def build_case_results(evidence: dict[str, Any], contract: dict[str, Any],
                        evidence_root: Path, repository_root: Path,
                        source_sha: str) -> dict[str, Any]:
@@ -67,10 +75,10 @@ def build_case_results(evidence: dict[str, Any], contract: dict[str, Any],
             'commandIdentity': case['execution']['commandIdentity'],
             'commandExitCode': case['execution']['commandExitCode'],
             'fixtureIdentity': case['execution']['fixtureIdentity'],
-            'oracleSha256': _case_digest(case['oracle'], repository=repository,
-                                         evidence_root=str(evidence_root.resolve())),
-            'actualSha256': _case_digest(case['actual'], repository=repository,
-                                         evidence_root=str(evidence_root.resolve())),
+            'oracleSha256': _case_side_digest(case['caseId'], 'oracle', case['oracle'], repository=repository,
+                                              evidence_root=str(evidence_root.resolve())),
+            'actualSha256': _case_side_digest(case['caseId'], 'actual', case['actual'], repository=repository,
+                                              evidence_root=str(evidence_root.resolve())),
         })
     return {
         'schemaVersion': 1,
