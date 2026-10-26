@@ -3425,11 +3425,14 @@ def execute_all(pi_path: Path, output: Path, binary_path: Path, command: list[st
     inventory_result, inventory_passed = _execute_source_inventory_cases(report, output, pi_path, command)
     runner_results.append(inventory_result)
     runner_commands = [
+        ('managed-npm', [sys.executable, str(RUNNERS['managed-npm']), '--pi', str(pi_path.resolve()),
+                         '--profile', str(profile / 'npm'), '--output', str(output / 'managed-npm.json')]),
+        # The npm runner builds the ResourceDiscoveryExtension fixture. Run it
+        # before the package CLI baseline so both CLI calibration samples use
+        # the same compiled DLL bytes.
         ('package-cli', [sys.executable, str(RUNNERS['package-cli']), '--pi', str(pi_path.resolve()),
                          '--pisharp', str(binary_path.resolve()), '--profile', str(profile / 'cli'),
                          '--output', str(output / 'package-cli.json')]),
-        ('managed-npm', [sys.executable, str(RUNNERS['managed-npm']), '--pi', str(pi_path.resolve()),
-                         '--profile', str(profile / 'npm'), '--output', str(output / 'managed-npm.json')]),
         ('managed-npm-update', [sys.executable, str(RUNNERS['managed-npm-update']),
                                 '--pi', str(pi_path.resolve()), '--pisharp', str(binary_path.resolve()),
                                 '--profile', str(profile / 'npm-update'),
