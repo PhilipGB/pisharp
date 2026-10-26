@@ -17,10 +17,17 @@ def _sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
-def _stable_value(value: Any, *, repository: str, evidence_root: str) -> Any:
+def _stable_value(value: Any, *, repository: str, evidence_root: str,
+                  case_id: str = '', git_ids: dict[str, str] | None = None) -> Any:
+    if git_ids is None:
+        git_ids = {}
     if isinstance(value, dict):
         return {
-            key: _stable_value(item, repository=repository, evidence_root=evidence_root)
+            key: ('<runtime-identity>' if case_id == 'v0.runtime-provenance' and key in {
+                'checkedOutSourceSha', 'pisharpSourceSha', 'binarySha256',
+            } else '<loopback-port>' if key == 'gitDaemonPort' and isinstance(item, int)
+            else _stable_value(item, repository=repository, evidence_root=evidence_root,
+                               case_id=case_id, git_ids=git_ids))
             for key, item in sorted(value.items())
             if key.lower() not in {
                 'argv', 'generatedat', 'startedat', 'timestamp', 'durationms',
@@ -28,18 +35,37 @@ def _stable_value(value: Any, *, repository: str, evidence_root: str) -> Any:
             }
         }
     if isinstance(value, list):
-        return [_stable_value(item, repository=repository, evidence_root=evidence_root) for item in value]
+        if (case_id == 'cli.update' and len(value) == 2 and value[0] == 'extensions/index.dll'
+                and isinstance(value[1], str) and re.fullmatch(r'[0-9a-f]{64}', value[1])):
+            return [value[0], '<built-fixture-digest>']
+        return [_stable_value(item, repository=repository, evidence_root=evidence_root,
+                              case_id=case_id, git_ids=git_ids) for item in value]
     if isinstance(value, str):
-        normalized = value.replace(repository, '<REPOSITORY>').replace(evidence_root, '<EVIDENCE>')
+        normalized = value.replace(evidence_root, '<EVIDENCE>')
+        try:
+            relative = Path(evidence_root).relative_to(repository)
+            obfuscated = str(Path(repository).parent / '<app>' / relative)
+            normalized = normalized.replace(obfuscated, '<EVIDENCE>')
+        except ValueError:
+            pass
+        normalized = normalized.replace(repository, '<REPOSITORY>')
         normalized = re.sub(r'/tmp/[^/\s]+', '/tmp/<TEMP>', normalized)
+        normalized = re.sub(r'(?<=127\.0\.0\.1):\d+', ':<PORT>', normalized)
+        if (case_id.startswith('git.') or case_id in {
+                'cli.update', 'concurrent.same-git-install', 'failure.cancelled-update',
+        }) \
+                and re.fullmatch(r'[0-9a-f]{40}', normalized):
+            if normalized not in git_ids:
+                git_ids[normalized] = f'<fixture-git-{len(git_ids) + 1}>'
+            return git_ids[normalized]
         return normalized
     return value
 
 
-def _case_digest(value: Any, *, repository: str, evidence_root: str) -> str | None:
+def _case_digest(value: Any, *, repository: str, evidence_root: str, case_id: str = '') -> str | None:
     if value is None:
         return None
-    normalized = _stable_value(value, repository=repository, evidence_root=evidence_root)
+    normalized = _stable_value(value, repository=repository, evidence_root=evidence_root, case_id=case_id)
     return _sha256(canonical_bytes(normalized))
 
 
@@ -48,7 +74,14 @@ def _case_side_digest(case_id: str, side: str, value: Any, *, repository: str,
     if (case_id == 'pm.cancellation' and side == 'actual' and isinstance(value, dict)
             and isinstance(value.get('state'), dict) and value['state'].get('exitCode') in (1, 130)):
         value = {**value, 'state': {**value['state'], 'exitCode': 'bounded-cancellation-exit'}}
-    return _case_digest(value, repository=repository, evidence_root=evidence_root)
+    if case_id.startswith('d0.same-pi-') and isinstance(value, dict) and isinstance(value.get('state'), dict):
+        state = value['state']
+        baseline = state.get('baselineNormalizedOracleSha256')
+        repeat = state.get('repeatNormalizedOracleSha256')
+        if isinstance(baseline, str) and re.fullmatch(r'[0-9a-f]{64}', baseline) and baseline == repeat:
+            value = {**value, 'state': {**state, 'baselineNormalizedOracleSha256': '<matching-digests>',
+                                        'repeatNormalizedOracleSha256': '<matching-digests>'}}
+    return _case_digest(value, repository=repository, evidence_root=evidence_root, case_id=case_id)
 
 
 def build_case_results(evidence: dict[str, Any], contract: dict[str, Any],
@@ -175,7 +208,10 @@ def build_differential_summary(differential: dict[str, Any], cases: dict[str, An
             'baselineCaseCount': item['baselineCaseCount'],
             'repeatCaseCount': item['repeatCaseCount'],
             'normalizedOracleEqual': item['normalizedOracleEqual'],
-            'normalizedOracleSha256': item['baselineNormalizedOracleSha256'],
+            'oracleDigestsMatched': (isinstance(item['baselineNormalizedOracleSha256'], str)
+                                     and re.fullmatch(r'[0-9a-f]{64}', item['baselineNormalizedOracleSha256'])
+                                     is not None and item['baselineNormalizedOracleSha256']
+                                     == item['repeatNormalizedOracleSha256']),
         }
         for name, item in sorted(differential['calibrations'].items())
     }

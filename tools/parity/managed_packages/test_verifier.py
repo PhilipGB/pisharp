@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import contextlib
+import copy
 import importlib.util
 import io
 from pathlib import Path
@@ -352,6 +353,76 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         first_digest = evidence_artifacts._case_digest(first, repository='/repo', evidence_root='/evidence')
         second_digest = evidence_artifacts._case_digest(second, repository='/repo', evidence_root='/evidence')
         self.assertEqual(first_digest, second_digest)
+
+    def test_committed_case_digest_normalizes_fixture_roots_and_loopback_ports(self) -> None:
+        first = {'source': 'npm:x@file:/repo/artifacts/run-one/profile/tmp/package-a/a.tgz',
+                 'git': 'git://127.0.0.1:12345/fixture/repo', 'gitDaemonPort': 12345}
+        second = {'source': 'npm:x@file:/repo/artifacts/run-two/profile/tmp/package-b/a.tgz',
+                  'git': 'git://127.0.0.1:54321/fixture/repo', 'gitDaemonPort': 54321}
+        one = evidence_artifacts._case_side_digest('git.install-url-shorthands', 'actual', first,
+                                                   repository='/repo', evidence_root='/repo/artifacts/run-one')
+        two = evidence_artifacts._case_side_digest('git.install-url-shorthands', 'actual', second,
+                                                   repository='/repo', evidence_root='/repo/artifacts/run-two')
+        self.assertEqual(one, two)
+        second['source'] = second['source'].replace('a.tgz', 'different.tgz')
+        self.assertNotEqual(one, evidence_artifacts._case_side_digest(
+            'git.install-url-shorthands', 'actual', second, repository='/repo',
+            evidence_root='/repo/artifacts/run-two'))
+
+    def test_committed_fixture_git_normalization_preserves_equality_relationships(self) -> None:
+        def digest(state):
+            return evidence_artifacts._case_side_digest(
+                'git.update-moving', 'actual', state, repository='/repo', evidence_root='/evidence')
+        self.assertEqual(digest({'head': 'a' * 40, 'expectedHead': 'a' * 40}),
+                         digest({'head': 'b' * 40, 'expectedHead': 'b' * 40}))
+        self.assertNotEqual(digest({'head': 'a' * 40, 'expectedHead': 'a' * 40}),
+                            digest({'head': 'a' * 40, 'expectedHead': 'b' * 40}))
+
+    def test_calibration_normalization_preserves_mismatched_digests(self) -> None:
+        def digest(first, second):
+            return evidence_artifacts._case_side_digest(
+                'd0.same-pi-package-cli', 'actual',
+                {'state': {'baselineNormalizedOracleSha256': first, 'repeatNormalizedOracleSha256': second}},
+                repository='/repo', evidence_root='/evidence')
+        self.assertEqual(digest('a' * 64, 'a' * 64), digest('b' * 64, 'b' * 64))
+        self.assertNotEqual(digest('a' * 64, 'a' * 64), digest('a' * 64, 'b' * 64))
+
+    def test_committed_concurrency_receipt_accepts_only_bounded_outcome_variation(self) -> None:
+        historical = {'cases': [
+            {'caseId': 'concurrent.same-git-install', 'executed': True, 'passed': True,
+             'classification': 'strict', 'oracleSha256': 'a', 'actualSha256': 'valid'},
+            {'caseId': 'other', 'executed': True, 'passed': True,
+             'classification': 'strict', 'oracleSha256': 'x', 'actualSha256': 'y'},
+        ], 'classificationCounts': {'strict': 2, 'equivalent': 0, 'intentional-safety-difference': 0}}
+        current = copy.deepcopy(historical)
+        current['cases'][0].update(classification='intentional-safety-difference', oracleSha256='b')
+        current['classificationCounts'].update(strict=1, **{'intentional-safety-difference': 1})
+        self.assertTrue(verify._portable_concurrency_fixture_matches('case-results.json', historical, current))
+        tampered = copy.deepcopy(current)
+        tampered['cases'][0]['actualSha256'] = 'unsafe'
+        self.assertFalse(verify._portable_concurrency_fixture_matches('case-results.json', historical, tampered))
+        tampered = copy.deepcopy(current)
+        tampered['cases'][1]['oracleSha256'] = 'unrelated-change'
+        self.assertFalse(verify._portable_concurrency_fixture_matches('case-results.json', historical, tampered))
+        tampered = copy.deepcopy(historical)
+        tampered['cases'][0]['oracleSha256'] = 'unrelated-change'
+        self.assertFalse(verify._portable_concurrency_fixture_matches('case-results.json', historical, tampered))
+        tampered = copy.deepcopy(historical)
+        tampered['classificationCounts']['strict'] = 1
+        self.assertFalse(verify._portable_concurrency_fixture_matches('case-results.json', tampered, current))
+
+        inventory = {'capabilities': [{'capabilityId': 'concurrency',
+                                       'requiredCaseIds': ['concurrent.same-git-install'],
+                                       'classifications': {'strict': 1, 'equivalent': 0,
+                                                           'intentional-safety-difference': 0}}]}
+        current_inventory = copy.deepcopy(inventory)
+        current_inventory['capabilities'][0]['classifications'].update(
+            strict=0, **{'intentional-safety-difference': 1})
+        self.assertTrue(verify._portable_concurrency_fixture_matches(
+            'inventory.json', inventory, current_inventory, historical))
+        inventory['capabilities'][0]['classifications']['strict'] = 2
+        self.assertFalse(verify._portable_concurrency_fixture_matches(
+            'inventory.json', inventory, current_inventory, historical))
 
     def test_committed_cancellation_digest_normalizes_only_the_bounded_exit_race(self) -> None:
         first = {'exitCode': 0, 'state': {'exitCode': 1, 'cancelled': True,

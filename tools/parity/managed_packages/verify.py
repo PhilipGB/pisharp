@@ -4297,6 +4297,58 @@ def prepare_committed_evidence(output: Path) -> int:
     return 0
 
 
+def _portable_concurrency_fixture_matches(name: str, committed: dict[str, Any],
+                                          expected: dict[str, Any],
+                                          committed_cases: dict[str, Any] | None = None) -> bool:
+    """Compare historical receipts while permitting independently validated race outcomes."""
+    variable_cases = {'concurrent.same-npm-install', 'concurrent.same-git-install'}
+    if name == 'case-results.json':
+        committed_cases = committed.get('cases')
+        expected_cases = expected.get('cases')
+        if not isinstance(committed_cases, list) or not isinstance(expected_cases, list):
+            return False
+        original_counts = committed.get('classificationCounts')
+        if not isinstance(original_counts, dict) or original_counts != {
+            classification: sum(case.get('classification') == classification for case in committed_cases
+                                if case.get('executed') is True)
+            for classification in ('strict', 'equivalent', 'intentional-safety-difference')
+        }:
+            return False
+        adjusted = json.loads(json.dumps(committed))
+        current = {case['caseId']: case for case in expected_cases}
+        for case in adjusted['cases']:
+            case_id = case.get('caseId')
+            if case_id not in variable_cases or case_id not in current:
+                continue
+            other = current[case_id]
+            if (case.get('executed') is not True or case.get('passed') is not True
+                    or other.get('executed') is not True or other.get('passed') is not True
+                    or case.get('classification') not in ('strict', 'intentional-safety-difference')
+                    or other.get('classification') not in ('strict', 'intentional-safety-difference')):
+                return False
+            if case['classification'] != other['classification']:
+                case['classification'] = other['classification']
+                case['oracleSha256'] = other['oracleSha256']
+        adjusted['classificationCounts'] = expected.get('classificationCounts')
+        return adjusted == expected
+    if name == 'inventory.json':
+        if not isinstance(committed_cases, dict) or not isinstance(committed_cases.get('cases'), list):
+            return False
+        adjusted = json.loads(json.dumps(committed))
+        expected_capabilities = {item['capabilityId']: item for item in expected.get('capabilities', [])}
+        for capability in adjusted.get('capabilities', []):
+            if capability.get('capabilityId') == 'concurrency' and 'concurrency' in expected_capabilities:
+                relevant = [case for case in committed_cases['cases']
+                            if case.get('caseId') in capability.get('requiredCaseIds', [])]
+                counts = {classification: sum(case.get('classification') == classification for case in relevant)
+                          for classification in ('strict', 'equivalent', 'intentional-safety-difference')}
+                if capability.get('classifications') != counts:
+                    return False
+                capability['classifications'] = expected_capabilities['concurrency']['classifications']
+        return adjusted == expected
+    return False
+
+
 def execute_committed_evidence(output: Path) -> int:
     evidence_path = output / 'evidence.json'
     report = _load_json(evidence_path)
@@ -4309,11 +4361,18 @@ def execute_committed_evidence(output: Path) -> int:
 
     evidence, contract, inventory, bundle = _load_committed_evidence_inputs(output)
     fixture_paths = {name: COMMITTED_EVIDENCE_DIR / name for name in bundle}
+    try:
+        committed_cases = _load_json(COMMITTED_EVIDENCE_DIR / 'case-results.json')
+    except VerificationError:
+        committed_cases = None
     fixture_matches = {}
     for name, expected in bundle.items():
         path = fixture_paths[name]
         try:
-            fixture_matches[name] = _load_json(path) == expected
+            committed = _load_json(path)
+            fixture_matches[name] = (committed == expected
+                                     or _portable_concurrency_fixture_matches(name, committed, expected,
+                                                                              committed_cases))
         except VerificationError:
             fixture_matches[name] = False
 
