@@ -63,12 +63,14 @@ unclassified mismatches in the accepted corpus.
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. The
-fresh local report passed the first 23 checkpoints and executed 211 cases with
-zero failures and zero skips. The 29 cases in committed evidence, CI
-integration, draft publication, and exact-head CI remain for the publication
-phase. The detailed [case coverage](managed-package-lifecycle-parity/case-coverage.json)
-and [case results](managed-package-lifecycle-parity/case-results.json) preserve
-the exact required IDs and classifications.
+initial local corpus passed 23 checkpoints and executed 211 cases with zero
+failures and zero skips. After the receipt and evidence bundle were committed,
+the committed-evidence checkpoint passed; the live report now passes 24/27
+checkpoints and 218/240 cases, with zero failures or skips. The remaining 22
+cases are in CI integration, draft publication, and exact-head CI. The compact
+[case coverage](managed-package-lifecycle-parity/case-coverage.json) and
+[case results](managed-package-lifecycle-parity/case-results.json) preserve the
+core local corpus and its exact required IDs and classifications.
 
 ## Differential results
 
@@ -116,11 +118,11 @@ mismatches.
 
 This receipt is bounded to the committed 15-family inventory and 240 required
 cases; it does not claim broader package-manager or platform parity outside those
-cases. At this evidence freeze, push CI integration, draft PR publication, and
-exact-head push/PR workflow verification are pending. The milestone requires a
-new PR to remain open, draft, and unmerged; live workflow IDs and current GitHub
-state will be verified by the publication checker and recorded in the PR
-description.
+cases. The committed-evidence checkpoint passes. Push CI integration, draft PR
+publication, and exact-head push/PR workflow verification remain pending. The
+milestone requires a new PR to remain open, draft, and unmerged; live workflow
+IDs and current GitHub state will be verified by the publication checker and
+recorded in the PR description.
 
 ## Local quality results
 

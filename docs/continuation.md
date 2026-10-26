@@ -5,12 +5,12 @@
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
 this branch is based on that merge, and Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The source-pinned managed-package
-corpus passes 23/27 checkpoints and 211/240 required cases, with zero failures
-or skips. The final local quality run passes 3,898/3,898 .NET tests, focused
+corpus passes 24/27 checkpoints and 218/240 required cases, with zero failures
+or skips; committed evidence now passes. The final local quality run passes 3,898/3,898 .NET tests, focused
 package tests 113/113, architecture tests 7/7, Python 119/119 across three
 suites, Node 24/24, MCP conformance, format, warnings-as-errors build, docs, and
-all 18 differential rechecks. Twenty-nine cases remain across committed
-evidence, CI integration, draft publication, and exact-head CI. The corrected
+all 18 differential rechecks. Twenty-two cases remain across CI integration,
+draft publication, and exact-head CI. The corrected
 resource-distribution path covers temporary npm/Git package roots through
 startup and reload without persisting invocation-only settings. See the
 [receipt](parity/fixtures/managed-package-lifecycle-parity.md) and

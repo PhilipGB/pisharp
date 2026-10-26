@@ -5,11 +5,12 @@
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
 this branch is based on that merge, with Pi pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The local package corpus passes
-23/27 checkpoints and 211/240 cases, with zero failures/skips. Format,
+24/27 checkpoints and 218/240 cases, with zero failures/skips, including the
+committed-evidence checkpoint. Format,
 warnings-as-errors build, .NET 3,898/3,898, focused package 113/113,
 architecture 7/7, Python 119/119, Node 24/24, MCP conformance, docs and all
-18 differential rechecks pass. The remaining 29 cases cover committed evidence,
-CI integration, draft publication, and exact-head CI. See the
+18 differential rechecks pass. The remaining 22 cases cover CI integration,
+draft publication, and exact-head CI. See the
 [managed-package receipt](docs/parity/fixtures/managed-package-lifecycle-parity.md)
 and [inventory](docs/parity/fixtures/managed-package-lifecycle-parity/inventory.json).
 
