@@ -184,6 +184,39 @@ def origin_head_clone_race(command_results: list[dict]) -> bool:
             and 'git rev-parse origin/HEAD failed with code 128' in diagnostics)
 
 
+def npm_target_install_race(command_results: list[dict]) -> bool:
+    return any(
+        result.get('exitCode') != 0
+        and 'npm error code ENOENT' in result.get('stderr', '')
+        and ('node_modules/concurrent-same-npm/package.json' in result.get('stderr', '')
+             or ('Cannot cd into' in result.get('stderr', '')
+                 and 'node_modules/concurrent-same-npm' in result.get('stderr', '')))
+        for result in command_results
+    )
+
+
+def is_same_npm_install_safety_difference(pi: dict, pisharp: dict,
+                                          oracle: dict, actual: dict) -> bool:
+    return (oracle != actual
+            and pi.get('npmTargetInstallRace') is True
+            and pi.get('commandOutcomeClasses') in (['failure', 'failure'], ['failure', 'success'])
+            and pi.get('allProcessesReaped') is True
+            and pi.get('boundedSeconds') is True
+            and pi.get('settingsValid') is True
+            and pi.get('sourceOccurrences', 0) <= 1
+            and not pi.get('updateArtifacts')
+            and pisharp.get('allProcessesReaped') is True
+            and pisharp.get('boundedSeconds') is True
+            and pisharp.get('settingsValid') is True
+            and pisharp.get('sourceConfigured') is True
+            and pisharp.get('sourceOccurrences') == 1
+            and pisharp.get('packageRootPresent') is True
+            and pisharp.get('installedVersion') == pisharp.get('expectedVersion')
+            and pisharp.get('packageManifestValid') is True
+            and not pisharp.get('updateArtifacts')
+            and pisharp.get('commandOutcomeClasses') == ['success', 'success'])
+
+
 def is_same_git_install_safety_difference(pi: dict, pisharp: dict,
                                           oracle: dict, actual: dict) -> bool:
     return (oracle != actual
@@ -211,6 +244,11 @@ def command_summary(result: dict) -> dict:
 
 
 def project_state(case_id: str, observed: dict) -> dict:
+    if case_id == 'concurrent.same-npm-install':
+        return {key: observed.get(key) for key in (
+            'commandOutcomeClasses', 'allProcessesReaped', 'boundedSeconds', 'settingsValid',
+            'sourceConfigured', 'sourceOccurrences', 'packageRootPresent', 'installedVersion',
+            'packageManifestValid', 'expectedVersion', 'updateArtifacts')}
     if case_id == 'concurrent.same-git-install':
         return {key: observed.get(key) for key in (
             'allProcessesReaped', 'boundedSeconds', 'settingsValid', 'sourceConfigured',
@@ -289,6 +327,7 @@ def case_same_npm(profile: Path, scratch: Path, pi: Path, pisharp: Path, env: di
         command_results = parallel_pair(product, pi, pisharp, item, commands,
                                         profile / 'gates/same-npm.py')
         observed, product_pass = clean_npm_state(item, source, name, command_results, version)
+        observed['npmTargetInstallRace'] = npm_target_install_race(command_results)
         product_pass = product_pass and observed['sourceConfigured'] and observed['sourceOccurrences'] == 1
         results[product] = observed
         passed = passed and product_pass
@@ -649,6 +688,10 @@ def main() -> int:
             equal = oracle == actual
             classification = 'strict' if equal else 'mismatch'
             passed = satisfied and equal
+            if (case_id == 'concurrent.same-npm-install'
+                    and is_same_npm_install_safety_difference(pi_observed, pisharp_observed,
+                                                              oracle, actual)):
+                classification, passed = 'intentional-safety-difference', True
             if (case_id == 'concurrent.same-git-install'
                     and is_same_git_install_safety_difference(pi_observed, pisharp_observed, oracle, actual)):
                 classification, passed = 'intentional-safety-difference', True

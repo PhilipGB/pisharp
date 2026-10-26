@@ -165,6 +165,45 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         }
         self.assertFalse(verify._is_same_git_install_safety_difference(case))
 
+    def test_same_npm_install_accepts_only_captured_enoent_race_with_safe_result(self) -> None:
+        oracle = {
+            'commandOutcomeClasses': ['failure', 'success'], 'allProcessesReaped': True,
+            'boundedSeconds': True, 'settingsValid': True, 'sourceConfigured': True,
+            'sourceOccurrences': 1, 'packageRootPresent': True, 'installedVersion': '1.0.0',
+            'packageManifestValid': True, 'expectedVersion': '1.0.0', 'updateArtifacts': [],
+        }
+        actual = {**oracle, 'commandOutcomeClasses': ['success', 'success']}
+        case = {
+            'equal': False, 'oracle': oracle, 'actual': actual,
+            'observations': {
+                'pi': {**oracle, 'npmTargetInstallRace': True},
+                'pisharp': actual,
+            },
+        }
+        self.assertTrue(verify._is_same_npm_install_safety_difference(case))
+        case['observations']['pi']['npmTargetInstallRace'] = False
+        self.assertFalse(verify._is_same_npm_install_safety_difference(case))
+
+    def test_same_npm_install_safety_difference_requires_two_successful_pisharp_processes(self) -> None:
+        case = {
+            'equal': False, 'oracle': {'installedVersion': None}, 'actual': {'installedVersion': '1.0.0'},
+            'observations': {
+                'pi': {
+                    'npmTargetInstallRace': True, 'commandOutcomeClasses': ['failure', 'failure'],
+                    'allProcessesReaped': True, 'boundedSeconds': True, 'settingsValid': True,
+                    'sourceOccurrences': 0, 'updateArtifacts': [],
+                },
+                'pisharp': {
+                    'allProcessesReaped': True, 'boundedSeconds': True, 'settingsValid': True,
+                    'sourceConfigured': True, 'sourceOccurrences': 1, 'packageRootPresent': True,
+                    'installedVersion': '1.0.0', 'expectedVersion': '1.0.0',
+                    'packageManifestValid': True, 'updateArtifacts': [],
+                    'commandOutcomeClasses': ['failure', 'success'],
+                },
+            },
+        }
+        self.assertFalse(verify._is_same_npm_install_safety_difference(case))
+
     def test_control_12_zero_discovered_tests_is_rejected(self) -> None:
         self.evidence['testResults']['discovered'] = 0
         self._reject()
