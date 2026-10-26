@@ -72,6 +72,25 @@ class ManagedPackageVerifierTests(unittest.TestCase):
               self.assertRaises(verify.ExecutionUnavailable)):
             verify._runtime_branch_name()
 
+    def test_pr_branch_history_uses_head_only_for_verified_merge_parents(self) -> None:
+        merge, base, head = 'a' * 40, 'b' * 40, 'c' * 40
+        event = self.root / 'pr-event.json'
+        event.write_text(json.dumps({'pull_request': {'head': {'sha': head}, 'base': {'sha': base}}}))
+        with (mock.patch.dict('os.environ', {'GITHUB_EVENT_NAME': 'pull_request',
+                                             'GITHUB_EVENT_PATH': str(event)}, clear=True),
+              mock.patch.object(verify, '_git', side_effect=[merge, f'{merge} {base} {head}'])):
+            self.assertEqual(head, verify._branch_history_head())
+        with (mock.patch.dict('os.environ', {'GITHUB_EVENT_NAME': 'pull_request',
+                                             'GITHUB_EVENT_PATH': str(event)}, clear=True),
+              mock.patch.object(verify, '_git', side_effect=[merge, f'{merge} {base} {"d" * 40}']),
+              self.assertRaises(verify.MandatoryFailure)):
+            verify._branch_history_head()
+
+    def test_non_pr_branch_history_uses_checkout_head(self) -> None:
+        with (mock.patch.dict('os.environ', {'GITHUB_EVENT_NAME': 'push'}, clear=True),
+              mock.patch.object(verify, '_git', return_value='a' * 40)):
+            self.assertEqual('a' * 40, verify._branch_history_head())
+
     def test_checkpoint_dependencies_cannot_be_bypassed(self) -> None:
         npm_install = next(item for item in self.evidence['checkpointResults']
                            if item['checkpointId'] == 'npm-install')

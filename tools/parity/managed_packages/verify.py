@@ -330,6 +330,27 @@ def _runtime_branch_name() -> str:
     raise ExecutionUnavailable('Cannot determine the current branch from Git or GitHub Actions metadata')
 
 
+def _branch_history_head() -> str:
+    """Select the PR head only after proving the checked-out merge has the advertised parents."""
+    head = _git('rev-parse', 'HEAD')
+    if os.environ.get('GITHUB_EVENT_NAME') != 'pull_request':
+        return head
+    event_path = os.environ.get('GITHUB_EVENT_PATH')
+    if not event_path:
+        raise ExecutionUnavailable('Pull request event metadata is required to verify branch history')
+    event = _load_json(Path(event_path))
+    pull_request = event.get('pull_request') or {}
+    pr_head = (pull_request.get('head') or {}).get('sha')
+    pr_base = (pull_request.get('base') or {}).get('sha')
+    if not all(isinstance(value, str) and re.fullmatch(r'[0-9a-f]{40}', value)
+               for value in (pr_head, pr_base)):
+        raise VerificationError('Pull request event has invalid head or base SHA')
+    parents = _git('rev-list', '--parents', '-n', '1', head).split()
+    if parents != [head, pr_base, pr_head]:
+        raise MandatoryFailure('Checked-out PR merge does not have the advertised base and head parents')
+    return pr_head
+
+
 def _safe_artifact(evidence_root: Path, relative: str) -> Path:
     candidate = (evidence_root / relative).resolve()
     root = evidence_root.resolve()
@@ -1137,8 +1158,9 @@ def _record_prerequisite_cases(report: dict[str, Any], output: Path, pi_path: Pa
         input_fingerprint=_sha256_bytes(_canonical_bytes({'piSha': pi_sha, 'pin': expected_pi_sha})),
     )
 
-    ahead = int(_git('rev-list', '--count', f'{merge_sha}..HEAD')) if merge_sha else -1
-    merge_commits = _git('rev-list', '--merges', '--format=%H', f'{merge_sha}..HEAD').splitlines() if merge_sha else []
+    history_head = _branch_history_head()
+    ahead = int(_git('rev-list', '--count', f'{merge_sha}..{history_head}')) if merge_sha else -1
+    merge_commits = _git('rev-list', '--merges', '--format=%H', f'{merge_sha}..{history_head}').splitlines() if merge_sha else []
     clean_start_pass = base_pass and ahead >= 0 and all(not line or line.startswith('commit ') for line in merge_commits)
     # A fresh branch may contain later milestone commits; the base ancestry must remain the recorded merge.
     clean_expected_state = {'baseSha': merge_sha, 'noImportedMergeCommits': True}
@@ -1151,7 +1173,7 @@ def _record_prerequisite_cases(report: dict[str, Any], output: Path, pi_path: Pa
                   'state': {'baseSha': clean_actual_state['baseSha'],
                             'noImportedMergeCommits': clean_actual_state['noImportedMergeCommits']}},
         passed=clean_start_pass, command_identity='git rev-parse and merge-base checks',
-        argv=['git', 'rev-list', '--merges', f'{merge_sha}..HEAD'],
+        argv=['git', 'rev-list', '--merges', f'{merge_sha}..{history_head}'],
         command_exit_code=0 if clean_start_pass else 1, fixture_identity='git-checkout',
         input_fingerprint=_sha256_bytes(_canonical_bytes(clean_actual_state)),
     )
