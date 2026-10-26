@@ -214,7 +214,8 @@ class ManagedPackageVerifierTests(unittest.TestCase):
                           'managed-package-verifier', 'mcp-conformance'}, set(required))
         package_steps = [
             {'name': name, 'conclusion': 'success'} for name in (
-                'Verify managed-package evidence controls', 'Run managed-package parity corpus',
+                'Verify managed-package evidence controls', 'Hydrate pinned Pi model data',
+                'Build pinned Pi offline', 'Run managed-package parity corpus',
                 'Record managed-package CI integration', 'Independently check managed-package evidence',
                 'Run dotnet test PiSharp.slnx --no-build --no-restore',
             )
@@ -228,6 +229,7 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         self.assertTrue(state['requiredJobsPresent'])
         self.assertTrue(state['allJobsCompletedSuccessfully'])
         self.assertTrue(state['packageGatePassed'])
+        self.assertTrue(state['pinnedPiPrepared'])
         self.assertTrue(state['fullDotnetSuitePassed'])
         self.assertTrue(state['mcpConformancePassed'])
 
@@ -291,7 +293,8 @@ class ManagedPackageVerifierTests(unittest.TestCase):
                 for name in required]
         package_job = next(item for item in jobs if item['name'] == 'managed-package-verifier')
         package_job['steps'] = [{'name': name, 'conclusion': 'success'} for name in (
-            'Verify managed-package evidence controls', 'Run managed-package parity corpus',
+            'Verify managed-package evidence controls', 'Hydrate pinned Pi model data',
+            'Build pinned Pi offline', 'Run managed-package parity corpus',
             'Record managed-package CI integration', 'Independently check managed-package evidence',
             'Run dotnet test PiSharp.slnx --no-build --no-restore',
         )]

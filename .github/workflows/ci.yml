@@ -79,6 +79,10 @@ jobs:
       - run: dotnet format PiSharp.slnx --verify-no-changes --no-restore
       - run: dotnet build PiSharp.slnx --no-restore --warnaserror
       - run: npm ci --prefix artifacts/parity/pi-ownership-oracle --ignore-scripts --no-audit --no-fund
+      - name: Hydrate pinned Pi model data
+        run: npm --prefix artifacts/parity/pi-ownership-oracle run hydrate:model-data
+      - name: Build pinned Pi offline
+        run: npm --prefix artifacts/parity/pi-ownership-oracle run build:offline
       - name: Run pinned multimodal image and session differentials
         run: |
           mkdir -p artifacts/parity/multimodal-differential

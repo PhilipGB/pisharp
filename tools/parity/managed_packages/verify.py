@@ -4378,6 +4378,8 @@ def _workflow_gate_state(jobs: list[dict[str, Any]], required_jobs: list[str]) -
                      if isinstance(item, dict)}
     package_step_names = (
         'Verify managed-package evidence controls',
+        'Hydrate pinned Pi model data',
+        'Build pinned Pi offline',
         'Run managed-package parity corpus',
         'Record managed-package CI integration',
         'Independently check managed-package evidence',
@@ -4394,6 +4396,8 @@ def _workflow_gate_state(jobs: list[dict[str, Any]], required_jobs: list[str]) -
         'observedJobNames': sorted(name for name in by_name if isinstance(name, str)),
         'allJobsCompletedSuccessfully': all_successful,
         'packageGatePassed': package_gate,
+        'pinnedPiPrepared': (package_steps.get('Hydrate pinned Pi model data', {}).get('conclusion') == 'success'
+                             and package_steps.get('Build pinned Pi offline', {}).get('conclusion') == 'success'),
         'packageGateSteps': {name: package_steps.get(name, {}).get('conclusion')
                              for name in package_step_names},
         'fullDotnetSuitePassed': full_tests.get('conclusion') == 'success',
@@ -4433,6 +4437,8 @@ def execute_ci_integration(output: Path) -> int:
         'python3 tools/parity/managed_packages/verify.py execute --all',
         'python3 tools/parity/managed_packages/verify.py check --all',
         'python3 tools/parity/managed_packages/test_verifier.py',
+        'npm --prefix artifacts/parity/pi-ownership-oracle run hydrate:model-data',
+        'npm --prefix artifacts/parity/pi-ownership-oracle run build:offline',
         'PULL_REQUEST_HEAD_SHA:', 'PULL_REQUEST_BASE_SHA:',
         'git merge-base --is-ancestor', 'if: always()', 'actions/upload-artifact@v4',
         contract['upstream']['revision'],
@@ -4506,7 +4512,10 @@ def execute_ci_integration(output: Path) -> int:
     }
     details_by_case = {
         'ci.pinned-pi': {'pinnedPiSha': contract['upstream']['revision'], 'checkedOutPiSha': pi_sha,
-                         'workflowContractPresent': workflow_has_required_steps},
+                         'workflowContractPresent': workflow_has_required_steps,
+                         'hydrationAndOfflineBuildRequired': (
+                             'Hydrate pinned Pi model data' in workflow
+                             and 'Build pinned Pi offline' in workflow)},
         'ci.execute-all': {'executeAllCommandRecorded': '--all' in report['provenance']['command'],
                            'allCoreCheckpointsPassed': all_core_passed,
                            'allCoreCasesPassed': all_core_cases_passed,
@@ -4853,7 +4862,9 @@ def check_publication(pr_number: int, evidence_root: Path | None = None) -> int:
         'ci1.package-gate': {'pushArtifactPassed': push_summary.get('artifactPassed'),
                              'prArtifactPassed': pr_summary.get('artifactPassed'),
                              'pushPackageGate': (push_summary.get('gate') or {}).get('packageGatePassed'),
-                             'prPackageGate': (pr_summary.get('gate') or {}).get('packageGatePassed')},
+                             'prPackageGate': (pr_summary.get('gate') or {}).get('packageGatePassed'),
+                             'pushPinnedPiPrepared': (push_summary.get('gate') or {}).get('pinnedPiPrepared'),
+                             'prPinnedPiPrepared': (pr_summary.get('gate') or {}).get('pinnedPiPrepared')},
         'ci1.tests': {'push': (push_summary.get('gate') or {}).get('fullDotnetSuitePassed'),
                       'pr': (pr_summary.get('gate') or {}).get('fullDotnetSuitePassed')},
         'ci1.mcp': {'push': (push_summary.get('gate') or {}).get('mcpConformancePassed'),
