@@ -305,7 +305,7 @@ def _platform_metadata() -> dict[str, str]:
 @lru_cache(maxsize=1)
 def _runtime_state() -> dict[str, str]:
     head = _git('rev-parse', 'HEAD')
-    branch = _git('branch', '--show-current')
+    branch = _runtime_branch_name()
     try:
         base = _git('merge-base', 'HEAD', 'origin/main')
     except ExecutionUnavailable as error:
@@ -317,6 +317,17 @@ def _runtime_state() -> dict[str, str]:
     if 'github.com/PhilipGB/pisharp' not in remote and 'github.com:PhilipGB/pisharp' not in remote:
         raise MandatoryFailure(f'Unexpected origin remote for evidence: {remote}')
     return {'headSha': head, 'branch': branch, 'baseSha': base, 'piSha': pi_sha, 'remote': remote}
+
+
+def _runtime_branch_name() -> str:
+    branch = _git('branch', '--show-current')
+    if branch:
+        return branch
+    # GitHub checks out pull-request merge refs detached; use the source branch.
+    branch = os.environ.get('GITHUB_HEAD_REF') or os.environ.get('GITHUB_REF_NAME')
+    if branch:
+        return branch
+    raise ExecutionUnavailable('Cannot determine the current branch from Git or GitHub Actions metadata')
 
 
 def _safe_artifact(evidence_root: Path, relative: str) -> Path:
@@ -1091,7 +1102,7 @@ def _record_prerequisite_cases(report: dict[str, Any], output: Path, pi_path: Pa
     p0_pass = next(item for item in report['checkpointResults']
                    if item['checkpointId'] == 'p0-prerequisite-merge')['status'] == 'passed'
 
-    branch = _git('branch', '--show-current')
+    branch = _runtime_branch_name()
     branch_base = _git('merge-base', 'origin/main', 'HEAD')
     current_main = _git('rev-parse', 'origin/main')
     base_expected_state = {'branch': 'milestone/managed-package-lifecycle-parity',

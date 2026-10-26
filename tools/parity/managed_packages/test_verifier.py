@@ -51,6 +51,27 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         result = verify.validate_evidence(self.evidence, self.root, allow_synthetic=True)
         self.assertEqual(0, result)
 
+    def test_detached_pull_request_checkout_uses_source_branch_name(self) -> None:
+        with (mock.patch.object(verify, '_git', return_value=''),
+              mock.patch.dict('os.environ', {
+                  'GITHUB_HEAD_REF': 'milestone/managed-package-lifecycle-parity',
+                  'GITHUB_REF_NAME': '27/merge',
+              }, clear=True)):
+            self.assertEqual('milestone/managed-package-lifecycle-parity', verify._runtime_branch_name())
+
+    def test_detached_push_checkout_uses_ref_name(self) -> None:
+        with (mock.patch.object(verify, '_git', return_value=''),
+              mock.patch.dict('os.environ', {
+                  'GITHUB_REF_NAME': 'milestone/managed-package-lifecycle-parity',
+              }, clear=True)):
+            self.assertEqual('milestone/managed-package-lifecycle-parity', verify._runtime_branch_name())
+
+    def test_unknown_detached_checkout_does_not_invent_branch(self) -> None:
+        with (mock.patch.object(verify, '_git', return_value=''),
+              mock.patch.dict('os.environ', {}, clear=True),
+              self.assertRaises(verify.ExecutionUnavailable)):
+            verify._runtime_branch_name()
+
     def test_checkpoint_dependencies_cannot_be_bypassed(self) -> None:
         npm_install = next(item for item in self.evidence['checkpointResults']
                            if item['checkpointId'] == 'npm-install')
