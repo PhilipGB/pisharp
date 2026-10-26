@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 import fixture_support
 import evidence_artifacts
@@ -192,6 +193,149 @@ class ManagedPackageVerifierTests(unittest.TestCase):
                     for case_id in checkpoint['requiredCaseIds']]
         self.assertEqual(required, covered)
         self.assertEqual(len(required), coverage['requiredCaseCount'])
+
+    def test_exact_head_run_selection_ignores_stale_heads_and_other_events(self) -> None:
+        runs = [
+            {'event': 'push', 'head_branch': 'milestone/managed-package-lifecycle-parity',
+             'head_sha': 'a' * 40, 'name': 'Linux CI', 'run_number': 10, 'id': 10},
+            {'event': 'pull_request', 'head_branch': 'milestone/managed-package-lifecycle-parity',
+             'head_sha': 'b' * 40, 'name': 'Linux CI', 'run_number': 11, 'id': 11},
+            {'event': 'push', 'head_branch': 'milestone/managed-package-lifecycle-parity',
+             'head_sha': 'b' * 40, 'name': 'Linux CI', 'run_number': 12, 'id': 12},
+        ]
+        selected = verify._latest_exact_workflow_run(
+            runs, event='push', branch='milestone/managed-package-lifecycle-parity', head_sha='b' * 40)
+        self.assertEqual(12, selected['id'])
+
+    def test_exact_head_workflow_gate_rejects_missing_or_skipped_jobs(self) -> None:
+        workflow = (verify.ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+        required = verify._required_workflow_jobs(workflow)
+        self.assertEqual({'macos-session-locks', 'macos-clipboard-contracts', 'windows-clipboard-contracts',
+                          'managed-package-verifier', 'mcp-conformance'}, set(required))
+        package_steps = [
+            {'name': name, 'conclusion': 'success'} for name in (
+                'Verify managed-package evidence controls', 'Run managed-package parity corpus',
+                'Record managed-package CI integration', 'Independently check managed-package evidence',
+                'Run dotnet test PiSharp.slnx --no-build --no-restore',
+            )
+        ]
+        jobs = [{'name': name, 'status': 'completed', 'conclusion': 'success', 'steps': []}
+                for name in required]
+        jobs[required.index('managed-package-verifier')]['steps'] = package_steps
+        jobs[required.index('mcp-conformance')]['steps'] = [
+            {'name': 'Run node tools/parity/mcp-conformance/run.mjs', 'conclusion': 'success'}]
+        state = verify._workflow_gate_state(jobs, required)
+        self.assertTrue(state['requiredJobsPresent'])
+        self.assertTrue(state['allJobsCompletedSuccessfully'])
+        self.assertTrue(state['packageGatePassed'])
+        self.assertTrue(state['fullDotnetSuitePassed'])
+        self.assertTrue(state['mcpConformancePassed'])
+
+        jobs[-1]['conclusion'] = 'skipped'
+        state = verify._workflow_gate_state(jobs, required)
+        self.assertFalse(state['allJobsCompletedSuccessfully'])
+
+    def test_remote_pr_artifact_must_bind_to_current_head_and_base(self) -> None:
+        evidence = fixture_support.make_valid_evidence(self.root / 'remote')
+        source_sha = 'e' * 40
+        head_sha = 'b' * 40
+        base_sha = 'c' * 40
+        evidence['provenance'].update({
+            'repository': 'https://github.com/PhilipGB/pisharp',
+            'piSha': verify.load_contract()['upstream']['revision'],
+            'pisharpSourceSha': source_sha,
+            'checkedOutSourceSha': source_sha,
+            'fixtureVersion': verify.FIXTURE_VERSION,
+            'testControl': False,
+            'binaryIdentity': {'scope': 'repository', 'path': 'src/PiSharp.Cli/PiSharp.Cli.csproj',
+                               'sha256': 'f' * 64},
+        })
+        case = next(item for item in evidence['cases'] if item['caseId'] == 'ci.pr-head-base')
+        case['actual'] = {'exitCode': 0, 'state': {
+            'headSha': head_sha, 'baseSha': base_sha, 'baseRef': 'main', 'mergeSha': source_sha,
+            'mergeContainsHead': True, 'mergeContainsBase': True,
+        }}
+        run = {'event': 'pull_request', 'head_branch': verify._runtime_state()['branch'],
+               'head_sha': head_sha}
+        pull_request = {'head': {'sha': head_sha}, 'base': {'sha': base_sha}}
+        verify._validate_remote_ci_provenance(evidence, run=run, pull_request=pull_request)
+
+        case['actual']['state']['mergeContainsBase'] = False
+        with self.assertRaises(verify.MandatoryFailure):
+            verify._validate_remote_ci_provenance(evidence, run=run, pull_request=pull_request)
+
+    def test_publication_checker_records_live_pr_and_exact_head_cases(self) -> None:
+        output = self.root / 'publication'
+        report = fixture_support.make_valid_evidence(output)
+        fixture_support.write_evidence(output, report)
+        head_sha = 'b' * 40
+        base_sha = 'c' * 40
+        branch = 'milestone/managed-package-lifecycle-parity'
+        pr = {
+            'number': 124, 'state': 'open', 'draft': True, 'merged': False, 'merged_at': None,
+            'html_url': 'https://github.com/PhilipGB/pisharp/pull/124',
+            'head': {'repo': {'full_name': 'PhilipGB/pisharp'}, 'ref': branch, 'sha': head_sha},
+            'base': {'repo': {'full_name': 'PhilipGB/pisharp'}, 'ref': 'main', 'sha': base_sha},
+        }
+        runs = [
+            {'id': 101, 'name': 'Linux CI', 'event': 'push', 'head_branch': branch,
+             'head_sha': head_sha, 'run_number': 1, 'status': 'completed', 'conclusion': 'success',
+             'html_url': 'https://github.com/PhilipGB/pisharp/actions/runs/101'},
+            {'id': 102, 'name': 'Linux CI', 'event': 'pull_request', 'head_branch': branch,
+             'head_sha': head_sha, 'run_number': 2, 'status': 'completed', 'conclusion': 'success',
+             'html_url': 'https://github.com/PhilipGB/pisharp/actions/runs/102'},
+        ]
+        workflow = (verify.ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+        required = verify._required_workflow_jobs(workflow)
+        jobs = [{'id': name, 'name': name, 'status': 'completed', 'conclusion': 'success', 'steps': []}
+                for name in required]
+        package_job = next(item for item in jobs if item['name'] == 'managed-package-verifier')
+        package_job['steps'] = [{'name': name, 'conclusion': 'success'} for name in (
+            'Verify managed-package evidence controls', 'Run managed-package parity corpus',
+            'Record managed-package CI integration', 'Independently check managed-package evidence',
+            'Run dotnet test PiSharp.slnx --no-build --no-restore',
+        )]
+        mcp_job = next(item for item in jobs if item['name'] == 'mcp-conformance')
+        mcp_job['steps'] = [{'name': 'Run node tools/parity/mcp-conformance/run.mjs', 'conclusion': 'success'}]
+
+        responses = {
+            '': {'full_name': 'PhilipGB/pisharp'},
+            'pulls/124': pr,
+            f'branches/{branch.replace("/", "%2F")}': {'commit': {'sha': head_sha}},
+            'branches/main': {'commit': {'sha': base_sha}},
+            f'actions/runs?branch={branch.replace("/", "%2F")}&per_page=100': {'workflow_runs': runs},
+            'actions/runs/101/jobs?per_page=100': {'jobs': jobs},
+            'actions/runs/102/jobs?per_page=100': {'jobs': jobs},
+            'actions/runs/101/artifacts?per_page=100': {'artifacts': [
+                {'name': 'managed-package-parity', 'expired': False}]},
+            'actions/runs/102/artifacts?per_page=100': {'artifacts': [
+                {'name': 'managed-package-parity', 'expired': False}]},
+        }
+
+        def api_response(endpoint: str, *, label: str) -> tuple[dict, dict]:
+            self.assertIn(endpoint, responses, label)
+            return responses[endpoint], {'argv': ['GET', endpoint], 'exitCode': 0}
+
+        with (mock.patch.object(verify, '_runtime_state', return_value={
+                    'branch': branch, 'headSha': head_sha}),
+              mock.patch.object(verify, '_run_github_api', side_effect=api_response),
+              mock.patch.object(verify, '_download_run_package_evidence',
+                                side_effect=lambda run, root: (root / f'download-{run["id"]}',
+                                                               {'argv': ['gh', 'run', 'download', str(run['id'])]})),
+              mock.patch.object(verify, '_remote_artifact_passes', return_value=(True, {'passed': True})),
+              mock.patch.object(verify, 'validate_evidence'),
+              mock.patch.object(verify, '_write_milestone_result')):
+            result = verify.check_publication(124, output)
+
+        self.assertEqual(0, result)
+        completed = verify._load_json(output / 'evidence.json')
+        for checkpoint_id in ('draft-publication', 'exact-head-ci'):
+            checkpoint = next(item for item in completed['checkpointResults']
+                              if item['checkpointId'] == checkpoint_id)
+            self.assertEqual('passed', checkpoint['status'])
+        required_case_count = sum(len(item['requiredCaseIds']) for item in verify.load_contract()['checkpoints'])
+        self.assertEqual(required_case_count, completed['testResults']['discovered'])
+        self.assertEqual(completed['testResults']['discovered'], completed['testResults']['executed'])
 
 
 if __name__ == '__main__':

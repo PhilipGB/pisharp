@@ -394,6 +394,47 @@ def _validate_provenance(provenance: dict[str, Any], evidence_root: Path, allow_
         raise MandatoryFailure('PiSharp binary identity hash is stale')
 
 
+def _validate_remote_ci_provenance(evidence: dict[str, Any], *, run: dict[str, Any],
+                                   pull_request: dict[str, Any] | None) -> None:
+    provenance = evidence['provenance']
+    contract = load_contract()
+    source_sha = provenance.get('checkedOutSourceSha')
+    if provenance.get('repository') not in (
+            'https://github.com/PhilipGB/pisharp.git', 'git@github.com:PhilipGB/pisharp.git',
+            'https://github.com/PhilipGB/pisharp', 'git@github.com:PhilipGB/pisharp'):
+        raise MandatoryFailure('Uploaded CI evidence repository is not PhilipGB/pisharp')
+    if provenance.get('piSha') != contract['upstream']['revision']:
+        raise MandatoryFailure('Uploaded CI evidence uses a different pinned Pi revision')
+    if provenance.get('pisharpSourceSha') != source_sha or not re.fullmatch(r'[0-9a-f]{40}', str(source_sha)):
+        raise MandatoryFailure('Uploaded CI evidence source identity is malformed')
+    if not re.fullmatch(r'[0-9a-f]{40}', str(provenance.get('baseSha', ''))):
+        raise MandatoryFailure('Uploaded CI evidence base identity is malformed')
+    if provenance.get('fixtureVersion') != FIXTURE_VERSION or provenance.get('testControl') is not False:
+        raise MandatoryFailure('Uploaded CI evidence has an unsupported fixture or test-control identity')
+    if (run.get('event') == 'push' and provenance.get('branch') != run.get('head_branch')):
+        raise MandatoryFailure('Push artifact branch does not match its exact-head workflow run')
+    if (run.get('event') == 'pull_request'
+            and provenance.get('branch') not in ('', run.get('head_branch'))):
+        raise MandatoryFailure('PR artifact branch does not match its exact-head workflow run')
+    if run.get('event') == 'push' and source_sha != run.get('head_sha'):
+        raise MandatoryFailure('Push artifact source SHA does not match its exact-head workflow run')
+    if pull_request is not None:
+        if run.get('event') != 'pull_request':
+            raise MandatoryFailure('Pull-request evidence was downloaded from a non-PR workflow run')
+        case_map = {item.get('caseId'): item for item in evidence.get('cases', [])}
+        pr_case = case_map.get('ci.pr-head-base', {})
+        actual = (pr_case.get('actual') or {}).get('state') or {}
+        if (actual.get('headSha') != (pull_request.get('head') or {}).get('sha')
+                or actual.get('baseSha') != (pull_request.get('base') or {}).get('sha')
+                or actual.get('baseRef') != 'main' or actual.get('mergeContainsHead') is not True
+                or actual.get('mergeContainsBase') is not True or actual.get('mergeSha') != source_sha):
+            raise MandatoryFailure('PR artifact does not prove the current PR head and base merge identity')
+    identity = provenance.get('binaryIdentity') or {}
+    if (identity.get('scope') != 'repository' or not re.fullmatch(r'[0-9a-f]{64}', str(identity.get('sha256', '')))
+            or not isinstance(identity.get('path'), str) or not identity['path'].startswith('src/PiSharp.Cli/')):
+        raise MandatoryFailure('Uploaded CI evidence binary identity is malformed')
+
+
 def _validate_inventory(pi_path: Path, *, verify_selectors: bool = True) -> dict[str, Any]:
     inventory_path = HERE / 'inventory.json'
     inventory = _load_json(inventory_path)
@@ -527,7 +568,9 @@ def _validate_inventory(pi_path: Path, *, verify_selectors: bool = True) -> dict
 def validate_evidence(evidence: dict[str, Any], evidence_root: Path, *, allow_synthetic: bool = False,
                       checkpoint_id: str | None = None,
                       defer_publication_checkpoints: bool = False,
-                      defer_ci_integration: bool = False) -> int:
+                      defer_ci_integration: bool = False,
+                      remote_ci_run: dict[str, Any] | None = None,
+                      remote_pull_request: dict[str, Any] | None = None) -> int:
     schema = _load_json(SCHEMA_PATH)
     errors = _schema_errors(evidence, schema)
     if errors:
@@ -544,8 +587,11 @@ def validate_evidence(evidence: dict[str, Any], evidence_root: Path, *, allow_sy
         missing = sorted(set(expected_ids) - set(observed_checkpoint_ids))
         extra = sorted(set(observed_checkpoint_ids) - set(expected_ids))
         raise MandatoryFailure(f'Checkpoint set differs from contract; missing={missing}, unknown={extra}')
-    _validate_provenance(evidence['provenance'], evidence_root, allow_synthetic)
-    if (checkpoint_id is None or checkpoint_id == 'source-inventory') and not allow_synthetic:
+    if remote_ci_run is None:
+        _validate_provenance(evidence['provenance'], evidence_root, allow_synthetic)
+    else:
+        _validate_remote_ci_provenance(evidence, run=remote_ci_run, pull_request=remote_pull_request)
+    if (checkpoint_id is None or checkpoint_id == 'source-inventory') and not allow_synthetic and remote_ci_run is None:
         _validate_inventory(Path(evidence['provenance']['piPath']))
 
     expected_cases = {case_id: checkpoint for checkpoint in contract['checkpoints']
@@ -895,6 +941,7 @@ def _persist_command_result(report: dict[str, Any], output: Path, path: str, res
     destination = output / path
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(_canonical_bytes(result))
+    report['artifacts'] = [item for item in report['artifacts'] if item['path'] != path]
     report['artifacts'].append({'path': path, 'sha256': _sha256_file(destination)})
 
 
@@ -4295,6 +4342,66 @@ def _successful_push_run(branch: str, head_sha: str) -> dict[str, Any] | None:
     return max(candidates, key=lambda item: item.get('run_number', 0)) if candidates else None
 
 
+def _latest_exact_workflow_run(runs: list[dict[str, Any]], *, event: str, branch: str,
+                               head_sha: str) -> dict[str, Any] | None:
+    candidates = [item for item in runs
+                  if item.get('event') == event and item.get('head_branch') == branch
+                  and item.get('head_sha') == head_sha and item.get('name') == 'Linux CI']
+    return max(candidates, key=lambda item: (item.get('run_number', 0), item.get('id', 0))) if candidates else None
+
+
+def _required_workflow_jobs(workflow: str) -> list[str]:
+    in_jobs = False
+    names: list[str] = []
+    for line in workflow.splitlines():
+        if line == 'jobs:':
+            in_jobs = True
+            continue
+        if in_jobs and line and not line.startswith(' '):
+            break
+        if in_jobs and line.startswith('  ') and not line.startswith('    '):
+            candidate = line.strip()
+            if candidate.endswith(':'):
+                names.append(candidate[:-1])
+    if not names:
+        raise VerificationError('CI workflow has no discoverable required jobs')
+    return names
+
+
+def _workflow_gate_state(jobs: list[dict[str, Any]], required_jobs: list[str]) -> dict[str, Any]:
+    by_name = {item.get('name'): item for item in jobs if isinstance(item, dict)}
+    required_present = all(name in by_name for name in required_jobs)
+    all_successful = bool(jobs) and all(item.get('status') == 'completed'
+                                        and item.get('conclusion') == 'success' for item in jobs)
+    package_job = by_name.get('managed-package-verifier', {})
+    package_steps = {item.get('name'): item for item in package_job.get('steps', [])
+                     if isinstance(item, dict)}
+    package_step_names = (
+        'Verify managed-package evidence controls',
+        'Run managed-package parity corpus',
+        'Record managed-package CI integration',
+        'Independently check managed-package evidence',
+    )
+    package_gate = all(package_steps.get(name, {}).get('conclusion') == 'success'
+                       for name in package_step_names)
+    full_tests = package_steps.get('Run dotnet test PiSharp.slnx --no-build --no-restore', {})
+    mcp_steps = {item.get('name'): item for item in by_name.get('mcp-conformance', {}).get('steps', [])
+                 if isinstance(item, dict)}
+    mcp_step = mcp_steps.get('Run node tools/parity/mcp-conformance/run.mjs', {})
+    return {
+        'requiredJobsPresent': required_present,
+        'requiredJobNames': required_jobs,
+        'observedJobNames': sorted(name for name in by_name if isinstance(name, str)),
+        'allJobsCompletedSuccessfully': all_successful,
+        'packageGatePassed': package_gate,
+        'packageGateSteps': {name: package_steps.get(name, {}).get('conclusion')
+                             for name in package_step_names},
+        'fullDotnetSuitePassed': full_tests.get('conclusion') == 'success',
+        'mcpConformancePassed': mcp_step.get('conclusion') == 'success'
+        and by_name.get('mcp-conformance', {}).get('conclusion') == 'success',
+    }
+
+
 def execute_ci_integration(output: Path) -> int:
     evidence_path = output / 'evidence.json'
     report = _load_json(evidence_path)
@@ -4555,23 +4662,366 @@ def check_evidence(checkpoint_id: str | None, evidence_root: Path) -> int:
     return 0
 
 
-def check_publication(pr_number: int) -> int:
+def _download_run_package_evidence(run: dict[str, Any], output: Path) -> tuple[Path, dict[str, Any]]:
+    run_id = run.get('id')
+    if not isinstance(run_id, int) or run_id <= 0:
+        raise VerificationError('Exact-head workflow run has no valid run ID')
+    destination = output / '_ci_downloads' / str(run_id)
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+    argv = ['gh', 'run', 'download', str(run_id), '--name', 'managed-package-parity',
+            '--dir', str(destination)]
+    try:
+        completed = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True, timeout=180)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ExecutionUnavailable(f'Cannot download managed-package artifact from run {run_id}: {error}') from error
+    command = {'argv': argv, 'exitCode': completed.returncode,
+               'stdout': completed.stdout.strip(), 'stderr': completed.stderr.strip()}
+    if completed.returncode != 0:
+        raise ExecutionUnavailable(f'Cannot download managed-package artifact from run {run_id}: '
+                                   f'{completed.stderr.strip() or completed.stdout.strip()}')
+    evidence_paths = list(destination.rglob('evidence.json'))
+    if len(evidence_paths) != 1:
+        raise MandatoryFailure(f'Run {run_id} artifact must contain exactly one evidence.json; found {len(evidence_paths)}')
+    return evidence_paths[0].parent, command
+
+
+def _remote_artifact_passes(evidence_root: Path, run: dict[str, Any], *,
+                            pull_request: dict[str, Any] | None) -> tuple[bool, dict[str, Any]]:
+    evidence_path = evidence_root / 'evidence.json'
+    evidence = _load_json(evidence_path)
+    try:
+        validate_evidence(evidence, evidence_root, defer_publication_checkpoints=True,
+                          remote_ci_run=run, remote_pull_request=pull_request)
+        checkpoint = next(item for item in evidence['checkpointResults']
+                          if item['checkpointId'] == 'ci-integration')
+        ci_cases = {item['caseId']: item for item in evidence['cases']
+                    if item['checkpoint'] == 'ci-integration'}
+        if checkpoint['status'] != 'passed' or any(
+                ci_cases.get(case_id, {}).get('passed') is not True
+                for case_id in _checkpoint_map(load_contract())['ci-integration']['requiredCaseIds']):
+            raise MandatoryFailure('Uploaded package artifact does not contain a passed CI integration checkpoint')
+    except VerificationError as error:
+        return False, {'evidencePath': evidence_path.as_posix(), 'error': str(error),
+                       'evidenceSha256': _sha256_file(evidence_path)}
+    return True, {'evidencePath': evidence_path.as_posix(), 'evidenceSha256': _sha256_file(evidence_path),
+                  'sourceSha': evidence['provenance']['checkedOutSourceSha'],
+                  'caseCount': len(evidence['cases']), 'checkpointStatus': checkpoint['status']}
+
+
+def _record_publication_case(report: dict[str, Any], output: Path, case_id: str, *,
+                             passed: bool, details: dict[str, Any], command_identity: str,
+                             argv: list[str], fixture_identity: str) -> None:
+    expected = {'exitCode': 0, 'state': {**details, 'passed': True}}
+    observed = {'exitCode': 0 if passed else 1, 'state': {**details, 'passed': passed}}
+    _record_baseline_case(
+        report, output, case_id, expected=expected, observed=observed, passed=passed,
+        command_identity=command_identity, argv=argv, command_exit_code=0 if passed else 1,
+        fixture_identity=fixture_identity,
+        input_fingerprint=_sha256_bytes(_canonical_bytes({'case': case_id, 'details': details})),
+    )
+
+
+def check_publication(pr_number: int, evidence_root: Path | None = None) -> int:
     if pr_number <= 0:
         raise VerificationError('PR number must be positive')
-    try:
-        completed = subprocess.run(['gh', 'pr', 'view', str(pr_number), '--json',
-                                    'number,state,isDraft,mergedAt,headRefName,baseRefName,headRefOid,baseRefOid,url'],
-                                   cwd=ROOT, check=True, capture_output=True, text=True)
-        pr = json.loads(completed.stdout)
-    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as error:
-        raise ExecutionUnavailable(f'Cannot query GitHub PR #{pr_number} with gh: {error}') from error
-    if pr.get('number') != pr_number or pr.get('state') != 'OPEN' or pr.get('isDraft') is not True or pr.get('mergedAt') is not None:
-        raise MandatoryFailure('Published milestone PR must be open, draft and unmerged')
-    if pr.get('baseRefName') != 'main' or pr.get('headRefName') != _git('branch', '--show-current'):
-        raise MandatoryFailure('Published PR base or head branch does not match this milestone checkout')
-    if pr.get('headRefOid') != _git('rev-parse', 'HEAD'):
-        raise MandatoryFailure('Published PR head does not match the current checkout')
-    raise MandatoryFailure('Publication workflow verification is not yet implemented; no publication pass can be reported')
+    output = (evidence_root or ROOT / 'artifacts/parity/managed-packages').resolve()
+    evidence_path = output / 'evidence.json'
+    if not evidence_path.is_file():
+        raise ExecutionUnavailable(f'Pre-publication evidence is missing: {evidence_path}')
+    report = _load_json(evidence_path)
+    validate_evidence(report, output, defer_publication_checkpoints=True)
+    runtime = _runtime_state()
+    branch = runtime['branch']
+    head_sha = runtime['headSha']
+    command_argv = [sys.executable, *sys.argv]
+
+    repository, repository_command = _run_github_api('', label='GitHub repository metadata query')
+    pr, pr_command = _run_github_api(f'pulls/{pr_number}', label=f'GitHub PR #{pr_number} query')
+    branch_response, branch_command = _run_github_api(
+        f'branches/{quote(branch, safe="")}', label=f'GitHub branch {branch} query')
+    main_response, main_command = _run_github_api('branches/main', label='GitHub main branch query')
+    if not all(isinstance(item, dict) for item in (repository, pr, branch_response, main_response)):
+        raise VerificationError('GitHub publication metadata response is malformed')
+
+    head = pr.get('head') or {}
+    base = pr.get('base') or {}
+    head_repo = (head.get('repo') or {}).get('full_name')
+    base_repo = (base.get('repo') or {}).get('full_name')
+    repository_name = repository.get('full_name')
+    branch_sha = ((branch_response.get('commit') or {}).get('sha'))
+    main_sha = ((main_response.get('commit') or {}).get('sha'))
+    pr_state = {
+        'number': pr.get('number'), 'repository': repository_name, 'headRepository': head_repo,
+        'baseRepository': base_repo, 'headBranch': head.get('ref'), 'baseBranch': base.get('ref'),
+        'headSha': head.get('sha'), 'baseSha': base.get('sha'), 'branchSha': branch_sha,
+        'currentMainSha': main_sha, 'state': pr.get('state'), 'draft': pr.get('draft'),
+        'merged': pr.get('merged'), 'mergedAt': pr.get('merged_at'), 'url': pr.get('html_url'),
+    }
+    publication_details = {
+        'publication.repository': {'repository': repository_name, 'headRepository': head_repo,
+                                   'baseRepository': base_repo},
+        'publication.branch': {'expectedBranch': branch, 'observedBranch': head.get('ref'),
+                               'branchSha': branch_sha, 'expectedHeadSha': head_sha},
+        'publication.base': {'expectedBase': 'main', 'observedBase': base.get('ref'),
+                             'baseSha': base.get('sha'), 'currentMainSha': main_sha},
+        'publication.head': {'expectedHeadSha': head_sha, 'observedHeadSha': head.get('sha')},
+        'publication.open': {'state': pr.get('state')},
+        'publication.draft': {'draft': pr.get('draft')},
+        'publication.unmerged': {'merged': pr.get('merged'), 'mergedAt': pr.get('merged_at')},
+    }
+    publication_pass = {
+        'publication.repository': (repository_name == 'PhilipGB/pisharp' and head_repo == repository_name
+                                   and base_repo == repository_name),
+        'publication.branch': (head.get('ref') == branch and branch_sha == head_sha),
+        'publication.base': (base.get('ref') == 'main' and isinstance(main_sha, str)
+                             and base.get('sha') == main_sha),
+        'publication.head': (head.get('sha') == head_sha and branch_sha == head_sha),
+        'publication.open': (pr.get('number') == pr_number and pr.get('state') == 'open'),
+        'publication.draft': pr.get('draft') is True,
+        'publication.unmerged': pr.get('merged') is False and pr.get('merged_at') is None,
+    }
+
+    runs_response, runs_command = _run_github_api(
+        f'actions/runs?branch={quote(branch, safe="")}&per_page=100', label='GitHub exact-head workflow runs query')
+    if not isinstance(runs_response, dict) or not isinstance(runs_response.get('workflow_runs'), list):
+        raise VerificationError('GitHub workflow run response is missing its workflow_runs array')
+    push_run = _latest_exact_workflow_run(runs_response['workflow_runs'], event='push', branch=branch,
+                                          head_sha=head_sha)
+    pr_run = _latest_exact_workflow_run(runs_response['workflow_runs'], event='pull_request', branch=branch,
+                                        head_sha=head_sha)
+    workflow = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+    required_jobs = _required_workflow_jobs(workflow)
+    run_summaries: dict[str, Any] = {}
+    artifacts_responses: dict[str, Any] = {}
+    downloaded: dict[str, tuple[Path, dict[str, Any]]] = {}
+    for event, run in (('push', push_run), ('pull_request', pr_run)):
+        key = 'push' if event == 'push' else 'pr'
+        if run is None:
+            run_summaries[key] = {'run': None, 'jobs': [], 'gate': {}, 'passed': False}
+            continue
+        run_id = run.get('id')
+        jobs_response, jobs_command = _run_github_api(
+            f'actions/runs/{run_id}/jobs?per_page=100', label=f'GitHub workflow run {run_id} jobs query')
+        jobs = jobs_response.get('jobs') if isinstance(jobs_response, dict) else None
+        if not isinstance(jobs, list):
+            raise VerificationError(f'GitHub workflow run {run_id} response is missing its job list')
+        gate = _workflow_gate_state(jobs, required_jobs)
+        run_pass = (run.get('status') == 'completed' and run.get('conclusion') == 'success'
+                    and run.get('event') == event and run.get('head_branch') == branch
+                    and run.get('head_sha') == head_sha and gate['requiredJobsPresent']
+                    and gate['allJobsCompletedSuccessfully'])
+        artifacts_response, artifacts_command = _run_github_api(
+            f'actions/runs/{run_id}/artifacts?per_page=100', label=f'GitHub workflow run {run_id} artifacts query')
+        artifacts = artifacts_response.get('artifacts') if isinstance(artifacts_response, dict) else None
+        if not isinstance(artifacts, list):
+            raise VerificationError(f'GitHub workflow run {run_id} response is missing its artifact list')
+        package_artifacts = [item for item in artifacts
+                             if item.get('name') == 'managed-package-parity' and item.get('expired') is False]
+        artifact_ok = len(package_artifacts) == 1
+        artifact_validation: dict[str, Any] = {'passed': False, 'error': 'workflow artifact is missing or expired'}
+        download_command: dict[str, Any] | None = None
+        if run_pass and artifact_ok:
+            remote_root, download_command = _download_run_package_evidence(run, output)
+            remote_pass, artifact_validation = _remote_artifact_passes(
+                remote_root, run, pull_request=pr if event == 'pull_request' else None)
+            artifact_ok = artifact_ok and remote_pass
+            if remote_pass:
+                downloaded[key] = (remote_root, download_command)
+        run_summaries[key] = {
+            'run': {field: run.get(field) for field in ('id', 'name', 'event', 'head_branch', 'head_sha',
+                                                       'status', 'conclusion', 'html_url', 'run_number')},
+            'jobs': [{field: job.get(field) for field in ('id', 'name', 'status', 'conclusion')}
+                     for job in jobs],
+            'gate': gate, 'workflowPassed': run_pass, 'artifactMetadata': package_artifacts,
+            'artifactPassed': artifact_ok, 'artifactValidation': artifact_validation,
+            'jobQuery': jobs_command, 'artifactQuery': artifacts_command,
+            'downloadCommand': download_command,
+        }
+        artifacts_responses[key] = artifacts_response
+
+    push_summary = run_summaries['push']
+    pr_summary = run_summaries['pr']
+    exact_details = {
+        'ci1.push-exact-head': {'run': push_summary.get('run'), 'sourceHeadSha': head_sha},
+        'ci1.pr-exact-head-base': {'run': pr_summary.get('run'), 'prHeadSha': head.get('sha'),
+                                   'prBaseSha': base.get('sha'), 'baseBranch': base.get('ref'),
+                                   'prArtifact': pr_summary.get('artifactValidation')},
+        'ci1.required-jobs': {'requiredJobs': required_jobs,
+                              'push': push_summary.get('gate'), 'pr': pr_summary.get('gate')},
+        'ci1.package-gate': {'pushArtifactPassed': push_summary.get('artifactPassed'),
+                             'prArtifactPassed': pr_summary.get('artifactPassed'),
+                             'pushPackageGate': (push_summary.get('gate') or {}).get('packageGatePassed'),
+                             'prPackageGate': (pr_summary.get('gate') or {}).get('packageGatePassed')},
+        'ci1.tests': {'push': (push_summary.get('gate') or {}).get('fullDotnetSuitePassed'),
+                      'pr': (pr_summary.get('gate') or {}).get('fullDotnetSuitePassed')},
+        'ci1.mcp': {'push': (push_summary.get('gate') or {}).get('mcpConformancePassed'),
+                    'pr': (pr_summary.get('gate') or {}).get('mcpConformancePassed')},
+        'ci1.no-skipped-jobs': {'push': (push_summary.get('gate') or {}).get('allJobsCompletedSuccessfully'),
+                                'pr': (pr_summary.get('gate') or {}).get('allJobsCompletedSuccessfully')},
+        'ci1.pr-still-draft': {'number': pr.get('number'), 'state': pr.get('state'),
+                               'draft': pr.get('draft'), 'merged': pr.get('merged'),
+                               'headSha': head.get('sha')},
+    }
+    exact_pass = {
+        'ci1.push-exact-head': bool(push_summary.get('workflowPassed')),
+        'ci1.pr-exact-head-base': (bool(pr_summary.get('workflowPassed'))
+                                  and bool(pr_summary.get('artifactPassed'))
+                                  and publication_pass['publication.base']
+                                  and publication_pass['publication.head']),
+        'ci1.required-jobs': all((summary.get('gate') or {}).get('requiredJobsPresent') is True
+                                 for summary in (push_summary, pr_summary)),
+        'ci1.package-gate': all((summary.get('gate') or {}).get('packageGatePassed') is True
+                                and summary.get('artifactPassed') is True
+                                for summary in (push_summary, pr_summary)),
+        'ci1.tests': all((summary.get('gate') or {}).get('fullDotnetSuitePassed') is True
+                         for summary in (push_summary, pr_summary)),
+        'ci1.mcp': all((summary.get('gate') or {}).get('mcpConformancePassed') is True
+                       for summary in (push_summary, pr_summary)),
+        'ci1.no-skipped-jobs': all((summary.get('gate') or {}).get('allJobsCompletedSuccessfully') is True
+                                   for summary in (push_summary, pr_summary)),
+        'ci1.pr-still-draft': (publication_pass['publication.open'] and publication_pass['publication.draft']
+                               and publication_pass['publication.unmerged']
+                               and publication_pass['publication.head']),
+    }
+
+    _persist_command_result(report, output, f'github/publication-pr-{pr_number}.json', {
+        'repository': repository, 'pr': pr, 'branch': branch_response, 'main': main_response,
+        'commands': [repository_command, pr_command, branch_command, main_command],
+    })
+    _persist_command_result(report, output, f'github/exact-head-ci-pr-{pr_number}.json', {
+        'workflowRuns': runs_response, 'runDetails': run_summaries,
+        'artifactResponses': artifacts_responses,
+        'commands': [runs_command],
+    })
+
+    publication_checkpoint = _checkpoint_map(load_contract())['draft-publication']
+    publication_command_by_case = {
+        'publication.repository': repository_command['argv'],
+        'publication.branch': branch_command['argv'],
+        'publication.base': main_command['argv'],
+        'publication.head': pr_command['argv'],
+        'publication.open': pr_command['argv'],
+        'publication.draft': pr_command['argv'],
+        'publication.unmerged': pr_command['argv'],
+    }
+    for case_id in publication_checkpoint['requiredCaseIds']:
+        _record_publication_case(
+            report, output, case_id, passed=publication_pass[case_id],
+            details=publication_details[case_id],
+            command_identity='gh api repository pull request and branch metadata',
+            argv=publication_command_by_case[case_id],
+            fixture_identity='github-pull-request')
+    _refresh_checkpoint_result(report, 'draft-publication')
+
+    exact_checkpoint = _checkpoint_map(load_contract())['exact-head-ci']
+    api_command_ids = {'ci1.push-exact-head', 'ci1.pr-exact-head-base', 'ci1.required-jobs', 'ci1.tests',
+                       'ci1.mcp', 'ci1.no-skipped-jobs'}
+    for case_id in exact_checkpoint['requiredCaseIds']:
+        if case_id in api_command_ids:
+            command_identity = 'gh api actions runs and workflow jobs'
+        elif case_id == 'ci1.package-gate':
+            command_identity = 'gh run download managed-package parity artifact'
+        else:
+            command_identity = 'verify.py check --publication --pr <number>'
+        fixture_identity = ('github-pull-request' if case_id in ('ci1.pr-exact-head-base', 'ci1.pr-still-draft')
+                            else 'github-workflow-runs')
+        if case_id == 'ci1.package-gate':
+            artifact_download = pr_summary.get('downloadCommand') or push_summary.get('downloadCommand') or {}
+            case_argv = artifact_download.get('argv', command_argv)
+        elif case_id == 'ci1.pr-still-draft':
+            case_argv = command_argv
+        else:
+            case_argv = runs_command['argv']
+        _record_publication_case(
+            report, output, case_id, passed=exact_pass[case_id], details=exact_details[case_id],
+            command_identity=command_identity, argv=case_argv, fixture_identity=fixture_identity)
+    _refresh_checkpoint_result(report, 'exact-head-ci')
+
+    result_path = output / 'publication-check.command.json'
+    command_result = {
+        'prNumber': pr_number, 'prUrl': pr.get('html_url'), 'branch': branch, 'headSha': head_sha,
+        'publicationChecks': publication_pass, 'exactHeadCiChecks': exact_pass,
+        'pushRun': push_summary, 'prRun': pr_summary,
+        'pushArtifactPath': (downloaded.get('push') or (None, None))[0].as_posix()
+        if downloaded.get('push') else None,
+        'prArtifactPath': (downloaded.get('pr') or (None, None))[0].as_posix()
+        if downloaded.get('pr') else None,
+        'recordedAt': dt.datetime.now(dt.timezone.utc).isoformat(),
+    }
+    result_path.write_bytes(_canonical_bytes(command_result))
+    report['artifacts'] = [item for item in report['artifacts']
+                           if item['path'] != result_path.relative_to(output).as_posix()]
+    report['artifacts'].append({'path': result_path.relative_to(output).as_posix(),
+                                'sha256': _sha256_file(result_path)})
+
+    runner_path = output / 'runner-results.json'
+    runner_results = _load_json(runner_path) if runner_path.is_file() else []
+    runner_results = [item for item in runner_results if item.get('runnerId') != 'publication']
+    all_publication_passed = all(publication_pass.values()) and all(exact_pass.values())
+    runner_results.append({
+        'runnerId': 'publication', 'argv': command_argv,
+        'startedAt': dt.datetime.now(dt.timezone.utc).isoformat(),
+        'exitCode': 0 if all_publication_passed else 1,
+        'stdout': json.dumps({'publication': publication_pass, 'exactHeadCI': exact_pass}, sort_keys=True),
+        'stderr': '',
+    })
+    runner_path.write_bytes(_canonical_bytes(runner_results))
+    report['artifacts'] = [item for item in report['artifacts'] if item['path'] != 'runner-results.json']
+    report['artifacts'].append({'path': 'runner-results.json', 'sha256': _sha256_file(runner_path)})
+    report['provenance']['runnerCommands'] = [item['argv'] for item in runner_results]
+    report['provenance']['runnerExitCodes'] = [item['exitCode'] for item in runner_results]
+    report['testResults']['executed'] = sum(item['executed'] for item in report['cases'])
+    report['testResults']['failed'] = sum(item['executed'] and not item['passed'] for item in report['cases'])
+    report['testResults']['skipped'] = sum(item['skipped'] for item in report['cases'])
+    report['executionExitCode'] = 0 if all_publication_passed and report['testResults']['failed'] == 0 else 1
+    evidence_path.write_bytes(_canonical_bytes(report))
+    validate_evidence(report, output)
+    _write_milestone_result(report, pr_number, pr.get('html_url'), push_summary.get('run'),
+                            pr_summary.get('run'))
+    print(f'Passed publication and exact-head CI checkpoints for PR #{pr_number}: {evidence_path}')
+    return 0
+
+
+def _write_milestone_result(report: dict[str, Any], pr_number: int, pr_url: str | None,
+                            push_run: dict[str, Any] | None, pr_run: dict[str, Any] | None) -> Path:
+    case_map = {item['caseId']: item for item in report['cases']}
+    checkpoint_map = {item['checkpointId']: item for item in report['checkpointResults']}
+    checkpoints = {item['checkpointId']: item['status'] for item in report['checkpointResults']}
+    required_checkpoints = load_contract()['requiredCheckpointIds']
+    unresolved = sum(not item['executed'] or not item['passed'] for item in report['cases'])
+    merge_case = case_map.get('p0.pr-metadata', {})
+    merge_sha = ((merge_case.get('actual') or {}).get('state') or {}).get('mergeCommit')
+
+    def workflow_summary(run: dict[str, Any] | None) -> dict[str, Any]:
+        if run is None:
+            return {}
+        return {key: run.get(key) for key in ('id', 'head_sha', 'event', 'status', 'conclusion', 'html_url')}
+
+    status_result = subprocess.run(['git', 'status', '--porcelain'], cwd=ROOT,
+                                   capture_output=True, text=True)
+    clean = status_result.returncode == 0 and not status_result.stdout.strip()
+    complete = (all(checkpoint_map[item]['status'] == 'passed' for item in required_checkpoints)
+                and unresolved == 0 and report['executionExitCode'] == 0)
+    result = {
+        'goal': 'managed-package-lifecycle-parity', 'status': 'COMPLETE' if complete else 'INCOMPLETE',
+        'pinnedPiSha': report['provenance']['piSha'], 'prerequisitePr': 26,
+        'prerequisiteMergeSha': merge_sha, 'milestoneBaseSha': report['provenance']['baseSha'],
+        'milestoneHeadSha': report['provenance']['checkedOutSourceSha'],
+        'draftPrNumber': pr_number, 'draftPrUrl': pr_url, 'checkpoints': checkpoints,
+        'strictMatches': sum(item['classification'] == 'strict' for item in report['cases']),
+        'equivalentMatches': sum(item['classification'] == 'equivalent' for item in report['cases']),
+        'approvedExclusions': len(report['exclusions']), 'unresolvedMandatoryDifferences': unresolved,
+        'pushWorkflow': workflow_summary(push_run), 'prWorkflow': workflow_summary(pr_run),
+        'workingTreeClean': clean, 'recordedAt': dt.datetime.now(dt.timezone.utc).isoformat(),
+    }
+    destination = ROOT / 'artifacts/parity/managed-package-milestone-result.json'
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(_canonical_bytes(result))
+    if complete is not (result['status'] == 'COMPLETE'):
+        raise MandatoryFailure('Final milestone report status does not match validated checkpoint evidence')
+    return destination
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -4617,9 +5067,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == 'prepare-evidence':
             return prepare_committed_evidence(args.evidence)
         if args.publication:
-            if args.pr is None or args.evidence is not None:
-                raise VerificationError('check --publication requires --pr and does not accept --evidence')
-            return check_publication(args.pr)
+            if args.pr is None:
+                raise VerificationError('check --publication requires --pr')
+            return check_publication(args.pr, args.evidence)
         if args.pr is not None or args.evidence is None:
             raise VerificationError('check --all/--checkpoint requires --evidence and does not accept --pr')
         return check_evidence(args.checkpoint, args.evidence)
