@@ -126,8 +126,9 @@ def main():
         'DOTNET_CLI_HOME': str(directories['dotnet']), 'npm_config_cache': str(directories['npm_cache']),
         'DOTNET_PROCESSOR_COUNT': '2', 'MSBUILDDISABLENODEREUSE': '1',
         'DOTNET_CLI_TELEMETRY_OPTOUT': '1', 'DOTNET_SKIP_FIRST_TIME_EXPERIENCE': '1',
-        'npm_config_offline': 'true',
+        'npm_config_offline': 'true', 'npm_config_update_notifier': 'false',
     })
+    env.pop('NPM_CONFIG_UPDATE_NOTIFIER', None)
     env.pop('PI_OFFLINE', None)
     args.output.parent.mkdir(parents=True, exist_ok=True)
 

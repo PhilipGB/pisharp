@@ -70,7 +70,7 @@ def base_environment(profile, product, agent, cwd, markers, trace):
         PI_CODING_AGENT_DIR=str(agent), PISHARP_AGENT_DIR=str(agent), PISHARP_SESSION_DIR=str(paths['sessions']),
         DOTNET_CLI_HOME=str(paths['dotnet']), NUGET_PACKAGES=str(paths['nuget']),
         NUGET_HTTP_CACHE_PATH=str(paths['nuget_http']), DOTNET_CLI_TELEMETRY_OPTOUT='1', DOTNET_NOLOGO='1',
-        npm_config_cache=str(paths['npm_cache']), npm_config_offline='true',
+        npm_config_cache=str(paths['npm_cache']), npm_config_offline='true', npm_config_update_notifier='false',
         GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=str(git_config), GIT_TERMINAL_PROMPT='0',
         PISHARP_MANAGED_NPM_MARKER_DIR=str(npm_markers), PISHARP_MANAGED_GIT_MARKER_DIR=str(git_markers),
         PISHARP_TEST_RESOURCE_DISCOVERY='true', PISHARP_TEST_EXTENSION_LOAD_LOG=str(trace),

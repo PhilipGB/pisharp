@@ -207,6 +207,17 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         self.assertFalse(module.clone_destination_collision([first, {'exitCode': 1, 'stderr': 'network error'}]))
         self.assertFalse(module.clone_destination_collision([first, {**second, 'exitCode': 0}]))
 
+    def test_package_cli_fixture_disables_external_npm_update_notices(self) -> None:
+        path = verify.ROOT / 'tools/parity/package-cli-process-differential.py'
+        spec = importlib.util.spec_from_file_location('package_cli_notifier_control', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        for product in ('pi', 'pisharp'):
+            env = module.base_environment(self.root / 'notifier', product, self.root / product / 'agent',
+                                          self.root / product / 'work', self.root / product / 'markers',
+                                          self.root / product / 'trace')
+            self.assertEqual('false', env.get('npm_config_update_notifier'))
+
     def test_same_git_install_safety_difference_requires_valid_pisharp_package(self) -> None:
         case = {
             'equal': False, 'oracle': {'packageRootPresent': False}, 'actual': {'packageRootPresent': True},
