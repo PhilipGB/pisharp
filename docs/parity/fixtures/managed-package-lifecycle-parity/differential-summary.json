@@ -4,21 +4,21 @@
       "baselineCaseCount": 10,
       "fixture": "managed-git-install",
       "normalizedOracleEqual": true,
-      "normalizedOracleSha256": "0b0ef3f51b1f9f9d96df86572bdc9fe35635ccf4ed5e50d5d3b4f72476a203bf",
+      "oracleDigestsMatched": true,
       "repeatCaseCount": 10
     },
     "managed-npm": {
       "baselineCaseCount": 6,
       "fixture": "managed-npm",
       "normalizedOracleEqual": true,
-      "normalizedOracleSha256": "b5acf68e56c6e4a9fbb2502f857e90b45b03dd407c777ad5dc22cba29eca8e20",
+      "oracleDigestsMatched": true,
       "repeatCaseCount": 6
     },
     "package-cli": {
       "baselineCaseCount": 53,
       "fixture": "package-cli",
       "normalizedOracleEqual": true,
-      "normalizedOracleSha256": "3810238c4c9d7261984e498a54dde19129e2db4750ffdb5486cf7ee6b90ee04e",
+      "oracleDigestsMatched": true,
       "repeatCaseCount": 53
     }
   },

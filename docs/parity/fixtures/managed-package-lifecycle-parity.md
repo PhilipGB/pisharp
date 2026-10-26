@@ -10,7 +10,7 @@ resource loading, startup/reload, failure recovery, and concurrency.
 - Actual PR #26 merge SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - New branch base SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - Branch: `milestone/managed-package-lifecycle-parity`.
-- Implementation source SHA: `71b167f92417614e0eef515b105a5841487eb8fb`.
+- Implementation source SHA: `b5255197db45fa0a34dc7861d013c201bf247dcd`.
 - Pinned Pi SHA: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 The reviewed source inventory records 15 capability families and the Pi/PiSharp
@@ -63,11 +63,11 @@ unclassified mismatches in the accepted corpus.
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. The
-latest local exact-source artifact passes 24/27 checkpoints and 218/240
+latest local exact-source artifact passes 23/27 checkpoints and 211/240
 executed cases with zero failures or skips. The committed-evidence checkpoint
-passed against the committed bundle for source
-`71b167f92417614e0eef515b105a5841487eb8fb`. The remaining 22 cases are in CI
-integration, draft publication, and exact-head CI. The compact
+will be rerun after committing the regenerated bundle for source
+`b5255197db45fa0a34dc7861d013c201bf247dcd`. The remaining 29 cases are in committed evidence, CI integration, draft
+publication, and exact-head CI. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the
 core corpus and its exact required IDs and classifications.
@@ -78,7 +78,7 @@ All local source-pinned lifecycle checkpoints passed. The same-Pi calibration
 repeated 53 package CLI, 6 npm, and 10 Git install oracle cases; all three
 normalized oracle reports matched. The negative control mutated a Git HEAD and
 was detected. The [differential summary](managed-package-lifecycle-parity/differential-summary.json)
-records the pinned SHA and result digests.
+records the pinned SHA and matching-digest checks; the runtime artifact retains the digests.
 
 ## Same-Pi calibration
 
@@ -127,20 +127,23 @@ mismatches.
 
 This receipt is bounded to the committed 15-family inventory and 240 required
 cases; it does not claim broader package-manager or platform parity outside those
-cases. CI integration and publication verification remain pending. The new PR
+cases. Committed evidence, CI integration, and publication verification remain pending. The new PR
 must remain open, draft, and unmerged. Its automated GitHub Actions will run on
 publication; exact-head workflow results remain pending.
 
 ## Local quality results
 
 The local quality checkpoint at source SHA
-`71b167f92417614e0eef515b105a5841487eb8fb` passed formatting, a
+`b5255197db45fa0a34dc7861d013c201bf247dcd` passed formatting, a
 warnings-as-errors build, all 3,898 .NET tests with zero failures/skips, focused
 package tests 113/113, architecture tests 7/7, managed-package Python tests
-42/42, terminal Python 66/66, built-in differential Python tests 27/27, terminal
+46/46, terminal Python 66/66, built-in differential Python tests 27/27, terminal
 Node tests 24/24, MCP conformance, documentation path validation, and all 18
 lifecycle differential rechecks. A prior push run also passed this quality gate
 at an earlier source SHA but stopped at its stale committed-evidence fixture.
+The first two full-suite attempts at this source hit timeouts in the large-line
+read test (and one provider stream test on the first attempt). The affected
+tests passed in isolation; Q0 passed with `DOTNET_PROCESSOR_COUNT=2`.
 The [quality summary](managed-package-lifecycle-parity/quality-summary.json)
 contains the machine-readable results.
 

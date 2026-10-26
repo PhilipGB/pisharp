@@ -153,7 +153,7 @@
       "passed": true
     },
     {
-      "actualSha256": "dffbbc5567ca70cebe29aa9f1f325e230d9304a38448ed26e77ed9f820e6d638",
+      "actualSha256": "29e12ff9e494a2c61ec02a7a07c632221531e8a073d1a7b85c41652540fd5b97",
       "assertions": {
         "v0.runtime-provenance": true
       },
@@ -164,7 +164,7 @@
       "commandIdentity": "python3 tools/parity/managed_packages/test_verifier.py",
       "executed": true,
       "fixtureIdentity": "runtime-provenance",
-      "oracleSha256": "dffbbc5567ca70cebe29aa9f1f325e230d9304a38448ed26e77ed9f820e6d638",
+      "oracleSha256": "29e12ff9e494a2c61ec02a7a07c632221531e8a073d1a7b85c41652540fd5b97",
       "passed": true
     },
     {
@@ -588,7 +588,7 @@
       "passed": true
     },
     {
-      "actualSha256": "761fbbb25dff8f209a67c526203777252fe042991f6eb21226317299223103ce",
+      "actualSha256": "207f3569daf2d4a07da11cc44c7186f8944960429d64925443e0581b8948e24f",
       "assertions": {
         "cli.install": true
       },
@@ -599,11 +599,11 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "cli-process",
-      "oracleSha256": "761fbbb25dff8f209a67c526203777252fe042991f6eb21226317299223103ce",
+      "oracleSha256": "207f3569daf2d4a07da11cc44c7186f8944960429d64925443e0581b8948e24f",
       "passed": true
     },
     {
-      "actualSha256": "86f623e1fdd636b61217447f0a34cfdb47d92954fec2458f7fdea96751e1fab2",
+      "actualSha256": "0f5e4430daa07af86b374fac4b6382941df6aa1d4d8160de7f6801d0e646da06",
       "assertions": {
         "cli.remove": true
       },
@@ -614,11 +614,11 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "cli-process",
-      "oracleSha256": "86f623e1fdd636b61217447f0a34cfdb47d92954fec2458f7fdea96751e1fab2",
+      "oracleSha256": "0f5e4430daa07af86b374fac4b6382941df6aa1d4d8160de7f6801d0e646da06",
       "passed": true
     },
     {
-      "actualSha256": "288219e01016f3477f1ac857d683dfaef4c48da5bbddcbeb6f11b492a8db7aee",
+      "actualSha256": "cd81041e8754ec2587247819033bd931af9def3589298836f27cea4e31f5d9cd",
       "assertions": {
         "cli.list": true
       },
@@ -629,11 +629,11 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "cli-process",
-      "oracleSha256": "288219e01016f3477f1ac857d683dfaef4c48da5bbddcbeb6f11b492a8db7aee",
+      "oracleSha256": "cd81041e8754ec2587247819033bd931af9def3589298836f27cea4e31f5d9cd",
       "passed": true
     },
     {
-      "actualSha256": "e556002c0b1634ec04603421dac289ac007b744435da1bf8bd85d81af4f150a4",
+      "actualSha256": "a513c3c06d4c4315ef1b5decbb5d6935b22bc1a6e319c1ecc8c43e90180615e4",
       "assertions": {
         "cli.update": true
       },
@@ -644,7 +644,7 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "cli-process",
-      "oracleSha256": "e556002c0b1634ec04603421dac289ac007b744435da1bf8bd85d81af4f150a4",
+      "oracleSha256": "a513c3c06d4c4315ef1b5decbb5d6935b22bc1a6e319c1ecc8c43e90180615e4",
       "passed": true
     },
     {
@@ -693,7 +693,7 @@
       "passed": true
     },
     {
-      "actualSha256": "5f3cb5cde660ebfcb7f126323afdf28c20f8761dd16516a73443325c718e22fb",
+      "actualSha256": "ff9f7fe42148d324db8d1e75e98ee885d3fb540bcc0555643ed601e619dd6bf4",
       "assertions": {
         "cli.local-scope": true
       },
@@ -704,11 +704,11 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "cli-process",
-      "oracleSha256": "5f3cb5cde660ebfcb7f126323afdf28c20f8761dd16516a73443325c718e22fb",
+      "oracleSha256": "ff9f7fe42148d324db8d1e75e98ee885d3fb540bcc0555643ed601e619dd6bf4",
       "passed": true
     },
     {
-      "actualSha256": "0fac378ee5185fcee4e5230f26dd226eb92c798eb63c950a9a22add3982997db",
+      "actualSha256": "e2dc3d981a42f3e843fa3b376447a526e9cbf804707d4ce72f948c7b483416f4",
       "assertions": {
         "cli.trust-options": true
       },
@@ -719,7 +719,7 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "cli-process",
-      "oracleSha256": "0fac378ee5185fcee4e5230f26dd226eb92c798eb63c950a9a22add3982997db",
+      "oracleSha256": "e2dc3d981a42f3e843fa3b376447a526e9cbf804707d4ce72f948c7b483416f4",
       "passed": true
     },
     {
@@ -813,7 +813,7 @@
       "passed": true
     },
     {
-      "actualSha256": "3ffe79ae46612af50b5ed0705f92515d76950f9a60a809fc868239cf6d180f02",
+      "actualSha256": "db3b7545c46ce53685889a0716656a8500fdfe918b9488fb131fd6702e98b02f",
       "assertions": {
         "npm.install-scoped": true
       },
@@ -824,7 +824,7 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "real-npm-processes",
-      "oracleSha256": "3ffe79ae46612af50b5ed0705f92515d76950f9a60a809fc868239cf6d180f02",
+      "oracleSha256": "db3b7545c46ce53685889a0716656a8500fdfe918b9488fb131fd6702e98b02f",
       "passed": true
     },
     {
@@ -843,7 +843,7 @@
       "passed": true
     },
     {
-      "actualSha256": "6b80df9ffbab9b66f27649e1608578735c55bb058b7ae3ae994c055401400be0",
+      "actualSha256": "404736bf0c9ad98e26589cd00565451db5f9feb06eb5b33df538ca312f2fa796",
       "assertions": {
         "npm.install-idempotent": true
       },
@@ -854,7 +854,7 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "real-npm-processes",
-      "oracleSha256": "6b80df9ffbab9b66f27649e1608578735c55bb058b7ae3ae994c055401400be0",
+      "oracleSha256": "404736bf0c9ad98e26589cd00565451db5f9feb06eb5b33df538ca312f2fa796",
       "passed": true
     },
     {
@@ -903,7 +903,7 @@
       "passed": true
     },
     {
-      "actualSha256": "ae67589ee96dbd976a8b7181a2f2d39f933eea4ff7081a7fd7076fb5c5b45a3d",
+      "actualSha256": "da2b8cb7da99473edeaad4aacdfe84b098e9e6800bc8e7f36d1ebec5f345679f",
       "assertions": {
         "npm.install-unscoped": true
       },
@@ -914,7 +914,7 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "real-npm-processes",
-      "oracleSha256": "ae67589ee96dbd976a8b7181a2f2d39f933eea4ff7081a7fd7076fb5c5b45a3d",
+      "oracleSha256": "da2b8cb7da99473edeaad4aacdfe84b098e9e6800bc8e7f36d1ebec5f345679f",
       "passed": true
     },
     {
@@ -1188,7 +1188,7 @@
       "passed": true
     },
     {
-      "actualSha256": "11b87eed122bc239a5bcff6a200d7c4564c54fdaf8a5c164e86e6c8ff5e4aef4",
+      "actualSha256": "0fda78afbf36a5390b28e20e8b8218335d7101852e5eceb5475a3fe8907c59ea",
       "assertions": {
         "pm.default": true
       },
@@ -1199,11 +1199,11 @@
       "commandIdentity": "tools/parity/package-managers-process-differential.py",
       "executed": true,
       "fixtureIdentity": "available-real-managers",
-      "oracleSha256": "11b87eed122bc239a5bcff6a200d7c4564c54fdaf8a5c164e86e6c8ff5e4aef4",
+      "oracleSha256": "0fda78afbf36a5390b28e20e8b8218335d7101852e5eceb5475a3fe8907c59ea",
       "passed": true
     },
     {
-      "actualSha256": "6a861651854c99af8b3874092a073be704bb1a2aaeaa1e41d8a0febb31e37666",
+      "actualSha256": "cd253cff8f4ca9e5bf2c9490a09536512c2e6d441addb82832e774e33f9a3c9d",
       "assertions": {
         "pm.npm": true
       },
@@ -1214,7 +1214,7 @@
       "commandIdentity": "tools/parity/package-managers-process-differential.py",
       "executed": true,
       "fixtureIdentity": "available-real-managers",
-      "oracleSha256": "6a861651854c99af8b3874092a073be704bb1a2aaeaa1e41d8a0febb31e37666",
+      "oracleSha256": "cd253cff8f4ca9e5bf2c9490a09536512c2e6d441addb82832e774e33f9a3c9d",
       "passed": true
     },
     {
@@ -1263,7 +1263,7 @@
       "passed": true
     },
     {
-      "actualSha256": "bb22b9820817bc606babf4b99e63143562686125dd7b8732b0192fd989adffb3",
+      "actualSha256": "52ae82b9c1680698d0a5ea4899cc8dd361266cfbd42be392a9467d747d5f8747",
       "assertions": {
         "pm.custom-arguments": true
       },
@@ -1274,7 +1274,7 @@
       "commandIdentity": "tools/parity/package-managers-process-differential.py",
       "executed": true,
       "fixtureIdentity": "command-shims",
-      "oracleSha256": "bb22b9820817bc606babf4b99e63143562686125dd7b8732b0192fd989adffb3",
+      "oracleSha256": "52ae82b9c1680698d0a5ea4899cc8dd361266cfbd42be392a9467d747d5f8747",
       "passed": true
     },
     {
@@ -1443,7 +1443,7 @@
       "passed": true
     },
     {
-      "actualSha256": "d7633422bfd58e1fc25667021b5510501eb0a7ecdf6e19310eb02b0355962266",
+      "actualSha256": "31da3dc7ab6c2d409dce9fefc3832d30064d6d269c8be47b010da4a8ae872677",
       "assertions": {
         "git.install-branch": true
       },
@@ -1454,11 +1454,11 @@
       "commandIdentity": "tools/parity/managed-git-install-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "d7633422bfd58e1fc25667021b5510501eb0a7ecdf6e19310eb02b0355962266",
+      "oracleSha256": "31da3dc7ab6c2d409dce9fefc3832d30064d6d269c8be47b010da4a8ae872677",
       "passed": true
     },
     {
-      "actualSha256": "d7633422bfd58e1fc25667021b5510501eb0a7ecdf6e19310eb02b0355962266",
+      "actualSha256": "31da3dc7ab6c2d409dce9fefc3832d30064d6d269c8be47b010da4a8ae872677",
       "assertions": {
         "git.install-tag": true
       },
@@ -1469,11 +1469,11 @@
       "commandIdentity": "tools/parity/managed-git-install-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "d7633422bfd58e1fc25667021b5510501eb0a7ecdf6e19310eb02b0355962266",
+      "oracleSha256": "31da3dc7ab6c2d409dce9fefc3832d30064d6d269c8be47b010da4a8ae872677",
       "passed": true
     },
     {
-      "actualSha256": "ebb0c3a603158600f69eb91cc431d338009ec5358d9c4dcbc05cf74114f9fd61",
+      "actualSha256": "31da3dc7ab6c2d409dce9fefc3832d30064d6d269c8be47b010da4a8ae872677",
       "assertions": {
         "git.install-commit": true
       },
@@ -1484,11 +1484,11 @@
       "commandIdentity": "tools/parity/managed-git-install-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "ebb0c3a603158600f69eb91cc431d338009ec5358d9c4dcbc05cf74114f9fd61",
+      "oracleSha256": "31da3dc7ab6c2d409dce9fefc3832d30064d6d269c8be47b010da4a8ae872677",
       "passed": true
     },
     {
-      "actualSha256": "d7633422bfd58e1fc25667021b5510501eb0a7ecdf6e19310eb02b0355962266",
+      "actualSha256": "31da3dc7ab6c2d409dce9fefc3832d30064d6d269c8be47b010da4a8ae872677",
       "assertions": {
         "git.install-floating": true
       },
@@ -1499,7 +1499,7 @@
       "commandIdentity": "tools/parity/managed-git-install-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "d7633422bfd58e1fc25667021b5510501eb0a7ecdf6e19310eb02b0355962266",
+      "oracleSha256": "31da3dc7ab6c2d409dce9fefc3832d30064d6d269c8be47b010da4a8ae872677",
       "passed": true
     },
     {
@@ -1548,7 +1548,7 @@
       "passed": true
     },
     {
-      "actualSha256": "d55a27273fb1b2156292b9093dd4d56959cf39257f899c61a86f7ab0c72d1686",
+      "actualSha256": "e32a616c44e6a57fbae653a58dcc614d4fcb916b88bd3fcbc499578858c589b5",
       "assertions": {
         "git.install-url-shorthands": true
       },
@@ -1559,11 +1559,11 @@
       "commandIdentity": "tools/parity/managed-git-install-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "d55a27273fb1b2156292b9093dd4d56959cf39257f899c61a86f7ab0c72d1686",
+      "oracleSha256": "e32a616c44e6a57fbae653a58dcc614d4fcb916b88bd3fcbc499578858c589b5",
       "passed": true
     },
     {
-      "actualSha256": "d086d9271aafd7ab98e373e0a7d0bbb28d9e32c5ea7c68dae288c555fb50287d",
+      "actualSha256": "9ddb6c70238e5d86afffe41451cfa3fda1aba8b8223402fcd684b3aeb9a63680",
       "assertions": {
         "git.install-existing": true
       },
@@ -1574,11 +1574,11 @@
       "commandIdentity": "tools/parity/managed-git-install-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "d086d9271aafd7ab98e373e0a7d0bbb28d9e32c5ea7c68dae288c555fb50287d",
+      "oracleSha256": "9ddb6c70238e5d86afffe41451cfa3fda1aba8b8223402fcd684b3aeb9a63680",
       "passed": true
     },
     {
-      "actualSha256": "275c9de26f1b1babfddeaea78fcf498ed4a657ae50f6d026e477071ee980a286",
+      "actualSha256": "8fefe93c12e039e9644afbab7605d3bfb7123db2fe6f4c0608d5d4b87553c091",
       "assertions": {
         "git.install-missing-dependencies": true
       },
@@ -1589,11 +1589,11 @@
       "commandIdentity": "tools/parity/managed-git-install-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "275c9de26f1b1babfddeaea78fcf498ed4a657ae50f6d026e477071ee980a286",
+      "oracleSha256": "8fefe93c12e039e9644afbab7605d3bfb7123db2fe6f4c0608d5d4b87553c091",
       "passed": true
     },
     {
-      "actualSha256": "74702f17e4c858600827fd110f502442664ce3a69af8d6c7a6580790514022b1",
+      "actualSha256": "4a8e067047ca35fea38e7f23d2600c7c8e9a06ababb77592470da0528abc82bb",
       "assertions": {
         "git.update-moving": true
       },
@@ -1604,11 +1604,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "74702f17e4c858600827fd110f502442664ce3a69af8d6c7a6580790514022b1",
+      "oracleSha256": "4a8e067047ca35fea38e7f23d2600c7c8e9a06ababb77592470da0528abc82bb",
       "passed": true
     },
     {
-      "actualSha256": "02d391de21921dcd8c2f0bc26308aa15f508cc80d785b1af738d6b3223698ea7",
+      "actualSha256": "4518526630e2b07d36f0080f68dcae324ce99cd4904252562c3c86efe0ca26b8",
       "assertions": {
         "git.update-no-change": true
       },
@@ -1619,11 +1619,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "02d391de21921dcd8c2f0bc26308aa15f508cc80d785b1af738d6b3223698ea7",
+      "oracleSha256": "4518526630e2b07d36f0080f68dcae324ce99cd4904252562c3c86efe0ca26b8",
       "passed": true
     },
     {
-      "actualSha256": "02d391de21921dcd8c2f0bc26308aa15f508cc80d785b1af738d6b3223698ea7",
+      "actualSha256": "4518526630e2b07d36f0080f68dcae324ce99cd4904252562c3c86efe0ca26b8",
       "assertions": {
         "git.update-pinned": true
       },
@@ -1634,11 +1634,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "02d391de21921dcd8c2f0bc26308aa15f508cc80d785b1af738d6b3223698ea7",
+      "oracleSha256": "4518526630e2b07d36f0080f68dcae324ce99cd4904252562c3c86efe0ca26b8",
       "passed": true
     },
     {
-      "actualSha256": "62342b484cf49200d238e15272d4dd4b9c080b1176c4ebf7a0177941de25096a",
+      "actualSha256": "ff1409dc51650e6e8d44932099ee0652d47c1a901092ea8471d62d47e3709db1",
       "assertions": {
         "git.update-failed-fetch": true
       },
@@ -1649,11 +1649,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "62342b484cf49200d238e15272d4dd4b9c080b1176c4ebf7a0177941de25096a",
+      "oracleSha256": "ff1409dc51650e6e8d44932099ee0652d47c1a901092ea8471d62d47e3709db1",
       "passed": true
     },
     {
-      "actualSha256": "62342b484cf49200d238e15272d4dd4b9c080b1176c4ebf7a0177941de25096a",
+      "actualSha256": "ff1409dc51650e6e8d44932099ee0652d47c1a901092ea8471d62d47e3709db1",
       "assertions": {
         "git.update-failed-checkout": true
       },
@@ -1664,11 +1664,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "62342b484cf49200d238e15272d4dd4b9c080b1176c4ebf7a0177941de25096a",
+      "oracleSha256": "ff1409dc51650e6e8d44932099ee0652d47c1a901092ea8471d62d47e3709db1",
       "passed": true
     },
     {
-      "actualSha256": "62342b484cf49200d238e15272d4dd4b9c080b1176c4ebf7a0177941de25096a",
+      "actualSha256": "ff1409dc51650e6e8d44932099ee0652d47c1a901092ea8471d62d47e3709db1",
       "assertions": {
         "git.update-dependency-failure": true
       },
@@ -1679,11 +1679,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "f10fa0a5ce192142fa2461707bbe3eabcd7f225753fc28e38153f9ab39d488ad",
+      "oracleSha256": "f9fa87404eea77836abd518ca774665ae523e3994a48d951f70202a9e227ab36",
       "passed": true
     },
     {
-      "actualSha256": "c9478d5ccfd45bd99bf8b280aef5b73315ce03f902054dddd603f41933788750",
+      "actualSha256": "c55b9b94e8cb04dc5ba42680bf33139020215ef33313b2e6f15b104bc16febc6",
       "assertions": {
         "git.update-cancelled": true
       },
@@ -1694,11 +1694,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "c9478d5ccfd45bd99bf8b280aef5b73315ce03f902054dddd603f41933788750",
+      "oracleSha256": "c55b9b94e8cb04dc5ba42680bf33139020215ef33313b2e6f15b104bc16febc6",
       "passed": true
     },
     {
-      "actualSha256": "f43334136d781a1ef64322d553ce894cb941e742acf3e13edacff7143b21b460",
+      "actualSha256": "2618d885b287b3acadfe22df8965f8a6e5db694c07dff24ebb2e9ef1d2af3652",
       "assertions": {
         "git.update-recovery": true
       },
@@ -1709,11 +1709,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "f43334136d781a1ef64322d553ce894cb941e742acf3e13edacff7143b21b460",
+      "oracleSha256": "2618d885b287b3acadfe22df8965f8a6e5db694c07dff24ebb2e9ef1d2af3652",
       "passed": true
     },
     {
-      "actualSha256": "74702f17e4c858600827fd110f502442664ce3a69af8d6c7a6580790514022b1",
+      "actualSha256": "4a8e067047ca35fea38e7f23d2600c7c8e9a06ababb77592470da0528abc82bb",
       "assertions": {
         "git.update-pinned-tag": true
       },
@@ -1724,11 +1724,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "74702f17e4c858600827fd110f502442664ce3a69af8d6c7a6580790514022b1",
+      "oracleSha256": "4a8e067047ca35fea38e7f23d2600c7c8e9a06ababb77592470da0528abc82bb",
       "passed": true
     },
     {
-      "actualSha256": "02d391de21921dcd8c2f0bc26308aa15f508cc80d785b1af738d6b3223698ea7",
+      "actualSha256": "4518526630e2b07d36f0080f68dcae324ce99cd4904252562c3c86efe0ca26b8",
       "assertions": {
         "git.update-pinned-commit": true
       },
@@ -1739,11 +1739,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "02d391de21921dcd8c2f0bc26308aa15f508cc80d785b1af738d6b3223698ea7",
+      "oracleSha256": "4518526630e2b07d36f0080f68dcae324ce99cd4904252562c3c86efe0ca26b8",
       "passed": true
     },
     {
-      "actualSha256": "74702f17e4c858600827fd110f502442664ce3a69af8d6c7a6580790514022b1",
+      "actualSha256": "4a8e067047ca35fea38e7f23d2600c7c8e9a06ababb77592470da0528abc82bb",
       "assertions": {
         "git.update-changed-remote": true
       },
@@ -1754,11 +1754,11 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "74702f17e4c858600827fd110f502442664ce3a69af8d6c7a6580790514022b1",
+      "oracleSha256": "4a8e067047ca35fea38e7f23d2600c7c8e9a06ababb77592470da0528abc82bb",
       "passed": true
     },
     {
-      "actualSha256": "62342b484cf49200d238e15272d4dd4b9c080b1176c4ebf7a0177941de25096a",
+      "actualSha256": "ff1409dc51650e6e8d44932099ee0652d47c1a901092ea8471d62d47e3709db1",
       "assertions": {
         "git.update-deleted-branch": true
       },
@@ -1769,7 +1769,7 @@
       "commandIdentity": "tools/parity/managed-git-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "loopback-git-daemon",
-      "oracleSha256": "62342b484cf49200d238e15272d4dd4b9c080b1176c4ebf7a0177941de25096a",
+      "oracleSha256": "ff1409dc51650e6e8d44932099ee0652d47c1a901092ea8471d62d47e3709db1",
       "passed": true
     },
     {
@@ -1893,7 +1893,7 @@
       "passed": true
     },
     {
-      "actualSha256": "4f70a461ec78cf9a2d8a4065be3d76b292b5c77d38f0419ffa0685dc2814d5c3",
+      "actualSha256": "aa6db3c0007405d13e5e55d0f98d40602d9dd358fb8dcd8831e4ddb46938c72f",
       "assertions": {
         "remove.npm": true
       },
@@ -1904,11 +1904,11 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "npm-git-local-source-fixtures",
-      "oracleSha256": "4f70a461ec78cf9a2d8a4065be3d76b292b5c77d38f0419ffa0685dc2814d5c3",
+      "oracleSha256": "aa6db3c0007405d13e5e55d0f98d40602d9dd358fb8dcd8831e4ddb46938c72f",
       "passed": true
     },
     {
-      "actualSha256": "d77918f0f1140a293480175e4fee53a9ace8275df254e1e8d8949edfa30c95c4",
+      "actualSha256": "8e68d12f061601a4904df91bc88378901f307aaa6067838054f9c603ec8ed807",
       "assertions": {
         "remove.git": true
       },
@@ -1919,7 +1919,7 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "npm-git-local-source-fixtures",
-      "oracleSha256": "d77918f0f1140a293480175e4fee53a9ace8275df254e1e8d8949edfa30c95c4",
+      "oracleSha256": "8e68d12f061601a4904df91bc88378901f307aaa6067838054f9c603ec8ed807",
       "passed": true
     },
     {
@@ -1953,7 +1953,7 @@
       "passed": true
     },
     {
-      "actualSha256": "54713f4219609a30e54d4a0fb0893f2e9a1a0510e49cd518a0bbe84660db9b1e",
+      "actualSha256": "20f3aeaaf9af7acc3ff00a11afef238f06a3534f4648bcda4b15db62ab0a6ca9",
       "assertions": {
         "remove.scope-isolation": true
       },
@@ -1964,7 +1964,7 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "user-project-settings",
-      "oracleSha256": "54713f4219609a30e54d4a0fb0893f2e9a1a0510e49cd518a0bbe84660db9b1e",
+      "oracleSha256": "20f3aeaaf9af7acc3ff00a11afef238f06a3534f4648bcda4b15db62ab0a6ca9",
       "passed": true
     },
     {
@@ -1983,7 +1983,7 @@
       "passed": true
     },
     {
-      "actualSha256": "d3c9215509ff5b44bb2f320a22ffd2dbec1ff0eeec803c42f35e0111e5dea0ce",
+      "actualSha256": "2892876554972ae87cffd67443b1dd536ee2fe05537cb03c068edf815441d90e",
       "assertions": {
         "list.mixed-scopes": true
       },
@@ -1994,11 +1994,11 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "user-project-settings",
-      "oracleSha256": "d3c9215509ff5b44bb2f320a22ffd2dbec1ff0eeec803c42f35e0111e5dea0ce",
+      "oracleSha256": "2892876554972ae87cffd67443b1dd536ee2fe05537cb03c068edf815441d90e",
       "passed": true
     },
     {
-      "actualSha256": "58bc39973af13b35b5fc6c7b260ad5c08cb1c0e0626aeb3938e495664489988a",
+      "actualSha256": "164627858844c59bbbfaaa4d9a2dd6a0ef4c6f2a1dd65a4d912ad8680b5fe7d7",
       "assertions": {
         "list.filtered": true
       },
@@ -2009,7 +2009,7 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "user-project-settings",
-      "oracleSha256": "58bc39973af13b35b5fc6c7b260ad5c08cb1c0e0626aeb3938e495664489988a",
+      "oracleSha256": "164627858844c59bbbfaaa4d9a2dd6a0ef4c6f2a1dd65a4d912ad8680b5fe7d7",
       "passed": true
     },
     {
@@ -2028,7 +2028,7 @@
       "passed": true
     },
     {
-      "actualSha256": "58bc39973af13b35b5fc6c7b260ad5c08cb1c0e0626aeb3938e495664489988a",
+      "actualSha256": "164627858844c59bbbfaaa4d9a2dd6a0ef4c6f2a1dd65a4d912ad8680b5fe7d7",
       "assertions": {
         "list.paths-filter-indicators": true
       },
@@ -2039,11 +2039,11 @@
       "commandIdentity": "tools/parity/package-cli-process-differential.py",
       "executed": true,
       "fixtureIdentity": "user-project-settings",
-      "oracleSha256": "58bc39973af13b35b5fc6c7b260ad5c08cb1c0e0626aeb3938e495664489988a",
+      "oracleSha256": "164627858844c59bbbfaaa4d9a2dd6a0ef4c6f2a1dd65a4d912ad8680b5fe7d7",
       "passed": true
     },
     {
-      "actualSha256": "552a27e22c87a2c8fc095d0719050f6705a023638a423eb3903f93d5670f4d1a",
+      "actualSha256": "ce541bf8540c8c6e3c57a56ea76e85076ac801dff2b288587f1c166b0b34f555",
       "assertions": {
         "bulk.selective": true
       },
@@ -2054,11 +2054,11 @@
       "commandIdentity": "tools/parity/managed-package-bulk-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "mixed-npm-git-fixtures",
-      "oracleSha256": "552a27e22c87a2c8fc095d0719050f6705a023638a423eb3903f93d5670f4d1a",
+      "oracleSha256": "ce541bf8540c8c6e3c57a56ea76e85076ac801dff2b288587f1c166b0b34f555",
       "passed": true
     },
     {
-      "actualSha256": "0126d53bd01bb767f59acb28485e298de7796a166fd9843076f3808452744700",
+      "actualSha256": "3a5d725035c2c791d71abb395582ab6b894b6ef04215ce2f16289c93bde70c8f",
       "assertions": {
         "bulk.extensions": true
       },
@@ -2069,11 +2069,11 @@
       "commandIdentity": "tools/parity/managed-package-bulk-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "mixed-npm-git-fixtures",
-      "oracleSha256": "0126d53bd01bb767f59acb28485e298de7796a166fd9843076f3808452744700",
+      "oracleSha256": "3a5d725035c2c791d71abb395582ab6b894b6ef04215ce2f16289c93bde70c8f",
       "passed": true
     },
     {
-      "actualSha256": "2d304022330149af9afba2bac0fcddd5450f8fdf8d9d18ff000d8e6510924ed3",
+      "actualSha256": "03fe0fca913937b77a5bc164b64bf700627541f3c4ca2eb944edf49af644d5e9",
       "assertions": {
         "bulk.mixed-sources": true
       },
@@ -2084,11 +2084,11 @@
       "commandIdentity": "tools/parity/managed-package-bulk-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "mixed-npm-git-fixtures",
-      "oracleSha256": "2d304022330149af9afba2bac0fcddd5450f8fdf8d9d18ff000d8e6510924ed3",
+      "oracleSha256": "03fe0fca913937b77a5bc164b64bf700627541f3c4ca2eb944edf49af644d5e9",
       "passed": true
     },
     {
-      "actualSha256": "5e93586b8c94df58a60b1f02a4ccaf808e6496b8698628df26f4eb8779556e52",
+      "actualSha256": "6ad0012aec7570b6fc8a173aaba9a4f0bb714a705a34e5360f778e9ee8bcf88c",
       "assertions": {
         "bulk.pinned": true
       },
@@ -2099,11 +2099,11 @@
       "commandIdentity": "tools/parity/managed-package-bulk-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "mixed-npm-git-fixtures",
-      "oracleSha256": "5e93586b8c94df58a60b1f02a4ccaf808e6496b8698628df26f4eb8779556e52",
+      "oracleSha256": "6ad0012aec7570b6fc8a173aaba9a4f0bb714a705a34e5360f778e9ee8bcf88c",
       "passed": true
     },
     {
-      "actualSha256": "38be7cd8026ae23c238449d424f0b5fac566cb5f4fc447c7ad92e98949887b01",
+      "actualSha256": "3893de0f597ac6413dcda4b14014ad6f29676276e7bbacf95580fd6fd89965e0",
       "assertions": {
         "bulk.partial-failure": true
       },
@@ -2114,7 +2114,7 @@
       "commandIdentity": "tools/parity/managed-package-bulk-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "mixed-npm-git-fixtures",
-      "oracleSha256": "38be7cd8026ae23c238449d424f0b5fac566cb5f4fc447c7ad92e98949887b01",
+      "oracleSha256": "3893de0f597ac6413dcda4b14014ad6f29676276e7bbacf95580fd6fd89965e0",
       "passed": true
     },
     {
@@ -2313,7 +2313,7 @@
       "passed": true
     },
     {
-      "actualSha256": "88e0e7c00e8e5ed958e017bd7931429320e6e65050d5739867fb1823a2787a19",
+      "actualSha256": "3fb112ce324cc2eeaa2e79e5479b815e18fb7c9d6adb7d7493af686437d03e02",
       "assertions": {
         "distribution.npm": true
       },
@@ -2324,11 +2324,11 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "88e0e7c00e8e5ed958e017bd7931429320e6e65050d5739867fb1823a2787a19",
+      "oracleSha256": "3fb112ce324cc2eeaa2e79e5479b815e18fb7c9d6adb7d7493af686437d03e02",
       "passed": true
     },
     {
-      "actualSha256": "48c97a6764696ab2bd706a25fcc1a20653eaf429e5e110141ae66d92cb35fc4d",
+      "actualSha256": "8cf60b6baa25e98b0b1bd5a54cacc58e3598f8cc6ea8021915c741572d34dfe9",
       "assertions": {
         "distribution.git": true
       },
@@ -2339,11 +2339,11 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "48c97a6764696ab2bd706a25fcc1a20653eaf429e5e110141ae66d92cb35fc4d",
+      "oracleSha256": "8cf60b6baa25e98b0b1bd5a54cacc58e3598f8cc6ea8021915c741572d34dfe9",
       "passed": true
     },
     {
-      "actualSha256": "252b9d9c3b5deb4d3a0940908a06dbcb3732a8b66b42fdfebf21f97acec563b7",
+      "actualSha256": "c2640f0ea1e44988a6a81be1e728a54a1ea0e3ff122490c5d6deff09d13d4efa",
       "assertions": {
         "distribution.skill": true
       },
@@ -2354,11 +2354,11 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "252b9d9c3b5deb4d3a0940908a06dbcb3732a8b66b42fdfebf21f97acec563b7",
+      "oracleSha256": "c2640f0ea1e44988a6a81be1e728a54a1ea0e3ff122490c5d6deff09d13d4efa",
       "passed": true
     },
     {
-      "actualSha256": "dbd768e99cc2efc72547311ad8f67883cca7c31462ed6a417b508b1a74737b9b",
+      "actualSha256": "840abd2bc631bbc96cbd120febbc35ad44839a4068caa245a486c7a78d13c4d7",
       "assertions": {
         "distribution.prompt": true
       },
@@ -2369,7 +2369,7 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "dbd768e99cc2efc72547311ad8f67883cca7c31462ed6a417b508b1a74737b9b",
+      "oracleSha256": "840abd2bc631bbc96cbd120febbc35ad44839a4068caa245a486c7a78d13c4d7",
       "passed": true
     },
     {
@@ -2493,7 +2493,7 @@
       "passed": true
     },
     {
-      "actualSha256": "e43f5425329e0fe609140f027695ee7f07c19b108a303265f6540fb2f67628e8",
+      "actualSha256": "a69b405a0f0e9f78e097f4bffd8344aeb637e46319b9dcdd898a4e17b8475fb1",
       "assertions": {
         "distribution.source-metadata": true
       },
@@ -2504,11 +2504,11 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "e43f5425329e0fe609140f027695ee7f07c19b108a303265f6540fb2f67628e8",
+      "oracleSha256": "a69b405a0f0e9f78e097f4bffd8344aeb637e46319b9dcdd898a4e17b8475fb1",
       "passed": true
     },
     {
-      "actualSha256": "718d081e3fabe080ec53b88926f11ba9e5aa1c9a6246c7bd887711fed7f107a6",
+      "actualSha256": "136faeeeb3ce6a350aa8d15f3ca35b35d59fe9af6547315f3f6308dfd91451f1",
       "assertions": {
         "distribution.temporary-npm-package": true
       },
@@ -2519,11 +2519,11 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "718d081e3fabe080ec53b88926f11ba9e5aa1c9a6246c7bd887711fed7f107a6",
+      "oracleSha256": "136faeeeb3ce6a350aa8d15f3ca35b35d59fe9af6547315f3f6308dfd91451f1",
       "passed": true
     },
     {
-      "actualSha256": "141d29f2600a1462cdc530dd21721668f1d3cf7fe2dd326fad05ae377f6daff0",
+      "actualSha256": "87c16d3ab295235c1341aa9cd0d9e937fb59224bb8474c7756db0b3764d88914",
       "assertions": {
         "distribution.temporary-git-package": true
       },
@@ -2534,11 +2534,11 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "141d29f2600a1462cdc530dd21721668f1d3cf7fe2dd326fad05ae377f6daff0",
+      "oracleSha256": "87c16d3ab295235c1341aa9cd0d9e937fb59224bb8474c7756db0b3764d88914",
       "passed": true
     },
     {
-      "actualSha256": "7f03d572f52a065f85eccc065b475d92b1a1e45c9d6ffa78285beb8621f785a3",
+      "actualSha256": "fcb23a56dd7ce5aae0ad7aab23f58777fe9483ac8e10a6574f6da99aceecce0a",
       "assertions": {
         "distribution.temporary-source-order": true
       },
@@ -2549,7 +2549,7 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "7f03d572f52a065f85eccc065b475d92b1a1e45c9d6ffa78285beb8621f785a3",
+      "oracleSha256": "fcb23a56dd7ce5aae0ad7aab23f58777fe9483ac8e10a6574f6da99aceecce0a",
       "passed": true
     },
     {
@@ -2793,7 +2793,7 @@
       "passed": true
     },
     {
-      "actualSha256": "c9478d5ccfd45bd99bf8b280aef5b73315ce03f902054dddd603f41933788750",
+      "actualSha256": "c55b9b94e8cb04dc5ba42680bf33139020215ef33313b2e6f15b104bc16febc6",
       "assertions": {
         "failure.cancelled-update": true
       },
@@ -2804,7 +2804,7 @@
       "commandIdentity": "ManagedGitPackageStoreTests",
       "executed": true,
       "fixtureIdentity": "deterministic-failure-injection",
-      "oracleSha256": "c9478d5ccfd45bd99bf8b280aef5b73315ce03f902054dddd603f41933788750",
+      "oracleSha256": "c55b9b94e8cb04dc5ba42680bf33139020215ef33313b2e6f15b104bc16febc6",
       "passed": true
     },
     {
@@ -2853,7 +2853,7 @@
       "passed": true
     },
     {
-      "actualSha256": "28895d61b9cd992e47bf72352df68666ddb43a34cc9f07cf95aa707f9837cac1",
+      "actualSha256": "5f352307810caf9661537ff5faa4a8e38294134f66d150dc02a693578e1b9e8c",
       "assertions": {
         "concurrent.same-git-install": true
       },
@@ -2864,7 +2864,7 @@
       "commandIdentity": "tools/parity/managed-package-concurrency-process-differential.py",
       "executed": true,
       "fixtureIdentity": "barrier-synchronized-processes",
-      "oracleSha256": "28895d61b9cd992e47bf72352df68666ddb43a34cc9f07cf95aa707f9837cac1",
+      "oracleSha256": "5f352307810caf9661537ff5faa4a8e38294134f66d150dc02a693578e1b9e8c",
       "passed": true
     },
     {
@@ -2973,7 +2973,7 @@
       "passed": true
     },
     {
-      "actualSha256": "1f3b13f2e766c8869d0d21feb9a8d505b5f99ec0b0e71903400bab0e8e5ee868",
+      "actualSha256": "e57b8454db646543712d59a19c1476bb71501b52bf08bfc7e497d03f140e39c0",
       "assertions": {
         "d0.same-pi-package-cli": true
       },
@@ -2984,11 +2984,11 @@
       "commandIdentity": "tools/parity/managed-package-differential-acceptance.py",
       "executed": true,
       "fixtureIdentity": "pinned-pi-independent-runs",
-      "oracleSha256": "1f3b13f2e766c8869d0d21feb9a8d505b5f99ec0b0e71903400bab0e8e5ee868",
+      "oracleSha256": "e57b8454db646543712d59a19c1476bb71501b52bf08bfc7e497d03f140e39c0",
       "passed": true
     },
     {
-      "actualSha256": "8fe4fabe40d465f44df44332aea77a403905d607ff5553ea4a8c93ba441aaeca",
+      "actualSha256": "d7b2d9908ab604cd0f9fd12bff2bccb9689cf7d7c644e6a9bb27617f3b122dab",
       "assertions": {
         "d0.same-pi-npm": true
       },
@@ -2999,11 +2999,11 @@
       "commandIdentity": "tools/parity/managed-package-differential-acceptance.py",
       "executed": true,
       "fixtureIdentity": "pinned-pi-independent-runs",
-      "oracleSha256": "8fe4fabe40d465f44df44332aea77a403905d607ff5553ea4a8c93ba441aaeca",
+      "oracleSha256": "d7b2d9908ab604cd0f9fd12bff2bccb9689cf7d7c644e6a9bb27617f3b122dab",
       "passed": true
     },
     {
-      "actualSha256": "f777c894fcbc62d5fea9728092594f2a1b80773824ae77d4c1f9d4f5bac0ac0c",
+      "actualSha256": "14c8c948604904612efa678edf9296a788be5c02ab82b485406be875d2789430",
       "assertions": {
         "d0.same-pi-git": true
       },
@@ -3014,7 +3014,7 @@
       "commandIdentity": "tools/parity/managed-package-differential-acceptance.py",
       "executed": true,
       "fixtureIdentity": "pinned-pi-independent-runs",
-      "oracleSha256": "f777c894fcbc62d5fea9728092594f2a1b80773824ae77d4c1f9d4f5bac0ac0c",
+      "oracleSha256": "14c8c948604904612efa678edf9296a788be5c02ab82b485406be875d2789430",
       "passed": true
     },
     {
@@ -3362,5 +3362,5 @@
   "goal": "managed-package-lifecycle-parity",
   "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "schemaVersion": 1,
-  "sourceImplementationSha": "71b167f92417614e0eef515b105a5841487eb8fb"
+  "sourceImplementationSha": "b5255197db45fa0a34dc7861d013c201bf247dcd"
 }
