@@ -180,11 +180,21 @@ public sealed partial class ManagedResourcePackageStore
         string? backup = null;
         try
         {
+            await using var processInstallLock = await AcquireProcessInstallLockAsync(gitInstallRoot, cancellationToken);
             var existed = Directory.Exists(packageRoot);
             if (existed && !reconcileExisting) return;
             await EnsureGitIgnoreAsync(gitInstallRoot, cancellationToken);
             Directory.CreateDirectory(Path.GetDirectoryName(packageRoot)!);
             stage = packageRoot + ".pisharp-stage-" + Guid.NewGuid().ToString("N");
+            var repository = source.Repository;
+            if (existed && reconcileExisting)
+            {
+                var existingRemote = await RunGitAsync(packageRoot,
+                    ["-C", packageRoot, "remote", "get-url", "origin"], cancellationToken,
+                    throwOnFailure: false);
+                if (existingRemote.ExitCode == 0 && !string.IsNullOrWhiteSpace(existingRemote.StandardOutput))
+                    repository = existingRemote.StandardOutput.Trim();
+            }
             var branch = existed && source.Ref is null
                 ? await GetCurrentBranchAsync(packageRoot, cancellationToken)
                 : null;
@@ -195,7 +205,7 @@ public sealed partial class ManagedResourcePackageStore
                 cloneArguments.Add("--branch");
                 cloneArguments.Add(branch);
             }
-            cloneArguments.Add(source.Repository);
+            cloneArguments.Add(repository);
             cloneArguments.Add(stage);
             await RunGitAsync(workingDirectory, cloneArguments, cancellationToken,
                 standardOutput: standardOutput, standardError: standardError,
@@ -304,21 +314,104 @@ public sealed partial class ManagedResourcePackageStore
     private async Task UpdateNpmAsync(string workingDirectory, string installRoot, string source, NpmPackageSpec spec,
         CancellationToken cancellationToken, TextWriter? standardOutput, TextWriter? standardError)
     {
-        var installLock = s_installLocks.GetOrAdd(Path.GetFullPath(installRoot), _ => new SemaphoreSlim(1, 1));
+        var rootKey = Path.GetFullPath(installRoot);
+        var installLock = s_installLocks.GetOrAdd(rootKey, _ => new SemaphoreSlim(1, 1));
         await installLock.WaitAsync(cancellationToken);
+        string? stageRoot = null;
+        string? backupRoot = null;
         try
         {
+            await using var processInstallLock = await AcquireProcessInstallLockAsync(rootKey, cancellationToken);
+            RecoverInterruptedNpmUpdate(rootKey);
+            stageRoot = rootKey + ".pisharp-update-stage-" + Guid.NewGuid().ToString("N");
+            backupRoot = rootKey + ".pisharp-update-backup-" + Guid.NewGuid().ToString("N");
+            CopyDirectory(rootKey, stageRoot);
             var installSpec = spec.Version is null ? spec.Name + "@latest" : spec.InstallSpec;
             var (exitCode, output, errorOutput) = await RunNpmAsync(workingDirectory,
-                GetNpmInstallArguments(installSpec, installRoot),
+                GetNpmInstallArguments(installSpec, stageRoot),
                 _processEnvironmentOverrides, cancellationToken, standardOutput, standardError);
             if (exitCode != 0)
             {
                 var details = string.IsNullOrWhiteSpace(errorOutput) ? output.Trim() : errorOutput.Trim();
                 throw new IOException($"npm update failed for '{source}' (exit {exitCode}). {details}");
             }
+            cancellationToken.ThrowIfCancellationRequested();
+            Directory.Move(rootKey, backupRoot);
+            try
+            {
+                Directory.Move(stageRoot, rootKey);
+                stageRoot = null;
+            }
+            catch
+            {
+                if (Directory.Exists(backupRoot) && !Directory.Exists(rootKey)) Directory.Move(backupRoot, rootKey);
+                backupRoot = null;
+                throw;
+            }
+            Directory.Delete(backupRoot, recursive: true);
+            backupRoot = null;
         }
-        finally { installLock.Release(); }
+        finally
+        {
+            if (stageRoot is not null) TryDeleteDirectory(stageRoot);
+            if (backupRoot is not null && Directory.Exists(rootKey)) TryDeleteDirectory(backupRoot);
+            installLock.Release();
+        }
+    }
+
+    private static void RecoverInterruptedNpmUpdate(string installRoot)
+    {
+        var parent = Path.GetDirectoryName(installRoot)!;
+        var name = Path.GetFileName(installRoot);
+        var backups = Directory.GetDirectories(parent, name + ".pisharp-update-backup-*");
+        if (!Directory.Exists(installRoot) && backups.Length > 0)
+        {
+            var restore = backups.OrderBy(path => path, StringComparer.Ordinal).Last();
+            Directory.Move(restore, installRoot);
+            backups = backups.Where(path => !string.Equals(path, restore, StringComparison.Ordinal)).ToArray();
+        }
+        foreach (var backup in backups) TryDeleteDirectory(backup);
+        foreach (var stage in Directory.GetDirectories(parent, name + ".pisharp-update-stage-*"))
+            TryDeleteDirectory(stage);
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        var sourceInfo = new DirectoryInfo(source);
+        if (sourceInfo.LinkTarget is { } directoryLink)
+        {
+            Directory.CreateSymbolicLink(destination, directoryLink);
+            return;
+        }
+
+        Directory.CreateDirectory(destination);
+        foreach (var entry in sourceInfo.EnumerateFileSystemInfos())
+        {
+            var target = Path.Combine(destination, entry.Name);
+            if (entry.LinkTarget is { } linkTarget)
+            {
+                if (entry is DirectoryInfo) Directory.CreateSymbolicLink(target, linkTarget);
+                else File.CreateSymbolicLink(target, linkTarget);
+            }
+            else if (entry is DirectoryInfo)
+            {
+                CopyDirectory(entry.FullName, target);
+            }
+            else
+            {
+                File.Copy(entry.FullName, target, overwrite: false);
+            }
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path)) Directory.Delete(path, recursive: true);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private async Task<bool> HasNpmPackageAsync(string installRoot, NpmPackageSpec spec, CancellationToken cancellationToken)

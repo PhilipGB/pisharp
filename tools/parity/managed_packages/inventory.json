@@ -1,0 +1,1288 @@
+{
+  "schemaVersion": 1,
+  "pisharpSourceSha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
+  "piSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
+  "repository": "PhilipGB/pisharp",
+  "capabilities": [
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "cli",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "Command parser, trust/scope gate, persistence and list output exist. Invalid package specs and Unicode/space paths remain in the mandatory corpus."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify package command behavior, usage and source/path handling.",
+      "executableCaseBindings": [
+        {
+          "caseId": "cli.help",
+          "runnerPath": "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageCommandProcessTests.PackageHelpAndUpdateTargetsFailBeforeSettingsOrAcquisition",
+          "fixtureFamilies": [
+            "cli-process"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs"
+      ],
+      "requiredCaseIds": [
+        "cli.install",
+        "cli.remove",
+        "cli.list",
+        "cli.update",
+        "cli.missing-source",
+        "cli.invalid-option",
+        "cli.conflicting-options",
+        "cli.local-scope",
+        "cli.trust-options",
+        "cli.help",
+        "cli.spaces-unicode-path",
+        "cli.invalid-package-spec"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Cli/Packages/ResourcePackageCommand.cs",
+          "symbols": [
+            "Parse",
+            "RunAsync",
+            "PrintListAsync"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/package-manager-cli.ts",
+          "symbols": [
+            "handlePackageCommand"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "npm-install",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "Existing tests cover local tarballs, ranges, manager argv, lifecycle cancellation and process installs; full local-registry matrix remains pending."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify npm package installation and failure behavior with real npm processes.",
+      "executableCaseBindings": [
+        {
+          "caseId": "npm.install-exact",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ManagedResourcePackageStoreTests.LocalTarballsLoadResourcesAndNativeExtensionOncePerStartupAndReload",
+          "fixtureFamilies": [
+            "real-npm-processes"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs",
+        "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs"
+      ],
+      "requiredCaseIds": [
+        "npm.install-exact",
+        "npm.install-range",
+        "npm.install-latest",
+        "npm.install-scoped",
+        "npm.install-dependencies",
+        "npm.install-idempotent",
+        "npm.install-invalid",
+        "npm.install-script-failure",
+        "npm.install-cancelled",
+        "npm.install-unscoped",
+        "npm.install-implicit",
+        "npm.install-prerelease",
+        "npm.install-peer-dependencies",
+        "npm.install-lifecycle-scripts",
+        "npm.install-existing",
+        "npm.install-reinstall",
+        "npm.install-unavailable-version"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/docs/packages.md",
+          "symbols": []
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "npm-update",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "A mutable loopback-registry process differential covers pinned/ranged/latest/prerelease updates, no-change, failure recovery, registry changes, repeated updates, cancellation and SIGKILL interruption. Interrupted updates are classified as an intentional safety improvement because Pi removes the prior package while PiSharp retains it."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify pinned, ranged and floating npm updates, failure recovery, and repeated updates.",
+      "executableCaseBindings": [
+        {
+          "caseId": "npm.update-range",
+          "runnerPath": "tools/parity/managed-npm-update-process-differential.py",
+          "selector": "all-required-npm-update-cases",
+          "fixtureFamilies": [
+            "mutable-local-npm-registry",
+            "real-npm-processes"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs",
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs"
+      ],
+      "requiredCaseIds": [
+        "npm.update-pinned",
+        "npm.update-range",
+        "npm.update-latest",
+        "npm.update-no-change",
+        "npm.update-failure",
+        "npm.update-cancelled",
+        "npm.update-repeat",
+        "npm.update-unpinned",
+        "npm.update-prerelease",
+        "npm.update-registry-change",
+        "npm.update-interrupted"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.Git.cs",
+          "symbols": [
+            "InstallAsync",
+            "UpdateAsync",
+            "GetUpdateTargets",
+            "AcquireGitAsync"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/docs/packages.md",
+          "symbols": []
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "package-managers",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "Real npm subprocesses verify default and explicit npm commands. Exact shims verify pnpm, Bun, Yarn fallback, custom arguments, missing executables, failure and cancellation. Pinned Pi leaves a partial package directory on SIGINT; PiSharp removes it as a documented safety improvement."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify configured npmCommand selection and exact process invocation.",
+      "executableCaseBindings": [
+        {
+          "caseId": "pm.custom-arguments",
+          "runnerPath": "tools/parity/package-managers-process-differential.py",
+          "selector": "all-required-package-managers-cases",
+          "fixtureFamilies": [
+            "command-shims",
+            "available-real-managers"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Cli/Configuration/PackageSettingsReaderTests.cs",
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs",
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs"
+      ],
+      "requiredCaseIds": [
+        "pm.default",
+        "pm.npm",
+        "pm.pnpm",
+        "pm.yarn",
+        "pm.bun",
+        "pm.custom-arguments",
+        "pm.missing-executable",
+        "pm.failure",
+        "pm.cancellation"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/settings-manager.ts",
+          "symbols": []
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "legacy-global",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "Pinned process probes cover npm, pnpm, Yarn and Bun global paths, malformed and missing lookup, managed precedence, and read-only removal. The ManagedResourcePackageStoreTests selection independently covers managed acquisition fallback."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify read-only legacy global package lookup, fallback and precedence.",
+      "executableCaseBindings": [
+        {
+          "caseId": "legacy.npm",
+          "runnerPath": "tools/parity/legacy-global-package-process-differential.py",
+          "selector": "all-required-legacy-global-cases",
+          "fixtureFamilies": [
+            "disposable-global-roots",
+            "package-manager-shims"
+          ]
+        },
+        {
+          "caseId": "legacy.pnpm",
+          "runnerPath": "tools/parity/legacy-global-package-process-differential.py",
+          "selector": "all-required-legacy-global-cases",
+          "fixtureFamilies": [
+            "disposable-global-roots",
+            "package-manager-shims"
+          ]
+        },
+        {
+          "caseId": "legacy.yarn",
+          "runnerPath": "tools/parity/legacy-global-package-process-differential.py",
+          "selector": "all-required-legacy-global-cases",
+          "fixtureFamilies": [
+            "disposable-global-roots",
+            "package-manager-shims"
+          ]
+        },
+        {
+          "caseId": "legacy.bun",
+          "runnerPath": "tools/parity/legacy-global-package-process-differential.py",
+          "selector": "all-required-legacy-global-cases",
+          "fixtureFamilies": [
+            "disposable-global-roots",
+            "package-manager-shims"
+          ]
+        },
+        {
+          "caseId": "legacy.missing",
+          "runnerPath": "tools/parity/legacy-global-package-process-differential.py",
+          "selector": "all-required-legacy-global-cases",
+          "fixtureFamilies": [
+            "disposable-global-roots",
+            "package-manager-shims"
+          ]
+        },
+        {
+          "caseId": "legacy.malformed",
+          "runnerPath": "tools/parity/legacy-global-package-process-differential.py",
+          "selector": "all-required-legacy-global-cases",
+          "fixtureFamilies": [
+            "disposable-global-roots",
+            "package-manager-shims"
+          ]
+        },
+        {
+          "caseId": "legacy.managed-precedence",
+          "runnerPath": "tools/parity/legacy-global-package-process-differential.py",
+          "selector": "all-required-legacy-global-cases",
+          "fixtureFamilies": [
+            "disposable-global-roots",
+            "package-manager-shims"
+          ]
+        },
+        {
+          "caseId": "legacy.read-only",
+          "runnerPath": "tools/parity/legacy-global-package-process-differential.py",
+          "selector": "all-required-legacy-global-cases",
+          "fixtureFamilies": [
+            "disposable-global-roots",
+            "package-manager-shims"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs"
+      ],
+      "requiredCaseIds": [
+        "legacy.npm",
+        "legacy.pnpm",
+        "legacy.yarn",
+        "legacy.bun",
+        "legacy.missing",
+        "legacy.malformed",
+        "legacy.managed-precedence",
+        "legacy.read-only"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/docs/packages.md",
+          "symbols": []
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "git-install",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "Paired local-daemon process cases verify branch, tag, commit, floating refs, invalid refs, failed clone, cancellation, URL forms, repeated install and dependency policy."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify Git package installation for refs, failures and cancellation.",
+      "executableCaseBindings": [
+        {
+          "caseId": "git.install-branch",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ManagedGitPackageStoreTests.ManagedGitLoadsResourcesAndNativeExtensionWithoutStartupFetchAndUpdatesConfiguredRef",
+          "fixtureFamilies": [
+            "local-bare-git"
+          ]
+        },
+        {
+          "caseId": "git.install-tag",
+          "runnerPath": "tools/parity/managed-git-install-process-differential.py",
+          "selector": "all-required-git-install-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        },
+        {
+          "caseId": "git.install-commit",
+          "runnerPath": "tools/parity/managed-git-install-process-differential.py",
+          "selector": "all-required-git-install-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        },
+        {
+          "caseId": "git.install-floating",
+          "runnerPath": "tools/parity/managed-git-install-process-differential.py",
+          "selector": "all-required-git-install-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        },
+        {
+          "caseId": "git.install-invalid-ref",
+          "runnerPath": "tools/parity/managed-git-install-process-differential.py",
+          "selector": "all-required-git-install-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        },
+        {
+          "caseId": "git.install-failure",
+          "runnerPath": "tools/parity/managed-git-install-process-differential.py",
+          "selector": "all-required-git-install-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        },
+        {
+          "caseId": "git.install-cancelled",
+          "runnerPath": "tools/parity/managed-git-install-process-differential.py",
+          "selector": "all-required-git-install-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        },
+        {
+          "caseId": "git.install-url-shorthands",
+          "runnerPath": "tools/parity/managed-git-install-process-differential.py",
+          "selector": "all-required-git-install-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        },
+        {
+          "caseId": "git.install-existing",
+          "runnerPath": "tools/parity/managed-git-install-process-differential.py",
+          "selector": "all-required-git-install-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        },
+        {
+          "caseId": "git.install-missing-dependencies",
+          "runnerPath": "tools/parity/managed-git-install-process-differential.py",
+          "selector": "all-required-git-install-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs",
+        "tests/PiSharp.Tests/TestInfrastructure/ManagedGitFixture.cs"
+      ],
+      "requiredCaseIds": [
+        "git.install-branch",
+        "git.install-tag",
+        "git.install-commit",
+        "git.install-floating",
+        "git.install-invalid-ref",
+        "git.install-failure",
+        "git.install-cancelled",
+        "git.install-url-shorthands",
+        "git.install-existing",
+        "git.install-missing-dependencies"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ManagedGitSource.cs",
+          "symbols": [
+            "TryParse",
+            "Identity"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/docs/packages.md",
+          "symbols": []
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "git-update",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "A paired process matrix now covers moving and pinned refs, unchanged/deleted refs, failure recovery, cancellation and changed cached remotes. Dependency failure exposes an approved safety difference: PiSharp retains the prior valid checkout while pinned Pi leaves the updated checkout active."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify Git update resolution, atomicity, recovery and observable output.",
+      "executableCaseBindings": [
+        {
+          "caseId": "git.update-changed-remote",
+          "runnerPath": "tools/parity/managed-git-update-process-differential.py",
+          "selector": "all-required-git-update-cases",
+          "fixtureFamilies": [
+            "loopback-git-daemon"
+          ]
+        },
+        {
+          "caseId": "git.update-moving",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ManagedGitPackageStoreTests.CachedUnpinnedGitSourceRefreshesOnlyOnExplicitUpdate",
+          "fixtureFamilies": [
+            "controlled-local-git"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs",
+        "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs"
+      ],
+      "requiredCaseIds": [
+        "git.update-moving",
+        "git.update-no-change",
+        "git.update-pinned",
+        "git.update-failed-fetch",
+        "git.update-failed-checkout",
+        "git.update-dependency-failure",
+        "git.update-cancelled",
+        "git.update-recovery",
+        "git.update-pinned-tag",
+        "git.update-pinned-commit",
+        "git.update-changed-remote",
+        "git.update-deleted-branch"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.Git.cs",
+          "symbols": [
+            "InstallAsync",
+            "UpdateAsync",
+            "GetUpdateTargets",
+            "AcquireGitAsync"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "identity",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "Version-independent npm/Git identities, canonical local aliases, project precedence and autoload deltas have focused PiSharp tests and are paired with pinned-Pi identity/resource tests by the managed-package identity differential runner."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify package identity, deduplication, scope precedence and autoload behavior.",
+      "executableCaseBindings": [
+        {
+          "caseId": "identity.npm",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ManagedResourcePackageStoreTests.ManagedNpmIdentityIgnoresVersionAndInstallSource",
+          "fixtureFamilies": [
+            "npm-git-local-source-fixtures"
+          ]
+        },
+        {
+          "caseId": "identity.git",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ManagedGitPackageStoreTests.SupportedGitSyntaxUsesVersionIndependentRepositoryIdentity",
+          "fixtureFamilies": [
+            "npm-git-local-source-fixtures"
+          ]
+        },
+        {
+          "caseId": "identity.local",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ResourcePackageLoadingTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageLoadingTests.LocalPackageAliasesDeduplicateWithinUserScope",
+          "fixtureFamilies": [
+            "user-project-settings"
+          ]
+        },
+        {
+          "caseId": "identity.duplicate",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ManagedResourcePackageStoreTests.NpmOwnsConfiguredRangeChecksForCompatibleAndIncompatibleCachedVersions",
+          "fixtureFamilies": [
+            "npm-git-local-source-fixtures"
+          ]
+        },
+        {
+          "caseId": "identity.scope-override",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ResourcePackageLoadingTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageLoadingTests.ProjectPackageDeclarationOverridesSameCanonicalUserIdentity",
+          "fixtureFamilies": [
+            "user-project-settings"
+          ]
+        },
+        {
+          "caseId": "identity.autoload-delta",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ResourcePackageLoadingTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageLoadingTests.DisabledProjectPackageEntryWinsCanonicalIdentityBeforeEnabledPersonalAlias",
+          "fixtureFamilies": [
+            "user-project-settings"
+          ]
+        },
+        {
+          "caseId": "identity.user-project-duplicates",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ResourcePackageLoadingTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageLoadingTests.ProjectPackageDeclarationOverridesSameCanonicalUserIdentity",
+          "fixtureFamilies": [
+            "user-project-settings"
+          ]
+        },
+        {
+          "caseId": "identity.local-symlink",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ResourcePackageLoadingTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageLoadingTests.DisabledProjectPackageEntryWinsCanonicalIdentityBeforeEnabledPersonalAlias",
+          "fixtureFamilies": [
+            "user-project-settings"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs",
+        "tests/PiSharp.Tests/Runtime/Resources/ResourcePackageLoadingTests.cs"
+      ],
+      "requiredCaseIds": [
+        "identity.npm",
+        "identity.git",
+        "identity.local",
+        "identity.duplicate",
+        "identity.scope-override",
+        "identity.autoload-delta",
+        "identity.user-project-duplicates",
+        "identity.local-symlink"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/settings-manager.ts",
+          "symbols": []
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "removal-listing",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "The paired package CLI process runner covers npm, Git and local removal, missing-source preservation, scope isolation, mixed-scope listing, filtered markers, and installed versus missing paths."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify npm, Git and local removal and package listing by scope.",
+      "executableCaseBindings": [
+        {
+          "caseId": "remove.local",
+          "runnerPath": "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageCommandProcessTests.LocalPackageInstallListAndRemovePreserveReferencesAndScopes",
+          "fixtureFamilies": [
+            "user-project-settings"
+          ]
+        },
+        {
+          "caseId": "remove.npm",
+          "runnerPath": "tools/parity/managed_packages/verify.py",
+          "selector": "all-required-removal-listing-cases",
+          "fixtureFamilies": [
+            "npm-git-local-source-fixtures",
+            "user-project-settings"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs"
+      ],
+      "requiredCaseIds": [
+        "remove.npm",
+        "remove.git",
+        "remove.local",
+        "remove.missing",
+        "remove.scope-isolation",
+        "list.empty",
+        "list.mixed-scopes",
+        "list.filtered",
+        "list.missing-install",
+        "list.paths-filter-indicators"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Cli/Packages/ResourcePackageCommand.cs",
+          "symbols": [
+            "Parse",
+            "RunAsync",
+            "PrintListAsync"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/package-manager-cli.ts",
+          "symbols": [
+            "handlePackageCommand"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "bulk-updates",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "A seven-case paired process matrix covers selective source updates, --extensions, mixed user/project npm and Git sources, pinned targets, partial failure, cancellation and saved project trust behavior. Cancellation preserves PiSharp's prior valid npm package while pinned Pi removes it."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify selective and bulk updates, target selection, partial failure and cancellation.",
+      "executableCaseBindings": [
+        {
+          "caseId": "bulk.cancelled",
+          "runnerPath": "tools/parity/managed-package-bulk-update-process-differential.py",
+          "selector": "all-required-bulk-updates-cases",
+          "fixtureFamilies": [
+            "mixed-npm-git-fixtures",
+            "project-trust"
+          ]
+        },
+        {
+          "caseId": "bulk.mixed-sources",
+          "runnerPath": "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageCommandProcessTests.BulkUpdateHandlesMixedUserAndTrustedProjectPackageScopes",
+          "fixtureFamilies": [
+            "mixed-npm-git-fixtures",
+            "project-trust"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs",
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs"
+      ],
+      "requiredCaseIds": [
+        "bulk.selective",
+        "bulk.extensions",
+        "bulk.mixed-sources",
+        "bulk.pinned",
+        "bulk.partial-failure",
+        "bulk.cancelled",
+        "bulk.trust"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Cli/Packages/ResourcePackageCommand.cs",
+          "symbols": [
+            "Parse",
+            "RunAsync",
+            "PrintListAsync"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/package-manager-cli.ts",
+          "symbols": [
+            "handlePackageCommand"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "configuration-trust",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "A ten-case paired process matrix now covers user/project scopes, relative source normalization, filters, disabled declarations, trust denial/approval, failed publication, concurrent external settings changes and a second-process restart. PiSharp reports an unreplaced settings file as an error while pinned Pi reports success without persisting the package declaration."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify settings persistence, trust gates, atomic writes, concurrency and restart.",
+      "executableCaseBindings": [
+        {
+          "caseId": "config.failed-write",
+          "runnerPath": "tools/parity/managed-package-configuration-process-differential.py",
+          "selector": "all-required-configuration-trust-cases",
+          "fixtureFamilies": [
+            "isolated-settings-roots",
+            "project-trust",
+            "concurrent-writers"
+          ]
+        },
+        {
+          "caseId": "config.trust-approved",
+          "runnerPath": "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageCommandProcessTests.ProjectNativeNupkgInstallUsesProjectScopeAndRequiresApproval",
+          "fixtureFamilies": [
+            "project-trust"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Cli/Configuration/PackageSettingsReaderTests.cs",
+        "tests/PiSharp.Tests/Cli/Configuration/PackageSettingsTests.cs",
+        "tests/PiSharp.Tests/Runtime/Resources/ProjectTrustTests.cs"
+      ],
+      "requiredCaseIds": [
+        "config.user",
+        "config.project",
+        "config.relative-source",
+        "config.filters",
+        "config.disabled",
+        "config.trust-denied",
+        "config.trust-approved",
+        "config.failed-write",
+        "config.concurrent-change",
+        "config.restart"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Cli/Configuration/PackageSettingsReader.cs",
+          "symbols": [
+            "ReadNpmCommand",
+            "Read",
+            "ReadNativeExtensions"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/settings-manager.ts",
+          "symbols": []
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/cli/project-trust.ts",
+          "symbols": []
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/docs/packages.md",
+          "symbols": []
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "resource-distribution",
+      "confirmedDifferences": [
+        {
+          "differenceId": "temporary-managed-package-source",
+          "description": "Pinned Pi resolveExtensionSources supports temporary npm/Git package sources from -e/--extension. PiSharp parses extension arguments as paths and does not acquire temporary managed package sources.",
+          "sourceEvidence": [
+            "packages/coding-agent/src/core/package-manager.ts:resolveExtensionSources",
+            "packages/coding-agent/src/core/resource-loader.ts:resolveExtensionSources",
+            "src/PiSharp.Cli/Startup/CliArguments.cs:ExtensionPaths",
+            "src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs:ProjectRuntimeConfiguration.LoadAsync"
+          ],
+          "requiredCaseIds": [
+            "distribution.temporary-npm-package",
+            "distribution.temporary-git-package"
+          ]
+        }
+      ],
+      "correctiveWorkRequired": [
+        "Add temporary npm/Git package resolution to the existing startup/package-store path; preserve one-invocation scope and leave settings unchanged."
+      ],
+      "coverageNotes": [],
+      "currentImplementationStatus": "gap-confirmed",
+      "description": "Verify package skills, prompts, themes and native extensions through real CLI/RPC paths.",
+      "executableCaseBindings": [
+        {
+          "caseId": "distribution.skill",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ResourcePackageLoadingTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageLoadingTests.PersonalPackageLoadsDeclaredSkillAndPromptWithPackageProvenance",
+          "fixtureFamilies": [
+            "local-npm-git-resource-fixtures"
+          ]
+        },
+        {
+          "caseId": "distribution.temporary-git-package",
+          "runnerPath": "tests/PiSharp.Tests/Cli/Packages/TemporaryManagedExtensionTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.ExplicitGitExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings",
+          "fixtureFamilies": [
+            "local-npm-git-resource-fixtures"
+          ]
+        },
+        {
+          "caseId": "distribution.temporary-npm-package",
+          "runnerPath": "tests/PiSharp.Tests/Cli/Packages/TemporaryManagedExtensionTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.ExplicitNpmExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings",
+          "fixtureFamilies": [
+            "local-npm-git-resource-fixtures"
+          ]
+        },
+        {
+          "caseId": "distribution.temporary-source-order",
+          "runnerPath": "tests/PiSharp.Tests/Cli/Packages/TemporaryManagedExtensionTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.TemporaryNpmAndGitRootsRetainExplicitSourceOrder",
+          "fixtureFamilies": [
+            "local-npm-git-resource-fixtures"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Runtime/Resources/ResourcePackageLoadingTests.cs",
+        "tests/PiSharp.Tests/Runtime/Resources/ResourceCatalogTests.cs",
+        "tools/parity/managed-npm-process-differential.py",
+        "tools/parity/resource-invocation-process-differential.py"
+      ],
+      "requiredCaseIds": [
+        "distribution.local",
+        "distribution.npm",
+        "distribution.git",
+        "distribution.skill",
+        "distribution.prompt",
+        "distribution.theme",
+        "distribution.native-extension",
+        "distribution.manifest",
+        "distribution.filters",
+        "distribution.invalid-resource",
+        "distribution.conventional-directories",
+        "distribution.exclusions",
+        "distribution.disabled",
+        "distribution.source-metadata",
+        "distribution.temporary-npm-package",
+        "distribution.temporary-git-package",
+        "distribution.temporary-source-order"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ResourcePackageFiles.cs",
+          "symbols": [
+            "Load"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/docs/packages.md",
+          "symbols": []
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/resource-loader.ts",
+          "symbols": [
+            "resolveExtensionSources"
+          ]
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "startup-reload",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "Paired Pi/PiSharp runtime probes now verify skill invocation after local and cached Git startup/reload, resource content changes, removal, disabled project filters and trust revocation. The same-run npm process differential covers npm resource reload and per-pass extension registration counts. The separate resource-distribution checkpoint supplies CLI/RPC invocation evidence."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify install/restart/invoke/update/reload/remove resource lifecycle snapshots.",
+      "executableCaseBindings": [
+        {
+          "caseId": "reload.local",
+          "runnerPath": "tools/parity/managed-package-startup-reload-process-differential.py",
+          "selector": "all-required-startup-reload-cases",
+          "fixtureFamilies": [
+            "resource-invocation-fixtures"
+          ]
+        },
+        {
+          "caseId": "reload.git",
+          "runnerPath": "tools/parity/managed-package-startup-reload-process-differential.py",
+          "selector": "all-required-startup-reload-cases",
+          "fixtureFamilies": [
+            "restartable-cli-processes"
+          ]
+        },
+        {
+          "caseId": "reload.updated-resource",
+          "runnerPath": "tools/parity/managed-package-startup-reload-process-differential.py",
+          "selector": "all-required-startup-reload-cases",
+          "fixtureFamilies": [
+            "resource-invocation-fixtures"
+          ]
+        },
+        {
+          "caseId": "reload.removed-resource",
+          "runnerPath": "tools/parity/managed-package-startup-reload-process-differential.py",
+          "selector": "all-required-startup-reload-cases",
+          "fixtureFamilies": [
+            "resource-invocation-fixtures"
+          ]
+        },
+        {
+          "caseId": "reload.disabled-resource",
+          "runnerPath": "tools/parity/managed-package-startup-reload-process-differential.py",
+          "selector": "all-required-startup-reload-cases",
+          "fixtureFamilies": [
+            "resource-invocation-fixtures"
+          ]
+        },
+        {
+          "caseId": "reload.trust-revoked",
+          "runnerPath": "tools/parity/managed-package-startup-reload-process-differential.py",
+          "selector": "all-required-startup-reload-cases",
+          "fixtureFamilies": [
+            "resource-invocation-fixtures"
+          ]
+        },
+        {
+          "caseId": "reload.npm",
+          "runnerPath": "tools/parity/managed-package-startup-reload-process-differential.py",
+          "selector": "all-required-startup-reload-cases",
+          "fixtureFamilies": [
+            "restartable-cli-processes"
+          ]
+        },
+        {
+          "caseId": "reload.no-duplicate-registration",
+          "runnerPath": "tools/parity/managed-package-startup-reload-process-differential.py",
+          "selector": "all-required-startup-reload-cases",
+          "fixtureFamilies": [
+            "restartable-cli-processes"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs",
+        "tests/PiSharp.Tests/Cli/Sessions/PackageExtensionBootstrapTests.cs"
+      ],
+      "requiredCaseIds": [
+        "reload.local",
+        "reload.npm",
+        "reload.git",
+        "reload.updated-resource",
+        "reload.removed-resource",
+        "reload.disabled-resource",
+        "reload.trust-revoked",
+        "reload.no-duplicate-registration"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs",
+          "symbols": [
+            "ProjectRuntimeConfiguration",
+            "LoadAsync"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/docs/packages.md",
+          "symbols": []
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "failure-recovery",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "Paired local-process fixtures cover registry, unreachable Git remote, invalid archive, lifecycle and dependency failures, permission denial, interrupted install cleanup, failed settings publication, Git update cancellation, SIGKILL staging and restart recovery."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify atomic failure recovery for installs, updates, settings and cancellation.",
+      "executableCaseBindings": [
+        {
+          "caseId": "failure.registry",
+          "runnerPath": "tools/parity/managed-package-failure-process-differential.py",
+          "selector": "all-required-failure-recovery-cases",
+          "fixtureFamilies": [
+            "deterministic-failure-injection",
+            "disposable-package-roots"
+          ]
+        },
+        {
+          "caseId": "failure.cancelled-update",
+          "runnerPath": "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ManagedGitPackageStoreTests.OfflineMissingDeltaAndFailedOrCancelledUpdatesKeepTheLastUsableCheckout",
+          "fixtureFamilies": [
+            "deterministic-failure-injection"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs",
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs",
+        "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs"
+      ],
+      "requiredCaseIds": [
+        "failure.registry",
+        "failure.git-remote",
+        "failure.invalid-archive",
+        "failure.lifecycle-script",
+        "failure.dependency-install",
+        "failure.settings-publication",
+        "failure.permission",
+        "failure.cancelled-install",
+        "failure.cancelled-update",
+        "failure.interrupted-staging",
+        "failure.restart-recovery"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        }
+      ]
+    },
+    {
+      "baselineComparisonStatus": "pending",
+      "capabilityId": "concurrency",
+      "confirmedDifferences": [],
+      "correctiveWorkRequired": [],
+      "coverageNotes": [
+        "Barrier-controlled paired Pi/PiSharp processes exercise duplicate npm and Git installs, install/remove, update/remove, simultaneous updates, discovery during update, cancelled lock waiters, SIGKILL writers and external settings changes. CLI mutation leases cover settings publication; managed npm and Git roots also use process-level leases."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
+      "description": "Verify bounded terminal outcomes and durable integrity under concurrent package operations.",
+      "executableCaseBindings": [
+        {
+          "caseId": "concurrent.same-git-install",
+          "runnerPath": "tools/parity/managed-package-concurrency-process-differential.py",
+          "selector": "all-required-concurrency-cases",
+          "fixtureFamilies": [
+            "barrier-synchronized-processes",
+            "disposable-package-roots"
+          ]
+        },
+        {
+          "caseId": "concurrent.same-npm-install",
+          "runnerPath": "tests/PiSharp.Tests/Cli/Packages/ResourcePackageCommandProcessTests.cs",
+          "selector": "FullyQualifiedName~PiSharp.Tests.ResourcePackageCommandProcessTests.ConcurrentProcessesInstallTheSameNpmPackageWithoutDuplicatingItsDeclaration",
+          "fixtureFamilies": [
+            "barrier-synchronized-processes",
+            "disposable-package-roots"
+          ]
+        }
+      ],
+      "existingTestEvidence": [
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedResourcePackageStoreTests.cs",
+        "tests/PiSharp.Tests/Runtime/Resources/ManagedGitPackageStoreTests.cs"
+      ],
+      "requiredCaseIds": [
+        "concurrent.same-npm-install",
+        "concurrent.same-git-install",
+        "concurrent.install-remove",
+        "concurrent.update-remove",
+        "concurrent.two-process-update",
+        "concurrent.update-discovery",
+        "concurrent.cancelled-lock",
+        "concurrent.crashed-writer",
+        "concurrent.external-settings-change"
+      ],
+      "sourceOwners": [
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
+          "symbols": [
+            "ConfigureNpmCommand",
+            "ResolveAsync",
+            "InstallSelectedAsync",
+            "GetLegacyGlobalNpmPathAsync",
+            "GetManagedPackageIdentity",
+            "AcquireProcessInstallLockAsync"
+          ]
+        },
+        {
+          "repository": "pisharp",
+          "path": "src/PiSharp.Cli/Packages/ResourcePackageCommand.cs",
+          "symbols": [
+            "AcquirePackageMutationLeaseAsync"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/package-manager.ts",
+          "symbols": [
+            "DefaultPackageManager"
+          ]
+        },
+        {
+          "repository": "pi",
+          "path": "packages/coding-agent/src/core/settings-manager.ts",
+          "symbols": []
+        }
+      ]
+    }
+  ]
+}

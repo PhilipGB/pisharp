@@ -1,0 +1,265 @@
+using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using PiSharp.Cli;
+using PiSharp.Cli.Sessions;
+using PiSharp.Cli.Startup;
+using PiSharp.Cli.Tui;
+using PiSharp.ResourceDiscoveryExtension;
+using PiSharp.Runtime.Resources;
+using PiSharp.Tests.TestInfrastructure;
+
+namespace PiSharp.Tests;
+
+[Collection("Managed npm subprocesses")]
+public sealed class TemporaryManagedExtensionTests
+{
+    [Fact]
+    public async Task ExplicitNpmExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var package = fixture.CreatePackageDirectory("temporary-extension");
+        var packageJson = JsonSerializer.Serialize(new
+        {
+            name = "temporary-extension",
+            version = "1.0.0",
+            pi = new
+            {
+                extensions = new[] { "extensions" },
+                skills = new[] { "skills" },
+                prompts = new[] { "prompts" },
+                themes = new[] { "themes" }
+            }
+        });
+        var tarball = await fixture.PackAsync(package, packageJson,
+            textFiles: new Dictionary<string, string>
+            {
+                ["skills/guide/SKILL.md"] = "---\nname: temporary-guide\ndescription: Temporary package skill\n---\nTemporary body",
+                ["prompts/review.md"] = "---\ndescription: Temporary package prompt\n---\nReview {{topic}}",
+                ["themes/temporary-theme.json"] = CreateTemporaryThemeJson()
+            },
+            copiedFiles: new Dictionary<string, string>
+            {
+                ["extensions/index.dll"] = typeof(ResourceDiscoveryFixture).Assembly.Location
+            });
+        var source = "npm:temporary-extension@file:" + tarball;
+        var loadLog = Path.Combine(fixture.Root, "extension-loads.log");
+        var previousLoadLog = Environment.GetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG");
+        var previousOffline = Environment.GetEnvironmentVariable("npm_config_offline");
+        var previousCache = Environment.GetEnvironmentVariable("npm_config_cache");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG", loadLog);
+            Environment.SetEnvironmentVariable("npm_config_offline", "true");
+            Environment.SetEnvironmentVariable("npm_config_cache", fixture.NpmCacheDirectory);
+            var arguments = ExtensionCliPaths.Resolve(CliArguments.Parse(["--extension", source]), fixture.ProjectDirectory);
+            var trust = new ProjectTrust(fixture.AgentDirectory);
+            using var configuration = await ProjectRuntimeConfiguration.LoadAsync(fixture.ProjectDirectory,
+                fixture.AgentDirectory, arguments, trust, interactiveTrust: false,
+                TextReader.Null, TextWriter.Null, trustedOverride: true);
+
+            using var runtime = await ProjectRuntimeContext.LoadAsync(configuration, fixture.AgentDirectory,
+                arguments, configuredSessionDirectory: null);
+
+            Assert.Contains(runtime.Extensions.LoadedExtensions, extension => extension.Source == "cli");
+            Assert.Contains(runtime.Resources.Skills, item => item.Name == "temporary-guide");
+            var skill = runtime.Resources.Skills.Single(item => item.Name == "temporary-guide");
+            Assert.Equal("cli", skill.SourceInfo.Source);
+            Assert.Equal("temporary", skill.SourceInfo.Scope);
+            Assert.Equal("top-level", skill.SourceInfo.Origin);
+            Assert.Contains(runtime.Resources.Prompts, item => item.Name == "review");
+            var prompt = runtime.Resources.Prompts.Single(item => item.Name == "review");
+            Assert.Equal(source, prompt.SourceInfo.Source);
+            Assert.Equal("temporary", prompt.SourceInfo.Scope);
+            Assert.Equal("package", prompt.SourceInfo.Origin);
+            var packageFiles = ResourcePackageFiles.Load(fixture.ProjectDirectory, fixture.AgentDirectory, trusted: false,
+                user: null, project: null, token: CancellationToken.None,
+                temporaryPackages: configuration.TemporaryExtensionPackages,
+                temporaryRoots: configuration.TemporaryExtensionPackageRoots);
+            var themeFile = Assert.Single(packageFiles.TemporaryThemes);
+            Assert.Equal(source, themeFile.Source.Source);
+            Assert.Equal("temporary", themeFile.Source.Scope);
+            Assert.Equal("package", themeFile.Source.Origin);
+            var extensionFile = Assert.Single(packageFiles.TemporaryExtensions);
+            Assert.Equal("cli", extensionFile.Source.Source);
+            Assert.Equal("temporary", extensionFile.Source.Scope);
+            Assert.Equal("top-level", extensionFile.Source.Origin);
+            var themes = new TerminalThemeCatalog(fixture.AgentDirectory,
+                temporaryPackages: configuration.TemporaryExtensionPackages,
+                temporaryPackageRoots: configuration.TemporaryExtensionPackageRoots,
+                discoverThemes: false);
+            Assert.Contains("temporary-theme", themes.GetAvailableNames());
+            Assert.Equal(["configured"], await File.ReadAllLinesAsync(loadLog));
+            Assert.False(File.Exists(Path.Combine(fixture.AgentDirectory, "settings.json")));
+            Assert.False(File.Exists(Path.Combine(fixture.ProjectDirectory, ".pi", "settings.json")));
+            Assert.True(Directory.Exists(Path.Combine(fixture.AgentDirectory, "tmp", "extensions")));
+            Assert.False(Directory.Exists(Path.Combine(fixture.AgentDirectory, "npm")));
+            Assert.False(Directory.Exists(Path.Combine(fixture.ProjectDirectory, ".pi", "npm")));
+
+            File.Delete(loadLog);
+            var process = await RunListModelsProcessAsync(fixture.ProjectDirectory, fixture.AgentDirectory,
+                fixture.NpmCacheDirectory, source, loadLog);
+            Assert.True(process.ExitCode == 0, $"CLI process failed ({process.ExitCode}):\n{process.Error}\n{process.Output}");
+            Assert.Contains("configured", await File.ReadAllTextAsync(loadLog));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PISHARP_TEST_EXTENSION_LOAD_LOG", previousLoadLog);
+            Environment.SetEnvironmentVariable("npm_config_offline", previousOffline);
+            Environment.SetEnvironmentVariable("npm_config_cache", previousCache);
+        }
+    }
+
+    [Fact]
+    public async Task ExplicitGitExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings()
+    {
+        await using var fixture = new ManagedGitFixture();
+        await fixture.CreateAsync();
+        var environment = fixture.CreateProcessEnvironment();
+        var previousEnvironment = environment.ToDictionary(pair => pair.Key,
+            pair => Environment.GetEnvironmentVariable(pair.Key), StringComparer.Ordinal);
+        var source = fixture.Source("v1");
+
+        try
+        {
+            foreach (var (name, value) in environment) Environment.SetEnvironmentVariable(name, value);
+            var arguments = ExtensionCliPaths.Resolve(CliArguments.Parse(["--extension", source]), fixture.ProjectDirectory);
+            var trust = new ProjectTrust(fixture.AgentDirectory);
+            using var configuration = await ProjectRuntimeConfiguration.LoadAsync(fixture.ProjectDirectory,
+                fixture.AgentDirectory, arguments, trust, interactiveTrust: false,
+                TextReader.Null, TextWriter.Null, trustedOverride: true);
+
+            var packageRoot = Assert.Single(configuration.TemporaryExtensionPackageRoots);
+            Assert.Equal("temporary", packageRoot.Scope);
+            Assert.StartsWith(Path.Combine(fixture.AgentDirectory, "tmp", "extensions") + Path.DirectorySeparatorChar,
+                packageRoot.Path, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            using var runtime = await ProjectRuntimeContext.LoadAsync(configuration, fixture.AgentDirectory,
+                arguments, configuredSessionDirectory: null);
+
+            Assert.Contains(runtime.Extensions.LoadedExtensions, extension => extension.Source == "cli");
+            var skill = Assert.Single(runtime.Resources.Skills, item => item.Name == "git-guide-v1");
+            Assert.Equal("cli", skill.SourceInfo.Source);
+            Assert.Equal("temporary", skill.SourceInfo.Scope);
+            Assert.Equal("top-level", skill.SourceInfo.Origin);
+            var prompt = Assert.Single(runtime.Resources.Prompts, item => item.Name == "review");
+            Assert.Equal(source, prompt.SourceInfo.Source);
+            Assert.Equal("temporary", prompt.SourceInfo.Scope);
+            Assert.Equal("package", prompt.SourceInfo.Origin);
+            Assert.Equal("Review from Git v1.", prompt.Template);
+            var packageFiles = ResourcePackageFiles.Load(fixture.ProjectDirectory, fixture.AgentDirectory, trusted: false,
+                user: null, project: null, token: CancellationToken.None,
+                temporaryPackages: configuration.TemporaryExtensionPackages,
+                temporaryRoots: configuration.TemporaryExtensionPackageRoots);
+            var themeFile = Assert.Single(packageFiles.TemporaryThemes);
+            Assert.Equal(source, themeFile.Source.Source);
+            Assert.Equal("temporary", themeFile.Source.Scope);
+            Assert.Equal("package", themeFile.Source.Origin);
+            var extensionFile = Assert.Single(packageFiles.TemporaryExtensions);
+            Assert.Equal("cli", extensionFile.Source.Source);
+            Assert.Equal("temporary", extensionFile.Source.Scope);
+            Assert.Equal("top-level", extensionFile.Source.Origin);
+            var themes = new TerminalThemeCatalog(fixture.AgentDirectory,
+                temporaryPackages: configuration.TemporaryExtensionPackages,
+                temporaryPackageRoots: configuration.TemporaryExtensionPackageRoots,
+                discoverThemes: false);
+            Assert.Contains("managed-git-theme", themes.GetAvailableNames());
+            Assert.Single(await File.ReadAllLinesAsync(fixture.PackageInstallLog));
+            Assert.Single(await File.ReadAllLinesAsync(fixture.DependencyInstallLog));
+            Assert.False(File.Exists(Path.Combine(fixture.AgentDirectory, "settings.json")));
+            Assert.False(File.Exists(Path.Combine(fixture.ProjectDirectory, ".pi", "settings.json")));
+            Assert.False(Directory.Exists(Path.Combine(fixture.AgentDirectory, "git")));
+            Assert.False(Directory.Exists(Path.Combine(fixture.ProjectDirectory, ".pi", "git")));
+
+            File.Delete(fixture.ExtensionLoadLog);
+            var process = await RunListModelsProcessAsync(fixture.ProjectDirectory, fixture.AgentDirectory,
+                fixture.NpmCacheDirectory, source, fixture.ExtensionLoadLog, environment);
+            Assert.True(process.ExitCode == 0, $"CLI process failed ({process.ExitCode}):\n{process.Error}\n{process.Output}");
+            Assert.Contains("configured", await File.ReadAllTextAsync(fixture.ExtensionLoadLog));
+            Assert.Single(await File.ReadAllLinesAsync(fixture.PackageInstallLog));
+            Assert.Single(await File.ReadAllLinesAsync(fixture.DependencyInstallLog));
+        }
+        finally
+        {
+            foreach (var (name, value) in previousEnvironment) Environment.SetEnvironmentVariable(name, value);
+        }
+    }
+
+    [Fact]
+    public async Task TemporaryNpmAndGitRootsRetainExplicitSourceOrder()
+    {
+        await using var npmFixture = new ManagedNpmFixture();
+        await using var gitFixture = new ManagedGitFixture();
+        npmFixture.Create();
+        await gitFixture.CreateAsync();
+        var npmDirectory = npmFixture.CreatePackageDirectory("temporary-order-npm");
+        var tarball = await npmFixture.PackAsync(npmDirectory,
+            "{\"name\":\"temporary-order-npm\",\"version\":\"1.0.0\",\"scripts\":{\"postinstall\":\"node postinstall.js\"}}",
+            textFiles: new Dictionary<string, string>
+            {
+                ["postinstall.js"] = "require('node:fs').appendFileSync(process.env.PISHARP_TEST_GIT_PACKAGE_LOG, 'npm\\n');"
+            });
+        var npmSource = "npm:temporary-order-npm@file:" + tarball;
+        var gitSource = gitFixture.Source("v1");
+        var environment = gitFixture.CreateProcessEnvironment();
+        environment["npm_config_cache"] = npmFixture.NpmCacheDirectory;
+        var acquisitionLog = Path.Combine(npmFixture.Root, "acquisition-order.log");
+        environment["PISHARP_TEST_GIT_PACKAGE_LOG"] = acquisitionLog;
+        var store = new ManagedResourcePackageStore(npmFixture.AgentDirectory, environment);
+
+        var roots = await store.ResolveTemporaryExtensionSourcesAsync(npmFixture.ProjectDirectory,
+            [gitSource, npmSource], offline: false);
+
+        Assert.Equal([gitSource, npmSource], roots.Select(root => root.Source).ToArray());
+        Assert.All(roots, root => Assert.Equal("temporary", root.Scope));
+        Assert.Equal(["run", "npm"], await File.ReadAllLinesAsync(acquisitionLog));
+    }
+
+    private static string CreateTemporaryThemeJson()
+    {
+        using var stream = typeof(TerminalThemeCatalog).Assembly.GetManifestResourceStream("PiSharp.Cli.Tui.Themes.dark.json")
+            ?? throw new InvalidOperationException("Built-in theme fixture resource is missing.");
+        var theme = JsonNode.Parse(stream) ?? throw new InvalidDataException("Built-in theme fixture is invalid.");
+        theme["name"] = "temporary-theme";
+        return theme.ToJsonString();
+    }
+
+    private static async Task<(int ExitCode, string Output, string Error)> RunListModelsProcessAsync(
+        string projectDirectory, string agentDirectory, string npmCacheDirectory, string source, string loadLog,
+        IReadOnlyDictionary<string, string?>? environment = null)
+    {
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = projectDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
+        };
+        start.ArgumentList.Add(typeof(CliArguments).Assembly.Location);
+        foreach (var argument in new[] { "--list-models", "--offline", "--extension", source })
+            start.ArgumentList.Add(argument);
+        start.Environment["PISHARP_AGENT_DIR"] = agentDirectory;
+        start.Environment["PISHARP_TEST_EXTENSION_LOAD_LOG"] = loadLog;
+        start.Environment["npm_config_offline"] = "true";
+        start.Environment["npm_config_cache"] = npmCacheDirectory;
+        foreach (var (name, value) in environment ?? new Dictionary<string, string?>()) start.Environment[name] = value;
+        foreach (var name in new[] { "OPENAI_API_KEY", "PISHARP_API_KEY", "PISHARP_BASE_URL", "PISHARP_MODEL",
+                     "PISHARP_AUTH_PATH", "PISHARP_MODELS_PATH", "PISHARP_SETTINGS_PATH" })
+            start.Environment.Remove(name);
+
+        using var process = Process.Start(start) ?? throw new IOException("Could not start the PiSharp CLI process.");
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        try { await process.WaitForExitAsync(timeout.Token); }
+        catch
+        {
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { }
+            await process.WaitForExitAsync();
+            throw;
+        }
+        return (process.ExitCode, await outputTask, await errorTask);
+    }
+}

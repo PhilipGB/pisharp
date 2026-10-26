@@ -192,7 +192,9 @@ internal sealed class TerminalPresentation : IDisposable
         explicitThemeBaseDirectory: _invocationDirectory,
         userPackages: _projectBinding.BaseUserSettings.Packages,
         projectPackages: _projectBinding.ProjectSettings?.Packages,
-        managedPackageRoots: _projectBinding.Configuration.ManagedPackageRoots);
+        managedPackageRoots: _projectBinding.Configuration.ManagedPackageRoots,
+        temporaryPackages: _projectBinding.Configuration.TemporaryExtensionPackages,
+        temporaryPackageRoots: _projectBinding.Configuration.TemporaryExtensionPackageRoots);
     TerminalTheme ResolveConfiguredTheme(string? themeSetting, TerminalColorState? terminalColors = null)
     {
         var colors = terminalColors ?? new TerminalColorState();

@@ -184,6 +184,11 @@ def main():
 
         pi_result = parse_json_result(pi_stdout)
         pisharp_result = parse_json_result(pisharp_stdout)
+        pi_manifest = json.loads((pi_root / 'agent/npm/node_modules/managed-parity/package.json').read_text())
+        pisharp_manifest = json.loads((pisharp_agent / 'npm/node_modules/managed-parity/package.json').read_text())
+        pi_result['installedPackage'] = {'name': pi_manifest.get('name'), 'version': pi_manifest.get('version')}
+        pisharp_result['installedPackage'] = {
+            'name': pisharp_manifest.get('name'), 'version': pisharp_manifest.get('version')}
         pi_counts = {
             'packageInstallScriptRuns': len((pi_markers / 'package.log').read_text().splitlines()),
             'dependencyInstallScriptRuns': len((pi_markers / 'dependency.log').read_text().splitlines()),
@@ -209,6 +214,8 @@ def main():
         pi_extensions = [{**entry, 'path': entry['path'].removesuffix('.js') + '.<module>'}
                          for entry in pi_resolved['extensions']]
         comparisons = {
+            'installedPackage': pi_result['installedPackage'] == pisharp_result['installedPackage']
+                == {'name': 'managed-parity', 'version': '1.0.0'},
             'skills': summarize_resource_entries(pi_resolved['skills']) == pisharp_package_skills,
             'prompts': summarize_resource_entries(pi_resolved['prompts']) == pisharp_package_prompts,
             'extensions': pi_extensions == pisharp_extensions,

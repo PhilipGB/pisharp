@@ -14,6 +14,16 @@ namespace PiSharp.Tests;
 [Collection("Managed npm subprocesses")]
 public sealed class ManagedResourcePackageStoreTests
 {
+    [Theory]
+    [InlineData("npm:range-package", "npm:range-package")]
+    [InlineData("npm:range-package@^1.2.0", "npm:range-package")]
+    [InlineData("npm:range-package@file:/tmp/range-package-1.0.0.tgz", "npm:range-package")]
+    [InlineData("npm:@fixture/range-package@2.0.0", "npm:@fixture/range-package")]
+    public void ManagedNpmIdentityIgnoresVersionAndInstallSource(string source, string expectedIdentity)
+    {
+        Assert.Equal(expectedIdentity, ManagedResourcePackageStore.GetManagedPackageIdentity(source));
+    }
+
     [Fact]
     public async Task LocalTarballsLoadResourcesAndNativeExtensionOncePerStartupAndReload()
     {
@@ -247,6 +257,7 @@ public sealed class ManagedResourcePackageStoreTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => install);
         Assert.True(await WaitForProcessExitAsync(pid), "The npm lifecycle process remained alive after cancellation.");
         Assert.Equal(pid.ToString(), await File.ReadAllTextAsync(pidPath));
+        Assert.False(Directory.Exists(Path.Combine(fixture.AgentDirectory, "npm", "node_modules", "slow-package")));
     }
 
     [Theory]
@@ -356,10 +367,14 @@ public sealed class ManagedResourcePackageStoreTests
         var logPath = Path.Combine(fixture.Root, "alternate-manager-argv.log");
         var shim = Path.Combine(fixture.Root, "alternate-manager-wrapper");
         var response = manager == "pnpm"
-            ? JsonSerializer.Serialize(new
+            ? JsonSerializer.Serialize(new[]
             {
-                dependencies = new Dictionary<string, object>
-                { ["alternate-legacy-control"] = new { path = packagePath } }
+                new
+                {
+                    path = Path.GetDirectoryName(packagePath),
+                    dependencies = new Dictionary<string, object>
+                    { ["alternate-legacy-control"] = new { path = packagePath } }
+                }
             })
             : globalBin;
         var lookup = manager == "pnpm"
@@ -388,6 +403,60 @@ public sealed class ManagedResourcePackageStoreTests
         await store.RemoveAsync(fixture.ProjectDirectory, "npm:alternate-legacy-control", "user");
         Assert.True(File.Exists(Path.Combine(packagePath, "package.json")));
         Assert.Equal(expected, File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Fact]
+    public async Task MalformedPnpmGlobalListsDoNotFallThroughToRootLookup()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var packageName = "malformed-pnpm-control";
+        var globalRoot = Path.Combine(fixture.Root, "pnpm-root");
+        var globalPackage = Path.Combine(globalRoot, packageName);
+        Directory.CreateDirectory(globalPackage);
+        await File.WriteAllTextAsync(Path.Combine(globalPackage, "package.json"),
+            JsonSerializer.Serialize(new { name = packageName, version = "1.0.0" }));
+
+        var logPath = Path.Combine(fixture.Root, "pnpm-argv.log");
+        var shim = Path.Combine(fixture.Root, "pnpm-wrapper");
+        await File.WriteAllTextAsync(shim,
+            "#!/bin/sh\nprintf '%s\\0' \"$@\" >> \"$PISHARP_TEST_NPM_ARGV\"\nshift 4\n" +
+            "if [ \"$1\" = list ]; then printf '%s\\n' \"$PISHARP_TEST_MANAGER_RESPONSE\"; exit 0; fi\n" +
+            "if [ \"$1\" = root ]; then printf '%s\\n' \"$PISHARP_TEST_GLOBAL_ROOT\"; exit 0; fi\n" +
+            "exit 1\n");
+        File.SetUnixFileMode(shim, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var environment = new Dictionary<string, string?>
+        {
+            ["PISHARP_TEST_NPM_ARGV"] = logPath,
+            ["PISHARP_TEST_GLOBAL_ROOT"] = globalRoot
+        };
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory, environment);
+        store.ConfigureNpmCommand([shim, "exec", "node@20", "--", "pnpm"]);
+        var malformedOutputs = new[]
+        {
+            "not json",
+            "{}",
+            JsonSerializer.Serialize(new
+            {
+                dependencies = new Dictionary<string, object>
+                { [packageName] = new { path = globalPackage } }
+            })
+        };
+
+        foreach (var malformedOutput in malformedOutputs)
+        {
+            environment["PISHARP_TEST_MANAGER_RESPONSE"] = malformedOutput;
+            File.Delete(logPath);
+            var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: false,
+                userPackages: [new("npm:" + packageName)], offline: true);
+
+            Assert.Empty(roots);
+            Assert.True(File.Exists(Path.Combine(globalPackage, "package.json")));
+            Assert.Equal(
+                new[] { "exec", "node@20", "--", "pnpm", "list", "-g", "--depth", "0", "--json" },
+                File.ReadAllText(logPath).Split('\0', StringSplitOptions.RemoveEmptyEntries));
+        }
     }
 
     [Fact]

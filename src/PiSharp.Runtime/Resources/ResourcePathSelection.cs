@@ -19,15 +19,19 @@ internal sealed class ResourcePathSelection(string cwd, string agentDirectory, b
         IReadOnlyList<string>? userSkills, IReadOnlyList<string>? projectSkills,
         IReadOnlyList<string>? userPrompts, IReadOnlyList<string>? projectPrompts, ExtensionResourceDiscovery? extensions,
         IReadOnlyList<ResourcePackageSource>? userPackages, IReadOnlyList<ResourcePackageSource>? projectPackages,
-        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots)
+        IReadOnlyList<ManagedResourcePackageRoot>? managedPackageRoots,
+        IReadOnlyList<ResourcePackageSource>? temporaryPackages,
+        IReadOnlyList<ManagedResourcePackageRoot>? temporaryPackageRoots)
     {
         var packages = ResourcePackageFiles.Load(cwd, agentDirectory, trusted, userPackages, projectPackages, token,
-            managedPackageRoots);
+            managedPackageRoots, temporaryPackages, temporaryPackageRoots);
         var result = new ResourcePathSelection(cwd, agentDirectory, trusted, token, packages);
         var skills = result.Defaults(true, userSkills, projectSkills);
         var prompts = result.Defaults(false, userPrompts, projectPrompts);
-        result.Select(true, discoverSkills ? skills : [], additionalSkills, extensions?.SkillPaths);
-        result.Select(false, discoverPrompts ? prompts : [], additionalPrompts, extensions?.PromptPaths);
+        result.Select(true, packages.TemporarySkills.Select(file => file.Path)
+                .Concat(discoverSkills ? skills : []).ToArray(), additionalSkills, extensions?.SkillPaths);
+        result.Select(false, packages.TemporaryPrompts.Select(file => file.Path)
+                .Concat(discoverPrompts ? prompts : []).ToArray(), additionalPrompts, extensions?.PromptPaths);
         return result;
     }
 
@@ -38,6 +42,8 @@ internal sealed class ResourcePathSelection(string cwd, string agentDirectory, b
         var kind = skills ? "skills" : "prompts";
         var packagePaths = skills ? packages.Skills : packages.Prompts;
         foreach (var file in packagePaths) _metadata.TryAdd(file.Path, file.Source);
+        foreach (var file in skills ? packages.TemporarySkills : packages.TemporaryPrompts)
+            _metadata.TryAdd(file.Path, file.Source);
         if (trusted)
         {
             Configured(projectEntries, Path.Combine(cwd, ".pi"), "project");

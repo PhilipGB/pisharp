@@ -7,14 +7,16 @@ using PiSharp.Cli.Startup;
 using PiSharp.Cli.Tui;
 using PiSharp.Runtime.Extensions;
 
-using var processShutdown = new CliProcessShutdown();
+var packageCommand = args.Length > 0 && args[0] is "install" or "remove" or "uninstall" or "list" or "update";
+using var processShutdown = new CliProcessShutdown(handleInterrupt: packageCommand);
 using var terminalIO = new CliTerminalIO();
 var standardInput = terminalIO.Input;
 
 var agentDirectory = Path.GetFullPath(Environment.GetEnvironmentVariable("PISHARP_AGENT_DIR") ??
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pisharp", "agent"));
 
-var cli = await CliStartupCommands.ParseOrRunAsync(args, agentDirectory, Console.Out, Console.Error);
+var cli = await CliStartupCommands.ParseOrRunAsync(args, agentDirectory, Console.Out, Console.Error,
+    processShutdown.InterruptToken);
 
 if (cli is null)
 {

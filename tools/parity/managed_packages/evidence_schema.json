@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PiSharp managed package verification evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "runId",
+    "generatedAt",
+    "provenance",
+    "checkpointResults",
+    "cases",
+    "artifacts",
+    "exclusions",
+    "testResults",
+    "executionExitCode"
+  ],
+  "properties": {
+    "schemaVersion": {"type": "integer", "enum": [1]},
+    "runId": {"type": "string", "minLength": 1},
+    "generatedAt": {"type": "string", "minLength": 1},
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository", "piSha", "piPath", "pisharpSourceSha", "checkedOutSourceSha",
+        "branch", "baseSha", "fixtureVersion", "binaryIdentity", "command", "environment", "testControl"
+      ],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "piSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "piPath": {"type": "string", "minLength": 1},
+        "pisharpSourceSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "checkedOutSourceSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "branch": {"type": "string", "minLength": 1},
+        "baseSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "fixtureVersion": {"type": "string", "minLength": 1},
+        "binaryIdentity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scope", "path", "sha256"],
+          "properties": {
+            "scope": {"type": "string", "enum": ["repository", "evidence"]},
+            "path": {"type": "string", "minLength": 1},
+            "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        },
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["system", "release", "architecture", "pythonVersion", "dotnetVersion", "nodeVersion", "npmVersion", "gitVersion", "locale"],
+          "properties": {
+            "system": {"type": "string", "minLength": 1},
+            "release": {"type": "string", "minLength": 1},
+            "architecture": {"type": "string", "minLength": 1},
+            "pythonVersion": {"type": "string", "minLength": 1},
+            "dotnetVersion": {"type": "string", "minLength": 1},
+            "nodeVersion": {"type": "string", "minLength": 1},
+            "npmVersion": {"type": "string", "minLength": 1},
+            "gitVersion": {"type": "string", "minLength": 1},
+            "locale": {"type": "string", "minLength": 1}
+          }
+        },
+        "testControl": {"type": "boolean"},
+        "runnerCommands": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}},
+        "runnerExitCodes": {"type": "array", "items": {"type": "integer"}}
+      }
+    },
+    "checkpointResults": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["checkpointId", "status", "discovered", "executed", "failed", "skipped", "commandExitCode", "runnerIds"],
+        "properties": {
+          "checkpointId": {"type": "string", "minLength": 1},
+          "status": {"type": "string", "enum": ["unexecuted", "running", "blocked", "failed", "passed"]},
+          "discovered": {"type": "integer", "minimum": 0},
+          "executed": {"type": "integer", "minimum": 0},
+          "failed": {"type": "integer", "minimum": 0},
+          "skipped": {"type": "integer", "minimum": 0},
+          "commandExitCode": {"type": ["integer", "null"]},
+          "runnerIds": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["caseId", "checkpoint", "executed", "skipped", "classification", "oracle", "actual", "assertions", "passed", "execution"],
+        "properties": {
+          "caseId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]+$"},
+          "checkpoint": {"type": "string", "minLength": 1},
+          "executed": {"type": "boolean"},
+          "skipped": {"type": "boolean"},
+          "classification": {"type": "string", "enum": ["strict", "equivalent", "intentional-safety-difference", "unsupported-platform", "unsupported-upstream", "mismatch", "unexecuted"]},
+          "oracle": {"type": ["object", "null"], "additionalProperties": true},
+          "actual": {"type": ["object", "null"], "additionalProperties": true},
+          "assertions": {"type": "object", "minProperties": 1, "patternProperties": {"^[a-zA-Z0-9._-]+$": {"type": "boolean"}}, "additionalProperties": false},
+          "passed": {"type": "boolean"},
+          "execution": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["commandIdentity", "argv", "commandExitCode", "fixtureIdentity", "inputFingerprint", "timestamp"],
+            "properties": {
+              "commandIdentity": {"type": "string", "minLength": 1},
+              "argv": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+              "commandExitCode": {"type": ["integer", "null"]},
+              "fixtureIdentity": {"type": "string", "minLength": 1},
+              "inputFingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "timestamp": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["caseId", "classification", "reason", "sourceReference", "artifactPath"],
+        "properties": {
+          "caseId": {"type": "string", "minLength": 1},
+          "classification": {"type": "string", "enum": ["intentional-safety-difference", "unsupported-platform", "unsupported-upstream"]},
+          "reason": {"type": "string", "minLength": 1},
+          "sourceReference": {"type": "string", "minLength": 1},
+          "artifactPath": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "testResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discovered", "executed", "failed", "skipped"],
+      "properties": {
+        "discovered": {"type": "integer", "minimum": 0},
+        "executed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "skipped": {"type": "integer", "minimum": 0}
+      }
+    },
+    "executionExitCode": {"type": "integer"}
+  }
+}

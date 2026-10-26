@@ -129,6 +129,59 @@ public sealed class ResourcePackageLoadingTests
         finally { Directory.Delete(root, true); }
     }
 
+    [Fact]
+    public async Task LocalPackageAliasesDeduplicateWithinUserScope()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-package-local-identity-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        var package = Path.Combine(root, "package");
+        var skillPath = Path.Combine(package, "skills", "identity", "SKILL.md");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.GetDirectoryName(skillPath)!);
+        try
+        {
+            await File.WriteAllTextAsync(skillPath, "---\nname: local-identity-guide\ndescription: Guide\n---\nbody");
+
+            var catalog = await ResourceCatalog.LoadAsync(project, agent, trusted: false,
+                userPackages: [new("../package"), new(package)]);
+
+            var skill = Assert.Single(catalog.Skills, item => item.Name == "local-identity-guide");
+            Assert.Equal(Path.GetFullPath(package), skill.SourceInfo.BaseDir);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public async Task ProjectPackageDeclarationOverridesSameCanonicalUserIdentity()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pisharp-package-local-scope-" + Guid.NewGuid().ToString("N"));
+        var agent = Path.Combine(root, "agent");
+        var project = Path.Combine(root, "project");
+        var package = Path.Combine(root, "package");
+        var skillPath = Path.Combine(package, "skills", "identity", "SKILL.md");
+        Directory.CreateDirectory(agent);
+        Directory.CreateDirectory(Path.Combine(project, ".pi"));
+        Directory.CreateDirectory(Path.GetDirectoryName(skillPath)!);
+        try
+        {
+            await File.WriteAllTextAsync(skillPath, "---\nname: project-identity-guide\ndescription: Guide\n---\nbody");
+
+            var catalog = await ResourceCatalog.LoadAsync(project, agent, trusted: true,
+                userPackages: [new("../package")],
+                projectPackages: [new("../../package", Skills: [], HasFilter: true)]);
+
+            Assert.DoesNotContain(catalog.Skills, item => item.Name == "project-identity-guide");
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+        }
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

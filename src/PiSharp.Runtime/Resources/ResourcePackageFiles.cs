@@ -8,14 +8,22 @@ internal sealed class ResourcePackageFiles
     internal List<PackageResourceFile> Prompts { get; } = [];
     internal List<PackageResourceFile> Themes { get; } = [];
     internal List<PackageResourceFile> Extensions { get; } = [];
+    internal List<PackageResourceFile> TemporarySkills { get; } = [];
+    internal List<PackageResourceFile> TemporaryPrompts { get; } = [];
+    internal List<PackageResourceFile> TemporaryThemes { get; } = [];
+    internal List<PackageResourceFile> TemporaryExtensions { get; } = [];
 
     internal static ResourcePackageFiles Load(string cwd, string agentDirectory, bool trusted,
         IReadOnlyList<ResourcePackageSource>? user, IReadOnlyList<ResourcePackageSource>? project, CancellationToken token,
-        IReadOnlyList<ManagedResourcePackageRoot>? managedRoots = null)
+        IReadOnlyList<ManagedResourcePackageRoot>? managedRoots = null,
+        IReadOnlyList<ResourcePackageSource>? temporaryPackages = null,
+        IReadOnlyList<ManagedResourcePackageRoot>? temporaryRoots = null)
     {
         var result = new ResourcePackageFiles();
+        var allManagedRoots = (managedRoots ?? []).Concat(temporaryRoots ?? []).ToArray();
         var selected = new Dictionary<string, (ResourcePackageSource Package, string Scope)>(StringComparer.Ordinal);
-        var declarations = SelectDeclarations(trusted ? project ?? [] : [], user ?? []);
+        var declarations = SelectDeclarations(trusted ? project ?? [] : [], user ?? [])
+            .Concat((temporaryPackages ?? []).Select(package => (Package: package, Scope: "temporary"))).ToArray();
         var skillPaths = new HashSet<string>(StringComparer.Ordinal);
         var promptPaths = new HashSet<string>(StringComparer.Ordinal);
         var themePaths = new HashSet<string>(StringComparer.Ordinal);
@@ -28,7 +36,7 @@ internal sealed class ResourcePackageFiles
             string root;
             if (ManagedResourcePackageStore.TryGetManagedPackageIdentity(package.Source, out _))
             {
-                var resolved = (managedRoots ?? []).FirstOrDefault(candidate =>
+                var resolved = allManagedRoots.FirstOrDefault(candidate =>
                     candidate.Scope == declaration.Scope && candidate.Source == package.Source);
                 if (resolved is null) continue;
                 root = Path.GetFullPath(resolved.Path);
@@ -46,8 +54,12 @@ internal sealed class ResourcePackageFiles
             selected.TryAdd(root, declaration);
             if (ResourceFileDiscovery.IsRegularFile(root))
             {
-                if (extensionPaths.Add(root)) result.Extensions.Add(new(root,
-                    new(root, package.Source, declaration.Scope, "package", Path.GetDirectoryName(root)!), true));
+                if (extensionPaths.Add(root))
+                {
+                    var file = new PackageResourceFile(root,
+                        SourceInfo(root, package, declaration.Scope, Path.GetDirectoryName(root)!, "extensions"), true);
+                    (declaration.Scope == "temporary" ? result.TemporaryExtensions : result.Extensions).Add(file);
+                }
                 continue;
             }
             if (!Directory.Exists(root)) continue;
@@ -57,14 +69,15 @@ internal sealed class ResourcePackageFiles
             {
                 foreach (var path in ResourceExtensionFiles.Enumerate(root))
                     if (extensionPaths.Add(path)) result.Extensions.Add(new(path,
-                        new(path, package.Source, declaration.Scope, "package", root), true));
+                        SourceInfo(path, package, declaration.Scope, root, "extensions"), true));
             }
-            Add("skills", package.Skills, result.Skills, skillPaths);
-            Add("prompts", package.Prompts, result.Prompts, promptPaths);
-            Add("themes", package.Themes, result.Themes, themePaths);
-            Add("extensions", package.Extensions, result.Extensions, extensionPaths);
+            Add("skills", package.Skills, result.Skills, result.TemporarySkills, skillPaths);
+            Add("prompts", package.Prompts, result.Prompts, result.TemporaryPrompts, promptPaths);
+            Add("themes", package.Themes, result.Themes, result.TemporaryThemes, themePaths);
+            Add("extensions", package.Extensions, result.Extensions, result.TemporaryExtensions, extensionPaths);
 
-            void Add(string kind, IReadOnlyList<string>? filter, List<PackageResourceFile> target, HashSet<string> seen)
+            void Add(string kind, IReadOnlyList<string>? filter, List<PackageResourceFile> target,
+                List<PackageResourceFile> temporaryTarget, HashSet<string> seen)
             {
                 IReadOnlyList<string>? entries = null;
                 var declared = manifest is not null && manifest.TryGetValue(kind, out entries);
@@ -82,16 +95,28 @@ internal sealed class ResourcePackageFiles
                     if (delta && !HasDelta(path, filter ?? [], root)) continue;
                     if (!seen.Add(path)) continue;
                     var active = delta ? DeltaEnabled(path, filter ?? [], root) : enabled.Contains(path, StringComparer.Ordinal);
-                    target.Add(new(path, new(path, package.Source, declaration.Scope, "package", root), active));
+                    var file = new PackageResourceFile(path, SourceInfo(path, package, declaration.Scope, root, kind), active);
+                    (declaration.Scope == "temporary" ? temporaryTarget : target).Add(file);
                 }
             }
+
         }
         RetainCanonicalEntries(result.Skills);
         RetainCanonicalEntries(result.Prompts);
         RetainCanonicalEntries(result.Themes);
         RetainCanonicalEntries(result.Extensions);
+        RetainCanonicalEntries(result.TemporarySkills);
+        RetainCanonicalEntries(result.TemporaryPrompts);
+        RetainCanonicalEntries(result.TemporaryThemes);
+        RetainCanonicalEntries(result.TemporaryExtensions);
         return result;
     }
+
+    private static ResourceSourceInfo SourceInfo(string path, ResourcePackageSource package, string scope, string root,
+        string kind) =>
+        scope == "temporary" && (kind is "skills" or "extensions")
+            ? new(path, "cli", "temporary", "top-level", root)
+            : new(path, package.Source, scope, "package", root);
 
     private static IReadOnlyList<(ResourcePackageSource Package, string Scope)> SelectDeclarations(
         IReadOnlyList<ResourcePackageSource> project, IReadOnlyList<ResourcePackageSource> user)
