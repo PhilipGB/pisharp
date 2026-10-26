@@ -178,6 +178,34 @@ def state(item: dict, source: str, package_name: str, command_results: list[dict
     }
 
 
+def origin_head_clone_race(command_results: list[dict]) -> bool:
+    diagnostics = '\n'.join(result.get('stderr', '') for result in command_results)
+    return ('error: Not a valid ref: refs/remotes/origin/main' in diagnostics
+            and 'git rev-parse origin/HEAD failed with code 128' in diagnostics)
+
+
+def is_same_git_install_safety_difference(pi: dict, pisharp: dict,
+                                          oracle: dict, actual: dict) -> bool:
+    return (oracle != actual
+            and pi.get('originHeadCloneRace') is True
+            and pi.get('commandOutcomeClasses') == ['failure', 'failure']
+            and pi.get('settingsValid') is True
+            and pi.get('sourceConfigured') is False
+            and pi.get('sourceOccurrences') == 0
+            and pi.get('packageRootPresent') is False
+            and pi.get('installedVersion') is None
+            and pi.get('packageManifestValid') is False
+            and pisharp.get('allProcessesReaped') is True
+            and pisharp.get('boundedSeconds') is True
+            and pisharp.get('settingsValid') is True
+            and pisharp.get('sourceConfigured') is True
+            and pisharp.get('sourceOccurrences') == 1
+            and pisharp.get('packageRootPresent') is True
+            and pisharp.get('installedVersion') == pisharp.get('expectedVersion')
+            and pisharp.get('packageManifestValid') is True
+            and 'success' in pisharp.get('commandOutcomeClasses', []))
+
+
 def command_summary(result: dict) -> dict:
     return {key: result.get(key) for key in ('exitCode', 'reaped', 'elapsedSeconds')}
 
@@ -280,6 +308,7 @@ def case_same_git(profile: Path, scratch: Path, pi: Path, pisharp: Path) -> tupl
                 [['install', source], ['install', source]], profile / 'gates/same-git.py')
             observed = state(item, source, 'managed-git-package', command_results,
                              expected_version=fixture['v1_head'], package_kind='git')
+            observed['originHeadCloneRace'] = origin_head_clone_race(command_results)
             product_pass = (observed['allProcessesReaped'] and observed['boundedSeconds']
                             and observed['settingsValid'] and observed['sourceConfigured']
                             and observed['sourceOccurrences'] == 1 and observed['packageRootPresent']
@@ -620,6 +649,9 @@ def main() -> int:
             equal = oracle == actual
             classification = 'strict' if equal else 'mismatch'
             passed = satisfied and equal
+            if (case_id == 'concurrent.same-git-install'
+                    and is_same_git_install_safety_difference(pi_observed, pisharp_observed, oracle, actual)):
+                classification, passed = 'intentional-safety-difference', True
             if case_id == 'concurrent.update-discovery':
                 pi_state_safe = (pi_observed.get('listExitCode') == 0
                                  and pi_observed.get('updateExitCode') == 0

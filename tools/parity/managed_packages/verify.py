@@ -2032,6 +2032,36 @@ def _record_failure_recovery_cases(report: dict[str, Any], output: Path,
     return all_passed
 
 
+def _is_same_git_install_safety_difference(observed_case: dict[str, Any]) -> bool:
+    """Accept only Pi's reproduced concurrent origin/HEAD clone race with a safe PiSharp result."""
+    observations = observed_case.get('observations', {})
+    pi_detail = observations.get('pi', {})
+    actual_detail = observations.get('pisharp', {})
+    oracle_state = observed_case.get('oracle')
+    actual_state = observed_case.get('actual')
+    return (
+        observed_case.get('equal') is False
+        and oracle_state != actual_state
+        and pi_detail.get('originHeadCloneRace') is True
+        and pi_detail.get('commandOutcomeClasses') == ['failure', 'failure']
+        and pi_detail.get('settingsValid') is True
+        and pi_detail.get('sourceConfigured') is False
+        and pi_detail.get('sourceOccurrences') == 0
+        and pi_detail.get('packageRootPresent') is False
+        and pi_detail.get('installedVersion') is None
+        and pi_detail.get('packageManifestValid') is False
+        and actual_detail.get('allProcessesReaped') is True
+        and actual_detail.get('boundedSeconds') is True
+        and actual_detail.get('settingsValid') is True
+        and actual_detail.get('sourceConfigured') is True
+        and actual_detail.get('sourceOccurrences') == 1
+        and actual_detail.get('packageRootPresent') is True
+        and actual_detail.get('installedVersion') == actual_detail.get('expectedVersion')
+        and actual_detail.get('packageManifestValid') is True
+        and 'success' in actual_detail.get('commandOutcomeClasses', [])
+    )
+
+
 def _record_concurrency_cases(report: dict[str, Any], output: Path,
                               runner_results: list[dict[str, Any]],
                               test_group_results: dict[str, dict[str, Any]]) -> bool:
@@ -2087,6 +2117,8 @@ def _record_concurrency_cases(report: dict[str, Any], output: Path,
                 and actual_detail.get('versionDuringDiscovery') == '1.0.0'
                 and actual_detail.get('finalVersion') == '1.1.0'
                 and actual_detail.get('listExitCode') == actual_detail.get('updateExitCode') == 0)
+        elif classification == 'intentional-safety-difference' and case_id == 'concurrent.same-git-install':
+            assertions_pass = direct_pass and _is_same_git_install_safety_difference(observed_case)
         else:
             assertions_pass = False
         if case_id == 'concurrent.same-npm-install':

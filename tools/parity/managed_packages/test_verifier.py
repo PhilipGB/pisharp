@@ -118,6 +118,53 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         })
         self._reject()
 
+    def test_same_git_install_accepts_only_the_captured_upstream_clone_race(self) -> None:
+        oracle = {
+            'allProcessesReaped': True, 'boundedSeconds': True, 'settingsValid': True,
+            'sourceConfigured': False, 'sourceOccurrences': 0, 'packageRootPresent': False,
+            'installedVersion': None, 'packageManifestValid': False,
+        }
+        actual = {
+            'allProcessesReaped': True, 'boundedSeconds': True, 'settingsValid': True,
+            'sourceConfigured': True, 'sourceOccurrences': 1, 'packageRootPresent': True,
+            'installedVersion': 'a' * 40, 'expectedVersion': 'a' * 40,
+            'packageManifestValid': True,
+        }
+        case = {
+            'equal': False, 'oracle': oracle, 'actual': actual,
+            'observations': {
+                'pi': {
+                    **oracle, 'originHeadCloneRace': True,
+                    'commandOutcomeClasses': ['failure', 'failure'],
+                },
+                'pisharp': {**actual, 'commandOutcomeClasses': ['success', 'success']},
+            },
+        }
+        self.assertTrue(verify._is_same_git_install_safety_difference(case))
+
+        case['observations']['pi']['originHeadCloneRace'] = False
+        self.assertFalse(verify._is_same_git_install_safety_difference(case))
+
+    def test_same_git_install_safety_difference_requires_valid_pisharp_package(self) -> None:
+        case = {
+            'equal': False, 'oracle': {'packageRootPresent': False}, 'actual': {'packageRootPresent': True},
+            'observations': {
+                'pi': {
+                    'originHeadCloneRace': True, 'commandOutcomeClasses': ['failure', 'failure'],
+                    'settingsValid': True, 'sourceConfigured': False, 'sourceOccurrences': 0,
+                    'packageRootPresent': False, 'installedVersion': None,
+                    'packageManifestValid': False,
+                },
+                'pisharp': {
+                    'allProcessesReaped': True, 'boundedSeconds': True, 'settingsValid': True,
+                    'sourceConfigured': True, 'sourceOccurrences': 1, 'packageRootPresent': True,
+                    'installedVersion': None, 'expectedVersion': 'a' * 40,
+                    'packageManifestValid': True, 'commandOutcomeClasses': ['success', 'success'],
+                },
+            },
+        }
+        self.assertFalse(verify._is_same_git_install_safety_difference(case))
+
     def test_control_12_zero_discovered_tests_is_rejected(self) -> None:
         self.evidence['testResults']['discovered'] = 0
         self._reject()

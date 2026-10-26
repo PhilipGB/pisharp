@@ -111,6 +111,13 @@
       "reason": "While npm update downloads a replacement, pinned Pi temporarily removes the usable package from discovery; PiSharp keeps version 1.0.0 discoverable until version 1.1.0 is published.",
       "sourceReference": "tools/parity/managed-package-concurrency-process-differential.py",
       "artifactPath": "cases/concurrent.update-discovery.json"
+    },
+    {
+      "caseId": "concurrent.same-git-install",
+      "classification": "intentional-safety-difference",
+      "reason": "Pinned Pi can race while two processes clone the same Git package, report an invalid origin/HEAD ref and leave it unconfigured. PiSharp serializes the install and publishes one valid package; the verifier accepts only this captured upstream race and safe final PiSharp state.",
+      "sourceReference": "packages/coding-agent/src/core/package-manager.ts#getLocalGitUpdateTarget (pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6); tools/parity/managed-package-concurrency-process-differential.py",
+      "artifactPath": "cases/concurrent.same-git-install.json"
     }
   ],
   "checkpoints": [
