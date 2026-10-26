@@ -13595,11 +13595,12 @@
   },
   "managed_package_lifecycle_parity_milestone": {
     "status": "in_progress",
-    "phase": "ci_integration",
+    "phase": "committed_evidence",
     "actual_pr26_merge_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
     "branch": "milestone/managed-package-lifecycle-parity",
     "branch_base_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
-    "implementation_source_sha": "5d5ee30cef9b7db69f0e15ef92d2c88377e392b9",
+    "implementation_source_sha": "965b3a248369c7daabdf8f7739933465a719e8c4",
+    "quality_push_run_id": null,
     "pi_reference": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
     "receipt": "docs/parity/fixtures/managed-package-lifecycle-parity.md",
     "inventory": "docs/parity/fixtures/managed-package-lifecycle-parity/inventory.json",
@@ -13608,9 +13609,9 @@
     "quality_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/quality-summary.json",
     "differential_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/differential-summary.json",
     "required_checkpoints": 27,
-    "passed_checkpoints_current": 24,
+    "passed_checkpoints_current": 23,
     "required_cases": 240,
-    "executed_cases_current": 218,
+    "executed_cases_current": 211,
     "failed_cases": 0,
     "skipped_cases": 0,
     "case_classifications": {
@@ -13622,7 +13623,7 @@
       "dotnet_full": "3898 passed, 0 failed, 0 skipped",
       "focused_package": "113 passed, 0 failed, 0 skipped",
       "architecture": "7 passed, 0 failed, 0 skipped",
-      "python": "119 passed across managed-package, terminal, and built-in differential suites",
+      "python": "129 passed across managed-package, terminal, and built-in differential suites",
       "node_terminal": "24 passed, 0 failed, 0 skipped",
       "mcp_conformance": "passed",
       "format": "passed",
@@ -13630,12 +13631,14 @@
       "documentation_paths": "passed",
       "differential_rechecks": "18 passed"
     },
-    "committed_evidence_checkpoint": "passed",
+    "committed_evidence_checkpoint": "bundle regenerated; fresh checkpoint run pending",
     "remaining_checkpoints": [
+      "committed-evidence",
       "ci-integration",
       "draft-publication",
       "exact-head-ci"
     ],
-    "publication_requirement": "Create a new open draft PR and keep it unmerged; verify successful exact-head push and PR workflows."
+    "publication_requirement": "Create a new open draft PR and keep it unmerged; verify successful exact-head push and PR workflows.",
+    "quality_execution": "local exact-source corpus run; PR Actions will run automatically after draft publication"
   }
 }

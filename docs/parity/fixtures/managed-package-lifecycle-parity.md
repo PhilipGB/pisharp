@@ -10,7 +10,7 @@ resource loading, startup/reload, failure recovery, and concurrency.
 - Actual PR #26 merge SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - New branch base SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - Branch: `milestone/managed-package-lifecycle-parity`.
-- Implementation source SHA: `5d5ee30cef9b7db69f0e15ef92d2c88377e392b9`.
+- Implementation source SHA: `965b3a248369c7daabdf8f7739933465a719e8c4`.
 - Pinned Pi SHA: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 The reviewed source inventory records 15 capability families and the Pi/PiSharp
@@ -63,14 +63,17 @@ unclassified mismatches in the accepted corpus.
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. The
-initial local corpus passed 23 checkpoints and executed 211 cases with zero
-failures and zero skips. After the receipt and evidence bundle were committed,
-the committed-evidence checkpoint passed; the live report now passes 24/27
-checkpoints and 218/240 cases, with zero failures or skips. The remaining 22
-cases are in CI integration, draft publication, and exact-head CI. The compact
+latest local exact-source artifact passes all 23 checkpoints through quality
+and all 211 executed cases with zero failures or skips. The committed evidence
+bundle has been regenerated for source
+`965b3a248369c7daabdf8f7739933465a719e8c4`; its seven committed-evidence cases
+await a fresh checkpoint after these evidence and receipt changes are committed.
+That brings the core total to 24/27 checkpoints and 218/240 cases when verified.
+The remaining 22 cases are in CI integration, draft publication, and exact-head
+CI. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the
-core local corpus and its exact required IDs and classifications.
+core corpus and its exact required IDs and classifications.
 
 ## Differential results
 
@@ -103,7 +106,11 @@ Eleven cases document PiSharp's safer staged-update and failure-reporting
 behavior. Pi may temporarily remove a usable package, leave partial install
 state, or silently succeed after settings publication fails; PiSharp preserves
 the prior valid package where possible, removes incomplete staging, and reports
-settings failures. These accepted differences are limited to the exact cases
+settings failures. The `pm.cancellation` case also records a reproduced SIGINT
+delivery race: pinned Pi exits 130 and may leave the interrupted package,
+while PiSharp exits 1 or 130 only when cancellation is observed, settings remain
+unchanged, and the partial package is removed. Any other exit or state fails.
+These accepted differences are limited to the exact cases
 listed in the checkpoint contract: `npm.update-cancelled`,
 `npm.update-interrupted`, `pm.cancellation`, `git.update-dependency-failure`,
 `bulk.cancelled`, `config.failed-write`, `failure.cancelled-install`,
@@ -118,20 +125,22 @@ mismatches.
 
 This receipt is bounded to the committed 15-family inventory and 240 required
 cases; it does not claim broader package-manager or platform parity outside those
-cases. The committed-evidence checkpoint passes. Push CI integration, draft PR
-publication, and exact-head push/PR workflow verification remain pending. The
-milestone requires a new PR to remain open, draft, and unmerged; live workflow
-IDs and current GitHub state will be verified by the publication checker and
-recorded in the PR description.
+cases. The committed-evidence bundle is refreshed for the current source SHA;
+its fresh checkpoint run, CI integration, and draft PR publication remain
+pending. The new PR must remain open, draft, and unmerged. Its automated GitHub
+Actions will run on publication; exact-head workflow results remain pending.
 
 ## Local quality results
 
-The final local quality run passed formatting, a warnings-as-errors build, all
-3,898 .NET tests with zero failures/skips, focused package tests 113/113,
-architecture tests 7/7, managed-package Python tests 26/26, terminal Python
-66/66, built-in differential Python tests 27/27, terminal Node tests 24/24, MCP
-conformance, documentation path validation, and all 18 lifecycle differential
-rechecks. The [quality summary](managed-package-lifecycle-parity/quality-summary.json)
+The local quality checkpoint at source SHA
+`965b3a248369c7daabdf8f7739933465a719e8c4` passed formatting, a
+warnings-as-errors build, all 3,898 .NET tests with zero failures/skips, focused
+package tests 113/113, architecture tests 7/7, managed-package Python tests
+36/36, terminal Python 66/66, built-in differential Python tests 27/27, terminal
+Node tests 24/24, MCP conformance, documentation path validation, and all 18
+lifecycle differential rechecks. A prior push run also passed this quality gate
+at an earlier source SHA but stopped at its stale committed-evidence fixture.
+The [quality summary](managed-package-lifecycle-parity/quality-summary.json)
 contains the machine-readable results.
 
 Raw process captures and profiles remain in the ignored local run directory;
