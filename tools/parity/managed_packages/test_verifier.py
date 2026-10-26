@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import contextlib
+import importlib.util
 import io
 from pathlib import Path
 import shutil
@@ -184,6 +185,26 @@ class ManagedPackageVerifierTests(unittest.TestCase):
 
         case['observations']['pi']['originHeadCloneRace'] = False
         self.assertFalse(verify._is_same_git_install_safety_difference(case))
+        case['observations']['pi']['cloneDestinationCollision'] = True
+        self.assertFalse(verify._is_same_git_install_safety_difference(case))
+        case['observations']['pi']['cloneCollisionErrors'] = [
+            'fatal: destination path /tmp/repo already exists and is not an empty directory\nError: git clone x failed',
+            "fatal: cannot copy '/usr/share/git-core/templates/hooks/x': No such file or directory\nError: git clone x failed",
+        ]
+        self.assertTrue(verify._is_same_git_install_safety_difference(case))
+        case['observations']['pisharp']['packageManifestValid'] = False
+        self.assertFalse(verify._is_same_git_install_safety_difference(case))
+
+    def test_clone_destination_collision_requires_both_specific_git_errors(self) -> None:
+        path = verify.ROOT / 'tools/parity/managed-package-concurrency-process-differential.py'
+        spec = importlib.util.spec_from_file_location('concurrency_collision_control', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        first = {'exitCode': 1, 'stderr': 'fatal: destination path /tmp/repo already exists and is not an empty directory\nError: git clone x failed'}
+        second = {'exitCode': 1, 'stderr': "fatal: cannot copy '/usr/share/git-core/templates/hooks/x': No such file or directory\nError: git clone x failed"}
+        self.assertTrue(module.clone_destination_collision([first, second]))
+        self.assertFalse(module.clone_destination_collision([first, {'exitCode': 1, 'stderr': 'network error'}]))
+        self.assertFalse(module.clone_destination_collision([first, {**second, 'exitCode': 0}]))
 
     def test_same_git_install_safety_difference_requires_valid_pisharp_package(self) -> None:
         case = {

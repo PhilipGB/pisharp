@@ -184,6 +184,15 @@ def origin_head_clone_race(command_results: list[dict]) -> bool:
             and 'git rev-parse origin/HEAD failed with code 128' in diagnostics)
 
 
+def clone_destination_collision(command_results: list[dict]) -> bool:
+    errors = [result.get('stderr', '') for result in command_results if result.get('exitCode') != 0]
+    return (any('fatal: destination path ' in error and 'already exists and is not an empty directory' in error
+                and 'Error: git clone ' in error for error in errors)
+            and any("fatal: cannot copy '/usr/share/git-core/templates/" in error
+                    and "No such file or directory" in error and 'Error: git clone ' in error
+                    for error in errors))
+
+
 def npm_target_install_race(command_results: list[dict]) -> bool:
     return any(
         result.get('exitCode') != 0
@@ -220,7 +229,7 @@ def is_same_npm_install_safety_difference(pi: dict, pisharp: dict,
 def is_same_git_install_safety_difference(pi: dict, pisharp: dict,
                                           oracle: dict, actual: dict) -> bool:
     return (oracle != actual
-            and pi.get('originHeadCloneRace') is True
+            and (pi.get('originHeadCloneRace') is True or pi.get('cloneDestinationCollision') is True)
             and pi.get('commandOutcomeClasses') == ['failure', 'failure']
             and pi.get('settingsValid') is True
             and pi.get('sourceConfigured') is False
@@ -348,6 +357,10 @@ def case_same_git(profile: Path, scratch: Path, pi: Path, pisharp: Path) -> tupl
             observed = state(item, source, 'managed-git-package', command_results,
                              expected_version=fixture['v1_head'], package_kind='git')
             observed['originHeadCloneRace'] = origin_head_clone_race(command_results)
+            observed['cloneDestinationCollision'] = clone_destination_collision(command_results)
+            if observed['cloneDestinationCollision']:
+                observed['cloneCollisionErrors'] = [result['stderr'][-4096:] for result in command_results
+                                                    if result['exitCode'] != 0]
             product_pass = (observed['allProcessesReaped'] and observed['boundedSeconds']
                             and observed['settingsValid'] and observed['sourceConfigured']
                             and observed['sourceOccurrences'] == 1 and observed['packageRootPresent']

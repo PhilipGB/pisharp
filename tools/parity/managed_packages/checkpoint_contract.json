@@ -122,7 +122,7 @@
     {
       "caseId": "concurrent.same-git-install",
       "classification": "intentional-safety-difference",
-      "reason": "Pinned Pi can race while two processes clone the same Git package, report an invalid origin/HEAD ref and leave it unconfigured. PiSharp serializes the install and publishes one valid package; the verifier accepts only this captured upstream race and safe final PiSharp state.",
+      "reason": "Pinned Pi can race while two processes clone the same Git package, reporting an invalid origin/HEAD ref or a destination collision paired with a missing Git template file, and leaving it unconfigured. PiSharp serializes the install and publishes one valid package; the verifier accepts only these captured upstream races and a safe final PiSharp state.",
       "sourceReference": "packages/coding-agent/src/core/package-manager.ts#getLocalGitUpdateTarget (pinned Pi b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6); tools/parity/managed-package-concurrency-process-differential.py",
       "artifactPath": "cases/concurrent.same-git-install.json"
     }

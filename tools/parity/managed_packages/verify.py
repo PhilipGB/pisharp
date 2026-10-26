@@ -2094,17 +2094,29 @@ def _is_same_npm_install_safety_difference(observed_case: dict[str, Any]) -> boo
 
 
 def _is_same_git_install_safety_difference(observed_case: dict[str, Any]) -> bool:
-    """Accept only Pi's reproduced concurrent origin/HEAD clone race with a safe PiSharp result."""
+    """Accept reproduced Pi clone races only with a safe PiSharp result."""
     observations = observed_case.get('observations', {})
     pi_detail = observations.get('pi', {})
     actual_detail = observations.get('pisharp', {})
     oracle_state = observed_case.get('oracle')
     actual_state = observed_case.get('actual')
+    collision_errors = pi_detail.get('cloneCollisionErrors', [])
+    collision_proven = (isinstance(collision_errors, list)
+                        and all(isinstance(error, str) for error in collision_errors)
+                        and any('fatal: destination path ' in error
+                                and 'already exists and is not an empty directory' in error
+                                and 'Error: git clone ' in error for error in collision_errors)
+                        and any("fatal: cannot copy '/usr/share/git-core/templates/" in error
+                                and 'No such file or directory' in error and 'Error: git clone ' in error
+                                for error in collision_errors))
     return (
         observed_case.get('equal') is False
         and oracle_state != actual_state
-        and pi_detail.get('originHeadCloneRace') is True
+        and (pi_detail.get('originHeadCloneRace') is True
+             or (pi_detail.get('cloneDestinationCollision') is True and collision_proven))
         and pi_detail.get('commandOutcomeClasses') == ['failure', 'failure']
+        and pi_detail.get('allProcessesReaped') is True
+        and pi_detail.get('boundedSeconds') is True
         and pi_detail.get('settingsValid') is True
         and pi_detail.get('sourceConfigured') is False
         and pi_detail.get('sourceOccurrences') == 0
