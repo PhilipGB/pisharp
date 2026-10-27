@@ -9,6 +9,7 @@ import importlib.util
 import io
 from pathlib import Path
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -379,6 +380,37 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         self.assertTrue(verify._is_same_git_install_safety_difference(case))
         pi['cloneCollisionErrors'][1] = second['stderr'].replace('/fixture/repo/', '/other/repo/')
         self.assertFalse(verify._is_same_git_install_safety_difference(case))
+
+    def test_clone_destination_collision_accepts_only_observed_missing_config_write(self) -> None:
+        path = verify.ROOT / 'tools/parity/managed-package-concurrency-process-differential.py'
+        spec = importlib.util.spec_from_file_location('concurrency_write_collision_control', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        first = {'exitCode': 1, 'stderr': "fatal: destination path '/tmp/fixture/repo' already exists and is not an empty directory.\nError: git clone x failed"}
+        second = {'exitCode': 1, 'stderr': "error: could not write config file /tmp/fixture/repo/.git/config: No such file or directory\nfatal: could not set 'core.repositoryformatversion' to '0'\nError: git clone x failed"}
+        self.assertTrue(module.clone_destination_collision([first, second]))
+        self.assertTrue(module.clone_destination_collision([second, first]))
+        self.assertFalse(module.clone_destination_collision([first, {**second, 'stderr': second['stderr'].replace('/fixture/repo/', '/other/repo/')}]))
+        self.assertFalse(module.clone_destination_collision([first, {**second, 'stderr': second['stderr'].replace('could not write config file', 'unrelated write error')}]))
+
+    def test_temporary_git_cache_paths_normalize_short_and_full_hashes(self) -> None:
+        path = verify.ROOT / 'tools/parity/resource-invocation-process-differential.py'
+        spec = importlib.util.spec_from_file_location('resource_cache_path_normalization_control', path)
+        module = importlib.util.module_from_spec(spec)
+        parity_root = str(path.parent)
+        sys.path.insert(0, parity_root)
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            sys.path.remove(parity_root)
+        normalize = module.normalize_temporary_git_cache_path
+        short = '<workspace>/agent/tmp/extensions/git-127.0.0.1/02171aa5/fixture/repo/skills/guide.md'
+        extended = '<workspace>/agent/tmp/extensions/git-127.0.0.1/02171aa53949884e91052d688894a7b85233f4c11f5f94d97f5d1a7c87924dba/fixture/repo/skills/guide.md'
+        expected = '<workspace>/agent/tmp/extensions/git-127.0.0.1/<source-cache>/fixture/repo/skills/guide.md'
+        self.assertEqual(expected, normalize(short))
+        self.assertEqual(expected, normalize(extended))
+        self.assertEqual('/agent/tmp/extensions/npm/02171aa53949884e91052d688894a7b8/package',
+                         normalize('/agent/tmp/extensions/npm/02171aa53949884e91052d688894a7b8/package'))
 
     def test_cancelled_update_accepts_only_observed_local_registry_restart_versions(self) -> None:
         old = {'cancelled': True, 'initialVersion': '1.0.0', 'finalVersion': None,

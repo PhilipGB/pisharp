@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
 import signal
 import socket
@@ -28,6 +29,11 @@ spec.loader.exec_module(shared)
 
 class RpcEndedBeforeCheckpoint(Exception):
     pass
+
+
+def normalize_temporary_git_cache_path(value):
+    return re.sub(r'(/tmp/extensions/git-[^/]+/)[0-9a-f]{8,64}(/)',
+                  lambda match: match.group(1) + '<source-cache>' + match.group(2), value)
 
 
 def create_managed_npm_tarballs(root, pi, environment):
@@ -617,7 +623,8 @@ export default function(pi) {
             reader.join(timeout=5)
             result = dict(errorBeforeResponse=True if failure else None, event=failure['event'] if failure else None,
                         error=failure['error'].replace(str(root / product), '<workspace>') if failure else None,
-                        providerInput=provider_inputs[0].replace(str(root / product), '<workspace>'),
+                        providerInput=normalize_temporary_git_cache_path(
+                            provider_inputs[0].replace(str(root / product), '<workspace>')),
                         providerRequests=expected_requests,
                         promptAccepted=True, commandDescription=command_info['description'] if command_info else None)
             if package_scenario:
@@ -633,7 +640,8 @@ export default function(pi) {
                 result['temporaryResourceMetadata'] = temporary_resource_metadata
             if scenario in ['managed-npm-package', 'managed-git-package',
                             'temporary-npm-package', 'temporary-git-package', 'temporary-mixed-source-order']:
-                result['templateProviderInput'] = provider_inputs[1].replace(str(root / product), '<workspace>')
+                result['templateProviderInput'] = normalize_temporary_git_cache_path(
+                    provider_inputs[1].replace(str(root / product), '<workspace>'))
                 result['extensionResourceDescription'] = startup_skill['description']
                 result['extensionConfiguredCount'] = sum(line == 'configured' for line in
                     (root / product / 'extension-load.log').read_text().splitlines())
