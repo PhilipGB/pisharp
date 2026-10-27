@@ -13595,7 +13595,7 @@
   },
   "managed_package_lifecycle_parity_milestone": {
     "status": "in_progress",
-    "phase": "committed_evidence",
+    "phase": "ci_integration",
     "actual_pr26_merge_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
     "branch": "milestone/managed-package-lifecycle-parity",
     "branch_base_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
@@ -13609,9 +13609,9 @@
     "quality_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/quality-summary.json",
     "differential_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/differential-summary.json",
     "required_checkpoints": 27,
-    "passed_checkpoints_current": 23,
+    "passed_checkpoints_current": 24,
     "required_cases": 240,
-    "executed_cases_current": 211,
+    "executed_cases_current": 218,
     "failed_cases": 0,
     "skipped_cases": 0,
     "case_classifications": {
@@ -13631,9 +13631,8 @@
       "documentation_paths": "passed",
       "differential_rechecks": "18 passed"
     },
-    "committed_evidence_checkpoint": "pending validation",
+    "committed_evidence_checkpoint": "passed locally",
     "remaining_checkpoints": [
-      "committed-evidence",
       "ci-integration",
       "draft-publication",
       "exact-head-ci"
