@@ -931,10 +931,13 @@
         }
       ],
       "correctiveWorkRequired": [
-        "Add temporary npm/Git package resolution to the existing startup/package-store path; preserve one-invocation scope and leave settings unchanged."
+        "Resolve temporary npm/Git sources through startup and apply Pi manifest selection for extensions while preserving one-invocation scope; the manifest and origin-isolation regressions now cover this correction."
       ],
-      "coverageNotes": [],
-      "currentImplementationStatus": "gap-confirmed",
+      "coverageNotes": [
+        "Temporary managed CLI extension loading follows the Pi package manifest: empty, omitted, valid, and missing extension declarations are covered, and skills, prompts, and themes remain available independently.",
+        "Temporary Git sources that share host, path, and ref but differ by canonical repository origin are requested together; tests verify ordered isolated contents and offline reuse."
+      ],
+      "currentImplementationStatus": "implemented-unverified",
       "description": "Verify package skills, prompts, themes and native extensions through real CLI/RPC paths.",
       "executableCaseBindings": [
         {
@@ -948,7 +951,7 @@
         {
           "caseId": "distribution.temporary-git-package",
           "runnerPath": "tests/PiSharp.Tests/Cli/Packages/TemporaryManagedExtensionTests.cs",
-          "selector": "FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.ExplicitGitExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings",
+          "selector": "FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.TemporaryGitRepositoriesWithSameHostPathAndRefUseIsolatedCaches",
           "fixtureFamilies": [
             "local-npm-git-resource-fixtures"
           ]
@@ -956,7 +959,7 @@
         {
           "caseId": "distribution.temporary-npm-package",
           "runnerPath": "tests/PiSharp.Tests/Cli/Packages/TemporaryManagedExtensionTests.cs",
-          "selector": "FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.ExplicitNpmExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings",
+          "selector": "FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.ExplicitNpmExtensionLoadsOnlyManifestEnabledExtensionsWithoutChangingPackageSettings",
           "fixtureFamilies": [
             "local-npm-git-resource-fixtures"
           ]

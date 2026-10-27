@@ -61,7 +61,6 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
 
     public IReadOnlyList<string> GetCliExtensionPaths(CliArguments arguments) =>
         (arguments.ExtensionPaths ?? []).Where(path => ManagedResourcePackageStore.GetManagedPackageIdentity(path) is null)
-            .Concat(TemporaryExtensionPackageRoots.Select(root => root.Path))
             .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal).ToArray();
 
     public static async Task<ProjectRuntimeConfiguration> LoadAsync(string workingDirectory, string agentDirectory,
@@ -91,8 +90,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
             {
                 var cliExtensions = (arguments.ExtensionPaths ?? []).Where(path =>
                         !path.StartsWith("builtin:", StringComparison.Ordinal) &&
-                        ManagedResourcePackageStore.GetManagedPackageIdentity(path) is null)
-                    .Concat(temporaryExtensionPackageRoots.Select(root => root.Path)).ToArray();
+                        ManagedResourcePackageStore.GetManagedPackageIdentity(path) is null).ToArray();
                 var userExtensions = arguments.NoExtensions ? null :
                     baseSettings.Extensions?.Where(path => !path.TrimStart('!', '+', '-').StartsWith(
                         "builtin:", StringComparison.Ordinal)).ToArray();
@@ -100,6 +98,8 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                     discover: !arguments.NoExtensions, additionalPaths: cliExtensions,
                     userPaths: userExtensions, builtins: [], userPackages: baseSettings.Packages,
                     managedPackageRoots: managedPackageRoots,
+                    temporaryPackages: temporaryExtensionPackages,
+                    temporaryPackageRoots: temporaryExtensionPackageRoots,
                     uiPackageFactory: extensionUi as IPiSharpExtensionUiPackageFactory);
             }
 
@@ -249,6 +249,8 @@ internal sealed class ProjectRuntimeContext : IDisposable
                 userPackages: configuration.BaseUserSettings.Packages,
                 projectPackages: configuration.ProjectSettings?.Packages,
                 managedPackageRoots: configuration.ManagedPackageRoots,
+                temporaryPackages: configuration.TemporaryExtensionPackages,
+                temporaryPackageRoots: configuration.TemporaryExtensionPackageRoots,
                 nativeExtensionPackageRoots: configuration.NativeExtensionPackageRoots,
                 uiPackageFactory: configuration.ExtensionUi as IPiSharpExtensionUiPackageFactory);
             var mcp = await McpConfiguration.LoadAsync(agentDirectory, cwd, configuration.Trusted, cancellationToken);

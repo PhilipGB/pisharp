@@ -16,24 +16,37 @@ namespace PiSharp.Tests;
 [Collection("Managed npm subprocesses")]
 public sealed class TemporaryManagedExtensionTests
 {
-    [Fact]
-    public async Task ExplicitNpmExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings()
+    [Theory]
+    [InlineData("empty", false)]
+    [InlineData("omitted", false)]
+    [InlineData("valid", true)]
+    [InlineData("missing", false)]
+    public async Task ExplicitNpmExtensionLoadsOnlyManifestEnabledExtensionsWithoutChangingPackageSettings(
+        string declaration, bool expectedToLoad)
     {
         await using var fixture = new ManagedNpmFixture();
         fixture.Create();
         var package = fixture.CreatePackageDirectory("temporary-extension");
-        var packageJson = JsonSerializer.Serialize(new
+        var pi = new JsonObject
         {
-            name = "temporary-extension",
-            version = "1.0.0",
-            pi = new
+            ["skills"] = JsonSerializer.SerializeToNode(new[] { "skills" }),
+            ["prompts"] = JsonSerializer.SerializeToNode(new[] { "prompts" }),
+            ["themes"] = JsonSerializer.SerializeToNode(new[] { "themes" })
+        };
+        if (declaration != "omitted")
+            pi["extensions"] = JsonSerializer.SerializeToNode(declaration switch
             {
-                extensions = new[] { "extensions" },
-                skills = new[] { "skills" },
-                prompts = new[] { "prompts" },
-                themes = new[] { "themes" }
-            }
-        });
+                "empty" => Array.Empty<string>(),
+                "valid" => new[] { "extensions/index.dll" },
+                "missing" => new[] { "extensions/missing.dll" },
+                _ => throw new ArgumentOutOfRangeException(nameof(declaration), declaration, null)
+            });
+        var packageJson = new JsonObject
+        {
+            ["name"] = "temporary-extension",
+            ["version"] = "1.0.0",
+            ["pi"] = pi
+        }.ToJsonString();
         var tarball = await fixture.PackAsync(package, packageJson,
             textFiles: new Dictionary<string, string>
             {
@@ -60,12 +73,25 @@ public sealed class TemporaryManagedExtensionTests
             var trust = new ProjectTrust(fixture.AgentDirectory);
             using var configuration = await ProjectRuntimeConfiguration.LoadAsync(fixture.ProjectDirectory,
                 fixture.AgentDirectory, arguments, trust, interactiveTrust: false,
-                TextReader.Null, TextWriter.Null, trustedOverride: true);
+                TextReader.Null, TextWriter.Null, trustedOverride: false);
+            Assert.False(configuration.Trusted);
+            var managedPackageRoot = Assert.Single(configuration.TemporaryExtensionPackageRoots).Path;
 
             using var runtime = await ProjectRuntimeContext.LoadAsync(configuration, fixture.AgentDirectory,
                 arguments, configuredSessionDirectory: null);
 
-            Assert.Contains(runtime.Extensions.LoadedExtensions, extension => extension.Source == "cli");
+            var loadedCliExtensions = runtime.Extensions.LoadedExtensions
+                .Where(extension => extension.Source == "cli").ToArray();
+            if (expectedToLoad)
+            {
+                var loaded = Assert.Single(loadedCliExtensions);
+                Assert.Equal("temporary", loaded.Scope);
+                Assert.Equal("top-level", loaded.Origin);
+                Assert.Equal(managedPackageRoot, loaded.BaseDir);
+                Assert.EndsWith(Path.Combine("extensions", "index.dll"), loaded.Path,
+                    OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            }
+            else Assert.Empty(loadedCliExtensions);
             Assert.Contains(runtime.Resources.Skills, item => item.Name == "temporary-guide");
             var skill = runtime.Resources.Skills.Single(item => item.Name == "temporary-guide");
             Assert.Equal("cli", skill.SourceInfo.Source);
@@ -84,16 +110,22 @@ public sealed class TemporaryManagedExtensionTests
             Assert.Equal(source, themeFile.Source.Source);
             Assert.Equal("temporary", themeFile.Source.Scope);
             Assert.Equal("package", themeFile.Source.Origin);
-            var extensionFile = Assert.Single(packageFiles.TemporaryExtensions);
-            Assert.Equal("cli", extensionFile.Source.Source);
-            Assert.Equal("temporary", extensionFile.Source.Scope);
-            Assert.Equal("top-level", extensionFile.Source.Origin);
+            if (expectedToLoad)
+            {
+                var extensionFile = Assert.Single(packageFiles.TemporaryExtensions);
+                Assert.Equal("cli", extensionFile.Source.Source);
+                Assert.Equal("temporary", extensionFile.Source.Scope);
+                Assert.Equal("top-level", extensionFile.Source.Origin);
+                Assert.Equal(managedPackageRoot, extensionFile.Source.BaseDir);
+            }
+            else Assert.Empty(packageFiles.TemporaryExtensions);
             var themes = new TerminalThemeCatalog(fixture.AgentDirectory,
                 temporaryPackages: configuration.TemporaryExtensionPackages,
                 temporaryPackageRoots: configuration.TemporaryExtensionPackageRoots,
                 discoverThemes: false);
             Assert.Contains("temporary-theme", themes.GetAvailableNames());
-            Assert.Equal(["configured"], await File.ReadAllLinesAsync(loadLog));
+            if (expectedToLoad) Assert.Equal(["configured"], await File.ReadAllLinesAsync(loadLog));
+            else Assert.False(File.Exists(loadLog));
             Assert.False(File.Exists(Path.Combine(fixture.AgentDirectory, "settings.json")));
             Assert.False(File.Exists(Path.Combine(fixture.ProjectDirectory, ".pi", "settings.json")));
             Assert.True(Directory.Exists(Path.Combine(fixture.AgentDirectory, "tmp", "extensions")));
@@ -104,7 +136,8 @@ public sealed class TemporaryManagedExtensionTests
             var process = await RunListModelsProcessAsync(fixture.ProjectDirectory, fixture.AgentDirectory,
                 fixture.NpmCacheDirectory, source, loadLog);
             Assert.True(process.ExitCode == 0, $"CLI process failed ({process.ExitCode}):\n{process.Error}\n{process.Output}");
-            Assert.Contains("configured", await File.ReadAllTextAsync(loadLog));
+            Assert.Equal(expectedToLoad, File.Exists(loadLog));
+            if (expectedToLoad) Assert.Contains("configured", await File.ReadAllTextAsync(loadLog));
         }
         finally
         {
@@ -216,6 +249,42 @@ public sealed class TemporaryManagedExtensionTests
         Assert.Equal([gitSource, npmSource], roots.Select(root => root.Source).ToArray());
         Assert.All(roots, root => Assert.Equal("temporary", root.Scope));
         Assert.Equal(["run", "npm"], await File.ReadAllLinesAsync(acquisitionLog));
+    }
+
+    [Fact]
+    public async Task TemporaryGitRepositoriesWithSameHostPathAndRefUseIsolatedCaches()
+    {
+        await using var first = new ManagedGitFixture();
+        await using var second = new ManagedGitFixture();
+        await first.CreateAsync();
+        await second.CreateAsync();
+        await first.SetBranchAsync("same-ref", first.Version1);
+        await second.SetBranchAsync("same-ref", second.Version2);
+        var firstSource = first.Source("same-ref");
+        var secondSource = second.Source("same-ref");
+        Assert.NotEqual(firstSource, secondSource);
+
+        var environment = first.CreateProcessEnvironment();
+        var store = new ManagedResourcePackageStore(first.AgentDirectory, environment);
+        var roots = await store.ResolveTemporaryExtensionSourcesAsync(first.ProjectDirectory,
+            [firstSource, secondSource], offline: false);
+
+        Assert.Equal([firstSource, secondSource], roots.Select(root => root.Source).ToArray());
+        var firstRoot = Assert.Single(roots, root => root.Source == firstSource).Path;
+        var secondRoot = Assert.Single(roots, root => root.Source == secondSource).Path;
+        Assert.NotEqual(firstRoot, secondRoot);
+        Assert.Equal(first.Version1, await ReadGitHeadAsync(firstRoot));
+        Assert.Equal(second.Version2, await ReadGitHeadAsync(secondRoot));
+        Assert.Contains("git-guide-v1", await File.ReadAllTextAsync(
+            Path.Combine(firstRoot, "skills", "git-guide-v1", "SKILL.md")), StringComparison.Ordinal);
+        Assert.Contains("git-guide-v2", await File.ReadAllTextAsync(
+            Path.Combine(secondRoot, "skills", "git-guide-v2", "SKILL.md")), StringComparison.Ordinal);
+
+        var offlineRoots = await store.ResolveTemporaryExtensionSourcesAsync(first.ProjectDirectory,
+            [firstSource, secondSource], offline: true);
+        Assert.Equal([firstRoot, secondRoot], offlineRoots.Select(root => root.Path).ToArray());
+        Assert.Equal(first.Version1, await ReadGitHeadAsync(firstRoot));
+        Assert.Equal(second.Version2, await ReadGitHeadAsync(secondRoot));
     }
 
     [Fact]

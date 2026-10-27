@@ -237,7 +237,7 @@ public sealed partial class ManagedResourcePackageStore
                 continue;
             }
             if (!ManagedGitSource.TryParse(package.Source, out var git)) continue;
-            var gitRoot = GetTemporaryInstallRoot("git-" + git.Host, git.Path, git.Ref);
+            var gitRoot = GetTemporaryInstallRoot("git-" + git.Host, git.Path, git.Ref, git.Repository);
             var packageRoot = Path.GetFullPath(Path.Combine(gitRoot, Path.Combine(git.Path.Split('/'))));
             if (!packageRoot.StartsWith(Path.GetFullPath(gitRoot) + Path.DirectorySeparatorChar,
                     OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
@@ -276,11 +276,13 @@ public sealed partial class ManagedResourcePackageStore
         return orderedRoots;
     }
 
-    private string GetTemporaryInstallRoot(string prefix, string? suffix = null, string? reference = null)
+    private string GetTemporaryInstallRoot(string prefix, string? suffix = null, string? reference = null,
+        string? repositoryOrigin = null)
     {
         var extensionsRoot = Path.Combine(_agentDirectory, "tmp", "extensions");
         var prefixRoot = Path.GetFullPath(Path.Combine(extensionsRoot, prefix));
-        var key = prefix + "-" + (suffix ?? "") + (reference is null ? "" : "@" + reference);
+        var key = prefix + "-" + (suffix ?? "") + (reference is null ? "" : "@" + reference) +
+            (repositoryOrigin is null ? "" : "\0" + repositoryOrigin);
         var digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant();
         // Keep PiSharp's shared npm temporary root stable, while giving each Git source/ref
         // the full SHA-256 identity so distinct references cannot share an installation.

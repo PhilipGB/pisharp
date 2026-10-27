@@ -1183,13 +1183,18 @@ def _execute_temporary_package_cases(report: dict[str, Any], output: Path, pi_pa
     pinned_pi_sha = load_contract()['upstream']['revision']
     commands: list[dict[str, Any]] = []
     all_passed = True
-    for case_id, scenario, test_name in [
+    for case_id, scenario, test_filter, expected_tests in [
         ('distribution.temporary-npm-package', 'temporary-npm-package',
-         'ExplicitNpmExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings'),
+         'FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.'
+         'ExplicitNpmExtensionLoadsOnlyManifestEnabledExtensionsWithoutChangingPackageSettings', 4),
         ('distribution.temporary-git-package', 'temporary-git-package',
-         'ExplicitGitExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings'),
+         'FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.'
+         'ExplicitGitExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings|'
+         'FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.'
+         'TemporaryGitRepositoriesWithSameHostPathAndRefUseIsolatedCaches', 2),
         ('distribution.temporary-source-order', 'temporary-mixed-source-order',
-         'TemporaryNpmAndGitRootsRetainExplicitSourceOrder'),
+         'FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.'
+         'TemporaryNpmAndGitRootsRetainExplicitSourceOrder', 1),
     ]:
         result_path = output / f'{scenario}.json'
         argv = [sys.executable, str(runner), '--pi', str(pi_path.resolve()), '--pisharp', str(binary_path),
@@ -1212,7 +1217,6 @@ def _execute_temporary_package_cases(report: dict[str, Any], output: Path, pi_pa
         _persist_command_result(report, output, f'{case_id.replace(".", "-")}.command.json', diff_command)
         commands.append(diff_command)
 
-        test_filter = f'FullyQualifiedName~PiSharp.Tests.TemporaryManagedExtensionTests.{test_name}'
         trx_name = case_id.replace('.', '-') + '.trx'
         trx_path = output / 'trx' / trx_name
         test_argv = ['dotnet', 'test', str(ROOT / 'tests/PiSharp.Tests/PiSharp.Tests.csproj'), '--no-build',
@@ -1230,7 +1234,9 @@ def _execute_temporary_package_cases(report: dict[str, Any], output: Path, pi_pa
         except OSError as error:
             test_exit, test_stdout, test_stderr = 127, '', str(error)
         counts = _trx_counts(trx_path)
-        test_pass = test_exit == 0 and counts == {'discovered': 1, 'passed': 1, 'failed': 0, 'skipped': 0}
+        test_pass = test_exit == 0 and counts == {
+            'discovered': expected_tests, 'passed': expected_tests, 'failed': 0, 'skipped': 0,
+        }
         test_command = {'runnerId': 'temporary package .NET regression', 'caseId': case_id,
                         'filter': test_filter, 'argv': test_argv, 'startedAt': test_started,
                         'exitCode': test_exit, 'counts': counts, 'stdout': test_stdout, 'stderr': test_stderr,
