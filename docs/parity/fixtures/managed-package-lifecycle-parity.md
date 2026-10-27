@@ -63,9 +63,9 @@ unclassified mismatches in the accepted corpus.
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. The
-latest local exact-source artifact passes 23/27 checkpoints and 211/240
-executed cases with zero failures or skips. The committed-evidence checkpoint awaits validation against the refreshed bundle for source
-`07eda4e67eb161c906223dfe2941bdc79206a1ce`. The remaining 29 cases are in committed evidence, CI
+latest local exact-source artifact passes 24/27 checkpoints and 218/240
+executed cases with zero failures or skips. The committed-evidence checkpoint passed against the committed bundle for source
+`07eda4e67eb161c906223dfe2941bdc79206a1ce`. The remaining 22 cases are in CI
 integration, draft publication, and exact-head CI. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the

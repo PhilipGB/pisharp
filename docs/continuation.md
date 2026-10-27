@@ -5,13 +5,13 @@
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
 this branch is based on that merge, and Pi remains pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The latest exact-source artifact
-passes 23/27 checkpoints and 211/240 executed managed-package cases, with zero
+passes 24/27 checkpoints and 218/240 executed managed-package cases, with zero
 failures or skips at source SHA `07eda4e67eb161c906223dfe2941bdc79206a1ce`.
-Its compact evidence bundle is refreshed; the committed-evidence checkpoint awaits validation.
+Its compact evidence bundle and committed-evidence checkpoint pass locally.
 Local quality passes 3,901/3,901 .NET tests, focused
 package tests 116/116, architecture tests 7/7, Python 150/150 across three
 suites, Node 24/24, MCP conformance, format, warnings-as-errors build, docs, and
-all 18 differential rechecks. Twenty-nine cases remain across committed evidence, CI integration,
+all 18 differential rechecks. Twenty-two cases remain across CI integration,
 draft publication, and exact-head CI; the PR's automated checks will run on
 GitHub. The corrected
 resource-distribution path covers temporary npm/Git package roots through
