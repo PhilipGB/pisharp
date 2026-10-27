@@ -10,7 +10,8 @@ from errors import ExecutionUnavailable
 
 def _run_github_api(endpoint: str, *, label: str) -> tuple[Any, dict[str, Any]]:
     """Read public repository evidence through GitHub REST without requiring gh auth."""
-    url = f'https://api.github.com/repos/PhilipGB/pisharp/{endpoint.lstrip("/")}'
+    base = 'https://api.github.com/repos/PhilipGB/pisharp'
+    url = f'{base}/{endpoint.lstrip("/")}' if endpoint.strip('/') else base
     request = Request(url, headers={
         'Accept': 'application/vnd.github+json',
         'User-Agent': 'pisharp-managed-package-verifier',

@@ -15,11 +15,21 @@ from unittest import mock
 
 import fixture_support
 import evidence_artifacts
+import github_api
 import package_adapters
 import verify
 
 
 class ManagedPackageVerifierTests(unittest.TestCase):
+    def test_github_repository_root_has_no_trailing_slash(self) -> None:
+        response = mock.MagicMock()
+        response.__enter__.return_value = response
+        response.read.return_value = b'{}'
+        response.status = 200
+        with mock.patch.object(github_api, 'urlopen', return_value=response) as urlopen:
+            github_api._run_github_api('', label='repository')
+        self.assertEqual('https://api.github.com/repos/PhilipGB/pisharp', urlopen.call_args.args[0].full_url)
+
     @classmethod
     def setUpClass(cls) -> None:
         cls._temporary = tempfile.TemporaryDirectory(prefix='managed-package-verifier-')
