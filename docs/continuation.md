@@ -4,9 +4,9 @@
 
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
 this branch is based on that merge, and Pi remains pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The latest local exact-source run
-passes all local checkpoints: 24/27 checkpoints and 218/240 cases,
-with zero failures or skips at implementation source SHA
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The machine-verifiable acceptance
+contract passes all 27/27 checkpoints and 240/240 cases, with zero failures or
+skips at implementation source SHA
 `0921687c3b42d7956ce69388080e9a095a4d1bef`. The committed-evidence checkpoint
 passes all seven cases against the committed bundle and receipt. Local quality
 passes 3,908/3,908 .NET tests, focused package tests
@@ -14,8 +14,9 @@ passes 3,908/3,908 .NET tests, focused package tests
 24/24, MCP conformance, format, warnings-as-errors build, docs, and all 18
 differential rechecks. New regressions cover Git publication crash recovery,
 origin-specific temporary Git identities, and temporary extension manifest
-selection. Twenty-two cases remain across CI integration, draft publication,
-and exact-head CI; PR Actions will validate the pushed head automatically. The resource
+selection. Both exact-head workflows and publication verification pass, and
+PR #27 remains open, draft, and unmerged. A documentation-only receipt refresh
+is being checked by the automatically triggered workflows. The resource
 distribution path also covers temporary npm/Git package roots through startup
 and reload without persisting invocation-only settings. See the
 [receipt](parity/fixtures/managed-package-lifecycle-parity.md) and

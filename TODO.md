@@ -4,17 +4,17 @@
 
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
 this branch is based on that merge, with Pi pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The latest local exact-source run
-passes all local checkpoints: 24/27 checkpoints and 218/240 cases,
-with zero failures/skips, at implementation source SHA
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The machine-verifiable acceptance
+contract passes all 27/27 checkpoints and 240/240 cases, with zero
+failures/skips, at implementation source SHA
 `0921687c3b42d7956ce69388080e9a095a4d1bef`. It covers Git publication crash
 recovery, origin-specific temporary Git identities, and temporary extension
 manifest selection. Local format, warnings-as-errors build, .NET 3,908/3,908,
 focused package 118/118, architecture 7/7, Python 153/153, Node 24/24, MCP
 conformance, docs, and all 18 differential rechecks pass. The committed-evidence
-checkpoint passes all seven cases. CI integration, draft publication, and
-exact-head CI remain (22 cases); push will let PR Actions validate the new head
-automatically. See the
+checkpoint passes 7/7; both exact-head workflows and the publication verifier
+also pass. PR #27 remains open, draft, and unmerged. A documentation-only receipt
+refresh is being checked by the automatically triggered workflows. See the
 [managed-package receipt](docs/parity/fixtures/managed-package-lifecycle-parity.md)
 and [inventory](docs/parity/fixtures/managed-package-lifecycle-parity/inventory.json).
 

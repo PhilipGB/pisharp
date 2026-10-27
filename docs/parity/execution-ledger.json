@@ -13594,8 +13594,8 @@
     ]
   },
   "managed_package_lifecycle_parity_milestone": {
-    "status": "in_progress",
-    "phase": "ci_integration",
+    "status": "complete",
+    "phase": "complete",
     "actual_pr26_merge_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
     "branch": "milestone/managed-package-lifecycle-parity",
     "branch_base_sha": "d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9",
@@ -13609,9 +13609,9 @@
     "quality_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/quality-summary.json",
     "differential_summary": "docs/parity/fixtures/managed-package-lifecycle-parity/differential-summary.json",
     "required_checkpoints": 27,
-    "passed_checkpoints_current": 24,
+    "passed_checkpoints_current": 27,
     "required_cases": 240,
-    "executed_cases_current": 218,
+    "executed_cases_current": 240,
     "failed_cases": 0,
     "skipped_cases": 0,
     "case_classifications": {
@@ -13632,12 +13632,8 @@
       "differential_rechecks": "18 passed"
     },
     "committed_evidence_checkpoint": "passed locally, 7/7 cases",
-    "remaining_checkpoints": [
-      "ci-integration",
-      "draft-publication",
-      "exact-head-ci"
-    ],
+    "remaining_checkpoints": [],
     "publication_requirement": "Keep PR #27 open, draft and unmerged; verify successful exact-head push and PR workflows.",
-    "quality_execution": "local exact-source corpus run; PR Actions run automatically after pushing the updated head"
+    "quality_execution": "local exact-source corpus, successful exact-head push and PR workflows, and passing publication verification; documentation-only receipt refresh is revalidated by automatic PR Actions"
   }
 }
