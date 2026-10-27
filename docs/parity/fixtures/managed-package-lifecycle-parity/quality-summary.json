@@ -93,16 +93,16 @@
       "skipped": 0
     },
     "package": {
-      "discovered": 113,
+      "discovered": 116,
       "failed": 0,
-      "passed": 113,
+      "passed": 116,
       "skipped": 0
     }
   },
   "fullDotnetSuite": {
-    "discovered": 3898,
+    "discovered": 3901,
     "failed": 0,
-    "passed": 3898,
+    "passed": 3901,
     "skipped": 0
   },
   "match": true,
@@ -119,7 +119,7 @@
   "pythonTests": [
     {
       "exitCode": 0,
-      "testsRun": 48
+      "testsRun": 49
     },
     {
       "exitCode": 0,

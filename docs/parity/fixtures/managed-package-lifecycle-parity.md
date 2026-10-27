@@ -10,7 +10,7 @@ resource loading, startup/reload, failure recovery, and concurrency.
 - Actual PR #26 merge SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - New branch base SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - Branch: `milestone/managed-package-lifecycle-parity`.
-- Implementation source SHA: `0602f50fc3a83f16a3fa45370f0c4d8d993c3536`.
+- Implementation source SHA: `a3c635ce1689489f3fd55aaa00bb6cf6e88bdac7`.
 - Pinned Pi SHA: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 The reviewed source inventory records 15 capability families and the Pi/PiSharp
@@ -63,9 +63,9 @@ unclassified mismatches in the accepted corpus.
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. The
-latest local exact-source artifact passes 24/27 checkpoints and 218/240
-executed cases with zero failures or skips. The committed-evidence checkpoint passed against the committed bundle for source
-`0602f50fc3a83f16a3fa45370f0c4d8d993c3536`. The remaining 22 cases are in CI
+latest local exact-source artifact passes 23/27 checkpoints and 211/240
+executed cases with zero failures or skips. The committed-evidence checkpoint awaits validation against the refreshed bundle for source
+`a3c635ce1689489f3fd55aaa00bb6cf6e88bdac7`. The remaining 29 cases are in committed evidence, CI
 integration, draft publication, and exact-head CI. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the
@@ -130,13 +130,19 @@ cases. CI integration and publication verification remain pending. The new PR
 must remain open, draft, and unmerged. Its automated GitHub Actions will run on
 publication; exact-head workflow results remain pending.
 
+The npm publication regression terminates an updater immediately after the old
+installation is moved aside; offline startup then restores its original resource.
+The earlier PR concurrency failure lacked its Pi stderr; ten local repetitions
+and the complete local concurrency differential passed, and failed-command
+diagnostics are now retained for future inspection.
+
 ## Local quality results
 
 The local quality checkpoint at source SHA
-`0602f50fc3a83f16a3fa45370f0c4d8d993c3536` passed formatting, a
-warnings-as-errors build, all 3,898 .NET tests with zero failures/skips, focused
-package tests 113/113, architecture tests 7/7, managed-package Python tests
-48/48, terminal Python 66/66, built-in differential Python tests 27/27, terminal
+`a3c635ce1689489f3fd55aaa00bb6cf6e88bdac7` passed formatting, a
+warnings-as-errors build, all 3,901 .NET tests with zero failures/skips, focused
+package tests 116/116, architecture tests 7/7, managed-package Python tests
+49/49, terminal Python 66/66, built-in differential Python tests 27/27, terminal
 Node tests 24/24, MCP conformance, documentation path validation, and all 18
 lifecycle differential rechecks. A prior push run also passed this quality gate
 at an earlier source SHA but stopped at its stale committed-evidence fixture.

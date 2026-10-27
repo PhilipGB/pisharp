@@ -65,13 +65,13 @@
       "exists": true,
       "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.Git.cs",
       "repository": "pisharp",
-      "sha256": "6679809409012573a858ac5565f0a13cbb7075471226f67cb81e46f623fea779"
+      "sha256": "2a01501ebf5aa45de1dd6a0b06a218daf892ea8beca24700f36456c4535234bd"
     },
     {
       "exists": true,
       "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
       "repository": "pisharp",
-      "sha256": "ea4c4733d6f8c604bf51615ea90784872c6aaf814efc92fbb5fb13a31fbeb4a4"
+      "sha256": "15b8e741fee72c00c4e9345b8c8e6067ce51bf1e83f427e0d47431033f598ae8"
     },
     {
       "exists": true,
