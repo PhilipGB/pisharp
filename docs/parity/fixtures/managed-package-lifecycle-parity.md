@@ -10,7 +10,7 @@ resource loading, startup/reload, failure recovery, and concurrency.
 - Actual PR #26 merge SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - New branch base SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - Branch: `milestone/managed-package-lifecycle-parity`.
-- Implementation source SHA: `a4221a8d12eaf447c437328809138cab67430ea5`.
+- Implementation source SHA: `0921687c3b42d7956ce69388080e9a095a4d1bef`.
 - Pinned Pi SHA: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 The reviewed source inventory records 15 capability families and the Pi/PiSharp
@@ -65,17 +65,26 @@ unclassified mismatches in the accepted corpus.
   persisted source/ref metadata. Reuse now validates that metadata and the
   checkout's origin and HEAD; regression coverage reproduces the former 32-bit
   collision and rejects a mismatched ref.
+- Included canonical repository origin (scheme, authority, port, and path) in
+  temporary Git cache identity. A regression requests two repositories with
+  the same host/path/ref but different ports together and verifies ordering,
+  isolated roots, distinct contents, and offline reuse.
+- Routed temporary managed extension packages through the existing manifest
+  loader. Empty, omitted, valid, and missing `extensions` declarations follow
+  pinned Pi selection semantics, while skills, prompts, and themes remain
+  independently available.
 - Stabilized same-Pi calibration by running the npm fixture build before the
   package CLI baseline, so both CLI samples use the same compiled extension DLL.
 
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. The
-latest local exact-source artifact passes 24/27 checkpoints and 218/240 cases
-with zero failures or skips. The committed-evidence checkpoint passes against
-the refreshed bundle for implementation source
-`a4221a8d12eaf447c437328809138cab67430ea5`. The remaining 22 cases are in CI
-integration, draft publication, and exact-head CI. The compact
+latest local exact-source run passes 23/27 checkpoints and 211/240 cases with
+zero failures or skips. The refreshed bundle is prepared for implementation
+source `0921687c3b42d7956ce69388080e9a095a4d1bef`; committed-evidence validation
+remains pending until the bundle and receipt are committed and checked. After
+that checkpoint, 22 cases remain in CI integration, draft publication, and
+exact-head CI. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the
 core corpus and its exact required IDs and classifications.
@@ -138,9 +147,9 @@ mismatches.
 
 This receipt is bounded to the committed 15-family inventory and 240 required
 cases; it does not claim broader package-manager or platform parity outside those
-cases. CI integration and publication verification remain pending for the
-updated head. PR #27 remains open, draft, and unmerged; its automated GitHub
-Actions will validate the pushed head.
+cases. Committed-evidence validation, CI integration, and publication
+verification remain pending for the updated head. PR #27 remains open, draft,
+and unmerged; its automated GitHub Actions will validate the pushed head.
 
 The npm publication regression terminates an updater immediately after the old
 installation is moved aside; offline startup then restores its original resource.
@@ -165,13 +174,14 @@ that exact observed alternative is recorded without relaxing PiSharp safety.
 ## Local quality results
 
 The local quality checkpoint at implementation source SHA
-`a4221a8d12eaf447c437328809138cab67430ea5` passed formatting, a
-warnings-as-errors build, all 3,904 .NET tests with zero failures/skips, focused
+`0921687c3b42d7956ce69388080e9a095a4d1bef` passed formatting, a
+warnings-as-errors build, all 3,908 .NET tests with zero failures/skips, focused
 package tests 118/118, architecture tests 7/7, managed-package Python tests
 60/60, terminal Python 66/66, built-in differential Python tests 27/27, terminal
 Node tests 24/24, MCP conformance, documentation path validation, and all 18
-lifecycle differential rechecks. The exact-source corpus reports 218/218
-executed cases passed and no failures or skips. The previous exact-head CI at
+lifecycle differential rechecks. The exact-source corpus reports 211/211
+executed cases passed and no failures or skips; seven committed-evidence cases
+remain pending, followed by 22 CI/publication cases. The previous exact-head CI at
 `799046d6` passed both workflows, but those results do not validate this updated
 source; PR Actions must run on the new head. The evidence normalizer handles
 repeated checkout directory names, and the concurrency classifier accepts only

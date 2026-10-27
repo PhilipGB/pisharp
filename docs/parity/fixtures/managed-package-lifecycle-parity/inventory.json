@@ -558,9 +558,9 @@
     },
     {
       "baselineCorrectionsRequired": [
-        "Add temporary npm/Git package resolution to the existing startup/package-store path; preserve one-invocation scope and leave settings unchanged."
+        "Resolve temporary npm/Git sources through startup and apply Pi manifest selection for extensions while preserving one-invocation scope; the manifest and origin-isolation regressions now cover this correction."
       ],
-      "baselineStatus": "gap-confirmed",
+      "baselineStatus": "implemented-unverified",
       "capabilityId": "resource-distribution",
       "classifications": {
         "equivalent": 0,

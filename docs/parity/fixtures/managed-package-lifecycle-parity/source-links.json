@@ -53,7 +53,7 @@
       "exists": true,
       "path": "src/PiSharp.Cli/Sessions/ProjectRuntimeContext.cs",
       "repository": "pisharp",
-      "sha256": "78bc43c401975e85d3bc4d04cd3f165f9876dbfc14051189c7073403a00a2320"
+      "sha256": "2b280af152402ff6fd6c6707a8b120e3ecb2fe4e073403d6c9834272f746e825"
     },
     {
       "exists": true,
@@ -71,7 +71,7 @@
       "exists": true,
       "path": "src/PiSharp.Runtime/Resources/ManagedResourcePackageStore.cs",
       "repository": "pisharp",
-      "sha256": "8c88df2486d8fa718ceb03449f0705a3b8c454cf900896777c00fe20b140f57c"
+      "sha256": "8feed9b21eb5511a95b0a9a5435ba7a94a07c7a7533549c57f1dfd62ad257553"
     },
     {
       "exists": true,
