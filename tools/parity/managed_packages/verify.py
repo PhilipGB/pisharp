@@ -21,6 +21,7 @@ from typing import Any
 from urllib.parse import quote
 
 import evidence_artifacts
+from clone_race import clone_destination_collision
 import checkpoint_validation
 import evidence_validation
 import package_adapters
@@ -1004,14 +1005,7 @@ def _is_same_git_install_safety_difference(observed_case: dict[str, Any]) -> boo
     oracle_state = observed_case.get('oracle')
     actual_state = observed_case.get('actual')
     collision_errors = pi_detail.get('cloneCollisionErrors', [])
-    collision_proven = (isinstance(collision_errors, list)
-                        and all(isinstance(error, str) for error in collision_errors)
-                        and any('fatal: destination path ' in error
-                                and 'already exists and is not an empty directory' in error
-                                and 'Error: git clone ' in error for error in collision_errors)
-                        and any("fatal: cannot copy '/usr/share/git-core/templates/" in error
-                                and 'No such file or directory' in error and 'Error: git clone ' in error
-                                for error in collision_errors))
+    collision_proven = isinstance(collision_errors, list) and clone_destination_collision(collision_errors)
     return (
         observed_case.get('equal') is False
         and oracle_state != actual_state

@@ -341,6 +341,34 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         self.assertFalse(module.clone_destination_collision([first, {'exitCode': 1, 'stderr': 'network error'}]))
         self.assertFalse(module.clone_destination_collision([first, {**second, 'exitCode': 0}]))
 
+    def test_clone_collision_requires_same_repository_config_path(self) -> None:
+        path = verify.ROOT / 'tools/parity/managed-package-concurrency-process-differential.py'
+        spec = importlib.util.spec_from_file_location('concurrency_config_collision_control', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        first = {'exitCode': 1, 'stderr': "fatal: destination path '/tmp/fixture/repo' already exists and is not an empty directory.\nError: git clone x failed"}
+        second = {'exitCode': 1, 'stderr': "error: could not lock config file /tmp/fixture/repo/.git/config: No such file or directory\nfatal: could not set 'core.repositoryformatversion' to '0'\nError: git clone x failed"}
+        self.assertTrue(module.clone_destination_collision([first, second]))
+        self.assertTrue(module.clone_destination_collision([second, first]))
+        self.assertFalse(module.clone_destination_collision([first, {**second, 'exitCode': 0}]))
+        self.assertFalse(module.clone_destination_collision([first, {**second, 'stderr': second['stderr'].replace('/fixture/repo/', '/other/repo/')}]))
+        self.assertFalse(module.clone_destination_collision([first, {**second, 'stderr': second['stderr'].replace("fatal: could not set 'core.repositoryformatversion' to '0'", 'unrelated failure')}]))
+        self.assertFalse(module.clone_destination_collision([first, first]))
+
+        oracle = {'allProcessesReaped': True, 'boundedSeconds': True, 'settingsValid': True,
+                  'sourceConfigured': False, 'sourceOccurrences': 0, 'packageRootPresent': False,
+                  'installedVersion': None, 'packageManifestValid': False}
+        actual = {'allProcessesReaped': True, 'boundedSeconds': True, 'settingsValid': True,
+                  'sourceConfigured': True, 'sourceOccurrences': 1, 'packageRootPresent': True,
+                  'installedVersion': 'a' * 40, 'expectedVersion': 'a' * 40, 'packageManifestValid': True}
+        pi = {**oracle, 'originHeadCloneRace': False, 'cloneDestinationCollision': True,
+              'cloneCollisionErrors': [first['stderr'], second['stderr']], 'commandOutcomeClasses': ['failure', 'failure']}
+        case = {'equal': False, 'oracle': oracle, 'actual': actual,
+                'observations': {'pi': pi, 'pisharp': {**actual, 'commandOutcomeClasses': ['success', 'success']}}}
+        self.assertTrue(verify._is_same_git_install_safety_difference(case))
+        pi['cloneCollisionErrors'][1] = second['stderr'].replace('/fixture/repo/', '/other/repo/')
+        self.assertFalse(verify._is_same_git_install_safety_difference(case))
+
     def test_package_cli_fixture_disables_external_npm_update_notices(self) -> None:
         path = verify.ROOT / 'tools/parity/package-cli-process-differential.py'
         spec = importlib.util.spec_from_file_location('package_cli_notifier_control', path)

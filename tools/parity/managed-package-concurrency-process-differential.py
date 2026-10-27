@@ -17,6 +17,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/parity'))
+sys.path.insert(0, str(ROOT / 'tools/parity/managed_packages'))
+from clone_race import clone_destination_collision as proven_clone_collision
 from pi_reference import verify_pi_checkout
 
 
@@ -186,11 +188,7 @@ def origin_head_clone_race(command_results: list[dict]) -> bool:
 
 def clone_destination_collision(command_results: list[dict]) -> bool:
     errors = [result.get('stderr', '') for result in command_results if result.get('exitCode') != 0]
-    return (any('fatal: destination path ' in error and 'already exists and is not an empty directory' in error
-                and 'Error: git clone ' in error for error in errors)
-            and any("fatal: cannot copy '/usr/share/git-core/templates/" in error
-                    and "No such file or directory" in error and 'Error: git clone ' in error
-                    for error in errors))
+    return proven_clone_collision(errors)
 
 
 def npm_target_install_race(command_results: list[dict]) -> bool:
