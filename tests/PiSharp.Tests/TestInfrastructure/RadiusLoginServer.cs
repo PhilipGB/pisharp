@@ -22,14 +22,35 @@ internal sealed class RadiusLoginServer : IAsyncDisposable
     public RadiusLoginServer(bool holdToken = false)
     {
         _holdToken = holdToken;
-        using var reservation = new TcpListener(IPAddress.Loopback, 0);
-        reservation.Start();
-        Origin = "http://127.0.0.1:" + ((IPEndPoint)reservation.LocalEndpoint).Port;
-        reservation.Stop();
-        _listener.Prefixes.Add(Origin + "/");
-        _listener.Start();
+        Origin = StartListener();
         _serve = ServeAsync();
     }
+
+    private string StartListener()
+    {
+        const int maxAttempts = 10;
+        for (var attempt = 0; ; attempt++)
+        {
+            using var reservation = new TcpListener(IPAddress.Loopback, 0);
+            reservation.Start();
+            var origin = "http://127.0.0.1:" + ((IPEndPoint)reservation.LocalEndpoint).Port;
+            reservation.Stop();
+            var prefix = origin + "/";
+            _listener.Prefixes.Add(prefix);
+            try
+            {
+                _listener.Start();
+                return origin;
+            }
+            catch (HttpListenerException error) when (attempt < maxAttempts - 1 && IsAddressInUse(error))
+            {
+                _listener.Prefixes.Remove(prefix);
+            }
+        }
+    }
+
+    private static bool IsAddressInUse(HttpListenerException error) => error.ErrorCode ==
+        (OperatingSystem.IsWindows() ? 10048 : OperatingSystem.IsMacOS() ? 48 : 98);
 
     private async Task ServeAsync()
     {
