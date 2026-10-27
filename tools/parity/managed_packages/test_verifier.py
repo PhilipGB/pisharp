@@ -612,6 +612,13 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         self.assertEqual(required, covered)
         self.assertEqual(len(required), coverage['requiredCaseCount'])
 
+    def test_extracted_removal_adapter_still_satisfies_inventory(self) -> None:
+        inventory = json.loads((verify.HERE / 'inventory.json').read_text())
+        removal = next(item for item in inventory['capabilities'] if item['capabilityId'] == 'removal-listing')
+        self.assertTrue(any(binding['runnerPath'] == 'tools/parity/managed_packages/package_adapters.py'
+                            for binding in removal['executableCaseBindings']))
+        verify._validate_inventory(fixture_support._pi_checkout(), verify_selectors=False)
+
     def test_exact_head_run_selection_ignores_stale_heads_and_other_events(self) -> None:
         runs = [
             {'event': 'push', 'head_branch': 'milestone/managed-package-lifecycle-parity',

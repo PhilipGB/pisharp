@@ -719,7 +719,7 @@
         },
         {
           "caseId": "remove.npm",
-          "runnerPath": "tools/parity/managed_packages/verify.py",
+          "runnerPath": "tools/parity/managed_packages/package_adapters.py",
           "selector": "all-required-removal-listing-cases",
           "fixtureFamilies": [
             "npm-git-local-source-fixtures",
