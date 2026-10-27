@@ -199,6 +199,34 @@ class ManagedPackageVerifierTests(unittest.TestCase):
                 for assertion in ('ci.pinned-pi', 'ci.execute-all', 'ci.negative-controls', 'ci.upload-on-failure'):
                     self.assertTrue(recorded[assertion], assertion)
 
+    def test_ci_integration_rejects_each_incomplete_core_or_control(self) -> None:
+        from types import SimpleNamespace
+        branch, head = 'milestone/managed-package-lifecycle-parity', 'a' * 40
+        environment = {'GITHUB_EVENT_NAME': 'push', 'GITHUB_SHA': head, 'GITHUB_REF_NAME': branch}
+        for defect in ('pin', 'missing-case', 'skipped-case', 'failed-checkpoint', 'controls', 'bootstrap'):
+            with self.subTest(defect=defect):
+                output = self.root / defect
+                evidence = fixture_support.make_valid_evidence(output)
+                evidence['provenance']['branch'] = branch
+                evidence['provenance']['command'].append('--all')
+                if defect == 'missing-case':
+                    evidence['cases'] = [case for case in evidence['cases'] if case['caseId'] != 'cli.install']
+                if defect == 'skipped-case':
+                    next(case for case in evidence['cases'] if case['caseId'] == 'cli.install')['skipped'] = True
+                if defect == 'failed-checkpoint':
+                    evidence['checkpointResults'][0]['status'] = 'failed'
+                fixture_support.write_evidence(output, evidence)
+                (output / 'verifier-tests.command.json').write_text(json.dumps({'exitCode': 1 if defect == 'controls' else 0}))
+                pin = verify.load_contract()['upstream']['revision']
+                def git(*args, **kwargs):
+                    return ('f' * 40 if defect == 'pin' else pin) if 'cwd' in kwargs else head
+                result = SimpleNamespace(returncode=1 if defect == 'bootstrap' else 0, stdout='', stderr='')
+                with (mock.patch.dict('os.environ', environment, clear=True),
+                      mock.patch.object(verify, '_validate_provenance'),
+                      mock.patch.object(verify, '_git', side_effect=git),
+                      mock.patch.object(verify.subprocess, 'run', return_value=result)):
+                    self.assertNotEqual(0, verify.execute_ci_integration(output))
+
     def test_checkpoint_dependencies_cannot_be_bypassed(self) -> None:
         npm_install = next(item for item in self.evidence['checkpointResults']
                            if item['checkpointId'] == 'npm-install')
