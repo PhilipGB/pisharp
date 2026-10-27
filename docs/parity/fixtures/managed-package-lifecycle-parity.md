@@ -10,7 +10,7 @@ resource loading, startup/reload, failure recovery, and concurrency.
 - Actual PR #26 merge SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - New branch base SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - Branch: `milestone/managed-package-lifecycle-parity`.
-- Implementation source SHA: `07eda4e67eb161c906223dfe2941bdc79206a1ce`.
+- Implementation source SHA: `a4221a8d12eaf447c437328809138cab67430ea5`.
 - Pinned Pi SHA: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 The reviewed source inventory records 15 capability families and the Pi/PiSharp
@@ -57,15 +57,24 @@ unclassified mismatches in the accepted corpus.
   last-known-good package when an update fails.
 - Added startup/reload snapshots and process coverage for package-provided
   skills, prompts, themes, and native extensions.
+- Added startup recovery for a Git update interrupted after moving the previous
+  installation aside. A process-kill regression confirms offline restoration of
+  the previous package and its resources, with staged and backup directories
+  cleaned up.
+- Replaced the truncated temporary Git cache identity with full SHA-256 and
+  persisted source/ref metadata. Reuse now validates that metadata and the
+  checkout's origin and HEAD; regression coverage reproduces the former 32-bit
+  collision and rejects a mismatched ref.
 - Stabilized same-Pi calibration by running the npm fixture build before the
   package CLI baseline, so both CLI samples use the same compiled extension DLL.
 
 ## Required case inventory
 
 The committed contract contains 27 checkpoints and 240 required cases. The
-latest local exact-source artifact passes 24/27 checkpoints and 218/240
-executed cases with zero failures or skips. The committed-evidence checkpoint passed against the committed bundle for source
-`07eda4e67eb161c906223dfe2941bdc79206a1ce`. The remaining 22 cases are in CI
+latest local exact-source artifact passes 24/27 checkpoints and 218/240 cases
+with zero failures or skips. The committed-evidence checkpoint passes against
+the refreshed bundle for implementation source
+`a4221a8d12eaf447c437328809138cab67430ea5`. The remaining 22 cases are in CI
 integration, draft publication, and exact-head CI. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the
@@ -93,8 +102,11 @@ The corpus includes failed installs/updates, settings publication failures,
 cancellation, process interruption, restart recovery, concurrent install/update,
 and resource discovery during update. Failure and concurrency checkpoints pass
 11/11 and 9/9 cases respectively, including explicit retained-package and
-no-replay assertions. Their full reports and executable identities are recorded
-in the local run artifact and summarized by the committed case results.
+no-replay assertions. The Git publication crash regression kills the updater
+between the old-install move and staged-install move, then verifies offline
+recovery of the old version and removal of orphaned stage/backup directories.
+Their full reports and executable identities are recorded in the local run
+artifact and summarized by the committed case results.
 
 ## Intentional differences
 
@@ -126,9 +138,9 @@ mismatches.
 
 This receipt is bounded to the committed 15-family inventory and 240 required
 cases; it does not claim broader package-manager or platform parity outside those
-cases. CI integration and publication verification remain pending. The new PR
-must remain open, draft, and unmerged. Its automated GitHub Actions will run on
-publication; exact-head workflow results remain pending.
+cases. CI integration and publication verification remain pending for the
+updated head. PR #27 remains open, draft, and unmerged; its automated GitHub
+Actions will validate the pushed head.
 
 The npm publication regression terminates an updater immediately after the old
 installation is moved aside; offline startup then restores its original resource.
@@ -152,22 +164,18 @@ that exact observed alternative is recorded without relaxing PiSharp safety.
 
 ## Local quality results
 
-The local quality checkpoint at source SHA
-`07eda4e67eb161c906223dfe2941bdc79206a1ce` passed formatting, a
-warnings-as-errors build, all 3,901 .NET tests with zero failures/skips, focused
-package tests 116/116, architecture tests 7/7, managed-package Python tests
-57/57, terminal Python 66/66, built-in differential Python tests 27/27, terminal
+The local quality checkpoint at implementation source SHA
+`a4221a8d12eaf447c437328809138cab67430ea5` passed formatting, a
+warnings-as-errors build, all 3,904 .NET tests with zero failures/skips, focused
+package tests 118/118, architecture tests 7/7, managed-package Python tests
+60/60, terminal Python 66/66, built-in differential Python tests 27/27, terminal
 Node tests 24/24, MCP conformance, documentation path validation, and all 18
-lifecycle differential rechecks. A prior push run also passed this quality gate
-at an earlier source SHA but stopped at its stale committed-evidence fixture.
-Two full-suite attempts on the preceding verifier source hit timeouts in the
-large-line read test (and one provider stream test on the first attempt). The
-affected tests passed in isolation; this Q0 passed with `DOTNET_PROCESSOR_COUNT=2`.
-PR run `40407150225` failed when npm emitted an update notice for only one side
-of calibration. The disposable fixture now disables npm update notifications
-for both products while retaining installation warnings and errors. The evidence
-normalizer also handles repeated checkout directory names: all 198 previously
-passing CI case records matched their local counterparts after normalization.
+lifecycle differential rechecks. The exact-source corpus reports 218/218
+executed cases passed and no failures or skips. The previous exact-head CI at
+`799046d6` passed both workflows, but those results do not validate this updated
+source; PR Actions must run on the new head. The evidence normalizer handles
+repeated checkout directory names, and the concurrency classifier accepts only
+the precise pinned-Pi clone-race error pair while requiring a safe PiSharp result.
 The [quality summary](managed-package-lifecycle-parity/quality-summary.json)
 contains the machine-readable results.
 

@@ -1,17 +1,18 @@
 # PiSharp capability parity
 
-## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-26
+## Active milestone — Complete Managed Package Lifecycle and Resource Distribution Parity — 2026-10-27
 
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
 this branch is based on that merge, with Pi pinned at
-`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The latest exact-source package
-corpus passes 24/27 checkpoints and 218/240 executed cases, with zero
-failures/skips, at source SHA `07eda4e67eb161c906223dfe2941bdc79206a1ce`.
-Committed evidence passes locally. Local
-format, warnings-as-errors build, .NET 3,901/3,901, focused package 116/116,
-architecture 7/7, Python 150/150, Node 24/24, MCP conformance, docs and all 18
-differential rechecks pass. CI integration, draft publication, and exact-head CI
-remain (22 cases); the PR's automated checks will run on GitHub. See the
+`b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The latest local exact-source
+corpus passes 24/27 checkpoints and 218/240 cases, with zero failures/skips,
+at implementation source SHA `a4221a8d12eaf447c437328809138cab67430ea5`.
+It now covers Git publication crash recovery and full SHA-256 temporary Git
+identities with source/ref validation. Local format, warnings-as-errors build,
+.NET 3,904/3,904, focused package 118/118, architecture 7/7, Python 153/153,
+Node 24/24, MCP conformance, docs, and all 18 differential rechecks pass.
+CI integration, draft publication, and exact-head CI remain (22 cases); push
+will let PR Actions validate the new head automatically. See the
 [managed-package receipt](docs/parity/fixtures/managed-package-lifecycle-parity.md)
 and [inventory](docs/parity/fixtures/managed-package-lifecycle-parity/inventory.json).
 
