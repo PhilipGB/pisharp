@@ -20,6 +20,7 @@ public sealed partial class ManagedResourcePackageStore
     private readonly string _agentDirectory;
     private readonly IReadOnlyDictionary<string, string?> _processEnvironmentOverrides;
     private IReadOnlyList<string> _npmCommand = [];
+    internal Action? NpmPublicationMovedForTesting { get; set; }
 
     public ManagedResourcePackageStore(string agentDirectory)
         : this(agentDirectory, null) { }
@@ -364,6 +365,8 @@ public sealed partial class ManagedResourcePackageStore
         string installRoot, List<ManagedResourcePackageRoot> roots, bool offline,
         IReadOnlyDictionary<string, string?> processEnvironmentOverrides, CancellationToken cancellationToken)
     {
+        if (packages is not null && packages.Any(package => TryParseNpmSource(package.Source, out _)))
+            await RecoverNpmUpdateAsync(installRoot, cancellationToken);
         foreach (var package in packages ?? [])
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -388,6 +391,22 @@ public sealed partial class ManagedResourcePackageStore
             if (!Directory.Exists(packageRoot))
                 throw new InvalidDataException($"npm install completed without installing package '{spec.Name}'.");
             roots.Add(new(package.Source, scope, packageRoot));
+        }
+    }
+
+    private static async Task RecoverNpmUpdateAsync(string installRoot, CancellationToken cancellationToken)
+    {
+        var rootKey = Path.GetFullPath(installRoot);
+        var installLock = s_installLocks.GetOrAdd(rootKey, _ => new SemaphoreSlim(1, 1));
+        await installLock.WaitAsync(cancellationToken);
+        try
+        {
+            await using var processInstallLock = await AcquireProcessInstallLockAsync(rootKey, cancellationToken);
+            RecoverInterruptedNpmUpdate(rootKey);
+        }
+        finally
+        {
+            installLock.Release();
         }
     }
 
@@ -438,6 +457,7 @@ public sealed partial class ManagedResourcePackageStore
         try
         {
             await using var processInstallLock = await AcquireProcessInstallLockAsync(rootKey, cancellationToken);
+            RecoverInterruptedNpmUpdate(rootKey);
             Directory.CreateDirectory(installRoot);
             var gitIgnore = Path.Combine(installRoot, ".gitignore");
             if (!File.Exists(gitIgnore)) await File.WriteAllTextAsync(gitIgnore, "*\n!.gitignore\n", cancellationToken);

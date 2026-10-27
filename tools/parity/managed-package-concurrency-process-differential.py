@@ -249,7 +249,10 @@ def is_same_git_install_safety_difference(pi: dict, pisharp: dict,
 
 
 def command_summary(result: dict) -> dict:
-    return {key: result.get(key) for key in ('exitCode', 'reaped', 'elapsedSeconds')}
+    summary = {key: result.get(key) for key in ('exitCode', 'reaped', 'elapsedSeconds')}
+    if result.get('exitCode') not in (0, -2, 130, -9):
+        summary['stderrTail'] = result.get('stderr', '')[-4096:]
+    return summary
 
 
 def project_state(case_id: str, observed: dict) -> dict:

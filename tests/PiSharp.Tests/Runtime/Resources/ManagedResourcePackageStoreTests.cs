@@ -163,6 +163,96 @@ public sealed class ManagedResourcePackageStoreTests
     }
 
     [Fact]
+    public async Task KilledNpmPublicationRecoversPreviousResourcesOffline()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var packageRoot = Path.Combine(fixture.AgentDirectory, "npm", "node_modules", "recovery-package");
+        Directory.CreateDirectory(packageRoot);
+        await File.WriteAllTextAsync(Path.Combine(packageRoot, "package.json"),
+            "{\"name\":\"recovery-package\",\"version\":\"1.0.0\"}");
+        await File.WriteAllTextAsync(Path.Combine(packageRoot, "resource.txt"), "previous version");
+        var script = Path.Combine(fixture.Root, "fake-npm.sh");
+        await File.WriteAllTextAsync(script, "#!/bin/sh\nif [ \"$1\" = outdated ]; then echo '{\"recovery-package\":{\"current\":\"1.0.0\",\"wanted\":\"2.0.0\"}}'; exit 1; fi\nprintf '{\"name\":\"recovery-package\",\"version\":\"2.0.0\"}' > \"$4/node_modules/recovery-package/package.json\"\nprintf 'new version' > \"$4/node_modules/recovery-package/resource.txt\"\n");
+        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var marker = Path.Combine(fixture.Root, "publication-moved");
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx")))
+            directory = directory.Parent;
+        Assert.NotNull(directory);
+        var start = new ProcessStartInfo("dotnet") { WorkingDirectory = directory.FullName };
+        foreach (var argument in new[] { "test", "tests/PiSharp.Tests/PiSharp.Tests.csproj", "--no-build", "--no-restore",
+                     "--filter", "FullyQualifiedName~NpmPublicationCrashChild" }) start.ArgumentList.Add(argument);
+        start.Environment["PISHARP_TEST_NPM_CRASH_ROOT"] = fixture.Root;
+        start.Environment["DOTNET_PROCESSOR_COUNT"] = "2";
+        using var process = Process.Start(start)!;
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            while (!File.Exists(marker) && !process.HasExited) await Task.Delay(50, timeout.Token);
+            Assert.True(File.Exists(marker), "Updater exited before the publication boundary.");
+            Assert.False(Directory.Exists(Path.Combine(fixture.AgentDirectory, "npm")));
+            var stage = Assert.Single(Directory.EnumerateDirectories(fixture.AgentDirectory, "npm.pisharp-update-stage-*"));
+            Assert.Equal("new version", await File.ReadAllTextAsync(
+                Path.Combine(stage, "node_modules", "recovery-package", "resource.txt")));
+            process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync(timeout.Token);
+            var store = new ManagedResourcePackageStore(fixture.AgentDirectory);
+            var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: true,
+                userPackages: [new("npm:recovery-package")], offline: true);
+            Assert.Equal("previous version", await File.ReadAllTextAsync(Path.Combine(Assert.Single(roots).Path, "resource.txt")));
+            Assert.False(Directory.EnumerateDirectories(fixture.AgentDirectory, "npm.pisharp-update-*").Any());
+        }
+        finally
+        {
+            if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(); }
+        }
+    }
+
+    [Fact]
+    public async Task NpmPublicationCrashChild()
+    {
+        var root = Environment.GetEnvironmentVariable("PISHARP_TEST_NPM_CRASH_ROOT");
+        if (string.IsNullOrEmpty(root)) return;
+        var store = new ManagedResourcePackageStore(Path.Combine(root, "agent"));
+        store.ConfigureNpmCommand([Path.Combine(root, "fake-npm.sh")]);
+        store.NpmPublicationMovedForTesting = () =>
+        {
+            File.WriteAllText(Path.Combine(root, "publication-moved"), "ready");
+            Thread.Sleep(Timeout.Infinite);
+        };
+        await store.UpdateAsync(Path.Combine(root, "project"), trusted: true,
+            userPackages: [new("npm:recovery-package")]);
+        Assert.Fail("The parent should terminate the updater at the publication boundary.");
+    }
+
+    [Fact]
+    public async Task OfflineStartupRestoresInterruptedNpmPublication()
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var installRoot = Path.Combine(fixture.AgentDirectory, "npm");
+        var backupRoot = installRoot + ".pisharp-update-backup-test";
+        var stageRoot = installRoot + ".pisharp-update-stage-test";
+        var packageRoot = Path.Combine(backupRoot, "node_modules", "recovery-package");
+        Directory.CreateDirectory(packageRoot);
+        await File.WriteAllTextAsync(Path.Combine(packageRoot, "package.json"),
+            "{\"name\":\"recovery-package\",\"version\":\"1.0.0\"}");
+        await File.WriteAllTextAsync(Path.Combine(packageRoot, "resource.txt"), "previous version");
+        Directory.CreateDirectory(stageRoot);
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory);
+
+        var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: true,
+            userPackages: [new("npm:recovery-package")], offline: true);
+
+        var root = Assert.Single(roots);
+        Assert.Equal("previous version", await File.ReadAllTextAsync(Path.Combine(root.Path, "resource.txt")));
+        Assert.False(Directory.Exists(backupRoot));
+        Assert.False(Directory.Exists(stageRoot));
+    }
+
+    [Fact]
     public async Task OfflineAndUntrustedResolutionDoNotInstallMissingPackages()
     {
         await using var fixture = new ManagedNpmFixture();

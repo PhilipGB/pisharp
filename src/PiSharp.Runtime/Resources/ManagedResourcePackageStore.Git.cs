@@ -56,6 +56,7 @@ public sealed partial class ManagedResourcePackageStore
             }
             else if (TryParseNpmSource(target.Package.Source, out var npm) && !IsExactNpmVersion(npm.Version))
             {
+                await RecoverNpmUpdateAsync(target.NpmInstallRoot, cancellationToken);
                 if (!await HasNpmPackageAsync(target.NpmInstallRoot, npm, cancellationToken))
                 {
                     await InstallAsync(target.WorkingDirectory, target.NpmInstallRoot, target.Package.Source, npm,
@@ -339,6 +340,7 @@ public sealed partial class ManagedResourcePackageStore
             Directory.Move(rootKey, backupRoot);
             try
             {
+                NpmPublicationMovedForTesting?.Invoke();
                 Directory.Move(stageRoot, rootKey);
                 stageRoot = null;
             }
@@ -362,6 +364,7 @@ public sealed partial class ManagedResourcePackageStore
     private static void RecoverInterruptedNpmUpdate(string installRoot)
     {
         var parent = Path.GetDirectoryName(installRoot)!;
+        if (!Directory.Exists(parent)) return;
         var name = Path.GetFileName(installRoot);
         var backups = Directory.GetDirectories(parent, name + ".pisharp-update-backup-*");
         if (!Directory.Exists(installRoot) && backups.Length > 0)
