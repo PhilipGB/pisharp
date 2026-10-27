@@ -100,9 +100,9 @@
     }
   },
   "fullDotnetSuite": {
-    "discovered": 3908,
+    "discovered": 3910,
     "failed": 0,
-    "passed": 3908,
+    "passed": 3910,
     "skipped": 0
   },
   "match": true,

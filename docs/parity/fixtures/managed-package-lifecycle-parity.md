@@ -10,7 +10,7 @@ resource loading, startup/reload, failure recovery, and concurrency.
 - Actual PR #26 merge SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - New branch base SHA: `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`.
 - Branch: `milestone/managed-package-lifecycle-parity`.
-- Implementation source SHA: `0921687c3b42d7956ce69388080e9a095a4d1bef`.
+- Implementation source SHA: `f71a2272b28c837b4526db5085824a082d30c3d1`.
 - Pinned Pi SHA: `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`.
 
 The reviewed source inventory records 15 capability families and the Pi/PiSharp
@@ -73,16 +73,21 @@ unclassified mismatches in the accepted corpus.
   loader. Empty, omitted, valid, and missing `extensions` declarations follow
   pinned Pi selection semantics, while skills, prompts, and themes remain
   independently available.
+- Preserved the invocation order of mixed local and managed CLI extension
+  sources. Manifest-selected managed assemblies now expand at their source's
+  position. A two-order regression checks source metadata and conflicting
+  command registrations against pinned Pi's sequential source resolution.
 - Stabilized same-Pi calibration by running the npm fixture build before the
   package CLI baseline, so both CLI samples use the same compiled extension DLL.
 
 ## Required case inventory
 
-The committed contract contains 27 checkpoints and 240 required cases. All
-27/27 checkpoints and 240/240 cases pass with zero failures or skips for
-implementation source `0921687c3b42d7956ce69388080e9a095a4d1bef`. This includes
-the committed-evidence, CI integration, draft-publication, and exact-head CI
-gates. The compact
+The committed contract contains 27 checkpoints and 240 required cases. On
+implementation source `f71a2272b28c837b4526db5085824a082d30c3d1`, local
+execution passes 24/27 checkpoints and 218/240 cases, with zero failures or
+skips. The committed-evidence checkpoint passes 7/7 against the committed
+bundle. CI integration, draft-publication, and exact-head CI remain pending on
+the final documentation head. The compact
 [case coverage](managed-package-lifecycle-parity/case-coverage.json) and
 [case results](managed-package-lifecycle-parity/case-results.json) preserve the
 core corpus and its exact required IDs and classifications.
@@ -144,11 +149,10 @@ mismatches.
 ## Remaining limitations
 
 This receipt is bounded to the committed 15-family inventory and 240 required
-cases; it does not claim broader package-manager or platform parity outside those
-cases. Exact-head push and PR workflows and the publication verifier passed for
-the completed implementation source. PR #27 remains open, draft, and unmerged.
-The documentation-only receipt refresh is also validated by the automatically
-triggered workflows.
+cases; it does not claim broader package-manager or platform parity outside
+those cases. The exact-head workflow and publication results previously
+reported for earlier heads do not validate this ordering correction. PR #27
+remains open, draft, and unmerged while the current-head checks run.
 
 The npm publication regression terminates an updater immediately after the old
 installation is moved aside; offline startup then restores its original resource.
@@ -173,17 +177,16 @@ that exact observed alternative is recorded without relaxing PiSharp safety.
 ## Local quality results
 
 The local quality checkpoint at implementation source SHA
-`0921687c3b42d7956ce69388080e9a095a4d1bef` passed formatting, a
-warnings-as-errors build, all 3,908 .NET tests with zero failures/skips, focused
+`f71a2272b28c837b4526db5085824a082d30c3d1` passed formatting, a
+warnings-as-errors build, all 3,910 .NET tests with zero failures/skips, focused
 package tests 118/118, architecture tests 7/7, managed-package Python tests
 60/60, terminal Python 66/66, built-in differential Python tests 27/27, terminal
 Node tests 24/24, MCP conformance, documentation path validation, and all 18
-lifecycle differential rechecks. The complete evidence run reports 240/240
-executed cases passed and no failures or skips across all 27 checkpoints. The
-exact-head push and PR workflows are runs `40579355549` and `40579367610` on
-head `af1e02cbde4cb2b5d77c78a9acd3e996788258d8`; the independent publication
-verifier passed. The documentation-only receipt refresh is being validated by
-the automatically triggered workflows. The evidence normalizer handles
+lifecycle differential rechecks. The mixed local/managed CLI extension ordering
+regression passes both argument orders and verifies conflicting command order.
+Local evidence validation passes 24/27 checkpoints and 218/240 cases,
+including the seven committed-evidence cases. CI integration,
+draft-publication, and exact-head CI remain pending. The evidence normalizer handles
 repeated checkout directory names, and the concurrency classifier accepts only
 the precise pinned-Pi clone-race error pair while requiring a safe PiSharp result.
 The [quality summary](managed-package-lifecycle-parity/quality-summary.json)
