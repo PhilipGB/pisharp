@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using PiSharp.Cli;
 using PiSharp.Cli.Sessions;
 using PiSharp.Cli.Tui;
@@ -206,6 +208,88 @@ public sealed class ManagedGitPackageStoreTests
             Assert.True(File.Exists(Path.Combine(fixture.UserCacheRoot, "skills", "git-guide-v1", "SKILL.md")));
         }
         finally { Environment.SetEnvironmentVariable("PATH", previousPath); }
+    }
+
+    [Fact]
+    public async Task KilledGitPublicationRestoresPreviousCheckoutOffline()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        await using var fixture = new ManagedGitFixture();
+        await fixture.CreateAsync();
+        await fixture.SetRemoteDefaultBranchAsync(fixture.Version1);
+        var source = fixture.UnpinnedSource;
+        var environment = fixture.CreateProcessEnvironment();
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory, environment);
+        var installed = await store.ResolveAsync(fixture.ProjectDirectory, trusted: false,
+            userPackages: [new(source)]);
+        Assert.Single(installed);
+        Assert.Equal(fixture.Version1, await ReadHeadAsync(fixture.UserCacheRoot));
+
+        await fixture.SetRemoteDefaultBranchAsync(fixture.Version2);
+        var marker = Path.Combine(fixture.Root, "git-publication-moved");
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PiSharp.slnx")))
+            directory = directory.Parent;
+        Assert.NotNull(directory);
+        var start = new ProcessStartInfo("dotnet") { WorkingDirectory = directory.FullName };
+        foreach (var argument in new[] { "test", "tests/PiSharp.Tests/PiSharp.Tests.csproj", "--no-build", "--no-restore",
+                     "--filter", "FullyQualifiedName~GitPublicationCrashChild" }) start.ArgumentList.Add(argument);
+        foreach (var (name, value) in environment) start.Environment[name] = value;
+        start.Environment["PISHARP_TEST_GIT_CRASH_ROOT"] = fixture.Root;
+        start.Environment["PISHARP_TEST_GIT_CRASH_SOURCE"] = source;
+        start.Environment["PISHARP_TEST_GIT_CRASH_MARKER"] = marker;
+        start.Environment["DOTNET_PROCESSOR_COUNT"] = "2";
+        using var process = Process.Start(start)!;
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            while (!File.Exists(marker) && !process.HasExited) await Task.Delay(50, timeout.Token);
+            Assert.True(File.Exists(marker), "Updater exited before the Git publication boundary.");
+            Assert.False(Directory.Exists(fixture.UserCacheRoot));
+            var packageParent = Path.GetDirectoryName(fixture.UserCacheRoot)!;
+            var stage = Assert.Single(Directory.EnumerateDirectories(packageParent),
+                path => Path.GetFileName(path).StartsWith("repo.pisharp-stage-", StringComparison.Ordinal));
+            var backup = Assert.Single(Directory.EnumerateDirectories(packageParent),
+                path => Path.GetFileName(path).StartsWith("repo.pisharp-backup-", StringComparison.Ordinal));
+            Assert.Equal(fixture.Version2, await ReadHeadAsync(stage));
+            Assert.Equal(fixture.Version1, await ReadHeadAsync(backup));
+
+            process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync(timeout.Token);
+            var roots = await store.ResolveAsync(fixture.ProjectDirectory, trusted: false,
+                userPackages: [new(source)], offline: true);
+            Assert.Equal(fixture.UserCacheRoot, Assert.Single(roots).Path);
+            Assert.Equal(fixture.Version1, await ReadHeadAsync(fixture.UserCacheRoot));
+            Assert.True(File.Exists(Path.Combine(fixture.UserCacheRoot, "skills", "git-guide-v1", "SKILL.md")));
+            Assert.DoesNotContain(Directory.EnumerateDirectories(packageParent),
+                path => Path.GetFileName(path).StartsWith("repo.pisharp-", StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (!process.HasExited) { process.Kill(entireProcessTree: true); await process.WaitForExitAsync(); }
+        }
+    }
+
+    [Fact]
+    public async Task GitPublicationCrashChild()
+    {
+        var root = Environment.GetEnvironmentVariable("PISHARP_TEST_GIT_CRASH_ROOT");
+        var source = Environment.GetEnvironmentVariable("PISHARP_TEST_GIT_CRASH_SOURCE");
+        var marker = Environment.GetEnvironmentVariable("PISHARP_TEST_GIT_CRASH_MARKER");
+        if (string.IsNullOrEmpty(root) || string.IsNullOrEmpty(source) || string.IsNullOrEmpty(marker)) return;
+        var keys = new[] { "npm_config_offline", "npm_config_cache", "GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL",
+            "GIT_TERMINAL_PROMPT", "PISHARP_TEST_GIT_PACKAGE_LOG", "PISHARP_TEST_GIT_DEPENDENCY_LOG",
+            "PISHARP_TEST_EXTENSION_LOAD_LOG", "PISHARP_TEST_RESOURCE_DISCOVERY" };
+        var environment = keys.ToDictionary(key => key, Environment.GetEnvironmentVariable, StringComparer.Ordinal);
+        var store = new ManagedResourcePackageStore(Path.Combine(root, "agent"), environment);
+        store.GitPublicationMovedForTesting = () =>
+        {
+            File.WriteAllText(marker, "ready");
+            Thread.Sleep(Timeout.Infinite);
+        };
+        await store.UpdateAsync(Path.Combine(root, "project"), trusted: false,
+            userPackages: [new(source)], source: source);
+        Assert.Fail("The parent should terminate the updater at the Git publication boundary.");
     }
 
     [Fact]

@@ -21,6 +21,7 @@ public sealed partial class ManagedResourcePackageStore
     private readonly IReadOnlyDictionary<string, string?> _processEnvironmentOverrides;
     private IReadOnlyList<string> _npmCommand = [];
     internal Action? NpmPublicationMovedForTesting { get; set; }
+    internal Action? GitPublicationMovedForTesting { get; set; }
 
     public ManagedResourcePackageStore(string agentDirectory)
         : this(agentDirectory, null) { }
@@ -241,16 +242,25 @@ public sealed partial class ManagedResourcePackageStore
             if (!packageRoot.StartsWith(Path.GetFullPath(gitRoot) + Path.DirectorySeparatorChar,
                     OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
                 throw new InvalidDataException($"Invalid temporary Git package source identity '{git.Identity}'.");
-            if (!Directory.Exists(packageRoot))
+            await RecoverInterruptedGitPublicationAsync(gitRoot, packageRoot, cancellationToken);
+            var exists = Directory.Exists(packageRoot);
+            var currentHead = exists ? await TryGetHeadAsync(packageRoot, cancellationToken) : null;
+            var matchesSource = exists && await HasMatchingTemporaryGitMetadataAsync(packageRoot, git,
+                currentHead, cancellationToken);
+            if (!matchesSource)
             {
                 if (offline) continue;
-                await AcquireGitAsync(cwd, packageRoot, git, gitRoot, reconcileExisting: false, cancellationToken);
+                await AcquireGitAsync(cwd, packageRoot, git, gitRoot, reconcileExisting: exists,
+                    cancellationToken, temporarySource: true);
             }
             else if (!offline && git.Ref is null)
             {
-                await AcquireGitAsync(cwd, packageRoot, git, gitRoot, reconcileExisting: true, cancellationToken);
+                await AcquireGitAsync(cwd, packageRoot, git, gitRoot, reconcileExisting: true,
+                    cancellationToken, temporarySource: true);
             }
-            roots.Add(new(package.Source, "temporary", packageRoot));
+            var installedHead = await TryGetHeadAsync(packageRoot, cancellationToken);
+            if (await HasMatchingTemporaryGitMetadataAsync(packageRoot, git, installedHead, cancellationToken))
+                roots.Add(new(package.Source, "temporary", packageRoot));
         }
 
         var rootsBySource = roots.GroupBy(root => root.Source, StringComparer.Ordinal)
@@ -271,7 +281,10 @@ public sealed partial class ManagedResourcePackageStore
         var extensionsRoot = Path.Combine(_agentDirectory, "tmp", "extensions");
         var prefixRoot = Path.GetFullPath(Path.Combine(extensionsRoot, prefix));
         var key = prefix + "-" + (suffix ?? "") + (reference is null ? "" : "@" + reference);
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant()[..8];
+        var digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant();
+        // Keep PiSharp's shared npm temporary root stable, while giving each Git source/ref
+        // the full SHA-256 identity so distinct references cannot share an installation.
+        var hash = prefix == "npm" && suffix is null && reference is null ? digest[..8] : digest;
         var root = Path.GetFullPath(Path.Combine(prefixRoot, hash));
         if (!root.StartsWith(prefixRoot + Path.DirectorySeparatorChar,
                 OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))

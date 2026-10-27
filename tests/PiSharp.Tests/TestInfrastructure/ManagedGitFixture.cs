@@ -109,6 +109,9 @@ internal sealed class ManagedGitFixture : IAsyncDisposable
         await RunGitAsync(ExportDirectory, ["--git-dir", RepositoryDirectory, "symbolic-ref", "HEAD", "refs/heads/main"]);
     }
 
+    public Task SetBranchAsync(string branch, string commit) =>
+        RunGitAsync(ExportDirectory, ["--git-dir", RepositoryDirectory, "update-ref", "refs/heads/" + branch, commit]);
+
     public Dictionary<string, string?> CreateProcessEnvironment() => new(StringComparer.Ordinal)
     {
         ["npm_config_offline"] = "true",

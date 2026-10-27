@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using PiSharp.Cli;
@@ -214,6 +216,103 @@ public sealed class TemporaryManagedExtensionTests
         Assert.Equal([gitSource, npmSource], roots.Select(root => root.Source).ToArray());
         Assert.All(roots, root => Assert.Equal("temporary", root.Scope));
         Assert.Equal(["run", "npm"], await File.ReadAllLinesAsync(acquisitionLog));
+    }
+
+    [Fact]
+    public async Task TemporaryGitCacheSeparatesCollidingShortHashesAndRejectsMismatchedMetadata()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        await using var fixture = new ManagedGitFixture();
+        await fixture.CreateAsync();
+        await fixture.SetBranchAsync("branch015869", fixture.Version1);
+        await fixture.SetBranchAsync("branch033708", fixture.Version2);
+        var sourceA = "git:localhost/fixture/managed@branch015869";
+        var sourceB = "git:localhost/fixture/managed@branch033708";
+        static string OldShortHash(string source)
+        {
+            Assert.True(ManagedResourcePackageStore.TryGetGitIdentity(source, out var identity));
+            var git = source[4..];
+            var at = git.LastIndexOf('@');
+            var reference = git[(at + 1)..];
+            var path = identity["git:localhost/".Length..];
+            var key = "git-localhost-" + path + "@" + reference;
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))).ToLowerInvariant()[..8];
+        }
+        Assert.Equal("33040f3c", OldShortHash(sourceA));
+        Assert.Equal(OldShortHash(sourceA), OldShortHash(sourceB));
+
+        var environment = fixture.CreateProcessEnvironment();
+        var globalConfig = environment["GIT_CONFIG_GLOBAL"]!;
+        await File.WriteAllTextAsync(globalConfig,
+            $"[url \"git://127.0.0.1:{fixture.Port}/fixture/repo.git\"]\n" +
+            "\tinsteadOf = https://localhost/fixture/managed\n");
+        var store = new ManagedResourcePackageStore(fixture.AgentDirectory, environment);
+        var roots = await store.ResolveTemporaryExtensionSourcesAsync(fixture.ProjectDirectory,
+            [sourceA, sourceB], offline: false);
+        Assert.Equal([sourceA, sourceB], roots.Select(root => root.Source).ToArray());
+        var rootA = Assert.Single(roots, root => root.Source == sourceA).Path;
+        var rootB = Assert.Single(roots, root => root.Source == sourceB).Path;
+        Assert.NotEqual(rootA, rootB);
+        Assert.Equal(fixture.Version1, await ReadGitHeadAsync(rootA));
+        Assert.Equal(fixture.Version2, await ReadGitHeadAsync(rootB));
+
+        await SetGitConfigAsync(rootB, "pisharp.source-ref", "branch015869");
+        Assert.Empty(await store.ResolveTemporaryExtensionSourcesAsync(fixture.ProjectDirectory,
+            [sourceB], offline: true));
+        var repaired = await store.ResolveTemporaryExtensionSourcesAsync(fixture.ProjectDirectory,
+            [sourceB], offline: false);
+        Assert.Equal(rootB, Assert.Single(repaired).Path);
+        Assert.Equal(fixture.Version2, await ReadGitHeadAsync(rootB));
+    }
+
+    private static async Task<string> ReadGitHeadAsync(string path)
+    {
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                WorkingDirectory = path,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            }
+        };
+        process.StartInfo.ArgumentList.Add("-C");
+        process.StartInfo.ArgumentList.Add(path);
+        process.StartInfo.ArgumentList.Add("rev-parse");
+        process.StartInfo.ArgumentList.Add("HEAD");
+        if (!process.Start()) throw new IOException("Could not start git rev-parse.");
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        if (process.ExitCode != 0) throw new IOException(await error);
+        return (await output).Trim();
+    }
+
+    private static async Task SetGitConfigAsync(string repository, string key, string value)
+    {
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                WorkingDirectory = repository,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            }
+        };
+        process.StartInfo.ArgumentList.Add("-C");
+        process.StartInfo.ArgumentList.Add(repository);
+        process.StartInfo.ArgumentList.Add("config");
+        process.StartInfo.ArgumentList.Add("--local");
+        process.StartInfo.ArgumentList.Add(key);
+        process.StartInfo.ArgumentList.Add(value);
+        if (!process.Start()) throw new IOException("Could not start git config.");
+        var error = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        if (process.ExitCode != 0) throw new IOException(await error);
     }
 
     private static string CreateTemporaryThemeJson()
