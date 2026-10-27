@@ -110,6 +110,95 @@ class ManagedPackageVerifierTests(unittest.TestCase):
               mock.patch.object(verify, '_git', return_value='a' * 40)):
             self.assertEqual('a' * 40, verify._branch_history_head())
 
+    def test_ci_event_context_push_validates_head_branch_and_pr_contract(self) -> None:
+        workflow = (verify.ROOT / '.github/workflows/ci.yml').read_text()
+        branch, head = 'milestone/managed-package-lifecycle-parity', 'a' * 40
+        env = {'GITHUB_SHA': head, 'GITHUB_REF_NAME': branch}
+        def run(environment, text=workflow):
+            return verify._ci_event_context('push', {}, environment, head, branch, text,
+                                            lambda child, parent: False, None)
+        result = run(env)
+        self.assertTrue(result['pushHeadValid'])
+        self.assertTrue(result['prHeadBaseValid'])
+        self.assertFalse(run({**env, 'GITHUB_SHA': 'b' * 40})['pushHeadValid'])
+        self.assertFalse(run({**env, 'GITHUB_REF_NAME': 'other'})['pushHeadValid'])
+        self.assertFalse(run(env, workflow.replace('PULL_REQUEST_BASE_SHA:', 'MISSING_BASE:'))['prHeadBaseValid'])
+
+    def test_ci_event_context_pr_requires_matching_merge_and_both_parents(self) -> None:
+        workflow = (verify.ROOT / '.github/workflows/ci.yml').read_text()
+        merge, base, head = 'a' * 40, 'b' * 40, 'c' * 40
+        branch = 'milestone/managed-package-lifecycle-parity'
+        payload = {'pull_request': {'head': {'sha': head, 'ref': branch},
+                                    'base': {'sha': base, 'ref': 'main'}}}
+        env = {'GITHUB_SHA': merge, 'GITHUB_HEAD_REF': branch}
+        def run(event=payload, environment=env, ancestors=(head, base), text=workflow):
+            return verify._ci_event_context('pull_request', event, environment, merge, branch, text,
+                                            lambda child, parent: child in ancestors and parent == merge, None)
+        self.assertTrue(run()['pushHeadValid'])
+        self.assertTrue(run()['prHeadBaseValid'])
+        self.assertFalse(run(ancestors=(head,))['prHeadBaseValid'])
+        self.assertFalse(run(ancestors=(base,))['pushHeadValid'])
+        self.assertFalse(run(environment={**env, 'GITHUB_SHA': head})['prHeadBaseValid'])
+        self.assertFalse(run(event={'pull_request': {'head': {'sha': head, 'ref': branch},
+                                                      'base': {'sha': base, 'ref': 'other'}}})['prHeadBaseValid'])
+        self.assertFalse(run(event={})['prHeadBaseValid'])
+
+    def test_ci_event_context_local_requires_successful_exact_head_push(self) -> None:
+        workflow = (verify.ROOT / '.github/workflows/ci.yml').read_text()
+        branch, head = 'milestone/managed-package-lifecycle-parity', 'a' * 40
+        push = {'id': 1, 'name': 'Linux CI', 'event': 'push', 'head_branch': branch, 'head_sha': head,
+                'status': 'completed', 'conclusion': 'success'}
+        def run(result, text=workflow):
+            return verify._ci_event_context('', {}, {}, head, branch, text, lambda child, parent: False, result)
+        self.assertTrue(run(push)['pushHeadValid'])
+        self.assertTrue(run(push)['prHeadBaseValid'])
+        for bad in (None, {**push, 'head_sha': 'b' * 40}, {**push, 'conclusion': 'failure'},
+                    {**push, 'status': 'in_progress'}, {**push, 'head_branch': 'other'},
+                    {**push, 'name': 'Unrelated workflow'}):
+            self.assertFalse(run(bad)['pushHeadValid'])
+        self.assertFalse(run(push, workflow.replace('git merge-base --is-ancestor', 'missing'))['prHeadBaseValid'])
+
+    def test_ci_integration_executes_all_assertions_in_each_event_context(self) -> None:
+        from types import SimpleNamespace
+        branch, head, base, merge = 'milestone/managed-package-lifecycle-parity', 'a' * 40, 'b' * 40, 'c' * 40
+        push = {'id': 1, 'name': 'Linux CI', 'event': 'push', 'head_branch': branch, 'head_sha': head,
+                'status': 'completed', 'conclusion': 'success'}
+        event_file = self.root / 'event.json'
+        event_file.write_text(json.dumps({'pull_request': {'head': {'sha': head, 'ref': branch},
+                                                           'base': {'sha': base, 'ref': 'main'}}}))
+        cases = [
+            ('push', head, {'GITHUB_EVENT_NAME': 'push', 'GITHUB_SHA': head, 'GITHUB_REF_NAME': branch}, 0),
+            ('push_bad', head, {'GITHUB_EVENT_NAME': 'push', 'GITHUB_SHA': base, 'GITHUB_REF_NAME': branch}, 1),
+            ('pr', merge, {'GITHUB_EVENT_NAME': 'pull_request', 'GITHUB_SHA': merge,
+                           'GITHUB_HEAD_REF': branch, 'GITHUB_EVENT_PATH': str(event_file)}, 0),
+            ('pr_bad', merge, {'GITHUB_EVENT_NAME': 'pull_request', 'GITHUB_SHA': head,
+                               'GITHUB_HEAD_REF': branch, 'GITHUB_EVENT_PATH': str(event_file)}, 1),
+            ('local', head, {}, 0),
+        ]
+        for name, checkout, environment, expected in cases:
+            with self.subTest(name=name):
+                output = self.root / name
+                evidence = fixture_support.make_valid_evidence(output)
+                evidence['provenance']['branch'] = branch
+                evidence['provenance']['command'].append('--all')
+                fixture_support.write_evidence(output, evidence)
+                (output / 'verifier-tests.command.json').write_text('{"exitCode":0}')
+                pin = verify.load_contract()['upstream']['revision']
+                def git(*args, **kwargs):
+                    return pin if 'cwd' in kwargs else checkout
+                result = SimpleNamespace(returncode=0, stdout='', stderr='')
+                with (mock.patch.dict('os.environ', environment, clear=True),
+                      mock.patch.object(verify, '_validate_provenance'),
+                      mock.patch.object(verify, '_git', side_effect=git),
+                      mock.patch.object(verify, '_successful_push_run', return_value=push),
+                      mock.patch.object(verify.subprocess, 'run', return_value=result)):
+                    self.assertEqual(expected, verify.execute_ci_integration(output))
+                recorded = json.loads((output / 'ci-integration.command.json').read_text())['checks']
+                self.assertEqual(expected == 0, recorded['ci.push-head'])
+                self.assertEqual(expected == 0, recorded['ci.pr-head-base'] if name.startswith('pr') else recorded['ci.push-head'])
+                for assertion in ('ci.pinned-pi', 'ci.execute-all', 'ci.negative-controls', 'ci.upload-on-failure'):
+                    self.assertTrue(recorded[assertion], assertion)
+
     def test_checkpoint_dependencies_cannot_be_bypassed(self) -> None:
         npm_install = next(item for item in self.evidence['checkpointResults']
                            if item['checkpointId'] == 'npm-install')

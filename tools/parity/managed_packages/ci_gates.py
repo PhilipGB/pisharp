@@ -1,8 +1,60 @@
 """Inspect required CI workflow jobs and exact-head results."""
 
-from typing import Any
+import re
+from typing import Any, Callable, Mapping
 
 from errors import VerificationError
+
+
+def _ci_event_context(event: str, payload: dict[str, Any], environment: Mapping[str, str],
+                      checkout_sha: str, branch: str, workflow: str,
+                      is_ancestor: Callable[[str, str], bool],
+                      push_run: dict[str, Any] | None) -> dict[str, Any]:
+    """Evaluate actual event identity and the workflow's PR-merge safeguards."""
+    valid_sha = lambda value: isinstance(value, str) and re.fullmatch(r'[0-9a-f]{40}', value) is not None
+    contract = all(marker in workflow for marker in (
+        'PULL_REQUEST_HEAD_SHA:', 'PULL_REQUEST_BASE_SHA:', 'git merge-base --is-ancestor'))
+    milestone = branch == 'milestone/managed-package-lifecycle-parity'
+    if event == 'push':
+        branch_match = milestone and environment.get('GITHUB_REF_NAME') == branch
+        push_ok = valid_sha(checkout_sha) and environment.get('GITHUB_SHA') == checkout_sha and branch_match
+        return {'pushHeadValid': push_ok, 'prHeadBaseValid': contract,
+                'pushDetails': {'event': 'push', 'eventSha': environment.get('GITHUB_SHA'),
+                                'checkedOutSha': checkout_sha, 'branch': environment.get('GITHUB_REF_NAME'),
+                                'matchesMilestoneBranch': branch_match},
+                'prDetails': {'syntheticMergeIdentityContractPresent': contract,
+                              'actualPullRequestWillBeValidatedByExactHeadCi': True}}
+    if event == 'pull_request':
+        pr = payload.get('pull_request') or {}
+        pr_head = (pr.get('head') or {}).get('sha')
+        pr_base = (pr.get('base') or {}).get('sha')
+        base_ref = (pr.get('base') or {}).get('ref')
+        head_branch = (pr.get('head') or {}).get('ref')
+        identity = (valid_sha(checkout_sha) and environment.get('GITHUB_SHA') == checkout_sha
+                    and milestone and environment.get('GITHUB_HEAD_REF') == branch and head_branch == branch)
+        contains_head = bool(identity and valid_sha(pr_head) and is_ancestor(pr_head, checkout_sha))
+        contains_base = bool(identity and valid_sha(pr_base) and is_ancestor(pr_base, checkout_sha))
+        return {'pushHeadValid': contains_head, 'prHeadBaseValid': bool(contains_head and contains_base
+                                                                         and base_ref == 'main' and contract),
+                'pushDetails': {'event': event, 'prHeadSha': pr_head, 'mergeSha': checkout_sha,
+                                'mergeContainsHead': contains_head},
+                'prDetails': {'headSha': pr_head, 'baseSha': pr_base, 'baseRef': base_ref,
+                              'mergeSha': checkout_sha, 'mergeContainsHead': contains_head,
+                              'mergeContainsBase': contains_base}}
+    if event:
+        return {'pushHeadValid': False, 'prHeadBaseValid': False,
+                'pushDetails': {'event': event}, 'prDetails': {'unsupportedEvent': event}}
+    valid_run = bool(push_run and milestone and valid_sha(checkout_sha)
+                     and push_run.get('event') == 'push' and push_run.get('name') == 'Linux CI'
+                     and push_run.get('head_branch') == branch
+                     and push_run.get('head_sha') == checkout_sha and push_run.get('status') == 'completed'
+                     and push_run.get('conclusion') == 'success')
+    return {'pushHeadValid': valid_run, 'prHeadBaseValid': contract,
+            'pushDetails': ({'runId': push_run.get('id'), 'headSha': push_run.get('head_sha'),
+                             'conclusion': push_run.get('conclusion')} if valid_run else
+                            {'headSha': checkout_sha, 'completedSuccessfulPushRun': False}),
+            'prDetails': {'syntheticMergeIdentityContractPresent': contract,
+                          'actualPullRequestWillBeValidatedByExactHeadCi': True}}
 
 
 def _latest_exact_workflow_run(runs: list[dict[str, Any]], *, event: str, branch: str,

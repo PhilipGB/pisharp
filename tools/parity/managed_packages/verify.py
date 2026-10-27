@@ -24,7 +24,7 @@ import evidence_artifacts
 from github_api import _run_github_api
 from errors import ExecutionUnavailable, MandatoryFailure, VerificationError
 from schema_validation import _schema_errors
-from ci_gates import (_latest_exact_workflow_run, _required_workflow_jobs, _workflow_step_block,
+from ci_gates import (_ci_event_context, _latest_exact_workflow_run, _required_workflow_jobs, _workflow_step_block,
                       _workflow_has_required_steps, _workflow_gate_state)
 
 
@@ -4422,7 +4422,8 @@ def _successful_push_run(branch: str, head_sha: str) -> dict[str, Any] | None:
     runs, _ = _run_github_api(
         f'actions/runs?branch={quote(branch)}&per_page=100', label='GitHub push workflow runs query')
     candidates = [item for item in runs.get('workflow_runs', [])
-                  if item.get('event') == 'push' and item.get('head_branch') == branch
+                  if item.get('event') == 'push' and item.get('name') == 'Linux CI'
+                  and item.get('head_branch') == branch
                   and item.get('head_sha') == head_sha and item.get('status') == 'completed'
                   and item.get('conclusion') == 'success']
     return max(candidates, key=lambda item: item.get('run_number', 0)) if candidates else None
@@ -4467,8 +4468,11 @@ def execute_ci_integration(output: Path) -> int:
     all_core_passed = all(result_map[item]['status'] == 'passed' for item in core_checkpoint_ids)
     core_case_ids = {case_id for item in contract['checkpoints'] if item['id'] in core_checkpoint_ids
                      for case_id in item['requiredCaseIds']}
-    all_core_cases_passed = all(case['executed'] and case['passed'] for case in report['cases']
-                                if case['caseId'] in core_case_ids)
+    core_cases = [case for case in report['cases'] if case['caseId'] in core_case_ids]
+    all_core_cases_passed = (len(core_cases) == len(core_case_ids)
+                             and {case['caseId'] for case in core_cases} == core_case_ids
+                             and all(case['executed'] and case['passed'] and not case['skipped']
+                                     for case in core_cases))
     execute_all_recorded = ('--all' in report['provenance']['command']
                             and report['executionExitCode'] == 0
                             and all_core_passed and all_core_cases_passed)
@@ -4478,39 +4482,18 @@ def execute_ci_integration(output: Path) -> int:
     negative_controls_ran = (verifier_log.get('exitCode') == 0
                               and 'python3 tools/parity/managed_packages/test_verifier.py' in workflow)
 
-    if event_name == 'push':
-        push_head_ok = os.environ.get('GITHUB_SHA') == repo_head and repo_head == _git('rev-parse', 'HEAD')
-        push_details = {'event': 'push', 'eventSha': os.environ.get('GITHUB_SHA'), 'checkedOutSha': repo_head,
-                        'branch': os.environ.get('GITHUB_REF_NAME', branch), 'matchesMilestoneBranch': True}
-    elif event_name == 'pull_request':
-        pull_request = event_payload.get('pull_request') or {}
-        pr_head = (pull_request.get('head') or {}).get('sha')
-        pr_base = (pull_request.get('base') or {}).get('sha')
-        pr_base_ref = (pull_request.get('base') or {}).get('ref')
-        merge_contains_head = bool(pr_head) and subprocess.run(
-            ['git', 'merge-base', '--is-ancestor', pr_head, repo_head], cwd=ROOT,
-            capture_output=True).returncode == 0
-        merge_contains_base = bool(pr_base) and subprocess.run(
-            ['git', 'merge-base', '--is-ancestor', pr_base, repo_head], cwd=ROOT,
-            capture_output=True).returncode == 0
-        push_head_ok = merge_contains_head
-        push_details = {'event': 'pull_request', 'prHeadSha': pr_head, 'mergeSha': repo_head,
-                        'mergeContainsHead': merge_contains_head}
-        pr_head_base_ok = (merge_contains_head and merge_contains_base and pr_base_ref == 'main'
-                           and 'PULL_REQUEST_HEAD_SHA:' in workflow and 'PULL_REQUEST_BASE_SHA:' in workflow)
-        pr_details = {'headSha': pr_head, 'baseSha': pr_base, 'baseRef': pr_base_ref,
-                      'mergeSha': repo_head, 'mergeContainsHead': merge_contains_head,
-                      'mergeContainsBase': merge_contains_base}
-    else:
-        push_run = _successful_push_run(branch, repo_head)
-        push_head_ok = push_run is not None
-        push_details = ({'runId': push_run.get('id'), 'headSha': push_run.get('head_sha'),
-                         'conclusion': push_run.get('conclusion')} if push_run else
-                        {'headSha': repo_head, 'completedSuccessfulPushRun': False})
-        pr_head_base_ok = ('PULL_REQUEST_HEAD_SHA:' in workflow and 'PULL_REQUEST_BASE_SHA:' in workflow
-                           and 'git merge-base --is-ancestor' in workflow)
-        pr_details = {'syntheticMergeIdentityContractPresent': pr_head_base_ok,
-                      'actualPullRequestWillBeValidatedByExactHeadCi': True}
+    push_run = _successful_push_run(branch, repo_head) if not event_name else None
+
+    def is_ancestor(child: str, parent: str) -> bool:
+        return subprocess.run(['git', 'merge-base', '--is-ancestor', child, parent],
+                              cwd=ROOT, capture_output=True).returncode == 0
+
+    event_context = _ci_event_context(event_name, event_payload, os.environ, repo_head, branch,
+                                      workflow, is_ancestor, push_run)
+    push_head_ok = event_context['pushHeadValid']
+    pr_head_base_ok = event_context['prHeadBaseValid']
+    push_details = event_context['pushDetails']
+    pr_details = event_context['prDetails']
 
     event_family = ('github-actions-pr' if event_name == 'pull_request' else 'github-actions-push')
     validations = {
