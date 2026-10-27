@@ -5,13 +5,13 @@
 PR #26 was verified merged at `d969d3ec5c4f0bb90e9c446a6c505c0374f59dd9`;
 this branch is based on that merge, with Pi pinned at
 `b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6`. The latest exact-source package
-corpus passes 24/27 checkpoints and 218/240 executed cases, with zero
-failures/skips, at source SHA `a3c635ce1689489f3fd55aaa00bb6cf6e88bdac7`.
-Committed evidence passes locally. Local
+corpus passes 23/27 checkpoints and 211/240 executed cases, with zero
+failures/skips, at source SHA `2a7ab5dc5d2a6bf5981e1411d4e4d8b4e67de032`.
+Committed evidence is being refreshed. Local
 format, warnings-as-errors build, .NET 3,901/3,901, focused package 116/116,
-architecture 7/7, Python 142/142, Node 24/24, MCP conformance, docs and all 18
-differential rechecks pass. CI integration, draft publication, and exact-head CI
-remain (22 cases); the PR's automated checks will run on GitHub. See the
+architecture 7/7, Python 148/148, Node 24/24, MCP conformance, docs and all 18
+differential rechecks pass. Committed evidence, CI integration, draft publication, and exact-head CI
+remain (29 cases); the PR's automated checks will run on GitHub. See the
 [managed-package receipt](docs/parity/fixtures/managed-package-lifecycle-parity.md)
 and [inventory](docs/parity/fixtures/managed-package-lifecycle-parity/inventory.json).
 
