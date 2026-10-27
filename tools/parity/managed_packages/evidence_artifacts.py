@@ -69,6 +69,14 @@ def _case_digest(value: Any, *, repository: str, evidence_root: str, case_id: st
 
 def _case_side_digest(case_id: str, side: str, value: Any, *, repository: str,
                      evidence_root: str) -> str | None:
+    if case_id == 'npm.update-cancelled' and side == 'oracle' and isinstance(value, dict):
+        state = value.get('state')
+        if isinstance(state, dict) and state == {
+                'cancelled': True, 'initialVersion': '1.0.0', 'finalVersion': None,
+                'restartExitCode': 0, 'versionAfterRestart': state.get('versionAfterRestart'),
+                'sourceConfigured': True, 'settingsUnchanged': True, 'downloadStarted': True,
+        } and state['versionAfterRestart'] in ('1.0.0', '1.1.0'):
+            value = {**value, 'state': {**state, 'versionAfterRestart': '<local-registry-version>'}}
     if (case_id == 'pm.cancellation' and side == 'actual' and isinstance(value, dict)
             and isinstance(value.get('state'), dict) and value['state'].get('exitCode') in (1, 130)):
         value = {**value, 'state': {**value['state'], 'exitCode': 'bounded-cancellation-exit'}}

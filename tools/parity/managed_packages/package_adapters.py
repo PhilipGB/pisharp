@@ -450,6 +450,11 @@ def _record_managed_npm_cases(context: AdapterContext, report: dict[str, Any], o
     return all_passed
 
 
+def _matches_cancelled_oracle(observed: Any, expected: dict[str, Any]) -> bool:
+    return isinstance(observed, dict) and observed in (
+        expected, {**expected, 'versionAfterRestart': '1.1.0'})
+
+
 def _record_npm_update_cases(context: AdapterContext, report: dict[str, Any], output: Path,
                              runner_results: list[dict[str, Any]]) -> bool:
     """Independently validate the mutable-registry npm update process matrix."""
@@ -542,8 +547,12 @@ def _record_npm_update_cases(context: AdapterContext, report: dict[str, Any], ou
         else:
             expected_oracle, expected_actual = safety_expected[case_id]
             classification = 'intentional-safety-difference'
+            oracle_matches = oracle_state == expected_oracle
+            if case_id == 'npm.update-cancelled':
+                # Restart can install either version from the still-running local registry.
+                oracle_matches = _matches_cancelled_oracle(oracle_state, expected_oracle)
             assertions_pass = (
-                oracle_state == expected_oracle and actual_state == expected_actual
+                oracle_matches and actual_state == expected_actual
                 and observed_case.get('passed') is True
                 and actual_state.get('initialVersion') == oracle_state.get('initialVersion')
                 and actual_state.get('finalVersion') == actual_state.get('initialVersion')
@@ -551,7 +560,8 @@ def _record_npm_update_cases(context: AdapterContext, report: dict[str, Any], ou
                 and actual_state.get('restartExitCode') == 0
                 and actual_state.get('versionAfterRestart') == actual_state.get('finalVersion')
                 and (oracle_state.get('versionAfterRestart') is None
-                     or oracle_state.get('versionAfterRestart') == oracle_state.get('initialVersion'))
+                     or oracle_state.get('versionAfterRestart') == oracle_state.get('initialVersion')
+                     or (case_id == 'npm.update-cancelled' and oracle_state.get('versionAfterRestart') == '1.1.0'))
                 and actual_state.get('downloadStarted') is True
             )
         passed = runner_pass and assertions_pass

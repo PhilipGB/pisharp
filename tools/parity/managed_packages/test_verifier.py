@@ -15,6 +15,7 @@ from unittest import mock
 
 import fixture_support
 import evidence_artifacts
+import package_adapters
 import verify
 
 
@@ -368,6 +369,23 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         self.assertTrue(verify._is_same_git_install_safety_difference(case))
         pi['cloneCollisionErrors'][1] = second['stderr'].replace('/fixture/repo/', '/other/repo/')
         self.assertFalse(verify._is_same_git_install_safety_difference(case))
+
+    def test_cancelled_update_accepts_only_observed_local_registry_restart_versions(self) -> None:
+        old = {'cancelled': True, 'initialVersion': '1.0.0', 'finalVersion': None,
+               'restartExitCode': 0, 'versionAfterRestart': '1.0.0', 'sourceConfigured': True,
+               'settingsUnchanged': True, 'downloadStarted': True}
+        newer = {**old, 'versionAfterRestart': '1.1.0'}
+        invalid = {**old, 'versionAfterRestart': '9.9.9'}
+        self.assertTrue(package_adapters._matches_cancelled_oracle(old, old))
+        self.assertTrue(package_adapters._matches_cancelled_oracle(newer, old))
+        self.assertFalse(package_adapters._matches_cancelled_oracle(invalid, old))
+        self.assertFalse(package_adapters._matches_cancelled_oracle({**newer, 'settingsUnchanged': False}, old))
+        digest = lambda state: evidence_artifacts._case_side_digest(
+            'npm.update-cancelled', 'oracle', {'exitCode': 0, 'state': state},
+            repository='/repo', evidence_root='/evidence')
+        self.assertEqual(digest(old), digest(newer))
+        self.assertNotEqual(digest(old), digest(invalid))
+        self.assertNotEqual(digest(old), digest({**newer, 'settingsUnchanged': False}))
 
     def test_package_cli_fixture_disables_external_npm_update_notices(self) -> None:
         path = verify.ROOT / 'tools/parity/package-cli-process-differential.py'
