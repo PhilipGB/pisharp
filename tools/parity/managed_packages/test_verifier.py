@@ -53,6 +53,23 @@ class ManagedPackageVerifierTests(unittest.TestCase):
         result = verify.validate_evidence(self.evidence, self.root, allow_synthetic=True)
         self.assertEqual(0, result)
 
+    def test_cancelled_install_reports_an_incomplete_manifest(self) -> None:
+        path = verify.ROOT / 'tools/parity/managed-package-failure-process-differential.py'
+        spec = importlib.util.spec_from_file_location('failure_incomplete_manifest_control', path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        agent = self.root / 'agent'
+        package = agent / 'npm/node_modules/fixture'
+        package.mkdir(parents=True)
+        (package / 'package.json').write_text('')
+        item = {'agent': agent, 'cwd': self.root}
+        with (mock.patch.object(module.package_cli, 'read_settings', return_value={}),
+              mock.patch.object(module.package_cli, 'package_sources', return_value=[]),
+              mock.patch.object(module.package_cli, 'setting_snapshot', return_value={})):
+            state = module.state(item, 'npm:fixture', {'exitCode': 1}, {}, 'fixture')
+        self.assertTrue(state['packageRootPresent'])
+        self.assertEqual('invalid-manifest', state['installedVersion'])
+
     def test_detached_pull_request_checkout_uses_source_branch_name(self) -> None:
         with (mock.patch.object(verify, '_git', return_value=''),
               mock.patch.dict('os.environ', {

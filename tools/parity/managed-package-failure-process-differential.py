@@ -73,7 +73,11 @@ def state(item: dict, source: str, command: dict, before: dict, name: str) -> di
         package_root = installed_root(item, name)
         manifest = package_root / 'package.json'
         package_root_present = package_root.is_dir()
-        version = json.loads(manifest.read_text(encoding='utf-8')).get('version') if manifest.is_file() else None
+        try:
+            parsed = json.loads(manifest.read_text(encoding='utf-8')) if manifest.is_file() else None
+            version = parsed.get('version') if isinstance(parsed, dict) else 'invalid-manifest' if parsed is not None else None
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            version = 'invalid-manifest'
     after = package_cli.setting_snapshot(item['agent'], item['cwd'])
     return {
         'commandFailed': command['exitCode'] != 0,
