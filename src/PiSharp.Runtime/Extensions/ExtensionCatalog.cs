@@ -812,6 +812,22 @@ public sealed partial class ExtensionCatalog : IDisposable
                     AddBuiltin(entry);
                     continue;
                 }
+                if (ManagedResourcePackageStore.GetManagedPackageIdentity(entry) is not null)
+                {
+                    var packageRoot = (temporaryPackageRoots ?? []).FirstOrDefault(root => root.Source == entry);
+                    if (packageRoot is null)
+                    {
+                        if (seenPaths.Add(ResourcePathIdentity.Canonicalize(entry)))
+                            catalog._loadErrors.Add(new(entry, "Extension path does not exist: " + entry));
+                        continue;
+                    }
+                    var rootPath = ResourcePathIdentity.Canonicalize(packageRoot.Path);
+                    foreach (var file in temporaryPackageFiles)
+                        if (file.Enabled && file.Source.BaseDir is { } baseDirectory &&
+                            seenPaths.Comparer.Equals(ResourcePathIdentity.Canonicalize(baseDirectory), rootPath))
+                            AddPath(file.Path, file.Source);
+                    continue;
+                }
                 var path = ResourceLocalPath.Resolve(entry, cwd);
                 IEnumerable<string> paths;
                 if (Directory.Exists(path)) paths = FindAssemblies(path);
@@ -828,8 +844,6 @@ public sealed partial class ExtensionCatalog : IDisposable
                     AddPath(assemblyPath, new(Path.GetFullPath(assemblyPath), "cli", "temporary", "top-level",
                         null));
             }
-            foreach (var file in temporaryPackageFiles)
-                if (file.Enabled) AddPath(file.Path, file.Source);
             if (projectTrusted)
                 AddConfiguredPaths(projectPaths, Path.Combine(cwd, ".pi"), "project");
             AddConfiguredPaths(userPaths, agentDirectory, "user");

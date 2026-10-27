@@ -147,6 +147,76 @@ public sealed class TemporaryManagedExtensionTests
         }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task MixedCliLocalAndManagedExtensionsPreserveArgumentOrder(bool managedFirst)
+    {
+        await using var fixture = new ManagedNpmFixture();
+        fixture.Create();
+        var package = fixture.CreatePackageDirectory("temporary-order-conflict");
+        var tarball = await fixture.PackAsync(package,
+            """{"name":"temporary-order-conflict","version":"1.0.0","pi":{"extensions":["extensions/user.dll"]}}""",
+            copiedFiles: new Dictionary<string, string>
+            {
+                ["extensions/user.dll"] = typeof(ExtensionConflictFixture).Assembly.Location
+            });
+        var managedSource = "npm:temporary-order-conflict@file:" + tarball;
+        var localPath = Path.Combine(fixture.ProjectDirectory, "project.dll");
+        File.Copy(typeof(ExtensionConflictFixture).Assembly.Location, localPath);
+        var orderedSources = managedFirst
+            ? new[] { managedSource, "./project.dll" }
+            : new[] { "./project.dll", managedSource };
+        var cliArguments = orderedSources.SelectMany(source => new[] { "--extension", source }).ToArray();
+        var previousOffline = Environment.GetEnvironmentVariable("npm_config_offline");
+        var previousCache = Environment.GetEnvironmentVariable("npm_config_cache");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("npm_config_offline", "true");
+            Environment.SetEnvironmentVariable("npm_config_cache", fixture.NpmCacheDirectory);
+            var arguments = ExtensionCliPaths.Resolve(CliArguments.Parse(cliArguments), fixture.ProjectDirectory);
+            using var configuration = await ProjectRuntimeConfiguration.LoadAsync(fixture.ProjectDirectory,
+                fixture.AgentDirectory, arguments, new ProjectTrust(fixture.AgentDirectory),
+                interactiveTrust: false, TextReader.Null, TextWriter.Null, trustedOverride: false);
+            using var runtime = await ProjectRuntimeContext.LoadAsync(configuration, fixture.AgentDirectory,
+                arguments, configuredSessionDirectory: null);
+
+            var managedPackageRoot = Assert.Single(configuration.TemporaryExtensionPackageRoots).Path;
+            var managedExtensionPath = Path.Combine(managedPackageRoot, "extensions", "user.dll");
+            var expectedPaths = managedFirst
+                ? new[] { managedExtensionPath, localPath }
+                : new[] { localPath, managedExtensionPath };
+            var loadedCliExtensions = runtime.Extensions.LoadedExtensions
+                .Where(extension => extension.Source == "cli").ToArray();
+            Assert.Equal(expectedPaths, loadedCliExtensions.Select(extension => extension.Path).ToArray());
+            Assert.All(loadedCliExtensions, extension =>
+            {
+                Assert.Equal("temporary", extension.Scope);
+                Assert.Equal("top-level", extension.Origin);
+            });
+            Assert.Equal(managedFirst ? new string?[] { managedPackageRoot, null } :
+                [null, managedPackageRoot], loadedCliExtensions.Select(extension => extension.BaseDir).ToArray());
+            var commands = runtime.Extensions.Registration.Commands;
+            Assert.Equal(expectedPaths, new[]
+            {
+                runtime.Extensions.Registration.CommandInfo["deploy:1"].SourceInfo.Path,
+                runtime.Extensions.Registration.CommandInfo["deploy:2"].SourceInfo.Path
+            });
+            var expectedOwners = managedFirst ? new[] { "user", "project" } : new[] { "project", "user" };
+            Assert.Equal(expectedOwners, new[]
+            {
+                await commands["deploy:1"]("", CancellationToken.None),
+                await commands["deploy:2"]("", CancellationToken.None)
+            });
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("npm_config_offline", previousOffline);
+            Environment.SetEnvironmentVariable("npm_config_cache", previousCache);
+        }
+    }
+
     [Fact]
     public async Task ExplicitGitExtensionLoadsFromTemporaryManagedCacheWithoutChangingPackageSettings()
     {

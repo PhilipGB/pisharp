@@ -60,7 +60,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
         bootstrapExtensions: null, ExtensionMode, HasUserInterface, ExtensionUi);
 
     public IReadOnlyList<string> GetCliExtensionPaths(CliArguments arguments) =>
-        (arguments.ExtensionPaths ?? []).Where(path => ManagedResourcePackageStore.GetManagedPackageIdentity(path) is null)
+        (arguments.ExtensionPaths ?? [])
             .Distinct(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal).ToArray();
 
     public static async Task<ProjectRuntimeConfiguration> LoadAsync(string workingDirectory, string agentDirectory,
@@ -89,8 +89,7 @@ internal sealed class ProjectRuntimeConfiguration : IDisposable
                 HasProjectTrustExtensionSources(agentDirectory, arguments, baseSettings))
             {
                 var cliExtensions = (arguments.ExtensionPaths ?? []).Where(path =>
-                        !path.StartsWith("builtin:", StringComparison.Ordinal) &&
-                        ManagedResourcePackageStore.GetManagedPackageIdentity(path) is null).ToArray();
+                    !path.StartsWith("builtin:", StringComparison.Ordinal)).ToArray();
                 var userExtensions = arguments.NoExtensions ? null :
                     baseSettings.Extensions?.Where(path => !path.TrimStart('!', '+', '-').StartsWith(
                         "builtin:", StringComparison.Ordinal)).ToArray();
