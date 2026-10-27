@@ -2523,7 +2523,7 @@
       "passed": true
     },
     {
-      "actualSha256": "87c16d3ab295235c1341aa9cd0d9e937fb59224bb8474c7756db0b3764d88914",
+      "actualSha256": "17bd5e9d53d6557ef9529f0428972e482735c21a28fde23eb9868ddad8b82630",
       "assertions": {
         "distribution.temporary-git-package": true
       },
@@ -2534,11 +2534,11 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "87c16d3ab295235c1341aa9cd0d9e937fb59224bb8474c7756db0b3764d88914",
+      "oracleSha256": "17bd5e9d53d6557ef9529f0428972e482735c21a28fde23eb9868ddad8b82630",
       "passed": true
     },
     {
-      "actualSha256": "fcb23a56dd7ce5aae0ad7aab23f58777fe9483ac8e10a6574f6da99aceecce0a",
+      "actualSha256": "635b2de68a07cc9d6fca48cb293f808199f45dbe6192fdefc714fe3ace0270ed",
       "assertions": {
         "distribution.temporary-source-order": true
       },
@@ -2549,7 +2549,7 @@
       "commandIdentity": "tools/parity/resource-invocation-process-differential.py",
       "executed": true,
       "fixtureIdentity": "local-npm-git-resource-fixtures",
-      "oracleSha256": "fcb23a56dd7ce5aae0ad7aab23f58777fe9483ac8e10a6574f6da99aceecce0a",
+      "oracleSha256": "635b2de68a07cc9d6fca48cb293f808199f45dbe6192fdefc714fe3ace0270ed",
       "passed": true
     },
     {
@@ -3362,5 +3362,5 @@
   "goal": "managed-package-lifecycle-parity",
   "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "schemaVersion": 1,
-  "sourceImplementationSha": "7f5fdfc2e3c0c271968a3c373a736bbb32fe8cbc"
+  "sourceImplementationSha": "a4221a8d12eaf447c437328809138cab67430ea5"
 }
