@@ -1109,7 +1109,7 @@
       "commandIdentity": "tools/parity/managed-npm-update-process-differential.py",
       "executed": true,
       "fixtureIdentity": "mutable-local-npm-registry",
-      "oracleSha256": "2246059b8d36fcfcdd173041aa05fe2da7a7aedc18f3f092281a48b35e17ff13",
+      "oracleSha256": "197f20098a6b3cd8a9e179f4ba8b29dc80947cb8155322c09b19a1432f6448d9",
       "passed": true
     },
     {
@@ -3362,5 +3362,5 @@
   "goal": "managed-package-lifecycle-parity",
   "pinnedPiSha": "b06c1f2cf1dea6af8748ddeee18c23587d2cb7c6",
   "schemaVersion": 1,
-  "sourceImplementationSha": "2a7ab5dc5d2a6bf5981e1411d4e4d8b4e67de032"
+  "sourceImplementationSha": "07eda4e67eb161c906223dfe2941bdc79206a1ce"
 }
